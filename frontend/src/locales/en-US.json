@@ -805,6 +805,19 @@
         "self": "Action",
         "query": "Query",
         "export": "Export"
+      },
+      "classification": {
+        "self": "Data classification",
+        "upload": "Upload classification",
+        "upload-succeed": "Upload succeed",
+        "search": "Search classification",
+        "label": "You can upload classification file with JSON format.",
+        "view-example": "View example",
+        "json-format-example": "Classification JSON format example",
+        "copy-succeed": "Copy example succeed",
+        "override-title": "Classification data override",
+        "override-desc": "Existed classification data will be overridden and affect all projects.",
+        "override-confirm": "Still upload"
       }
     },
     "access-control": {
@@ -955,18 +968,23 @@
     "view-commit": "View commit",
     "advanced-search": {
       "self": "Advanced search",
+      "filter": "Filter",
       "scope": {
         "project": {
           "title": "Project",
-          "description": "Include only issues from this project"
+          "description": "Filter by project"
         },
         "instance": {
           "title": "Instance",
-          "description": "Include only issues related with the instance"
+          "description": "Filter by instance"
+        },
+        "environment": {
+          "title": "Environment",
+          "description": "Filter by environment"
         },
         "database": {
           "title": "Database",
-          "description": "Include only issues related with the database"
+          "description": "Filter by database"
         },
         "type": {
           "title": "Change Type",
@@ -1338,6 +1356,7 @@
     }
   },
   "environment": {
+    "all": "All environment",
     "id": "Environment ID",
     "id-description": "The Environment ID is the unique identifier for your environment. You cannot change it after created.",
     "select": "Select environment",
@@ -2377,7 +2396,8 @@
     "description": "You can upload your Bytebase license to unlock pro/enterprise features.",
     "upload-license": "Upload license",
     "upgrade-trial-button": "Upgrade trial",
-    "start-n-days-trial": "Start {days} days trial (no credit card required)",
+    "request-n-days-trial": "Request {days} days trial (no credit card required)",
+    "request-with-qr": "Scan QR code",
     "successfully-start-trial": "Successfully start free trial for {days} days",
     "successfully-upgrade-trial": "Successfully upgrade free trial to {plan}",
     "require-subscription": "This feature requires {requiredPlan} subscription, please purchase Bytebase license to unlock this feature.",
@@ -3217,8 +3237,6 @@
     "diff-editor": {
       "self": "Diff editor",
       "resolve": "Resolve",
-      "latest-schema": "Latest schema",
-      "editing-schema": "Editing schema",
       "auto-merge-failed": "Auto merge failed",
       "need-to-resolve-conflicts": "Branch has been updated by others. You need to resolve the conflicts before you can merge.",
       "resolve-and-merge-again": "Resolve and merge again",

@@ -33,7 +33,7 @@ func TestTiDBTransformSchemaString(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := transformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
+		result, err := TransformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
 		a.NoError(err)
 		if record {
 			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)

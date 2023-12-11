@@ -18,16 +18,17 @@
   </SQLCheckButton>
 </template>
 <script lang="ts" setup>
-import { toRefs } from "vue";
+import { toRef } from "vue";
 import { SQLCheckButton, SQLCheckSummary } from "@/components/SQLCheck";
 import { ComposedDatabase } from "@/types";
 import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{
-  selectedTab: "raw-sql" | "schema-editor";
   databaseList: ComposedDatabase[];
-  editStatement: string;
+  getStatement: () => Promise<{ statement: string; errors: string[] }>;
 }>();
 
-const { show, database, getStatement } = useSchemaEditorSQLCheck(toRefs(props));
+const { show, database } = useSchemaEditorSQLCheck({
+  databaseList: toRef(props, "databaseList"),
+});
 </script>

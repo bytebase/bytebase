@@ -29,6 +29,12 @@
       >
         <MaskingAlgorithmsView />
       </NTabPane>
+      <NTabPane
+        name="classification"
+        :tab="$t('settings.sensitive-data.classification.self')"
+      >
+        <ClassificationView />
+      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -49,6 +55,7 @@ const dataMaskingTabList = [
   "global-masking-rule",
   "semantic-types",
   "masking-algorithms",
+  "classification",
 ] as const;
 type DataMaskingTab = typeof dataMaskingTabList[number];
 const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>
@@ -58,8 +65,10 @@ interface LocalState {
   selectedTab: DataMaskingTab;
 }
 
+const defaultTab: DataMaskingTab = "global-masking-rule";
+
 const state = reactive<LocalState>({
-  selectedTab: "global-masking-rule",
+  selectedTab: defaultTab,
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const router = useRouter();
@@ -72,7 +81,7 @@ watch(
     if (isDataMaskingTab(tab)) {
       state.selectedTab = tab;
     } else {
-      state.selectedTab = "global-masking-rule";
+      state.selectedTab = defaultTab;
     }
   },
   {

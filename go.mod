@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.21.3
+go 1.21.5
 
 require (
 	cloud.google.com/go/spanner v1.53.0
@@ -14,7 +14,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.23.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20231117080012-40c25c7c076c
+	github.com/bytebase/mysql-parser v0.0.0-20231208095055-182de2379272
 	github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a
 	github.com/bytebase/postgresql-parser v0.0.0-20230926094140-aa337757cdd0
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
@@ -36,7 +36,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/jackc/pgx/v4 v4.18.1
+	github.com/jackc/pgx/v5 v5.5.0
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.3
@@ -69,7 +69,7 @@ require (
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
 	github.com/xo/dburl v0.18.3
 	github.com/xuri/excelize/v2 v2.8.0
-	go.mongodb.org/mongo-driver v1.13.0
+	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.16.0
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e
@@ -120,7 +120,7 @@ require (
 	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect

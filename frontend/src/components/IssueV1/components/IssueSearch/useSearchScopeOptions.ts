@@ -9,6 +9,7 @@ import {
   InstanceV1Name,
   ProjectV1Name,
   RichDatabaseName,
+  EnvironmentV1Name,
 } from "@/components/v2";
 import {
   useCurrentUserV1,
@@ -17,6 +18,7 @@ import {
   useProjectV1ListByCurrentUser,
   useSearchDatabaseV1List,
   useUserStore,
+  useEnvironmentV1List,
 } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
@@ -44,11 +46,15 @@ export type ValueOption = {
   render: RenderFunction;
 };
 
-export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
+export const useSearchScopeOptions = (
+  params: Ref<SearchParams>,
+  supportOptionIdList: SearchScopeId[]
+) => {
   const { t } = useI18n();
   const me = useCurrentUserV1();
   const userStore = useUserStore();
   const databaseV1Store = useDatabaseV1Store();
+  const environmentList = useEnvironmentV1List(false /* !showDeleted */);
   const { projectList } = useProjectV1ListByCurrentUser();
   const { instanceList } = useInstanceV1List(false /* !showDeleted */);
   const { databaseList } = useSearchDatabaseV1List({
@@ -232,6 +238,22 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         }),
       },
       {
+        id: "environment",
+        title: t("issue.advanced-search.scope.environment.title"),
+        description: t("issue.advanced-search.scope.environment.description"),
+        options: environmentList.value.map((env) => {
+          return {
+            value: extractEnvironmentResourceName(env.name),
+            keywords: [env.name, env.title],
+            render: () =>
+              h(EnvironmentV1Name, {
+                environment: env,
+                link: false,
+              }),
+          };
+        }),
+      },
+      {
         id: "type",
         title: t("issue.advanced-search.scope.type.title"),
         description: t("issue.advanced-search.scope.type.description"),
@@ -249,7 +271,8 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
         ],
       },
     ];
-    return scopes;
+    const supportOptionIdSet = new Set(supportOptionIdList);
+    return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 
   // filteredScopeOptions will filter search options by chosen scope.
@@ -266,31 +289,33 @@ export const useSearchScopeOptions = (params: Ref<SearchParams>) => {
       })),
     }));
     const index = clone.findIndex((scope) => scope.id === "database");
-    clone[index].options = clone[index].options.filter((option) => {
-      if (!existedScopes.has("project") && !existedScopes.has("instance")) {
-        return true;
-      }
+    if (index >= 0) {
+      clone[index].options = clone[index].options.filter((option) => {
+        if (!existedScopes.has("project") && !existedScopes.has("instance")) {
+          return true;
+        }
 
-      const uid = option.value.split("-").slice(-1)[0];
-      const db = databaseV1Store.getDatabaseByUID(uid);
-      const project = db.project;
-      const instance = db.instance;
+        const uid = option.value.split("-").slice(-1)[0];
+        const db = databaseV1Store.getDatabaseByUID(uid);
+        const project = db.project;
+        const instance = db.instance;
 
-      const existedProject = `projects/${
-        existedScopes.get("project") ?? UNKNOWN_ID
-      }`;
-      if (project === existedProject) {
-        return true;
-      }
-      const existedInstance = `instances/${
-        existedScopes.get("instance") ?? UNKNOWN_ID
-      }`;
-      if (instance === existedInstance) {
-        return true;
-      }
+        const existedProject = `projects/${
+          existedScopes.get("project") ?? UNKNOWN_ID
+        }`;
+        if (project === existedProject) {
+          return true;
+        }
+        const existedInstance = `instances/${
+          existedScopes.get("instance") ?? UNKNOWN_ID
+        }`;
+        if (instance === existedInstance) {
+          return true;
+        }
 
-      return false;
-    });
+        return false;
+      });
+    }
 
     return clone;
   });

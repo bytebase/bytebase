@@ -267,13 +267,24 @@
       </button>
     </div>
   </div>
+  <WeChatQRModal
+    v-if="state.showQRCodeModal"
+    :title="$t('subscription.inquire-enterprise-plan')"
+    @close="state.showQRCodeModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useLanguage } from "@/composables/useLanguage";
 import { useSubscriptionV1Store } from "@/store";
-import { Plan, PLANS, FEATURE_SECTIONS } from "@/types";
+import {
+  Plan,
+  PLANS,
+  FEATURE_SECTIONS,
+  ENTERPRISE_INQUIRE_LINK,
+} from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import FeatureItem from "./FeatureItem.vue";
 import { LocalPlan } from "./types";
@@ -281,6 +292,7 @@ import { LocalPlan } from "./types";
 interface LocalState {
   isMonthly: boolean;
   instanceCount: number;
+  showQRCodeModal: boolean;
 }
 
 const emit = defineEmits(["on-trial"]);
@@ -288,13 +300,14 @@ const emit = defineEmits(["on-trial"]);
 const minimumInstanceCount = 5;
 
 const { t } = useI18n();
+const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
 const state = reactive<LocalState>({
   isMonthly: false,
   instanceCount:
     subscriptionStore.subscription?.instanceCount ?? minimumInstanceCount,
+  showQRCodeModal: false,
 });
-const enterprisePlanFormLink = "https://www.bytebase.com/contact-us";
 
 watch(
   () => subscriptionStore.subscription,
@@ -363,12 +376,16 @@ const onButtonClick = (plan: Plan) => {
     case PlanType.ENTERPRISE:
       if (subscriptionStore.currentPlan === PlanType.ENTERPRISE) {
         if (subscriptionStore.isTrialing) {
-          window.open(enterprisePlanFormLink, "__blank");
+          if (locale.value === "zh-CN") {
+            state.showQRCodeModal = true;
+          } else {
+            window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+          }
         } else {
           window.open(subscriptionStore.purchaseLicenseUrl, "__blank");
         }
       } else {
-        window.open(enterprisePlanFormLink, "__blank");
+        window.open(ENTERPRISE_INQUIRE_LINK, "__blank");
       }
   }
 };

@@ -14,7 +14,8 @@ export const extensionNameOfLanguage = (lang: Language) => {
       return "redis";
   }
   // A simple fallback
-  return "txt";
+  console.warn("unexpected language", lang);
+  return "sql";
 };
 
 export const useEditorContextKey = <

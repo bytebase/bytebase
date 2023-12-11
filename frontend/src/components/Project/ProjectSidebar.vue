@@ -62,6 +62,7 @@ interface ProjectSidebarItem extends SidebarItem {
 
 const props = defineProps<{
   projectSlug?: string;
+  projectId?: string;
   issueSlug?: string;
   databaseSlug?: string;
   changeHistorySlug?: string;
@@ -83,6 +84,7 @@ const state = reactive<LocalState>({
 const params = computed(() => {
   return {
     projectSlug: props.projectSlug,
+    projectId: props.projectId,
     issueSlug: props.issueSlug,
     databaseSlug: props.databaseSlug,
     changeHistorySlug: props.changeHistorySlug,
@@ -155,9 +157,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "link",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("common.branches"),
@@ -177,9 +177,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "link",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("database.sync-schema.title"),
@@ -198,9 +196,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       type: "div",
       hide:
         isDefaultProject.value ||
-        !currentUserIamPolicy.allowToChangeDatabaseOfProject(
-          project.value.name
-        ),
+        !currentUserIamPolicy.isMemberOfProject(project.value.name),
       children: [
         {
           title: t("common.gitops"),

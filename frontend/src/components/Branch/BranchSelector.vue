@@ -7,6 +7,8 @@
     :filterable="true"
     :clearable="clearable"
     :filter="filterByName"
+    :loading="!ready"
+    :disabled="disabled || loading"
     class="bb-branch-select"
     :render-label="renderLabel"
     @update:value="$emit('update:branch', $event)"
@@ -16,12 +18,8 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption, SelectRenderLabel } from "naive-ui";
 import { computed, h } from "vue";
-import { useDatabaseV1Store, useProjectV1Store, useBranchList } from "@/store";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
+import { useDatabaseV1Store, useBranchListByProject } from "@/store";
+import { ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { InstanceV1EngineIcon } from "../v2";
 
@@ -31,9 +29,11 @@ interface BranchSelectOption extends SelectOption {
 }
 
 const props = defineProps<{
-  project?: string;
+  project: ComposedProject;
   branch?: string;
   clearable?: boolean;
+  loading?: boolean;
+  disabled?: boolean;
   filter?: (branch: Branch, index: number) => boolean;
 }>();
 
@@ -41,21 +41,13 @@ defineEmits<{
   (event: "update:branch", name: string | undefined): void;
 }>();
 
-const { branchList: branchList } = useBranchList(props.project || "");
-const projectStore = useProjectV1Store();
+const { branchList, ready } = useBranchListByProject(
+  computed(() => props.project.name)
+);
 const databaseStore = useDatabaseV1Store();
 
 const combinedBranchList = computed(() => {
   let list = branchList.value;
-  if (props.project) {
-    const project = projectStore.getProjectByUID(props.project);
-    if (project) {
-      list = list.filter((branch) => {
-        const [projectName] = getProjectAndBranchId(branch.name);
-        return project.name === `${projectNamePrefix}${projectName}`;
-      });
-    }
-  }
   if (props.filter) {
     list = list.filter(props.filter);
   }

@@ -6,6 +6,7 @@
     :data="dataTableRows"
     :row-key="rowKey"
     :row-props="rowProps"
+    :loading="!ready"
     class="bb-branch-data-table"
   />
 </template>
@@ -16,18 +17,13 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
-import { useDatabaseV1Store, useProjectV1Store, useUserStore } from "@/store";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+import { useDatabaseV1Store, useUserStore } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
 
 type BranchRowData = {
   branch: Branch;
   name: string;
   branchName: string;
-  projectName: string;
   baselineVersion: string;
   updatedTimeStr: string;
   children?: BranchRowData[];
@@ -35,7 +31,6 @@ type BranchRowData = {
 
 const props = defineProps<{
   branches: Branch[];
-  hideProjectColumn?: boolean;
   ready?: boolean;
 }>();
 
@@ -45,7 +40,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const userV1Store = useUserStore();
-const projectV1Store = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const dataTableRows = computed(() => {
@@ -53,10 +47,6 @@ const dataTableRows = computed(() => {
     return branch.parentBranch === "";
   });
   const parentRows: BranchRowData[] = parentBranches.map((branch) => {
-    const [projectName] = getProjectAndBranchId(branch.name);
-    const project = projectV1Store.getProjectByName(
-      `${projectNamePrefix}${projectName}`
-    );
     const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
     const baselineVersion = `(${database.effectiveEnvironmentEntity.title}) ${database.databaseName}`;
 
@@ -64,7 +54,6 @@ const dataTableRows = computed(() => {
       branch: branch,
       name: branch.branchId,
       branchName: branch.branchId,
-      projectName: project.title,
       baselineVersion: baselineVersion,
       updatedTimeStr: getUpdatedTimeStr(branch),
       children: [],
@@ -81,9 +70,7 @@ const dataTableRows = computed(() => {
       parentRow.children?.push({
         branch: childBranch,
         name: childBranch.branchId,
-        branchName: `${parentRow.branchName}/${childBranch.branchId}`,
-        // Child branch does not show project name.
-        projectName: "",
+        branchName: `${childBranch.branchId}`,
         baselineVersion: "",
         updatedTimeStr: getUpdatedTimeStr(childBranch),
       });
@@ -97,10 +84,6 @@ const dataTableColumns = computed(() => {
   const BRANCH_NAME_COLUMN = {
     title: t("common.branch"),
     key: "branchName",
-  };
-  const PROJECT_NAME_COLUMN = {
-    title: t("common.project"),
-    key: "projectName",
   };
   const BASELINE_VERSION_COLUMN = {
     title: t("schema-designer.baseline-version"),
@@ -119,7 +102,6 @@ const dataTableColumns = computed(() => {
 
   return [
     BRANCH_NAME_COLUMN,
-    !props.hideProjectColumn ? PROJECT_NAME_COLUMN : undefined,
     BASELINE_VERSION_COLUMN,
     UPDATED_TIME_COLUMN,
   ].filter((column) => column);

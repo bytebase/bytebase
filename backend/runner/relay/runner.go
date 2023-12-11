@@ -133,7 +133,7 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 		return errors.Wrapf(err, "failed to get external approval status, id: %v, endpoint: %s, id: %s", node.Id, node.Endpoint, id)
 	}
 	if resp.Status == relayplugin.StatusApproved {
-		if err := r.approveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
+		if err := r.ApproveExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
 		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
@@ -143,7 +143,7 @@ func (r *Runner) checkExternalApproval(ctx context.Context, approval *store.Exte
 			return err
 		}
 	} else if resp.Status == relayplugin.StatusRejected {
-		if err := r.rejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
+		if err := r.RejectExternalApprovalNode(ctx, approval.IssueUID); err != nil {
 			return err
 		}
 		if _, err := r.store.UpdateExternalApprovalV2(ctx, &store.UpdateExternalApprovalMessage{
@@ -211,7 +211,8 @@ func (r *Runner) cancelExternalApproval(ctx context.Context, issueUID int) {
 	}
 }
 
-func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) error {
+// ApproveExternalApprovalNode will approve the external approval node and update the issue.
+func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) error {
 	issue, err := r.store.GetIssueV2(ctx, &store.FindIssueMessage{
 		UID: &issueUID,
 	})
@@ -433,7 +434,8 @@ func (r *Runner) approveExternalApprovalNode(ctx context.Context, issueUID int) 
 	return nil
 }
 
-func (r *Runner) rejectExternalApprovalNode(ctx context.Context, issueUID int) error {
+// ApproveExternalApprovalNode will reject the external approval node and update the issue.
+func (r *Runner) RejectExternalApprovalNode(ctx context.Context, issueUID int) error {
 	issue, err := r.store.GetIssueV2(ctx, &store.FindIssueMessage{
 		UID: &issueUID,
 	})

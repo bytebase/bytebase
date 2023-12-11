@@ -12,9 +12,9 @@ import (
 	"time"
 
 	// Import pg driver.
-	// init() in pgx/v4/stdlib will register it's pgx driver.
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/stdlib"
+	// init() in pgx/v5/stdlib will register it's pgx driver.
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"

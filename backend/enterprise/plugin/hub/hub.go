@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"time"
 
@@ -121,12 +120,6 @@ func (p *Provider) loadLicense(ctx context.Context) *enterprise.License {
 	if err != nil {
 		slog.Debug("failed to load enterprise license", log.BBError(err))
 	}
-	if license == nil {
-		license, err = p.findTrialingLicense(ctx)
-		if err != nil {
-			slog.Debug("failed to load trialing license", log.BBError(err))
-		}
-	}
 
 	if license == nil {
 		license, err = p.fetchLicense(ctx)
@@ -177,29 +170,6 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 			)
 			return license, nil
 		}
-	}
-
-	return nil, nil
-}
-
-func (p *Provider) findTrialingLicense(ctx context.Context) (*enterprise.License, error) {
-	settingName := api.SettingEnterpriseTrial
-	setting, err := p.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to load trial license from settings")
-	}
-	if setting != nil && setting.Value != "" {
-		var data enterprise.License
-		if err := json.Unmarshal([]byte(setting.Value), &data); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse trial license")
-		}
-		data.InstanceCount = enterprise.InstanceLimitForTrial
-		if time.Now().AddDate(0, 0, -enterprise.TrialDaysLimit).Unix() >= setting.CreatedTs {
-			return nil, nil
-		}
-		return &data, nil
 	}
 
 	return nil, nil

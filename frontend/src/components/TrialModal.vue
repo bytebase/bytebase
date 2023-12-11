@@ -1,7 +1,7 @@
 <template>
   <BBModal
     :title="
-      $t('subscription.start-n-days-trial', {
+      $t('subscription.request-n-days-trial', {
         days: subscriptionStore.trialingDays,
       })
     "
@@ -34,7 +34,7 @@
           @click.prevent="trialSubscription"
         >
           {{
-            $t("subscription.start-n-days-trial", {
+            $t("subscription.request-n-days-trial", {
               days: subscriptionStore.trialingDays,
             })
           }}
@@ -50,18 +50,32 @@
       </div>
     </div>
   </BBModal>
+  <WeChatQRModal
+    v-if="state.showQRCodeModal"
+    :title="$t('subscription.request-with-qr')"
+    @close="state.showQRCodeModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { useI18n } from "vue-i18n";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import { useSubscriptionV1Store, pushNotification } from "@/store";
-import { planTypeToString } from "@/types";
+import { useLanguage } from "@/composables/useLanguage";
+import { useSubscriptionV1Store } from "@/store";
+import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
-const emit = defineEmits(["cancel"]);
-const { t } = useI18n();
+interface LocalState {
+  showQRCodeModal: boolean;
+}
+
+const state = reactive<LocalState>({
+  showQRCodeModal: false,
+});
+
 const router = useRouter();
+const { locale } = useLanguage();
+
 const subscriptionStore = useSubscriptionV1Store();
 
 const learnMore = () => {
@@ -69,16 +83,10 @@ const learnMore = () => {
 };
 
 const trialSubscription = () => {
-  subscriptionStore.trialSubscription(PlanType.ENTERPRISE).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.success"),
-      description: t("subscription.successfully-start-trial", {
-        days: subscriptionStore.trialingDays,
-      }),
-    });
-    emit("cancel");
-  });
+  if (locale.value === "zh-CN") {
+    state.showQRCodeModal = true;
+  } else {
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+  }
 };
 </script>

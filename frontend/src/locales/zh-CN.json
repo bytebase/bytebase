@@ -802,6 +802,19 @@
         "self": "操作类型",
         "query": "查询",
         "export": "导出"
+      },
+      "classification": {
+        "self": "数据分类分级",
+        "upload": "导入分类分级",
+        "upload-succeed": "导入成功",
+        "search": "搜索分类分级",
+        "label": "您可以上传数据分类分级的 JSON 格式文件。",
+        "view-example": "查看样例",
+        "json-format-example": "分类分级 JSON 格式样例",
+        "copy-succeed": "样例已复制",
+        "override-title": "覆盖分类分级数据",
+        "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
+        "override-confirm": "继续导入"
       }
     },
     "access-control": {
@@ -952,18 +965,23 @@
     "view-commit": "查看提交",
     "advanced-search": {
       "self": "高级搜索",
+      "filter": "过滤",
       "scope": {
         "project": {
           "title": "项目",
-          "description": "仅搜索某个项目下的工单"
+          "description": "根据项目过滤"
         },
         "instance": {
           "title": "实例",
-          "description": "仅搜索与某个实例关联的工单"
+          "description": "根据实例过滤"
         },
         "database": {
           "title": "数据库",
-          "description": "仅搜索与某个数据库关联的工单"
+          "description": "根据数据库过滤"
+        },
+        "environment": {
+          "title": "环境",
+          "description": "根据环境过滤"
         },
         "type": {
           "title": "变更类型",
@@ -1336,6 +1354,7 @@
   },
   "environment": {
     "id": "环境 ID",
+    "all": "所有环境",
     "id-description": "环境 ID 是环境的唯一标识符。一旦创建不能修改。",
     "select": "选择环境",
     "archive": "归档此环境",
@@ -2373,7 +2392,8 @@
     "description": "您可以在这里上传您购买的 Bytebase 证书来解锁专业版/企业版功能。",
     "upload-license": "上传证书",
     "upgrade-trial-button": "升级试用",
-    "start-n-days-trial": "开启 {days} 天试用 (无需信用卡)",
+    "request-n-days-trial": "申请 {days} 天试用 (无需信用卡)",
+    "request-with-qr": "扫描二维码申请试用",
     "successfully-start-trial": "成功开启 {days} 天的免费试用",
     "successfully-upgrade-trial": "成功升级为{plan}试用",
     "require-subscription": "这个功能需要{requiredPlan}订阅，请购买 Bytebase 证书来解锁该功能。",
@@ -3210,8 +3230,6 @@
     "diff-editor": {
       "self": "Diff 编辑器",
       "resolve": "解决",
-      "latest-schema": "最新 Schema",
-      "editing-schema": "正在编辑的 Schema",
       "auto-merge-failed": "自动合并失败",
       "need-to-resolve-conflicts": "父分支已经被其他用户更新，您需要先解决可能存在的冲突。",
       "resolve-and-merge-again": "解决冲突并再次合并",

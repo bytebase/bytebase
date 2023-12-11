@@ -1,7 +1,7 @@
 <template>
   <div
     v-bind="$attrs"
-    class="flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-2 text-main gap-y-2"
+    class="flex flex-col sm:flex-row items-start sm:items-center bg-blue-100 py-3 px-2 text-main gap-y-2 gap-x-4"
   >
     <div class="flex items-center">
       <button
@@ -17,7 +17,7 @@
         })
       }}
     </div>
-    <div class="flex items-center gap-x-4 text-sm ml-5 text-accent">
+    <div class="flex items-center gap-x-4 text-sm text-accent">
       <template v-for="action in actions" :key="action.text">
         <NTooltip :disabled="!action.disabled">
           <template #trigger>

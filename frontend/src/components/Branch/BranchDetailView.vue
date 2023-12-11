@@ -1,5 +1,19 @@
 <template>
-  <div class="space-y-3 w-full overflow-x-auto" v-bind="$attrs">
+  <div
+    class="flex flex-col gap-y-3 w-full overflow-x-auto relative"
+    v-bind="$attrs"
+  >
+    <MaskSpinner
+      v-if="state.isReverting || state.savingStatus"
+      class="!bg-white/75"
+    >
+      <div class="text-sm">
+        <template v-if="state.savingStatus">
+          {{ state.savingStatus }}
+        </template>
+      </div>
+    </MaskSpinner>
+
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
@@ -20,7 +34,7 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <div
-            v-if="!viewMode"
+            v-if="!readonly"
             class="flex flex-row justify-end items-center space-x-2"
           >
             <template v-if="!state.isEditing">
@@ -38,12 +52,12 @@
               >
             </template>
             <template v-else>
-              <NButton @click="handleCancelEdit">{{
+              <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
                 $t("common.cancel")
               }}</NButton>
               <NButton
                 type="primary"
-                :loading="state.isSaving"
+                :loading="!!state.savingStatus"
                 @click="handleSaveBranch"
                 >{{ $t("common.save") }}</NButton
               >
@@ -62,23 +76,20 @@
         <span class="mr-4 shrink-0"
           >{{ $t("schema-designer.baseline-version") }}:</span
         >
-        <DatabaseInfo
-          class="flex-nowrap mr-4 shrink-0"
-          :database="baselineDatabase"
-        />
+        <DatabaseInfo class="flex-nowrap mr-4 shrink-0" :database="database" />
       </div>
     </div>
 
     <div class="w-full h-[32rem]">
-      <SchemaDesignEditor
-        :key="schemaEditorKey"
+      <SchemaDesignEditorLite
+        ref="schemaDesignerRef"
         :project="project"
         :readonly="!state.isEditing"
-        :branch="branch"
+        :branch="dirtyBranch"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
-    <div v-if="!viewMode">
+    <div v-if="!readonly">
       <BBButtonConfirm
         :style="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
@@ -91,16 +102,18 @@
   <TargetDatabasesSelectPanel
     v-if="selectTargetDatabasesContext.show"
     :project-id="project.uid"
-    :engine="branch.engine"
+    :engine="dirtyBranch.engine"
     :selected-database-id-list="[]"
+    :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
-    @update="handleSelectedDatabaseIdListChanged"
+    @update="handleApplyToDatabase"
   />
 
   <MergeBranchPanel
     v-if="state.showDiffEditor && mergeBranchPanelContext"
-    :source-branch-name="mergeBranchPanelContext.sourceBranchName"
-    :target-branch-name="mergeBranchPanelContext.targetBranchName"
+    :project="project"
+    :head-branch-name="mergeBranchPanelContext.headBranchName"
+    :branch-name="mergeBranchPanelContext.branchName"
     @dismiss="state.showDiffEditor = false"
     @merged="handleMergeAfterConflictResolved"
   />
@@ -109,34 +122,29 @@
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { cloneDeep, head, isEqual, uniqueId } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { NButton, NDivider, NInput, NTag } from "naive-ui";
-import { CSSProperties, computed, reactive, ref, watch } from "vue";
+import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
-import {
-  mergeSchemaEditToMetadata,
-  validateDatabaseMetadata,
-} from "@/components/SchemaEditorV1/utils";
+import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
-import { branchServiceClient } from "@/grpcweb";
-import {
-  pushNotification,
-  useDatabaseV1Store,
-  useSchemaEditorV1Store,
-} from "@/store";
-import { useBranchList, useBranchStore } from "@/store/modules/branch";
+import { pushNotification, useDatabaseV1Store } from "@/store";
+import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
 import {
   getProjectAndBranchId,
   projectNamePrefix,
 } from "@/store/modules/v1/common";
+import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
+import { generateDiffDDL } from "../SchemaEditorLite";
+import MaskSpinner from "../misc/MaskSpinner.vue";
 import MergeBranchPanel from "./MergeBranchPanel.vue";
-import SchemaDesignEditor from "./SchemaDesignEditor.vue";
+import SchemaDesignEditorLite from "./SchemaDesignEditorLite.vue";
 import { validateBranchName } from "./utils";
 
 interface LocalState {
@@ -144,63 +152,78 @@ interface LocalState {
   isEditing: boolean;
   isEditingBranchId: boolean;
   showDiffEditor: boolean;
-  isSaving: boolean;
+  isReverting: boolean;
+  savingStatus: string;
+  applyingToDatabaseStatus: boolean;
 }
 
 const props = defineProps<{
-  // Should be a schema design name of main branch.
-  branch: Branch;
-  viewMode?: boolean;
+  project: ComposedProject;
+  cleanBranch: Branch;
+  dirtyBranch: Branch;
+  readonly?: boolean;
+}>();
+const emit = defineEmits<{
+  (event: "update:branch-id", id: string): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchList(
-  getProjectAndBranchId(props.branch.name)[0]
+const { branchList, ready } = useBranchListByProject(
+  computed(() => props.project.name)
 );
 const { runSQLCheck } = provideSQLCheckContext();
+const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
   branchId: "",
   isEditing: false,
   isEditingBranchId: false,
   showDiffEditor: false,
-  isSaving: false,
+  isReverting: false,
+  savingStatus: "",
+  applyingToDatabaseStatus: false,
 });
 const mergeBranchPanelContext = ref<{
-  sourceBranchName: string;
-  targetBranchName: string;
+  headBranchName: string;
+  branchName: string;
 }>();
-const schemaEditorKey = ref<string>(uniqueId());
 const selectTargetDatabasesContext = ref<{
   show: boolean;
 }>({
   show: false,
 });
 
-const branch = computed(() => {
-  return props.branch;
-});
-
 const parentBranch = asyncComputed(async () => {
+  const branch = props.dirtyBranch;
   // Show parent branch when the current branch is a personal draft and it's not the new created one.
-  if (branch.value.parentBranch !== "") {
+  if (branch.parentBranch !== "") {
     return await branchStore.fetchBranchByName(
-      branch.value.parentBranch,
+      branch.parentBranch,
       true /* useCache */
     );
   }
   return undefined;
 }, undefined);
 
-const baselineDatabase = computed(() => {
-  return databaseStore.getDatabaseByName(branch.value.baselineDatabase);
+const database = computed(() => {
+  return databaseStore.getDatabaseByName(props.dirtyBranch.baselineDatabase);
 });
 
-const project = computed(() => {
-  return baselineDatabase.value.projectEntity;
-});
+const rebuildMetadataEdit = () => {
+  const rebuild = schemaDesignerRef.value?.schemaEditor?.rebuildMetadataEdit;
+  if (typeof rebuild !== "function") {
+    console.warn("<SchemaEditor> ref is missing");
+    return;
+  }
+  const branch = props.dirtyBranch;
+  rebuild(
+    database.value,
+    branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+    branch.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+  );
+};
 
 const branchIdInputStyle = computed(() => {
   const style: CSSProperties = {
@@ -218,22 +241,10 @@ const branchIdInputStyle = computed(() => {
   return style;
 });
 
-const prepareBaselineDatabase = async () => {
-  await databaseStore.getOrFetchDatabaseByName(branch.value.baselineDatabase);
-};
-
 watch(
-  () => [props.branch],
-  async () => {
-    state.branchId = branch.value.branchId;
-    await prepareBaselineDatabase();
-    // Prepare the parent branch for personal draft.
-    if (branch.value.parentBranch !== "") {
-      await branchStore.fetchBranchByName(
-        branch.value.parentBranch,
-        true /* useCache */
-      );
-    }
+  () => props.dirtyBranch.branchId,
+  (title) => {
+    state.branchId = title;
   },
   {
     immediate: true,
@@ -258,16 +269,17 @@ const handleBranchIdInputBlur = async () => {
     return;
   }
 
+  const branch = props.dirtyBranch;
   const updateMask = [];
-  if (branch.value.branchId !== state.branchId) {
+  if (branch.branchId !== state.branchId) {
     updateMask.push("branch_id");
   }
   if (updateMask.length !== 0) {
     await branchStore.updateBranch(
       Branch.fromPartial({
-        name: branch.value.name,
+        name: branch.name,
         branchId: state.branchId,
-        baselineDatabase: branch.value.baselineDatabase,
+        baselineDatabase: branch.baselineDatabase,
       }),
       updateMask
     );
@@ -277,22 +289,24 @@ const handleBranchIdInputBlur = async () => {
       title: t("schema-designer.message.updated-succeed"),
     });
   }
+  emit("update:branch-id", state.branchId);
   state.isEditingBranchId = false;
 };
 
 const handleMergeBranch = () => {
+  const branch = props.dirtyBranch;
   const tempList = branchList.value.filter((item) => {
     const [projectName] = getProjectAndBranchId(item.name);
     return (
-      `${projectNamePrefix}${projectName}` === project.value.name &&
-      item.engine === branch.value.engine &&
-      item.name !== branch.value.name
+      `${projectNamePrefix}${projectName}` === props.project.name &&
+      item.engine === branch.engine &&
+      item.name !== branch.name
     );
   });
-  const targetBranchName = parentBranch.value
+  const branchName = parentBranch.value
     ? parentBranch.value.name
     : head(tempList)?.name;
-  if (!targetBranchName) {
+  if (!branchName) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -302,8 +316,8 @@ const handleMergeBranch = () => {
   }
 
   mergeBranchPanelContext.value = {
-    sourceBranchName: branch.value.name,
-    targetBranchName: targetBranchName,
+    headBranchName: branch.name,
+    branchName: branchName,
   };
   state.showDiffEditor = true;
 };
@@ -313,25 +327,14 @@ const handleEdit = async () => {
 };
 
 const handleCancelEdit = async () => {
-  const schemaEditorV1Store = useSchemaEditorV1Store();
-  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    branch.value.name
-  );
-  if (!branchSchema) {
-    return;
-  }
+  state.isReverting = true;
 
-  const baselineMetadata =
-    branchSchema.branch.baselineSchemaMetadata ||
-    DatabaseMetadata.fromPartial({});
-  const mergedMetadata = mergeSchemaEditToMetadata(
-    branchSchema.schemaList,
-    cloneDeep(baselineMetadata)
-  );
-  if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
-    // If the metadata is changed, we need to rebuild the editing state.
-    schemaEditorKey.value = uniqueId();
-  }
+  Object.assign(props.dirtyBranch, cloneDeep(props.cleanBranch));
+
+  await nextTick();
+  rebuildMetadataEdit();
+
+  state.isReverting = false;
   state.isEditing = false;
 };
 
@@ -339,31 +342,42 @@ const handleSaveBranch = async () => {
   if (!state.isEditing) {
     return;
   }
-  if (state.isSaving) {
+  if (state.savingStatus) {
     return;
   }
+
+  const applyMetadataEdit =
+    schemaDesignerRef.value?.schemaEditor?.applyMetadataEdit;
+  if (typeof applyMetadataEdit !== "function") {
+    return;
+  }
+  const cleanup = async (success = false) => {
+    state.savingStatus = "";
+    if (success) {
+      state.isEditing = false;
+      await nextTick();
+      rebuildMetadataEdit();
+    }
+  };
+
   const check = runSQLCheck.value;
-  if (check && !(await check())) {
-    return;
+  if (check) {
+    state.savingStatus = "Checking SQL";
+    if (!(await check())) {
+      return cleanup();
+    }
+    // TODO: optimize: check() could return the generated DDL to avoid
+    // generating one more time below. useful for large schemas
   }
 
-  const updateMask = [];
-  const schemaEditorV1Store = useSchemaEditorV1Store();
-  const branchSchema = schemaEditorV1Store.resourceMap["branch"].get(
-    branch.value.name
-  );
-  if (!branchSchema) {
-    return;
-  }
+  state.savingStatus = "Validating schema";
+  const branch = props.dirtyBranch;
+  const editing = branch.schemaMetadata
+    ? cloneDeep(branch.schemaMetadata)
+    : DatabaseMetadata.fromPartial({});
+  await applyMetadataEdit(database.value, editing);
 
-  const baselineMetadata =
-    branchSchema.branch.baselineSchemaMetadata ||
-    DatabaseMetadata.fromPartial({});
-  const mergedMetadata = mergeSchemaEditToMetadata(
-    branchSchema.schemaList,
-    cloneDeep(baselineMetadata)
-  );
-  const validationMessages = validateDatabaseMetadata(mergedMetadata);
+  const validationMessages = validateDatabaseMetadata(editing);
   if (validationMessages.length > 0) {
     pushNotification({
       module: "bytebase",
@@ -371,30 +385,27 @@ const handleSaveBranch = async () => {
       title: "Invalid schema design",
       description: validationMessages.join("\n"),
     });
-    return;
-  }
-  if (!isEqual(mergedMetadata, branch.value.schemaMetadata)) {
-    updateMask.push("schema_metadata");
+    return cleanup();
   }
 
-  state.isSaving = true;
-  if (updateMask.length !== 0) {
-    await branchStore.updateBranch(
-      Branch.fromPartial({
-        name: branch.value.name,
-        schemaMetadata: mergedMetadata,
-      }),
-      updateMask
-    );
+  state.savingStatus = "Saving";
+  const updateMask = ["schema_metadata"];
+  const updatedBranch = await branchStore.updateBranch(
+    Branch.fromPartial({
+      name: branch.name,
+      schemaMetadata: editing,
+    }),
+    updateMask
+  );
+  Object.assign(props.cleanBranch, updatedBranch);
+  Object.assign(props.dirtyBranch, cloneDeep(updatedBranch));
 
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
-  }
-  state.isSaving = false;
-  state.isEditing = false;
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("schema-designer.message.updated-succeed"),
+  });
+  cleanup(/* success */ true);
 };
 
 const handleMergeAfterConflictResolved = (branchName: string) => {
@@ -404,50 +415,34 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   router.replace({
     name: "workspace.project.branch.detail",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
       branchName: branchId,
     },
   });
 };
 
-const handleSelectedDatabaseIdListChanged = async (
-  databaseIdList: string[]
-) => {
-  let statement = "";
-  try {
-    const diffResponse = await branchServiceClient.diffMetadata(
-      {
-        sourceMetadata: branch.value.baselineSchemaMetadata,
-        targetMetadata: branch.value.schemaMetadata,
-        engine: branch.value.engine,
-      },
-      {
-        silent: true,
-      }
-    );
-    statement = diffResponse.diff;
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: t("schema-editor.message.invalid-schema"),
-    });
-    return;
-  }
+const handleApplyToDatabase = async (databaseIdList: string[]) => {
+  const cleanup = () => {
+    state.applyingToDatabaseStatus = false;
+  };
 
-  if (
-    statement === "" &&
-    !isEqual(
-      branch.value.baselineSchemaMetadata?.schemaConfigs,
-      branch.value.schemaMetadata?.schemaConfigs
-    )
-  ) {
+  state.applyingToDatabaseStatus = true;
+  // Use the raw branch since the branch might be dirty by schema editor
+  const branch = props.cleanBranch;
+
+  const source =
+    branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const target = branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
+  const result = await generateDiffDDL(database.value, source, target);
+
+  if (result.fatal) {
     pushNotification({
       module: "bytebase",
-      style: "WARN",
-      title: t("schema-editor.message.cannot-change-config"),
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: result.errors.join("\n"),
     });
-    return;
+    return cleanup();
   }
 
   const targetDatabaseList = databaseIdList.map((id) =>
@@ -455,13 +450,13 @@ const handleSelectedDatabaseIdListChanged = async (
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
-    project: project.value.uid,
+    project: props.project.uid,
     mode: "normal",
     ghost: undefined,
-    branch: branch.value.name,
+    branch: branch.name,
   };
   query.databaseList = databaseIdList.join(",");
-  query.sql = statement;
+  query.sql = result.statement;
   query.name = generateIssueName(
     targetDatabaseList.map((db) => db.databaseName)
   );
@@ -490,12 +485,13 @@ const generateIssueName = (databaseNameList: string[]) => {
 };
 
 const deleteBranch = async () => {
-  await branchStore.deleteBranch(branch.value.name);
+  const branch = props.dirtyBranch;
+  await branchStore.deleteBranch(branch.name);
   router.replace({
     name: "workspace.project.detail",
     hash: "#branches",
     params: {
-      projectSlug: projectV1Slug(project.value),
+      projectSlug: projectV1Slug(props.project),
     },
   });
 };

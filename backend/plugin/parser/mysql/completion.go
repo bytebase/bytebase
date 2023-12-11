@@ -232,6 +232,8 @@ type Completer struct {
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
 	references []TableReference
+	cteCache   map[int][]*VirtualTableReference
+	cteTables  []*VirtualTableReference
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
@@ -246,6 +248,7 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 		mysql.MySQLParserRULE_querySpecification,
 		mysql.MySQLParserRULE_queryExpression,
 		mysql.MySQLParserRULE_selectAlias,
+		mysql.MySQLParserRULE_withClause,
 	)
 	return &Completer{
 		ctx:                 ctx,
@@ -257,6 +260,7 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 		getMetadata:         metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
+		cteCache:            make(map[int][]*VirtualTableReference),
 	}
 }
 
@@ -357,6 +361,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
+		c.fetchCommonTableExpression(candidates.Rules[candidate])
+
 		switch candidate {
 		case mysql.MySQLParserRULE_runtimeFunctionCall:
 			runtimeFunctionEntries.insertFunctions()
@@ -373,6 +379,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			schemas := make(map[string]bool)
 			if len(schema) == 0 {
 				schemas[c.defaultDatabase] = true
+				// User didn't specify a schema, so we need to append cte tables.
+				schemas[""] = true
 			} else {
 				schemas[schema] = true
 			}
@@ -391,6 +399,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				schemas := make(map[string]bool)
 				if len(qualifier) == 0 {
 					schemas[c.defaultDatabase] = true
+					schemas[""] = true // User didn't specify a schema, so we need to append cte tables.
 				} else {
 					schemas[qualifier] = true
 				}
@@ -419,6 +428,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 			if len(schemas) == 0 {
 				schemas[c.defaultDatabase] = true
+				// User didn't specify a schema, so we need to append cte tables.
+				schemas[""] = true
 			}
 
 			if flags&ObjectFlagsShowTables != 0 {
@@ -459,6 +470,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			if flags&ObjectFlagsShowColumns != 0 {
 				if database == table { // Schema and table are equal if it's not clear if we see a schema or table qualifier.
 					schemas[c.defaultDatabase] = true
+					// User didn't specify a schema, so we need to append cte tables.
+					schemas[""] = true
 				}
 
 				tables := make(map[string]bool)
@@ -496,6 +509,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
 						case *PhysicalTableReference:
+							schemas[""] = true
 							tables[reference.Table] = true
 						case *VirtualTableReference:
 							for _, column := range reference.Columns {
@@ -543,6 +557,77 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, columnEntries.toSLice()...)
 	result = append(result, viewEntries.toSLice()...)
 	return result, nil
+}
+
+func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
+	c.cteTables = nil
+	for _, rule := range ruleStack {
+		if rule.ID == mysql.MySQLParserRULE_queryExpression {
+			for _, pos := range rule.CTEList {
+				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
+			}
+		}
+	}
+}
+
+func (c *Completer) extractCTETables(pos int) []*VirtualTableReference {
+	if metadata, exists := c.cteCache[pos]; exists {
+		return metadata
+	}
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return nil
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := mysql.NewMySQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, 0)
+	parser := mysql.NewMySQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	tree := parser.WithClause()
+
+	listener := &CTETableListener{context: c}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	c.cteCache[pos] = listener.tables
+	return listener.tables
+}
+
+type CTETableListener struct {
+	*mysql.BaseMySQLParserListener
+
+	context *Completer
+	tables  []*VirtualTableReference
+}
+
+func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpressionContext) {
+	table := &VirtualTableReference{}
+	if ctx.Identifier() != nil {
+		table.Table = unquote(ctx.Identifier().GetText())
+	}
+	if ctx.ColumnInternalRefList() != nil {
+		for _, column := range ctx.ColumnInternalRefList().AllColumnInternalRef() {
+			table.Columns = append(table.Columns, unquote(column.Identifier().GetText()))
+		}
+	} else {
+		// User didn't specify the column list, so we need to fetch the column list from the database.
+		// TODO(zp): GetQuerySpan doesn't support MySQL yet.
+		if span, err := base.GetQuerySpan(
+			l.context.ctx,
+			store.Engine_MYSQL,
+			fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
+			l.context.defaultDatabase,
+			l.context.getMetadata,
+		); err == nil && len(span) == 1 {
+			for _, column := range span[0].Results {
+				table.Columns = append(table.Columns, column.Name)
+			}
+		}
+	}
+
+	l.tables = append(l.tables, table)
 }
 
 func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
@@ -1071,6 +1156,16 @@ func (m CompletionMap) insertDatabases(c *Completer) {
 
 func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	for schema := range schemas {
+		if len(schema) == 0 {
+			// User didn't specify a schema, so we need to append cte tables.
+			for _, table := range c.cteTables {
+				m.Insert(base.Candidate{
+					Type: base.CandidateTypeTable,
+					Text: table.Table,
+				})
+			}
+			continue
+		}
 		for _, table := range c.listTables(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeTable,
@@ -1093,6 +1188,20 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 
 func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]bool) {
 	for database := range databases {
+		if len(database) == 0 {
+			// User didn't specify a schema, so we need to append cte tables.
+			for _, table := range c.cteTables {
+				if tables[table.Table] {
+					for _, column := range table.Columns {
+						m.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: column,
+						})
+					}
+				}
+			}
+			continue
+		}
 		if _, exists := c.metadataCache[database]; !exists {
 			metadata, err := c.getMetadata(c.ctx, database)
 			if err != nil || metadata == nil {

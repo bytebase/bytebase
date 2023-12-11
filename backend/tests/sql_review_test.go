@@ -16,7 +16,7 @@ import (
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
 	"github.com/google/go-cmp/cmp"
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"

@@ -8,6 +8,7 @@
         :params="params"
         :autofocus="autofocus"
         :readonly-scopes="readonlyScopes"
+        :support-option-id-list="supportOptionIdList"
         class="flex-1"
         v-bind="componentProps?.searchbox"
         @update:params="$emit('update:params', $event)"
@@ -44,8 +45,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
-import { SearchParams, SearchScope, SearchScopeId } from "@/utils";
+import { ref, computed } from "vue";
+import {
+  SearchParams,
+  SearchScope,
+  SearchScopeId,
+  UIIssueFilterScopeIdList,
+  SearchScopeIdList,
+} from "@/utils";
 import AdvancedSearchBox from "./AdvancedSearchBox.vue";
 import Status from "./Status.vue";
 import TimeRange from "./TimeRange.vue";
@@ -88,4 +95,9 @@ const handleSelectScope = (id: SearchScopeId) => {
     showTimeRange.value = true;
   }
 };
+
+const supportOptionIdList = computed(() => [
+  ...UIIssueFilterScopeIdList,
+  ...SearchScopeIdList,
+]);
 </script>

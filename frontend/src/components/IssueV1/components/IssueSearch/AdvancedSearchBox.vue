@@ -1,9 +1,9 @@
 <template>
-  <div ref="containerRef" class="bb-advanced-issue-search-box relative">
+  <div ref="containerRef" class="bb-advanced-issue-search-box w-full relative">
     <NInput
       ref="inputRef"
       v-model:value="inputText"
-      :placeholder="$t('issue.advanced-search.self')"
+      :placeholder="placeholder ?? $t('issue.advanced-search.self')"
       class="bb-advanced-issue-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
@@ -18,7 +18,12 @@
             'max-width': `calc(${containerWidth}px - 14rem)`,
           }"
         >
-          <SearchIcon class="w-4 h-4 text-control-placeholder" />
+          <div class="flex items-center space-x-2">
+            <FilterIcon class="w-4 h-4 text-control-placeholder" />
+            <span class="textinfolabel">
+              {{ $t("issue.advanced-search.filter") }}
+            </span>
+          </div>
           <div
             ref="tagsContainerRef"
             class="flex-1 flex flex-row items-center flex-nowrap gap-1 overflow-auto hide-scrollbar"
@@ -80,7 +85,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, last } from "lodash-es";
-import { SearchIcon } from "lucide-vue-next";
+import { FilterIcon } from "lucide-vue-next";
 import { XIcon } from "lucide-vue-next";
 import { matchSorter } from "match-sorter";
 import { InputInst, NInput } from "naive-ui";
@@ -111,13 +116,17 @@ import { useSearchScopeOptions } from "./useSearchScopeOptions";
 
 const props = withDefaults(
   defineProps<{
+    placeholder?: string | undefined;
     params: SearchParams;
     readonlyScopes?: SearchScope[];
     autofocus?: boolean;
+    supportOptionIdList?: SearchScopeId[];
   }>(),
   {
     readonlyScopes: () => [],
+    supportOptionIdList: () => [],
     autofocus: false,
+    placeholder: undefined,
   }
 );
 
@@ -190,7 +199,7 @@ const {
   currentScope,
   currentScopeOption,
   valueOptions,
-} = useSearchScopeOptions(toRef(props, "params"));
+} = useSearchScopeOptions(toRef(props, "params"), props.supportOptionIdList);
 
 const visibleScopeOptions = computed(() => {
   if (currentScopeOption.value) {

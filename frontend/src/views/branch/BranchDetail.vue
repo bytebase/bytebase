@@ -4,59 +4,87 @@
       <BranchCreateView :project-id="project?.uid" v-bind="$attrs" />
     </template>
     <template v-else-if="branch">
-      <BranchDetailView :branch="branch" v-bind="$attrs" />
+      <BranchDetailView
+        v-if="project"
+        :key="detailViewKey"
+        :project="project"
+        :clean-branch="branch.clean"
+        :dirty-branch="branch.dirty"
+        v-bind="$attrs"
+        @update:branch-id="handleUpdateBranchId"
+      />
     </template>
   </template>
+  <div v-else class="w-full h-full relative">
+    <MaskSpinner />
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { idFromSlug } from "@/utils";
 
+const props = defineProps<{
+  projectSlug: string;
+  branchName: string;
+}>();
+
 const { t } = useI18n();
-const route = useRoute();
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
+const detailViewKey = ref(uniqueId());
 
-const isCreating = computed(() => route.params.branchName === "new");
-const branch = computed(() => {
-  return branchStore.getBranchByName(branchFullName.value);
-});
+const isCreating = computed(() => props.branchName === "new");
+const branch = ref<{ clean: Branch; dirty: Branch }>();
 const project = computed(() => {
-  if (route.params.projectSlug === "-") {
+  if (props.projectSlug === "-") {
     return;
   }
   return projectStore.getProjectByUID(
-    String(idFromSlug(route.params.projectSlug as string))
+    String(idFromSlug(props.projectSlug as string))
   );
 });
 
+const handleUpdateBranchId = (id: string) => {
+  if (!branch.value) return;
+  branch.value.clean.branchId = id;
+  branch.value.dirty.branchId = id;
+  router.replace({
+    params: {
+      projectSlug: props.projectSlug,
+      branchName: id,
+    },
+  });
+};
+
 watch(
-  () => route.params,
+  [() => props.projectSlug, () => props.branchName],
   async () => {
     if (isCreating.value) {
       return;
     }
 
     // Prepare branch name from route params.
-    const sheetId = (route.params.branchName as string) || "";
-    if (!sheetId || !project.value) {
+    const branchId = props.branchName;
+    if (!branchId || !project.value) {
       return;
     }
-    branchFullName.value = `${project.value.name}/branches/${sheetId}`;
+    branchFullName.value = `${project.value.name}/branches/${branchId}`;
   },
   {
     immediate: true,
-    deep: true,
   }
 );
 
@@ -69,10 +97,17 @@ watch(
       return;
     }
 
-    await branchStore.fetchBranchByName(
+    const br = await branchStore.fetchBranchByName(
       branchFullName.value,
       false /* useCache */
     );
+    branch.value = {
+      clean: br,
+      dirty: cloneDeep(br),
+    };
+    if (!br) {
+      router.replace("error.404");
+    }
     ready.value = true;
   },
   {
@@ -85,7 +120,7 @@ const documentTitle = computed(() => {
     return t("schema-designer.new-branch");
   } else {
     if (branch.value) {
-      return branch.value.title;
+      return branch.value.clean.branchId;
     }
   }
   return t("common.loading");

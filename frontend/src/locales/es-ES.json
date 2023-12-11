@@ -804,6 +804,19 @@
         "self": "Acción",
         "query": "Consulta",
         "export": "Exportar"
+      },
+      "classification": {
+        "self": "Clasificación de datos",
+        "upload": "Subir clasificación",
+        "upload-succeed": "Subida exitosa",
+        "search": "Clasificación de búsqueda",
+        "label": "Puede cargar un archivo de clasificación con formato JSON.",
+        "view-example": "Ver ejemplo",
+        "json-format-example": "Ejemplo de formato JSON de clasificación",
+        "copy-succeed": "Copiar ejemplo correctamente",
+        "override-title": "Anulación de datos de clasificación",
+        "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
+        "override-confirm": "Aún subiendo"
       }
     },
     "access-control": {
@@ -954,18 +967,23 @@
     "view-commit": "Ver commit",
     "advanced-search": {
       "self": "Búsqueda Avanzada",
+      "filter": "Filtrar",
       "scope": {
         "project": {
           "title": "Proyecto",
-          "description": "Incluir solo ediciones de este proyecto"
+          "description": "Filtrar por proyecto"
         },
         "instance": {
           "title": "Instancia",
-          "description": "Incluir solo problemas relacionados con la instancia"
+          "description": "Filtrar por instancia"
         },
         "database": {
           "title": "Base de datos",
-          "description": "Incluir sólo cuestiones relacionadas con la base de datos"
+          "description": "Filtrar por base de datos"
+        },
+        "environment": {
+          "title": "Ambiente",
+          "description": "Filtrar por entorno"
         },
         "type": {
           "title": "Tipo de cambio",
@@ -1338,6 +1356,7 @@
   },
   "environment": {
     "id": "ID del Entorno",
+    "all": "Todo el entorno",
     "id-description": "El ID del entorno es el identificador único para su entorno. No puede cambiarlo después de creado.",
     "select": "Seleccionar entorno",
     "archive": "Archivar este entorno",
@@ -2373,7 +2392,8 @@
     "description": "Puedes subir tu licencia Bytebase para desbloquear funciones de edición/empresa.",
     "upload-license": "Subir licencia",
     "upgrade-trial-button": "Actualizar prueba",
-    "start-n-days-trial": "Comienza una prueba de {days} días (no se requiere tarjeta de crédito)",
+    "request-n-days-trial": "Solicite una prueba de {days} días (no se requiere tarjeta de crédito)",
+    "request-with-qr": "Escanear código QR",
     "successfully-start-trial": "Prueba gratuita iniciada con éxito por {days} días",
     "successfully-upgrade-trial": "Prueba gratuita actualizada con éxito a {plan}",
     "require-subscription": "Esta función requiere una suscripción a {requiredPlan}. Compre una licencia de Bytebase para desbloquear esta función.",
@@ -3215,8 +3235,6 @@
     "diff-editor": {
       "self": "Editor de diferencias",
       "resolve": "Resolver",
-      "latest-schema": "Último esquema",
-      "editing-schema": "Editando esquema",
       "auto-merge-failed": "Falló la fusión automática",
       "need-to-resolve-conflicts": "El diseño del esquema ha sido actualizado por otros. Debe resolver los conflictos antes de poder fusionar.",
       "resolve-and-merge-again": "Resolver y fusionar nuevamente",

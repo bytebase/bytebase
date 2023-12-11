@@ -2,7 +2,7 @@
   <div class="w-full space-y-4 text-sm">
     <div class="space-y-4">
       <div class="flex items-center justify-between gap-x-6">
-        <div class="flex-1 textinfolabel !leading-8">
+        <div class="flex-1 textinfolabel">
           {{ $t("schema-template.column-type-restriction.description") }}
         </div>
       </div>
@@ -282,7 +282,7 @@ const handleMySQLEnabledChange = (event: InputEvent) => {
 
 const handleMySQLTypesChange = async () => {
   columnTypesForMySQL.value = columnTypesForMySQL.value
-    .toUpperCase()
+    .toLowerCase()
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean)
@@ -300,7 +300,7 @@ const handleMySQLTypesChange = async () => {
     mysqlFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
-      .map((item) => item.toUpperCase())
+      .map((item) => item.toLowerCase())
   );
   if (columnTypeTemplateForMySQL.value.enabled) {
     // Check if there is any field template that is not covered by the column types.
@@ -316,11 +316,11 @@ const handleMySQLTypesChange = async () => {
     // Check if there is any field template that is not covered by the column types.
     const uncoveredTypes = fieldTemplateTypesOfMySQL.filter(
       (item) =>
-        !columnTypeTemplateForMySQL.value.types.includes(item.toUpperCase())
+        !columnTypeTemplateForMySQL.value.types.includes(item.toLowerCase())
     );
     if (uncoveredTypes.length > 0) {
       unmatchedFieldTemplates.value = mysqlFieldTemplates.filter((item) =>
-        uncoveredTypes.includes((item.column?.type || "").toUpperCase())
+        uncoveredTypes.includes((item.column?.type || "").toLowerCase())
       );
       return;
     }
@@ -351,7 +351,7 @@ const handlePostgreSQLEnabledChange = (event: InputEvent) => {
 
 const handlePostgreSQLTypesChange = async () => {
   columnTypesForPostgreSQL.value = columnTypesForPostgreSQL.value
-    .toUpperCase()
+    .toLowerCase()
     .split("\n")
     .map((item) => item.trim())
     .filter(Boolean)
@@ -374,7 +374,7 @@ const handlePostgreSQLTypesChange = async () => {
     postgresFieldTemplates
       .map((item) => (item.column?.type || "") as string)
       .filter(Boolean)
-      .map((item) => item.toUpperCase())
+      .map((item) => item.toLowerCase())
   );
   if (columnTypeTemplateForPostgreSQL.value.enabled) {
     // Check if there is any field template that is not covered by the column types.
@@ -391,12 +391,12 @@ const handlePostgreSQLTypesChange = async () => {
     const uncoveredTypes = fieldTemplateTypesOfPostgreSQL.filter(
       (item) =>
         !columnTypeTemplateForPostgreSQL.value.types.includes(
-          item.toUpperCase()
+          item.toLowerCase()
         )
     );
     if (uncoveredTypes.length > 0) {
       unmatchedFieldTemplates.value = postgresFieldTemplates.filter((item) =>
-        uncoveredTypes.includes((item.column?.type || "").toUpperCase())
+        uncoveredTypes.includes((item.column?.type || "").toLowerCase())
       );
       return;
     }
