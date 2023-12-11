@@ -30,12 +30,14 @@
 <script setup lang="ts">
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, toRaw } from "vue";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
+  databaseForTask,
   getLocalSheetByName,
   isValidStage,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
@@ -50,8 +52,10 @@ import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDeploymentConfigName,
   extractSheetUID,
+  flattenTaskV1List,
   getSheetStatement,
   setSheetStatement,
+  sheetNameOfTaskV1,
 } from "@/utils";
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
@@ -59,6 +63,7 @@ const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
 const { runSQLCheck } = useSQLCheckContext();
+const sheetStore = useSheetV1Store();
 const loading = ref(false);
 
 const issueCreateErrorList = computed(() => {
@@ -111,9 +116,7 @@ const doCreateIssue = async () => {
       rolloutEntity: createdRollout,
     };
 
-    emitWindowEvent("bb.issue-create", {
-      uid: composedIssue.uid,
-    });
+    await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
       router.push(`/issue/${composedIssue.uid}`);
     });
@@ -208,5 +211,28 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
   }
 
   setSheetStatement(sheet, formatted);
+};
+
+const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
+  const eventParams = {
+    uid: issue.uid,
+    description: issue.description,
+    project: toRaw(issue.projectEntity),
+    tasks: [],
+  };
+  const tasks = flattenTaskV1List(issue.rolloutEntity);
+  for (const task of tasks) {
+    const spec = specForTask(issue.planEntity, task);
+    const database = databaseForTask(issue, task);
+    const sheetName = sheetNameOfTaskV1(task);
+    const sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+    const statement = sheet ? getSheetStatement(sheet) : "";
+    eventParams.tasks.push({
+      database: toRaw(database),
+      earliestAllowedTime: spec?.earliestAllowedTime,
+      statement,
+    } as never);
+  }
+  emitWindowEvent("bb.issue-create", eventParams);
 };
 </script>
