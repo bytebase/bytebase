@@ -216,6 +216,7 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
 const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
   const eventParams = {
     uid: issue.uid,
+    description: issue.description,
     project: toRaw(issue.projectEntity),
     tasks: [],
   };
