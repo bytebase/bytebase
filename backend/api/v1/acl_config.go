@@ -84,6 +84,15 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.EnvironmentService_GetEnvironment_FullMethodName:      iam.PermissionEnvironmentsGet,
 	v1pb.EnvironmentService_ListEnvironments_FullMethodName:    iam.PermissionEnvironmentsList,
 	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: iam.PermissionEnvironmentsUpdate,
+	v1pb.IssueService_ListIssues_FullMethodName:                iam.PermissionIssuesList,
+	v1pb.IssueService_GetIssue_FullMethodName:                  iam.PermissionIssuesGet,
+	v1pb.IssueService_UpdateIssue_FullMethodName:               iam.PermissionIssuesUpdate,
+	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:   iam.PermissionIssuesUpdate,
+	v1pb.IssueService_CreateIssueComment_FullMethodName:        iam.PermissionIssueCommentsCreate,
+	v1pb.IssueService_UpdateIssueComment_FullMethodName:        iam.PermissionIssueCommentsUpdate,
+	v1pb.IssueService_ApproveIssue_FullMethodName:              "",
+	v1pb.IssueService_RejectIssue_FullMethodName:               "",
+	v1pb.IssueService_RequestIssue_FullMethodName:              "",
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

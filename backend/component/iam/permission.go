@@ -35,4 +35,11 @@ const (
 	PermissionEnvironmentsUpdate   Permission = "bb.environments.update"
 	PermissionEnvironmentsDelete   Permission = "bb.environments.delete"
 	PermissionEnvironmentsUndelete Permission = "bb.environments.undelete"
+
+	PermissionIssuesList          Permission = "bb.issues.list"
+	PermissionIssuesGet           Permission = "bb.issues.get"
+	PermissionIssuesCreate        Permission = "bb.issues.create"
+	PermissionIssuesUpdate        Permission = "bb.issues.update"
+	PermissionIssueCommentsCreate Permission = "bb.issueComments.create"
+	PermissionIssueCommentsUpdate Permission = "bb.issueComments.update"
 )
