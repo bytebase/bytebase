@@ -12,7 +12,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -31,7 +30,6 @@ import (
 )
 
 var _ db.Driver = (*Driver)(nil)
-var shellEscaper = regexp.MustCompile(`[^\w@%+=:,./-]`)
 
 func init() {
 	db.Register(storepb.Engine_MONGODB, newDriver)
@@ -196,9 +194,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}`, strings.TrimRight(statement, " \t\n\r\f;"), limit)
 	}
 	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
-	if shellEscaper.MatchString(evalArg) {
-		evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
-	}
+	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
 	evalArg = fmt.Sprintf(`'%s'`, evalArg)
 
 	fileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
