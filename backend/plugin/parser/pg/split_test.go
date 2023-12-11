@@ -39,6 +39,19 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `-- klsjdfjasldf
 			-- klsjdflkjaskldfj
 			`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:                 "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n\t\t\t",
+						BaseLine:             0,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 0,
+						LastLine:             2,
+						LastColumn:           0,
+						Empty:                true,
+					},
+				},
+			},
 		},
 		{
 			statement: `select * from t;
@@ -46,8 +59,17 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `select * from t;`,
-						LastLine: 1,
+						Text:       `select * from t;`,
+						LastLine:   0,
+						LastColumn: 15,
+					},
+					{
+						Text:                 "\n\t\t\t/* sdfasdf */",
+						LastLine:             1,
+						LastColumn:           3,
+						FirstStatementLine:   1,
+						FirstStatementColumn: 3,
+						Empty:                true,
 					},
 				},
 			},
@@ -59,12 +81,25 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `select * from t;`,
-						LastLine: 1,
+						Text:       `select * from t;`,
+						LastLine:   0,
+						LastColumn: 15,
 					},
 					{
-						Text:     `select * from t;`,
-						LastLine: 3,
+						Text:                 "\n\t\t\t/* sdfasdf */;",
+						FirstStatementLine:   1,
+						FirstStatementColumn: 3,
+						LastLine:             1,
+						LastColumn:           16,
+						Empty:                true,
+					},
+					{
+						Text:                 "\n\t\t\tselect * from t;",
+						BaseLine:             1,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 3,
+						LastLine:             2,
+						LastColumn:           18,
 					},
 				},
 			},
@@ -74,8 +109,9 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     bigSQL,
-						LastLine: 1,
+						Text:       bigSQL,
+						LastLine:   0,
+						LastColumn: len(bigSQL) - 1,
 					},
 				},
 			},
@@ -85,28 +121,35 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "CREATE TABLE t(a int);",
-						LastLine: 1,
+						Text:                 "    CREATE TABLE t(a int);",
+						FirstStatementColumn: 4,
+						LastLine:             0,
+						LastColumn:           25,
 					},
 					{
-						Text:     "CREATE TABLE t1(a int)",
-						LastLine: 1,
+						Text:                 " CREATE TABLE t1(a int)",
+						FirstStatementColumn: 27,
+						LastColumn:           48,
 					},
 				},
 			},
 		},
 		{
 			statement: `CREATE TABLE "tech_Book"(id int, name varchar(255));
-						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;"ka');`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
-						LastLine: 1,
+						Text:       `CREATE TABLE "tech_Book"(id int, name varchar(255));`,
+						LastLine:   0,
+						LastColumn: 51,
 					},
 					{
-						Text:     `INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
-						LastLine: 2,
+						Text:                 "\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
+						FirstStatementLine:   1,
+						FirstStatementColumn: 6,
+						LastLine:             1,
+						LastColumn:           81,
 					},
 				},
 			},
@@ -116,18 +159,23 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						/* this is the comment. */
 						CREATE /* inline comment */TABLE "tech_Book"(id int, name varchar(255));
 						-- this is the comment.
-						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
+						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;"ka');`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: `/* this is the comment. */
-						CREATE /* inline comment */TABLE "tech_Book"(id int, name varchar(255));`,
-						LastLine: 3,
+						Text:                 "\n\t\t\t\t\t\t/* this is the comment. */\n\t\t\t\t\t\tCREATE /* inline comment */TABLE \"tech_Book\"(id int, name varchar(255));",
+						FirstStatementLine:   2,
+						FirstStatementColumn: 6,
+						LastLine:             2,
+						LastColumn:           77,
 					},
 					{
-						Text: `-- this is the comment.
-						INSERT INTO "tech_Book" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafa\'jdfl;"ka');`,
-						LastLine: 5,
+						Text:                 "\n\t\t\t\t\t\t-- this is the comment.\n\t\t\t\t\t\tINSERT INTO \"tech_Book\" VALUES (0, 'abce_ksdf'), (1, 'lks''kjsafajdfl;\"ka');",
+						BaseLine:             2,
+						FirstStatementLine:   4,
+						FirstStatementColumn: 6,
+						LastLine:             4,
+						LastColumn:           81,
 					},
 				},
 			},
@@ -137,7 +185,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						LANGUAGE SQL
 						AS $$
 						/*this is the comment */
-						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\jasdf\'lkasdf"asdklf\\');
+						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\jasdflkasdf"asdklf\\');
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$$;
@@ -149,15 +197,20 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						LANGUAGE SQL
 						AS $$
 						/*this is the comment */
-						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\jasdf\'lkasdf"asdklf\\');
+						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lk\\jasdflkasdf"asdklf\\');
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$$;`,
-						LastLine: 8,
+						LastLine:   7,
+						LastColumn: 8,
 					},
 					{
-						Text:     `CREATE TABLE t(a int);`,
-						LastLine: 9,
+						Text:                 "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
+						BaseLine:             7,
+						FirstStatementLine:   8,
+						FirstStatementColumn: 6,
+						LastLine:             8,
+						LastColumn:           27,
 					},
 				},
 			},
@@ -167,7 +220,7 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						LANGUAGE SQL
 						AS $tag_name$
 						/*this is the comment */
-						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdf\'lkasdf"asdklf');
+						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdflkasdf"asdklf');
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$tag_name$;
@@ -179,15 +232,20 @@ func TestPGSplitMultiSQL(t *testing.T) {
 						LANGUAGE SQL
 						AS $tag_name$
 						/*this is the comment */
-						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdf\'lkasdf"asdklf');
+						INSERT /* inline comment */ INTO tbl VALUES ('lkjafd''lksjadlf;lkjasdflkasdf"asdklf');
 						-- this is the comment
 						INSERT INTO tbl VALUES ('fasf_bkdjlfa');
 						$tag_name$;`,
-						LastLine: 8,
+						LastLine:   7,
+						LastColumn: 16,
 					},
 					{
-						Text:     `CREATE TABLE t(a int);`,
-						LastLine: 9,
+						Text:                 "\n\t\t\t\t\t\tCREATE TABLE t(a int);",
+						BaseLine:             7,
+						FirstStatementLine:   8,
+						FirstStatementColumn: 6,
+						LastLine:             8,
+						LastColumn:           27,
 					},
 				},
 			},
@@ -198,12 +256,16 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text:     "CREATE TABLE t\r\n(a int);",
-						LastLine: 2,
+						Text:       "CREATE TABLE t\r\n(a int);",
+						LastLine:   1,
+						LastColumn: 7,
 					},
 					{
-						Text:     "CREATE TABLE t1(b int);",
-						LastLine: 3,
+						Text:               "\r\nCREATE TABLE t1(b int);",
+						BaseLine:           1,
+						FirstStatementLine: 2,
+						LastLine:           2,
+						LastColumn:         22,
 					},
 				},
 			},
@@ -212,17 +274,14 @@ func TestPGSplitMultiSQL(t *testing.T) {
 			statement: `INSERT INTO "public"."table"("id","content")
 			VALUES
 			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
-			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
-			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
+			(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\''; local xxxyy.abcddd.mysql @text;------- '),
+			(1444,'table t xyz abc a''a\\\\\\\\''b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
 			want: resData{
 				res: []base.SingleSQL{
 					{
-						Text: `INSERT INTO "public"."table"("id","content")
-			VALUES
-			(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),
-			(133,'knuandfan public table id\';create table t(a int, b int);set @text=\'\\\\kdaminxkljasdfiebkla.unkonwn\'+\'abcdef.xyz\\\'; local xxxyy.abcddd.mysql @text;------- '),
-			(1444,'table t xyz abc a\'a\\\\\\\\\'b"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\');`,
-						LastLine: 5,
+						Text:       "INSERT INTO \"public\".\"table\"(\"id\",\"content\")\n\t\t\tVALUES\n\t\t\t(12,'table column name () { :xna,sydfn,,kasdfyn;}; /////test string/// 0'),\n\t\t\t(133,'knuandfan public table id'';create table t(a int, b int);set @text=''\\\\\\\\kdaminxkljasdfiebkla.unkonwn''+''abcdef.xyz\\\\''; local xxxyy.abcddd.mysql @text;------- '),\n\t\t\t(1444,'table t xyz abc a''a\\\\\\\\\\\\\\\\''b\"c>?>xxxxxx%}}%%>c<[[?${12344556778990{%}}cake\\\\');",
+						LastLine:   4,
+						LastColumn: 91,
 					},
 				},
 			},
@@ -230,25 +289,55 @@ func TestPGSplitMultiSQL(t *testing.T) {
 		{
 			statement: `INSERT INTO t VALUES ('klajfas)`,
 			want: resData{
-				err: "invalid string: not found delimiter: ', but found EOF",
+				res: []base.SingleSQL{
+					{
+						Text:                 "INSERT INTO t VALUES ('klajfas)",
+						LastLine:             0,
+						LastColumn:           22,
+						FirstStatementLine:   0,
+						FirstStatementColumn: 0,
+						Empty:                false,
+					},
+				},
 			},
 		},
 		{
 			statement: `INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: "invalid indentifier: not found delimiter: \", but found EOF",
+				res: []base.SingleSQL{
+					{
+						Text:       "INSERT INTO \"t VALUES ('klajfas)",
+						LastLine:   0,
+						LastColumn: 12,
+					},
+				},
 			},
 		},
 		{
 			statement: `/*INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: "invalid comment: not found */, but found EOF",
+				res: []base.SingleSQL{
+					{
+						Text:                 "/*INSERT INTO \"t VALUES ('klajfas)",
+						BaseLine:             0,
+						FirstStatementLine:   0,
+						FirstStatementColumn: 0,
+						LastLine:             0,
+						LastColumn:           0,
+						Empty:                false,
+					},
+				},
 			},
 		},
 		{
 			statement: `$$INSERT INTO "t VALUES ('klajfas)`,
 			want: resData{
-				err: "scanTo failed: delimiter \"$$\" not found",
+				res: []base.SingleSQL{
+					{
+						Text:       "$$INSERT INTO \"t VALUES ('klajfas)",
+						LastColumn: 2,
+					},
+				},
 			},
 		},
 	}
