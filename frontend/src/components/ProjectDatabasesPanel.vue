@@ -71,6 +71,7 @@
           <span class="text-main">{{ $t("quick-action.transfer-in-db") }}</span>
         </template>
       </i18n-t>
+      <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
     </div>
   </div>
 </template>
