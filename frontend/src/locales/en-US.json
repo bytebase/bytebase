@@ -667,8 +667,8 @@
         },
         "confirm-delete-custom-logo": "Delete custom branding logo?",
         "restrict-issue-creation-for-sql-review": {
-          "title": "Restrict issue creation for SQL review",
-          "description": "Once enabled, users can only create issues after SQL review has passed."
+          "title": "Prohibit issue creation for SQL review with errors",
+          "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
         }
       }
     },
@@ -1959,7 +1959,7 @@
       "batch": "Batch Mode"
     },
     "db-name-template": "Tenant Database Name Template",
-    "select": "Select project",
+    "select": "Select Project",
     "lgtm-check": {
       "self": "LGTM check",
       "disabled": "Skip LGTM check",
