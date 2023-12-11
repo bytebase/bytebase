@@ -60,18 +60,8 @@ export interface UpdateSubscriptionRequest {
   patch: PatchSubscription | undefined;
 }
 
-export interface TrialSubscriptionRequest {
-  trial: TrialSubscription | undefined;
-}
-
 export interface PatchSubscription {
   license: string;
-}
-
-export interface TrialSubscription {
-  plan: PlanType;
-  days: number;
-  instanceCount: number;
 }
 
 export interface Subscription {
@@ -245,65 +235,6 @@ export const UpdateSubscriptionRequest = {
   },
 };
 
-function createBaseTrialSubscriptionRequest(): TrialSubscriptionRequest {
-  return { trial: undefined };
-}
-
-export const TrialSubscriptionRequest = {
-  encode(message: TrialSubscriptionRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.trial !== undefined) {
-      TrialSubscription.encode(message.trial, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): TrialSubscriptionRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTrialSubscriptionRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.trial = TrialSubscription.decode(reader, reader.uint32());
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TrialSubscriptionRequest {
-    return { trial: isSet(object.trial) ? TrialSubscription.fromJSON(object.trial) : undefined };
-  },
-
-  toJSON(message: TrialSubscriptionRequest): unknown {
-    const obj: any = {};
-    if (message.trial !== undefined) {
-      obj.trial = TrialSubscription.toJSON(message.trial);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TrialSubscriptionRequest>): TrialSubscriptionRequest {
-    return TrialSubscriptionRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TrialSubscriptionRequest>): TrialSubscriptionRequest {
-    const message = createBaseTrialSubscriptionRequest();
-    message.trial = (object.trial !== undefined && object.trial !== null)
-      ? TrialSubscription.fromPartial(object.trial)
-      : undefined;
-    return message;
-  },
-};
-
 function createBasePatchSubscription(): PatchSubscription {
   return { license: "" };
 }
@@ -357,95 +288,6 @@ export const PatchSubscription = {
   fromPartial(object: DeepPartial<PatchSubscription>): PatchSubscription {
     const message = createBasePatchSubscription();
     message.license = object.license ?? "";
-    return message;
-  },
-};
-
-function createBaseTrialSubscription(): TrialSubscription {
-  return { plan: 0, days: 0, instanceCount: 0 };
-}
-
-export const TrialSubscription = {
-  encode(message: TrialSubscription, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.plan !== 0) {
-      writer.uint32(8).int32(message.plan);
-    }
-    if (message.days !== 0) {
-      writer.uint32(16).int32(message.days);
-    }
-    if (message.instanceCount !== 0) {
-      writer.uint32(32).int32(message.instanceCount);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): TrialSubscription {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseTrialSubscription();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.plan = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.days = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 32) {
-            break;
-          }
-
-          message.instanceCount = reader.int32();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): TrialSubscription {
-    return {
-      plan: isSet(object.plan) ? planTypeFromJSON(object.plan) : 0,
-      days: isSet(object.days) ? globalThis.Number(object.days) : 0,
-      instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
-    };
-  },
-
-  toJSON(message: TrialSubscription): unknown {
-    const obj: any = {};
-    if (message.plan !== 0) {
-      obj.plan = planTypeToJSON(message.plan);
-    }
-    if (message.days !== 0) {
-      obj.days = Math.round(message.days);
-    }
-    if (message.instanceCount !== 0) {
-      obj.instanceCount = Math.round(message.instanceCount);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<TrialSubscription>): TrialSubscription {
-    return TrialSubscription.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<TrialSubscription>): TrialSubscription {
-    const message = createBaseTrialSubscription();
-    message.plan = object.plan ?? 0;
-    message.days = object.days ?? 0;
-    message.instanceCount = object.instanceCount ?? 0;
     return message;
   },
 };
@@ -903,54 +745,6 @@ export const SubscriptionServiceDefinition = {
               105,
               111,
               110,
-            ]),
-          ],
-        },
-      },
-    },
-    trialSubscription: {
-      name: "TrialSubscription",
-      requestType: TrialSubscriptionRequest,
-      requestStream: false,
-      responseType: Subscription,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([5, 116, 114, 105, 97, 108])],
-          578365826: [
-            new Uint8Array([
-              31,
-              58,
-              5,
-              116,
-              114,
-              105,
-              97,
-              108,
-              34,
-              22,
-              47,
-              118,
-              49,
-              47,
-              115,
-              117,
-              98,
-              115,
-              99,
-              114,
-              105,
-              112,
-              116,
-              105,
-              111,
-              110,
-              47,
-              116,
-              114,
-              105,
-              97,
-              108,
             ]),
           ],
         },
