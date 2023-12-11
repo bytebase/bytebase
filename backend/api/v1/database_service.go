@@ -223,22 +223,6 @@ func getDatabasesFromExpression(expression string) map[string]bool {
 	return databaseNames
 }
 
-// SearchDatabases searches all databases.
-// Deprecated.
-func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
-	// TODO(d): to be deprecated.
-	r := &v1pb.ListDatabasesRequest{Parent: request.Parent, Filter: request.Filter, PageToken: request.PageToken, PageSize: request.PageSize}
-	resp, err := s.ListDatabases(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-	response := &v1pb.SearchDatabasesResponse{
-		Databases:     resp.Databases,
-		NextPageToken: resp.NextPageToken,
-	}
-	return response, nil
-}
-
 // UpdateDatabase updates a database.
 func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.UpdateDatabaseRequest) (*v1pb.Database, error) {
 	if request.Database == nil {
