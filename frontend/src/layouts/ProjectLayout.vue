@@ -1,6 +1,6 @@
 <template>
   <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-  <div class="p-6 h-full overflow-auto">
+  <div class="p-4 h-full overflow-auto">
     <HideInStandaloneMode>
       <template v-if="isDefaultProject">
         <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
@@ -41,6 +41,10 @@ const props = defineProps({
     type: String,
   },
   projectWebhookSlug: {
+    type: String,
+    default: undefined,
+  },
+  branchName: {
     type: String,
     default: undefined,
   },

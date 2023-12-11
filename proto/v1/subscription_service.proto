@@ -25,13 +25,6 @@ service SubscriptionService {
     };
     option (google.api.method_signature) = "patch";
   }
-  rpc TrialSubscription(TrialSubscriptionRequest) returns (Subscription) {
-    option (google.api.http) = {
-      post: "/v1/subscription/trial"
-      body: "trial"
-    };
-    option (google.api.method_signature) = "trial";
-  }
 }
 
 message GetSubscriptionRequest {}
@@ -40,10 +33,6 @@ message GetFeatureMatrixRequest {}
 
 message UpdateSubscriptionRequest {
   PatchSubscription patch = 1;
-}
-
-message TrialSubscriptionRequest {
-  TrialSubscription trial = 1;
 }
 
 enum PlanType {
@@ -58,14 +47,6 @@ enum PlanType {
 
 message PatchSubscription {
   string license = 1;
-}
-
-message TrialSubscription {
-  PlanType plan = 1;
-
-  int32 days = 2;
-
-  int32 instance_count = 4;
 }
 
 message Subscription {

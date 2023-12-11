@@ -28,4 +28,18 @@ const (
 	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
 	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
 	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
+
+	PermissionEnvironmentsList     Permission = "bb.environments.list"
+	PermissionEnvironmentsGet      Permission = "bb.environments.get"
+	PermissionEnvironmentsCreate   Permission = "bb.environments.create"
+	PermissionEnvironmentsUpdate   Permission = "bb.environments.update"
+	PermissionEnvironmentsDelete   Permission = "bb.environments.delete"
+	PermissionEnvironmentsUndelete Permission = "bb.environments.undelete"
+
+	PermissionIssuesList          Permission = "bb.issues.list"
+	PermissionIssuesGet           Permission = "bb.issues.get"
+	PermissionIssuesCreate        Permission = "bb.issues.create"
+	PermissionIssuesUpdate        Permission = "bb.issues.update"
+	PermissionIssueCommentsCreate Permission = "bb.issueComments.create"
+	PermissionIssueCommentsUpdate Permission = "bb.issueComments.update"
 )

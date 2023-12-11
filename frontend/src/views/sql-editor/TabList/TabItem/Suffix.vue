@@ -65,7 +65,7 @@ const icon = computed((): IconType | undefined => {
   if (props.tab.mode === TabMode.ReadOnly && !props.tab.isSaved) {
     return "unsaved";
   }
-  return undefined;
+  return "close";
 });
 </script>
 

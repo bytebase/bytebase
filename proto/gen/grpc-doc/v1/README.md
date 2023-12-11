@@ -187,13 +187,17 @@
     - [Branch](#bytebase-v1-Branch)
     - [CreateBranchRequest](#bytebase-v1-CreateBranchRequest)
     - [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest)
+    - [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest)
+    - [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse)
     - [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest)
     - [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse)
     - [GetBranchRequest](#bytebase-v1-GetBranchRequest)
     - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
     - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
     - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
+    - [MergeBranchResponse](#bytebase-v1-MergeBranchResponse)
     - [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest)
+    - [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse)
     - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
   
     - [BranchView](#bytebase-v1-BranchView)
@@ -532,8 +536,6 @@
     - [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest)
     - [PatchSubscription](#bytebase-v1-PatchSubscription)
     - [Subscription](#bytebase-v1-Subscription)
-    - [TrialSubscription](#bytebase-v1-TrialSubscription)
-    - [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest)
     - [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest)
   
     - [PlanType](#bytebase-v1-PlanType)
@@ -3382,7 +3384,6 @@ The type of the backup.
 | ----------- | ------------ | ------------- | ------------|
 | GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
 | ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) |  |
-| SearchDatabases | [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest) | [SearchDatabasesResponse](#bytebase-v1-SearchDatabasesResponse) | Search for databases that the caller has both projects.get permission on, and also satisfy the specified query. |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) |  |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) |  |
 | SyncDatabase | [SyncDatabaseRequest](#bytebase-v1-SyncDatabaseRequest) | [SyncDatabaseResponse](#bytebase-v1-SyncDatabaseResponse) |  |
@@ -3473,6 +3474,39 @@ The type of the backup.
 
 
 
+<a name="bytebase-v1-DiffDatabaseRequest"></a>
+
+### DiffDatabaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of branch. |
+| database | [string](#string) |  | The name of the databsae to merge the branch to. |
+
+
+
+
+
+
+<a name="bytebase-v1-DiffDatabaseResponse"></a>
+
+### DiffDatabaseResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| diff | [string](#string) |  | The schema diff when merge occurs seamlessly. |
+| schema | [string](#string) |  | The merged schema if there is no conflict. |
+| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
+
+
+
+
+
+
 <a name="bytebase-v1-DiffMetadataRequest"></a>
 
 ### DiffMetadataRequest
@@ -3528,7 +3562,7 @@ The type of the backup.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the branch. Foramt: projects/{project} |
+| parent | [string](#string) |  | The parent resource of the branch. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. |
 | page_size | [int32](#int32) |  | The maximum number of branches to return. The service may return fewer than this value. If unspecified, at most 50 branches will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListBranches` call. Provide this to retrieve the subsequent page.
@@ -3569,6 +3603,23 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
 | merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. |
 | etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
+| validate_only | [bool](#bool) |  | validate_only determines if the merge can occur seamlessly without any conflicts. |
+
+
+
+
+
+
+<a name="bytebase-v1-MergeBranchResponse"></a>
+
+### MergeBranchResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch | [Branch](#bytebase-v1-Branch) |  | The merged branch when merge occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when merge has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
 
@@ -3588,6 +3639,23 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | source_branch | [string](#string) |  | The branch (remote upstream) used to rebase. We use its head as baseline. We use its head schema as baseline and reapply the difference between base and head of the named branch. Format: projects/{project}/branches/{branch} |
 | merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. This has to be set together with source_database or source_branch. |
 | etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
+| validate_only | [bool](#bool) |  | validate_only determines if the rebase can occur seamlessly without any conflicts. |
+
+
+
+
+
+
+<a name="bytebase-v1-RebaseBranchResponse"></a>
+
+### RebaseBranchResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| branch | [Branch](#bytebase-v1-Branch) |  | The rebased branch when rebase occurs seamlessly. |
+| conflict_schema | [string](#string) |  | The conflict schema when rebase has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
 
@@ -3643,9 +3711,10 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | ListBranches | [ListBranchesRequest](#bytebase-v1-ListBranchesRequest) | [ListBranchesResponse](#bytebase-v1-ListBranchesResponse) |  |
 | CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
+| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [MergeBranchResponse](#bytebase-v1-MergeBranchResponse) |  |
+| RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| DiffDatabase | [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest) | [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse) | DiffDatabase works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) return the diff DDLs similar to DiffSchema in database service. 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user will call DiffSchema() in database service to get diff DDLs. |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
@@ -3791,7 +3860,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this changelist will be created. Foramt: projects/{project} |
+| parent | [string](#string) |  | The parent resource where this changelist will be created. Format: projects/{project} |
 | changelist | [Changelist](#bytebase-v1-Changelist) |  | The changelist to create. |
 | changelist_id | [string](#string) |  | The ID to use for the changelist, which will become the final component of the changelist&#39;s resource name.
 
@@ -8595,38 +8664,6 @@ Type is the database change type.
 
 
 
-<a name="bytebase-v1-TrialSubscription"></a>
-
-### TrialSubscription
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| plan | [PlanType](#bytebase-v1-PlanType) |  |  |
-| days | [int32](#int32) |  |  |
-| instance_count | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TrialSubscriptionRequest"></a>
-
-### TrialSubscriptionRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| trial | [TrialSubscription](#bytebase-v1-TrialSubscription) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateSubscriptionRequest"></a>
 
 ### UpdateSubscriptionRequest
@@ -8672,7 +8709,6 @@ Type is the database change type.
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 | GetFeatureMatrix | [GetFeatureMatrixRequest](#bytebase-v1-GetFeatureMatrixRequest) | [FeatureMatrix](#bytebase-v1-FeatureMatrix) |  |
 | UpdateSubscription | [UpdateSubscriptionRequest](#bytebase-v1-UpdateSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
-| TrialSubscription | [TrialSubscriptionRequest](#bytebase-v1-TrialSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) |  |
 
  
 
@@ -9386,7 +9422,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource where this sheet will be created. Foramt: projects/{project} |
+| parent | [string](#string) |  | The parent resource where this sheet will be created. Format: projects/{project} |
 | sheet | [Sheet](#bytebase-v1-Sheet) |  | The sheet to create. |
 
 
@@ -9433,7 +9469,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the sheet. Foramt: projects/{project} |
+| parent | [string](#string) |  | The parent resource of the sheet. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
 | page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.

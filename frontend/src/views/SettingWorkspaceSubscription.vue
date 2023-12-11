@@ -106,14 +106,13 @@
         </dt>
 
         <dd class="mt-1">
-          <a
+          <button
             type="button"
             class="btn-primary inline-flex justify-center ml-auto"
-            target="_blank"
-            href="https://www.bytebase.com/contact-us"
+            @click="inquireEnterprise"
           >
             {{ $t("subscription.contact-us") }}
-          </a>
+          </button>
         </dd>
       </div>
     </dl>
@@ -151,6 +150,12 @@
     />
   </div>
 
+  <WeChatQRModal
+    v-if="state.showQRCodeModal"
+    :title="$t('subscription.inquire-enterprise-plan')"
+    @close="state.showQRCodeModal = false"
+  />
+
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
     @dismiss="state.showInstanceAssignmentDrawer = false"
@@ -161,12 +166,14 @@
 import { storeToRefs } from "pinia";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
   useCurrentUserV1,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
+import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 import PricingTable from "../components/PricingTable/";
@@ -174,6 +181,7 @@ import PricingTable from "../components/PricingTable/";
 interface LocalState {
   loading: boolean;
   license: string;
+  showQRCodeModal: boolean;
   showTrialModal: boolean;
   showInstanceAssignmentDrawer: boolean;
 }
@@ -181,12 +189,14 @@ interface LocalState {
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const { t } = useI18n();
+const { locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   loading: false,
   license: "",
   showTrialModal: false,
+  showQRCodeModal: false,
   showInstanceAssignmentDrawer: false,
 });
 
@@ -254,6 +264,14 @@ const currentPlan = computed((): string => {
 
 const openTrialModal = () => {
   state.showTrialModal = true;
+};
+
+const inquireEnterprise = () => {
+  if (locale.value === "zh-CN") {
+    state.showQRCodeModal = true;
+  } else {
+    window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
+  }
 };
 
 const canManageSubscription = computed((): boolean => {

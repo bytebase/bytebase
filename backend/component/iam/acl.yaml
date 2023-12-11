@@ -25,6 +25,18 @@ roles:
       - bb.databaseSecrets.update
       - bb.databaseSecrets.delete
       - bb.slowQueries.list
+      - bb.environments.list
+      - bb.environments.get
+      - bb.environments.create
+      - bb.environments.update
+      - bb.environments.delete
+      - bb.environments.undelete
+      - bb.issues.list
+      - bb.issues.get
+      - bb.issues.create
+      - bb.issues.update
+      - bb.issueComments.create
+      - bb.issueComments.update
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -51,8 +63,22 @@ roles:
       - bb.databaseSecrets.update
       - bb.databaseSecrets.delete
       - bb.slowQueries.list
+      - bb.environments.list
+      - bb.environments.get
+      - bb.environments.create
+      - bb.environments.update
+      - bb.environments.delete
+      - bb.environments.undelete
+      - bb.issues.list
+      - bb.issues.get
+      - bb.issues.create
+      - bb.issues.update
+      - bb.issueComments.create
+      - bb.issueComments.update
   - name: roles/workspaceMember
-    permissions: []
+    permissions:
+      - bb.environments.list
+      - bb.environments.get
   - name: roles/projectOwner
     permissions:
       - bb.databases.list
