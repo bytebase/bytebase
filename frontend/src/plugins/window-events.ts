@@ -11,7 +11,7 @@ export const emitWindowEvent = (
 ) => {
   const data: Record<string, any> = { activity };
   if (params) {
-    data.params = params;
+    data.params = JSON.parse(JSON.stringify(params));
   }
   window.parent.postMessage(data, "*");
 
