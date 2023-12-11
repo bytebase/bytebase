@@ -54,7 +54,16 @@ func permissionExist(p Permission) bool {
 		PermissionEnvironmentsCreate,
 		PermissionEnvironmentsUpdate,
 		PermissionEnvironmentsDelete,
-		PermissionEnvironmentsUndelete:
+		PermissionEnvironmentsUndelete,
+		PermissionIssuesList,
+		PermissionIssuesGet,
+		PermissionIssuesCreate,
+		PermissionIssuesUpdate,
+		PermissionIssuesApprove,
+		PermissionIssuesReject,
+		PermissionIssueRerequestReview,
+		PermissionIssueCommentsCreate,
+		PermissionIssueCommentsUpdate:
 		return true
 	default:
 		return false

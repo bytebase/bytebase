@@ -31,6 +31,15 @@ roles:
       - bb.environments.update
       - bb.environments.delete
       - bb.environments.undelete
+      - bb.issues.list
+      - bb.issues.get
+      - bb.issues.create
+      - bb.issues.update
+      - bb.issues.approve
+      - bb.issues.reject
+      - bb.issues.rerequestReview
+      - bb.issueComments.create
+      - bb.issueComments.update
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -63,6 +72,15 @@ roles:
       - bb.environments.update
       - bb.environments.delete
       - bb.environments.undelete
+      - bb.issues.list
+      - bb.issues.get
+      - bb.issues.create
+      - bb.issues.update
+      - bb.issues.approve
+      - bb.issues.reject
+      - bb.issues.rerequestReview
+      - bb.issueComments.create
+      - bb.issueComments.update
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
