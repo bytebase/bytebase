@@ -119,7 +119,7 @@ export interface GetBranchRequest {
 export interface ListBranchesRequest {
   /**
    * The parent resource of the branch.
-   * Foramt: projects/{project}
+   * Format: projects/{project}
    */
   parent: string;
   /** To filter the search result. */
@@ -212,6 +212,23 @@ export interface MergeBranchRequest {
    * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
    */
   etag: string;
+  /** validate_only determines if the merge can occur seamlessly without any conflicts. */
+  validateOnly: boolean;
+}
+
+export interface MergeBranchResponse {
+  /** The merged branch when merge occurs seamlessly. */
+  branch?:
+    | Branch
+    | undefined;
+  /**
+   * The conflict schema when merge has conflicts.
+   * The conflict section is enclosed by the following.
+   * <<<<< HEAD
+   * ====
+   * >>>>> main
+   */
+  conflictSchema?: string | undefined;
 }
 
 export interface RebaseBranchRequest {
@@ -244,6 +261,23 @@ export interface RebaseBranchRequest {
    * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
    */
   etag: string;
+  /** validate_only determines if the rebase can occur seamlessly without any conflicts. */
+  validateOnly: boolean;
+}
+
+export interface RebaseBranchResponse {
+  /** The rebased branch when rebase occurs seamlessly. */
+  branch?:
+    | Branch
+    | undefined;
+  /**
+   * The conflict schema when rebase has conflicts.
+   * The conflict section is enclosed by the following.
+   * <<<<< HEAD
+   * ====
+   * >>>>> main
+   */
+  conflictSchema?: string | undefined;
 }
 
 export interface DeleteBranchRequest {
@@ -252,6 +286,30 @@ export interface DeleteBranchRequest {
    * Format: projects/{project}/branches/{branch}
    */
   name: string;
+}
+
+export interface DiffDatabaseRequest {
+  /** The name of branch. */
+  name: string;
+  /** The name of the databsae to merge the branch to. */
+  database: string;
+}
+
+export interface DiffDatabaseResponse {
+  /** The schema diff when merge occurs seamlessly. */
+  diff: string;
+  /** The merged schema if there is no conflict. */
+  schema?:
+    | string
+    | undefined;
+  /**
+   * The conflict schema when rebase has conflicts.
+   * The conflict section is enclosed by the following.
+   * <<<<< HEAD
+   * ====
+   * >>>>> main
+   */
+  conflictSchema?: string | undefined;
 }
 
 export interface DiffMetadataRequest {
@@ -981,7 +1039,7 @@ export const UpdateBranchRequest = {
 };
 
 function createBaseMergeBranchRequest(): MergeBranchRequest {
-  return { name: "", headBranch: "", mergedSchema: "", etag: "" };
+  return { name: "", headBranch: "", mergedSchema: "", etag: "", validateOnly: false };
 }
 
 export const MergeBranchRequest = {
@@ -997,6 +1055,9 @@ export const MergeBranchRequest = {
     }
     if (message.etag !== "") {
       writer.uint32(34).string(message.etag);
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(40).bool(message.validateOnly);
     }
     return writer;
   },
@@ -1036,6 +1097,13 @@ export const MergeBranchRequest = {
 
           message.etag = reader.string();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1051,6 +1119,7 @@ export const MergeBranchRequest = {
       headBranch: isSet(object.headBranch) ? globalThis.String(object.headBranch) : "",
       mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
+      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
   },
 
@@ -1068,6 +1137,9 @@ export const MergeBranchRequest = {
     if (message.etag !== "") {
       obj.etag = message.etag;
     }
+    if (message.validateOnly === true) {
+      obj.validateOnly = message.validateOnly;
+    }
     return obj;
   },
 
@@ -1080,12 +1152,89 @@ export const MergeBranchRequest = {
     message.headBranch = object.headBranch ?? "";
     message.mergedSchema = object.mergedSchema ?? "";
     message.etag = object.etag ?? "";
+    message.validateOnly = object.validateOnly ?? false;
+    return message;
+  },
+};
+
+function createBaseMergeBranchResponse(): MergeBranchResponse {
+  return { branch: undefined, conflictSchema: undefined };
+}
+
+export const MergeBranchResponse = {
+  encode(message: MergeBranchResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.branch !== undefined) {
+      Branch.encode(message.branch, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.conflictSchema !== undefined) {
+      writer.uint32(18).string(message.conflictSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MergeBranchResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMergeBranchResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.branch = Branch.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.conflictSchema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MergeBranchResponse {
+    return {
+      branch: isSet(object.branch) ? Branch.fromJSON(object.branch) : undefined,
+      conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
+    };
+  },
+
+  toJSON(message: MergeBranchResponse): unknown {
+    const obj: any = {};
+    if (message.branch !== undefined) {
+      obj.branch = Branch.toJSON(message.branch);
+    }
+    if (message.conflictSchema !== undefined) {
+      obj.conflictSchema = message.conflictSchema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MergeBranchResponse>): MergeBranchResponse {
+    return MergeBranchResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MergeBranchResponse>): MergeBranchResponse {
+    const message = createBaseMergeBranchResponse();
+    message.branch = (object.branch !== undefined && object.branch !== null)
+      ? Branch.fromPartial(object.branch)
+      : undefined;
+    message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
   },
 };
 
 function createBaseRebaseBranchRequest(): RebaseBranchRequest {
-  return { name: "", sourceDatabase: "", sourceBranch: "", mergedSchema: "", etag: "" };
+  return { name: "", sourceDatabase: "", sourceBranch: "", mergedSchema: "", etag: "", validateOnly: false };
 }
 
 export const RebaseBranchRequest = {
@@ -1104,6 +1253,9 @@ export const RebaseBranchRequest = {
     }
     if (message.etag !== "") {
       writer.uint32(42).string(message.etag);
+    }
+    if (message.validateOnly === true) {
+      writer.uint32(48).bool(message.validateOnly);
     }
     return writer;
   },
@@ -1150,6 +1302,13 @@ export const RebaseBranchRequest = {
 
           message.etag = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.validateOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1166,6 +1325,7 @@ export const RebaseBranchRequest = {
       sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
+      validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
   },
 
@@ -1186,6 +1346,9 @@ export const RebaseBranchRequest = {
     if (message.etag !== "") {
       obj.etag = message.etag;
     }
+    if (message.validateOnly === true) {
+      obj.validateOnly = message.validateOnly;
+    }
     return obj;
   },
 
@@ -1199,6 +1362,83 @@ export const RebaseBranchRequest = {
     message.sourceBranch = object.sourceBranch ?? "";
     message.mergedSchema = object.mergedSchema ?? "";
     message.etag = object.etag ?? "";
+    message.validateOnly = object.validateOnly ?? false;
+    return message;
+  },
+};
+
+function createBaseRebaseBranchResponse(): RebaseBranchResponse {
+  return { branch: undefined, conflictSchema: undefined };
+}
+
+export const RebaseBranchResponse = {
+  encode(message: RebaseBranchResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.branch !== undefined) {
+      Branch.encode(message.branch, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.conflictSchema !== undefined) {
+      writer.uint32(18).string(message.conflictSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RebaseBranchResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRebaseBranchResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.branch = Branch.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.conflictSchema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RebaseBranchResponse {
+    return {
+      branch: isSet(object.branch) ? Branch.fromJSON(object.branch) : undefined,
+      conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
+    };
+  },
+
+  toJSON(message: RebaseBranchResponse): unknown {
+    const obj: any = {};
+    if (message.branch !== undefined) {
+      obj.branch = Branch.toJSON(message.branch);
+    }
+    if (message.conflictSchema !== undefined) {
+      obj.conflictSchema = message.conflictSchema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RebaseBranchResponse>): RebaseBranchResponse {
+    return RebaseBranchResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RebaseBranchResponse>): RebaseBranchResponse {
+    const message = createBaseRebaseBranchResponse();
+    message.branch = (object.branch !== undefined && object.branch !== null)
+      ? Branch.fromPartial(object.branch)
+      : undefined;
+    message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
   },
 };
@@ -1256,6 +1496,169 @@ export const DeleteBranchRequest = {
   fromPartial(object: DeepPartial<DeleteBranchRequest>): DeleteBranchRequest {
     const message = createBaseDeleteBranchRequest();
     message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseDiffDatabaseRequest(): DiffDatabaseRequest {
+  return { name: "", database: "" };
+}
+
+export const DiffDatabaseRequest = {
+  encode(message: DiffDatabaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.database !== "") {
+      writer.uint32(18).string(message.database);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffDatabaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffDatabaseRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+    };
+  },
+
+  toJSON(message: DiffDatabaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    return DiffDatabaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffDatabaseRequest>): DiffDatabaseRequest {
+    const message = createBaseDiffDatabaseRequest();
+    message.name = object.name ?? "";
+    message.database = object.database ?? "";
+    return message;
+  },
+};
+
+function createBaseDiffDatabaseResponse(): DiffDatabaseResponse {
+  return { diff: "", schema: undefined, conflictSchema: undefined };
+}
+
+export const DiffDatabaseResponse = {
+  encode(message: DiffDatabaseResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.diff !== "") {
+      writer.uint32(10).string(message.diff);
+    }
+    if (message.schema !== undefined) {
+      writer.uint32(18).string(message.schema);
+    }
+    if (message.conflictSchema !== undefined) {
+      writer.uint32(26).string(message.conflictSchema);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): DiffDatabaseResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDiffDatabaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.diff = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.conflictSchema = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DiffDatabaseResponse {
+    return {
+      diff: isSet(object.diff) ? globalThis.String(object.diff) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
+      conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
+    };
+  },
+
+  toJSON(message: DiffDatabaseResponse): unknown {
+    const obj: any = {};
+    if (message.diff !== "") {
+      obj.diff = message.diff;
+    }
+    if (message.schema !== undefined) {
+      obj.schema = message.schema;
+    }
+    if (message.conflictSchema !== undefined) {
+      obj.conflictSchema = message.conflictSchema;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    return DiffDatabaseResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DiffDatabaseResponse>): DiffDatabaseResponse {
+    const message = createBaseDiffDatabaseResponse();
+    message.diff = object.diff ?? "";
+    message.schema = object.schema ?? undefined;
+    message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
   },
 };
@@ -1646,7 +2049,7 @@ export const BranchServiceDefinition = {
       name: "MergeBranch",
       requestType: MergeBranchRequest,
       requestStream: false,
-      responseType: Branch,
+      responseType: MergeBranchResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -1703,7 +2106,7 @@ export const BranchServiceDefinition = {
       name: "RebaseBranch",
       requestType: RebaseBranchRequest,
       requestStream: false,
-      responseType: Branch,
+      responseType: RebaseBranchResponse,
       responseStream: false,
       options: {
         _unknownFields: {
@@ -1803,6 +2206,78 @@ export const BranchServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    /**
+     * DiffDatabase works similar to branch rebase.
+     * 1) set the base as the schema of a database;
+     * 2) apply the changes between base and head of branch to the new base (schema of database);
+     * 3) return the diff DDLs similar to DiffSchema in database service.
+     * 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
+     * will call DiffSchema() in database service to get diff DDLs.
+     */
+    diffDatabase: {
+      name: "DiffDatabase",
+      requestType: DiffDatabaseRequest,
+      requestStream: false,
+      responseType: DiffDatabaseResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              47,
+              34,
+              45,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              98,
+              114,
+              97,
+              110,
+              99,
+              104,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              100,
+              105,
+              102,
+              102,
+              68,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
             ]),
           ],
         },

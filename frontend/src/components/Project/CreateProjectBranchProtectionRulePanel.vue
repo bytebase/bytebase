@@ -89,9 +89,8 @@ import { NButton, NCheckbox, NInput, NDivider, NSelect, NTag } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useRoleStore, useBranchList } from "@/store";
+import { useRoleStore, useBranchListByProject } from "@/store";
 import {
-  getProjectName,
   getProjectAndBranchId,
   projectNamePrefix,
   protectionRulesSuffix,
@@ -123,7 +122,9 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { branchList } = useBranchList(getProjectName(props.project.name));
+const { branchList } = useBranchListByProject(
+  computed(() => props.project.name)
+);
 const protectionRuleStore = useProjectProtectionRulesStore();
 const branchProtectionRules = useProjectBranchProtectionRules(
   props.project.name

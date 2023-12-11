@@ -19,7 +19,6 @@ var ownerAndDBAMethods = map[string]bool{
 	v1pb.InstanceService_AddDataSource_FullMethodName:          true,
 	v1pb.InstanceService_RemoveDataSource_FullMethodName:       true,
 	v1pb.InstanceService_UpdateDataSource_FullMethodName:       true,
-	v1pb.SubscriptionService_TrialSubscription_FullMethodName:  true,
 	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
 	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
 	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
@@ -60,7 +59,6 @@ var methodPermissionMap = map[string]iam.Permission{
 
 	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
 	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
-	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesList,
 	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_SyncDatabase_FullMethodName:           iam.PermissionDatabasesSync,
@@ -79,6 +77,22 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_AdviseIndex_FullMethodName:            "", // TODO(p0ny): not critical, implement later.
 	v1pb.DatabaseService_ListChangeHistories_FullMethodName:    iam.PermissionChangeHistoriesList,
 	v1pb.DatabaseService_GetChangeHistory_FullMethodName:       iam.PermissionChangeHistoriesGet,
+	v1pb.EnvironmentService_CreateEnvironment_FullMethodName:   iam.PermissionEnvironmentsCreate,
+	v1pb.EnvironmentService_UpdateEnvironment_FullMethodName:   iam.PermissionEnvironmentsUpdate,
+	v1pb.EnvironmentService_DeleteEnvironment_FullMethodName:   iam.PermissionEnvironmentsDelete,
+	v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName: iam.PermissionEnvironmentsUndelete,
+	v1pb.EnvironmentService_GetEnvironment_FullMethodName:      iam.PermissionEnvironmentsGet,
+	v1pb.EnvironmentService_ListEnvironments_FullMethodName:    iam.PermissionEnvironmentsList,
+	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: iam.PermissionEnvironmentsUpdate,
+	v1pb.IssueService_ListIssues_FullMethodName:                iam.PermissionIssuesList,
+	v1pb.IssueService_GetIssue_FullMethodName:                  iam.PermissionIssuesGet,
+	v1pb.IssueService_UpdateIssue_FullMethodName:               iam.PermissionIssuesUpdate,
+	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:   iam.PermissionIssuesUpdate,
+	v1pb.IssueService_CreateIssueComment_FullMethodName:        iam.PermissionIssueCommentsCreate,
+	v1pb.IssueService_UpdateIssueComment_FullMethodName:        iam.PermissionIssueCommentsUpdate,
+	v1pb.IssueService_ApproveIssue_FullMethodName:              "",
+	v1pb.IssueService_RejectIssue_FullMethodName:               "",
+	v1pb.IssueService_RequestIssue_FullMethodName:              "",
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

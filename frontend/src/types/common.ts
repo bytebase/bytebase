@@ -34,6 +34,10 @@ export const MINIMUM_POLL_INTERVAL = 200;
 // Add jitter to avoid timer from different clients converging to the same polling frequency.
 export const POLL_JITTER = 200;
 
+// Link to inquire enterprise plan
+export const ENTERPRISE_INQUIRE_LINK =
+  "https://www.bytebase.com/contact-us?source=console";
+
 // RowStatus
 export type RowStatus = "NORMAL" | "ARCHIVED";
 

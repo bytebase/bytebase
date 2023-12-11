@@ -10,14 +10,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-type trial struct {
-	instanceCount       int32
-	expectInstanceCount int32
-	plan                v1pb.PlanType
-	expectPlan          v1pb.PlanType
-	days                int32
-}
-
 func TestSubscription(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
@@ -35,29 +27,4 @@ func TestSubscription(t *testing.T) {
 	subscription, err := ctl.getSubscription(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.PlanType_FREE, subscription.Plan)
-
-	trialList := []trial{
-		{
-			// Test trial the TEAM plan.
-			instanceCount:       10,
-			expectInstanceCount: 10,
-			plan:                v1pb.PlanType_ENTERPRISE,
-			expectPlan:          v1pb.PlanType_ENTERPRISE,
-			days:                7,
-		},
-	}
-
-	for _, trial := range trialList {
-		err = ctl.trialPlan(ctx, &v1pb.TrialSubscription{
-			InstanceCount: trial.instanceCount,
-			Plan:          trial.plan,
-			Days:          trial.days,
-		})
-		a.NoError(err)
-
-		subscription, err = ctl.getSubscription(ctx)
-		a.NoError(err)
-		a.Equal(trial.expectPlan, subscription.Plan)
-		a.Equal(trial.expectInstanceCount, subscription.InstanceCount)
-	}
 }

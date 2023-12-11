@@ -134,7 +134,7 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return this.isSelfHostLicense && this.currentPlan < PlanType.ENTERPRISE;
     },
     isSelfHostLicense(state): boolean {
-      return import.meta.env.MODE.toLowerCase() !== "aws";
+      return import.meta.env.MODE.toLowerCase() !== "release-aws";
     },
     purchaseLicenseUrl(state): string {
       return import.meta.env.BB_PURCHASE_LICENSE_URL;

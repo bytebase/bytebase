@@ -71,13 +71,14 @@
           <span class="text-main">{{ $t("quick-action.transfer-in-db") }}</span>
         </template>
       </i18n-t>
+      <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { reactive, PropType, computed, ref, watchEffect } from "vue";
-import { useCurrentUserV1, usePageMode, usePolicyV1Store } from "@/store";
+import { usePageMode, usePolicyV1Store } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import {
   Policy,
@@ -86,7 +87,6 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import {
   filterDatabaseV1ByKeyword,
-  isDatabaseV1Accessible,
   SearchParams,
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
@@ -107,7 +107,6 @@ const props = defineProps({
   },
 });
 
-const currentUserV1 = useCurrentUserV1();
 const pageMode = usePageMode();
 
 const state = reactive<LocalState>({
@@ -146,9 +145,7 @@ const selectedEnvironment = computed(() => {
 });
 
 const filteredDatabaseList = computed(() => {
-  let list = [...props.databaseList].filter((database) =>
-    isDatabaseV1Accessible(database, currentUserV1.value)
-  );
+  let list = props.databaseList;
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
