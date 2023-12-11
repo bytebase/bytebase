@@ -37,6 +37,7 @@ import {
   databaseForTask,
   getLocalSheetByName,
   isValidStage,
+  specForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
@@ -220,12 +221,14 @@ const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
   };
   const tasks = flattenTaskV1List(issue.rolloutEntity);
   for (const task of tasks) {
+    const spec = specForTask(issue.planEntity, task);
     const database = databaseForTask(issue, task);
     const sheetName = sheetNameOfTaskV1(task);
     const sheet = await sheetStore.getOrFetchSheetByName(sheetName);
     const statement = sheet ? getSheetStatement(sheet) : "";
     eventParams.tasks.push({
       database: toRaw(database),
+      earliestAllowedTime: spec?.earliestAllowedTime,
       statement,
     } as never);
   }
