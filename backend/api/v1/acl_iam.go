@@ -39,7 +39,14 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.InstanceService_AddDataSource_FullMethodName,
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
-		v1pb.InstanceService_SyncSlowQueries_FullMethodName:
+		v1pb.InstanceService_SyncSlowQueries_FullMethodName,
+		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
+		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
+		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
+		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
+		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
+		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName:
 		ok, err := in.iamManager.CheckPermission(ctx, p, user)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
