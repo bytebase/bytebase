@@ -645,7 +645,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		}
 		if payload.DatabaseConfig != nil && payload.BaselineDatabaseConfig != nil {
 			v1SheetPayload = &v1pb.SheetPayload{
-				Type:                   v1pb.SheetPayload_Type(payload.Type),
 				DatabaseConfig:         convertStoreDatabaseConfig(payload.DatabaseConfig, nil /* filter */),
 				BaselineDatabaseConfig: convertStoreDatabaseConfig(payload.BaselineDatabaseConfig, nil /* filter */),
 			}
