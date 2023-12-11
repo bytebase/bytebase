@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "store/common.proto";
 import "store/database.proto";
 import "store/vcs.proto";
 
