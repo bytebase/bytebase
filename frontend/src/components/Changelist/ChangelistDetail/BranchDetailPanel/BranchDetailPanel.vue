@@ -8,7 +8,7 @@
         <div class="w-full flex flex-row justify-between items-center gap-2">
           <BranchBaseline v-if="branch" :branch="branch" />
         </div>
-        <SchemaDesignEditor
+        <SchemaDesignEditorLite
           v-if="editorBindings"
           class="flex-1"
           :readonly="true"
@@ -25,7 +25,7 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import SchemaDesignEditor from "@/components/Branch/SchemaDesignEditor.vue";
+import SchemaDesignEditorLite from "@/components/Branch/SchemaDesignEditorLite.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";

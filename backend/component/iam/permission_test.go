@@ -48,7 +48,19 @@ func permissionExist(p Permission) bool {
 		PermissionDatabaseSecretsList,
 		PermissionDatabaseSecretsUpdate,
 		PermissionDatabaseSecretsDelete,
-		PermissionSlowQueriesList:
+		PermissionSlowQueriesList,
+		PermissionEnvironmentsList,
+		PermissionEnvironmentsGet,
+		PermissionEnvironmentsCreate,
+		PermissionEnvironmentsUpdate,
+		PermissionEnvironmentsDelete,
+		PermissionEnvironmentsUndelete,
+		PermissionIssuesList,
+		PermissionIssuesGet,
+		PermissionIssuesCreate,
+		PermissionIssuesUpdate,
+		PermissionIssueCommentsCreate,
+		PermissionIssueCommentsUpdate:
 		return true
 	default:
 		return false

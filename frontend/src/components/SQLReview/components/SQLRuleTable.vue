@@ -80,11 +80,11 @@
             </button>
           </div>
           <div
-            v-if="getRuleLocalization(rule.type).description"
+            v-if="rule.comment || getRuleLocalization(rule.type).description"
             class="bb-grid-cell col-span-full pl-24 border-t-0"
           >
             <p class="w-full text-left pl-2 text-gray-500 -mt-2 mb-1">
-              {{ getRuleLocalization(rule.type).description }}
+              {{ rule.comment || getRuleLocalization(rule.type).description }}
             </p>
           </div>
         </template>

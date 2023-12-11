@@ -18,6 +18,9 @@ type CodeCompletionCore struct {
 	QueryRule           int
 	ShadowQueryRule     int
 	SelectItemAliasRule int
+	// CTERule is used to determine the CTE alias for the completion candidates.
+	// Currently, it always uses in ShadowQueryRule for MySQL.
+	CTERule int
 
 	parser            antlr.Parser
 	atn               *antlr.ATN
@@ -47,6 +50,7 @@ func NewCodeCompletionCore(
 	queryRule int,
 	shadowQueryRule int,
 	selectItemAliasRule int,
+	cteRule int,
 ) *CodeCompletionCore {
 	return &CodeCompletionCore{
 		IgnoredTokens:       ignoredTokens,
@@ -54,6 +58,7 @@ func NewCodeCompletionCore(
 		QueryRule:           queryRule,
 		ShadowQueryRule:     shadowQueryRule,
 		SelectItemAliasRule: selectItemAliasRule,
+		CTERule:             cteRule,
 		parser:              parser,
 		atn:                 parser.GetATN(),
 		followSetsByState:   followSets,
@@ -72,6 +77,7 @@ type RuleContext struct {
 	// SelectItemAliases is the map of token index of select item aliases.
 	// Only the QueryRule has the SelectItemAliases.
 	SelectItemAliases map[int]bool
+	CTEList           []int
 }
 
 // RuleList is the list of rules.
@@ -93,9 +99,12 @@ func NewRuleList() *RuleList {
 func (l *RuleList) Copy() *RuleList {
 	rules := make([]*RuleContext, len(l.rules))
 	for i, rule := range l.rules {
+		var cteList []int
+		cteList = append(cteList, rule.CTEList...)
 		rules[i] = &RuleContext{
 			ID:                rule.ID,
 			SelectItemAliases: rule.SelectItemAliases,
+			CTEList:           cteList,
 		}
 	}
 	bitSet := antlr.NewBitSet()
@@ -485,7 +494,8 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 						TokenIndex: status,
 					})
 				}
-				if startState.GetRuleIndex() == c.SelectItemAliasRule {
+				switch startState.GetRuleIndex() {
+				case c.SelectItemAliasRule:
 					if c.lastQueryRuleContext != nil {
 						if c.lastQueryRuleContext.SelectItemAliases == nil {
 							c.lastQueryRuleContext.SelectItemAliases = make(map[int]bool)
@@ -497,6 +507,10 @@ func (c *CodeCompletionCore) fetchEndStatus(startState antlr.ATNState, tokenInde
 							c.lastShadowQueryRuleContext.SelectItemAliases = make(map[int]bool)
 						}
 						c.lastShadowQueryRuleContext.SelectItemAliases[c.tokens[currentEntry.TokenIndex].StartPosition] = true
+					}
+				case c.CTERule:
+					if c.lastShadowQueryRuleContext != nil {
+						c.lastShadowQueryRuleContext.CTEList = append(c.lastShadowQueryRuleContext.CTEList, c.tokens[currentEntry.TokenIndex].StartPosition)
 					}
 				}
 			case *antlr.PredicateTransition:

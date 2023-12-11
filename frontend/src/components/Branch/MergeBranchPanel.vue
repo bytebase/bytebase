@@ -23,7 +23,7 @@
             <BranchSelector
               class="!w-4/5 text-center"
               :clearable="false"
-              :project="getProjectName(project.name)"
+              :project="project"
               :branch="state.branchName"
               :filter="targetBranchFilter"
               @update:branch="(branch) => (state.branchName = branch ?? '')"
@@ -80,7 +80,6 @@ import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { getProjectName } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DiffEditor } from "../MonacoEditor";
@@ -120,7 +119,9 @@ const sourceBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await branchStore.fetchBranchByName(name, true /* useCache */);
+    // Don't use local store cache since we need to ensure the branch is
+    // fresh clean here
+    return await branchStore.fetchBranchByName(name, /* !useCache */ false);
   },
   emptyBranch(),
   {
@@ -134,7 +135,9 @@ const targetBranch = asyncComputed(
     if (!name) {
       return emptyBranch();
     }
-    return await branchStore.fetchBranchByName(name, true /* useCache */);
+    // Don't use local store cache since we need to ensure the branch is
+    // fresh clean here
+    return await branchStore.fetchBranchByName(name, /* !useCache */ false);
   },
   emptyBranch(),
   {
@@ -161,8 +164,10 @@ const handleMergeBranch = async () => {
       headBranch: sourceBranch.value.name,
       mergedSchema: "",
       etag: "",
+      validateOnly: false,
     });
   } catch (error: any) {
+    // TODO(Jim): this needs to be updated.
     // If there is conflict, we need to show the conflict and let user resolve it.
     if (error.code === Status.ABORTED) {
       dialog.create({

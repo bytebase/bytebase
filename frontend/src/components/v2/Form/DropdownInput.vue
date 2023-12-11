@@ -1,10 +1,12 @@
 <template>
   <NDropdown
     v-if="allowInputValue"
+    ref="dropdownRef"
     trigger="click"
     placement="bottom-start"
     :options="dropdownOptions"
     :width="consistentMenuWidth ? 'trigger' : undefined"
+    style="max-height: 20rem; overflow-y: auto; overflow-x: hidden"
     v-bind="dropdownProps"
     @select="$emit('update:value', $event as string)"
   >
@@ -57,13 +59,14 @@ import {
   NSelect,
   SelectOption,
 } from "naive-ui";
-import { computed } from "vue";
+import { computed, h, ref } from "vue";
 import { VueClass, VueStyle } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
     value?: string | undefined | null;
     allowInputValue?: boolean;
+    allowFilter?: boolean;
     options: SelectOption[];
     dropdownProps?: DropdownProps;
     suffixClass?: VueClass;
@@ -73,20 +76,48 @@ const props = withDefaults(
   {
     value: undefined,
     allowInputValue: true,
+    allowFilter: false,
     dropdownProps: undefined,
     suffixClass: undefined,
     suffixStyle: undefined,
     consistentMenuWidth: true,
   }
 );
-defineEmits<{
+const emit = defineEmits<{
   (event: "update:value", value: string): void;
 }>();
 
+const dropdownRef = ref();
+
 const dropdownOptions = computed(() => {
-  return props.options.map<DropdownOption>((opt) => ({
-    key: opt.value,
-    ...opt,
-  }));
+  return props.options
+    .map<DropdownOption>((opt) => ({
+      key: opt.value,
+      ...opt,
+      type: "render",
+      render: () =>
+        h(
+          "div",
+          {
+            class:
+              "px-3 py-2 textinfo text-sm hover:bg-gray-100 cursor-pointer",
+          },
+          opt.value
+        ),
+      props: {
+        onClick: () => {
+          emit("update:value", opt.value as string);
+          if (dropdownRef.value) {
+            dropdownRef.value.doUpdateShow(false);
+          }
+        },
+      },
+    }))
+    .filter((opt: DropdownOption) => {
+      if (!props.value || !props.allowFilter) {
+        return true;
+      }
+      return (opt.key as string).startsWith(props.value);
+    });
 });
 </script>

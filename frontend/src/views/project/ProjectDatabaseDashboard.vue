@@ -25,6 +25,7 @@ import {
   isOwnerOfProjectV1,
   hasPermissionInProjectV1,
   getQuickActionList,
+  isDatabaseV1Alterable,
 } from "@/utils";
 
 const props = defineProps({
@@ -34,6 +35,7 @@ const props = defineProps({
   },
 });
 
+const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const pageMode = usePageMode();
 
@@ -51,8 +53,13 @@ useSearchDatabaseV1List(
 );
 
 const databaseV1List = computed(() => {
-  const list = useDatabaseV1Store().databaseListByProject(project.value.name);
-  return sortDatabaseV1List(list);
+  let list = useDatabaseV1Store().databaseListByProject(project.value.name);
+  list = sortDatabaseV1List(list);
+  // In standalone mode, only show alterable databases.
+  if (pageMode.value === "STANDALONE") {
+    list = list.filter((db) => isDatabaseV1Alterable(db, currentUser.value));
+  }
+  return list;
 });
 
 const quickActionMapByRole = computed(() => {

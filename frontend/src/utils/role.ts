@@ -232,11 +232,6 @@ export const hasSettingPagePermission = (
         "bb.permission.workspace.manage-member",
         role
       );
-    case "setting.workspace.project":
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        role
-      );
     case "setting.workspace.sensitive-data":
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-sensitive-data",

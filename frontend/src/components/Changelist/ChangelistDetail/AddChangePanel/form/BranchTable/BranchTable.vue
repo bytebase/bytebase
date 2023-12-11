@@ -137,17 +137,17 @@ const toggleSelect = (branch: Branch, on: boolean) => {
   }
 };
 
-const renderTitle = (item: Branch) => {
+const renderTitle = (branch: Branch) => {
   const keyword = props.keyword.trim().toLowerCase();
 
-  const { title } = item;
+  const { branchId } = branch;
 
   if (!keyword) {
-    return escape(title);
+    return escape(branchId);
   }
 
   return getHighlightHTMLByRegExp(
-    escape(title),
+    escape(branchId),
     escape(keyword),
     false /* !caseSensitive */
   );
