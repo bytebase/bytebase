@@ -73,6 +73,10 @@ const state = reactive<LocalState>({
   showQRCodeModal: false,
 });
 
+defineEmits<{
+  (event: "cancel"): void;
+}>();
+
 const router = useRouter();
 const { locale } = useLanguage();
 
