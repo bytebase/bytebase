@@ -41,15 +41,7 @@ func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL,
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	list, err := splitSQLImpl(stream)
-	if err != nil {
-		return nil, err
-	}
-	var results []base.SingleSQL
-	for _, sql := range list {
-		results = append(results, sql)
-	}
-	return results, nil
+	return splitSQLImpl(stream)
 }
 
 func splitSQLImpl(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
