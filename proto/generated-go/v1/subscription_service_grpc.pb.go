@@ -22,7 +22,6 @@ const (
 	SubscriptionService_GetSubscription_FullMethodName    = "/bytebase.v1.SubscriptionService/GetSubscription"
 	SubscriptionService_GetFeatureMatrix_FullMethodName   = "/bytebase.v1.SubscriptionService/GetFeatureMatrix"
 	SubscriptionService_UpdateSubscription_FullMethodName = "/bytebase.v1.SubscriptionService/UpdateSubscription"
-	SubscriptionService_TrialSubscription_FullMethodName  = "/bytebase.v1.SubscriptionService/TrialSubscription"
 )
 
 // SubscriptionServiceClient is the client API for SubscriptionService service.
@@ -32,7 +31,6 @@ type SubscriptionServiceClient interface {
 	GetSubscription(ctx context.Context, in *GetSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 	GetFeatureMatrix(ctx context.Context, in *GetFeatureMatrixRequest, opts ...grpc.CallOption) (*FeatureMatrix, error)
 	UpdateSubscription(ctx context.Context, in *UpdateSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
-	TrialSubscription(ctx context.Context, in *TrialSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error)
 }
 
 type subscriptionServiceClient struct {
@@ -70,15 +68,6 @@ func (c *subscriptionServiceClient) UpdateSubscription(ctx context.Context, in *
 	return out, nil
 }
 
-func (c *subscriptionServiceClient) TrialSubscription(ctx context.Context, in *TrialSubscriptionRequest, opts ...grpc.CallOption) (*Subscription, error) {
-	out := new(Subscription)
-	err := c.cc.Invoke(ctx, SubscriptionService_TrialSubscription_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SubscriptionServiceServer is the server API for SubscriptionService service.
 // All implementations must embed UnimplementedSubscriptionServiceServer
 // for forward compatibility
@@ -86,7 +75,6 @@ type SubscriptionServiceServer interface {
 	GetSubscription(context.Context, *GetSubscriptionRequest) (*Subscription, error)
 	GetFeatureMatrix(context.Context, *GetFeatureMatrixRequest) (*FeatureMatrix, error)
 	UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error)
-	TrialSubscription(context.Context, *TrialSubscriptionRequest) (*Subscription, error)
 	mustEmbedUnimplementedSubscriptionServiceServer()
 }
 
@@ -102,9 +90,6 @@ func (UnimplementedSubscriptionServiceServer) GetFeatureMatrix(context.Context, 
 }
 func (UnimplementedSubscriptionServiceServer) UpdateSubscription(context.Context, *UpdateSubscriptionRequest) (*Subscription, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSubscription not implemented")
-}
-func (UnimplementedSubscriptionServiceServer) TrialSubscription(context.Context, *TrialSubscriptionRequest) (*Subscription, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TrialSubscription not implemented")
 }
 func (UnimplementedSubscriptionServiceServer) mustEmbedUnimplementedSubscriptionServiceServer() {}
 
@@ -173,24 +158,6 @@ func _SubscriptionService_UpdateSubscription_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SubscriptionService_TrialSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TrialSubscriptionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SubscriptionServiceServer).TrialSubscription(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SubscriptionService_TrialSubscription_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SubscriptionServiceServer).TrialSubscription(ctx, req.(*TrialSubscriptionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SubscriptionService_ServiceDesc is the grpc.ServiceDesc for SubscriptionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -209,10 +176,6 @@ var SubscriptionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSubscription",
 			Handler:    _SubscriptionService_UpdateSubscription_Handler,
-		},
-		{
-			MethodName: "TrialSubscription",
-			Handler:    _SubscriptionService_TrialSubscription_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
