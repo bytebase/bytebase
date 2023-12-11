@@ -17,7 +17,7 @@ export const extractSQLRowValue = (value: RowValue) => {
     console.debug("mixed type in row value", value);
   }
   if (value.bytesValue) {
-    // convert byte arrays to binary 0101001 strings
+    // convert byte arrays to binary 10101001 strings
     const byteArray = value.bytesValue;
     const parts: string[] = [];
     for (let i = 0; i < byteArray.length; i++) {
@@ -25,7 +25,11 @@ export const extractSQLRowValue = (value: RowValue) => {
       const part = byte.toString(2).padStart(8, "0");
       parts.push(part);
     }
-    return parts.join("");
+    const binaryString = parts.join("").replace(/^0+/g, "");
+    if (binaryString.length === 0) {
+      return "0";
+    }
+    return binaryString;
   }
   const key = keys[0];
   return plainObject[key];
