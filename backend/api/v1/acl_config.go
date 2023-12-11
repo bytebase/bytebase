@@ -19,7 +19,6 @@ var ownerAndDBAMethods = map[string]bool{
 	v1pb.InstanceService_AddDataSource_FullMethodName:          true,
 	v1pb.InstanceService_RemoveDataSource_FullMethodName:       true,
 	v1pb.InstanceService_UpdateDataSource_FullMethodName:       true,
-	v1pb.SubscriptionService_TrialSubscription_FullMethodName:  true,
 	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
 	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
 	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
@@ -60,7 +59,6 @@ var methodPermissionMap = map[string]iam.Permission{
 
 	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
 	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
-	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesList,
 	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_SyncDatabase_FullMethodName:           iam.PermissionDatabasesSync,
