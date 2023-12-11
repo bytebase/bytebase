@@ -61,28 +61,6 @@ func DealWithDelimiter(statement string) (string, error) {
 	return statement, nil
 }
 
-func getDefaultChannelTokenType(tokens []antlr.Token, base int, offset int) int {
-	current := base
-	step := 1
-	remaining := offset
-	if offset < 0 {
-		step = -1
-		remaining = -offset
-	}
-	for remaining != 0 {
-		current += step
-		if current < 0 || current >= len(tokens) {
-			return parser.MySQLParserEOF
-		}
-
-		if tokens[current].GetChannel() == antlr.TokenDefaultChannel {
-			remaining--
-		}
-	}
-
-	return tokens[current].GetTokenType()
-}
-
 func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	input := antlr.NewInputStream(statement)
 	lexer := parser.NewMySQLLexer(input)

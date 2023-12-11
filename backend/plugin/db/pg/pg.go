@@ -456,6 +456,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
