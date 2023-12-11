@@ -263,6 +263,7 @@ func (s *Store) createRepositoryImplV2(ctx context.Context, tx *Tx, create *Repo
 		&repository.SchemaPathTemplate,
 		&repository.SheetPathTemplate,
 		&repository.EnableSQLReviewCI,
+		&repository.EnableCD,
 		&repository.ExternalID,
 		&repository.ExternalWebhookID,
 		&repository.WebhookURLHost,
