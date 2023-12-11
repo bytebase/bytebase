@@ -28,4 +28,11 @@ const (
 	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
 	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
 	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
+
+	PermissionEnvironmentsList     Permission = "bb.environments.list"
+	PermissionEnvironmentsGet      Permission = "bb.environments.get"
+	PermissionEnvironmentsCreate   Permission = "bb.environments.create"
+	PermissionEnvironmentsUpdate   Permission = "bb.environments.update"
+	PermissionEnvironmentsDelete   Permission = "bb.environments.delete"
+	PermissionEnvironmentsUndelete Permission = "bb.environments.undelete"
 )
