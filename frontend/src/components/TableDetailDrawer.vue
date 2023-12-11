@@ -81,17 +81,12 @@
             <div class="max-w-6xl px-6 space-y-6 divide-y divide-block-border">
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
-                <div class="col-span-1">
+                <div v-if="hasTableEngineProperty" class="col-span-1">
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
                   <dd class="mt-1 text-sm text-main">
-                    {{
-                      instanceEngine === Engine.POSTGRES ||
-                      instanceEngine === Engine.SNOWFLAKE
-                        ? "n/a"
-                        : table.engine
-                    }}
+                    {{ table.engine }}
                   </dd>
                 </div>
 
@@ -126,36 +121,22 @@
                   </dd>
                 </div>
 
-                <div class="col-span-1">
+                <div v-if="hasIndexSizeProperty" class="col-span-1">
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
                   <dd class="mt-1 text-sm text-main">
-                    {{
-                      instanceEngine === Engine.CLICKHOUSE ||
-                      instanceEngine === Engine.SNOWFLAKE
-                        ? "n/a"
-                        : bytesToString(table.indexSize.toNumber())
-                    }}
+                    {{ bytesToString(table.indexSize.toNumber()) }}
                   </dd>
                 </div>
 
-                <template
-                  v-if="
-                    instanceEngine !== Engine.CLICKHOUSE &&
-                    instanceEngine !== Engine.SNOWFLAKE
-                  "
-                >
+                <template v-if="hasCollationProperty">
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
                     </dt>
                     <dd class="mt-1 text-sm text-main">
-                      {{
-                        instanceEngine === Engine.POSTGRES
-                          ? "n/a"
-                          : table.collation
-                      }}
+                      {{ table.collation }}
                     </dd>
                   </div>
                 </template>
@@ -306,6 +287,18 @@ const hasPartitionTables = computed(() => {
     database.value.instanceEntity.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
+  );
+});
+
+const hasTableEngineProperty = computed(() => {
+  return ![Engine.POSTGRES, Engine.SNOWFLAKE].includes(instanceEngine.value);
+});
+const hasIndexSizeProperty = computed(() => {
+  return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(instanceEngine.value);
+});
+const hasCollationProperty = computed(() => {
+  return ![Engine.POSTGRES, Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(
+    instanceEngine.value
   );
 });
 

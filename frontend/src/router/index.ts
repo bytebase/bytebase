@@ -346,15 +346,6 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
-                path: "project",
-                name: "setting.workspace.project",
-                meta: {
-                  title: () => t("common.projects"),
-                },
-                component: () => import("../views/SettingWorkspaceProject.vue"),
-                props: true,
-              },
-              {
                 path: "member",
                 name: "setting.workspace.member",
                 meta: { title: () => t("settings.sidebar.members") },
