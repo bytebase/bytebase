@@ -46,7 +46,7 @@ service ChangelistService {
 
 message CreateChangelistRequest {
   // The parent resource where this changelist will be created.
-  // Foramt: projects/{project}
+  // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The changelist to create.

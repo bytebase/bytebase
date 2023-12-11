@@ -119,7 +119,7 @@ export interface GetBranchRequest {
 export interface ListBranchesRequest {
   /**
    * The parent resource of the branch.
-   * Foramt: projects/{project}
+   * Format: projects/{project}
    */
   parent: string;
   /** To filter the search result. */
