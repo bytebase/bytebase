@@ -304,7 +304,7 @@ type ListBranchesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource of the branch.
-	// Foramt: projects/{project}
+	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`

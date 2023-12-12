@@ -186,11 +186,7 @@
   
 - [store/sheet.proto](#store_sheet-proto)
     - [SheetPayload](#bytebase-store-SheetPayload)
-    - [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign)
     - [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload)
-  
-    - [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type)
-    - [SheetPayload.Type](#bytebase-store-SheetPayload-Type)
   
 - [store/slow_query.proto](#store_slow_query-proto)
     - [SlowQueryDetails](#bytebase-store-SlowQueryDetails)
@@ -2867,29 +2863,9 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [SheetPayload.Type](#bytebase-store-SheetPayload-Type) |  |  |
 | vcs_payload | [SheetPayload.VCSPayload](#bytebase-store-SheetPayload-VCSPayload) |  |  |
-| schema_design | [SheetPayload.SchemaDesign](#bytebase-store-SheetPayload-SchemaDesign) |  |  |
 | database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-store-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-SheetPayload-SchemaDesign"></a>
-
-### SheetPayload.SchemaDesign
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| type | [SheetPayload.SchemaDesign.Type](#bytebase-store-SheetPayload-SchemaDesign-Type) |  | The type of the schema design. |
-| engine | [Engine](#bytebase-store-Engine) |  | The database instance engine of the schema design. |
-| baseline_sheet_id | [string](#string) |  | The id of the baseline sheet including the baseline full schema. |
-| baseline_schema_design_id | [string](#string) |  | The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. |
 
 
 
@@ -2917,31 +2893,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
  
-
-
-<a name="bytebase-store-SheetPayload-SchemaDesign-Type"></a>
-
-### SheetPayload.SchemaDesign.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| MAIN_BRANCH | 1 | Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. |
-| PERSONAL_DRAFT | 2 | Personal draft type is a copy of the main branch type schema designs. |
-
-
-
-<a name="bytebase-store-SheetPayload-Type"></a>
-
-### SheetPayload.Type
-Type of the SheetPayload.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| SCHEMA_DESIGN | 1 |  |
-
 
  
 

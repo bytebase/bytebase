@@ -667,8 +667,8 @@
         },
         "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?",
         "restrict-issue-creation-for-sql-review": {
-          "title": "Restringir la creación de incidencias para la revisión de SQL",
-          "description": "Cuando está habilitado, solo los usuarios con el rol de DBA pueden crear incidencias para la revisión de SQL."
+          "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
+          "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
         }
       }
     },
@@ -1960,7 +1960,7 @@
       "batch": "Modo Lote"
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
-    "select": "Seleccionar proyecto",
+    "select": "Seleccionar Proyecto",
     "lgtm-check": {
       "self": "Revisión de LGTM",
       "disabled": "Omitir revisión de LGTM",
