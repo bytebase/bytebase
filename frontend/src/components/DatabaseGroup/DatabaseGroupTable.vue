@@ -3,6 +3,7 @@
     :column-list="COLUMN_LIST"
     :data-source="databaseGroupList"
     :row-clickable="true"
+    :show-placeholder="true"
     row-key="name"
     class="border"
     @click-row="clickDatabaseGroup"

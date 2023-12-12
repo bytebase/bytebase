@@ -190,27 +190,10 @@
           <div class="w-full mx-auto md:flex">
             <div class="md:min-w-0 md:flex-1">
               <div
-                class="w-full flex flex-row justify-between items-center flex-wrap px-2 gap-x-4"
+                class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
               >
                 <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-4">
                   <QuickActionPanel :quick-action-list="quickActionList" />
-                </div>
-                <div
-                  v-if="route.name === 'workspace.home'"
-                  class="hidden md:flex"
-                >
-                  <a
-                    href="/sql-editor"
-                    target="_blank"
-                    class="btn-normal items-center !px-4 !text-base"
-                  >
-                    <heroicons-outline:terminal
-                      class="text-accent w-6 h-6 mr-2"
-                    />
-                    <span class="whitespace-nowrap">{{
-                      $t("sql-editor.self")
-                    }}</span>
-                  </a>
                 </div>
               </div>
             </div>
@@ -245,7 +228,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useActuatorV1Store,
@@ -268,7 +251,6 @@ interface LocalState {
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-const route = useRoute();
 const router = useRouter();
 
 const state = reactive<LocalState>({
