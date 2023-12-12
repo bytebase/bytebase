@@ -1,17 +1,14 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Engine, engineFromJSON, engineToJSON } from "./common";
 import { DatabaseConfig } from "./database";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.store";
 
 export interface SheetPayload {
-  type: SheetPayload_Type;
-  vcsPayload: SheetPayload_VCSPayload | undefined;
-  schemaDesign:
-    | SheetPayload_SchemaDesign
+  vcsPayload:
+    | SheetPayload_VCSPayload
     | undefined;
   /** The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. */
   databaseConfig:
@@ -19,40 +16,6 @@ export interface SheetPayload {
     | undefined;
   /** The snapshot of the baseline database config when creating the sheet. */
   baselineDatabaseConfig: DatabaseConfig | undefined;
-}
-
-/** Type of the SheetPayload. */
-export enum SheetPayload_Type {
-  TYPE_UNSPECIFIED = 0,
-  SCHEMA_DESIGN = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function sheetPayload_TypeFromJSON(object: any): SheetPayload_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return SheetPayload_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "SCHEMA_DESIGN":
-      return SheetPayload_Type.SCHEMA_DESIGN;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SheetPayload_Type.UNRECOGNIZED;
-  }
-}
-
-export function sheetPayload_TypeToJSON(object: SheetPayload_Type): string {
-  switch (object) {
-    case SheetPayload_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case SheetPayload_Type.SCHEMA_DESIGN:
-      return "SCHEMA_DESIGN";
-    case SheetPayload_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 export interface SheetPayload_VCSPayload {
@@ -65,78 +28,14 @@ export interface SheetPayload_VCSPayload {
   pushEvent: PushEvent | undefined;
 }
 
-export interface SheetPayload_SchemaDesign {
-  /** The type of the schema design. */
-  type: SheetPayload_SchemaDesign_Type;
-  /** The database instance engine of the schema design. */
-  engine: Engine;
-  /** The id of the baseline sheet including the baseline full schema. */
-  baselineSheetId: string;
-  /** The sheet id of the baseline schema design. Only valid when the schema design is a personal draft. */
-  baselineSchemaDesignId: string;
-}
-
-export enum SheetPayload_SchemaDesign_Type {
-  TYPE_UNSPECIFIED = 0,
-  /** MAIN_BRANCH - Main branch type is the main version of schema design. And only allow to be updated/merged with personal drafts. */
-  MAIN_BRANCH = 1,
-  /** PERSONAL_DRAFT - Personal draft type is a copy of the main branch type schema designs. */
-  PERSONAL_DRAFT = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function sheetPayload_SchemaDesign_TypeFromJSON(object: any): SheetPayload_SchemaDesign_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return SheetPayload_SchemaDesign_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "MAIN_BRANCH":
-      return SheetPayload_SchemaDesign_Type.MAIN_BRANCH;
-    case 2:
-    case "PERSONAL_DRAFT":
-      return SheetPayload_SchemaDesign_Type.PERSONAL_DRAFT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return SheetPayload_SchemaDesign_Type.UNRECOGNIZED;
-  }
-}
-
-export function sheetPayload_SchemaDesign_TypeToJSON(object: SheetPayload_SchemaDesign_Type): string {
-  switch (object) {
-    case SheetPayload_SchemaDesign_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case SheetPayload_SchemaDesign_Type.MAIN_BRANCH:
-      return "MAIN_BRANCH";
-    case SheetPayload_SchemaDesign_Type.PERSONAL_DRAFT:
-      return "PERSONAL_DRAFT";
-    case SheetPayload_SchemaDesign_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 function createBaseSheetPayload(): SheetPayload {
-  return {
-    type: 0,
-    vcsPayload: undefined,
-    schemaDesign: undefined,
-    databaseConfig: undefined,
-    baselineDatabaseConfig: undefined,
-  };
+  return { vcsPayload: undefined, databaseConfig: undefined, baselineDatabaseConfig: undefined };
 }
 
 export const SheetPayload = {
   encode(message: SheetPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
     if (message.vcsPayload !== undefined) {
       SheetPayload_VCSPayload.encode(message.vcsPayload, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.schemaDesign !== undefined) {
-      SheetPayload_SchemaDesign.encode(message.schemaDesign, writer.uint32(26).fork()).ldelim();
     }
     if (message.databaseConfig !== undefined) {
       DatabaseConfig.encode(message.databaseConfig, writer.uint32(34).fork()).ldelim();
@@ -154,26 +53,12 @@ export const SheetPayload = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
           message.vcsPayload = SheetPayload_VCSPayload.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.schemaDesign = SheetPayload_SchemaDesign.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -200,9 +85,7 @@ export const SheetPayload = {
 
   fromJSON(object: any): SheetPayload {
     return {
-      type: isSet(object.type) ? sheetPayload_TypeFromJSON(object.type) : 0,
       vcsPayload: isSet(object.vcsPayload) ? SheetPayload_VCSPayload.fromJSON(object.vcsPayload) : undefined,
-      schemaDesign: isSet(object.schemaDesign) ? SheetPayload_SchemaDesign.fromJSON(object.schemaDesign) : undefined,
       databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
       baselineDatabaseConfig: isSet(object.baselineDatabaseConfig)
         ? DatabaseConfig.fromJSON(object.baselineDatabaseConfig)
@@ -212,14 +95,8 @@ export const SheetPayload = {
 
   toJSON(message: SheetPayload): unknown {
     const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = sheetPayload_TypeToJSON(message.type);
-    }
     if (message.vcsPayload !== undefined) {
       obj.vcsPayload = SheetPayload_VCSPayload.toJSON(message.vcsPayload);
-    }
-    if (message.schemaDesign !== undefined) {
-      obj.schemaDesign = SheetPayload_SchemaDesign.toJSON(message.schemaDesign);
     }
     if (message.databaseConfig !== undefined) {
       obj.databaseConfig = DatabaseConfig.toJSON(message.databaseConfig);
@@ -235,12 +112,8 @@ export const SheetPayload = {
   },
   fromPartial(object: DeepPartial<SheetPayload>): SheetPayload {
     const message = createBaseSheetPayload();
-    message.type = object.type ?? 0;
     message.vcsPayload = (object.vcsPayload !== undefined && object.vcsPayload !== null)
       ? SheetPayload_VCSPayload.fromPartial(object.vcsPayload)
-      : undefined;
-    message.schemaDesign = (object.schemaDesign !== undefined && object.schemaDesign !== null)
-      ? SheetPayload_SchemaDesign.fromPartial(object.schemaDesign)
       : undefined;
     message.databaseConfig = (object.databaseConfig !== undefined && object.databaseConfig !== null)
       ? DatabaseConfig.fromPartial(object.databaseConfig)
@@ -410,112 +283,6 @@ export const SheetPayload_VCSPayload = {
     message.pushEvent = (object.pushEvent !== undefined && object.pushEvent !== null)
       ? PushEvent.fromPartial(object.pushEvent)
       : undefined;
-    return message;
-  },
-};
-
-function createBaseSheetPayload_SchemaDesign(): SheetPayload_SchemaDesign {
-  return { type: 0, engine: 0, baselineSheetId: "", baselineSchemaDesignId: "" };
-}
-
-export const SheetPayload_SchemaDesign = {
-  encode(message: SheetPayload_SchemaDesign, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== 0) {
-      writer.uint32(8).int32(message.type);
-    }
-    if (message.engine !== 0) {
-      writer.uint32(16).int32(message.engine);
-    }
-    if (message.baselineSheetId !== "") {
-      writer.uint32(26).string(message.baselineSheetId);
-    }
-    if (message.baselineSchemaDesignId !== "") {
-      writer.uint32(34).string(message.baselineSchemaDesignId);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SheetPayload_SchemaDesign {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSheetPayload_SchemaDesign();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.engine = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.baselineSheetId = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.baselineSchemaDesignId = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SheetPayload_SchemaDesign {
-    return {
-      type: isSet(object.type) ? sheetPayload_SchemaDesign_TypeFromJSON(object.type) : 0,
-      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
-      baselineSheetId: isSet(object.baselineSheetId) ? globalThis.String(object.baselineSheetId) : "",
-      baselineSchemaDesignId: isSet(object.baselineSchemaDesignId)
-        ? globalThis.String(object.baselineSchemaDesignId)
-        : "",
-    };
-  },
-
-  toJSON(message: SheetPayload_SchemaDesign): unknown {
-    const obj: any = {};
-    if (message.type !== 0) {
-      obj.type = sheetPayload_SchemaDesign_TypeToJSON(message.type);
-    }
-    if (message.engine !== 0) {
-      obj.engine = engineToJSON(message.engine);
-    }
-    if (message.baselineSheetId !== "") {
-      obj.baselineSheetId = message.baselineSheetId;
-    }
-    if (message.baselineSchemaDesignId !== "") {
-      obj.baselineSchemaDesignId = message.baselineSchemaDesignId;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
-    return SheetPayload_SchemaDesign.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SheetPayload_SchemaDesign>): SheetPayload_SchemaDesign {
-    const message = createBaseSheetPayload_SchemaDesign();
-    message.type = object.type ?? 0;
-    message.engine = object.engine ?? 0;
-    message.baselineSheetId = object.baselineSheetId ?? "";
-    message.baselineSchemaDesignId = object.baselineSchemaDesignId ?? "";
     return message;
   },
 };
