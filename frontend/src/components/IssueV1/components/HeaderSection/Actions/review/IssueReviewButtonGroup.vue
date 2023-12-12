@@ -1,13 +1,15 @@
 <template>
   <div class="flex items-stretch gap-x-3">
-    <ReviewActionButton
-      v-for="action in issueReviewActionList"
-      :key="action"
-      :action="action"
-      @perform-action="
-        (action) => events.emit('perform-issue-review-action', { action })
-      "
-    />
+    <template v-if="showIssueReviewActions">
+      <ReviewActionButton
+        v-for="action in issueReviewActionList"
+        :key="action"
+        :action="action"
+        @perform-action="
+          (action) => events.emit('perform-issue-review-action', { action })
+        "
+      />
+    </template>
 
     <IssueStatusActionButtonGroup
       :display-mode="displayMode"
@@ -28,17 +30,19 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, usePageMode } from "@/store";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
+const pageMode = usePageMode();
 const { issue, phase, reviewContext, events, activeTask, activeStage } =
   useIssueContext();
 const { ready, status, done } = reviewContext;
@@ -134,6 +138,10 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
   });
 
   return [...taskExtraActionOptions, ...stageExtraActionOptions];
+});
+
+const showIssueReviewActions = computed(() => {
+  return !(pageMode.value === "STANDALONE" && customTheme.value === "lixiang");
 });
 
 const displayMode = computed(() => {
