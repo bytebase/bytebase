@@ -1017,6 +1017,14 @@
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
+        },
+        "project-assigned": {
+          "title": "Proyecto asignado",
+          "description": "Buscar en las bases de datos con proyecto asignado",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Ocultar búsqueda avanzada"

@@ -1018,6 +1018,14 @@
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
+        },
+        "project-assigned": {
+          "title": "Project Assigned",
+          "description": "Search by databases that are assigned to a project.",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Hide advanced search"
