@@ -3,7 +3,7 @@
     <InstanceV1Name
       :instance="coreDatabaseInfo.instanceEntity"
       :plain="true"
-      text-class="hover:underline"
+      :link="link"
     >
       <template
         v-if="
@@ -16,7 +16,8 @@
           :environment="database.instanceEntity.environmentEntity"
           :plain="true"
           :show-icon="false"
-          text-class="hover:underline text-control-light"
+          :link="link"
+          text-class="text-control-light"
         />
       </template>
     </InstanceV1Name>
@@ -31,14 +32,11 @@
           :environment="database.effectiveEnvironmentEntity"
           :plain="true"
           :show-icon="false"
-          text-class="hover:underline text-control-light"
+          :link="link"
+          text-class="text-control-light"
         />
 
-        <DatabaseV1Name
-          :database="database"
-          :plain="true"
-          class="hover:underline"
-        />
+        <DatabaseV1Name :database="database" :plain="true" :link="link" />
       </template>
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
@@ -75,6 +73,15 @@ import { UNKNOWN_ID } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
+
+withDefaults(
+  defineProps<{
+    link?: boolean;
+  }>(),
+  {
+    link: true,
+  }
+);
 
 const { issue, selectedTask } = useIssueContext();
 const pageMode = usePageMode();
