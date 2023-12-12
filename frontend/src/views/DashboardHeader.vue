@@ -47,8 +47,13 @@
         <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
         <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
       </div>
-      <a href="/sql-editor" target="_blank">
+      <a
+        href="/sql-editor"
+        target="_blank"
+        class="flex items-center text-sm gap-x-1 rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover py-0.5 px-1"
+      >
         <heroicons-outline:terminal class="w-6 h-6" />
+        <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
       </a>
       <router-link to="/setting/general" exact-active-class="">
         <Settings class="w-6 h-6" />
