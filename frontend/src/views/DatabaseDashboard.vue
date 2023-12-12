@@ -15,12 +15,7 @@
       />
     </div>
 
-    <DatabaseOperations
-      v-if="selectedDatabases.length > 0 || isStandaloneMode"
-      class="mb-3"
-      :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
-    />
+    <DatabaseOperations class="mb-3" :databases="selectedDatabases" />
 
     <DatabaseV1Table
       pagination-class="mb-4"

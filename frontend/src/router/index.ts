@@ -757,13 +757,7 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.instances"),
               quickActionListByRole: () => {
                 return new Map([
-                  [
-                    "OWNER",
-                    [
-                      "quickaction.bb.instance.create",
-                      "quickaction.bb.subscription.license-assignment",
-                    ],
-                  ],
+                  ["OWNER", ["quickaction.bb.instance.create"]],
                   ["DBA", ["quickaction.bb.instance.create"]],
                 ]);
               },
@@ -781,13 +775,9 @@ const routes: Array<RouteRecordRaw> = [
               title: () => t("common.databases"),
               quickActionListByRole: () => {
                 const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
-                  "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.data.update",
                   "quickaction.bb.database.create",
                 ];
                 const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
-                  "quickaction.bb.database.schema.update",
-                  "quickaction.bb.database.data.update",
                   "quickaction.bb.database.create",
                   "quickaction.bb.issue.grant.request.querier",
                   "quickaction.bb.issue.grant.request.exporter",

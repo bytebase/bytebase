@@ -22,70 +22,61 @@
             <span>{{ totalLicenseCount }}</span>
           </div>
         </div>
-        <BBTable
-          ref="tableRef"
+        <BBGrid
+          class="border"
           :column-list="columnList"
-          :section-data-source="datasource"
+          :data-source="instanceList"
           :show-header="true"
           :custom-header="true"
-          :left-bordered="true"
-          :right-bordered="true"
-          :top-bordered="true"
-          :bottom-bordered="true"
-          :compact-section="true"
           :row-clickable="false"
         >
           <template #header>
-            <th
-              v-for="(column, index) in columnList"
-              :key="index"
-              scope="col"
-              class="pl-2 first:pl-4 py-2 text-left text-xs font-medium text-gray-500 tracking-wider capitalize"
-              :class="[column.center && 'text-center pr-2']"
-            >
-              <template v-if="index === 0 && canManageSubscription">
-                <input
-                  v-if="instanceList.length > 0"
-                  type="checkbox"
-                  class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                  :checked="allSelectionState.checked"
-                  :indeterminate="allSelectionState.indeterminate"
-                  :disabled="
-                    !allSelectionState.checked &&
-                    instanceList.length > instanceLicenseCount
-                  "
-                  @input="
-                    selectAllInstances(
-                      ($event.target as HTMLInputElement).checked
-                    )
-                  "
-                />
-              </template>
-              <template v-else>{{ $t(column.title) }}</template>
-            </th>
+            <div role="table-row" class="bb-grid-row bb-grid-header-row group">
+              <div
+                v-for="(column, index) in columnList"
+                :key="index"
+                role="table-cell"
+                class="bb-grid-header-cell capitalize"
+                :class="[column.class]"
+              >
+                <template v-if="index === 0 && canManageSubscription">
+                  <input
+                    v-if="instanceList.length > 0"
+                    type="checkbox"
+                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                    :checked="allSelectionState.checked"
+                    :indeterminate="allSelectionState.indeterminate"
+                    :disabled="
+                      !allSelectionState.checked &&
+                      instanceList.length > instanceLicenseCount
+                    "
+                    @input="
+                      selectAllInstances(
+                        ($event.target as HTMLInputElement).checked
+                      )
+                    "
+                  />
+                </template>
+                <template v-else>{{ column.title }}</template>
+              </div>
+            </div>
           </template>
-          <template
-            #body="{ rowData: instance }: { rowData: ComposedInstance }"
-          >
-            <BBTableCell
-              v-if="canManageSubscription"
-              class="w-[1%]"
-              @click.stop="
-                toggleSelectInstance(instance, !isInstanceSelected(instance))
-              "
-            >
-              <!-- width: 1% means as narrow as possible -->
+          <template #item="{ item: instance }: { item: ComposedInstance }">
+            <div v-if="canManageSubscription" class="bb-grid-cell">
               <input
                 type="checkbox"
-                class="ml-2 h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
                 :checked="isInstanceSelected(instance)"
                 :disabled="
                   !isInstanceSelected(instance) &&
                   state.selectedInstance.size == instanceLicenseCount
                 "
+                @click.stop="
+                  toggleSelectInstance(instance, !isInstanceSelected(instance))
+                "
               />
-            </BBTableCell>
-            <BBTableCell class="bb-grid-cell">
+            </div>
+            <div class="bb-grid-cell">
               <div class="flex items-center gap-x-1">
                 <InstanceV1EngineIcon :instance="instance" />
                 <router-link
@@ -97,20 +88,20 @@
                   {{ instanceV1Name(instance) }}
                 </router-link>
               </div>
-            </BBTableCell>
-            <BBTableCell class="bb-grid-cell">
+            </div>
+            <div class="bb-grid-cell">
               <EnvironmentV1Name
                 :environment="instance.environmentEntity"
                 :link="false"
               />
-            </BBTableCell>
-            <BBTableCell class="bb-grid-cell">
+            </div>
+            <div class="bb-grid-cell">
               <EllipsisText class="w-10">
                 {{ hostPortOfInstanceV1(instance) }}
               </EllipsisText>
-            </BBTableCell>
+            </div>
           </template>
-        </BBTable>
+        </BBGrid>
       </div>
 
       <template #footer>
@@ -140,9 +131,9 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { reactive, computed, watchEffect, ref } from "vue";
+import { reactive, computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBTableColumn, BBTableSectionDataSource } from "@/bbkit/types";
+import { BBGrid, BBGridColumn } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -158,33 +149,16 @@ import { ComposedInstance } from "@/types";
 import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
-defineProps({
-  show: {
-    default: false,
-    type: Boolean,
-  },
-});
-
-const columnList = computed(() => {
-  const resp: BBTableColumn[] = [
-    {
-      title: "common.name",
-    },
-    {
-      title: "common.environment",
-    },
-    {
-      title: "common.Address",
-    },
-  ];
-  if (canManageSubscription.value) {
-    resp.unshift({
-      // This column is for selection input.
-      title: "",
-    });
+const props = withDefaults(
+  defineProps<{
+    show: boolean;
+    selectedInstanceList?: string[];
+  }>(),
+  {
+    show: false,
+    selectedInstanceList: () => [],
   }
-  return resp;
-});
+);
 
 interface LocalState {
   selectedInstance: Set<string>;
@@ -206,6 +180,31 @@ const currentUserV1 = useCurrentUserV1();
 const { instanceList } = useInstanceV1List(false /* !showDeleted */);
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
+const columnList = computed(() => {
+  const resp: BBGridColumn[] = [
+    {
+      title: t("common.name"),
+      width: "minmax(min-content, auto)",
+    },
+    {
+      title: t("common.environment"),
+      width: "minmax(min-content, auto)",
+    },
+    {
+      title: t("common.Address"),
+      width: "minmax(min-content, auto)",
+    },
+  ];
+  if (canManageSubscription.value) {
+    resp.unshift({
+      // This column is for selection input.
+      title: "",
+      width: "minmax(auto, 3rem)",
+    });
+  }
+  return resp;
+});
+
 const canManageSubscription = computed((): boolean => {
   return hasWorkspacePermissionV1(
     "bb.permission.workspace.manage-subscription",
@@ -219,6 +218,9 @@ watchEffect(() => {
       state.selectedInstance.add(instance.name);
     }
   }
+  for (const instance of props.selectedInstanceList) {
+    state.selectedInstance.add(instance);
+  }
 });
 
 const totalLicenseCount = computed((): string => {
@@ -231,19 +233,6 @@ const totalLicenseCount = computed((): string => {
 const assignedLicenseCount = computed((): string => {
   return `${state.selectedInstance.size}`;
 });
-
-const tableRef = ref<HTMLTableElement>();
-
-const datasource = computed(
-  (): BBTableSectionDataSource<ComposedInstance>[] => {
-    return [
-      {
-        title: "",
-        list: instanceList.value,
-      },
-    ];
-  }
-);
 
 const isInstanceSelected = (instance: ComposedInstance): boolean => {
   return state.selectedInstance.has(instance.name);

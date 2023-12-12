@@ -23,8 +23,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -52,9 +53,14 @@ const props = defineProps({
 
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
+const recentProjects = useRecentProjects();
 
 const project = computed(() => {
   return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
+});
+
+watchEffect(() => {
+  recentProjects.setRecentProject(project.value.name);
 });
 
 const isDefaultProject = computed((): boolean => {
