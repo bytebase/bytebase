@@ -5,7 +5,9 @@
         {{ $t("common.activity") }}
       </span>
 
-      <Subscribers />
+      <HideInStandaloneMode>
+        <Subscribers />
+      </HideInStandaloneMode>
     </div>
 
     <ActivityList />
