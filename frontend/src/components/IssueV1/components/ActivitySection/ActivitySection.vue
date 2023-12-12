@@ -5,7 +5,9 @@
         {{ $t("common.activity") }}
       </span>
 
-      <Subscribers v-if="showSubscribers" />
+      <HideInStandaloneMode>
+        <Subscribers />
+      </HideInStandaloneMode>
     </div>
 
     <ActivityList />
@@ -13,14 +15,6 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
-import { usePageMode } from "@/store";
 import ActivityList from "./ActivityList.vue";
 import Subscribers from "./Subscribers";
-
-const pageMode = usePageMode();
-
-const showSubscribers = computed(() => {
-  return pageMode.value === "BUNDLED";
-});
 </script>
