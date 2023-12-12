@@ -187,7 +187,6 @@ func executeMigration(
 	sheetID *int,
 	mi *db.MigrationInfo,
 	license enterprise.LicenseService) (string, string, error) {
-
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
