@@ -665,8 +665,8 @@
         },
         "confirm-delete-custom-logo": "删除自定义品牌 Logo？",
         "restrict-issue-creation-for-sql-review": {
-          "title": "通过 SQL 审核限制工单的创建",
-          "description": "开启后，只有具有 SQL 审核通过时用户才能创建工单。"
+          "title": "禁止提交包含错误告警的工单",
+          "description": "启用后，只有在预览阶段不包含任何“错误”级别告警的工单才能被提交。"
         }
       }
     },
