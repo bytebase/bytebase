@@ -172,6 +172,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 	defer conn.Close()
 
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return 0, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
+
 	if opts.BeginFunc != nil {
 		if err := opts.BeginFunc(ctx, conn); err != nil {
 			return 0, err
@@ -242,6 +248,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 		sqlResult, err := tx.ExecContext(ctx, chunkText)
 		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := driver.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+			}
+
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
@@ -272,6 +285,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
@@ -288,12 +306,33 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
 			})
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := driver.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+				break
+			}
 		} else {
 			results = append(results, result)
 		}
 	}
 
 	return results, nil
+}
+
+func (driver *Driver) StopConnectionByID(id string) error {
+	// We cannot use placeholder parameter because TiDB doesn't accept it.
+	_, err := driver.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
+	return err
+}
+
+func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
+	var id string
+	if err := conn.QueryRowContext(ctx, `SELECT CONNECTION_ID();`).Scan(&id); err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
