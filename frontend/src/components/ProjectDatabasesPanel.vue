@@ -19,7 +19,6 @@
     <DatabaseOperations
       v-if="showDatabaseOperations"
       :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
     />
 
     <template v-if="databaseList.length > 0">
@@ -184,7 +183,7 @@ const showDatabaseOperations = computed(() => {
     return true;
   }
 
-  return selectedDatabases.value.length > 0;
+  return true;
 });
 
 const showEmptyActions = computed(() => {
