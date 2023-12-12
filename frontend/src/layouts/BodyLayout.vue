@@ -228,7 +228,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   useActuatorV1Store,
@@ -251,7 +251,6 @@ interface LocalState {
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-const route = useRoute();
 const router = useRouter();
 
 const state = reactive<LocalState>({

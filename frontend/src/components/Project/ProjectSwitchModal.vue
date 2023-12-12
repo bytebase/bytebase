@@ -24,8 +24,8 @@
       <NTabs v-model:value="state.selectedTab" type="line">
         <NTabPane
           v-for="tab in tabList"
-          :name="tab.id"
           :key="tab.id"
+          :name="tab.id"
           :tab="tab.title"
         >
           <ProjectV1Table
