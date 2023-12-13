@@ -188,6 +188,7 @@ func TestCheckDatabaseMetadata(t *testing.T) {
 			if t.Err == "" {
 				a.NoError(err)
 			} else {
+				a.NotNil(err, t.Err)
 				a.Equal(t.Err, err.Error())
 			}
 		}
