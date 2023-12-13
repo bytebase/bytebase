@@ -8,14 +8,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -27,10 +25,7 @@ import (
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
-	if regexp.MustCompile("does not exist").MatchString(err.Error()) {
-		return common.Wrapf(err, common.NotFound, "failed to execute query %q", query)
-	}
-	return common.Wrapf(err, common.DbExecutionError, "failed to execute query %q", query)
+	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
 // ApplyMultiStatements will apply the split statements from scanner.

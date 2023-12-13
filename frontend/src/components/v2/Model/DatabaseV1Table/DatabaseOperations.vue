@@ -1,41 +1,32 @@
 <template>
   <div
     v-bind="$attrs"
-    class="flex flex-col sm:flex-row items-start sm:items-center bg-blue-100 py-3 px-2 text-main gap-y-2 gap-x-4"
+    class="text-sm flex flex-col lg:flex-row items-start lg:items-center bg-blue-100 py-3 px-4 text-main gap-y-2 gap-x-4 overflow-x-auto"
   >
+    {{
+      $t("database.selected-n-databases", {
+        n: databases.length,
+      })
+    }}
     <div class="flex items-center">
-      <button
-        v-if="!isStandaloneMode"
-        class="w-7 h-7 p-1 mr-3 rounded cursor-pointer"
-        @click.prevent="$emit('dismiss')"
-      >
-        <heroicons-outline:x class="w-5 h-5" />
-      </button>
-      {{
-        $t("database.selected-n-databases", {
-          n: databases.length,
-        })
-      }}
-    </div>
-    <div class="flex items-center gap-x-4 text-sm text-accent">
       <template v-for="action in actions" :key="action.text">
-        <NTooltip :disabled="!action.disabled">
+        <NTooltip :disabled="!action.disabled || !action.tooltip(action.text)">
           <template #trigger>
-            <button
+            <NButton
+              quaternary
+              size="small"
+              type="primary"
               :disabled="action.disabled"
-              class="flex items-center gap-x-1 hover:text-accent-hover disabled:text-control-light disabled:cursor-not-allowed"
               @click="action.click"
             >
-              <component :is="action.icon" class="h-4 w-4" />
-              {{ action.text }}
-            </button>
+              <template #icon>
+                <component :is="action.icon" class="h-4 w-4" />
+              </template>
+              <span class="text-sm">{{ action.text }}</span>
+            </NButton>
           </template>
           <span class="w-56 text-sm">
-            {{
-              $t("database.batch-action-disabled", {
-                action: action.text.toLowerCase(),
-              })
-            }}
+            {{ action.tooltip(action.text) }}
           </span>
         </NTooltip>
       </template>
@@ -113,6 +104,7 @@ interface DatabaseAction {
   text: string;
   disabled: boolean;
   click: () => void;
+  tooltip: (action: string) => string;
 }
 
 interface LocalState {
@@ -124,10 +116,6 @@ interface LocalState {
 
 const props = defineProps<{
   databases: ComposedDatabase[];
-}>();
-
-defineEmits<{
-  (event: "dismiss"): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -156,6 +144,20 @@ const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
 });
+
+const getDisabledTooltip = (action: string) => {
+  if (selectedProjectNames.value.size > 1) {
+    return t("database.batch-action-disabled", {
+      action: action.toLowerCase(),
+    });
+  }
+  if (selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME)) {
+    return t("database.batch-action-disabled-for-unassigned", {
+      action: action.toLowerCase(),
+    });
+  }
+  return "";
+};
 
 const selectedProjectUid = computed(() => {
   if (selectedProjectNames.value.size !== 1) {
@@ -197,6 +199,12 @@ const canEditDatabase = (
 
   return false;
 };
+
+const databaseSupportAlterSchema = computed(() => {
+  return props.databases.every((db) => {
+    return instanceV1HasAlterSchema(db.instanceEntity);
+  });
+});
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
@@ -323,42 +331,77 @@ const actions = computed((): DatabaseAction[] => {
       text: t("common.sync"),
       disabled: props.databases.length < 1,
       click: syncSchema,
+      tooltip: (action) => getDisabledTooltip(action),
     });
-    if (allowTransferProject.value) {
-      resp.unshift({
-        icon: h(SwitchHorizontalIcon),
-        text: t("database.transfer-project"),
-        disabled: !selectedProjectUid.value,
-        click: () => (state.showTransferOutDatabaseForm = true),
-      });
-    }
-    if (allowEditLabels.value) {
-      resp.push({
-        icon: h(TagIcon),
-        text: t("database.edit-labels"),
-        disabled: false,
-        click: () => (state.showLabelEditorDrawer = true),
-      });
-    }
+    resp.unshift({
+      icon: h(SwitchHorizontalIcon),
+      text: t("database.transfer-project"),
+      disabled: !allowTransferProject.value || !selectedProjectUid.value,
+      click: () => (state.showTransferOutDatabaseForm = true),
+      tooltip: (action) => {
+        if (!allowTransferProject.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
+    resp.push({
+      icon: h(TagIcon),
+      text: t("database.edit-labels"),
+      disabled: !allowEditLabels.value || props.databases.length < 1,
+      click: () => (state.showLabelEditorDrawer = true),
+      tooltip: (action) => {
+        if (!allowEditLabels.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
   }
-  if (!selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME)) {
-    if (allowChangeData.value) {
-      resp.unshift({
-        icon: h(PencilIcon),
-        text: t("database.change-data"),
-        disabled: !selectedProjectUid.value,
-        click: () => generateMultiDb("bb.issue.database.data.update"),
-      });
+  resp.unshift(
+    {
+      icon: h(PencilIcon),
+      text: t("database.change-data"),
+      disabled:
+        !allowChangeData.value ||
+        !selectedProjectUid.value ||
+        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+      click: () => generateMultiDb("bb.issue.database.data.update"),
+      tooltip: (action) => {
+        if (!allowChangeData.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    },
+    {
+      icon: h(PencilAltIcon),
+      text: t("database.edit-schema"),
+      disabled:
+        !databaseSupportAlterSchema.value ||
+        !allowEditSchema.value ||
+        !selectedProjectUid.value ||
+        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+      click: () => generateMultiDb("bb.issue.database.schema.update"),
+      tooltip: (action) => {
+        if (!databaseSupportAlterSchema.value) {
+          return t("database.batch-action-not-support-alter-schema");
+        }
+        if (!allowEditSchema.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
     }
-    if (allowEditSchema.value) {
-      resp.unshift({
-        icon: h(PencilAltIcon),
-        text: t("database.edit-schema"),
-        disabled: !selectedProjectUid.value,
-        click: () => generateMultiDb("bb.issue.database.schema.update"),
-      });
-    }
-  }
+  );
   return resp;
 });
 

@@ -14,13 +14,10 @@ export type DatabaseQuickActionType =
 export type IssueQuickActionType =
   | "quickaction.bb.issue.grant.request.querier"
   | "quickaction.bb.issue.grant.request.exporter";
-type SubscriptionQuickActionType =
-  "quickaction.bb.subscription.license-assignment";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
   | ProjectQuickActionType
   | InstanceQuickActionType
   | DatabaseQuickActionType
-  | IssueQuickActionType
-  | SubscriptionQuickActionType;
+  | IssueQuickActionType;

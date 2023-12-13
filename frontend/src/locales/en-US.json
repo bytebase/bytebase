@@ -172,6 +172,7 @@
     "agents": "Agents",
     "billings": "Billings",
     "all": "All",
+    "recent": "Recent",
     "deployment-config": "Deployment Config",
     "by": "by",
     "ok": "OK",
@@ -1017,6 +1018,14 @@
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
+        },
+        "project-assigned": {
+          "title": "Project Assigned",
+          "description": "Search by databases that are assigned to a project.",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Hide advanced search"
@@ -1157,7 +1166,9 @@
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
       "approvers-of-current-step": "Approvers of current step"
-    }
+    },
+    "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1517,7 +1528,10 @@
     "select-branch": "Select a branch",
     "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
+    "batch-action-not-support-alter-schema": "Some databases don't support altering schema",
+    "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
+    "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
