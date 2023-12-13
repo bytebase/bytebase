@@ -554,7 +554,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 			if err != nil {
 				slog.Error("Failed to get database config from store", slog.Int("sheetID", *sheetID), slog.Int("databaseUID", *task.DatabaseID), log.BBError(err))
 			} else {
-				updatedDatabaseConfig := mergeDatabaseConfig(sheet.Payload.DatabaseConfig, sheet.Payload.BaselineDatabaseConfig, databaseSchema.GetConfig())
+				updatedDatabaseConfig := utils.MergeDatabaseConfig(sheet.Payload.BaselineDatabaseConfig, databaseSchema.GetConfig(), sheet.Payload.DatabaseConfig)
 				err = stores.UpdateDBSchema(ctx, *task.DatabaseID, &store.UpdateDBSchemaMessage{
 					Config: updatedDatabaseConfig,
 				}, api.SystemBotID)
