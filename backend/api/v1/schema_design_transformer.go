@@ -1684,7 +1684,19 @@ func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSche
 	return nil
 }
 
-// nolint
+func checkDatabaseMetadataColumnType(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
+	for _, schema := range metadata.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			for _, column := range table.GetColumns() {
+				if !checkColumnType(engine, column.Type) {
+					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func checkColumnType(engine storepb.Engine, tp string) bool {
 	switch engine {
 	case storepb.Engine_MYSQL:
@@ -1698,13 +1710,11 @@ func checkColumnType(engine storepb.Engine, tp string) bool {
 	}
 }
 
-// nolint
 func checkMySQLColumnType(tp string) bool {
 	_, err := mysqlparser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
 }
 
-// nolint
 func checkPostgreSQLColumnType(tp string) bool {
 	_, err := pgrawparser.Parse(pgrawparser.ParseContext{}, fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
 	return err == nil
