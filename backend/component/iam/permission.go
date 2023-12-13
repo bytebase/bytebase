@@ -57,4 +57,9 @@ const (
 	PermissionRisksCreate Permission = "bb.risks.create"
 	PermissionRisksUpdate Permission = "bb.risks.update"
 	PermissionRisksDelete Permission = "bb.risks.delete"
+
+	PermissionRolesList   Permission = "bb.roles.list"
+	PermissionRolesCreate Permission = "bb.roles.create"
+	PermissionRolesUpdate Permission = "bb.roles.update"
+	PermissionRolesDelete Permission = "bb.roles.delete"
 )
