@@ -378,7 +378,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
-		// XXX(zp): We only try to merge the schema config when the schema could be merged successfully. Otherwise, users manually merge the
+		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
 		mergedConfig = utils.MergeDatabaseConfig(headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
 	}
