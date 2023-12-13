@@ -45,6 +45,10 @@ roles:
       - bb.projects.undelete
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
+      - bb.risks.list
+      - bb.risks.create
+      - bb.risks.update
+      - bb.risks.delete
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -91,6 +95,10 @@ roles:
       - bb.projects.undelete
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
+      - bb.risks.list
+      - bb.risks.create
+      - bb.risks.update
+      - bb.risks.delete
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
