@@ -25,7 +25,6 @@ import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, PropType, reactive, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
-import EllipsisText from "@/components/EllipsisText.vue";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { useSettingV1Store } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
@@ -162,8 +161,11 @@ const columns = computed(() => {
     {
       key: "comment",
       title: t("database.comment"),
+      ellipsis: {
+        tooltip: true,
+      },
       render: (row) => {
-        return h(EllipsisText, { text: row.userComment });
+        return row.userComment;
       },
     },
   ];
