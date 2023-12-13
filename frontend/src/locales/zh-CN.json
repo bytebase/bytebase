@@ -1524,6 +1524,8 @@
     "select-branch": "选择一个分支",
     "delete-this-branch": "删除这个分支",
     "table-detail": "表详情",
+    "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
+    "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
