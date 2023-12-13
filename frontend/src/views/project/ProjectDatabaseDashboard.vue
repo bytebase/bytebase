@@ -2,7 +2,7 @@
   <div v-if="showQuickActionPanel" class="flex-1 pb-4">
     <QuickActionPanel :quick-action-list="quickActionList" />
   </div>
-  <ProjectDatabasesPanel :database-list="databaseV1List" />
+  <ProjectDatabasesPanel :project="project" :database-list="databaseV1List" />
 </template>
 
 <script lang="ts" setup>

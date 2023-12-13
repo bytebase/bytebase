@@ -1709,8 +1709,10 @@
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
       },
+      "select-databases": "Seleccionar bases de datos",
       "select-target-project": "Seleccionar proyecto de destino"
     },
+    "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación"

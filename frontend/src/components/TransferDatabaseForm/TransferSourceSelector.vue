@@ -1,8 +1,5 @@
 <template>
   <div class="textlabel">
-    <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mb-2">
-      {{ $t("quick-action.unassigned-db-hint") }}
-    </div>
     <div class="flex items-center justify-between">
       <div class="radio-set-row">
         <template v-if="project.name !== DEFAULT_PROJECT_V1_NAME">
@@ -55,6 +52,9 @@
           @update:value="$emit('search-text-change', $event)"
         />
       </NInputGroup>
+    </div>
+    <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mt-2">
+      {{ $t("quick-action.unassigned-db-hint") }}
     </div>
   </div>
 </template>
