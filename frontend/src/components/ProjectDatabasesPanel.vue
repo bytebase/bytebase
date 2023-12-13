@@ -18,6 +18,7 @@
 
     <DatabaseOperations
       v-if="showDatabaseOperations"
+      :project-uid="project.uid"
       :databases="selectedDatabases"
     />
 
@@ -81,9 +82,9 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed, ref, watchEffect } from "vue";
+import { reactive, computed, ref, watchEffect } from "vue";
 import { usePageMode, usePolicyV1Store } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
 import {
   Policy,
   PolicyResourceType,
@@ -104,12 +105,10 @@ interface LocalState {
   params: SearchParams;
 }
 
-const props = defineProps({
-  databaseList: {
-    required: true,
-    type: Object as PropType<ComposedDatabase[]>,
-  },
-});
+const props = defineProps<{
+  project: ComposedProject;
+  databaseList: ComposedDatabase[];
+}>();
 
 const pageMode = usePageMode();
 

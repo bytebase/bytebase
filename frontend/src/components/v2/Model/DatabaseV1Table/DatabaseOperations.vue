@@ -53,6 +53,19 @@
     @apply="onLabelsApply($event)"
   />
 
+  <Drawer
+    :show="state.showTransferOutDatabaseForm"
+    :auto-focus="true"
+    @close="state.showTransferOutDatabaseForm = false"
+  >
+    <TransferOutDatabaseForm
+      :project-id="selectedProjectUid"
+      :database-list="props.databases"
+      :selected-database-uid-list="selectedDatabaseUidList"
+      @dismiss="state.showTransferOutDatabaseForm = false"
+    />
+  </Drawer>
+
   <BBAlert
     v-if="state.showUnassignAlert"
     :style="'WARN'"
@@ -76,10 +89,12 @@ import {
   TagIcon,
   PencilIcon,
   PenSquareIcon,
+  ArrowRightLeftIcon,
 } from "lucide-vue-next";
 import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { Drawer } from "@/components/v2";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -115,17 +130,23 @@ interface LocalState {
   showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
+  showTransferOutDatabaseForm: boolean;
 }
 
-const props = defineProps<{
-  databases: ComposedDatabase[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    databases: ComposedDatabase[];
+    projectUid?: string;
+  }>(),
+  { projectUid: "" }
+);
 
 const state = reactive<LocalState>({
   loading: false,
   showSchemaEditorModal: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
+  showTransferOutDatabaseForm: false,
 });
 const schemaEditorContext = ref<{
   databaseIdList: string[];
@@ -167,6 +188,9 @@ const getDisabledTooltip = (action: string) => {
 };
 
 const selectedProjectUid = computed(() => {
+  if (props.projectUid) {
+    return props.projectUid;
+  }
   if (selectedProjectNames.value.size !== 1) {
     return "";
   }
@@ -215,10 +239,7 @@ const databaseSupportAlterSchema = computed(() => {
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
-    return (
-      canEditDatabase(db, "bb.permission.project.change-database") &&
-      instanceV1HasAlterSchema(db.instanceEntity)
-    );
+    return canEditDatabase(db, "bb.permission.project.change-database");
   });
 });
 
@@ -335,6 +356,7 @@ const unAssignDatabases = async () => {
     return;
   }
   try {
+    state.loading = true;
     await useDatabaseV1Store().transferDatabases(
       assignedDatabases.value,
       DEFAULT_PROJECT_V1_NAME
@@ -355,30 +377,50 @@ const unAssignDatabases = async () => {
   }
 };
 
+const operationsInProjectDetail = computed(() => !!props.projectUid);
+
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
-    resp.push({
-      icon: h(RefreshCcwIcon),
-      text: t("common.sync"),
-      disabled: props.databases.length < 1,
-      click: syncSchema,
-      tooltip: (action) => getDisabledTooltip(action),
-    });
-    resp.push({
-      icon: h(TagIcon),
-      text: t("database.edit-labels"),
-      disabled: !allowEditLabels.value || props.databases.length < 1,
-      click: () => (state.showLabelEditorDrawer = true),
-      tooltip: (action) => {
-        if (!allowEditLabels.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
+    resp.push(
+      {
+        icon: h(RefreshCcwIcon),
+        text: t("common.sync"),
+        disabled: props.databases.length < 1,
+        click: syncSchema,
+        tooltip: (action) => getDisabledTooltip(action),
       },
-    });
+      {
+        icon: h(TagIcon),
+        text: t("database.edit-labels"),
+        disabled: !allowEditLabels.value || props.databases.length < 1,
+        click: () => (state.showLabelEditorDrawer = true),
+        tooltip: (action) => {
+          if (!allowEditLabels.value) {
+            return t("database.batch-action-permission-denied", {
+              action,
+            });
+          }
+          return getDisabledTooltip(action);
+        },
+      }
+    );
+    if (!operationsInProjectDetail.value) {
+      resp.push({
+        icon: h(ArrowRightLeftIcon),
+        text: t("database.transfer-project"),
+        disabled: !allowTransferProject.value || props.databases.length < 1,
+        click: () => (state.showTransferOutDatabaseForm = true),
+        tooltip: (action) => {
+          if (!allowTransferProject.value) {
+            return t("database.batch-action-permission-denied", {
+              action,
+            });
+          }
+          return getDisabledTooltip(action);
+        },
+      });
+    }
   }
   resp.unshift(
     {
@@ -387,6 +429,7 @@ const actions = computed((): DatabaseAction[] => {
       disabled:
         !allowChangeData.value ||
         !selectedProjectUid.value ||
+        props.databases.length < 1 ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.data.update"),
       tooltip: (action) => {
@@ -405,6 +448,7 @@ const actions = computed((): DatabaseAction[] => {
         !databaseSupportAlterSchema.value ||
         !allowEditSchema.value ||
         !selectedProjectUid.value ||
+        props.databases.length < 1 ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.schema.update"),
       tooltip: (action) => {
@@ -421,11 +465,11 @@ const actions = computed((): DatabaseAction[] => {
     }
   );
 
-  if (allowTransferProject.value && assignedDatabases.value.length > 0) {
+  if (operationsInProjectDetail.value) {
     resp.push({
       icon: h(UnlinkIcon),
       text: t("database.unassign"),
-      disabled: false,
+      disabled: !allowTransferProject.value || props.databases.length < 1,
       click: () => (state.showUnassignAlert = true),
       tooltip: (action) => {
         if (!allowTransferProject.value) {
