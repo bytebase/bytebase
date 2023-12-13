@@ -610,7 +610,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func tidbSyntaxCheck(statement string) (any, []Advice) {
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
+	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, []Advice{
 			{

@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(
@@ -16,19 +17,22 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 1
+      line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 2
+      line: 3
+      column: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`c` requires comments
-      line: 3
+      line: 4
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'comment');
@@ -38,7 +42,8 @@
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int COMMENT 'this is comment');
@@ -48,13 +53,15 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is comment');
@@ -64,13 +71,15 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 408
       title: column.comment
       content: Column `t`.`b` requires comments
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int COMMENT 'It is COMMENT');
@@ -80,11 +89,13 @@
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 409
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
-      line: 1
+      line: 2
+      column: 0
       details: ""
