@@ -18,6 +18,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -330,7 +331,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	var mergedSchema string
 	var mergedMetadata *storepb.DatabaseSchemaMetadata
-	// While user specify the merged schema, backend would not parcitipate in the merge process,
+	var mergedConfig *storepb.DatabaseConfig
+	// While user specify the merged schema, backend would not participate in the merge process,
 	// instead, it would just update the HEAD of the base branch to the merged schema.
 	if request.MergedSchema != "" {
 		mergedSchema = request.MergedSchema
@@ -339,6 +341,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
 		}
 		mergedMetadata = metadata
+		// FIXME(zp): Frontend pass the head branch and try merge config again?
+		mergedConfig = baseBranch.Head.DatabaseConfig
 	} else {
 		headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
 		if err != nil {
@@ -374,7 +378,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
-		// TODO(d): handle database config.
+		// XXX(zp): We only try to merge the schema config when the schema could be merged successfully. Otherwise, users manually merge the
+		// metadata in the frontend, and config would be ignored.
+		mergedConfig = utils.MergeDatabaseConfig(headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -386,9 +392,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		ResourceID: baseBranchID,
 		UpdaterID:  principalID,
 		Head: &storepb.BranchSnapshot{
-			Schema:   []byte(mergedSchema),
-			Metadata: mergedMetadata,
-			// TODO(d): handle config.
+			Schema:         []byte(mergedSchema),
+			Metadata:       mergedMetadata,
+			DatabaseConfig: mergedConfig,
 		}}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
