@@ -37,68 +37,59 @@ defineEmits<{
 
 // TODO: localization.
 const example = {
-  title: "数据分级分类样例",
+  title: "Classification Example",
   levels: [
     {
       id: "1",
-      title: "1级",
+      title: "Level 1",
       description: "",
     },
     {
       id: "2",
-      title: "2级",
+      title: "Level 2",
       description: "",
     },
   ],
   classification: {
     "1": {
       id: "1",
-      title: "个人",
+      title: "Basic",
       description: "",
     },
     "1-1": {
       id: "1-1",
-      title: "个人自然信息",
+      title: "Basic",
       description: "",
-    },
-    "1-1-1": {
-      id: "1-1-1",
-      title: "个人基本信息",
-      description: "指个人基本情况数据，如个人姓名、性别、国籍、家庭住址等。",
-      levelId: "1",
-    },
-    "1-1-2": {
-      id: "1-1-2",
-      title: "个人财产信息",
-      description: "指个人的财产数据，如个人收入状况、拥有的不动产状况等。",
-      levelId: "2",
     },
     "1-2": {
       id: "1-2",
-      title: "个人身份信息",
+      title: "Assert",
       description: "",
     },
-    "1-2-1": {
-      id: "1-2-1",
-      title: "传统鉴别信息",
-      description: "指各类常规个人身份鉴别技术手段所依赖的数据。",
-      levelId: "2",
+    "1-3": {
+      id: "1-3",
+      title: "Contact",
+      description: "",
+    },
+    "1-4": {
+      id: "1-4",
+      title: "Health",
+      description: "",
     },
     "2": {
       id: "2",
-      title: "单位",
+      title: "Relationship",
       description: "",
     },
     "2-1": {
       id: "2-1",
-      title: "单位基本信息",
+      title: "Social",
       description: "",
     },
-    "2-1-1": {
-      id: "2-1-1",
-      title: "单位基本概况",
-      description: "指单位基础概况数据。",
-      levelId: "1",
+    "2-2": {
+      id: "2-1",
+      title: "Business",
+      description: "",
     },
   },
 };
