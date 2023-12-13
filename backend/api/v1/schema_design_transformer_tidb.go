@@ -17,6 +17,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// nolint
 func checkTiDBColumnType(tp string) bool {
 	_, err := tidbparser.ParseTiDB(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp), "", "")
 	return err == nil

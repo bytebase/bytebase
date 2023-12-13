@@ -598,11 +598,12 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
 	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
-
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
+	// TODO(d): check column type checkColumnType(engine, column.Type).
+	// TODO(d): reduce the common set between source and target schema.
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
