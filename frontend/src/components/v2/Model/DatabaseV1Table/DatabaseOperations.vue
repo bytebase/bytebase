@@ -10,9 +10,7 @@
     }}
     <div class="flex items-center">
       <template v-for="action in actions" :key="action.text">
-        <NTooltip
-          :disabled="!action.disabled || !getDisabledTooltip(action.text)"
-        >
+        <NTooltip :disabled="!action.disabled || !action.tooltip(action.text)">
           <template #trigger>
             <NButton
               quaternary
@@ -28,7 +26,7 @@
             </NButton>
           </template>
           <span class="w-56 text-sm">
-            {{ getDisabledTooltip(action.text) }}
+            {{ action.tooltip(action.text) }}
           </span>
         </NTooltip>
       </template>
@@ -106,6 +104,7 @@ interface DatabaseAction {
   text: string;
   disabled: boolean;
   click: () => void;
+  tooltip: (action: string) => string;
 }
 
 interface LocalState {
@@ -200,6 +199,12 @@ const canEditDatabase = (
 
   return false;
 };
+
+const databaseSupportAlterSchema = computed(() => {
+  return props.databases.every((db) => {
+    return instanceV1HasAlterSchema(db.instanceEntity);
+  });
+});
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
@@ -326,44 +331,77 @@ const actions = computed((): DatabaseAction[] => {
       text: t("common.sync"),
       disabled: props.databases.length < 1,
       click: syncSchema,
+      tooltip: (action) => getDisabledTooltip(action),
     });
-    if (allowTransferProject.value) {
-      resp.unshift({
-        icon: h(SwitchHorizontalIcon),
-        text: t("database.transfer-project"),
-        disabled: !selectedProjectUid.value,
-        click: () => (state.showTransferOutDatabaseForm = true),
-      });
-    }
-    if (allowEditLabels.value) {
-      resp.push({
-        icon: h(TagIcon),
-        text: t("database.edit-labels"),
-        disabled: props.databases.length < 1,
-        click: () => (state.showLabelEditorDrawer = true),
-      });
-    }
-  }
-  if (allowChangeData.value) {
     resp.unshift({
+      icon: h(SwitchHorizontalIcon),
+      text: t("database.transfer-project"),
+      disabled: !allowTransferProject.value || !selectedProjectUid.value,
+      click: () => (state.showTransferOutDatabaseForm = true),
+      tooltip: (action) => {
+        if (!allowTransferProject.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
+    resp.push({
+      icon: h(TagIcon),
+      text: t("database.edit-labels"),
+      disabled: !allowEditLabels.value || props.databases.length < 1,
+      click: () => (state.showLabelEditorDrawer = true),
+      tooltip: (action) => {
+        if (!allowEditLabels.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
+  }
+  resp.unshift(
+    {
       icon: h(PencilIcon),
       text: t("database.change-data"),
       disabled:
+        !allowChangeData.value ||
         !selectedProjectUid.value ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.data.update"),
-    });
-  }
-  if (allowEditSchema.value) {
-    resp.unshift({
+      tooltip: (action) => {
+        if (!allowChangeData.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    },
+    {
       icon: h(PencilAltIcon),
       text: t("database.edit-schema"),
       disabled:
+        !databaseSupportAlterSchema.value ||
+        !allowEditSchema.value ||
         !selectedProjectUid.value ||
         selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
       click: () => generateMultiDb("bb.issue.database.schema.update"),
-    });
-  }
+      tooltip: (action) => {
+        if (!databaseSupportAlterSchema.value) {
+          return t("database.batch-action-not-support-alter-schema");
+        }
+        if (!allowEditSchema.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    }
+  );
   return resp;
 });
 
