@@ -22,9 +22,13 @@
     </div>
     <div
       v-else-if="showSuccessBanner"
-      class="h-8 w-full text-base font-medium bg-success text-white flex justify-center items-center"
+      class="h-8 w-full text-base font-medium text-white flex justify-center items-center"
+      :class="isUnfinishedResolvedIssue ? 'bg-warning' : 'bg-success'"
     >
       {{ $t("common.done") }}
+      <span v-if="isUnfinishedResolvedIssue" class="text-sm ml-2">
+        {{ $t("issue.some-tasks-are-not-executed-successfully") }}
+      </span>
     </div>
     <div
       v-else-if="showPendingRollout"
@@ -52,7 +56,10 @@ import {
 } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { activeTaskInRollout, isDatabaseRelatedIssue } from "@/utils";
-import { useIssueContext } from "../logic";
+import {
+  useIssueContext,
+  isUnfinishedResolvedTask as checkUnfinishedResolvedTask,
+} from "../logic";
 
 const { isCreating, issue, reviewContext } = useIssueContext();
 const { status: reviewStatus } = reviewContext;
@@ -111,5 +118,9 @@ const earliestAllowedTime = computed(() => {
   // return dayjs(task.earliestAllowedTs * 1000).format(
   //   `YYYY-MM-DD HH:mm:ss ${tz}`
   // );
+});
+
+const isUnfinishedResolvedIssue = computed(() => {
+  return checkUnfinishedResolvedTask(issue.value);
 });
 </script>
