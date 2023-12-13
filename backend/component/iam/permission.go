@@ -52,4 +52,14 @@ const (
 	PermissionProjectsUndelete     Permission = "bb.projects.undelete"
 	PermissionProjectsGetIAMPolicy Permission = "bb.projects.getIamPolicy"
 	PermissionProjectsSetIAMPolicy Permission = "bb.projects.setIamPolicy"
+
+	PermissionRisksList   Permission = "bb.risks.list"
+	PermissionRisksCreate Permission = "bb.risks.create"
+	PermissionRisksUpdate Permission = "bb.risks.update"
+	PermissionRisksDelete Permission = "bb.risks.delete"
+
+	PermissionRolesList   Permission = "bb.roles.list"
+	PermissionRolesCreate Permission = "bb.roles.create"
+	PermissionRolesUpdate Permission = "bb.roles.update"
+	PermissionRolesDelete Permission = "bb.roles.delete"
 )
