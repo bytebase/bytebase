@@ -1163,7 +1163,9 @@
       "project-owners": "项目所有者",
       "releasers-of-current-stage": "当前阶段的发布人",
       "approvers-of-current-step": "当前步骤的审批人"
-    }
+    },
+    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
+    "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
