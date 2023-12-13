@@ -98,6 +98,7 @@ import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
+import { engineHasSchema } from "../engine-specs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -552,7 +553,7 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateSchemaOrTable = () => {
-  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
+  if (!engineHasSchema(engine.value)) {
     const schema = head(schemaList.value);
     if (schema) {
       state.tableNameModalContext = {
@@ -562,7 +563,7 @@ const handleCreateSchemaOrTable = () => {
         table: undefined,
       };
     }
-  } else if (engine.value === Engine.POSTGRES) {
+  } else {
     state.schemaNameModalContext = {
       database: database.value,
       metadata: metadata.value,

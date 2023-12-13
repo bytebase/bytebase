@@ -8,12 +8,21 @@ export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   });
 };
 
+export const engineSupportsSchemaEditor = (engine: Engine) => {
+  if ([Engine.MYSQL, Engine.TIDB].includes(engine)) {
+    return true;
+  }
+  if ([Engine.POSTGRES].includes(engine)) {
+    return true;
+  }
+  return false;
+};
+
 export const allowUsingSchemaEditorV1 = (
   databaseList: ComposedDatabase[]
 ): boolean => {
-  const supported = new Set([Engine.MYSQL, Engine.POSTGRES]);
   return databaseList.every((db) => {
-    return supported.has(db.instanceEntity.engine);
+    return engineSupportsSchemaEditor(db.instanceEntity.engine);
   });
 };
 
