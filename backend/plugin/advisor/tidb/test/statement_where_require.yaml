@@ -5,24 +5,25 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DELETE FROM tech_book
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "DELETE FROM tech_book;" requires WHERE clause
-      line: 0
+      content: '"DELETE FROM tech_book" requires WHERE clause'
+      line: 1
+      column: 0
       details: ""
 - statement: UPDATE tech_book SET id = 1
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "UPDATE tech_book SET id = 1;" requires WHERE clause
-      line: 0
+      content: '"UPDATE tech_book SET id = 1" requires WHERE clause'
+      line: 1
+      column: 0
       details: ""
 - statement: DELETE FROM tech_book WHERE id > 0
   want:
@@ -31,6 +32,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: UPDATE tech_book SET id = 1 WHERE id > 10
   want:
@@ -39,15 +41,16 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: SELECT id FROM tech_book
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "SELECT id FROM tech_book;" requires WHERE clause
-      line: 0
+      content: '"SELECT id FROM tech_book" requires WHERE clause'
+      line: 1
+      column: 0
       details: ""
 - statement: SELECT id FROM tech_book WHERE id > 0
   want:
@@ -56,13 +59,14 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)
   want:
     - status: WARN
       code: 202
       title: statement.where.require
-      content: |-
-        "SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book);" requires WHERE clause
-      line: 0
+      content: '"SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)" requires WHERE clause'
+      line: 1
+      column: 0
       details: ""
