@@ -81,7 +81,7 @@ RUN mkdir -p /var/opt/bytebase
 RUN mkdir -p /var/opt/bytebase/pgdata-demo
 # Our HEALTHCHECK instruction in dockerfile needs curl.
 # Install psmisc to use killall command in demo.sh used by render.com.
-RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5
+RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5 xz-utils
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
@@ -93,6 +93,15 @@ COPY ./scripts /usr/local/bin/
 COPY ./scripts/.psqlrc /root/.psqlrc
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
+
+COPY ./backend/resources /tmp/bytebase/resources/
+RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-amd64.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-amd64.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-amd64-16
+RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-amd64.txz -C /var/opt/bytebase/resources/postgres-linux-amd64-16/
+RUN rm -rf /tmp/bytebase
 
 ENV OPENSSL_CONF /etc/ssl/
 
