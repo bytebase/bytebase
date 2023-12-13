@@ -37,6 +37,14 @@ roles:
       - bb.issues.update
       - bb.issueComments.create
       - bb.issueComments.update
+      - bb.projects.list
+      - bb.projects.get
+      - bb.projects.create
+      - bb.projects.update
+      - bb.projects.delete
+      - bb.projects.undelete
+      - bb.projects.getIamPolicy
+      - bb.projects.setIamPolicy
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -75,6 +83,14 @@ roles:
       - bb.issues.update
       - bb.issueComments.create
       - bb.issueComments.update
+      - bb.projects.list
+      - bb.projects.get
+      - bb.projects.create
+      - bb.projects.update
+      - bb.projects.delete
+      - bb.projects.undelete
+      - bb.projects.getIamPolicy
+      - bb.projects.setIamPolicy
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
