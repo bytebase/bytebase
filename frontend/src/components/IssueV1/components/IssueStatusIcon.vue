@@ -1,10 +1,4 @@
 <template>
-  <span
-    v-if="!isUnfinishedResolvedIssue"
-    class="flex items-center justify-center rounded-full select-none overflow-hidden"
-    :class="issueIconClass()"
-  >
-  </span>
   <NTooltip :disabled="!isUnfinishedResolvedIssue">
     <template #trigger>
       <span
