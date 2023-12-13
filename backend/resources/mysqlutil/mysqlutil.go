@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -59,6 +60,10 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 // Install will extract the mysqlutil tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
+	t1 := time.Now()
+	defer func() {
+		slog.Info("mysqlutil", "cost", time.Now().Sub(t1))
+	}()
 	tarName, version, err := getTarNameAndVersion()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get tarball name and version")
