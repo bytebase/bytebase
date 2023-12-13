@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(
@@ -16,7 +17,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `pk` in table `t` should be not greater than 5
-      line: 3
+      line: 4
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
@@ -26,7 +28,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `idx` in table `t` should be not greater than 5
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
@@ -36,7 +39,8 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int, b int, c int, d int, e int, f int, g int);
@@ -46,5 +50,6 @@
       code: 802
       title: index.key-number-limit
       content: The number of index `uk` in table `t` should be not greater than 5
-      line: 1
+      line: 2
+      column: 0
       details: ""
