@@ -288,10 +288,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 }
 
 func (driver *Driver) TiDBExecute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
-	statement, err := mysqlparser.DealWithDelimiter(statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to deal with delimiter")
-	}
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, err
