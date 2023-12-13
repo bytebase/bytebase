@@ -276,8 +276,9 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	}
 
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
-		sanitizeBranchSchemaMetadata(request.Branch)
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
+		sanitizeCommentForSchemaMetadata(metadata)
+
 		schema, err := getDesignSchema(branch.Engine, string(branch.Head.GetSchema()), metadata)
 		if err != nil {
 			return nil, err
@@ -594,18 +595,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	if request.SourceMetadata == nil || request.TargetMetadata == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "source_metadata and target_metadata are required")
 	}
-
 	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
 	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
-	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeSourceMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source metadata: %v", err))
-	}
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
+
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
-
-	sanitizeCommentForSchemaMetadata(request.SourceMetadata)
-	sanitizeCommentForSchemaMetadata(request.TargetMetadata)
 
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
@@ -789,16 +785,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	return schemaDesign, nil
 }
 
-func sanitizeBranchSchemaMetadata(design *v1pb.Branch) {
-	if dbSchema := design.GetBaselineSchemaMetadata(); dbSchema != nil {
-		sanitizeCommentForSchemaMetadata(dbSchema)
-	}
-	if dbSchema := design.GetSchemaMetadata(); dbSchema != nil {
-		sanitizeCommentForSchemaMetadata(dbSchema)
-	}
-}
-
-func sanitizeCommentForSchemaMetadata(dbSchema *v1pb.DatabaseMetadata) {
+func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
