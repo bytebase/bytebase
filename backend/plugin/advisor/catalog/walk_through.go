@@ -40,7 +40,7 @@ const (
 	ErrorTypeParseError WalkThroughErrorType = 101
 	// ErrorTypeDeparseError is the error in deparsing.
 	ErrorTypeDeparseError WalkThroughErrorType = 102
-	// ErrorTypeDeparseError is the error in setting line for statement.
+	// ErrorTypeSetLineError is the error in setting line for statement.
 	ErrorTypeSetLineError WalkThroughErrorType = 103
 
 	// 201 ~ 299 database error type.
@@ -143,7 +143,7 @@ func NewParseError(content string) *WalkThroughError {
 	}
 }
 
-// NewParseError returns a new ErrorTypeParseError.
+// NewSetLineError returns a new ErrorTypeParseError.
 func NewSetLineError(content string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeSetLineError,
