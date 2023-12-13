@@ -191,7 +191,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		if queryContext != nil && queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}`, strings.TrimRight(statement, " \t\n\r\f;"), limit)
+		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}`, strings.Trim(statement, " \t\n\r\f;"), limit)
 	}
 	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
