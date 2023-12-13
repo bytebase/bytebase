@@ -35,9 +35,9 @@
 <script lang="ts" setup>
 import { PenSquareIcon } from "lucide-vue-next";
 import { computed } from "vue";
+import { engineHasSchema } from "@/components/SchemaEditorLite/engine-specs";
 import { MiniActionButton } from "@/components/v2";
 import { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -90,10 +90,10 @@ const referencedNameForFk = (fk: ForeignKeyMetadata) => {
     (column) => column.name === fk.referencedColumns[position]
   );
 
-  if (props.db.instanceEntity.engine === Engine.MYSQL) {
-    return `${referencedTable.name}(${referencedColumn?.name})`;
-  } else {
+  if (engineHasSchema(props.db.instanceEntity.engine)) {
     return `${referencedSchema.name}.${referencedTable.name}(${referencedColumn?.name})`;
+  } else {
+    return `${referencedTable.name}(${referencedColumn?.name})`;
   }
 };
 </script>

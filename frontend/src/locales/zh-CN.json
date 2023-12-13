@@ -172,6 +172,7 @@
     "agents": "Agents",
     "billings": "计费",
     "all": "全部",
+    "recent": "最近访问",
     "deployment-config": "部署配置",
     "by": "由",
     "ok": "OK",
@@ -1014,6 +1015,14 @@
           },
           "description": "按工单的审批状态搜索",
           "title": "审批状态"
+        },
+        "project-assigned": {
+          "title": "已分配项目",
+          "description": "按数据库的项目分配状态搜索",
+          "value": {
+            "yes": "是",
+            "no": "否"
+          }
         }
       },
       "hide": "隐藏高级搜索"
@@ -1154,7 +1163,9 @@
       "project-owners": "项目所有者",
       "releasers-of-current-stage": "当前阶段的发布人",
       "approvers-of-current-step": "当前步骤的审批人"
-    }
+    },
+    "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
+    "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1513,7 +1524,10 @@
     "select-branch": "选择一个分支",
     "delete-this-branch": "删除这个分支",
     "table-detail": "表详情",
+    "batch-action-not-support-alter-schema": "一些数据库不支持修改表结构",
+    "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
+    "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",

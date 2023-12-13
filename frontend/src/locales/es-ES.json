@@ -172,6 +172,7 @@
     "agents": "Agentes",
     "billings": "Facturación",
     "all": "Todos",
+    "recent": "Reciente",
     "deployment-config": "Configuración de Despliegue",
     "by": "por",
     "ok": "OK",
@@ -1016,6 +1017,14 @@
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
+        },
+        "project-assigned": {
+          "title": "Proyecto asignado",
+          "description": "Buscar en las bases de datos con proyecto asignado",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Ocultar búsqueda avanzada"
@@ -1156,7 +1165,9 @@
       "project-owners": "Propietarios del proyecto",
       "releasers-of-current-stage": "Liberadores de la etapa actual.",
       "approvers-of-current-step": "Aprobadores del paso actual"
-    }
+    },
+    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1516,7 +1527,10 @@
     "select-branch": "Seleccione una rama",
     "delete-this-branch": "Eliminar esta rama",
     "table-detail": "Detalle de la tabla",
+    "batch-action-not-support-alter-schema": "Algunas bases de datos no admiten la modificación del esquema",
+    "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
+    "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
