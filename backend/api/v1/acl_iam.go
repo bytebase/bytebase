@@ -69,7 +69,11 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.RiskService_ListRisks_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
-		v1pb.RiskService_DeleteRisk_FullMethodName:
+		v1pb.RiskService_DeleteRisk_FullMethodName,
+		v1pb.RoleService_ListRoles_FullMethodName,
+		v1pb.RoleService_CreateRole_FullMethodName,
+		v1pb.RoleService_UpdateRole_FullMethodName,
+		v1pb.RoleService_DeleteRole_FullMethodName:
 
 		projectIDsGetter = func(context.Context, any) ([]string, error) {
 			return nil, nil
