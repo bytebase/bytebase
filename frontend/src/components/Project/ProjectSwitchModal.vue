@@ -7,8 +7,8 @@
     class="w-[48rem] max-w-full h-128 max-h-full"
     @close="$emit('dismiss')"
   >
-    <div class="space-y-2 my-4">
-      <div class="w-full sticky top-0 mb-4">
+    <div class="space-y-2 h-full overflow-y-auto py-2 relative">
+      <div class="w-full bg-white sticky top-0 mb-2 z-50">
         <div class="flex items-center justify-between space-x-2">
           <SearchBox
             v-model:value="state.searchText"

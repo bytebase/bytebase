@@ -3,8 +3,7 @@ export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.reorder";
 export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
-  | "quickaction.bb.project.database.transfer"
-  | "quickaction.bb.project.database.transfer-out";
+  | "quickaction.bb.project.database.transfer";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type DatabaseQuickActionType =
   | "quickaction.bb.database.create" // Used by DBA and Owner
