@@ -40,6 +40,8 @@ const (
 	ErrorTypeParseError WalkThroughErrorType = 101
 	// ErrorTypeDeparseError is the error in deparsing.
 	ErrorTypeDeparseError WalkThroughErrorType = 102
+	// ErrorTypeDeparseError is the error in setting line for statement.
+	ErrorTypeSetLineError WalkThroughErrorType = 103
 
 	// 201 ~ 299 database error type.
 
@@ -137,6 +139,14 @@ type WalkThroughError struct {
 func NewParseError(content string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeParseError,
+		Content: content,
+	}
+}
+
+// NewParseError returns a new ErrorTypeParseError.
+func NewSetLineError(content string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeSetLineError,
 		Content: content,
 	}
 }
@@ -1354,14 +1364,14 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 
 	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
-		return nil, NewParseError(err.Error())
+		return nil, NewSetLineError(err.Error())
 	}
 
 	var returnNodes []tidbast.StmtNode
 	for _, item := range list {
 		nodes, _, err := p.Parse(item.Text, "", "")
 		if err != nil {
-			return nil, NewParseError(err.Error())
+			return nil, NewSetLineError(err.Error())
 		}
 
 		if len(nodes) != 1 {
@@ -1373,14 +1383,13 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 		node.SetOriginTextPosition(item.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
-				return nil, NewParseError(err.Error())
+				return nil, NewSetLineError(err.Error())
 			}
 		}
 		returnNodes = append(returnNodes, node)
 	}
 
 	return returnNodes, nil
-	// return nil, NewParseError(err.Error())
 }
 
 func restoreNode(node tidbast.Node, flag format.RestoreFlags) (string, *WalkThroughError) {
