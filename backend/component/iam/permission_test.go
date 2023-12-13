@@ -72,7 +72,11 @@ func permissionExist(p Permission) bool {
 		PermissionRisksList,
 		PermissionRisksCreate,
 		PermissionRisksUpdate,
-		PermissionRisksDelete:
+		PermissionRisksDelete,
+		PermissionRolesList,
+		PermissionRolesCreate,
+		PermissionRolesUpdate,
+		PermissionRolesDelete:
 		return true
 	default:
 		return false
