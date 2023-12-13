@@ -84,7 +84,6 @@ import {
   ListOrderedIcon,
   GalleryHorizontalEndIcon,
   ChevronsDownIcon,
-  ChevronsUpIcon,
   FileSearchIcon,
   FileDownIcon,
 } from "lucide-vue-next";
