@@ -17,8 +17,11 @@ export const useRecentProjects = () => {
     if (!name) {
       return;
     }
-    if (new Set(recentViewProjectNames.value).has(name)) {
-      return;
+    const index = recentViewProjectNames.value.findIndex(
+      (proj) => proj === name
+    );
+    if (index >= 0) {
+      recentViewProjectNames.value.splice(index, 1);
     }
 
     recentViewProjectNames.value.unshift(name);
