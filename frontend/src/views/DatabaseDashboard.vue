@@ -161,6 +161,13 @@ const selectedEnvironment = computed(() => {
   );
 });
 
+const selectedProjectAssigned = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "project-assigned")
+      ?.value ?? `${UNKNOWN_ID}`
+  );
+});
+
 const selectedProject = computed(() => {
   return (
     state.params.scopes.find((scope) => scope.id === "project")?.value ??
@@ -221,6 +228,15 @@ const filteredDatabaseList = computed(() => {
         extractEnvironmentResourceName(db.effectiveEnvironment) ===
         selectedEnvironment.value
     );
+  }
+  if (selectedProjectAssigned.value !== `${UNKNOWN_ID}`) {
+    list = list.filter((db) => {
+      if (selectedProjectAssigned.value == "yes") {
+        return db.project !== DEFAULT_PROJECT_V1_NAME;
+      } else {
+        return db.project === DEFAULT_PROJECT_V1_NAME;
+      }
+    });
   }
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
@@ -330,5 +346,6 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
 const supportOptionIdList = computed((): SearchScopeId[] => [
   ...CommonFilterScopeIdList,
   "project",
+  "project-assigned",
 ]);
 </script>

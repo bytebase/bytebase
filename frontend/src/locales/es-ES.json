@@ -1017,6 +1017,14 @@
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
+        },
+        "project-assigned": {
+          "title": "Proyecto asignado",
+          "description": "Buscar en las bases de datos con proyecto asignado",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Ocultar búsqueda avanzada"
@@ -1157,7 +1165,9 @@
       "project-owners": "Propietarios del proyecto",
       "releasers-of-current-stage": "Liberadores de la etapa actual.",
       "approvers-of-current-step": "Aprobadores del paso actual"
-    }
+    },
+    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
