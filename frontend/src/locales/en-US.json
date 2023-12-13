@@ -1166,7 +1166,9 @@
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
       "approvers-of-current-step": "Approvers of current step"
-    }
+    },
+    "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
