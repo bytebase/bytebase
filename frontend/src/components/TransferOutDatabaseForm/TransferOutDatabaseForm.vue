@@ -73,7 +73,6 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from "lodash-es";
 import {
   NTransfer,
   NTree,
@@ -88,11 +87,10 @@ import { ProjectV1Name, ProjectSelect, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useGracefulRequest,
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { ComposedDatabase, PresetRoleType, UNKNOWN_ID } from "@/types";
+import { PresetRoleType, UNKNOWN_ID } from "@/types";
 import { Project } from "@/types/proto/v1/project_service";
 import Label from "./Label.vue";
 import {
@@ -232,39 +230,25 @@ const doTransfer = async () => {
   const target = targetProject.value!;
   if (!target) return;
 
-  const transferOneDatabase = async (database: ComposedDatabase) => {
-    const databasePatch = cloneDeep(database);
-    databasePatch.project = target.name;
-    const updateMask = ["project"];
-    const updated = await useDatabaseV1Store().updateDatabase({
-      database: databasePatch,
-      updateMask,
-    });
-    return updated;
-  };
-
   const databaseList = selectedDatabaseList.value;
 
   try {
     loading.value = true;
-    await useGracefulRequest(async () => {
-      const requests = databaseList.map((db) => {
-        transferOneDatabase(db);
-      });
-      await Promise.all(requests);
+    await useDatabaseV1Store().transferDatabases(
+      selectedDatabaseList.value,
+      target.name
+    );
+    const displayDatabaseName =
+      databaseList.length > 1
+        ? `${databaseList.length} databases`
+        : `'${databaseList[0].databaseName}'`;
 
-      const displayDatabaseName =
-        databaseList.length > 1
-          ? `${databaseList.length} databases`
-          : `'${databaseList[0].databaseName}'`;
-
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
-      });
-      emit("dismiss");
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
     });
+    emit("dismiss");
   } finally {
     loading.value = false;
   }
