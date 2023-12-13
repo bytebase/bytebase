@@ -26,6 +26,7 @@ import {
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
 } from "@/utils";
+import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
@@ -171,6 +172,29 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     return resp;
   };
 
+  const transferOneDatabase = async (database: Database, project: string) => {
+    const updated = await useDatabaseV1Store().updateDatabase({
+      database: {
+        ...database,
+        project: project,
+      },
+      updateMask: ["project"],
+    });
+    return updated;
+  };
+
+  const transferDatabases = async (
+    databaseList: Database[],
+    project: string
+  ) => {
+    await useGracefulRequest(async () => {
+      const requests = databaseList.map((db) => {
+        transferOneDatabase(db, project);
+      });
+      await Promise.all(requests);
+    });
+  };
+
   return {
     reset,
     databaseList,
@@ -190,6 +214,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     fetchDatabaseSchema,
     updateDatabaseInstance,
     diffSchema,
+    transferDatabases,
   };
 });
 

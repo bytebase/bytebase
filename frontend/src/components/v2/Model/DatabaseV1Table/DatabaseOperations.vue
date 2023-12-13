@@ -26,7 +26,7 @@
             </NButton>
           </template>
           <span class="w-56 text-sm">
-            {{ action.tooltip(action.text) }}
+            {{ action.tooltip(action.text.toLowerCase()) }}
           </span>
         </NTooltip>
       </template>
@@ -40,19 +40,6 @@
     @close="state.showSchemaEditorModal = false"
   />
 
-  <Drawer
-    v-if="selectedProjectUid"
-    :show="state.showTransferOutDatabaseForm"
-    :auto-focus="true"
-    @close="state.showTransferOutDatabaseForm = false"
-  >
-    <TransferOutDatabaseForm
-      :project-id="selectedProjectUid"
-      :selected-database-uid-list="selectedDatabaseUidList"
-      @dismiss="state.showTransferOutDatabaseForm = false"
-    />
-  </Drawer>
-
   <LabelEditorDrawer
     :show="state.showLabelEditorDrawer"
     :readonly="false"
@@ -65,18 +52,34 @@
     @dismiss="state.showLabelEditorDrawer = false"
     @apply="onLabelsApply($event)"
   />
+
+  <BBAlert
+    v-if="state.showUnassignAlert"
+    :style="'WARN'"
+    :ok-text="$t('database.unassign')"
+    :title="$t('database.unassign-alert-title')"
+    :description="$t('database.unassign-alert-description')"
+    @ok="
+      () => {
+        state.showUnassignAlert = false;
+        unAssignDatabases();
+      }
+    "
+    @cancel="state.showUnassignAlert = false"
+  />
 </template>
 
 <script lang="ts" setup>
+import {
+  UnlinkIcon,
+  RefreshCcwIcon,
+  TagIcon,
+  PencilIcon,
+  PenSquareIcon,
+} from "lucide-vue-next";
 import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import PencilIcon from "~icons/heroicons-outline/pencil";
-import PencilAltIcon from "~icons/heroicons-outline/pencil-alt";
-import RefreshIcon from "~icons/heroicons-outline/refresh";
-import SwitchHorizontalIcon from "~icons/heroicons-outline/switch-horizontal";
-import TagIcon from "~icons/heroicons-outline/tag";
-import { Drawer } from "@/components/v2";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -110,7 +113,7 @@ interface DatabaseAction {
 interface LocalState {
   loading: boolean;
   showSchemaEditorModal: boolean;
-  showTransferOutDatabaseForm: boolean;
+  showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
 }
 
@@ -121,7 +124,7 @@ const props = defineProps<{
 const state = reactive<LocalState>({
   loading: false,
   showSchemaEditorModal: false,
-  showTransferOutDatabaseForm: false,
+  showUnassignAlert: false,
   showLabelEditorDrawer: false,
 });
 const schemaEditorContext = ref<{
@@ -145,15 +148,19 @@ const selectedProjectNames = computed(() => {
   return new Set(props.databases.map((db) => db.project));
 });
 
+const assignedDatabases = computed(() => {
+  return props.databases.filter((db) => db.project !== DEFAULT_PROJECT_V1_NAME);
+});
+
 const getDisabledTooltip = (action: string) => {
   if (selectedProjectNames.value.size > 1) {
     return t("database.batch-action-disabled", {
-      action: action.toLowerCase(),
+      action,
     });
   }
   if (selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME)) {
     return t("database.batch-action-disabled-for-unassigned", {
-      action: action.toLowerCase(),
+      action,
     });
   }
   return "";
@@ -323,29 +330,40 @@ const syncSchema = async () => {
   }
 };
 
+const unAssignDatabases = async () => {
+  if (state.loading) {
+    return;
+  }
+  try {
+    await useDatabaseV1Store().transferDatabases(
+      assignedDatabases.value,
+      DEFAULT_PROJECT_V1_NAME
+    );
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("database.successfully-transferred-databases"),
+    });
+  } catch {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("db.failed-to-sync-schema"),
+    });
+  } finally {
+    state.loading = false;
+  }
+};
+
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
   if (!isStandaloneMode.value) {
     resp.push({
-      icon: h(RefreshIcon),
+      icon: h(RefreshCcwIcon),
       text: t("common.sync"),
       disabled: props.databases.length < 1,
       click: syncSchema,
       tooltip: (action) => getDisabledTooltip(action),
-    });
-    resp.unshift({
-      icon: h(SwitchHorizontalIcon),
-      text: t("database.transfer-project"),
-      disabled: !allowTransferProject.value || !selectedProjectUid.value,
-      click: () => (state.showTransferOutDatabaseForm = true),
-      tooltip: (action) => {
-        if (!allowTransferProject.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
     });
     resp.push({
       icon: h(TagIcon),
@@ -381,7 +399,7 @@ const actions = computed((): DatabaseAction[] => {
       },
     },
     {
-      icon: h(PencilAltIcon),
+      icon: h(PenSquareIcon),
       text: t("database.edit-schema"),
       disabled:
         !databaseSupportAlterSchema.value ||
@@ -402,6 +420,23 @@ const actions = computed((): DatabaseAction[] => {
       },
     }
   );
+
+  if (allowTransferProject.value && assignedDatabases.value.length > 0) {
+    resp.push({
+      icon: h(UnlinkIcon),
+      text: t("database.unassign"),
+      disabled: false,
+      click: () => (state.showUnassignAlert = true),
+      tooltip: (action) => {
+        if (!allowTransferProject.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    });
+  }
   return resp;
 });
 
