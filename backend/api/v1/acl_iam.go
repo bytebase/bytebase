@@ -37,9 +37,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	if !ok {
 		return nil
 	}
-	projectIDsGetter := func(context.Context, any) ([]string, error) {
-		return nil, nil
-	}
+	var projectIDsGetter func(context.Context, any) ([]string, error)
 
 	switch fullMethod {
 	// below are "workspace-level" permissions.
@@ -67,7 +65,15 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
 		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
 		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
-		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName:
+		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName,
+		v1pb.RiskService_ListRisks_FullMethodName,
+		v1pb.RiskService_CreateRisk_FullMethodName,
+		v1pb.RiskService_UpdateRisk_FullMethodName,
+		v1pb.RiskService_DeleteRisk_FullMethodName:
+
+		projectIDsGetter = func(context.Context, any) ([]string, error) {
+			return nil, nil
+		}
 	case
 		v1pb.DatabaseService_GetDatabase_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
