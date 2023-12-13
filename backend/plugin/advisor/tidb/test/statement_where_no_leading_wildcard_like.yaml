@@ -5,40 +5,41 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: SELECT * FROM t WHERE a LIKE '%abc'
   want:
     - status: WARN
       code: 204
       title: statement.where.no-leading-wildcard-like
-      content: |-
-        "SELECT * FROM t WHERE a LIKE '%abc';" uses leading wildcard LIKE
-      line: 0
+      content: '"SELECT * FROM t WHERE a LIKE ''%abc''" uses leading wildcard LIKE'
+      line: 1
+      column: 0
       details: ""
 - statement: SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc'
   want:
     - status: WARN
       code: 204
       title: statement.where.no-leading-wildcard-like
-      content: |-
-        "SELECT * FROM t WHERE a LIKE 'abc' OR a LIKE '%abc';" uses leading wildcard LIKE
-      line: 0
+      content: '"SELECT * FROM t WHERE a LIKE ''abc'' OR a LIKE ''%abc''" uses leading wildcard LIKE'
+      line: 1
+      column: 0
       details: ""
 - statement: SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc'
   want:
     - status: WARN
       code: 204
       title: statement.where.no-leading-wildcard-like
-      content: |-
-        "SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc';" uses leading wildcard LIKE
-      line: 0
+      content: '"SELECT * FROM t WHERE a LIKE ''%acc'' OR a LIKE ''%abc''" uses leading wildcard LIKE'
+      line: 1
+      column: 0
       details: ""
 - statement: SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1
   want:
     - status: WARN
       code: 204
       title: statement.where.no-leading-wildcard-like
-      content: |-
-        "SELECT * FROM (SELECT * FROM t WHERE a LIKE '%acc' OR a LIKE '%abc') t1;" uses leading wildcard LIKE
-      line: 0
+      content: '"SELECT * FROM (SELECT * FROM t WHERE a LIKE ''%acc'' OR a LIKE ''%abc'') t1" uses leading wildcard LIKE'
+      line: 1
+      column: 0
       details: ""

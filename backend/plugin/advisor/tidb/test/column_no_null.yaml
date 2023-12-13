@@ -6,30 +6,34 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`id` cannot have NULL value"
-      line: 1
+      content: '`book`.`id` cannot have NULL value'
+      line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`name` cannot have NULL value"
-      line: 2
+      content: '`book`.`name` cannot have NULL value'
+      line: 3
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`name` cannot have NULL value"
-      line: 0
+      content: '`book`.`name` cannot have NULL value'
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
   want:
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`name` cannot have NULL value"
-      line: 0
+      content: '`book`.`name` cannot have NULL value'
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
   want:
@@ -38,6 +42,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
@@ -46,8 +51,9 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`id` cannot have NULL value"
-      line: 1
+      content: '`book`.`id` cannot have NULL value'
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE book(a int NOT NULL);
@@ -58,6 +64,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
@@ -66,8 +73,9 @@
     - status: WARN
       code: 402
       title: column.no-null
-      content: "`book`.`name` cannot have NULL value"
-      line: 1
+      content: '`book`.`name` cannot have NULL value'
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE book(id int NOT NULL);
@@ -78,4 +86,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
