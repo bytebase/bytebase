@@ -597,12 +597,15 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	}
 	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
 	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
-
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
+	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
+	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+	}
 
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
@@ -805,4 +808,9 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 			}
 		}
 	}
+}
+
+func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, targeteMetadata *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseSchemaMetadata) {
+	// TODO(d): reduce the common set between source and target schema.
+	return sourceMetadata, targeteMetadata
 }

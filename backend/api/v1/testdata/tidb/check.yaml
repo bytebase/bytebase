@@ -139,7 +139,7 @@
         }
       ]
     }
-  err: column a type abcd is invalid in table t
+  err: ""
 - engine: 6
   metadata: |-
     {
@@ -281,7 +281,7 @@
         }
       ]
     }
-  err: foreign key fk1 in table t references column a in table t2 but not found
+  err: foreign key referenced column a not found in table t
 - engine: 6
   metadata: |-
     {
@@ -352,4 +352,4 @@
         }
       ]
     }
-  err: foreign key fk1 in table t references table t3 but not found
+  err: foreign key referenced table t3 not found in table t
