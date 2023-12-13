@@ -42,4 +42,14 @@ const (
 	PermissionIssuesUpdate        Permission = "bb.issues.update"
 	PermissionIssueCommentsCreate Permission = "bb.issueComments.create"
 	PermissionIssueCommentsUpdate Permission = "bb.issueComments.update"
+
+	// Project Service.
+	PermissionProjectsList         Permission = "bb.projects.list"
+	PermissionProjectsGet          Permission = "bb.projects.get"
+	PermissionProjectsCreate       Permission = "bb.projects.create"
+	PermissionProjectsUpdate       Permission = "bb.projects.update"
+	PermissionProjectsDelete       Permission = "bb.projects.delete"
+	PermissionProjectsUndelete     Permission = "bb.projects.undelete"
+	PermissionProjectsGetIAMPolicy Permission = "bb.projects.getIamPolicy"
+	PermissionProjectsSetIAMPolicy Permission = "bb.projects.setIamPolicy"
 )
