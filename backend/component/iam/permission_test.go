@@ -60,7 +60,15 @@ func permissionExist(p Permission) bool {
 		PermissionIssuesCreate,
 		PermissionIssuesUpdate,
 		PermissionIssueCommentsCreate,
-		PermissionIssueCommentsUpdate:
+		PermissionIssueCommentsUpdate,
+		PermissionProjectsList,
+		PermissionProjectsGet,
+		PermissionProjectsCreate,
+		PermissionProjectsUpdate,
+		PermissionProjectsDelete,
+		PermissionProjectsUndelete,
+		PermissionProjectsGetIAMPolicy,
+		PermissionProjectsSetIAMPolicy:
 		return true
 	default:
 		return false
