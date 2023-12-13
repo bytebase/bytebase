@@ -9,7 +9,7 @@
     <ProjectBranchesPanel id="branches" :project="project" />
   </template>
   <template v-if="hash === 'databases'">
-    <ProjectDatabasesPanel :database-list="databaseV1List" />
+    <ProjectDatabasesPanel :project="project" :database-list="databaseV1List" />
   </template>
   <template v-if="hash === 'database-groups'">
     <ProjectDatabaseGroupPanel :project="project" />

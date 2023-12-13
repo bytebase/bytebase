@@ -1705,8 +1705,10 @@
         "select-target-project": "选择目标项目",
         "select-at-least-one-database": "至少选择一个数据库"
       },
+      "select-databases": "选择数据库",
       "select-target-project": "选择目标项目"
     },
+    "transfer-database-to": "将数据库转移到目标项目",
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级"
