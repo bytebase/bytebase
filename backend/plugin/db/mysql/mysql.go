@@ -166,6 +166,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
+
+	if driver.dbType == storepb.Engine_TIDB {
+		return driver.TiDBExecute(ctx, statement, false, opts)
+	}
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, err
@@ -278,6 +282,35 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
+	}
+
+	return totalRowsAffected, nil
+}
+
+func (driver *Driver) TiDBExecute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
+	statement, err := mysqlparser.DealWithDelimiter(statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to deal with delimiter")
+	}
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer conn.Close()
+
+	if opts.BeginFunc != nil {
+		if err := opts.BeginFunc(ctx, conn); err != nil {
+			return 0, err
+		}
+	}
+	sqlResult, err := conn.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
+	}
+	totalRowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 	}
 
 	return totalRowsAffected, nil
