@@ -78,6 +78,8 @@
           :checked-row-keys="selectedDatabaseNames"
           :columns="dataTableColumns"
           :data="filteredDatabaseList"
+          :max-height="640"
+          :virtual-scroll="true"
           :row-key="(row: ComposedDatabase) => row.name"
           @update:checked-row-keys="handleDatabaseRowCheck"
         />
@@ -170,6 +172,11 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.database"),
       key: "databaseName",
+      resizable: true,
+      width: 100,
+      ellipsis: {
+        tooltip: true,
+      },
       render(row: ComposedDatabase) {
         return row.databaseName;
       },
@@ -177,6 +184,11 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.environment"),
       key: "environment",
+      resizable: true,
+      width: 100,
+      ellipsis: {
+        tooltip: true,
+      },
       render(row: ComposedDatabase) {
         return row.effectiveEnvironmentEntity.title;
       },
@@ -184,6 +196,11 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.instance"),
       key: "instance",
+      resizable: true,
+      width: 100,
+      ellipsis: {
+        tooltip: true,
+      },
       render(row: ComposedDatabase) {
         return h(
           "div",
@@ -200,6 +217,8 @@ const dataTableColumns = computed(() => {
     {
       title: t("common.labels"),
       key: "labels",
+      resizable: true,
+      width: 100,
       render(row: ComposedDatabase) {
         return h(LabelsColumn, {
           labels: row.labels,
