@@ -792,7 +792,7 @@
           "self": "MD5 mask",
           "salt": "Salt",
           "salt-label": "Salt is used to generate a hash from the original value."
-        }
+        } 
       },
       "masking-level": {
         "self": "Masking Level",
@@ -808,7 +808,7 @@
         "export": "Export"
       },
       "classification": {
-        "self": "Data classification",
+        "self": "Data Classification",
         "upload": "Upload classification",
         "upload-succeed": "Upload succeed",
         "search": "Search classification",
