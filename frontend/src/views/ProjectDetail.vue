@@ -211,11 +211,8 @@ onMounted(() => {
 const quickActionMapByRole = computed(() => {
   if (project.value.state === State.ACTIVE) {
     const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
-      "quickaction.bb.database.schema.update",
-      "quickaction.bb.database.data.update",
       "quickaction.bb.database.create",
       "quickaction.bb.project.database.transfer",
-      "quickaction.bb.project.database.transfer-out",
     ];
     const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
 
@@ -230,11 +227,7 @@ const quickActionMapByRole = computed(() => {
     ) {
       // Default project (Unassigned databases) are not allowed
       // to be changed.
-      DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.database.schema.update",
-        "quickaction.bb.database.data.update",
-        "quickaction.bb.database.create"
-      );
+      DEVELOPER_QUICK_ACTION_LIST.push("quickaction.bb.database.create");
     }
     if (
       hasPermissionInProjectV1(
@@ -244,8 +237,7 @@ const quickActionMapByRole = computed(() => {
       )
     ) {
       DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.project.database.transfer",
-        "quickaction.bb.project.database.transfer-out"
+        "quickaction.bb.project.database.transfer"
       );
     }
     if (!isOwnerOfProjectV1(project.value.iamPolicy, currentUserV1.value)) {

@@ -410,7 +410,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			continue
 		}
 
-		stmts, err := mysqlparser.ParseMySQL(statement)
+		stmts, err := mysqlparser.ParseMySQL(stmt.Text)
 		if err != nil {
 			slog.Error("failed to parse statement", slog.String("statement", stmt.Text), log.BBError(err))
 			continue
