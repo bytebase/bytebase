@@ -75,6 +75,10 @@
         </template>
       </template>
 
+      <template #placeholder-content>
+        <slot name="placeholder"></slot>
+      </template>
+
       <template #footer>
         <div
           v-if="hasReservedDatabases && !state.showReservedDatabaseList"
