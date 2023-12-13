@@ -14,11 +14,7 @@ import (
 )
 
 func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
-	p, ok := methodPermissionMap[fullMethod]
-	if !ok {
-		return nil
-	}
-
+	// Below are the skipped.
 	switch fullMethod {
 	// skip checking for custom approval.
 	case
@@ -35,6 +31,17 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
 		return nil
+	}
+
+	p, ok := methodPermissionMap[fullMethod]
+	if !ok {
+		return nil
+	}
+	projectIDsGetter := func(context.Context, any) ([]string, error) {
+		return nil, nil
+	}
+
+	switch fullMethod {
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
 	case
@@ -61,13 +68,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
 		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
 		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName:
-		ok, err := in.iamManager.CheckPermission(ctx, p, user)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
-		}
 	case
 		v1pb.DatabaseService_GetDatabase_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
@@ -86,17 +86,8 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_AdviseIndex_FullMethodName, // TODO(p0ny): implement.
 		v1pb.DatabaseService_ListChangeHistories_FullMethodName,
 		v1pb.DatabaseService_GetChangeHistory_FullMethodName:
-		projectIDs, err := in.getProjectIDsForDatabaseService(ctx, req)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
-		}
-		ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
-		}
+
+		projectIDsGetter = in.getProjectIDsForDatabaseService
 	case
 		v1pb.IssueService_GetIssue_FullMethodName,
 		v1pb.IssueService_CreateIssue_FullMethodName,
@@ -104,17 +95,8 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.IssueService_CreateIssueComment_FullMethodName,
 		v1pb.IssueService_UpdateIssueComment_FullMethodName,
 		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
-		projectIDs, err := in.getProjectIDsForProjectService(ctx, req)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
-		}
-		ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
-		}
+
+		projectIDsGetter = in.getProjectIDsForIssueService
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
 		v1pb.ProjectService_UpdateProject_FullMethodName,
@@ -144,17 +126,19 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ProjectService_GetProjectProtectionRules_FullMethodName,
 		v1pb.ProjectService_UpdateProjectProtectionRules_FullMethodName:
 
-		projectIDs, err := in.getProjectIDsForIssueService(ctx, req)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
-		}
-		ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
-		}
-		if !ok {
-			return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
-		}
+		projectIDsGetter = in.getProjectIDsForProjectService
+	}
+
+	projectIDs, err := projectIDsGetter(ctx, req)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
+	}
+	ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
 	}
 
 	return nil
