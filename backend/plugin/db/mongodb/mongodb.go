@@ -173,6 +173,7 @@ func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	statement = strings.Trim(statement, " \t\n\r\f;")
 	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
 	connectionURI := getMongoDBConnectionURI(driver.connCfg)
@@ -191,7 +192,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		if queryContext != nil && queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}`, strings.Trim(statement, " \t\n\r\f;"), limit)
+		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s)); sleep(0);} else {print(EJSON.stringify(a)); sleep(0);}`, statement, limit)
 	}
 	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
@@ -399,7 +400,6 @@ func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement s
 }
 
 func isMongoStatement(statement string) bool {
-	statement = strings.TrimLeft(statement, " \n\t")
 	statement = strings.ToLower(statement)
 	return strings.HasPrefix(statement, "db.")
 }
