@@ -4,7 +4,8 @@
       code: 606
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a int)
   want:
@@ -12,7 +13,8 @@
       code: 605
       title: table.comment
       content: Table `t` requires comments
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a int) COMMENT 'sdlfkjalkseblkjduafelbnlsdfkljayue'
   want:
@@ -20,5 +22,6 @@
       code: 606
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
