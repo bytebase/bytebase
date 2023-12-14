@@ -147,7 +147,7 @@ export const readableSQLEditorTreeFactor = (
 ) => {
   const treeStore = useSQLEditorTreeStore();
   if (factor === "project") {
-    if (treeStore.projectMode) {
+    if (treeStore.selectedProject) {
       return t("common.database");
     } else {
       return t("common.project");
