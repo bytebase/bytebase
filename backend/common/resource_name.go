@@ -87,6 +87,9 @@ func GetSchemaTableName(name string) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+	if tokens[0] == "-" {
+		tokens[0] = ""
+	}
 	return tokens[0], tokens[1], nil
 }
 
