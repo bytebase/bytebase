@@ -6,7 +6,6 @@ import { DatabaseConfig, DatabaseSchemaMetadata } from "./database";
 export const protobufPackage = "bytebase.store";
 
 export interface BranchSnapshot {
-  schema: Uint8Array;
   metadata: DatabaseSchemaMetadata | undefined;
   databaseConfig: DatabaseConfig | undefined;
 }
@@ -27,19 +26,16 @@ export interface BranchConfig {
 }
 
 function createBaseBranchSnapshot(): BranchSnapshot {
-  return { schema: new Uint8Array(0), metadata: undefined, databaseConfig: undefined };
+  return { metadata: undefined, databaseConfig: undefined };
 }
 
 export const BranchSnapshot = {
   encode(message: BranchSnapshot, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.schema.length !== 0) {
-      writer.uint32(10).bytes(message.schema);
-    }
     if (message.metadata !== undefined) {
-      DatabaseSchemaMetadata.encode(message.metadata, writer.uint32(18).fork()).ldelim();
+      DatabaseSchemaMetadata.encode(message.metadata, writer.uint32(10).fork()).ldelim();
     }
     if (message.databaseConfig !== undefined) {
-      DatabaseConfig.encode(message.databaseConfig, writer.uint32(26).fork()).ldelim();
+      DatabaseConfig.encode(message.databaseConfig, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -56,17 +52,10 @@ export const BranchSnapshot = {
             break;
           }
 
-          message.schema = reader.bytes();
+          message.metadata = DatabaseSchemaMetadata.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
-            break;
-          }
-
-          message.metadata = DatabaseSchemaMetadata.decode(reader, reader.uint32());
-          continue;
-        case 3:
-          if (tag !== 26) {
             break;
           }
 
@@ -83,7 +72,6 @@ export const BranchSnapshot = {
 
   fromJSON(object: any): BranchSnapshot {
     return {
-      schema: isSet(object.schema) ? bytesFromBase64(object.schema) : new Uint8Array(0),
       metadata: isSet(object.metadata) ? DatabaseSchemaMetadata.fromJSON(object.metadata) : undefined,
       databaseConfig: isSet(object.databaseConfig) ? DatabaseConfig.fromJSON(object.databaseConfig) : undefined,
     };
@@ -91,9 +79,6 @@ export const BranchSnapshot = {
 
   toJSON(message: BranchSnapshot): unknown {
     const obj: any = {};
-    if (message.schema.length !== 0) {
-      obj.schema = base64FromBytes(message.schema);
-    }
     if (message.metadata !== undefined) {
       obj.metadata = DatabaseSchemaMetadata.toJSON(message.metadata);
     }
@@ -108,7 +93,6 @@ export const BranchSnapshot = {
   },
   fromPartial(object: DeepPartial<BranchSnapshot>): BranchSnapshot {
     const message = createBaseBranchSnapshot();
-    message.schema = object.schema ?? new Uint8Array(0);
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? DatabaseSchemaMetadata.fromPartial(object.metadata)
       : undefined;
@@ -192,31 +176,6 @@ export const BranchConfig = {
     return message;
   },
 };
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (globalThis.Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = globalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (globalThis.Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(globalThis.String.fromCharCode(byte));
-    });
-    return globalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

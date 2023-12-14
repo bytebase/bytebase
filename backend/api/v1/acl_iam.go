@@ -29,6 +29,8 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
 		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
+		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
+		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
 		return nil
 	}
@@ -59,6 +61,11 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
 		v1pb.InstanceService_SyncSlowQueries_FullMethodName,
+		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
+		v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName,
+		v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName,
+		v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName,
+		v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName,
 		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
 		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
 		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
@@ -107,6 +114,28 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForIssueService
+	case
+		v1pb.ChangelistService_CreateChangelist_FullMethodName,
+		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
+		v1pb.ChangelistService_GetChangelist_FullMethodName,
+		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForChangelistService
+	case
+		v1pb.RolloutService_GetRollout_FullMethodName,
+		v1pb.RolloutService_CreateRollout_FullMethodName,
+		v1pb.RolloutService_PreviewRollout_FullMethodName,
+		v1pb.RolloutService_GetPlan_FullMethodName,
+		v1pb.RolloutService_CreatePlan_FullMethodName,
+		v1pb.RolloutService_UpdatePlan_FullMethodName,
+		v1pb.RolloutService_ListTaskRuns_FullMethodName,
+		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
+		v1pb.RolloutService_RunPlanChecks_FullMethodName,
+		v1pb.RolloutService_BatchRunTasks_FullMethodName,
+		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
+		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForRolloutService
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
 		v1pb.ProjectService_UpdateProject_FullMethodName,
@@ -187,6 +216,107 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Wrapf(err, "database %q not found", databaseResourceName)
 	}
 	return database, nil
+}
+
+func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req any) ([]string, error) {
+	var projects, changelists []string
+	switch r := req.(type) {
+	case *v1pb.CreateChangelistRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdateChangelistRequest:
+		changelists = append(changelists, r.GetChangelist().GetName())
+	case *v1pb.GetChangelistRequest:
+		changelists = append(changelists, r.GetName())
+	case *v1pb.DeleteChangelistRequest:
+		changelists = append(changelists, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, changelist := range changelists {
+		projectID, _, err := common.GetProjectIDChangelistID(changelist)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse changelist %q", changelist)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
+}
+
+func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
+	var projects, rollouts, plans, tasks, stages []string
+	switch r := req.(type) {
+	case *v1pb.GetRolloutRequest:
+		rollouts = append(rollouts, r.GetName())
+	case *v1pb.CreateRolloutRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.PreviewRolloutRequest:
+		projects = append(projects, r.GetProject())
+	case *v1pb.GetPlanRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.CreatePlanRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdatePlanRequest:
+		plans = append(plans, r.GetPlan().GetName())
+	case *v1pb.ListTaskRunsRequest:
+		tasks = append(tasks, r.GetParent())
+	case *v1pb.ListPlanCheckRunsRequest:
+		plans = append(plans, r.GetParent())
+	case *v1pb.RunPlanChecksRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.BatchRunTasksRequest:
+		stages = append(stages, r.GetParent())
+	case *v1pb.BatchSkipTasksRequest:
+		stages = append(stages, r.GetParent())
+	case *v1pb.BatchCancelTaskRunsRequest:
+		tasks = append(tasks, r.GetParent())
+	}
+
+	var projectIDs []string
+	for _, plan := range plans {
+		projectID, _, err := common.GetProjectIDPlanID(plan)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse plan %q", plan)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, rollout := range rollouts {
+		projectID, _, err := common.GetProjectIDRolloutID(rollout)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse rollout %q", rollout)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, stage := range stages {
+		projectID, _, _, err := common.GetProjectIDRolloutIDMaybeStageID(stage)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse stage %q", stage)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, task := range tasks {
+		projectID, _, _, _, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(task)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse task %q", task)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
@@ -296,7 +426,7 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
-	return projectIDs, nil
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) ([]string, error) {
@@ -317,20 +447,16 @@ func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) 
 		issueNames = append(issueNames, r.GetIssues()...)
 	}
 
-	projectIDsMap := make(map[string]struct{})
+	var projectIDs []string
 	for _, issueName := range issueNames {
 		projectID, _, err := common.GetProjectIDIssueID(issueName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get projectID from %q", issueName)
 		}
-		projectIDsMap[projectID] = struct{}{}
-	}
-
-	var projectIDs []string
-	for projectID := range projectIDsMap {
 		projectIDs = append(projectIDs, projectID)
 	}
-	return projectIDs, nil
+
+	return uniq(projectIDs), nil
 }
 
 func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, req any) ([]string, error) {
@@ -428,5 +554,20 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 		projectIDs = append(projectIDs, database.ProjectID)
 	}
 
-	return projectIDs, nil
+	return uniq(projectIDs), nil
+}
+
+func uniq[T comparable](array []T) []T {
+	res := make([]T, 0, len(array))
+	seen := make(map[T]struct{}, len(array))
+
+	for _, e := range array {
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		res = append(res, e)
+	}
+
+	return res
 }

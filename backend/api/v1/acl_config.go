@@ -135,6 +135,33 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RoleService_CreateRole_FullMethodName: iam.PermissionRolesCreate,
 	v1pb.RoleService_UpdateRole_FullMethodName: iam.PermissionRolesUpdate,
 	v1pb.RoleService_DeleteRole_FullMethodName: iam.PermissionRolesDelete,
+
+	v1pb.ChangelistService_ListChangelists_FullMethodName:  iam.PermissionChangelistsList,
+	v1pb.ChangelistService_GetChangelist_FullMethodName:    iam.PermissionChangelistsGet,
+	v1pb.ChangelistService_CreateChangelist_FullMethodName: iam.PermissionChangelistsCreate,
+	v1pb.ChangelistService_UpdateChangelist_FullMethodName: iam.PermissionChangelistsUpdate,
+	v1pb.ChangelistService_DeleteChangelist_FullMethodName: iam.PermissionChangelistsDelete,
+
+	v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:    iam.PermissionInstanceRolesList,
+	v1pb.InstanceRoleService_GetInstanceRole_FullMethodName:      iam.PermissionInstanceRolesGet,
+	v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesCreate,
+	v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesUpdate,
+	v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName:   iam.PermissionInstanceRolesDelete,
+	v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName: iam.PermissionInstanceRolesUndelete,
+
+	v1pb.RolloutService_ListPlans_FullMethodName:           iam.PermissionPlansList,
+	v1pb.RolloutService_GetPlan_FullMethodName:             iam.PermissionPlansGet,
+	v1pb.RolloutService_CreatePlan_FullMethodName:          iam.PermissionPlansCreate,
+	v1pb.RolloutService_UpdatePlan_FullMethodName:          iam.PermissionPlansUpdate,
+	v1pb.RolloutService_GetRollout_FullMethodName:          iam.PermissionRolloutsGet,
+	v1pb.RolloutService_CreateRollout_FullMethodName:       iam.PermissionRolloutsCreate,
+	v1pb.RolloutService_PreviewRollout_FullMethodName:      iam.PermissionRolloutsPreview,
+	v1pb.RolloutService_ListTaskRuns_FullMethodName:        iam.PermissionTaskRunsList,
+	v1pb.RolloutService_ListPlanCheckRuns_FullMethodName:   iam.PermissionPlanCheckRunsList,
+	v1pb.RolloutService_RunPlanChecks_FullMethodName:       iam.PermissionPlanCheckRunsRun,
+	v1pb.RolloutService_BatchRunTasks_FullMethodName:       iam.PermissionTasksRun,
+	v1pb.RolloutService_BatchSkipTasks_FullMethodName:      iam.PermissionTasksSkip,
+	v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName: iam.PermissionTaskRunsCancel,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {
