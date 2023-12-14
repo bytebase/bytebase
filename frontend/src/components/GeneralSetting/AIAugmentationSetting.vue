@@ -89,6 +89,7 @@
           <NButton
             type="primary"
             :disabled="!allowSave"
+            :loading="updating"
             @click.prevent="updateOpenAIKeyEndpoint"
           >
             {{ $t("common.update") }}
@@ -109,8 +110,13 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import {
+  hasFeature,
+  pushNotification,
+  useCurrentUserV1,
+  useSettingSWRStore,
+} from "@/store";
+import "@/store/modules/v1/setting";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
@@ -120,9 +126,35 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const containerRef = ref<HTMLDivElement>();
+const settingStore = useSettingSWRStore();
+const openAIKeySetting = settingStore.useSettingByName(
+  "bb.plugin.openai.key",
+  /* silent */ true
+);
+const updateOpenAIKeySetting = settingStore.useUpdateSettingByName(
+  "bb.plugin.openai.key"
+);
+const openAIEndpointSetting = settingStore.useSettingByName(
+  "bb.plugin.openai.endpoint",
+  /* silent */ true
+);
+const updateOpenAIEndpointSetting = settingStore.useUpdateSettingByName(
+  "bb.plugin.openai.endpoint"
+);
+const openAIKey = computed(() => {
+  return openAIKeySetting.data.value?.value?.stringValue;
+});
+const openAIEndpoint = computed(() => {
+  return openAIEndpointSetting.data.value?.value?.stringValue;
+});
+const updating = computed(() => {
+  return (
+    updateOpenAIKeySetting.isLoading.value ||
+    updateOpenAIEndpointSetting.isLoading.value
+  );
+});
 
 const state = reactive<LocalState>({
   openAIKey: "",
@@ -130,16 +162,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
-const openAIKeySetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.key"
-);
-const openAIEndpointSetting = settingV1Store.getSettingByName(
-  "bb.plugin.openai.endpoint"
-);
-
 watchEffect(() => {
-  state.openAIKey = maskKey(openAIKeySetting?.value?.stringValue);
-  state.openAIEndpoint = openAIEndpointSetting?.value?.stringValue ?? "";
+  state.openAIKey = maskKey(openAIKey.value);
+  state.openAIEndpoint = openAIEndpoint.value ?? "";
 });
 
 const allowEdit = computed((): boolean => {
@@ -151,12 +176,11 @@ const allowEdit = computed((): boolean => {
 
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
-    state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
+    state.openAIKey !== maskKey(openAIKey.value) ||
     (state.openAIKey && !state.openAIKey.includes("***"));
   return (
     allowEdit.value &&
-    (openAIKeyUpdated ||
-      state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue)
+    (openAIKeyUpdated || state.openAIEndpoint !== openAIEndpoint.value)
   );
 });
 
@@ -177,22 +201,22 @@ const updateOpenAIKeyEndpoint = async () => {
   }
 
   if (
-    state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
+    state.openAIKey !== maskKey(openAIKey.value) ||
     !state.openAIKey.includes("***")
   ) {
-    await settingV1Store.upsertSetting({
-      name: "bb.plugin.openai.key",
+    await updateOpenAIKeySetting.mutateAsync({
       value: {
         stringValue: state.openAIKey,
       },
+      validateOnly: false,
     });
   }
-  if (state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue) {
-    await settingV1Store.upsertSetting({
-      name: "bb.plugin.openai.endpoint",
+  if (state.openAIEndpoint !== openAIEndpoint.value) {
+    await updateOpenAIEndpointSetting.mutateAsync({
       value: {
         stringValue: state.openAIEndpoint,
       },
+      validateOnly: false,
     });
   }
   pushNotification({

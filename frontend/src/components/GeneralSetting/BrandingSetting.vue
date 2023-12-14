@@ -193,7 +193,7 @@ const allowSave = computed((): boolean => {
 const hasBrandingFeature = featureToRef("bb.feature.branding");
 
 const doUpdate = async (content: string, message: string) => {
-  const updatedValue = await updateBrandingLogoSetting.mutateAsync({
+  const updatedSetting = await updateBrandingLogoSetting.mutateAsync({
     value: {
       stringValue: content,
     },
@@ -201,7 +201,7 @@ const doUpdate = async (content: string, message: string) => {
   });
 
   state.logoFile = null;
-  state.logoUrl = updatedValue?.stringValue;
+  state.logoUrl = updatedSetting.value?.stringValue;
 
   pushNotification({
     module: "bytebase",

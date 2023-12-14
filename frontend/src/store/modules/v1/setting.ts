@@ -149,6 +149,7 @@ export const useSettingSWRStore = defineStore("setting_swr", () => {
   const useUpdateSettingByName = (name: SettingName) => {
     const mutation = useMutation({
       queryClient,
+      mutationKey: [name],
       mutationFn: async (params: {
         value: SettingValue;
         validateOnly?: boolean;
@@ -161,16 +162,10 @@ export const useSettingSWRStore = defineStore("setting_swr", () => {
           },
           validateOnly,
         });
-        return resp.value;
+        return resp;
       },
-      onSuccess: (value) => {
-        queryClient.setQueryData(
-          [name],
-          Setting.fromPartial({
-            name,
-            value,
-          })
-        );
+      onSuccess: (setting) => {
+        queryClient.setQueryData([name], setting);
       },
     });
     return mutation;
