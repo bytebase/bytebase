@@ -132,7 +132,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
-import { useSettingV1Store } from "@/store";
+import { useSettingSWRStore } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -159,7 +159,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
 
 const columnList = computed(() => {
   const columns: BBGridColumn[] = [
@@ -203,10 +202,14 @@ const onInput = (index: number, callback: (item: SemanticItem) => void) => {
   item.dirty = true;
 };
 
+const maskingAlgorithmSetting = useSettingSWRStore().useSettingByName(
+  "bb.workspace.masking-algorithm",
+  /* silent */ true
+);
 const algorithmList = computed((): SelectOption[] => {
   const list = (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+    maskingAlgorithmSetting.data.value?.value?.maskingAlgorithmSettingValue
+      ?.algorithms ?? []
   ).map((algorithm) => ({
     label: algorithm.title,
     value: algorithm.id,

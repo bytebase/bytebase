@@ -1,3 +1,4 @@
+import { QueryClient, useMutation, useQuery } from "@tanstack/vue-query";
 import { defineStore } from "pinia";
 import { settingServiceClient } from "@/grpcweb";
 import { settingNamePrefix } from "@/store/modules/v1/common";
@@ -120,4 +121,64 @@ export const useSettingV1Store = defineStore("setting_v1", {
       await useActuatorV1Store().fetchServerInfo();
     },
   },
+});
+
+export const useSettingSWRStore = defineStore("setting_swr", () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000, // 5 minutes
+      },
+    },
+  });
+  const useSettingByName = (name: SettingName, silent = false) => {
+    const query = useQuery({
+      queryClient,
+      queryKey: [name],
+      queryFn: async () => {
+        return await settingServiceClient.getSetting(
+          {
+            name: `${settingNamePrefix}${name}`,
+          },
+          { silent }
+        );
+      },
+    });
+    return query;
+  };
+  const useUpdateSettingByName = (name: SettingName) => {
+    const mutation = useMutation({
+      queryClient,
+      mutationFn: async (params: {
+        value: SettingValue;
+        validateOnly?: boolean;
+      }) => {
+        const { value, validateOnly } = params;
+        const resp = await settingServiceClient.setSetting({
+          setting: {
+            name: `${settingNamePrefix}${name}`,
+            value,
+          },
+          validateOnly,
+        });
+        return resp.value;
+      },
+      onSuccess: (value) => {
+        queryClient.setQueryData(
+          [name],
+          Setting.fromPartial({
+            name,
+            value,
+          })
+        );
+      },
+    });
+    return mutation;
+  };
+
+  return {
+    queryClient,
+    useSettingByName,
+    useUpdateSettingByName,
+  };
 });

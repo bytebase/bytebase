@@ -1,6 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
     <DrawerContent :title="$t('common.add')">
+      <MaskSpinner v-if="updating" />
       <div
         class="w-[40rem] max-w-[calc(100vw-5rem)] space-y-6 divide-y divide-block-border"
       >
@@ -13,7 +14,7 @@
             <NInput
               v-model:value="state.title"
               :placeholder="t('settings.sensitive-data.algorithms.table.title')"
-              :disabled="state.processing || readonly"
+              :disabled="updating || readonly"
             />
           </div>
           <div class="sm:col-span-2 sm:col-start-1">
@@ -25,7 +26,7 @@
               :placeholder="
                 t('settings.sensitive-data.algorithms.table.description')
               "
-              :disabled="state.processing || readonly"
+              :disabled="updating || readonly"
             />
           </div>
           <div class="w-full mb-6 space-y-1">
@@ -70,7 +71,7 @@
                   t('settings.sensitive-data.algorithms.full-mask.substitution')
                 "
                 class="mt-2"
-                :disabled="state.processing || readonly"
+                :disabled="updating || readonly"
               />
             </div>
           </template>
@@ -100,7 +101,7 @@
                       'settings.sensitive-data.algorithms.range-mask.slice-start'
                     )
                   "
-                  :disabled="state.processing || readonly"
+                  :disabled="updating || readonly"
                   style="width: 5rem"
                   @update:value="onSliceStartChange(i, $event)"
                 />
@@ -120,7 +121,7 @@
                   :placeholder="
                     t('settings.sensitive-data.algorithms.range-mask.slice-end')
                   "
-                  :disabled="state.processing || readonly"
+                  :disabled="updating || readonly"
                   style="width: 5rem"
                   @update:value="onSliceEndChange(i, $event)"
                 />
@@ -141,12 +142,12 @@
                       'settings.sensitive-data.algorithms.range-mask.substitution'
                     )
                   "
-                  :disabled="state.processing || readonly"
+                  :disabled="updating || readonly"
                 />
               </div>
               <div class="h-[34px] flex flex-row items-center self-end">
                 <MiniActionButton
-                  :disabled="state.processing || readonly"
+                  :disabled="updating || readonly"
                   @click.stop="removeSlice(i)"
                 >
                   <TrashIcon class="w-4 h-4" />
@@ -158,7 +159,7 @@
             </div>
             <NButton
               class="ml-auto"
-              :disabled="state.processing || readonly"
+              :disabled="updating || readonly"
               @click.prevent="addSlice"
             >
               {{ $t("common.add") }}
@@ -181,7 +182,7 @@
                   t('settings.sensitive-data.algorithms.md5-mask.salt')
                 "
                 class="mt-2"
-                :disabled="state.processing || readonly"
+                :disabled="updating || readonly"
               />
             </div>
           </template>
@@ -218,6 +219,7 @@ import { TrashIcon } from "lucide-vue-next";
 import { NInput, NInputNumber } from "naive-ui";
 import { computed, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
   Drawer,
   DrawerContent,
@@ -226,7 +228,7 @@ import {
   RadioGridItem,
   MiniActionButton,
 } from "@/components/v2";
-import { pushNotification, useSettingV1Store } from "@/store";
+import { pushNotification, useSettingSWRStore } from "@/store";
 import {
   MaskingAlgorithmSetting_Algorithm as Algorithm,
   MaskingAlgorithmSetting_Algorithm_FullMask as FullMask,
@@ -283,7 +285,17 @@ const state = reactive<LocalState>({
   md5Mask: MD5Mask.fromPartial({}),
 });
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
+const settingStore = useSettingSWRStore();
+const maskingAlgorithmSetting = settingStore.useSettingByName(
+  "bb.workspace.masking-algorithm",
+  /* silent */ true
+);
+const updateMaskingAlgorithmSetting = settingStore.useUpdateSettingByName(
+  "bb.workspace.masking-algorithm"
+);
+const updating = computed(() => {
+  return updateMaskingAlgorithmSetting.isLoading.value;
+});
 
 const maskingTypeList = computed((): MaskingTypeOption[] => [
   {
@@ -302,8 +314,8 @@ const maskingTypeList = computed((): MaskingTypeOption[] => [
 
 const algorithmList = computed((): Algorithm[] => {
   return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+    maskingAlgorithmSetting.data.value?.value?.maskingAlgorithmSettingValue
+      ?.algorithms ?? []
   );
 });
 
@@ -410,7 +422,7 @@ const errorMessage = computed(() => {
 });
 
 const isSubmitDisabled = computed(() => {
-  if (props.readonly || state.processing) {
+  if (props.readonly || updating.value) {
     return true;
   }
 
@@ -422,8 +434,6 @@ const isSubmitDisabled = computed(() => {
 });
 
 const onUpsert = async () => {
-  state.processing = true;
-
   const index = algorithmList.value.findIndex(
     (item) => item.id === maskingAlgorithm.value.id
   );
@@ -434,29 +444,24 @@ const onUpsert = async () => {
     newList[index] = maskingAlgorithm.value;
   }
 
-  try {
-    await settingStore.upsertSetting({
-      name: "bb.workspace.masking-algorithm",
-      value: {
-        maskingAlgorithmSettingValue: {
-          algorithms: newList,
-        },
+  await updateMaskingAlgorithmSetting.mutateAsync({
+    value: {
+      maskingAlgorithmSettingValue: {
+        algorithms: newList,
       },
-    });
+    },
+  });
 
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-    emit("dismiss");
-  } finally {
-    state.processing = false;
-  }
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+  emit("dismiss");
 };
 
 const onMaskingTypeChange = (maskingType: MaskingType) => {
-  if (state.processing || props.readonly) {
+  if (updating.value || props.readonly) {
     return;
   }
   switch (maskingType) {

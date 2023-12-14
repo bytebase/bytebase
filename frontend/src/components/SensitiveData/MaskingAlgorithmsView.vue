@@ -9,7 +9,7 @@
         {{ $t("common.add") }}
       </NButton>
     </div>
-    <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
+    <div class="space-y-5 divide-y-2 pb-10 divide-gray-100 relative">
       <MaskingAlgorithmsTable
         :readonly="!hasPermission || !hasSensitiveDataFeature"
         :row-clickable="false"

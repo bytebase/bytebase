@@ -3,6 +3,8 @@
     :column-list="columnList"
     :data-source="algorithmList"
     :row-clickable="rowClickable"
+    :ready="!loading"
+    :loading="loading || updating"
     class="border compact"
     @click-row="(item: Algorithm) => $emit('select', item.id)"
   >
@@ -38,13 +40,14 @@
 </template>
 
 <script lang="ts" setup>
+import { pullAt } from "lodash-es";
 import { PencilIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
-import { computed, onMounted } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { MiniActionButton } from "@/components/v2";
-import { useSettingV1Store, pushNotification } from "@/store";
+import { pushNotification, useSettingSWRStore } from "@/store";
 import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
 import { getMaskingType } from "./utils";
 
@@ -61,14 +64,16 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const settingStore = useSettingV1Store();
-
-onMounted(async () => {
-  await settingStore.getOrFetchSettingByName(
-    "bb.workspace.masking-algorithm",
-    true
-  );
-});
+const settingStore = useSettingSWRStore();
+const maskingAlgorithmSetting = settingStore.useSettingByName(
+  "bb.workspace.masking-algorithm",
+  /* silent */ true
+);
+const updateMaskingAlgorithmSetting = settingStore.useUpdateSettingByName(
+  "bb.workspace.masking-algorithm"
+);
+const loading = maskingAlgorithmSetting.isLoading;
+const updating = updateMaskingAlgorithmSetting.isLoading;
 
 const columnList = computed(() => {
   const columns: BBGridColumn[] = [
@@ -95,8 +100,8 @@ const columnList = computed(() => {
 
 const rawAlgorithmList = computed((): Algorithm[] => {
   return (
-    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
-      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+    maskingAlgorithmSetting.data.value?.value?.maskingAlgorithmSettingValue
+      ?.algorithms ?? []
   );
 });
 
@@ -127,13 +132,10 @@ const onRemove = async (id: string) => {
   if (index < 0) {
     return;
   }
-  const newList = [
-    ...rawAlgorithmList.value.slice(0, index),
-    ...rawAlgorithmList.value.slice(index + 1),
-  ];
+  const newList = [...rawAlgorithmList.value];
+  pullAt(newList, index);
 
-  await settingStore.upsertSetting({
-    name: "bb.workspace.masking-algorithm",
+  await updateMaskingAlgorithmSetting.mutateAsync({
     value: {
       maskingAlgorithmSettingValue: {
         algorithms: newList,

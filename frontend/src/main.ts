@@ -1,3 +1,4 @@
+import { VueQueryPlugin as TanstackVueQueryPlugin } from "@tanstack/vue-query";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
@@ -155,6 +156,8 @@ app.config.globalProperties.instanceName = instanceName;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
 app.config.globalProperties.connectionSlug = connectionSlug;
+
+app.use(TanstackVueQueryPlugin);
 
 app
   // Need to use a directive on the element.

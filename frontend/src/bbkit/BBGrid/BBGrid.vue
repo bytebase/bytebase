@@ -70,7 +70,7 @@
     </slot>
     <slot name="loading">
       <div
-        v-if="!ready"
+        v-if="!ready || loading"
         class="flex flex-col items-center justify-center text-control-placeholder border-t"
         :style="{
           'grid-column': `auto / span ${columnList.length}`,
@@ -115,6 +115,7 @@ const props = withDefaults(
     rowClickable?: boolean;
     showPlaceholder?: boolean;
     ready?: boolean;
+    loading?: boolean;
     isRowExpanded?: (item: DataType, row: number) => boolean;
     isRowClickable?: (item: DataType, row: number) => boolean;
     expandedRowClass?: VueClass;
@@ -129,6 +130,7 @@ const props = withDefaults(
     rowClickable: true,
     showPlaceholder: false,
     ready: true,
+    loading: false,
     isRowExpanded: () => false,
     isRowClickable: () => true,
     expandedRowClass: undefined,
