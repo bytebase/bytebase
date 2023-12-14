@@ -26,6 +26,14 @@
             />
           </div>
         </div>
+        <div v-if="showDatabaseUnitLabel" class="contents">
+          <div class="text-gray-500 font-medium">
+            {{ $t("common.unit") }}
+          </div>
+          <div class="text-main text-right">
+            {{ database.labels["unit_name"] }}
+          </div>
+        </div>
         <div class="contents">
           <div class="text-gray-500 font-medium">
             {{ $t("common.instance") }}
@@ -34,7 +42,7 @@
             <InstanceV1Name :instance="database.instanceEntity" :link="false" />
           </div>
         </div>
-        <div v-if="!hasProjectContext" class="contents">
+        <div v-if="showDatabaseProject" class="contents">
           <div class="text-gray-500 font-medium">
             {{ $t("common.project") }}
           </div>
@@ -42,7 +50,7 @@
             <ProjectV1Name :project="database.projectEntity" :link="false" />
           </div>
         </div>
-        <div class="contents">
+        <div v-if="showDatabaseLabels" class="contents">
           <div class="text-gray-500 font-medium">{{ $t("common.labels") }}</div>
           <div class="text-main flex flex-row justify-end flex-wrap gap-1">
             <div
@@ -72,8 +80,8 @@ import {
   InstanceV1Name,
   ProjectV1Name,
 } from "@/components/v2";
-import { useSQLEditorTreeStore } from "@/store";
 import { ComposedDatabase } from "@/types";
+import { customTheme } from "@/utils/customTheme";
 import { useHoverStateContext } from "./hover-state";
 
 const props = defineProps<{
@@ -86,7 +94,6 @@ const emit = defineEmits<{
   (event: "click-outside", e: MouseEvent): void;
 }>();
 
-const treeStore = useSQLEditorTreeStore();
 const { node, update } = useHoverStateContext();
 
 const popoverRef = ref<HTMLDivElement>();
@@ -98,8 +105,16 @@ const show = computed(
   () => props.database !== undefined && props.x !== 0 && props.y !== 0
 );
 
-const hasProjectContext = computed(() => {
-  return treeStore.selectedProject;
+const showDatabaseProject = computed(() => {
+  return customTheme.value !== "lixiang";
+});
+
+const showDatabaseUnitLabel = computed(() => {
+  return customTheme.value === "lixiang" && props.database?.labels["unit_name"];
+});
+
+const showDatabaseLabels = computed(() => {
+  return customTheme.value !== "lixiang";
 });
 
 useEventListener(popoverRef, "mouseenter", () => {

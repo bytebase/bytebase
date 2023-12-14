@@ -115,6 +115,7 @@ import {
   useTabStore,
 } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
+import { customTheme } from "@/utils/customTheme";
 
 interface LocalState {
   databaseNameSearch: string;
@@ -165,7 +166,7 @@ const filteredDatabaseList = computed(() => {
 });
 
 const dataTableColumns = computed(() => {
-  return [
+  const columns = [
     {
       type: "selection",
     },
@@ -215,10 +216,21 @@ const dataTableColumns = computed(() => {
       },
     },
     {
+      title: t("common.unit"),
+      key: "unit",
+      resizable: true,
+      width: 100,
+      hide: customTheme.value !== "lixiang",
+      render(row: ComposedDatabase) {
+        return row.labels["unit_name"];
+      },
+    },
+    {
       title: t("common.labels"),
       key: "labels",
       resizable: true,
       width: 100,
+      hide: customTheme.value === "lixiang",
       render(row: ComposedDatabase) {
         return h(LabelsColumn, {
           labels: row.labels,
@@ -228,6 +240,8 @@ const dataTableColumns = computed(() => {
       },
     },
   ];
+
+  return columns.filter((column) => !column.hide);
 });
 
 const handleDatabaseRowCheck = (keys: DataTableRowKey[]) => {

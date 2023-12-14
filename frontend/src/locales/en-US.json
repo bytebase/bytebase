@@ -278,7 +278,8 @@
     "show-all": "Show all",
     "view-details": "View details",
     "force-verb": "Force {verb}",
-    "nothing-changed": "Nothing changed"
+    "nothing-changed": "Nothing changed",
+    "unit": "Unit"
   },
   "error-page": {
     "go-back-home": "Go back home"
