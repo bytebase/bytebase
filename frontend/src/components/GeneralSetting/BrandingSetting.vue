@@ -81,9 +81,9 @@
       <div class="flex justify-end gap-x-3">
         <NPopconfirm v-if="allowDelete" @positive-click="deleteLogo">
           <template #trigger>
-            <button type="button" class="btn-normal" :disabled="!allowEdit">
+            <NButton :disabled="!allowEdit">
               {{ $t("common.delete") }}
-            </button>
+            </NButton>
           </template>
           <template #default>
             {{ t("settings.general.workspace.confirm-delete-custom-logo") }}
@@ -116,14 +116,13 @@ import { NPopconfirm } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 interface LocalState {
   displayName?: string;
   logoUrl?: string;
   logoFile: File | null;
-  loading: boolean;
   showFeatureModal: boolean;
 }
 
@@ -139,19 +138,29 @@ const convertFileToBase64 = (file: File) =>
     reader.onerror = (error) => reject(error);
   });
 
-const settingV1Store = useSettingV1Store();
+const settingStore = useSettingSWRStore();
+const brandingLogoSetting = settingStore.useSettingByName(
+  "bb.branding.logo",
+  /* silent */ true
+);
+const updateBrandingLogoSetting =
+  settingStore.useUpdateSettingByName("bb.branding.logo");
+const loading = brandingLogoSetting.isLoading;
+const updating = updateBrandingLogoSetting.isLoading;
 const { t } = useI18n();
 
 const state = reactive<LocalState>({
   displayName: "",
   logoUrl: "",
   logoFile: null,
-  loading: false,
   showFeatureModal: false,
 });
 
+const brandingLogoStringValue = computed(() => {
+  return brandingLogoSetting.data.value?.value?.stringValue;
+});
 watchEffect(() => {
-  state.logoUrl = settingV1Store.brandingLogo;
+  state.logoUrl = brandingLogoStringValue.value;
 });
 
 const currentUserV1 = useCurrentUserV1();
@@ -169,41 +178,38 @@ const valid = computed((): boolean => {
 
 const allowDelete = computed(() => {
   if (!allowEdit.value) return false;
-  return settingV1Store.brandingLogo !== "";
+  return !!brandingLogoStringValue.value;
 });
 const allowSave = computed((): boolean => {
   return (
-    allowEdit.value && state.logoFile !== null && valid.value && !state.loading
+    allowEdit.value &&
+    state.logoFile !== null &&
+    valid.value &&
+    !loading.value &&
+    !updating.value
   );
 });
 
 const hasBrandingFeature = featureToRef("bb.feature.branding");
 
 const doUpdate = async (content: string, message: string) => {
-  state.loading = true;
-  try {
-    const setting = await settingV1Store.upsertSetting({
-      name: "bb.branding.logo",
-      value: {
-        stringValue: content,
-      },
-    });
+  const updatedValue = await updateBrandingLogoSetting.mutateAsync({
+    value: {
+      stringValue: content,
+    },
+    validateOnly: false,
+  });
 
-    state.logoFile = null;
-    state.logoUrl = setting.value?.stringValue;
+  state.logoFile = null;
+  state.logoUrl = updatedValue?.stringValue;
 
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: message,
-    });
-  } finally {
-    state.loading = false;
-  }
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: message,
+  });
 };
 const deleteLogo = async () => {
-  state.loading = true;
-
   await doUpdate("", t("common.deleted"));
 };
 
@@ -219,7 +225,6 @@ const uploadLogo = async () => {
     return;
   }
 
-  state.loading = true;
   const fileInBase64 = await convertFileToBase64(state.logoFile);
 
   await doUpdate(

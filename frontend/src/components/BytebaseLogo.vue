@@ -17,7 +17,7 @@
       <img
         v-else
         class="h-8 md:h-10 w-auto"
-        src="../assets/logo-full.svg"
+        src="@/assets/logo-full.svg"
         alt="Bytebase"
       />
     </router-link>
@@ -26,9 +26,14 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 
-const customBrandingLogo = computed((): string | undefined => {
-  return useSettingV1Store().brandingLogo;
+const brandingLogoSetting = useSettingSWRStore().useSettingByName(
+  "bb.branding.logo",
+  /* silent */ true
+);
+
+const customBrandingLogo = computed(() => {
+  return brandingLogoSetting.data.value?.value?.stringValue;
 });
 </script>
