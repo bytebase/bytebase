@@ -38,8 +38,7 @@ type FindBranchMessage struct {
 	ProjectID  *string
 	ResourceID *string
 	UID        *int
-	// TODO(d): handle LoadFull.
-	LoadFull bool
+	LoadFull   bool
 }
 
 // UpdateBranchMessage is the message to update a branch.
@@ -94,7 +93,7 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		SELECT
 			branch.id,
 			branch.creator_id,
@@ -111,7 +110,28 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 			branch.config
 		FROM branch
 		LEFT JOIN project ON branch.project_id = project.id
-		WHERE %s`, strings.Join(where, " AND ")),
+		WHERE %s`, strings.Join(where, " AND "))
+	if !find.LoadFull {
+		query = fmt.Sprintf(`
+		SELECT
+			branch.id,
+			branch.creator_id,
+			branch.created_ts,
+			branch.updater_id,
+			branch.updated_ts,
+			project.resource_id AS project_id,
+			branch.name,
+			branch.engine,
+			'{}',
+			'{}',
+			'',
+			'',
+			branch.config
+		FROM branch
+		LEFT JOIN project ON branch.project_id = project.id
+		WHERE %s`, strings.Join(where, " AND "))
+	}
+	rows, err := tx.QueryContext(ctx, query,
 		args...,
 	)
 	if err != nil {
