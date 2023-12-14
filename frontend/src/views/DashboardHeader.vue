@@ -50,7 +50,7 @@
       <a
         href="/sql-editor"
         target="_blank"
-        class="flex items-center text-sm gap-x-1 rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover py-0.5 px-1"
+        class="flex items-center text-sm gap-x-1 rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover py-0.5 px-2"
       >
         <heroicons-outline:terminal class="w-6 h-6" />
         <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
