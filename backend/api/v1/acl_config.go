@@ -148,6 +148,11 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesUpdate,
 	v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName:   iam.PermissionInstanceRolesDelete,
 	v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName: iam.PermissionInstanceRolesUndelete,
+
+	v1pb.RolloutService_ListPlans_FullMethodName:  iam.PermissionPlansList,
+	v1pb.RolloutService_GetPlan_FullMethodName:    iam.PermissionPlansGet,
+	v1pb.RolloutService_CreatePlan_FullMethodName: iam.PermissionPlansCreate,
+	v1pb.RolloutService_UpdatePlan_FullMethodName: iam.PermissionPlansUpdate,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

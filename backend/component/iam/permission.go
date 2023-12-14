@@ -75,4 +75,9 @@ const (
 	PermissionInstanceRolesUpdate   Permission = "bb.instanceRoles.update"
 	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
 	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
+
+	PermissionPlansList   Permission = "bb.plans.list"
+	PermissionPlansGet    Permission = "bb.plans.get"
+	PermissionPlansCreate Permission = "bb.plans.create"
+	PermissionPlansUpdate Permission = "bb.plans.update"
 )

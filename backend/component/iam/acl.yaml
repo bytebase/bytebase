@@ -58,6 +58,10 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -117,6 +121,10 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
