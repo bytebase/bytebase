@@ -25,7 +25,6 @@
         "title": "Syntax error",
         "content": "syntax error at or near \"user\"",
         "sqlReviewReport": {
-          "line": 1,
           "code": 201
         }
       }

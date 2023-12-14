@@ -264,6 +264,15 @@ func GetRiskID(name string) (int64, error) {
 	return riskID, nil
 }
 
+// GetProjectIDIssueID returns the project ID and issue ID from the issue name.
+func GetProjectIDIssueID(name string) (string, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)
+	if err != nil {
+		return "", "", err
+	}
+	return tokens[0], tokens[1], nil
+}
+
 // GetIssueID returns the issue ID from a resource name.
 func GetIssueID(name string) (int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssuePrefix)

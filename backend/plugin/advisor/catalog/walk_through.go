@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	mysqlparser "github.com/bytebase/mysql-parser"
-
 	tidbparser "github.com/pingcap/tidb/pkg/parser"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
@@ -13,7 +11,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 
-	mysqlbbparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbbbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -42,6 +40,8 @@ const (
 	ErrorTypeParseError WalkThroughErrorType = 101
 	// ErrorTypeDeparseError is the error in deparsing.
 	ErrorTypeDeparseError WalkThroughErrorType = 102
+	// ErrorTypeSetLineError is the error in setting line for statement.
+	ErrorTypeSetLineError WalkThroughErrorType = 103
 
 	// 201 ~ 299 database error type.
 
@@ -139,6 +139,14 @@ type WalkThroughError struct {
 func NewParseError(content string) *WalkThroughError {
 	return &WalkThroughError{
 		Type:    ErrorTypeParseError,
+		Content: content,
+	}
+}
+
+// NewSetLineError returns a new ErrorTypeParseError.
+func NewSetLineError(content string) *WalkThroughError {
+	return &WalkThroughError{
+		Type:    ErrorTypeSetLineError,
 		Content: content,
 	}
 }
@@ -1354,44 +1362,31 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	treeList, err := mysqlbbparser.ParseMySQL(statement)
+	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
-		return nil, NewParseError(err.Error())
-	}
-	if len(treeList) == 0 {
-		return nil, nil
+		return nil, NewSetLineError(err.Error())
 	}
 
 	var returnNodes []tidbast.StmtNode
-	for _, item := range treeList {
-		tree := item.Tree
-		tokens := item.Tokens
+	for _, item := range list {
+		nodes, _, err := p.Parse(item.Text, "", "")
+		if err != nil {
+			return nil, NewSetLineError(err.Error())
+		}
 
-		for _, child := range tree.GetChildren() {
-			if child == nil {
-				continue
-			}
+		if len(nodes) != 1 {
+			continue
+		}
 
-			if query, ok := child.(mysqlparser.IQueryContext); ok {
-				text := tokens.GetTextFromRuleContext(query)
-				lastLine := query.GetStop().GetLine() + item.BaseLine
-
-				if nodes, _, err := p.Parse(text, "", ""); err == nil {
-					if len(nodes) != 1 {
-						continue
-					}
-					node := nodes[0]
-					node.SetText(nil, text)
-					node.SetOriginTextPosition(lastLine)
-					if n, ok := node.(*tidbast.CreateTableStmt); ok {
-						if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
-							return nil, NewParseError(err.Error())
-						}
-					}
-					returnNodes = append(returnNodes, node)
-				}
+		node := nodes[0]
+		node.SetText(nil, item.Text)
+		node.SetOriginTextPosition(item.LastLine)
+		if n, ok := node.(*tidbast.CreateTableStmt); ok {
+			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
+				return nil, NewSetLineError(err.Error())
 			}
 		}
+		returnNodes = append(returnNodes, node)
 	}
 
 	return returnNodes, nil

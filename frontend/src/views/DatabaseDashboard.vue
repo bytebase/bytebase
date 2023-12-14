@@ -1,19 +1,21 @@
 <template>
   <div class="flex flex-col relative space-y-4">
-    <AdvancedSearchBox
-      v-model:params="state.params"
-      class="px-4"
-      :autofocus="false"
-      :placeholder="$t('database.filter-database')"
-      :support-option-id-list="supportOptionIdList"
-    />
+    <div
+      class="w-full px-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
+    >
+      <AdvancedSearchBox
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('database.filter-database')"
+        :support-option-id-list="supportOptionIdList"
+      />
+      <DatabaseLabelFilter
+        v-model:selected="state.selectedLabels"
+        :database-list="databaseV1List"
+      />
+    </div>
 
-    <DatabaseOperations
-      v-if="selectedDatabases.length > 0 || isStandaloneMode"
-      class="mb-3"
-      :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
-    />
+    <DatabaseOperations class="mb-3" :databases="selectedDatabases" />
 
     <DatabaseV1Table
       pagination-class="mb-4"
@@ -94,12 +96,14 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import {
+  SearchScopeId,
   SearchParams,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
   CommonFilterScopeIdList,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {
@@ -107,6 +111,7 @@ interface LocalState {
   loading: boolean;
   selectedDatabaseIds: Set<string>;
   params: SearchParams;
+  selectedLabels: { key: string; value: string }[];
 }
 
 const uiStateStore = useUIStateStore();
@@ -121,6 +126,7 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
+  selectedLabels: [],
 });
 
 const currentUserV1 = useCurrentUserV1();
@@ -151,6 +157,20 @@ const selectedInstance = computed(() => {
 const selectedEnvironment = computed(() => {
   return (
     state.params.scopes.find((scope) => scope.id === "environment")?.value ??
+    `${UNKNOWN_ID}`
+  );
+});
+
+const selectedProjectAssigned = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "project-assigned")
+      ?.value ?? `${UNKNOWN_ID}`
+  );
+});
+
+const selectedProject = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "project")?.value ??
     `${UNKNOWN_ID}`
   );
 });
@@ -209,12 +229,31 @@ const filteredDatabaseList = computed(() => {
         selectedEnvironment.value
     );
   }
+  if (selectedProjectAssigned.value !== `${UNKNOWN_ID}`) {
+    list = list.filter((db) => {
+      if (selectedProjectAssigned.value == "yes") {
+        return db.project !== DEFAULT_PROJECT_V1_NAME;
+      } else {
+        return db.project === DEFAULT_PROJECT_V1_NAME;
+      }
+    });
+  }
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (db) =>
         extractInstanceResourceName(db.instanceEntity.name) ===
         selectedInstance.value
     );
+  }
+  if (selectedProject.value !== `${UNKNOWN_ID}`) {
+    list = list.filter(
+      (db) => extractProjectResourceName(db.project) === selectedProject.value
+    );
+  }
+  if (state.selectedLabels.length > 0) {
+    list = list.filter((db) => {
+      return state.selectedLabels.some((kv) => db.labels[kv.key] === kv.value);
+    });
   }
   if (isStandaloneMode.value) {
     list = list.filter(
@@ -304,5 +343,9 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
   );
 });
 
-const supportOptionIdList = computed(() => [...CommonFilterScopeIdList]);
+const supportOptionIdList = computed((): SearchScopeId[] => [
+  ...CommonFilterScopeIdList,
+  "project",
+  "project-assigned",
+]);
 </script>

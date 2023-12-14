@@ -4,7 +4,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE t(id INT PRIMARY KEY)
   want:
@@ -13,6 +14,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(id VARCHAR(5), PRIMARY KEY(id))
   want:
@@ -20,7 +22,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5), PRIMARY KEY(id, id2, id3))
   want:
@@ -28,13 +31,15 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE t(id INT, id2 BIGINT, PRIMARY KEY(id, id2))
   want:
@@ -43,6 +48,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(id INT, PRIMARY KEY(id))
   want:
@@ -51,6 +57,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -60,7 +67,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -71,6 +79,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -80,7 +89,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -90,13 +100,15 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -107,6 +119,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -117,6 +130,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id VARCHAR(5));
@@ -126,7 +140,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 VARCHAR(5), id3 VARCHAR(5));
@@ -136,13 +151,15 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id3` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id INT, id2 BIGINT);
@@ -153,6 +170,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id BIGINT);
@@ -163,6 +181,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -172,7 +191,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -183,6 +203,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -192,7 +213,8 @@
       code: 803
       title: index.pk-type-limit
       content: Columns in primary key must be INT/BIGINT but `t`.`id2` is varchar(5)
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(id int);
@@ -203,4 +225,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""

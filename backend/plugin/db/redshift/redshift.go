@@ -240,7 +240,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 		defer tx.Rollback()
 
-		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
+		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
 			return 0, err
 		}
@@ -351,6 +351,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

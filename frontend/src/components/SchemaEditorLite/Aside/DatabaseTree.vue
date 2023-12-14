@@ -97,6 +97,7 @@ import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
+import { engineHasSchema } from "../engine-specs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -225,15 +226,15 @@ const contextMenuOptions = computed(() => {
   const { engine } = treeNode.instance;
   if (treeNode.type === "database") {
     const options: DropdownOption[] = [];
-    if (engine === Engine.MYSQL) {
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-      });
-    } else if (engine === Engine.POSTGRES) {
+    if (engineHasSchema(engine)) {
       options.push({
         key: "create-schema",
         label: t("schema-editor.actions.create-schema"),
+      });
+    } else {
+      options.push({
+        key: "create-table",
+        label: t("schema-editor.actions.create-table"),
       });
     }
     return options;
@@ -637,9 +638,9 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   const treeNode = contextMenu.treeNode;
   if (!treeNode) return;
   if (treeNode.type === "database") {
+    const engine = treeNode.instance.engine;
     if (key === "create-table") {
-      const engine = treeNode.instance.engine;
-      if (engine === Engine.MYSQL) {
+      if (!engineHasSchema(engine)) {
         const schema = head(treeNode.metadata.database.schemas);
         if (!schema) {
           return;
@@ -652,11 +653,13 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         };
       }
     } else if (key === "create-schema") {
-      state.schemaNameModalContext = {
-        db: treeNode.database,
-        database: treeNode.metadata.database,
-        schema: undefined,
-      };
+      if (engineHasSchema(engine)) {
+        state.schemaNameModalContext = {
+          db: treeNode.database,
+          database: treeNode.metadata.database,
+          schema: undefined,
+        };
+      }
     }
   } else if (treeNode.type === "schema") {
     if (key === "create-table") {

@@ -229,7 +229,7 @@ type CreateSheetRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource where this sheet will be created.
-	// Foramt: projects/{project}
+	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The sheet to create.
 	Sheet *Sheet `protobuf:"bytes,2,opt,name=sheet,proto3" json:"sheet,omitempty"`
@@ -592,7 +592,7 @@ type SearchSheetsRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource of the sheet.
-	// Foramt: projects/{project}
+	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	// Format: only support the following spec for now:

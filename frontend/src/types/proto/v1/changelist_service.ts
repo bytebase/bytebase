@@ -10,7 +10,7 @@ export const protobufPackage = "bytebase.v1";
 export interface CreateChangelistRequest {
   /**
    * The parent resource where this changelist will be created.
-   * Foramt: projects/{project}
+   * Format: projects/{project}
    */
   parent: string;
   /** The changelist to create. */

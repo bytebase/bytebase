@@ -83,3 +83,13 @@ func (*ParseErrorListener) ReportAttemptingFullContext(recognizer antlr.Parser, 
 func (*ParseErrorListener) ReportContextSensitivity(recognizer antlr.Parser, dfa *antlr.DFA, startIndex, stopIndex, prediction int, configs *antlr.ATNConfigSet) {
 	antlr.ConsoleErrorListenerINSTANCE.ReportContextSensitivity(recognizer, dfa, startIndex, stopIndex, prediction, configs)
 }
+
+func FilterEmptySQL(list []SingleSQL) []SingleSQL {
+	var result []SingleSQL
+	for _, sql := range list {
+		if !sql.Empty {
+			result = append(result, sql)
+		}
+	}
+	return result
+}

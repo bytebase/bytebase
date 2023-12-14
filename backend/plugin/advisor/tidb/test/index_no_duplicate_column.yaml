@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t (
@@ -15,7 +16,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      line: 2
+      line: 3
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -25,7 +27,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -35,7 +38,8 @@
       code: 812
       title: index.no-duplicate-column
       content: INDEX `idx_a` has duplicate column `t`.`a`
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -45,7 +49,8 @@
       code: 812
       title: index.no-duplicate-column
       content: PRIMARY KEY `pk_a` has duplicate column `t`.`a`
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -55,7 +60,8 @@
       code: 812
       title: index.no-duplicate-column
       content: UNIQUE KEY `uk_a` has duplicate column `t`.`a`
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -65,5 +71,6 @@
       code: 812
       title: index.no-duplicate-column
       content: FOREIGN KEY `fk_a` has duplicate column `t`.`a`
-      line: 1
+      line: 2
+      column: 0
       details: ""

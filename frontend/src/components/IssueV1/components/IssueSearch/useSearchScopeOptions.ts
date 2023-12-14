@@ -270,6 +270,31 @@ export const useSearchScopeOptions = (
           },
         ],
       },
+      {
+        id: "project-assigned",
+        title: t("issue.advanced-search.scope.project-assigned.title"),
+        description: t(
+          "issue.advanced-search.scope.project-assigned.description"
+        ),
+        options: [
+          {
+            value: "yes",
+            keywords: ["yes"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.project-assigned.value.yes")
+              ),
+          },
+          {
+            value: "no",
+            keywords: ["no"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.project-assigned.value.no")
+              ),
+          },
+        ],
+      },
     ];
     const supportOptionIdSet = new Set(supportOptionIdList);
     return scopes.filter((scope) => supportOptionIdSet.has(scope.id));

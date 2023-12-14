@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -153,11 +154,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 		}
 		return "", "", util.FormatErrorWithQuery(err, query)
 	}
-	pos := strings.Index(version, "-")
-	if pos == -1 {
-		return version, "", nil
+
+	return parseVersion(version)
+}
+
+func parseVersion(version string) (string, string, error) {
+	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
+		return version[loc[0]:loc[1]], version[loc[1]:], nil
 	}
-	return version[:pos], version[pos:], nil
+	return "", "", errors.Errorf("failed to parse version %q", version)
 }
 
 // Execute executes a SQL statement.
@@ -166,11 +171,21 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to deal with delimiter")
 	}
+
+	if driver.dbType == storepb.Engine_TIDB {
+		return driver.TiDBExecute(ctx, statement, false, opts)
+	}
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, err
 	}
 	defer conn.Close()
+
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return 0, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
 	if opts.BeginFunc != nil {
 		if err := opts.BeginFunc(ctx, conn); err != nil {
@@ -185,7 +200,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to split sql")
 		}
-		list = filterEmptySQL(list)
+		list = base.FilterEmptySQL(list)
 		if len(list) == 0 {
 			return 0, nil
 		}
@@ -242,6 +257,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 
 		sqlResult, err := tx.ExecContext(ctx, chunkText)
 		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := driver.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+			}
+
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
@@ -270,13 +292,43 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	return totalRowsAffected, nil
 }
 
+func (driver *Driver) TiDBExecute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer conn.Close()
+
+	if opts.BeginFunc != nil {
+		if err := opts.BeginFunc(ctx, conn); err != nil {
+			return 0, err
+		}
+	}
+	sqlResult, err := conn.ExecContext(ctx, statement)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
+	}
+	totalRowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
+	}
+
+	return totalRowsAffected, nil
+}
+
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = filterEmptySQL(singleSQLs)
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
@@ -288,12 +340,33 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
 			})
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := driver.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+				break
+			}
 		} else {
 			results = append(results, result)
 		}
 	}
 
 	return results, nil
+}
+
+func (driver *Driver) StopConnectionByID(id string) error {
+	// We cannot use placeholder parameter because TiDB doesn't accept it.
+	_, err := driver.db.Exec(fmt.Sprintf("KILL QUERY %s", id))
+	return err
+}
+
+func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
+	var id string
+	if err := conn.QueryRowContext(ctx, `SELECT CONNECTION_ID();`).Scan(&id); err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
@@ -341,14 +414,4 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
-}
-
-func filterEmptySQL(list []base.SingleSQL) []base.SingleSQL {
-	var result []base.SingleSQL
-	for _, sql := range list {
-		if !sql.Empty {
-			result = append(result, sql)
-		}
-	}
-	return result
 }

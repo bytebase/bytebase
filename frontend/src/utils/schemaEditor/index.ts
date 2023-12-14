@@ -8,12 +8,21 @@ export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   });
 };
 
+export const engineSupportsSchemaEditor = (engine: Engine) => {
+  if ([Engine.MYSQL, Engine.TIDB].includes(engine)) {
+    return true;
+  }
+  if ([Engine.POSTGRES].includes(engine)) {
+    return true;
+  }
+  return false;
+};
+
 export const allowUsingSchemaEditorV1 = (
   databaseList: ComposedDatabase[]
 ): boolean => {
-  const supported = new Set([Engine.MYSQL, Engine.POSTGRES]);
   return databaseList.every((db) => {
-    return supported.has(db.instanceEntity.engine);
+    return engineSupportsSchemaEditor(db.instanceEntity.engine);
   });
 };
 
@@ -62,9 +71,11 @@ export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
     ];
   } else if (engine === Engine.POSTGRES) {
     return [
+      "bigint",
       "bigserial",
       "bit",
       "bool",
+      "boolean",
       "box",
       "bytea",
       "char",
@@ -73,12 +84,14 @@ export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
       "circle",
       "date",
       "decimal",
+      "double precision",
       "float4",
       "float8",
       "inet",
       "int2",
       "int4",
       "int8",
+      "integer",
       "interval",
       "json",
       "jsonb",
@@ -90,10 +103,12 @@ export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
       "path",
       "point",
       "polygon",
+      "real",
       "serial",
       "serial2",
       "serial4",
       "serial8",
+      "smallint",
       "smallserial",
       "text",
       "time",
@@ -102,7 +117,7 @@ export const getDataTypeSuggestionList = (engine: Engine = Engine.MYSQL) => {
       "timetz",
       "tsquery",
       "tsvector",
-      "txid_snaps",
+      "txid_snapshot",
       "uuid",
       "varbit",
       "varchar",

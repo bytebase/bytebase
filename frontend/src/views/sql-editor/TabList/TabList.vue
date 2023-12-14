@@ -132,7 +132,7 @@ const handleRemoveTab = async (
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
       content: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.content"),
-      type: "info",
+      type: "warning",
       autoFocus: false,
       closable: false,
       maskClosable: false,

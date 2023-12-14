@@ -172,6 +172,7 @@
     "agents": "Agentes",
     "billings": "Facturación",
     "all": "Todos",
+    "recent": "Reciente",
     "deployment-config": "Configuración de Despliegue",
     "by": "por",
     "ok": "OK",
@@ -666,8 +667,8 @@
         },
         "confirm-delete-custom-logo": "¿Eliminar el logotipo de marca personalizado?",
         "restrict-issue-creation-for-sql-review": {
-          "title": "Restringir la creación de incidencias para la revisión de SQL",
-          "description": "Cuando está habilitado, solo los usuarios con el rol de DBA pueden crear incidencias para la revisión de SQL."
+          "title": "Prohibir la creación de problemas para la revisión de SQL con errores.",
+          "description": "Una vez habilitado, a los usuarios solo se les permite crear problemas si la revisión de SQL no contiene errores."
         }
       }
     },
@@ -1016,6 +1017,14 @@
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
+        },
+        "project-assigned": {
+          "title": "Proyecto asignado",
+          "description": "Buscar en las bases de datos con proyecto asignado",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Ocultar búsqueda avanzada"
@@ -1156,7 +1165,9 @@
       "project-owners": "Propietarios del proyecto",
       "releasers-of-current-stage": "Liberadores de la etapa actual.",
       "approvers-of-current-step": "Aprobadores del paso actual"
-    }
+    },
+    "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1501,6 +1512,9 @@
     "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
+    "unassign": "Desasignar",
+    "unassign-alert-title": "Desasignar bases de datos",
+    "unassign-alert-description": "Las bases de datos seleccionadas se transferirán desde su proyecto.",
     "edit-schema": "Modificar esquema",
     "edit-schema-in-vcs": "Modificar esquema en VCS",
     "edit-labels": "Editar etiquetas",
@@ -1516,7 +1530,11 @@
     "select-branch": "Seleccione una rama",
     "delete-this-branch": "Eliminar esta rama",
     "table-detail": "Detalle de la tabla",
+    "batch-action-not-support-alter-schema": "Algunas bases de datos no admiten la modificación del esquema",
+    "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
+    "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
+    "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1691,8 +1709,10 @@
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
       },
+      "select-databases": "Seleccionar bases de datos",
       "select-target-project": "Seleccionar proyecto de destino"
     },
+    "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación"
@@ -1958,7 +1978,7 @@
       "batch": "Modo Lote"
     },
     "db-name-template": "Plantilla de nombre de base de datos del inquilino",
-    "select": "Seleccionar proyecto",
+    "select": "Seleccionar Proyecto",
     "lgtm-check": {
       "self": "Revisión de LGTM",
       "disabled": "Omitir revisión de LGTM",
@@ -2136,7 +2156,9 @@
       "tunnel": "@:{'data-source.ssh.tunnel'}",
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
       "none": "Ninguno"
-    }
+    },
+    "admin": "Admin",
+    "read-only": "Solo lectura"
   },
   "setting": {
     "project": {

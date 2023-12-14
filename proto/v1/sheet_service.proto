@@ -55,7 +55,7 @@ service SheetService {
 
 message CreateSheetRequest {
   // The parent resource where this sheet will be created.
-  // Foramt: projects/{project}
+  // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // The sheet to create.
@@ -124,7 +124,7 @@ message DeleteSheetRequest {
 
 message SearchSheetsRequest {
   // The parent resource of the sheet.
-  // Foramt: projects/{project}
+  // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // To filter the search result.

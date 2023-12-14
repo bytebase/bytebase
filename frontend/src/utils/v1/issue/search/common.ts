@@ -8,6 +8,8 @@ export const UIIssueFilterScopeIdList = [
   "releaser",
 ] as const;
 type UIIssueFilterScopeId = typeof UIIssueFilterScopeIdList[number];
+export const DatabaseFilterScopeIdList = ["project-assigned"] as const;
+type DatabaseFilterScopeId = typeof DatabaseFilterScopeIdList[number];
 
 export const CommonFilterScopeIdList = ["environment", "instance"] as const;
 type CommonFilterScopeId = typeof CommonFilterScopeIdList[number];
@@ -27,6 +29,7 @@ export const SearchScopeIdList = [
 export type SearchScopeId =
   | typeof SearchScopeIdList[number]
   | UIIssueFilterScopeId
+  | DatabaseFilterScopeId
   | CommonFilterScopeId;
 
 export type SearchScope = {

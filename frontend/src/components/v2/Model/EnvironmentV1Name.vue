@@ -3,7 +3,7 @@
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="link && !plain && 'normal-link'"
+    :class="[link && !plain && 'normal-link', link && 'hover:underline']"
   >
     <span class="line-clamp-1" :class="textClass">
       {{ environmentV1Name(environment) }}

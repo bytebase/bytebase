@@ -12,7 +12,13 @@ import {
   unknownDatabase,
   UNKNOWN_ID,
 } from "@/types";
-import { Plan, Task, Task_Type } from "@/types/proto/v1/rollout_service";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
+import {
+  Plan,
+  Task,
+  Task_Status,
+  Task_Type,
+} from "@/types/proto/v1/rollout_service";
 import {
   defer,
   extractDatabaseResourceName,
@@ -230,4 +236,19 @@ export const chooseUpdateTarget = (
   });
 
   return d.promise;
+};
+
+export const isUnfinishedResolvedTask = (issue: ComposedIssue | undefined) => {
+  if (!issue) {
+    return false;
+  }
+  if (issue.uid.startsWith("-")) {
+    return false;
+  }
+  if (issue.status !== IssueStatus.DONE) {
+    return false;
+  }
+  return flattenTaskV1List(issue.rolloutEntity).some((task) => {
+    return ![Task_Status.DONE, Task_Status.SKIPPED].includes(task.status);
+  });
 };

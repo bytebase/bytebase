@@ -30,7 +30,7 @@ type CreateChangelistRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent resource where this changelist will be created.
-	// Foramt: projects/{project}
+	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The changelist to create.
 	Changelist *Changelist `protobuf:"bytes,2,opt,name=changelist,proto3" json:"changelist,omitempty"`

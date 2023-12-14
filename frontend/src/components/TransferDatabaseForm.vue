@@ -1,33 +1,66 @@
 <template>
-  <TransferMultipleDatabaseForm
-    :target-project="project"
-    :transfer-source="state.transferSource"
-    :database-list="filteredDatabaseList"
-    @dismiss="$emit('dismiss')"
-    @submit="(databaseList) => transferDatabase(databaseList)"
-  >
-    <template #transfer-source-selector>
-      <TransferSourceSelector
-        :project="project"
-        :raw-database-list="rawDatabaseList"
-        :transfer-source="state.transferSource"
-        :instance-filter="state.instanceFilter"
-        :project-filter="state.projectFilter"
-        :search-text="state.searchText"
-        @change="state.transferSource = $event"
-        @select-instance="state.instanceFilter = $event"
-        @select-project="state.projectFilter = $event"
-        @search-text-change="state.searchText = $event"
-      />
-    </template>
-  </TransferMultipleDatabaseForm>
+  <DrawerContent :title="$t('quick-action.transfer-in-db-title')">
+    <div
+      class="px-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]"
+    >
+      <div
+        v-if="state.loading"
+        class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+      >
+        <BBSpin />
+      </div>
+      <div v-else class="space-y-4">
+        <TransferSourceSelector
+          :project="project"
+          :raw-database-list="rawDatabaseList"
+          :transfer-source="state.transferSource"
+          :instance-filter="state.instanceFilter"
+          :project-filter="state.projectFilter"
+          :search-text="state.searchText"
+          @change="state.transferSource = $event"
+          @select-instance="state.instanceFilter = $event"
+          @select-project="state.projectFilter = $event"
+          @search-text-change="state.searchText = $event"
+        />
+        <MultipleDatabaseSelector
+          v-if="filteredDatabaseList.length > 0"
+          v-model:selected-uid-list="state.selectedDatabaseUidList"
+          :transfer-source="state.transferSource"
+          :database-list="filteredDatabaseList"
+        />
+        <NoDataPlaceholder v-else />
+      </div>
+    </div>
 
-  <div
-    v-if="state.loading"
-    class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
-  >
-    <BBSpin />
-  </div>
+    <template #footer>
+      <div class="flex-1 flex items-center justify-between">
+        <div>
+          <div
+            v-if="state.selectedDatabaseUidList.length > 0"
+            class="textinfolabel"
+          >
+            {{
+              $t("database.selected-n-databases", {
+                n: state.selectedDatabaseUidList.length,
+              })
+            }}
+          </div>
+        </div>
+        <div class="flex items-center gap-x-3">
+          <NButton @click.prevent="$emit('dismiss')">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="!allowTransfer"
+            @click.prevent="transferDatabase"
+          >
+            {{ $t("common.transfer") }}
+          </NButton>
+        </div>
+      </div>
+    </template>
+  </DrawerContent>
 </template>
 
 <script lang="ts" setup>
@@ -35,7 +68,7 @@ import { cloneDeep } from "lodash-es";
 import { computed, onBeforeMount, reactive } from "vue";
 import { toRef } from "vue";
 import {
-  TransferMultipleDatabaseForm,
+  MultipleDatabaseSelector,
   TransferSource,
   TransferSourceSelector,
 } from "@/components/TransferDatabaseForm";
@@ -66,6 +99,7 @@ interface LocalState {
   projectFilter: Project | undefined;
   searchText: string;
   loading: boolean;
+  selectedDatabaseUidList: string[];
 }
 
 const props = defineProps({
@@ -89,6 +123,7 @@ const state = reactive<LocalState>({
   projectFilter: undefined,
   searchText: "",
   loading: false,
+  selectedDatabaseUidList: [],
 });
 const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
   "bb.permission.workspace.manage-database"
@@ -158,7 +193,12 @@ const filteredDatabaseList = computed(() => {
   return sortDatabaseV1List(list);
 });
 
-const transferDatabase = async (databaseList: ComposedDatabase[]) => {
+const allowTransfer = computed(() => state.selectedDatabaseUidList.length > 0);
+
+const transferDatabase = async () => {
+  const databaseList = state.selectedDatabaseUidList.map((uid) =>
+    databaseStore.getDatabaseByUID(uid)
+  );
   const transferOneDatabase = async (database: ComposedDatabase) => {
     const targetProject = useProjectV1Store().getProjectByUID(props.projectId);
     const databasePatch = cloneDeep(database);

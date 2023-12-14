@@ -3,8 +3,7 @@ export type EnvironmentQuickActionType =
   | "quickaction.bb.environment.reorder";
 export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
-  | "quickaction.bb.project.database.transfer"
-  | "quickaction.bb.project.database.transfer-out";
+  | "quickaction.bb.project.database.transfer";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
 export type DatabaseQuickActionType =
   | "quickaction.bb.database.create" // Used by DBA and Owner
@@ -14,13 +13,10 @@ export type DatabaseQuickActionType =
 export type IssueQuickActionType =
   | "quickaction.bb.issue.grant.request.querier"
   | "quickaction.bb.issue.grant.request.exporter";
-type SubscriptionQuickActionType =
-  "quickaction.bb.subscription.license-assignment";
 
 export type QuickActionType =
   | EnvironmentQuickActionType
   | ProjectQuickActionType
   | InstanceQuickActionType
   | DatabaseQuickActionType
-  | IssueQuickActionType
-  | SubscriptionQuickActionType;
+  | IssueQuickActionType;

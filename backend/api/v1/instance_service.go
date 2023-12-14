@@ -278,16 +278,6 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
-	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
-		slog.Warn("Failed to sync instance",
-			slog.String("instance", instance.ResourceID),
-			log.BBError(err))
-	}
-	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
-	s.stateCfg.InstanceSyncTickleChan <- 0
-
 	return convertToInstance(ins), nil
 }
 

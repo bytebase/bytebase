@@ -7,17 +7,18 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_b(b));
     ALTER TABLE t DROP COLUMN b
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-in-index"
-      content: "`t`.`b` cannot drop index column"
-      line: 1
+      title: column.disallow-drop-in-index
+      content: '`t`.`b` cannot drop index column'
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int, c int, INDEX idx_ac(a,c));
@@ -25,11 +26,11 @@
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-in-index"
-      content: "`t`.`c` cannot drop index column"
-      line: 1
+      title: column.disallow-drop-in-index
+      content: '`t`.`c` cannot drop index column'
+      line: 2
+      column: 0
       details: ""
-
 - statement: |-
     CREATE TABLE t(a int, b int, INDEX idx_a(a));
     CREATE TABLE y(a int, b int);
@@ -37,11 +38,11 @@
   want:
     - status: SUCCESS
       code: 0
-      title: "OK"
+      title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
-
 - statement: |-
     CREATE TABLE t(a int,b int, c int, INDEX idx_ac(a,c));
     ALTER TABLE t DROP COLUMN a;
@@ -49,13 +50,15 @@
   want:
     - status: WARN
       code: 424
-      title: "column.disallow-drop-in-index"
-      content: "`t`.`a` cannot drop index column"
-      line: 1
+      title: column.disallow-drop-in-index
+      content: '`t`.`a` cannot drop index column'
+      line: 2
+      column: 0
       details: ""
     - status: WARN
       code: 424
-      title: "column.disallow-drop-in-index"
-      content: "`t`.`c` cannot drop index column"
-      line: 2
+      title: column.disallow-drop-in-index
+      content: '`t`.`c` cannot drop index column'
+      line: 3
+      column: 0
       details: ""

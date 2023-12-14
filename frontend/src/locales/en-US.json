@@ -172,6 +172,7 @@
     "agents": "Agents",
     "billings": "Billings",
     "all": "All",
+    "recent": "Recent",
     "deployment-config": "Deployment Config",
     "by": "by",
     "ok": "OK",
@@ -667,8 +668,8 @@
         },
         "confirm-delete-custom-logo": "Delete custom branding logo?",
         "restrict-issue-creation-for-sql-review": {
-          "title": "Restrict issue creation for SQL review",
-          "description": "Once enabled, users can only create issues after SQL review has passed."
+          "title": "Prohibit issue creation for SQL review with errors",
+          "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
         }
       }
     },
@@ -807,7 +808,7 @@
         "export": "Export"
       },
       "classification": {
-        "self": "Data classification",
+        "self": "Data Classification",
         "upload": "Upload classification",
         "upload-succeed": "Upload succeed",
         "search": "Search classification",
@@ -1017,6 +1018,14 @@
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
+        },
+        "project-assigned": {
+          "title": "Project Assigned",
+          "description": "Search by databases that are assigned to a project.",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Hide advanced search"
@@ -1157,7 +1166,9 @@
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
       "approvers-of-current-step": "Approvers of current step"
-    }
+    },
+    "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1502,6 +1513,9 @@
     "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
+    "unassign": "Unassign",
+    "unassign-alert-title": "Unassign databases",
+    "unassign-alert-description": "Selected databases will transfer out from their project",
     "edit-schema": "Edit Schema",
     "edit-schema-in-vcs": "Edit Schema in VCS",
     "edit-labels": "Edit Labels",
@@ -1517,7 +1531,11 @@
     "select-branch": "Select a branch",
     "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
+    "batch-action-not-support-alter-schema": "Some databases don't support altering schema",
+    "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
+    "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
+    "successfully-transferred-databases": "Successfully transferred databases",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
@@ -1692,8 +1710,10 @@
         "select-target-project": "Select target project",
         "select-at-least-one-database": "Select at least one database"
       },
+      "select-databases": "Select databases",
       "select-target-project": "Select target project"
     },
+    "transfer-database-to": "Transfer databases to target project",
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
       "self": "Classification"
@@ -1959,7 +1979,7 @@
       "batch": "Batch Mode"
     },
     "db-name-template": "Tenant Database Name Template",
-    "select": "Select project",
+    "select": "Select Project",
     "lgtm-check": {
       "self": "LGTM check",
       "disabled": "Skip LGTM check",
@@ -2140,7 +2160,9 @@
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
-    "connection-string-schema": "Connection String Schema"
+    "connection-string-schema": "Connection String Schema",
+    "admin": "Admin",
+    "read-only": "RO"
   },
   "setting": {
     "project": {

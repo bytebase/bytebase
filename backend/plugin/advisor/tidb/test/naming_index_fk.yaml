@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT fk_author_id FOREIGN KEY (author_id) REFERENCES author (id)
   want:
@@ -12,7 +13,8 @@
       code: 305
       title: naming.index.fk
       content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `fk_author_id`
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk FOREIGN KEY (author_id) REFERENCES author (id)
   want:
@@ -20,13 +22,15 @@
       code: 305
       title: naming.index.fk
       content: Foreign key `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk` in table `tech_book` mismatches the naming convention, its length should be within 64 characters
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 305
       title: naming.index.fk
       content: Foreign key in table `tech_book` mismatches the naming convention, expect "^$|^fk_tech_book_author_id_author_id$" but found `rvemempmcmmhutaskvcidmwaldtfjdgmcpkhmibtadfydtkexpuzczrrneucthfwk`
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id_author_id (author_id) REFERENCES author (id))
   want:
@@ -35,6 +39,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY (author_id) REFERENCES author (id))
   want:
@@ -43,6 +48,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE book(id INT, author_id INT, FOREIGN KEY fk_book_author_id (author_id) REFERENCES author (id))
   want:
@@ -50,5 +56,6 @@
       code: 305
       title: naming.index.fk
       content: Foreign key in table `book` mismatches the naming convention, expect "^$|^fk_book_author_id_author_id$" but found `fk_book_author_id`
-      line: 0
+      line: 1
+      column: 0
       details: ""

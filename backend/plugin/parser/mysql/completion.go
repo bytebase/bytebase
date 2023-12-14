@@ -197,25 +197,6 @@ func newSynonyms() map[int][]string {
 	}
 }
 
-type TableReference interface {
-	isTableReference()
-}
-
-type PhysicalTableReference struct {
-	Database string
-	Table    string
-	Alias    string
-}
-
-func (*PhysicalTableReference) isTableReference() {}
-
-type VirtualTableReference struct {
-	Table   string
-	Columns []string
-}
-
-func (*VirtualTableReference) isTableReference() {}
-
 type Completer struct {
 	ctx                 context.Context
 	core                *base.CodeCompletionCore
@@ -228,12 +209,12 @@ type Completer struct {
 	noSeparatorRequired map[int]bool
 	// referencesStack is a hierarchical stack of table references.
 	// We'll update the stack when we encounter a new FROM clauses.
-	referencesStack [][]TableReference
+	referencesStack [][]base.TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references []TableReference
-	cteCache   map[int][]*VirtualTableReference
-	cteTables  []*VirtualTableReference
+	references []base.TableReference
+	cteCache   map[int][]*base.VirtualTableReference
+	cteTables  []*base.VirtualTableReference
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
@@ -260,7 +241,7 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 		getMetadata:         metadata,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
-		cteCache:            make(map[int][]*VirtualTableReference),
+		cteCache:            make(map[int][]*base.VirtualTableReference),
 	}
 }
 
@@ -269,7 +250,7 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
 		caretIndex--
 	}
-	c.referencesStack = append([][]TableReference{{}}, c.referencesStack...)
+	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
 	// TODO: we can just skip the head of the caret statement.
 	context := c.parser.Script()
@@ -418,7 +399,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				schemas[database] = true
 			} else if len(c.references) > 0 {
 				for _, reference := range c.references {
-					if physicalTable, ok := reference.(*PhysicalTableReference); ok {
+					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
 						if len(physicalTable.Database) != 0 {
 							schemas[physicalTable.Database] = true
 						}
@@ -439,7 +420,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
-						case *PhysicalTableReference:
+						case *base.PhysicalTableReference:
 							if (len(database) == 0 && len(reference.Database) == 0) || schemas[reference.Database] {
 								if len(reference.Alias) == 0 {
 									tableEntries.Insert(base.Candidate{
@@ -453,7 +434,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 									})
 								}
 							}
-						case *VirtualTableReference:
+						case *base.VirtualTableReference:
 							// User specified a database qualifier, so we don't show virtual tables.
 							if len(database) > 0 {
 								continue
@@ -480,13 +461,13 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
-						case *PhysicalTableReference:
+						case *base.PhysicalTableReference:
 							// Could be an alias
 							if strings.EqualFold(reference.Alias, table) {
 								tables[reference.Table] = true
 								schemas[reference.Database] = true
 							}
-						case *VirtualTableReference:
+						case *base.VirtualTableReference:
 							// Could be a virtual table
 							if strings.EqualFold(reference.Table, table) {
 								for _, column := range reference.Columns {
@@ -508,10 +489,10 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					}
 					for _, reference := range c.references {
 						switch reference := reference.(type) {
-						case *PhysicalTableReference:
+						case *base.PhysicalTableReference:
 							schemas[""] = true
 							tables[reference.Table] = true
-						case *VirtualTableReference:
+						case *base.VirtualTableReference:
 							for _, column := range reference.Columns {
 								columnEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeColumn,
@@ -570,7 +551,7 @@ func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
 	}
 }
 
-func (c *Completer) extractCTETables(pos int) []*VirtualTableReference {
+func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 	if metadata, exists := c.cteCache[pos]; exists {
 		return metadata
 	}
@@ -599,11 +580,11 @@ type CTETableListener struct {
 	*mysql.BaseMySQLParserListener
 
 	context *Completer
-	tables  []*VirtualTableReference
+	tables  []*base.VirtualTableReference
 }
 
 func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpressionContext) {
-	table := &VirtualTableReference{}
+	table := &base.VirtualTableReference{}
 	if ctx.Identifier() != nil {
 		table.Table = unquote(ctx.Identifier().GetText())
 	}
@@ -866,7 +847,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 		if c.scanner.GetTokenType() == mysql.MySQLLexerALTER_SYMBOL {
 			c.scanner.SkipTokenSequence([]int{mysql.MySQLLexerALTER_SYMBOL, mysql.MySQLLexerTABLE_SYMBOL})
 
-			var reference PhysicalTableReference
+			var reference base.PhysicalTableReference
 			reference.Table = unquote(c.scanner.GetTokenText())
 			if c.scanner.Forward(false /* skipHidden */) && c.scanner.IsTokenType(mysql.MySQLLexerDOT_SYMBOL) {
 				reference.Database = reference.Table
@@ -890,7 +871,7 @@ func (c *Completer) collectLeadingTableReferences(caretIndex int, forTableAlter 
 				switch c.scanner.GetTokenType() {
 				case mysql.MySQLLexerOPEN_PAR_SYMBOL:
 					level++
-					c.referencesStack = append([][]TableReference{{}}, c.referencesStack...)
+					c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 				case mysql.MySQLLexerCLOSE_PAR_SYMBOL:
 					if level == 0 {
 						c.scanner.PopAndRestore()
@@ -951,7 +932,7 @@ func (l *TableRefListener) ExitTableRef(ctx *mysql.TableRefContext) {
 	}
 
 	if !l.fromClauseMode || l.level == 0 {
-		reference := &PhysicalTableReference{}
+		reference := &base.PhysicalTableReference{}
 		if ctx.QualifiedIdentifier() != nil {
 			reference.Table = unquote(ctx.QualifiedIdentifier().Identifier().GetText())
 			if ctx.QualifiedIdentifier().DotIdentifier() != nil {
@@ -980,7 +961,7 @@ func (l *TableRefListener) ExitTableAlias(ctx *mysql.TableAliasContext) {
 		}
 
 		// We are in the single table.
-		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*PhysicalTableReference); ok {
+		if physicalTable, ok := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(*base.PhysicalTableReference); ok {
 			physicalTable.Alias = unquote(ctx.Identifier().GetText())
 		}
 	}
@@ -992,7 +973,7 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 	}
 
 	if l.level == 0 && len(l.context.referencesStack) > 0 && ctx.TableAlias() != nil {
-		reference := &VirtualTableReference{
+		reference := &base.VirtualTableReference{
 			Table: unquote(ctx.TableAlias().Identifier().GetText()),
 		}
 
@@ -1028,7 +1009,7 @@ func (l *TableRefListener) EnterSubquery(_ *mysql.SubqueryContext) {
 	if l.fromClauseMode {
 		l.level++
 	} else {
-		l.context.referencesStack = append([][]TableReference{{}}, l.context.referencesStack...)
+		l.context.referencesStack = append([][]base.TableReference{{}}, l.context.referencesStack...)
 	}
 }
 

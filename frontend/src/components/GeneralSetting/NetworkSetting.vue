@@ -123,12 +123,11 @@ const allowSave = computed((): boolean => {
   }
 
   const externalUrlChanged =
-    state.externalUrl !== "" &&
-    state.externalUrl !== settingV1Store.workspaceProfileSetting?.externalUrl;
+    state.externalUrl !==
+    (settingV1Store.workspaceProfileSetting?.externalUrl ?? "");
   const gitopsWebhookUrlChanged =
-    state.gitopsWebhookUrl !== "" &&
     state.gitopsWebhookUrl !==
-      settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl;
+    (settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "");
   return externalUrlChanged || gitopsWebhookUrlChanged;
 });
 

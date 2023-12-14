@@ -144,7 +144,7 @@ message GetBranchRequest {
 
 message ListBranchesRequest {
   // The parent resource of the branch.
-  // Foramt: projects/{project}
+  // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   // To filter the search result.

@@ -1538,7 +1538,7 @@ func (s *IssueService) updateExternalApprovalWithStatus(ctx context.Context, iss
 		}
 	} else {
 		if err := s.relayRunner.RejectExternalApprovalNode(ctx, issue.UID); err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to approve external node, error: %v", err)
+			return nil, status.Errorf(codes.Internal, "failed to reject external node, error: %v", err)
 		}
 	}
 

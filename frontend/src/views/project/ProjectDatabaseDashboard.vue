@@ -2,7 +2,7 @@
   <div v-if="showQuickActionPanel" class="flex-1 pb-4">
     <QuickActionPanel :quick-action-list="quickActionList" />
   </div>
-  <ProjectDatabasesPanel :database-list="databaseV1List" />
+  <ProjectDatabasesPanel :project="project" :database-list="databaseV1List" />
 </template>
 
 <script lang="ts" setup>
@@ -25,6 +25,7 @@ import {
   isOwnerOfProjectV1,
   hasPermissionInProjectV1,
   getQuickActionList,
+  isDatabaseV1Alterable,
 } from "@/utils";
 
 const props = defineProps({
@@ -34,6 +35,7 @@ const props = defineProps({
   },
 });
 
+const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const pageMode = usePageMode();
 
@@ -51,8 +53,13 @@ useSearchDatabaseV1List(
 );
 
 const databaseV1List = computed(() => {
-  const list = useDatabaseV1Store().databaseListByProject(project.value.name);
-  return sortDatabaseV1List(list);
+  let list = useDatabaseV1Store().databaseListByProject(project.value.name);
+  list = sortDatabaseV1List(list);
+  // In standalone mode, only show alterable databases.
+  if (pageMode.value === "STANDALONE") {
+    list = list.filter((db) => isDatabaseV1Alterable(db, currentUser.value));
+  }
+  return list;
 });
 
 const quickActionMapByRole = computed(() => {
@@ -62,7 +69,6 @@ const quickActionMapByRole = computed(() => {
       "quickaction.bb.database.data.update",
       "quickaction.bb.database.create",
       "quickaction.bb.project.database.transfer",
-      "quickaction.bb.project.database.transfer-out",
     ];
     const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
 
@@ -91,8 +97,7 @@ const quickActionMapByRole = computed(() => {
       )
     ) {
       DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.project.database.transfer",
-        "quickaction.bb.project.database.transfer-out"
+        "quickaction.bb.project.database.transfer"
       );
     }
     if (!isOwnerOfProjectV1(project.value.iamPolicy, currentUserV1.value)) {

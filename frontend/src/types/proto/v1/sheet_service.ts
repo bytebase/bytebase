@@ -12,7 +12,7 @@ export const protobufPackage = "bytebase.v1";
 export interface CreateSheetRequest {
   /**
    * The parent resource where this sheet will be created.
-   * Foramt: projects/{project}
+   * Format: projects/{project}
    */
   parent: string;
   /** The sheet to create. */
@@ -95,7 +95,7 @@ export interface DeleteSheetRequest {
 export interface SearchSheetsRequest {
   /**
    * The parent resource of the sheet.
-   * Foramt: projects/{project}
+   * Format: projects/{project}
    */
   parent: string;
   /**
