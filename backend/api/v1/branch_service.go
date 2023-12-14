@@ -18,6 +18,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -810,7 +811,94 @@ func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchema
 	}
 }
 
-func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, targeteMetadata *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseSchemaMetadata) {
-	// TODO(d): reduce the common set between source and target schema.
-	return sourceMetadata, targeteMetadata
+func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, targetMetadata *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseSchemaMetadata) {
+	// TODO(d): handle indexes, etc.
+	sourceModel, targetModel := model.NewDatabaseMetadata(sourceMetadata), model.NewDatabaseMetadata(targetMetadata)
+	s, t := &storepb.DatabaseSchemaMetadata{}, &storepb.DatabaseSchemaMetadata{}
+	for _, schema := range sourceMetadata.GetSchemas() {
+		ts := targetModel.GetSchema(schema.GetName())
+		if ts == nil {
+			s.Schemas = append(s.Schemas, schema)
+			continue
+		}
+		trimSchema := &storepb.SchemaMetadata{Name: schema.GetName()}
+		for _, table := range schema.GetTables() {
+			tt := ts.GetTable(table.GetName())
+			if tt == nil {
+				trimSchema.Tables = append(trimSchema.Tables, table)
+				continue
+			}
+
+			if !equalTable(table, tt.GetProto()) {
+				trimSchema.Tables = append(trimSchema.Tables, table)
+				continue
+			}
+		}
+		if len(trimSchema.Tables) > 0 {
+			s.Schemas = append(s.Schemas, trimSchema)
+		}
+	}
+
+	for _, schema := range targetMetadata.GetSchemas() {
+		ts := sourceModel.GetSchema(schema.GetName())
+		if ts == nil {
+			t.Schemas = append(t.Schemas, schema)
+			continue
+		}
+		trimSchema := &storepb.SchemaMetadata{Name: schema.GetName()}
+		for _, table := range schema.GetTables() {
+			tt := ts.GetTable(table.GetName())
+			if tt == nil {
+				trimSchema.Tables = append(trimSchema.Tables, table)
+				continue
+			}
+
+			if !equalTable(table, tt.GetProto()) {
+				trimSchema.Tables = append(trimSchema.Tables, table)
+				continue
+			}
+		}
+		if len(trimSchema.Tables) > 0 {
+			t.Schemas = append(t.Schemas, trimSchema)
+		}
+	}
+
+	return s, t
+}
+
+func equalTable(s, t *storepb.TableMetadata) bool {
+	if len(s.GetColumns()) != len(t.GetColumns()) {
+		return false
+	}
+	if len(s.Indexes) != len(t.Indexes) {
+		return false
+	}
+	if s.GetComment() != t.GetComment() {
+		return false
+	}
+	for i := 0; i < len(s.GetColumns()); i++ {
+		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
+		if sc.Name != tc.Name {
+			return false
+		}
+		if sc.Comment != tc.Comment {
+			return false
+		}
+		if sc.Type != tc.Type {
+			return false
+		}
+		if sc.Nullable != tc.Nullable {
+			return false
+		}
+		if sc.GetDefault().GetValue() != tc.GetDefault().GetValue() {
+			return false
+		}
+		if sc.GetDefaultExpression() != tc.GetDefaultExpression() {
+			return false
+		}
+		if sc.GetDefaultNull() != tc.GetDefaultNull() {
+			return false
+		}
+	}
+	return true
 }
