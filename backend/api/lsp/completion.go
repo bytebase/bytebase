@@ -40,9 +40,11 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 	defaultDatabase := h.getDefaultDatabase()
 	engine := h.getEngineType(ctx)
-	if engine == storepb.Engine_ENGINE_UNSPECIFIED {
-		// return errors will close the websocket connection, so we just log the error and return empty completion list.
-		slog.Error("Engine is not specified")
+	switch engine {
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		// Nothing.
+	default:
+		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
 	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
