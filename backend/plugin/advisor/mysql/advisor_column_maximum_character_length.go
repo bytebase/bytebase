@@ -203,9 +203,6 @@ func (*columnMaximumCharacterLengthChecker) getCharLength(ctx mysql.IDataTypeCon
 			return 1
 		}
 		charLengthStr := ctx.FieldLength().Real_ulonglong_number().GetText()
-		if charLengthStr == "" {
-			return 1
-		}
 		charLengthInt, err := strconv.Atoi(charLengthStr)
 		if err != nil {
 			return 0
