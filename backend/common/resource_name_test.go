@@ -37,6 +37,11 @@ func TestGetSchemaTableName(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "", schema)
 	require.Equal(t, "b", table)
+
+	schema, table, err = GetSchemaTableName("schemas/-/tables/b")
+	require.NoError(t, err)
+	require.Equal(t, "", schema)
+	require.Equal(t, "b", table)
 }
 
 func TestGetRiskID(t *testing.T) {
