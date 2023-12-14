@@ -76,8 +76,11 @@ const (
 	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
 	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
 
-	PermissionPlansList   Permission = "bb.plans.list"
-	PermissionPlansGet    Permission = "bb.plans.get"
-	PermissionPlansCreate Permission = "bb.plans.create"
-	PermissionPlansUpdate Permission = "bb.plans.update"
+	PermissionPlansList       Permission = "bb.plans.list"
+	PermissionPlansGet        Permission = "bb.plans.get"
+	PermissionPlansCreate     Permission = "bb.plans.create"
+	PermissionPlansUpdate     Permission = "bb.plans.update"
+	PermissionRolloutsGet     Permission = "bb.rollouts.get"
+	PermissionRolloutsCreate  Permission = "bb.rollouts.create"
+	PermissionRolloutsPreview Permission = "bb.rollouts.preview"
 )

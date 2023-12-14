@@ -122,6 +122,9 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 		projectIDsGetter = in.getProjectIDsForChangelistService
 	case
+		v1pb.RolloutService_GetRollout_FullMethodName,
+		v1pb.RolloutService_CreateRollout_FullMethodName,
+		v1pb.RolloutService_PreviewRollout_FullMethodName,
 		v1pb.RolloutService_GetPlan_FullMethodName,
 		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_UpdatePlan_FullMethodName:
@@ -242,8 +245,14 @@ func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req 
 }
 
 func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
-	var projects, plans []string
+	var projects, rollouts, plans []string
 	switch r := req.(type) {
+	case *v1pb.GetRolloutRequest:
+		rollouts = append(rollouts, r.GetName())
+	case *v1pb.CreateRolloutRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.PreviewRolloutRequest:
+		projects = append(projects, r.GetProject())
 	case *v1pb.GetPlanRequest:
 		plans = append(plans, r.GetName())
 	case *v1pb.CreatePlanRequest:
@@ -264,6 +273,13 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectID, err := common.GetProjectID(project)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, rollout := range rollouts {
+		projectID, _, err := common.GetProjectIDRolloutID(rollout)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse rollout %q", rollout)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}

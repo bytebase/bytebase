@@ -62,6 +62,9 @@ roles:
       - bb.plans.get
       - bb.plans.create
       - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -125,6 +128,9 @@ roles:
       - bb.plans.get
       - bb.plans.create
       - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list

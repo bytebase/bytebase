@@ -91,7 +91,10 @@ func permissionExist(p Permission) bool {
 		PermissionPlansList,
 		PermissionPlansGet,
 		PermissionPlansCreate,
-		PermissionPlansUpdate:
+		PermissionPlansUpdate,
+		PermissionRolloutsGet,
+		PermissionRolloutsCreate,
+		PermissionRolloutsPreview:
 		return true
 	default:
 		return false
