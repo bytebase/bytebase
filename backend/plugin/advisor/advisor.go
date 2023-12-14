@@ -558,7 +558,7 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = errors.Errorf("panic in advisor check: %v", panicErr)
+			err = errors.Errorf("panic in advisor check, in type: %v, because: %v", advType, panicErr)
 		}
 	}()
 
