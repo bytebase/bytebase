@@ -45,7 +45,9 @@ export const useEditStatus = () => {
   ) => {
     const key = keyForResource(database, metadata);
     const keys = recursive
-      ? dirtyPathsArray.value.filter((path) => path.startsWith(key))
+      ? dirtyPathsArray.value.filter(
+          (path) => path === key || path.startsWith(`${key}/`)
+        )
       : [key];
 
     keys.forEach((key) => dirtyPaths.value.delete(key));
@@ -62,7 +64,7 @@ export const useEditStatus = () => {
     if (dirtyPaths.value.has(key)) {
       return dirtyPaths.value.get(key)!;
     }
-    if (dirtyPathsArray.value.some((path) => path.startsWith(key))) {
+    if (dirtyPathsArray.value.some((path) => path.startsWith(`${key}/`))) {
       return "updated";
     }
     return "normal";
@@ -80,7 +82,7 @@ export const useEditStatus = () => {
     if (dirtyPaths.value.has(key)) {
       return dirtyPaths.value.get(key)!;
     }
-    if (dirtyPathsArray.value.some((path) => path.startsWith(key))) {
+    if (dirtyPathsArray.value.some((path) => path.startsWith(`${key}/`))) {
       return "updated";
     }
     return "normal";
@@ -99,7 +101,7 @@ export const useEditStatus = () => {
     if (dirtyPaths.value.has(key)) {
       return dirtyPaths.value.get(key)!;
     }
-    if (dirtyPathsArray.value.some((path) => path.startsWith(key))) {
+    if (dirtyPathsArray.value.some((path) => path.startsWith(`${key}/`))) {
       return "updated";
     }
     return "normal";
