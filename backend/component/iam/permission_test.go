@@ -87,7 +87,14 @@ func permissionExist(p Permission) bool {
 		PermissionInstanceRolesCreate,
 		PermissionInstanceRolesUpdate,
 		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesUndelete:
+		PermissionInstanceRolesUndelete,
+		PermissionExternalVersionControlsGet,
+		PermissionExternalVersionControlsList,
+		PermissionExternalVersionControlsCreate,
+		PermissionExternalVersionControlsUpdate,
+		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsSearchProjects,
+		PermissionExternalVersionControlsListProjects:
 		return true
 	default:
 		return false

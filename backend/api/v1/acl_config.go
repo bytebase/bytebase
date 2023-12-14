@@ -148,6 +148,15 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesUpdate,
 	v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName:   iam.PermissionInstanceRolesDelete,
 	v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName: iam.PermissionInstanceRolesUndelete,
+
+	v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName:          iam.PermissionExternalVersionControlsList,
+	v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName:            iam.PermissionExternalVersionControlsGet,
+	v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsCreate,
+	v1pb.ExternalVersionControlService_ExchangeToken_FullMethodName:                        iam.PermissionExternalVersionControlsUpdate,
+	v1pb.ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsUpdate,
+	v1pb.ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsDelete,
+	v1pb.ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName: iam.PermissionExternalVersionControlsSearchProjects,
+	v1pb.ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName:                iam.PermissionExternalVersionControlsListProjects,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

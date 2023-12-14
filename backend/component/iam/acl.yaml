@@ -58,6 +58,13 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -117,6 +124,13 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list

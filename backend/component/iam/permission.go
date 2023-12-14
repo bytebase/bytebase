@@ -75,4 +75,12 @@ const (
 	PermissionInstanceRolesUpdate   Permission = "bb.instanceRoles.update"
 	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
 	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
+
+	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
+	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
+	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
+	PermissionExternalVersionControlsUpdate         Permission = "bb.externalVersionControls.update"
+	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
+	PermissionExternalVersionControlsSearchProjects Permission = "bb.externalVersionControls.searchProjects"
+	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
 )
