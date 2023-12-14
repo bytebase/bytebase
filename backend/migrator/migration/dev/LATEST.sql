@@ -1264,6 +1264,9 @@ CREATE TABLE branch (
   engine TEXT NOT NULL,
   base JSONB NOT NULL DEFAULT '{}',
   head JSONB NOT NULL DEFAULT '{}',
+  base_schema TEXT NOT NULL DEFAULT '',
+  head_schema TEXT NOT NULL DEFAULT '',
+  reconcile_state TEXT NOT NULL DEFAULT '',
   config JSONB NOT NULL DEFAULT '{}'
 );
 
