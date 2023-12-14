@@ -1271,6 +1271,8 @@ CREATE TABLE branch (
 
 CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON branch(project_id, name);
 
+CREATE INDEX idx_branch_reconcile_state ON branch(reconcile_state);
+
 ALTER SEQUENCE branch_id_seq RESTART WITH 101;
 
 CREATE TRIGGER update_branch_updated_ts
