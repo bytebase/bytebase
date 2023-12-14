@@ -2,7 +2,7 @@
   <div v-if="showQuickActionPanel" class="flex-1 pb-4">
     <QuickActionPanel :quick-action-list="quickActionList" />
   </div>
-  <ProjectDatabasesPanel :database-list="databaseV1List" />
+  <ProjectDatabasesPanel :project="project" :database-list="databaseV1List" />
 </template>
 
 <script lang="ts" setup>
@@ -69,7 +69,6 @@ const quickActionMapByRole = computed(() => {
       "quickaction.bb.database.data.update",
       "quickaction.bb.database.create",
       "quickaction.bb.project.database.transfer",
-      "quickaction.bb.project.database.transfer-out",
     ];
     const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
 
@@ -98,8 +97,7 @@ const quickActionMapByRole = computed(() => {
       )
     ) {
       DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.project.database.transfer",
-        "quickaction.bb.project.database.transfer-out"
+        "quickaction.bb.project.database.transfer"
       );
     }
     if (!isOwnerOfProjectV1(project.value.iamPolicy, currentUserV1.value)) {

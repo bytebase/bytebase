@@ -1,4 +1,4 @@
-package taskrun
+package utils
 
 import (
 	"reflect"
@@ -7,9 +7,9 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// mergeDatabaseConfig computes the migration from target and baseline, and applies the migration to current databaseConfig.
+// MergeDatabaseConfig computes the migration from target and baseline, and applies the migration to current databaseConfig.
 // Return the merged databaseConfig.
-func mergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storepb.DatabaseConfig {
 	// Avoid nil values.
 	if target == nil {
 		target = &storepb.DatabaseConfig{}
@@ -17,11 +17,11 @@ func mergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *sto
 	if baseline == nil {
 		baseline = &storepb.DatabaseConfig{}
 	}
-	if current == nil {
-		current = &storepb.DatabaseConfig{}
+	if head == nil {
+		head = &storepb.DatabaseConfig{}
 	}
 
-	targetMap, baselineMap, currentMap := buildSchemaMap(target), buildSchemaMap(baseline), buildSchemaMap(current)
+	targetMap, baselineMap, currentMap := buildSchemaMap(target), buildSchemaMap(baseline), buildSchemaMap(head)
 	for schemaName, targetSchema := range targetMap {
 		currentSchema, hasCurrent := currentMap[schemaName]
 		baselineSchema := baselineMap[schemaName]
@@ -40,7 +40,7 @@ func mergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *sto
 		delete(currentMap, schemaName)
 	}
 
-	result := &storepb.DatabaseConfig{Name: current.Name}
+	result := &storepb.DatabaseConfig{Name: head.Name}
 	for _, v := range currentMap {
 		result.SchemaConfigs = append(result.SchemaConfigs, v)
 	}

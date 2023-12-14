@@ -337,7 +337,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 		defer tx.Rollback()
 
-		// Set the current transaction role to the database owner so that the owner of created database will be the same as the database owner.
+		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
 			return 0, err
 		}

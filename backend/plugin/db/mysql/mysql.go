@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 
@@ -153,11 +154,15 @@ func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 		}
 		return "", "", util.FormatErrorWithQuery(err, query)
 	}
-	pos := strings.Index(version, "-")
-	if pos == -1 {
-		return version, "", nil
+
+	return parseVersion(version)
+}
+
+func parseVersion(version string) (string, string, error) {
+	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
+		return version[loc[0]:loc[1]], version[loc[1]:], nil
 	}
-	return version[:pos], version[pos:], nil
+	return "", "", errors.Errorf("failed to parse version %q", version)
 }
 
 // Execute executes a SQL statement.

@@ -32,6 +32,7 @@ import {
   SelectRenderLabel,
 } from "naive-ui";
 import { computed, h, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useInstanceV1ByUID, useTabStore } from "@/store";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 
@@ -40,6 +41,7 @@ interface DataSourceSelectOption extends SelectOption {
   dataSource: DataSource;
 }
 
+const { t } = useI18n();
 const tabStore = useTabStore();
 const connection = computed(() => tabStore.currentTab.connection);
 const selectedDataSourceId = computed(() => {
@@ -121,9 +123,9 @@ const handleDataSourceSelect = (dataSourceId?: string) => {
 
 const readableDataSourceType = (type: DataSourceType): string => {
   if (type === DataSourceType.ADMIN) {
-    return "Admin";
+    return t("data-source.admin");
   } else if (type === DataSourceType.READ_ONLY) {
-    return "RO";
+    return t("data-source.read-only");
   } else {
     return "Unknown";
   }
