@@ -1,5 +1,5 @@
 import { pick } from "lodash-es";
-import { Ref, shallowRef, watch } from "vue";
+import { Ref, reactive, shallowRef, watch } from "vue";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnConfig,
@@ -16,47 +16,53 @@ import { keyForResource, keyForResourceName } from "./common";
 export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
   // Build maps from keys to metadata objects for acceleration
   const buildMaps = (targets: EditTarget[]) => {
-    const schemaConfig = new Map(
-      targets.flatMap((target) => {
-        return target.metadata.schemaConfigs.map((schemaConfig) => {
-          const key = keyForResourceName(
-            target.database.name,
-            schemaConfig.name
-          );
-          return [key, schemaConfig];
-        });
-      })
-    );
-    const tableConfig = new Map(
-      targets.flatMap((target) => {
-        return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
-          return schemaConfig.tableConfigs.map((tableConfig) => {
+    const schemaConfig = reactive(
+      new Map(
+        targets.flatMap((target) => {
+          return target.metadata.schemaConfigs.map((schemaConfig) => {
             const key = keyForResourceName(
               target.database.name,
-              schemaConfig.name,
-              tableConfig.name
+              schemaConfig.name
             );
-            return [key, tableConfig];
+            return [key, schemaConfig];
           });
-        });
-      })
+        })
+      )
     );
-    const columnConfig = new Map(
-      targets.flatMap((target) => {
-        return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
-          return schemaConfig.tableConfigs.flatMap((tableConfig) => {
-            return tableConfig.columnConfigs.map((columnConfig) => {
+    const tableConfig = reactive(
+      new Map(
+        targets.flatMap((target) => {
+          return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
+            return schemaConfig.tableConfigs.map((tableConfig) => {
               const key = keyForResourceName(
                 target.database.name,
                 schemaConfig.name,
-                tableConfig.name,
-                columnConfig.name
+                tableConfig.name
               );
-              return [key, columnConfig];
+              return [key, tableConfig];
             });
           });
-        });
-      })
+        })
+      )
+    );
+    const columnConfig = reactive(
+      new Map(
+        targets.flatMap((target) => {
+          return target.metadata.schemaConfigs.flatMap((schemaConfig) => {
+            return schemaConfig.tableConfigs.flatMap((tableConfig) => {
+              return tableConfig.columnConfigs.map((columnConfig) => {
+                const key = keyForResourceName(
+                  target.database.name,
+                  schemaConfig.name,
+                  tableConfig.name,
+                  columnConfig.name
+                );
+                return [key, columnConfig];
+              });
+            });
+          });
+        })
+      )
     );
     return { schemaConfig, tableConfig, columnConfig };
   };
