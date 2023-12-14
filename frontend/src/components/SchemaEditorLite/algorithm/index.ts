@@ -1,5 +1,12 @@
 import { ComposedDatabase } from "@/types";
-import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import {
+  DatabaseMetadata,
+  SchemaConfig,
+  SchemaMetadata,
+  TableConfig,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
+import { keyBy } from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { DiffMerge } from "./diff-merge";
 
@@ -55,7 +62,44 @@ export const useAlgorithm = (context: SchemaEditorContext) => {
         });
       });
     });
+
+    cleanupUnusedConfigs(metadata);
   };
 
   return { rebuildMetadataEdit, applyMetadataEdit };
+};
+
+const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
+  const cleanupColumnConfigs = (
+    table: TableMetadata,
+    tableConfig: TableConfig
+  ) => {
+    const columnMap = keyBy(table.columns, (column) => column.name);
+    tableConfig.columnConfigs = tableConfig.columnConfigs.filter((cc) =>
+      columnMap.has(cc.name)
+    );
+  };
+  const cleanupTableConfigs = (
+    schema: SchemaMetadata,
+    schemaConfig: SchemaConfig
+  ) => {
+    const tableMap = keyBy(schema.tables, (table) => table.name);
+    schemaConfig.tableConfigs = schemaConfig.tableConfigs.filter((tc) =>
+      tableMap.has(tc.name)
+    );
+    schemaConfig.tableConfigs.forEach((tc) => {
+      cleanupColumnConfigs(tableMap.get(tc.name)!, tc);
+    });
+  };
+  const cleanupSchemaConfigs = (metadata: DatabaseMetadata) => {
+    const schemaMap = keyBy(metadata.schemas, (schema) => schema.name);
+    metadata.schemaConfigs = metadata.schemaConfigs.filter((sc) =>
+      schemaMap.has(sc.name)
+    );
+    metadata.schemaConfigs.forEach((sc) => {
+      cleanupTableConfigs(schemaMap.get(sc.name)!, sc);
+    });
+  };
+
+  cleanupSchemaConfigs(metadata);
 };
