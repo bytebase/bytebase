@@ -22,13 +22,13 @@ func backfillBranches(ctx context.Context, stores *store.Store) {
 			slog.Error("failed to get branch", slog.Int("branchID", id), log.BBError(err))
 			continue
 		}
-		headMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Head.Schema))
+		headMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.HeadSchema))
 		if err != nil {
 			slog.Error("failed to transform head metadata", slog.Int("branchID", id), log.BBError(err))
 			continue
 		}
 		branch.Head.Metadata = headMetadata
-		baseMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.Base.Schema))
+		baseMetadata, err := apiv1.TransformSchemaStringToDatabaseMetadata(branch.Engine, string(branch.BaseSchema))
 		if err != nil {
 			slog.Error("failed to transform head metadata", slog.Int("branchID", id), log.BBError(err))
 			continue

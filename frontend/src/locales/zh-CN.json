@@ -1509,6 +1509,9 @@
     "sync-status": "同步状态",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
+    "unassign": "取消分配",
+    "unassign-alert-title": "取消分配数据库",
+    "unassign-alert-description": "选定的数据库将从其项目中转出",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
     "edit-labels": "编辑标签",
@@ -1528,6 +1531,7 @@
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
+    "successfully-transferred-databases": "数据库转移完成",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1701,8 +1705,10 @@
         "select-target-project": "选择目标项目",
         "select-at-least-one-database": "至少选择一个数据库"
       },
+      "select-databases": "选择数据库",
       "select-target-project": "选择目标项目"
     },
+    "transfer-database-to": "将数据库转移到目标项目",
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级"
@@ -2149,7 +2155,9 @@
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
-    "connection-string-schema": "连接串模式"
+    "connection-string-schema": "连接串模式",
+    "admin": "主库",
+    "read-only": "从库"
   },
   "setting": {
     "project": {

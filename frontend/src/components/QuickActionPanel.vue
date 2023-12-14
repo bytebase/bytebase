@@ -54,14 +54,6 @@
       :project-id="projectId"
       @dismiss="state.quickActionType = undefined"
     />
-    <TransferOutDatabaseForm
-      v-if="
-        projectId &&
-        state.quickActionType === 'quickaction.bb.project.database.transfer-out'
-      "
-      :project-id="projectId"
-      @dismiss="state.quickActionType = undefined"
-    />
   </Drawer>
 
   <RequestQueryPanel
@@ -92,7 +84,6 @@ import {
   ListOrderedIcon,
   GalleryHorizontalEndIcon,
   ChevronsDownIcon,
-  ChevronsUpIcon,
   FileSearchIcon,
   FileDownIcon,
 } from "lucide-vue-next";
@@ -106,7 +97,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
   useInstanceV1Store,
@@ -187,10 +177,6 @@ const createProject = () => {
 
 const transferDatabase = () => {
   state.quickActionType = "quickaction.bb.project.database.transfer";
-};
-
-const transferOutDatabase = () => {
-  state.quickActionType = "quickaction.bb.project.database.transfer-out";
 };
 
 const createInstance = () => {
@@ -275,12 +261,6 @@ const availableQuickActionList = computed((): QuickAction[] => {
       title: t("quick-action.transfer-in-db"),
       action: transferDatabase,
       icon: h(ChevronsDownIcon),
-    },
-    {
-      type: "quickaction.bb.project.database.transfer-out",
-      title: t("quick-action.transfer-out-db"),
-      action: transferOutDatabase,
-      icon: h(ChevronsUpIcon),
     },
     {
       type: "quickaction.bb.issue.grant.request.querier",

@@ -307,6 +307,7 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 	var name []string
 	tableMetadata := &TableMetadata{
 		internal: make(map[string]*storepb.ColumnMetadata),
+		proto:    table,
 	}
 	for _, column := range table.Columns {
 		tableMetadata.internal[column.Name] = column
@@ -362,6 +363,7 @@ type TableMetadata struct {
 	internal map[string]*storepb.ColumnMetadata
 	columns  []*storepb.ColumnMetadata
 	rowCount int64
+	proto    *storepb.TableMetadata
 }
 
 // GetColumn gets the column by name.
@@ -376,6 +378,10 @@ func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
 
 func (t *TableMetadata) GetRowCount() int64 {
 	return t.rowCount
+}
+
+func (t *TableMetadata) GetProto() *storepb.TableMetadata {
+	return t.proto
 }
 
 // ViewMetadata is the metadata for a view.
