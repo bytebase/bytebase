@@ -2160,7 +2160,9 @@
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
-    "connection-string-schema": "Connection String Schema"
+    "connection-string-schema": "Connection String Schema",
+    "admin": "Admin",
+    "read-only": "RO"
   },
   "setting": {
     "project": {

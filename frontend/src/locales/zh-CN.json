@@ -2155,7 +2155,9 @@
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
-    "connection-string-schema": "连接串模式"
+    "connection-string-schema": "连接串模式",
+    "admin": "主库",
+    "read-only": "从库"
   },
   "setting": {
     "project": {
