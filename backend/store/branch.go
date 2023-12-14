@@ -238,8 +238,9 @@ func (s *Store) CreateBranch(ctx context.Context, create *BranchMessage) (*Branc
 		create.Engine.String(),
 		base,
 		head,
-		create.BaseSchema,
-		create.HeadSchema,
+		// Convert to string because []byte{} is null which violates db schema constraints.
+		string(create.BaseSchema),
+		string(create.HeadSchema),
 		config,
 	).Scan(
 		&create.UID,
@@ -284,11 +285,12 @@ func (s *Store) UpdateBranch(ctx context.Context, update *UpdateBranchMessage) e
 		}
 		set, args = append(set, fmt.Sprintf("head = $%d", len(args)+1)), append(args, head)
 	}
+	// Convert to string because []byte{} is null which violates db schema constraints.
 	if v := update.BaseSchema; v != nil {
-		set, args = append(set, fmt.Sprintf("base_schema = $%d", len(args)+1)), append(args, v)
+		set, args = append(set, fmt.Sprintf("base_schema = $%d", len(args)+1)), append(args, string(*v))
 	}
 	if v := update.HeadSchema; v != nil {
-		set, args = append(set, fmt.Sprintf("head_schema = $%d", len(args)+1)), append(args, v)
+		set, args = append(set, fmt.Sprintf("head_schema = $%d", len(args)+1)), append(args, string(*v))
 	}
 	if v := update.Config; v != nil {
 		config, err := protojson.Marshal(v)
