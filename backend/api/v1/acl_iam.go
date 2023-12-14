@@ -127,7 +127,13 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
 		v1pb.RolloutService_GetPlan_FullMethodName,
 		v1pb.RolloutService_CreatePlan_FullMethodName,
-		v1pb.RolloutService_UpdatePlan_FullMethodName:
+		v1pb.RolloutService_UpdatePlan_FullMethodName,
+		v1pb.RolloutService_ListTaskRuns_FullMethodName,
+		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
+		v1pb.RolloutService_RunPlanChecks_FullMethodName,
+		v1pb.RolloutService_BatchRunTasks_FullMethodName,
+		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
+		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForRolloutService
 	case
@@ -245,7 +251,7 @@ func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req 
 }
 
 func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
-	var projects, rollouts, plans []string
+	var projects, rollouts, plans, tasks, stages []string
 	switch r := req.(type) {
 	case *v1pb.GetRolloutRequest:
 		rollouts = append(rollouts, r.GetName())
@@ -259,6 +265,18 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projects = append(projects, r.GetParent())
 	case *v1pb.UpdatePlanRequest:
 		plans = append(plans, r.GetPlan().GetName())
+	case *v1pb.ListTaskRunsRequest:
+		tasks = append(tasks, r.GetParent())
+	case *v1pb.ListPlanCheckRunsRequest:
+		plans = append(plans, r.GetParent())
+	case *v1pb.RunPlanChecksRequest:
+		plans = append(plans, r.GetName())
+	case *v1pb.BatchRunTasksRequest:
+		stages = append(stages, r.GetParent())
+	case *v1pb.BatchSkipTasksRequest:
+		stages = append(stages, r.GetParent())
+	case *v1pb.BatchCancelTaskRunsRequest:
+		tasks = append(tasks, r.GetParent())
 	}
 
 	var projectIDs []string
@@ -280,6 +298,20 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectID, _, err := common.GetProjectIDRolloutID(rollout)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse rollout %q", rollout)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, stage := range stages {
+		projectID, _, _, err := common.GetProjectIDRolloutIDMaybeStageID(stage)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse stage %q", stage)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, task := range tasks {
+		projectID, _, _, _, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(task)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse task %q", task)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
