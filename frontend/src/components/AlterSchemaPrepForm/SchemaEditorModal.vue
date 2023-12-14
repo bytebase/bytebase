@@ -381,7 +381,12 @@ const generateDiffDDLMap = async (silent: boolean) => {
     const editing = cloneDeep(target.metadata);
     await applyMetadataEdit(database, editing);
 
-    const result = await generateSingleDiffDDL(database, source, editing);
+    const result = await generateSingleDiffDDL(
+      database,
+      source,
+      editing,
+      /* !allowEmptyDiffDDLWithConfigChange */ false
+    );
     if (result.fatal && !silent) {
       pushNotification({
         module: "bytebase",
