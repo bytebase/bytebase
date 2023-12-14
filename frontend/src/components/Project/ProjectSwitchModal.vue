@@ -49,7 +49,6 @@
 </template>
 
 <script lang="ts" setup>
-import { concat } from "lodash-es";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
@@ -109,7 +108,7 @@ const tabList = computed(() => [
   {
     title: t("common.all"),
     id: "all",
-    list: getFilteredProjectList(concat(projectList.value, projectList.value)),
+    list: getFilteredProjectList(projectList.value),
   },
 ]);
 
