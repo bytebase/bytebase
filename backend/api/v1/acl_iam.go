@@ -29,6 +29,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
 		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
+		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
 		return nil
 	}
@@ -107,6 +108,13 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForIssueService
+	case
+		v1pb.ChangelistService_CreateChangelist_FullMethodName,
+		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
+		v1pb.ChangelistService_GetChangelist_FullMethodName,
+		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForChangelistService
 	case
 		v1pb.ProjectService_GetProject_FullMethodName,
 		v1pb.ProjectService_UpdateProject_FullMethodName,
@@ -187,6 +195,38 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Wrapf(err, "database %q not found", databaseResourceName)
 	}
 	return database, nil
+}
+
+func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req any) ([]string, error) {
+	var projects, changelists []string
+	switch r := req.(type) {
+	case *v1pb.CreateChangelistRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdateChangelistRequest:
+		changelists = append(changelists, r.GetChangelist().GetName())
+	case *v1pb.GetChangelistRequest:
+		changelists = append(changelists, r.GetName())
+	case *v1pb.DeleteChangelistRequest:
+		changelists = append(changelists, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, changelist := range changelists {
+		projectID, _, err := common.GetProjectIDChangelistID(changelist)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse changelist %q", changelist)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any) ([]string, error) {
@@ -296,7 +336,7 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
-	return projectIDs, nil
+	return uniq(projectIDs), nil
 }
 
 func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) ([]string, error) {
@@ -317,20 +357,16 @@ func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) 
 		issueNames = append(issueNames, r.GetIssues()...)
 	}
 
-	projectIDsMap := make(map[string]struct{})
+	var projectIDs []string
 	for _, issueName := range issueNames {
 		projectID, _, err := common.GetProjectIDIssueID(issueName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get projectID from %q", issueName)
 		}
-		projectIDsMap[projectID] = struct{}{}
-	}
-
-	var projectIDs []string
-	for projectID := range projectIDsMap {
 		projectIDs = append(projectIDs, projectID)
 	}
-	return projectIDs, nil
+
+	return uniq(projectIDs), nil
 }
 
 func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, req any) ([]string, error) {
@@ -428,5 +464,20 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 		projectIDs = append(projectIDs, database.ProjectID)
 	}
 
-	return projectIDs, nil
+	return uniq(projectIDs), nil
+}
+
+func uniq[T comparable](array []T) []T {
+	res := make([]T, 0, len(array))
+	seen := make(map[T]struct{}, len(array))
+
+	for _, e := range array {
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		res = append(res, e)
+	}
+
+	return res
 }
