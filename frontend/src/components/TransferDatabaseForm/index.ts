@@ -1,11 +1,11 @@
-import TransferMultipleDatabaseForm from "./TransferMultipleDatabaseForm.vue";
+import MultipleDatabaseSelector from "./MultipleDatabaseSelector.vue";
 import TransferSingleDatabase from "./TransferSingleDatabase.vue";
 import TransferSourceSelector from "./TransferSourceSelector.vue";
 
 export * from "./utils";
 
 export {
-  TransferMultipleDatabaseForm,
+  MultipleDatabaseSelector,
   TransferSourceSelector,
   TransferSingleDatabase,
 };

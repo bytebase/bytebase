@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -102,8 +103,10 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 
 	sslCAs := splitSslCA(driver.config.TLSConfig.SslCA)
 	dumpSuccess := false
+	var errs error
 	for _, sslCA := range sslCAs {
 		if err := driver.execPgDump(ctx, args, out, sslCA); err != nil {
+			errs = multierr.Append(errs, err)
 			slog.Warn("Failed to exec pg_dump", log.BBError(err))
 		} else {
 			dumpSuccess = true
@@ -112,7 +115,7 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 		}
 	}
 	if !dumpSuccess {
-		return errors.New("Failed to exec pg_dump")
+		return errors.Errorf("Failed to exec pg_dump, err: %v", errs)
 	}
 	return nil
 }

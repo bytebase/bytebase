@@ -34,7 +34,7 @@
             <InstanceV1Name :instance="database.instanceEntity" :link="false" />
           </div>
         </div>
-        <div class="contents">
+        <div v-if="!hasProjectContext" class="contents">
           <div class="text-gray-500 font-medium">
             {{ $t("common.project") }}
           </div>
@@ -72,6 +72,7 @@ import {
   InstanceV1Name,
   ProjectV1Name,
 } from "@/components/v2";
+import { useSQLEditorTreeStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { useHoverStateContext } from "./hover-state";
 
@@ -85,6 +86,7 @@ const emit = defineEmits<{
   (event: "click-outside", e: MouseEvent): void;
 }>();
 
+const treeStore = useSQLEditorTreeStore();
 const { node, update } = useHoverStateContext();
 
 const popoverRef = ref<HTMLDivElement>();
@@ -95,6 +97,10 @@ onClickOutside(popoverRef, (e) => {
 const show = computed(
   () => props.database !== undefined && props.x !== 0 && props.y !== 0
 );
+
+const hasProjectContext = computed(() => {
+  return treeStore.selectedProject;
+});
 
 useEventListener(popoverRef, "mouseenter", () => {
   // Reset the value immediately to cancel other pending setting values
