@@ -2156,7 +2156,9 @@
       "tunnel": "@:{'data-source.ssh.tunnel'}",
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
       "none": "Ninguno"
-    }
+    },
+    "admin": "Admin",
+    "read-only": "Solo lectura"
   },
   "setting": {
     "project": {
