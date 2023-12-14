@@ -160,6 +160,8 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			Engine:     parentBranch.Engine,
 			Base:       parentBranch.Head,
 			Head:       parentBranch.Head,
+			BaseSchema: parentBranch.HeadSchema,
+			HeadSchema: parentBranch.HeadSchema,
 			Config: &storepb.BranchConfig{
 				SourceBranch:   request.Branch.ParentBranch,
 				SourceDatabase: parentBranch.Config.GetSourceDatabase(),
