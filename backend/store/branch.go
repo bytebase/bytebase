@@ -18,10 +18,12 @@ type BranchMessage struct {
 	ProjectID  string
 	ResourceID string
 
-	Engine storepb.Engine
-	Config *storepb.BranchConfig
-	Base   *storepb.BranchSnapshot
-	Head   *storepb.BranchSnapshot
+	Engine     storepb.Engine
+	Config     *storepb.BranchConfig
+	Base       *storepb.BranchSnapshot
+	Head       *storepb.BranchSnapshot
+	BaseSchema []byte
+	HeadSchema []byte
 
 	// Output only fields
 	UID         int
@@ -48,6 +50,8 @@ type UpdateBranchMessage struct {
 	Config           *storepb.BranchConfig
 	Base             *storepb.BranchSnapshot
 	Head             *storepb.BranchSnapshot
+	BaseSchema       *[]byte
+	HeadSchema       *[]byte
 	UpdateResourceID *string
 }
 
@@ -102,6 +106,8 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 			branch.engine,
 			branch.base,
 			branch.head,
+			branch.base_schema,
+			branch.head_schema,
 			branch.config
 		FROM branch
 		LEFT JOIN project ON branch.project_id = project.id
@@ -130,6 +136,8 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 			&engine,
 			&base,
 			&head,
+			&branch.BaseSchema,
+			&branch.HeadSchema,
 			&config,
 		); err != nil {
 			return nil, err
@@ -208,9 +216,11 @@ func (s *Store) CreateBranch(ctx context.Context, create *BranchMessage) (*Branc
 			engine,
 			base,
 			head,
+			base_schema,
+			head_schema,
 			config
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING id, created_ts, updated_ts;
 	`
 
@@ -228,6 +238,8 @@ func (s *Store) CreateBranch(ctx context.Context, create *BranchMessage) (*Branc
 		create.Engine.String(),
 		base,
 		head,
+		create.BaseSchema,
+		create.HeadSchema,
 		config,
 	).Scan(
 		&create.UID,
@@ -271,6 +283,12 @@ func (s *Store) UpdateBranch(ctx context.Context, update *UpdateBranchMessage) e
 			return err
 		}
 		set, args = append(set, fmt.Sprintf("head = $%d", len(args)+1)), append(args, head)
+	}
+	if v := update.BaseSchema; v != nil {
+		set, args = append(set, fmt.Sprintf("base_schema = $%d", len(args)+1)), append(args, v)
+	}
+	if v := update.HeadSchema; v != nil {
+		set, args = append(set, fmt.Sprintf("head_schema = $%d", len(args)+1)), append(args, v)
 	}
 	if v := update.Config; v != nil {
 		config, err := protojson.Marshal(v)
