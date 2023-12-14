@@ -68,4 +68,11 @@ const (
 	PermissionChangelistsUpdate Permission = "bb.changelists.update"
 	PermissionChangelistsCreate Permission = "bb.changelists.create"
 	PermissionChangelistsDelete Permission = "bb.changelists.delete"
+
+	PermissionInstanceRolesList     Permission = "bb.instanceRoles.list"
+	PermissionInstanceRolesGet      Permission = "bb.instanceRoles.get"
+	PermissionInstanceRolesCreate   Permission = "bb.instanceRoles.create"
+	PermissionInstanceRolesUpdate   Permission = "bb.instanceRoles.update"
+	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
+	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
 )
