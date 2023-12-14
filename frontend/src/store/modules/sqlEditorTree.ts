@@ -31,6 +31,7 @@ import {
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
+import { customTheme } from "@/utils/customTheme";
 import { useTabStore } from "./tab";
 import {
   useDBSchemaV1Store,
@@ -47,42 +48,52 @@ const defaultProjectFactor: StatefulFactor = {
   disabled: false,
 };
 
-const defaultFactorList = (): StatefulFactor[] => [defaultProjectFactor];
+const defaultEnvironmentFactor: StatefulFactor = {
+  factor: "environment",
+  disabled: false,
+};
 
-const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
-  "bb.sql-editor.tree-factor-list",
-  defaultFactorList(),
-  {
-    serializer: {
-      read: (raw: string): StatefulFactor[] => {
-        try {
-          const array = JSON.parse(raw) as StatefulFactor[];
-          if (!Array.isArray(array)) {
-            throw new Error();
-          }
-          const factorList: StatefulFactor[] = [];
-          array.forEach((sf) => {
-            if (isValidFactor(sf.factor)) {
-              factorList.push({
-                factor: sf.factor,
-                disabled: !!sf.disabled,
-              });
-            }
-          });
-          if (factorList.length === 0) {
-            throw new Error();
-          }
-          return factorList;
-        } catch {
-          return defaultFactorList();
-        }
-      },
-      write: (factorList) => JSON.stringify(factorList),
-    },
+const defaultFactorList = (): StatefulFactor[] => {
+  if (customTheme.value === "lixiang") {
+    return [defaultEnvironmentFactor];
+  } else {
+    return [defaultProjectFactor];
   }
-);
+};
 
 export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
+  const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
+    "bb.sql-editor.tree-factor-list",
+    defaultFactorList(),
+    {
+      serializer: {
+        read: (raw: string): StatefulFactor[] => {
+          try {
+            const array = JSON.parse(raw) as StatefulFactor[];
+            if (!Array.isArray(array)) {
+              throw new Error();
+            }
+            const factorList: StatefulFactor[] = [];
+            array.forEach((sf) => {
+              if (isValidFactor(sf.factor)) {
+                factorList.push({
+                  factor: sf.factor,
+                  disabled: !!sf.disabled,
+                });
+              }
+            });
+            if (factorList.length === 0) {
+              throw new Error();
+            }
+            return factorList;
+          } catch {
+            return defaultFactorList();
+          }
+        },
+        write: (factorList) => JSON.stringify(factorList),
+      },
+    }
+  );
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
   const databaseList = ref<ComposedDatabase[]>([]);
@@ -90,7 +101,7 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     cloneDeep(factorListInLocalStorage.value)
   );
   const filteredDatabaseList = computed(() => {
-    if (projectMode.value) {
+    if (selectedProject.value) {
       return databaseList.value.filter((database) => {
         return database.project === selectedProject.value?.name;
       });
@@ -101,7 +112,7 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const filteredFactorList = computed(() => {
     return factorList.value
       .filter((sf) =>
-        projectMode.value ? sf.factor !== defaultProjectFactor.factor : true
+        selectedProject.value ? sf.factor !== defaultProjectFactor.factor : true
       )
       .filter((sf) => !sf.disabled)
       .map((sf) => sf.factor);
@@ -110,8 +121,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const state = ref<TreeState>("UNSET");
   const expandedKeys = ref<string[]>([]); // mixed factor type
   const tree = ref<TreeNode[]>([]);
-
-  const projectMode = computed(() => Boolean(selectedProject.value));
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
     const { type, target } = node.meta;
@@ -241,7 +250,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     selectedProject,
     state,
     tree,
-    projectMode,
     collectNode,
     nodesByTarget,
     expandNodes,
