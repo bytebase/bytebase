@@ -433,7 +433,12 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
   const source =
     branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
   const target = branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
-  const result = await generateDiffDDL(database.value, source, target);
+  const result = await generateDiffDDL(
+    database.value,
+    source,
+    target,
+    /* !allowEmptyDiffDDLWithConfigChange */ false
+  );
 
   if (result.fatal) {
     pushNotification({
