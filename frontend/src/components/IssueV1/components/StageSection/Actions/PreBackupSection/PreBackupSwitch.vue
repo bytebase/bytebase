@@ -2,7 +2,7 @@
   <div class="flex items-center">
     <NSwitch
       :value="preBackupEnabled"
-      class="bb-rollback-switch"
+      class="bb-pre-backup-switch"
       :disabled="showPreBackupDisabled"
       @update:value="togglePreBackup"
     >
@@ -25,19 +25,19 @@ const { preBackupEnabled, showPreBackupDisabled, togglePreBackup } =
 </script>
 
 <style>
-.bb-rollback-switch {
+.bb-pre-backup-switch {
   --n-width: max(
     var(--n-rail-width),
     calc(var(--n-rail-width) + var(--n-button-width) - var(--n-rail-height))
   ) !important;
 }
-.bb-rollback-switch .n-switch__checked {
+.bb-pre-backup-switch .n-switch__checked {
   padding-right: calc(var(--n-rail-height) - var(--n-offset) + 1px) !important;
 }
-.bb-rollback-switch .n-switch__unchecked {
+.bb-pre-backup-switch .n-switch__unchecked {
   padding-left: calc(var(--n-rail-height) - var(--n-offset) + 1px) !important;
 }
-.bb-rollback-switch .n-switch__button-placeholder {
+.bb-pre-backup-switch .n-switch__button-placeholder {
   width: calc(1.25 * var(--n-rail-height)) !important;
 }
 </style>

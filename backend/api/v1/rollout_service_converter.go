@@ -247,14 +247,21 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 
 func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
+	var preUpdateBackupDetail *storepb.PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail
+	if c.PreUpdateBackupDetail != nil && c.GetPreUpdateBackupDetail().GetDatabase() != "" {
+		preUpdateBackupDetail = &storepb.PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail{
+			Database: c.GetPreUpdateBackupDetail().GetDatabase(),
+		}
+	}
 	return &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 		ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-			Target:          c.Target,
-			Sheet:           c.Sheet,
-			Type:            storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
-			SchemaVersion:   c.SchemaVersion,
-			RollbackEnabled: c.RollbackEnabled,
-			GhostFlags:      c.GhostFlags,
+			Target:                c.Target,
+			Sheet:                 c.Sheet,
+			Type:                  storepb.PlanConfig_ChangeDatabaseConfig_Type(c.Type),
+			SchemaVersion:         c.SchemaVersion,
+			RollbackEnabled:       c.RollbackEnabled,
+			GhostFlags:            c.GhostFlags,
+			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
 	}
 }
