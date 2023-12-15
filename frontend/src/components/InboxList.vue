@@ -55,7 +55,9 @@
       </div>
     </li>
   </ul>
-  <div v-else class="text-center text-control-light">No items</div>
+  <div v-else class="text-center text-control-light py-4">
+    {{ $t("common.no-data") }}
+  </div>
 </template>
 
 <script lang="ts" setup>
