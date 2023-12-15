@@ -14,24 +14,7 @@ import (
 )
 
 func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
-	// Below are the skipped.
-	switch fullMethod {
-	// skip checking for custom approval.
-	case
-		v1pb.IssueService_ApproveIssue_FullMethodName,
-		v1pb.IssueService_RejectIssue_FullMethodName,
-		v1pb.IssueService_RequestIssue_FullMethodName:
-		return nil
-	// handled in the method because checking is complex.
-	case
-		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
-		v1pb.DatabaseService_ListDatabases_FullMethodName,     // TODO(p0ny): implement
-		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
-		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
-		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
-		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+	if isSkippedMethod(fullMethod) {
 		return nil
 	}
 
@@ -208,6 +191,40 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	}
 
 	return nil
+}
+
+func isSkippedMethod(fullMethod string) bool {
+	// Below are the skipped.
+	switch fullMethod {
+	// TODO(p0ny): explicit skips
+	// skip actuator service
+	// skip anomaly service
+	// skip auth service
+	// skip cel service
+	// skip inbox service
+	// skip logging service
+	// skip sql service
+	// skip subscription service
+
+	// skip checking for custom approval.
+	case
+		v1pb.IssueService_ApproveIssue_FullMethodName,
+		v1pb.IssueService_RejectIssue_FullMethodName,
+		v1pb.IssueService_RequestIssue_FullMethodName:
+		return true
+	// handled in the method because checking is complex.
+	case
+		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
+		v1pb.DatabaseService_ListDatabases_FullMethodName,     // TODO(p0ny): implement
+		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
+		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
+		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
+		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
+		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
+		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+		return true
+	}
+	return false
 }
 
 func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
