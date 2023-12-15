@@ -2787,7 +2787,7 @@ type Plan_ChangeDatabaseConfig struct {
 	RollbackEnabled bool                                      `protobuf:"varint,5,opt,name=rollback_enabled,json=rollbackEnabled,proto3" json:"rollback_enabled,omitempty"`
 	RollbackDetail  *Plan_ChangeDatabaseConfig_RollbackDetail `protobuf:"bytes,6,opt,name=rollback_detail,json=rollbackDetail,proto3,oneof" json:"rollback_detail,omitempty"`
 	GhostFlags      map[string]string                         `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// If set, we will create a task backing up data before the DML task is executed.
+	// If set, a backup of the modified data will be created automatically before any changes are applied.
 	PreUpdateBackupDetail *Plan_ChangeDatabaseConfig_PreUpdateBackupDetail `protobuf:"bytes,8,opt,name=pre_update_backup_detail,json=preUpdateBackupDetail,proto3,oneof" json:"pre_update_backup_detail,omitempty"`
 }
 

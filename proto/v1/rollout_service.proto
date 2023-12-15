@@ -272,7 +272,7 @@ message Plan {
       // Format: instances/{instance}/databases/{database}
       string database = 1;
     }
-    // If set, we will create a task backing up data before the DML task is executed.
+    // If set, a backup of the modified data will be created automatically before any changes are applied.
     optional PreUpdateBackupDetail pre_update_backup_detail = 8;
   }
 

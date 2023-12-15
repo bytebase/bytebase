@@ -172,7 +172,7 @@ export interface Plan_ChangeDatabaseConfig {
   rollbackEnabled: boolean;
   rollbackDetail?: Plan_ChangeDatabaseConfig_RollbackDetail | undefined;
   ghostFlags: { [key: string]: string };
-  /** If set, we will create a task backing up data before the DML task is executed. */
+  /** If set, a backup of the modified data will be created automatically before any changes are applied. */
   preUpdateBackupDetail?: Plan_ChangeDatabaseConfig_PreUpdateBackupDetail | undefined;
 }
 
