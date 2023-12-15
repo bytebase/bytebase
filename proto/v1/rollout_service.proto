@@ -273,7 +273,7 @@ message Plan {
       string database = 1;
     }
     // If set, we will create a task backing up data before the DML task is executed.
-    optional PreUpdateBackupDetail pre_update_backup_detail = 9;
+    optional PreUpdateBackupDetail pre_update_backup_detail = 8;
   }
 
   message RestoreDatabaseConfig {
