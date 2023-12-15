@@ -94,7 +94,7 @@ func permissionExist(p Permission) bool {
 		PermissionExternalVersionControlsUpdate,
 		PermissionExternalVersionControlsDelete,
 		PermissionExternalVersionControlsSearchProjects,
-		PermissionExternalVersionControlsListProjects:
+		PermissionExternalVersionControlsListProjects,
 		PermissionPlansList,
 		PermissionPlansGet,
 		PermissionPlansCreate,
