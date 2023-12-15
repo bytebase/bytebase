@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -64,7 +65,12 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
-
+		v1pb.IdentityProviderService_GetIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_CreateIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_UpdateIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName,
 		v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName,
 		v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName,
 		v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName,
@@ -194,6 +200,10 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 }
 
 func isSkippedMethod(fullMethod string) bool {
+	if auth.IsAuthenticationAllowed(fullMethod) {
+		return true
+	}
+
 	// Below are the skipped.
 	switch fullMethod {
 	// TODO(p0ny): explicit skips

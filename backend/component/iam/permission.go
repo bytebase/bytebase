@@ -112,4 +112,10 @@ const (
 	PermissionBranchesCreate Permission = "bb.branches.create"
 	PermissionBranchesUpdate Permission = "bb.branches.update"
 	PermissionBranchesDelete Permission = "bb.branches.delete"
+
+	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
+	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
+	PermissionIdentityProvidersUpdate   Permission = "bb.identityProviders.update"
+	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
+	PermissionIdentityProvidersUndelete Permission = "bb.identityProviders.undelete"
 )

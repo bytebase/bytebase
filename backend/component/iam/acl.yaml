@@ -91,6 +91,11 @@ roles:
       - bb.branches.create
       - bb.branches.update
       - bb.branches.delete
+      - bb.identityProviders.get
+      - bb.identityProviders.create
+      - bb.identityProviders.update
+      - bb.identityProviders.delete
+      - bb.identityProviders.undelete
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -183,6 +188,11 @@ roles:
       - bb.branches.create
       - bb.branches.update
       - bb.branches.delete
+      - bb.identityProviders.get
+      - bb.identityProviders.create
+      - bb.identityProviders.update
+      - bb.identityProviders.delete
+      - bb.identityProviders.undelete
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
