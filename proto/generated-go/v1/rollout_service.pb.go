@@ -2783,7 +2783,7 @@ type Plan_ChangeDatabaseConfig struct {
 	// schema_version is parsed from VCS file name.
 	// It is automatically generated in the UI workflow.
 	SchemaVersion string `protobuf:"bytes,4,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
-	// If RollbackEnabled, build the RollbackSheetID of the task after the task is completed..
+	// If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.
 	RollbackEnabled bool                                      `protobuf:"varint,5,opt,name=rollback_enabled,json=rollbackEnabled,proto3" json:"rollback_enabled,omitempty"`
 	RollbackDetail  *Plan_ChangeDatabaseConfig_RollbackDetail `protobuf:"bytes,6,opt,name=rollback_detail,json=rollbackDetail,proto3,oneof" json:"rollback_detail,omitempty"`
 	GhostFlags      map[string]string                         `protobuf:"bytes,7,rep,name=ghost_flags,json=ghostFlags,proto3" json:"ghost_flags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`

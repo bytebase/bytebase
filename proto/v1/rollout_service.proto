@@ -252,7 +252,7 @@ message Plan {
     // It is automatically generated in the UI workflow.
     string schema_version = 4;
 
-    // If RollbackEnabled, build the RollbackSheetID of the task after the task is completed..
+    // If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.
     bool rollback_enabled = 5;
 
     message RollbackDetail {

@@ -168,7 +168,7 @@ export interface Plan_ChangeDatabaseConfig {
    * It is automatically generated in the UI workflow.
    */
   schemaVersion: string;
-  /** If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.. */
+  /** If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. */
   rollbackEnabled: boolean;
   rollbackDetail?: Plan_ChangeDatabaseConfig_RollbackDetail | undefined;
   ghostFlags: { [key: string]: string };
