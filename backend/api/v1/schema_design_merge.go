@@ -232,19 +232,19 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		// If two actions are CREATE or UPDATE both, we need to check the table attributes is conflict.
 		// XXX: Expanding the table attributes check if we support more attributes.
 		if n.to.Engine != other.to.Engine {
-			return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.from.Engine, other.from.Engine)
+			return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.to.Engine, other.to.Engine)
 		}
 		if n.to.Collation != other.to.Collation {
-			return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.from.Collation, other.from.Collation)
+			return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.to.Collation, other.to.Collation)
 		}
 		if n.to.Comment != other.to.Comment {
-			return true, fmt.Sprintf("conflict table comment, one is %s, the other is %s", n.from.Comment, other.from.Comment)
+			return true, fmt.Sprintf("conflict table comment, one is %s, the other is %s", n.to.Comment, other.to.Comment)
 		}
 		if n.to.UserComment != other.to.UserComment {
-			return true, fmt.Sprintf("conflict table user comment, one is %s, the other is %s", n.from.UserComment, other.from.UserComment)
+			return true, fmt.Sprintf("conflict table user comment, one is %s, the other is %s", n.to.UserComment, other.to.UserComment)
 		}
 		if n.to.Classification != other.to.Classification {
-			return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.from.Classification, other.from.Classification)
+			return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.to.Classification, other.to.Classification)
 		}
 	}
 
@@ -503,22 +503,22 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 
 	if n.action == diffActionCreate {
 		if n.to.Type != other.to.Type {
-			return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.from.Type, other.from.Type)
+			return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.to.Type, other.to.Type)
 		}
 		if n.to.DefaultValue != other.to.DefaultValue {
-			return true, fmt.Sprintf("conflict column default value, one is %s, the other is %s", n.from.DefaultValue, other.from.DefaultValue)
+			return true, fmt.Sprintf("conflict column default value, one is %s, the other is %s", n.to.DefaultValue, other.to.DefaultValue)
 		}
 		if n.to.Nullable != other.to.Nullable {
-			return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.from.Nullable, other.from.Nullable)
+			return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.to.Nullable, other.to.Nullable)
 		}
 		if n.to.Comment != other.to.Comment {
-			return true, fmt.Sprintf("conflict column comment, one is %s, the other is %s", n.from.Comment, other.from.Comment)
+			return true, fmt.Sprintf("conflict column comment, one is %s, the other is %s", n.to.Comment, other.to.Comment)
 		}
 		if n.to.UserComment != other.to.UserComment {
-			return true, fmt.Sprintf("conflict column user comment, one is %s, the other is %s", n.from.UserComment, other.from.UserComment)
+			return true, fmt.Sprintf("conflict column user comment, one is %s, the other is %s", n.to.UserComment, other.to.UserComment)
 		}
 		if n.to.Classification != other.to.Classification {
-			return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.from.Classification, other.from.Classification)
+			return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.to.Classification, other.to.Classification)
 		}
 	}
 	if n.action == diffActionUpdate {
@@ -634,16 +634,16 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 	}
 	if n.action == diffActionCreate {
 		if slices.Equal(n.to.Expressions, other.to.Expressions) {
-			return true, fmt.Sprintf("conflict index expressions, one is %v, the other is %v", n.from.Expressions, other.from.Expressions)
+			return true, fmt.Sprintf("conflict index expressions, one is %v, the other is %v", n.to.Expressions, other.to.Expressions)
 		}
 		if n.to.Type != other.to.Type {
-			return true, fmt.Sprintf("conflict index type, one is %s, the other is %s", n.from.Type, other.from.Type)
+			return true, fmt.Sprintf("conflict index type, one is %s, the other is %s", n.to.Type, other.to.Type)
 		}
 		if n.to.Unique != other.to.Unique {
-			return true, fmt.Sprintf("conflict index unique, one is %t, the other is %t", n.from.Unique, other.from.Unique)
+			return true, fmt.Sprintf("conflict index unique, one is %t, the other is %t", n.to.Unique, other.to.Unique)
 		}
 		if n.to.Primary != other.to.Primary {
-			return true, fmt.Sprintf("conflict index primary, one is %t, the other is %t", n.from.Primary, other.from.Primary)
+			return true, fmt.Sprintf("conflict index primary, one is %t, the other is %t", n.to.Primary, other.to.Primary)
 		}
 	}
 
@@ -739,22 +739,22 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 	}
 	if n.action == diffActionCreate {
 		if n.to.ReferencedSchema != other.to.ReferencedSchema {
-			return true, fmt.Sprintf("conflict foreign key referenced schema, one is %s, the other is %s", n.from.ReferencedSchema, other.from.ReferencedSchema)
+			return true, fmt.Sprintf("conflict foreign key referenced schema, one is %s, the other is %s", n.to.ReferencedSchema, other.to.ReferencedSchema)
 		}
 		if n.to.ReferencedTable != other.to.ReferencedTable {
-			return true, fmt.Sprintf("conflict foreign key referenced table, one is %s, the other is %s", n.from.ReferencedTable, other.from.ReferencedTable)
+			return true, fmt.Sprintf("conflict foreign key referenced table, one is %s, the other is %s", n.to.ReferencedTable, other.to.ReferencedTable)
 		}
 		if n.to.OnDelete != other.to.OnDelete {
-			return true, fmt.Sprintf("conflict foreign key on delete, one is %s, the other is %s", n.from.OnDelete, other.from.OnDelete)
+			return true, fmt.Sprintf("conflict foreign key on delete, one is %s, the other is %s", n.to.OnDelete, other.to.OnDelete)
 		}
 		if n.to.OnUpdate != other.to.OnUpdate {
-			return true, fmt.Sprintf("conflict foreign key on update, one is %s, the other is %s", n.from.OnUpdate, other.from.OnUpdate)
+			return true, fmt.Sprintf("conflict foreign key on update, one is %s, the other is %s", n.to.OnUpdate, other.to.OnUpdate)
 		}
 		if !slices.Equal(n.to.Columns, other.to.Columns) {
-			return true, fmt.Sprintf("conflict foreign key columns, one is %v, the other is %v", n.from.Columns, other.from.Columns)
+			return true, fmt.Sprintf("conflict foreign key columns, one is %v, the other is %v", n.to.Columns, other.to.Columns)
 		}
 		if !slices.Equal(n.to.ReferencedColumns, other.to.ReferencedColumns) {
-			return true, fmt.Sprintf("conflict foreign key referenced columns, one is %v, the other is %v", n.from.ReferencedColumns, other.from.ReferencedColumns)
+			return true, fmt.Sprintf("conflict foreign key referenced columns, one is %v, the other is %v", n.to.ReferencedColumns, other.to.ReferencedColumns)
 		}
 	}
 	if n.action == diffActionUpdate {
