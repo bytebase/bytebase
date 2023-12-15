@@ -120,7 +120,12 @@ func permissionExist(p Permission) bool {
 		PermissionBranchesGet,
 		PermissionBranchesCreate,
 		PermissionBranchesUpdate,
-		PermissionBranchesDelete:
+		PermissionBranchesDelete,
+		PermissionIdentityProvidersGet,
+		PermissionIdentityProvidersCreate,
+		PermissionIdentityProvidersUpdate,
+		PermissionIdentityProvidersDelete,
+		PermissionIdentityProvidersUndelete:
 		return true
 	default:
 		return false
