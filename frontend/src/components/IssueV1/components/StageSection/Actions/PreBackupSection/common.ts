@@ -7,6 +7,7 @@ import {
 import { useActuatorV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { isDev } from "@/utils";
 
 export const usePreBackupContext = () => {
   const context = useIssueContext();
@@ -21,12 +22,11 @@ export const usePreBackupContext = () => {
     if (engine !== Engine.MYSQL && engine !== Engine.TIDB) {
       return false;
     }
-    const flagEnabled =
-      useActuatorV1Store().serverInfo?.preUpdateBackup || false;
-    if (!flagEnabled) {
-      return false;
+    if (isDev()) {
+      return true;
     }
-    return true;
+
+    return useActuatorV1Store().serverInfo?.preUpdateBackup || false;
   });
 
   const showPreBackupDisabled = computed((): boolean => {
