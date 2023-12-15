@@ -22,7 +22,7 @@
 import { NWatermark } from "naive-ui";
 import { computed } from "vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 import { UNKNOWN_USER_NAME } from "@/types";
 import { extractUserUID } from "@/utils";
 
@@ -31,9 +31,9 @@ const SIZE = 16;
 const PADDING = 6;
 
 const currentUserV1 = useCurrentUserV1();
-const setting = computed(() =>
-  useSettingV1Store().getSettingByName("bb.workspace.watermark")
-);
+const setting = useSettingSWRStore().useSettingByName(
+  "bb.workspace.watermark"
+).data;
 const hasWatermarkFeature = featureToRef("bb.feature.watermark");
 
 const lines = computed(() => {

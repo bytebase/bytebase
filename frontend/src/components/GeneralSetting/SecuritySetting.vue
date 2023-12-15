@@ -141,7 +141,10 @@ import {
   useActuatorV1Store,
   usePolicyV1Store,
 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import {
+  useSettingSWRStore,
+  useSettingV1Store,
+} from "@/store/modules/v1/setting";
 import { FeatureType } from "@/types";
 import {
   PolicyResourceType,
@@ -155,6 +158,7 @@ interface LocalState {
 }
 const state = reactive<LocalState>({});
 const { t } = useI18n();
+const settingStore = useSettingSWRStore();
 const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
@@ -164,6 +168,12 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
+const watermarkSetting = settingStore.useSettingByName(
+  "bb.workspace.watermark"
+);
+const updateWatermarkSetting = settingStore.useUpdateSettingByName(
+  "bb.workspace.watermark"
+);
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermissionV1(
@@ -172,10 +182,7 @@ const allowEdit = computed((): boolean => {
   );
 });
 const watermarkEnabled = computed((): boolean => {
-  return (
-    settingV1Store.getSettingByName("bb.workspace.watermark")?.value
-      ?.stringValue === "1"
-  );
+  return watermarkSetting.data.value?.value?.stringValue === "1";
 });
 const disallowSignupEnabled = computed((): boolean => {
   return settingV1Store.workspaceProfileSetting?.disallowSignup ?? false;
@@ -238,11 +245,11 @@ const handleWatermarkToggle = async (on: boolean) => {
     return;
   }
   const value = on ? "1" : "0";
-  await settingV1Store.upsertSetting({
-    name: "bb.workspace.watermark",
+  await updateWatermarkSetting.mutateAsync({
     value: {
       stringValue: value,
     },
+    validateOnly: false,
   });
   pushNotification({
     module: "bytebase",

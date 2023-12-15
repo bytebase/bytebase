@@ -144,9 +144,9 @@ watch(
     if (settingV1Store.brandingLogo) {
       set.add("bb.feature.branding");
     }
-    const watermarkSetting = settingV1Store.getSettingByName(
+    const watermarkSetting = useSettingSWRStore().useSettingByName(
       "bb.workspace.watermark"
-    );
+    ).data;
     if (watermarkSetting?.value?.stringValue === "1") {
       set.add("bb.feature.watermark");
     }
