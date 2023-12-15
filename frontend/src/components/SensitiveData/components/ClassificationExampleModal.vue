@@ -50,48 +50,48 @@ const example = {
       description: "",
     },
   ],
-  classification: {
-    "1": {
+  classifications: [
+    {
       id: "1",
       title: "Basic",
       description: "",
     },
-    "1-1": {
+    {
       id: "1-1",
       title: "Basic",
       description: "",
     },
-    "1-2": {
+    {
       id: "1-2",
       title: "Assert",
       description: "",
     },
-    "1-3": {
+    {
       id: "1-3",
       title: "Contact",
       description: "",
     },
-    "1-4": {
+    {
       id: "1-4",
       title: "Health",
       description: "",
     },
-    "2": {
+    {
       id: "2",
       title: "Relationship",
       description: "",
     },
-    "2-1": {
+    {
       id: "2-1",
       title: "Social",
       description: "",
     },
-    "2-2": {
-      id: "2-1",
+    {
+      id: "2-2",
       title: "Business",
       description: "",
     },
-  },
+  ],
 };
 
 const { copy: copyTextToClipboard } = useClipboard();
