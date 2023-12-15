@@ -269,7 +269,7 @@ message Plan {
 
     message PreUpdateBackupDetail {
       // The database for keeping the backup data.
-      // Format: instances/instance-id/databases/database-name.
+      // Format: instances/{instance}/databases/{database}
       string database = 1;
     }
     // If set, we will create a task backing up data before the DML task is executed.
