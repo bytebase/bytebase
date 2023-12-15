@@ -2278,7 +2278,8 @@
     "executing-query": "Executing query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
-    "next-row": "Next row"
+    "next-row": "Next row",
+    "copy-success": "Copy success"
   },
   "schema-editor": {
     "self": "Schema Editor",

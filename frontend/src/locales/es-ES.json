@@ -2274,7 +2274,8 @@
     "executing-query": "Ejecutando consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
-    "next-row": "siguiente fila"
+    "next-row": "siguiente fila",
+    "copy-success": "Copiado al portapapeles"
   },
   "schema-editor": {
     "self": "Editor de esquema",
