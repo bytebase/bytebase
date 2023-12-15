@@ -9,7 +9,6 @@ import {
   PolicyResourceType,
   policyTypeToJSON,
   BackupPlanSchedule,
-  ApprovalStrategy,
   RolloutPolicy,
 } from "@/types/proto/v1/org_policy_service";
 import { useCurrentUserV1 } from "../auth";
@@ -271,8 +270,6 @@ export const getDefaultBackupPlanPolicy = (
     },
   };
 };
-
-export const defaultApprovalStrategy = ApprovalStrategy.AUTOMATIC;
 
 // Default RolloutPolicy payload is somehow strict to prevent auto rollout
 export const getDefaultRolloutPolicyPayload = () => {

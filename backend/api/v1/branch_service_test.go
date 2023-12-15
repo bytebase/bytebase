@@ -79,6 +79,19 @@ func TestEqualTable(t *testing.T) {
 		{
 			s: &storepb.TableMetadata{
 				Columns: []*storepb.ColumnMetadata{
+					{Name: "a", Type: "int"},
+				},
+			},
+			t: &storepb.TableMetadata{
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "a", Type: "int", UserComment: "hello?"},
+				},
+			},
+			want: false,
+		},
+		{
+			s: &storepb.TableMetadata{
+				Columns: []*storepb.ColumnMetadata{
 					{Name: "a", Type: "int", DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "abc"}},
 				},
 			},

@@ -2273,7 +2273,8 @@
     "executing-query": "执行查询",
     "grouping": "分组",
     "previous-row": "上一行",
-    "next-row": "下一行"
+    "next-row": "下一行",
+    "copy-success": "复制成功"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

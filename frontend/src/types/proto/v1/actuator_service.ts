@@ -97,6 +97,8 @@ export interface ActuatorInfo {
   debug: boolean;
   /** lsp is the enablement of lsp in SQL Editor. */
   lsp: boolean;
+  /** lsp is the enablement of data backup prior to data update. */
+  preUpdateBackup: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -546,6 +548,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     gitopsWebhookUrl: "",
     debug: false,
     lsp: false,
+    preUpdateBackup: false,
   };
 }
 
@@ -598,6 +601,9 @@ export const ActuatorInfo = {
     }
     if (message.lsp === true) {
       writer.uint32(128).bool(message.lsp);
+    }
+    if (message.preUpdateBackup === true) {
+      writer.uint32(136).bool(message.preUpdateBackup);
     }
     return writer;
   },
@@ -721,6 +727,13 @@ export const ActuatorInfo = {
 
           message.lsp = reader.bool();
           continue;
+        case 17:
+          if (tag !== 136) {
+            break;
+          }
+
+          message.preUpdateBackup = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -748,6 +761,7 @@ export const ActuatorInfo = {
       gitopsWebhookUrl: isSet(object.gitopsWebhookUrl) ? globalThis.String(object.gitopsWebhookUrl) : "",
       debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
       lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
+      preUpdateBackup: isSet(object.preUpdateBackup) ? globalThis.Boolean(object.preUpdateBackup) : false,
     };
   },
 
@@ -801,6 +815,9 @@ export const ActuatorInfo = {
     if (message.lsp === true) {
       obj.lsp = message.lsp;
     }
+    if (message.preUpdateBackup === true) {
+      obj.preUpdateBackup = message.preUpdateBackup;
+    }
     return obj;
   },
 
@@ -825,6 +842,7 @@ export const ActuatorInfo = {
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
     message.debug = object.debug ?? false;
     message.lsp = object.lsp ?? false;
+    message.preUpdateBackup = object.preUpdateBackup ?? false;
     return message;
   },
 };

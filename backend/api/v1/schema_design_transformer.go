@@ -16,7 +16,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	pgse "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
-	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -176,19 +175,6 @@ type tableState struct {
 	comment     string
 }
 
-func (t *tableState) removeUnsupportedIndex() {
-	unsupported := []string{}
-	for name, index := range t.indexes {
-		if index.primary {
-			continue
-		}
-		unsupported = append(unsupported, name)
-	}
-	for _, name := range unsupported {
-		delete(t.indexes, name)
-	}
-}
-
 func (t *tableState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
@@ -212,7 +198,6 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	}
 
 	indexes := []*indexState{}
-	t.removeUnsupportedIndex()
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
@@ -468,8 +453,34 @@ func (i *indexState) toString(buf *strings.Builder) error {
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
+	} else {
+		if i.unique {
+			if _, err := buf.WriteString("UNIQUE INDEX "); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString("INDEX "); err != nil {
+				return err
+			}
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("`%s` (", i.name)); err != nil {
+			return err
+		}
+		for j, key := range i.keys {
+			if j > 0 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
 	}
-	// TODO: support other type indexes.
 	return nil
 }
 
@@ -1595,7 +1606,6 @@ func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSche
 		return errors.Errorf("unsupported engine for check database metadata: %v", engine)
 	}
 
-	md := model.NewDatabaseMetadata(metadata)
 	schemaMap := make(map[string]bool)
 	for _, schema := range metadata.GetSchemas() {
 		if (engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB) && schema.GetName() != "" {
@@ -1645,37 +1655,6 @@ func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSche
 						if _, ok := columnNameMap[key]; !ok {
 							return errors.Errorf("primary key column %s not found in table %s", key, table.GetName())
 						}
-					}
-				}
-			}
-
-			for _, fk := range table.GetForeignKeys() {
-				if fk.GetName() == "" {
-					return errors.Errorf("foreign key name should not be empty in table %s", table.GetName())
-				}
-				if _, ok := indexNameMap[fk.GetName()]; ok {
-					return errors.Errorf("duplicate foreign key name %s in table %s", fk.GetName(), table.GetName())
-				}
-				indexNameMap[fk.GetName()] = true
-				for _, key := range fk.GetColumns() {
-					if _, ok := columnNameMap[key]; !ok {
-						return errors.Errorf("foreign key column %s not found in table %s", key, table.GetName())
-					}
-				}
-
-				ms := md.GetSchema(fk.GetReferencedSchema())
-				if ms == nil {
-					return errors.Errorf("foreign key referenced schema %s not found in table %s", fk.GetReferencedSchema(), table.GetName())
-				}
-				mt := ms.GetTable(fk.GetReferencedTable())
-				if mt == nil {
-					return errors.Errorf("foreign key referenced table %s not found in table %s", fk.GetReferencedTable(), table.GetName())
-				}
-
-				for _, referencedColumn := range fk.GetReferencedColumns() {
-					rc := mt.GetColumn(referencedColumn)
-					if rc == nil {
-						return errors.Errorf("foreign key referenced column %s not found in table %s", referencedColumn, table.GetName())
 					}
 				}
 			}
