@@ -211,6 +211,7 @@
                 :custom-click="true"
                 :database-list="selectableDatabaseList"
                 :show-selection-column="true"
+                :show-sql-editor-button="false"
                 @select-database="
                 (db: ComposedDatabase) =>
                   toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
