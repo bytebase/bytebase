@@ -10,6 +10,9 @@ export type DatabaseQuickActionType =
   | "quickaction.bb.database.request" // Used by Developer (not yet)
   | "quickaction.bb.database.schema.update"
   | "quickaction.bb.database.data.update";
+export type DatabaseGroupQuickActionType =
+  | "quickaction.bb.group.database-group.create"
+  | "quickaction.bb.group.table-group.create";
 export type IssueQuickActionType =
   | "quickaction.bb.issue.grant.request.querier"
   | "quickaction.bb.issue.grant.request.exporter";
@@ -19,4 +22,5 @@ export type QuickActionType =
   | ProjectQuickActionType
   | InstanceQuickActionType
   | DatabaseQuickActionType
+  | DatabaseGroupQuickActionType
   | IssueQuickActionType;
