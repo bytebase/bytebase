@@ -163,7 +163,7 @@ export const useSettingSWRStore = defineStore("setting_swr", () => {
           },
           validateOnly,
         });
-        console.log("setting updated", name, resp);
+        console.debug("setting updated", name, resp);
         return resp;
       },
       onSuccess: (setting) => {
