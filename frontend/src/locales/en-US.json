@@ -2278,7 +2278,8 @@
     "executing-query": "Executing query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
-    "next-row": "Next row"
+    "next-row": "Next row",
+    "copy-success": "Copy success"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2340,7 +2341,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nothing changed",
+    "nothing-changed-for-database": "Nothing changed for database {database}",
     "message": {
       "invalid-schema-name": "Invalid schema name",
       "duplicated-schema-name": "Duplicated schema name",

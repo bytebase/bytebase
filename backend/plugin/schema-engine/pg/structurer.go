@@ -353,19 +353,6 @@ func (t *tableState) commentToString(buf *strings.Builder, schemaName string) er
 	return nil
 }
 
-func (t *tableState) removeUnsupportedIndex() {
-	unsupported := []string{}
-	for name, index := range t.indexes {
-		if index.primary {
-			continue
-		}
-		unsupported = append(unsupported, name)
-	}
-	for _, name := range unsupported {
-		delete(t.indexes, name)
-	}
-}
-
 func (t *tableState) toString(buf *strings.Builder, schemaName string) error {
 	if !t.ignoreTable {
 		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE \"%s\".\"%s\" (\n  ", schemaName, t.name)); err != nil {
@@ -394,7 +381,6 @@ func (t *tableState) toString(buf *strings.Builder, schemaName string) error {
 	}
 
 	indexes := []*indexState{}
-	t.removeUnsupportedIndex()
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
@@ -660,8 +646,35 @@ func (i *indexState) toString(buf *strings.Builder, schemaName, tableName string
 		if _, err := buf.WriteString(");\n"); err != nil {
 			return err
 		}
+	} else {
+		indexType := "INDEX"
+		if i.unique {
+			indexType = "UNIQUE INDEX"
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE %s \"%s\".\"%s\" ON \"%s\".\"%s\" (", indexType, schemaName, i.name, schemaName, tableName)); err != nil {
+			return err
+		}
+		for j, key := range i.keys {
+			if j > 0 {
+				if _, err := buf.WriteString(", "); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString("\""); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString(key); err != nil {
+				return err
+			}
+			if _, err := buf.WriteString("\""); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(");\n"); err != nil {
+			return err
+		}
 	}
-	// TODO: support other type indexes.
 	return nil
 }
 
