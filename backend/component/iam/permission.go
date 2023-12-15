@@ -106,4 +106,16 @@ const (
 	PermissionPoliciesCreate Permission = "bb.policies.create"
 	PermissionPoliciesUpdate Permission = "bb.policies.update"
 	PermissionPoliciesDelete Permission = "bb.policies.delete"
+
+	PermissionBranchesList   Permission = "bb.branches.list"
+	PermissionBranchesGet    Permission = "bb.branches.get"
+	PermissionBranchesCreate Permission = "bb.branches.create"
+	PermissionBranchesUpdate Permission = "bb.branches.update"
+	PermissionBranchesDelete Permission = "bb.branches.delete"
+
+	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
+	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
+	PermissionIdentityProvidersUpdate   Permission = "bb.identityProviders.update"
+	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
+	PermissionIdentityProvidersUndelete Permission = "bb.identityProviders.undelete"
 )
