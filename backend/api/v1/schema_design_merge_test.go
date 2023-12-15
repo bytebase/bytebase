@@ -1,388 +1,75 @@
 package v1
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestIsDiffConflict(t *testing.T) {
-	type testCase struct {
-		description string
-		base        *storepb.DatabaseSchemaMetadata
-		head        *storepb.DatabaseSchemaMetadata
-		target      *storepb.DatabaseSchemaMetadata
-		want        bool
-	}
-
-	defaultBase := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*storepb.TableMetadata{
-					{
-						Name: "employees",
-						Columns: []*storepb.ColumnMetadata{
-							{
-								Name: "id",
-								Type: "int",
-							},
-							{
-								Name: "name",
-								Type: "text",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	testCases := []testCase{
-		{
-			description: "create different table with different name should not conflict",
-			base:        defaultBase,
-			head: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "salary",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "employee_id",
-										Type: "int",
-									},
-									{
-										Name: "amount",
-										Type: "int",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			target: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "office",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "address",
-										Type: "text",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: false,
-		},
-	}
-
-	a := require.New(t)
-
-	for _, tc := range testCases {
-		diffBetweenBaseAndHead, err := diffMetadata(tc.base, tc.head)
-		a.NoError(err, tc.description)
-		a.NotNil(diffBetweenBaseAndHead, tc.description)
-		diffBetweenBaseAndTarget, err := diffMetadata(tc.base, tc.target)
-		a.NoError(err, tc.description)
-		a.NotNil(diffBetweenBaseAndTarget, tc.description)
-
-		isConflict, _ := diffBetweenBaseAndTarget.isConflictWith(diffBetweenBaseAndHead)
-		a.Equal(tc.want, isConflict, tc.description)
-	}
-}
-
 func TestTryMerge(t *testing.T) {
 	type testCase struct {
-		description string
-		base        *storepb.DatabaseSchemaMetadata
-		head        *storepb.DatabaseSchemaMetadata
-		target      *storepb.DatabaseSchemaMetadata
-		want        *storepb.DatabaseSchemaMetadata
+		Description string `yaml:"description"`
+		// Merge Head to Base with Ancestor as the common ancestor.
+		// Base is the base storepb.DatabaseSchemaMetadata protojson marshalled string.
+		Ancestor string `yaml:"ancestor"`
+		// Head is the head storepb.DatabaseSchemaMetadata protojson marshalled string.
+		Head string `yaml:"head"`
+		// Ancestor is the ancestor storepb.DatabaseSchemaMetadata protojson marshalled string.
+		Base string `yaml:"base"`
+		// Expected is the expected storepb.DatabaseSchemaMetadata protojson marshalled string.
+		Expected string `yaml:"expected"`
 	}
 
-	defaultBase := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*storepb.TableMetadata{
-					{
-						Name: "employees",
-						Columns: []*storepb.ColumnMetadata{
-							{
-								Name: "id",
-								Type: "int",
-							},
-							{
-								Name: "name",
-								Type: "text",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	testCases := []testCase{
-		{
-			description: "create different table with different name should not conflict",
-			base:        defaultBase,
-			head: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "salary",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "employee_id",
-										Type: "int",
-									},
-									{
-										Name: "amount",
-										Type: "int",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			target: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "office",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "address",
-										Type: "text",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "office",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "address",
-										Type: "text",
-									},
-								},
-							},
-							{
-								Name: "salary",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "employee_id",
-										Type: "int",
-									},
-									{
-										Name: "amount",
-										Type: "int",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
-			description: "add different column in the same table",
-			base:        defaultBase,
-			head: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-									{
-										Name: "salary",
-										Type: "int",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			target: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-									{
-										Name: "phone",
-										Type: "text",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{
-						Name: "",
-						Tables: []*storepb.TableMetadata{
-							{
-								Name: "employees",
-								Columns: []*storepb.ColumnMetadata{
-									{
-										Name: "id",
-										Type: "int",
-									},
-									{
-										Name: "name",
-										Type: "text",
-									},
-									{
-										Name: "phone",
-										Type: "text",
-									},
-									{
-										Name: "salary",
-										Type: "int",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	const record = false
 
 	a := require.New(t)
-	for _, tc := range testCases {
-		got, err := tryMerge(tc.base, tc.head, tc.target)
-		a.NoError(err, tc.description)
-		a.NotNil(got, tc.description)
-		equal := proto.Equal(tc.want, got)
-		a.True(equal, tc.description)
+
+	testFilepath := "testdata/schema_design_merge/try_merge.yaml"
+	content, err := os.ReadFile(testFilepath)
+	a.NoError(err)
+	testCases := []testCase{}
+	err = yaml.Unmarshal(content, &testCases)
+	a.NoError(err)
+
+	for idx, tc := range testCases {
+		ancestorSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+		err = protojson.Unmarshal([]byte(tc.Ancestor), ancestorSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		headSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+		err = protojson.Unmarshal([]byte(tc.Head), headSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		baseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+		err := protojson.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		expectedSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+		err = protojson.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+
+		s := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(mergedSchemaMetadata)
+		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		if record {
+			testCases[idx].Expected = strings.TrimSpace(string(s))
+		} else if e := proto.Equal(mergedSchemaMetadata, expectedSchemaMetadata); !e {
+			a.Equalf(tc.Expected, string(s), "test case %d: %s", idx, tc.Description)
+		}
+	}
+
+	if record {
+		f, err := os.OpenFile(testFilepath, os.O_WRONLY|os.O_TRUNC, 0644)
+		a.NoError(err)
+		defer f.Close()
+		content, err := yaml.Marshal(testCases)
+		a.NoError(err)
+		_, err = f.Write(content)
+		a.NoError(err)
 	}
 }
