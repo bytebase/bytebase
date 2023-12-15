@@ -96,7 +96,7 @@ We mainly follow [Google's style guide](https://developers.google.com/style)
 
 > ✅ 
 > This feature is only available for 
-> - **Workspace Owner** role 
+> - **Workspace Admin** role 
 > - **Team** or **Enterprise** plan
 
 6. For a task-based heading, start with a bare infinitive.

@@ -31,7 +31,7 @@ docker run --init \
   --health-interval 5m \
   --health-timeout 60s \
   --volume ~/.bytebase/data:/var/opt/bytebase \
-  bytebase/bytebase:2.11.1 \
+  bytebase/bytebase:2.12.0 \
   --data /var/opt/bytebase \
   --port 8080 \
   --demo next
