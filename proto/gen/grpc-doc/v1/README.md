@@ -5264,7 +5264,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
@@ -5466,7 +5466,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
 
 
 
@@ -5537,7 +5537,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
