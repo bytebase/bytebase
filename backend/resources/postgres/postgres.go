@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	currentVersion = "16"
+	currentVersion     = "16"
+	postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
 )
 
 // Install will extract the postgres and utility tar in resourceDir.
@@ -51,6 +52,13 @@ func Install(resourceDir string) (string, error) {
 		}
 		// Install if not exist yet.
 		needInstall = true
+	}
+	var createSymolic bool
+	if createSymolic, err = utils.LinkImpl(postgresUtilSource, pgBaseDir); err != nil {
+		return "", err
+	}
+	if createSymolic {
+		needInstall = false
 	}
 	if needInstall {
 		slog.Info("Installing PostgreSQL utilities...")

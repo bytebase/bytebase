@@ -27,6 +27,8 @@ const (
 	MySQLDump binaryName = "mysqldump"
 )
 
+const MySQLUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64"
+
 // GetPath returns the binary path specified by `binName`, `binDir` is the path that installed the mysqlutil.
 func GetPath(binName binaryName, binDir string) string {
 	switch binName {
@@ -86,8 +88,17 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mysqlutil in resourceDir.
 func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
+	var createSymolic bool
+	var err error
+	if createSymolic, err = utils.LinkImpl(MySQLUtilsDir, mysqlutilDir); err != nil {
+		return err
+	}
+	if createSymolic {
+		return nil
+	}
+
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err := os.RemoveAll(tmpDir); err != nil {
+	if err = os.RemoveAll(tmpDir); err != nil {
 		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
 	}
 

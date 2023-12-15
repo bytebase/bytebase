@@ -15,6 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
+const MongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64"
+
 // nolint
 // GetMongoshPath returns the mongosh path.
 func GetMongoshPath(binDir string) string {
@@ -67,8 +69,16 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mongoutil in resourceDir.
 func installImpl(resourceDir, mongoutilDir, tarName, version string) error {
+	var createSymolic bool
+	var err error
+	if createSymolic, err = utils.LinkImpl(MongoUtilsDir, mongoutilDir); err != nil {
+		return err
+	}
+	if createSymolic {
+		return nil
+	}
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err := os.RemoveAll(tmpDir); err != nil {
+	if err = os.RemoveAll(tmpDir); err != nil {
 		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
 	}
 

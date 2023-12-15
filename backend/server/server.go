@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -147,6 +148,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}()
 
 	var err error
+	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
+		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
+	}
 	// Install mysqlutil
 	s.mysqlBinDir, err = mysqlutil.Install(profile.ResourceDir)
 	if err != nil {

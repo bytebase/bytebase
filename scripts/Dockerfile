@@ -94,14 +94,20 @@ COPY ./scripts/.psqlrc /root/.psqlrc
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 
-COPY ./backend/resources /tmp/bytebase/resources/
-RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
-RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-amd64.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
-RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
-RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-amd64.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
-RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-amd64-16
-RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-amd64.txz -C /var/opt/bytebase/resources/postgres-linux-amd64-16/
-RUN rm -rf /tmp/bytebase
+# COPY ./backend/resources /tmp/bytebase/resources/
+# RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+# RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-amd64.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+# RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+# RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-amd64.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+# RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-amd64-16
+# RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-amd64.txz -C /var/opt/bytebase/resources/postgres-linux-amd64-16/
+# RUN rm -rf /tmp/bytebase
+
+# COPY ./backend/resources/mongoutil-1.6.1-linux-amd64/ /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+# COPY ./backend/resources/mysqlutil-8.0.33-linux-amd64/ /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+# COPY ./backend/resources/postgres-linux-amd64-16/ /var/opt/bytebase/resources/postgres-linux-amd64-16/
+RUN mkdir -p /var/opt/bytebase/resources/
+COPY ./backend/resources/tmp /var/opt/bytebase//resources/
 
 ENV OPENSSL_CONF /etc/ssl/
 

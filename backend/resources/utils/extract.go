@@ -5,6 +5,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
+	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -94,4 +95,41 @@ func extractTar(r io.Reader, targetDir string) error {
 	}
 
 	return nil
+}
+
+func LinkImpl(storeDir, utilDir string) (bool, error) {
+	/*
+		baseDir := removeLastDir(utilDir)
+		if _, err := os.Stat(baseDir); err != nil {
+			if os.IsNotExist(err) {
+				return false, nil
+			}
+		}
+	*/
+	slog.Info("link impl", "storeDir", storeDir, "utilDir", utilDir)
+	if _, err := os.Stat(storeDir); err != nil {
+		if os.IsNotExist(err) {
+			// source file doesn't exists.'
+			slog.Info("storeDir does not exists")
+			return false, nil
+		}
+	}
+	if utilDir == storeDir {
+		// they are same, just use it.
+		slog.Info("utilDir is same as storeDir")
+		return true, nil
+	}
+
+	// they are not same, create a symbolic link.
+	if err := os.Symlink(storeDir, utilDir); err != nil {
+		// panic if failed to create symbolic link
+		return false, errors.Wrapf(err, "failed to create a symbolic link for util")
+	}
+
+	// create symbolic link success
+	return true, nil
+}
+
+func removeLastDir(path string) string {
+	return filepath.Dir(path)
 }
