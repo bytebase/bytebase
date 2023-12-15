@@ -110,7 +110,12 @@ func permissionExist(p Permission) bool {
 		PermissionTaskRunsCancel,
 		PermissionSettingsList,
 		PermissionSettingsGet,
-		PermissionSettingsSet:
+		PermissionSettingsSet,
+		PermissionPoliciesList,
+		PermissionPoliciesGet,
+		PermissionPoliciesCreate,
+		PermissionPoliciesUpdate,
+		PermissionPoliciesDelete:
 		return true
 	default:
 		return false

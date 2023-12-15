@@ -100,4 +100,10 @@ const (
 	PermissionSettingsList Permission = "bb.settings.list"
 	PermissionSettingsGet  Permission = "bb.settings.get"
 	PermissionSettingsSet  Permission = "bb.settings.set"
+
+	PermissionPoliciesList   Permission = "bb.policies.list"
+	PermissionPoliciesGet    Permission = "bb.policies.get"
+	PermissionPoliciesCreate Permission = "bb.policies.create"
+	PermissionPoliciesUpdate Permission = "bb.policies.update"
+	PermissionPoliciesDelete Permission = "bb.policies.delete"
 )
