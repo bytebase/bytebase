@@ -139,6 +139,16 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 		projectIDsGetter = in.getProjectIDsForChangelistService
 	case
+		v1pb.BranchService_ListBranches_FullMethodName,
+		v1pb.BranchService_GetBranch_FullMethodName,
+		v1pb.BranchService_CreateBranch_FullMethodName,
+		v1pb.BranchService_UpdateBranch_FullMethodName,
+		v1pb.BranchService_DeleteBranch_FullMethodName,
+		v1pb.BranchService_MergeBranch_FullMethodName,
+		v1pb.BranchService_RebaseBranch_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForBranchService
+	case
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
@@ -333,6 +343,43 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectIDs = append(projectIDs, projectID)
 	}
 
+	return uniq(projectIDs), nil
+}
+
+func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any) ([]string, error) {
+	var projects, branches []string
+	switch r := req.(type) {
+	case *v1pb.GetBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.ListBranchesRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.CreateBranchRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdateBranchRequest:
+		branches = append(branches, r.GetBranch().GetName())
+	case *v1pb.DeleteBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.MergeBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.RebaseBranchRequest:
+		branches = append(branches, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, branch := range branches {
+		projectID, _, err := common.GetProjectAndBranchID(branch)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse branch %q", branch)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
 	return uniq(projectIDs), nil
 }
 

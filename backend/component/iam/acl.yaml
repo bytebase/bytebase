@@ -86,6 +86,11 @@ roles:
       - bb.policies.create
       - bb.policies.update
       - bb.policies.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.create
+      - bb.branches.update
+      - bb.branches.delete
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -173,6 +178,11 @@ roles:
       - bb.policies.create
       - bb.policies.update
       - bb.policies.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.create
+      - bb.branches.update
+      - bb.branches.delete
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
