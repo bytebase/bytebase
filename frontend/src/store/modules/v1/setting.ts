@@ -1,5 +1,6 @@
 import { QueryClient, useMutation, useQuery } from "@tanstack/vue-query";
 import { defineStore } from "pinia";
+import { computed } from "vue";
 import { settingServiceClient } from "@/grpcweb";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -162,6 +163,7 @@ export const useSettingSWRStore = defineStore("setting_swr", () => {
           },
           validateOnly,
         });
+        console.log("setting updated", name, resp);
         return resp;
       },
       onSuccess: (setting) => {
@@ -170,10 +172,35 @@ export const useSettingSWRStore = defineStore("setting_swr", () => {
     });
     return mutation;
   };
+  const workspaceProfileSetting = computed(() => {
+    const query = useSettingByName("bb.workspace.profile");
+    return query.data.value?.value?.workspaceProfileSettingValue;
+  });
+  const updateWorkspaceProfile = async (
+    payload: Partial<WorkspaceProfileSetting>
+  ) => {
+    if (!workspaceProfileSetting.value) {
+      return;
+    }
+    const mutation = useUpdateSettingByName("bb.workspace.profile");
+    await mutation.mutateAsync({
+      value: {
+        workspaceProfileSettingValue: {
+          ...workspaceProfileSetting.value,
+          ...payload,
+        },
+      },
+      validateOnly: false,
+    });
+    // Fetch the latest server info to refresh the disallow signup flag.
+    await useActuatorV1Store().fetchServerInfo();
+  };
 
   return {
     queryClient,
     useSettingByName,
     useUpdateSettingByName,
+    workspaceProfileSetting,
+    updateWorkspaceProfile,
   };
 });

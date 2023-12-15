@@ -141,10 +141,7 @@ import {
   useActuatorV1Store,
   usePolicyV1Store,
 } from "@/store";
-import {
-  useSettingSWRStore,
-  useSettingV1Store,
-} from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 import { FeatureType } from "@/types";
 import {
   PolicyResourceType,
@@ -159,7 +156,6 @@ interface LocalState {
 const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingStore = useSettingSWRStore();
-const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
 const policyV1Store = usePolicyV1Store();
@@ -168,6 +164,7 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
+const { workspaceProfileSetting } = storeToRefs(settingStore);
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermissionV1(
@@ -180,10 +177,10 @@ const watermarkEnabled = computed((): boolean => {
   return query.data.value?.value?.stringValue === "1";
 });
 const disallowSignupEnabled = computed((): boolean => {
-  return settingV1Store.workspaceProfileSetting?.disallowSignup ?? false;
+  return workspaceProfileSetting.value?.disallowSignup ?? false;
 });
 const require2FAEnabled = computed((): boolean => {
-  return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
+  return workspaceProfileSetting.value?.require2fa ?? false;
 });
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
@@ -208,7 +205,7 @@ const handleDisallowSignupToggle = async (on: boolean) => {
     state.featureNameForModal = "bb.feature.disallow-signup";
     return;
   }
-  await settingV1Store.updateWorkspaceProfile({
+  await settingStore.updateWorkspaceProfile({
     disallowSignup: on,
   });
   pushNotification({
@@ -224,7 +221,7 @@ const handleRequire2FAToggle = async (on: boolean) => {
     return;
   }
 
-  await settingV1Store.updateWorkspaceProfile({
+  await settingStore.updateWorkspaceProfile({
     require2fa: on,
   });
   pushNotification({
