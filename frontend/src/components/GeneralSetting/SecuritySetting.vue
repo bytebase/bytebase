@@ -168,12 +168,6 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
-const watermarkSetting = settingStore.useSettingByName(
-  "bb.workspace.watermark"
-);
-const updateWatermarkSetting = settingStore.useUpdateSettingByName(
-  "bb.workspace.watermark"
-);
 
 const allowEdit = computed((): boolean => {
   return hasWorkspacePermissionV1(
@@ -182,7 +176,8 @@ const allowEdit = computed((): boolean => {
   );
 });
 const watermarkEnabled = computed((): boolean => {
-  return watermarkSetting.data.value?.value?.stringValue === "1";
+  const query = settingStore.useSettingByName("bb.workspace.watermark");
+  return query.data.value?.value?.stringValue === "1";
 });
 const disallowSignupEnabled = computed((): boolean => {
   return settingV1Store.workspaceProfileSetting?.disallowSignup ?? false;
@@ -244,8 +239,11 @@ const handleWatermarkToggle = async (on: boolean) => {
     state.featureNameForModal = "bb.feature.watermark";
     return;
   }
+  const mutation = settingStore.useUpdateSettingByName(
+    "bb.workspace.watermark"
+  );
   const value = on ? "1" : "0";
-  await updateWatermarkSetting.mutateAsync({
+  await mutation.mutateAsync({
     value: {
       stringValue: value,
     },
