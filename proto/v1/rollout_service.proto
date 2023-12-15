@@ -267,8 +267,15 @@ message Plan {
 
     map<string, string> ghost_flags = 7;
 
-    // If set, we will create a task backing up affected table rows before the DML task is executed.
-    string pre_update_backup_database = 8;
+    // If set, we will create a task backing up data before the DML task is executed.
+    bool pre_update_backup = 8;
+
+    message PreUpdateBackupDetail {
+      // The database for keeping the backup data.
+      // Format: instances/instance-id/databases/database-name.
+      string database = 1;
+    }
+    PreUpdateBackupDetail pre_update_backup_detail = 9;
   }
 
   message RestoreDatabaseConfig {
