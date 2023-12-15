@@ -199,7 +199,7 @@ message AddDataSourceRequest {
   // Format: instances/{instance}
   string instance = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // Identified by type.
+  // Identified by data source ID.
   // Only READ_ONLY data source can be added.
   DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 
@@ -212,7 +212,7 @@ message RemoveDataSourceRequest {
   // Format: instances/{instance}
   string instance = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // Identified by type.
+  // Identified by data source ID.
   // Only READ_ONLY data source can be removed.
   DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 }
@@ -222,7 +222,7 @@ message UpdateDataSourceRequest {
   // Format: instances/{instance}
   string instance = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // Identified by type.
+  // Identified by data source ID.
   DataSource data_source = 2 [(google.api.field_behavior) = REQUIRED];
 
   // The list of fields to update.
