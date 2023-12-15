@@ -112,6 +112,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		GitopsWebhookUrl: setting.GitopsWebhookUrl,
 		Debug:            slog.Default().Enabled(ctx, slog.LevelDebug),
 		Lsp:              s.profile.Lsp,
+		PreUpdateBackup:  s.profile.PreUpdateBackup,
 	}
 
 	return &serverInfo, nil
