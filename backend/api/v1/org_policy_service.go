@@ -552,33 +552,6 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(policy *v1pb.Policy) (st
 			return "", errors.Wrap(err, "failed to marshal rollout policy")
 		}
 		return string(payloadBytes), nil
-	case v1pb.PolicyType_DEPLOYMENT_APPROVAL:
-		payload, err := convertToPipelineApprovalPolicyPayload(policy.GetDeploymentApprovalPolicy())
-		if err != nil {
-			return "", status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		if payload.Value != api.PipelineApprovalValueManualNever && payload.Value != api.PipelineApprovalValueManualAlways {
-			return "", status.Errorf(codes.InvalidArgument, "invalid approval policy value: %q", *payload)
-		}
-		if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
-			if payload.Value != api.PipelineApprovalValueManualNever {
-				return "", status.Errorf(codes.PermissionDenied, err.Error())
-			}
-		}
-		issueTypeSeen := make(map[api.IssueType]bool)
-		for _, group := range payload.AssigneeGroupList {
-			if group.IssueType != issueDatabaseSchemaUpdate &&
-				group.IssueType != issueDatabaseSchemaUpdateGhost &&
-				group.IssueType != issueDatabaseDataUpdate &&
-				group.IssueType != api.IssueDatabaseGeneral {
-				return "", status.Errorf(codes.InvalidArgument, "invalid assignee group issue type %q", group.IssueType)
-			}
-			if issueTypeSeen[group.IssueType] {
-				return "", status.Errorf(codes.InvalidArgument, "duplicate assignee group issue type %q", group.IssueType)
-			}
-			issueTypeSeen[group.IssueType] = true
-		}
-		return payload.String()
 	case v1pb.PolicyType_BACKUP_PLAN:
 		payload, err := convertToBackupPlanPolicyPayload(policy.GetBackupPlanPolicy())
 		if err != nil {
@@ -717,13 +690,6 @@ func convertToPolicy(parentPath string, policyMessage *store.PolicyMessage) (*v1
 	case api.PolicyTypeRollout:
 		pType = v1pb.PolicyType_ROLLOUT_POLICY
 		payload, err := convertToV1RolloutPolicyPayload(policyMessage.Payload)
-		if err != nil {
-			return nil, err
-		}
-		policy.Policy = payload
-	case api.PolicyTypePipelineApproval:
-		pType = v1pb.PolicyType_DEPLOYMENT_APPROVAL
-		payload, err := convertToV1PBDeploymentApprovalPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -1070,51 +1036,6 @@ func convertToV1RolloutPolicyPayload(payloadStr string) (*v1pb.Policy_RolloutPol
 	}, nil
 }
 
-func convertToV1PBDeploymentApprovalPolicy(payloadStr string) (*v1pb.Policy_DeploymentApprovalPolicy, error) {
-	payload, err := api.UnmarshalPipelineApprovalPolicy(payloadStr)
-	if err != nil {
-		return nil, err
-	}
-
-	approvalStrategy := v1pb.ApprovalStrategy_APPROVAL_STRATEGY_UNSPECIFIED
-	switch payload.Value {
-	case api.PipelineApprovalValueManualAlways:
-		approvalStrategy = v1pb.ApprovalStrategy_MANUAL
-	case api.PipelineApprovalValueManualNever:
-		approvalStrategy = v1pb.ApprovalStrategy_AUTOMATIC
-	}
-
-	var approvalStrategies []*v1pb.DeploymentApprovalStrategy
-	for _, group := range payload.AssigneeGroupList {
-		// HACK(p0ny): skip if type is IssueDatabaseGeneral
-		if group.IssueType == api.IssueDatabaseGeneral {
-			continue
-		}
-
-		assigneeGroupValue := v1pb.ApprovalGroup_ASSIGNEE_GROUP_UNSPECIFIED
-		switch group.Value {
-		case api.AssigneeGroupValueProjectOwner:
-			assigneeGroupValue = v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER
-		case api.AssigneeGroupValueWorkspaceOwnerOrDBA:
-			assigneeGroupValue = v1pb.ApprovalGroup_APPROVAL_GROUP_DBA
-		}
-
-		approvalStrategies = append(approvalStrategies, &v1pb.DeploymentApprovalStrategy{
-			ApprovalGroup:  assigneeGroupValue,
-			DeploymentType: convertIssueTypeToDeplymentType(group.IssueType),
-			// TODO: support using different strategy for different assignee group.
-			ApprovalStrategy: approvalStrategy,
-		})
-	}
-
-	return &v1pb.Policy_DeploymentApprovalPolicy{
-		DeploymentApprovalPolicy: &v1pb.DeploymentApprovalPolicy{
-			DefaultStrategy:              approvalStrategy,
-			DeploymentApprovalStrategies: approvalStrategies,
-		},
-	}, nil
-}
-
 func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutPolicy {
 	return &storepb.RolloutPolicy{
 		Automatic:      policy.Automatic,
@@ -1122,74 +1043,6 @@ func convertToStorePBRolloutPolicy(policy *v1pb.RolloutPolicy) *storepb.RolloutP
 		ProjectRoles:   policy.ProjectRoles,
 		IssueRoles:     policy.IssueRoles,
 	}
-}
-
-func convertToPipelineApprovalPolicyPayload(policy *v1pb.DeploymentApprovalPolicy) (*api.PipelineApprovalPolicy, error) {
-	var strategy api.PipelineApprovalValue
-	switch policy.DefaultStrategy {
-	case v1pb.ApprovalStrategy_MANUAL:
-		strategy = api.PipelineApprovalValueManualAlways
-	case v1pb.ApprovalStrategy_AUTOMATIC:
-		strategy = api.PipelineApprovalValueManualNever
-	default:
-		return nil, errors.Errorf("invalid default strategy %v", policy.DefaultStrategy)
-	}
-
-	// HACK(p0ny): always append issue type database general, the group value is set according to seenProjectOwnerGroupValue.
-	seenProjectOwnerGroupValue := false
-
-	var assigneeGroupList []api.AssigneeGroup
-	for _, group := range policy.DeploymentApprovalStrategies {
-		var assigneeGroup api.AssigneeGroupValue
-		switch group.ApprovalGroup {
-		case v1pb.ApprovalGroup_APPROVAL_GROUP_PROJECT_OWNER:
-			assigneeGroup = api.AssigneeGroupValueProjectOwner
-			seenProjectOwnerGroupValue = true
-		case v1pb.ApprovalGroup_APPROVAL_GROUP_DBA:
-			assigneeGroup = api.AssigneeGroupValueWorkspaceOwnerOrDBA
-		default:
-			return nil, errors.Errorf("invalid assignee group %v", group.ApprovalGroup)
-		}
-
-		var issueType api.IssueType
-		switch group.DeploymentType {
-		case v1pb.DeploymentType_DATABASE_CREATE:
-			issueType = issueDatabaseCreate
-		case v1pb.DeploymentType_DATABASE_DDL:
-			issueType = issueDatabaseSchemaUpdate
-		case v1pb.DeploymentType_DATABASE_DDL_GHOST:
-			issueType = issueDatabaseSchemaUpdateGhost
-		case v1pb.DeploymentType_DATABASE_DML:
-			issueType = issueDatabaseDataUpdate
-		case v1pb.DeploymentType_DATABASE_RESTORE_PITR:
-			issueType = issueDatabaseRestorePITR
-		default:
-			return nil, errors.Errorf("invalid deployment type %v", group.DeploymentType)
-		}
-
-		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
-			Value:     assigneeGroup,
-			IssueType: issueType,
-		})
-	}
-
-	// HACK(p0ny): always append issue type database general.
-	if seenProjectOwnerGroupValue {
-		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
-			Value:     api.AssigneeGroupValueProjectOwner,
-			IssueType: api.IssueDatabaseGeneral,
-		})
-	} else {
-		assigneeGroupList = append(assigneeGroupList, api.AssigneeGroup{
-			Value:     api.AssigneeGroupValueWorkspaceOwnerOrDBA,
-			IssueType: api.IssueDatabaseGeneral,
-		})
-	}
-
-	return &api.PipelineApprovalPolicy{
-		Value:             strategy,
-		AssigneeGroupList: assigneeGroupList,
-	}, nil
 }
 
 func convertToV1PBSlowQueryPolicy(payloadStr string) (*v1pb.Policy_SlowQueryPolicy, error) {
@@ -1366,8 +1219,6 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 	switch strings.ToUpper(pType) {
 	case v1pb.PolicyType_WORKSPACE_IAM.String():
 		return api.PolicyTypeWorkspaceIAM, nil
-	case v1pb.PolicyType_DEPLOYMENT_APPROVAL.String():
-		return api.PolicyTypePipelineApproval, nil
 	case v1pb.PolicyType_ROLLOUT_POLICY.String():
 		return api.PolicyTypeRollout, nil
 	case v1pb.PolicyType_BACKUP_PLAN.String():
