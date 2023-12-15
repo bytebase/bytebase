@@ -884,12 +884,24 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 	if s.GetComment() != t.GetComment() {
 		return false
 	}
+	if s.GetUserComment() != t.GetUserComment() {
+		return false
+	}
+	if s.GetClassification() != t.GetClassification() {
+		return false
+	}
 	for i := 0; i < len(s.GetColumns()); i++ {
 		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
 		if sc.Name != tc.Name {
 			return false
 		}
 		if sc.Comment != tc.Comment {
+			return false
+		}
+		if sc.UserComment != tc.UserComment {
+			return false
+		}
+		if sc.Classification != tc.Classification {
 			return false
 		}
 		if sc.Type != tc.Type {
