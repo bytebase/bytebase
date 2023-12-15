@@ -30,9 +30,6 @@ const (
 
 	// PolicyTypeWorkspaceIAM is the workspace IAM policy type.
 	PolicyTypeWorkspaceIAM PolicyType = "bb.policy.workspace-iam"
-	// PolicyTypePipelineApproval is the approval policy type.
-	// Deprecated: use PolicyTypeRollout instead.
-	PolicyTypePipelineApproval PolicyType = "bb.policy.pipeline-approval"
 	// PolicyTypeRollout is the rollout policy type.
 	PolicyTypeRollout PolicyType = "bb.policy.rollout"
 	// PolicyTypeBackupPlan is the backup plan policy type.
@@ -94,7 +91,6 @@ var (
 	// AllowedResourceTypes includes allowed resource types for each policy type.
 	AllowedResourceTypes = map[PolicyType][]PolicyResourceType{
 		PolicyTypeWorkspaceIAM:                      {PolicyResourceTypeWorkspace},
-		PolicyTypePipelineApproval:                  {PolicyResourceTypeEnvironment},
 		PolicyTypeRollout:                           {PolicyResourceTypeEnvironment},
 		PolicyTypeBackupPlan:                        {PolicyResourceTypeEnvironment},
 		PolicyTypeSQLReview:                         {PolicyResourceTypeEnvironment},
@@ -107,46 +103,6 @@ var (
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace},
 	}
 )
-
-// PipelineApprovalPolicy is the policy configuration for pipeline approval.
-type PipelineApprovalPolicy struct {
-	Value PipelineApprovalValue `json:"value"`
-	// The AssigneeGroup is the final value of the assignee group which overrides the default value.
-	// If there is no value provided in the AssigneeGroupList, we use the the workspace owners and DBAs (default) as the available assignee.
-	// If the AssigneeGroupValue is PROJECT_OWNER, the available assignee is the project owners.
-	AssigneeGroupList []AssigneeGroup `json:"assigneeGroupList"`
-}
-
-func (pa *PipelineApprovalPolicy) String() (string, error) {
-	s, err := json.Marshal(pa)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
-
-// UnmarshalPipelineApprovalPolicy will unmarshal payload to pipeline approval policy.
-func UnmarshalPipelineApprovalPolicy(payload string) (*PipelineApprovalPolicy, error) {
-	var pa PipelineApprovalPolicy
-	if err := json.Unmarshal([]byte(payload), &pa); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal pipeline approval policy %q", payload)
-	}
-	return &pa, nil
-}
-
-// AssigneeGroup is the configuration of the assignee group.
-type AssigneeGroup struct {
-	IssueType IssueType          `json:"issueType"`
-	Value     AssigneeGroupValue `json:"value"`
-}
-
-func (p *AssigneeGroup) String() (string, error) {
-	s, err := json.Marshal(p)
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
-}
 
 // BackupPlanPolicy is the policy configuration for backup plan.
 type BackupPlanPolicy struct {

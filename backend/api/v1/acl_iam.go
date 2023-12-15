@@ -8,30 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
-	// Below are the skipped.
-	switch fullMethod {
-	// skip checking for custom approval.
-	case
-		v1pb.IssueService_ApproveIssue_FullMethodName,
-		v1pb.IssueService_RejectIssue_FullMethodName,
-		v1pb.IssueService_RequestIssue_FullMethodName:
-		return nil
-	// handled in the method because checking is complex.
-	case
-		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
-		v1pb.DatabaseService_ListDatabases_FullMethodName,     // TODO(p0ny): implement
-		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
-		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
-		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
-		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+	if isSkippedMethod(fullMethod) {
 		return nil
 	}
 
@@ -81,7 +65,12 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
 		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
-
+		v1pb.IdentityProviderService_GetIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_CreateIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_UpdateIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName,
+		v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName,
 		v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName,
 		v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName,
 		v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName,
@@ -138,6 +127,16 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForChangelistService
+	case
+		v1pb.BranchService_ListBranches_FullMethodName,
+		v1pb.BranchService_GetBranch_FullMethodName,
+		v1pb.BranchService_CreateBranch_FullMethodName,
+		v1pb.BranchService_UpdateBranch_FullMethodName,
+		v1pb.BranchService_DeleteBranch_FullMethodName,
+		v1pb.BranchService_MergeBranch_FullMethodName,
+		v1pb.BranchService_RebaseBranch_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForBranchService
 	case
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
@@ -198,6 +197,44 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	}
 
 	return nil
+}
+
+func isSkippedMethod(fullMethod string) bool {
+	if auth.IsAuthenticationAllowed(fullMethod) {
+		return true
+	}
+
+	// Below are the skipped.
+	switch fullMethod {
+	// TODO(p0ny): explicit skips
+	// skip actuator service
+	// skip anomaly service
+	// skip auth service
+	// skip cel service
+	// skip inbox service
+	// skip logging service
+	// skip sql service
+	// skip subscription service
+
+	// skip checking for custom approval.
+	case
+		v1pb.IssueService_ApproveIssue_FullMethodName,
+		v1pb.IssueService_RejectIssue_FullMethodName,
+		v1pb.IssueService_RequestIssue_FullMethodName:
+		return true
+	// handled in the method because checking is complex.
+	case
+		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
+		v1pb.DatabaseService_ListDatabases_FullMethodName,     // TODO(p0ny): implement
+		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
+		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
+		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
+		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
+		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
+		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+		return true
+	}
+	return false
 }
 
 func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
@@ -333,6 +370,43 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectIDs = append(projectIDs, projectID)
 	}
 
+	return uniq(projectIDs), nil
+}
+
+func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any) ([]string, error) {
+	var projects, branches []string
+	switch r := req.(type) {
+	case *v1pb.GetBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.ListBranchesRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.CreateBranchRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdateBranchRequest:
+		branches = append(branches, r.GetBranch().GetName())
+	case *v1pb.DeleteBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.MergeBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.RebaseBranchRequest:
+		branches = append(branches, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, branch := range branches {
+		projectID, _, err := common.GetProjectAndBranchID(branch)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse branch %q", branch)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
 	return uniq(projectIDs), nil
 }
 
