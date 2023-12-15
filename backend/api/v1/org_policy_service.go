@@ -1181,39 +1181,6 @@ func convertToRestrictIssueCreationForSQLReviewPayload(policy *v1pb.RestrictIssu
 	}, nil
 }
 
-// This is to be deprecated.
-const (
-	// IssueDatabaseCreate is the issue type for creating databases.
-	issueDatabaseCreate api.IssueType = "bb.issue.database.create"
-	// IssueDatabaseSchemaUpdate is the issue type for updating database schemas (DDL).
-	issueDatabaseSchemaUpdate api.IssueType = "bb.issue.database.schema.update"
-	// IssueDatabaseSchemaUpdateGhost is the issue type for updating database schemas using gh-ost.
-	issueDatabaseSchemaUpdateGhost api.IssueType = "bb.issue.database.schema.update.ghost"
-	// IssueDatabaseDataUpdate is the issue type for updating database data (DML).
-	issueDatabaseDataUpdate api.IssueType = "bb.issue.database.data.update"
-	// IssueDatabaseRestorePITR is the issue type for performing a Point-in-time Recovery.
-	issueDatabaseRestorePITR api.IssueType = "bb.issue.database.restore.pitr"
-)
-
-// TODO(p0ny): fix bb.issue.database.general.
-func convertIssueTypeToDeplymentType(issueType api.IssueType) v1pb.DeploymentType {
-	res := v1pb.DeploymentType_DEPLOYMENT_TYPE_UNSPECIFIED
-	switch issueType {
-	case issueDatabaseCreate:
-		res = v1pb.DeploymentType_DATABASE_CREATE
-	case issueDatabaseSchemaUpdate:
-		res = v1pb.DeploymentType_DATABASE_DDL
-	case issueDatabaseSchemaUpdateGhost:
-		res = v1pb.DeploymentType_DATABASE_DDL_GHOST
-	case issueDatabaseDataUpdate:
-		res = v1pb.DeploymentType_DATABASE_DML
-	case issueDatabaseRestorePITR:
-		res = v1pb.DeploymentType_DATABASE_RESTORE_PITR
-	}
-
-	return res
-}
-
 func convertPolicyType(pType string) (api.PolicyType, error) {
 	var policyType api.PolicyType
 	switch strings.ToUpper(pType) {
