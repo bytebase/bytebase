@@ -20,9 +20,6 @@
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
   
-- [v1/deployment.proto](#v1_deployment-proto)
-    - [DeploymentType](#bytebase-v1-DeploymentType)
-  
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
     - [IamPolicy](#bytebase-v1-IamPolicy)
@@ -31,8 +28,6 @@
     - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
-    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
@@ -51,8 +46,6 @@
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
-    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
-    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
@@ -870,38 +863,6 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
-<a name="v1_deployment-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/deployment.proto
-
-
- 
-
-
-<a name="bytebase-v1-DeploymentType"></a>
-
-### DeploymentType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CREATE | 1 |  |
-| DATABASE_DDL | 2 |  |
-| DATABASE_DDL_GHOST | 3 |  |
-| DATABASE_DML | 4 |  |
-| DATABASE_RESTORE_PITR | 5 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_iam_policy-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -1000,39 +961,6 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
-
-### DeploymentApprovalPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
-
-### DeploymentApprovalStrategy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
-| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
-| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
 
 
 
@@ -1221,7 +1149,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
@@ -1344,32 +1271,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
  
 
 
-<a name="bytebase-v1-ApprovalGroup"></a>
-
-### ApprovalGroup
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
-| APPROVAL_GROUP_DBA | 1 |  |
-| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStrategy"></a>
-
-### ApprovalStrategy
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
-| AUTOMATIC | 1 |  |
-| MANUAL | 2 |  |
-
-
-
 <a name="bytebase-v1-BackupPlanSchedule"></a>
 
 ### BackupPlanSchedule
@@ -1422,7 +1323,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | WORKSPACE_IAM | 1 |  |
-| DEPLOYMENT_APPROVAL | 2 |  |
 | ROLLOUT_POLICY | 11 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
