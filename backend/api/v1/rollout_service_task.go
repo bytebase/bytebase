@@ -444,12 +444,17 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to get sheet id from sheet %q", c.Sheet)
 		}
+		preUpdateBackupDetail := api.PreUpdateBackupDetail{}
+		if c.GetPreUpdateBackupDetail().GetDatabase() != "" {
+			preUpdateBackupDetail.Database = c.GetPreUpdateBackupDetail().GetDatabase()
+		}
 		payload := api.TaskDatabaseDataUpdatePayload{
-			SpecID:            spec.Id,
-			SheetID:           sheetUID,
-			SchemaVersion:     getOrDefaultSchemaVersion(c.SchemaVersion),
-			RollbackEnabled:   c.RollbackEnabled,
-			RollbackSQLStatus: api.RollbackSQLStatusPending,
+			SpecID:                spec.Id,
+			SheetID:               sheetUID,
+			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
+			RollbackEnabled:       c.RollbackEnabled,
+			RollbackSQLStatus:     api.RollbackSQLStatusPending,
+			PreUpdateBackupDetail: preUpdateBackupDetail,
 		}
 		if c.RollbackDetail != nil {
 			issueID, err := common.GetIssueID(c.RollbackDetail.RollbackFromIssue)

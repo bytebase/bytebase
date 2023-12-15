@@ -133,4 +133,7 @@ message ActuatorInfo {
 
   // lsp is the enablement of lsp in SQL Editor.
   bool lsp = 16;
+
+  // lsp is the enablement of data backup prior to data update.
+  bool pre_update_backup = 17;
 }

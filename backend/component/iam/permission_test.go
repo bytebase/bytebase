@@ -88,6 +88,13 @@ func permissionExist(p Permission) bool {
 		PermissionInstanceRolesUpdate,
 		PermissionInstanceRolesDelete,
 		PermissionInstanceRolesUndelete,
+		PermissionExternalVersionControlsGet,
+		PermissionExternalVersionControlsList,
+		PermissionExternalVersionControlsCreate,
+		PermissionExternalVersionControlsUpdate,
+		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsSearchProjects,
+		PermissionExternalVersionControlsListProjects,
 		PermissionPlansList,
 		PermissionPlansGet,
 		PermissionPlansCreate,
@@ -100,7 +107,20 @@ func permissionExist(p Permission) bool {
 		PermissionPlanCheckRunsRun,
 		PermissionTasksRun,
 		PermissionTasksSkip,
-		PermissionTaskRunsCancel:
+		PermissionTaskRunsCancel,
+		PermissionSettingsList,
+		PermissionSettingsGet,
+		PermissionSettingsSet,
+		PermissionPoliciesList,
+		PermissionPoliciesGet,
+		PermissionPoliciesCreate,
+		PermissionPoliciesUpdate,
+		PermissionPoliciesDelete,
+		PermissionBranchesList,
+		PermissionBranchesGet,
+		PermissionBranchesCreate,
+		PermissionBranchesUpdate,
+		PermissionBranchesDelete:
 		return true
 	default:
 		return false

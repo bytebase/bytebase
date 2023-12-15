@@ -218,9 +218,16 @@ type TaskDatabaseDataUpdatePayload struct {
 	// RollbackFromIssueID is the issue ID containing the original task from which the rollback SQL statement is generated for this task.
 	RollbackFromIssueID int `json:"rollbackFromIssueId,omitempty"`
 	// RollbackFromTaskID is the task ID from which the rollback SQL statement is generated for this task.
-	RollbackFromTaskID int `json:"rollbackFromTaskId,omitempty"`
+	RollbackFromTaskID    int                   `json:"rollbackFromTaskId,omitempty"`
+	PreUpdateBackupDetail PreUpdateBackupDetail `json:"preUpdateBackupDetail,omitempty"`
 
 	SchemaGroupName string `json:"schemaGroupName,omitempty"`
+}
+
+type PreUpdateBackupDetail struct {
+	// The database for keeping the backup data.
+	// Format: instances/{instance}/databases/{database}
+	Database string `json:"database,omitempty"`
 }
 
 // TaskDatabaseBackupPayload is the task payload for database backup.

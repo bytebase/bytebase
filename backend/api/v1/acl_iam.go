@@ -73,6 +73,23 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.EnvironmentService_GetEnvironment_FullMethodName,
 		v1pb.EnvironmentService_ListEnvironments_FullMethodName,
 		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName,
+		v1pb.SettingService_ListSettings_FullMethodName,
+		v1pb.SettingService_GetSetting_FullMethodName,
+		v1pb.SettingService_SetSetting_FullMethodName,
+		v1pb.OrgPolicyService_ListPolicies_FullMethodName,
+		v1pb.OrgPolicyService_GetPolicy_FullMethodName,
+		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,
+		v1pb.OrgPolicyService_UpdatePolicy_FullMethodName,
+		v1pb.OrgPolicyService_DeletePolicy_FullMethodName,
+
+		v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName,
+		v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName,
+		v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName,
+		v1pb.ExternalVersionControlService_ExchangeToken_FullMethodName,
+		v1pb.ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName,
+		v1pb.ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName,
+		v1pb.ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName,
+		v1pb.ExternalVersionControlService_ListProjectGitOpsInfo_FullMethodName,
 		v1pb.RiskService_ListRisks_FullMethodName,
 		v1pb.RiskService_CreateRisk_FullMethodName,
 		v1pb.RiskService_UpdateRisk_FullMethodName,
@@ -121,6 +138,16 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForChangelistService
+	case
+		v1pb.BranchService_ListBranches_FullMethodName,
+		v1pb.BranchService_GetBranch_FullMethodName,
+		v1pb.BranchService_CreateBranch_FullMethodName,
+		v1pb.BranchService_UpdateBranch_FullMethodName,
+		v1pb.BranchService_DeleteBranch_FullMethodName,
+		v1pb.BranchService_MergeBranch_FullMethodName,
+		v1pb.BranchService_RebaseBranch_FullMethodName:
+
+		projectIDsGetter = in.getProjectIDsForBranchService
 	case
 		v1pb.RolloutService_GetRollout_FullMethodName,
 		v1pb.RolloutService_CreateRollout_FullMethodName,
@@ -316,6 +343,43 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectIDs = append(projectIDs, projectID)
 	}
 
+	return uniq(projectIDs), nil
+}
+
+func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any) ([]string, error) {
+	var projects, branches []string
+	switch r := req.(type) {
+	case *v1pb.GetBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.ListBranchesRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.CreateBranchRequest:
+		projects = append(projects, r.GetParent())
+	case *v1pb.UpdateBranchRequest:
+		branches = append(branches, r.GetBranch().GetName())
+	case *v1pb.DeleteBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.MergeBranchRequest:
+		branches = append(branches, r.GetName())
+	case *v1pb.RebaseBranchRequest:
+		branches = append(branches, r.GetName())
+	}
+
+	var projectIDs []string
+	for _, branch := range branches {
+		projectID, _, err := common.GetProjectAndBranchID(branch)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse branch %q", branch)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	for _, project := range projects {
+		projectID, err := common.GetProjectID(project)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project %q", project)
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
 	return uniq(projectIDs), nil
 }
 
