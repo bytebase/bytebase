@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <InstanceOperations class="mb-3" :instance-list="selectedInstanceList" />
+  <div class="space-y-2">
+    <InstanceOperations :instance-list="selectedInstanceList" />
     <BBGrid
       class="border-y"
       :column-list="columnList"

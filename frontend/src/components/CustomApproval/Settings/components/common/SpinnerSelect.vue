@@ -1,5 +1,5 @@
 <template>
-  <NSelect :loading="loading" @update:value="handleUpdate" />
+  <NSelect v-bind="$attrs" :loading="loading" @update:value="handleUpdate" />
 </template>
 
 <script lang="ts">
