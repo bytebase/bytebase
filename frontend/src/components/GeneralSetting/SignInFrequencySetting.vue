@@ -48,13 +48,17 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 import { FeatureType, defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { hasWorkspacePermissionV1 } from "@/utils";
+
+const settingStore = useSettingSWRStore();
+const { workspaceProfileSetting } = storeToRefs(settingStore);
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
@@ -62,7 +66,7 @@ const getInitialState = (): LocalState => {
     timeFormat: "DAYS",
   };
   const seconds =
-    settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds?.toNumber();
+    workspaceProfileSetting.value?.tokenDuration?.seconds?.toNumber();
   if (seconds && seconds > 0) {
     if (seconds < 60 * 60 * 24) {
       defaultState.inputValue = Math.floor(seconds / (60 * 60)) || 1;
@@ -82,7 +86,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>(getInitialState());
 
@@ -110,7 +113,7 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
     state.timeFormat === "HOURS"
       ? state.inputValue * 60 * 60
       : state.inputValue * 24 * 60 * 60;
-  await settingV1Store.updateWorkspaceProfile({
+  await settingStore.updateWorkspaceProfile({
     tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
   });
   pushNotification({
