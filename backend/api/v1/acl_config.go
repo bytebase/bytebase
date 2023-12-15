@@ -179,6 +179,14 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.OrgPolicyService_CreatePolicy_FullMethodName: iam.PermissionPoliciesCreate,
 	v1pb.OrgPolicyService_UpdatePolicy_FullMethodName: iam.PermissionPoliciesUpdate,
 	v1pb.OrgPolicyService_DeletePolicy_FullMethodName: iam.PermissionPoliciesDelete,
+
+	v1pb.BranchService_GetBranch_FullMethodName:    iam.PermissionBranchesGet,
+	v1pb.BranchService_ListBranches_FullMethodName: iam.PermissionBranchesList,
+	v1pb.BranchService_CreateBranch_FullMethodName: iam.PermissionBranchesCreate,
+	v1pb.BranchService_UpdateBranch_FullMethodName: iam.PermissionBranchesUpdate,
+	v1pb.BranchService_DeleteBranch_FullMethodName: iam.PermissionBranchesDelete,
+	v1pb.BranchService_MergeBranch_FullMethodName:  iam.PermissionBranchesUpdate,
+	v1pb.BranchService_RebaseBranch_FullMethodName: iam.PermissionBranchesUpdate,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {
