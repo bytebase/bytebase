@@ -18,19 +18,20 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useSettingV1Store } from "@/store";
+import { useSettingSWRStore } from "@/store";
 import { Announcement_AlertLevel } from "@/types/proto/v1/setting_service";
 import { urlfy } from "@/utils";
 
-const settingV1Store = useSettingV1Store();
+const { workspaceProfileSetting } = storeToRefs(useSettingSWRStore());
 
 const showBanner = computed(() => {
   return announcementText.value !== "";
 });
 
 const bgColor = computed(() => {
-  switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
+  switch (workspaceProfileSetting.value?.announcement?.level) {
     case Announcement_AlertLevel.ALERT_LEVEL_INFO:
       return "bg-info";
     case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
@@ -43,7 +44,7 @@ const bgColor = computed(() => {
 });
 
 const bgColorHover = computed(() => {
-  switch (settingV1Store.workspaceProfileSetting?.announcement?.level) {
+  switch (workspaceProfileSetting.value?.announcement?.level) {
     case Announcement_AlertLevel.ALERT_LEVEL_INFO:
       return "hover:bg-info-hover";
     case Announcement_AlertLevel.ALERT_LEVEL_WARNING:
@@ -56,11 +57,11 @@ const bgColorHover = computed(() => {
 });
 
 const announcementText = computed(() => {
-  return settingV1Store.workspaceProfileSetting?.announcement?.text ?? "";
+  return workspaceProfileSetting.value?.announcement?.text ?? "";
 });
 
 const announcementLink = computed(() => {
-  const link = settingV1Store.workspaceProfileSetting?.announcement?.link ?? "";
+  const link = workspaceProfileSetting.value?.announcement?.link ?? "";
   if (link.length === 0) {
     return link;
   }

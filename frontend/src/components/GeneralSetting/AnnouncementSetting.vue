@@ -125,11 +125,12 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
+import { storeToRefs } from "pinia";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
 import { pushNotification, useCurrentUserV1, featureToRef } from "@/store";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useSettingSWRStore } from "@/store/modules/v1/setting";
 import {
   Announcement,
   Announcement_AlertLevel,
@@ -142,7 +143,7 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
+const settingStore = useSettingSWRStore();
 const currentUserV1 = useCurrentUserV1();
 const hasAnnouncementSetting = featureToRef("bb.feature.announcement");
 
@@ -159,8 +160,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 
+const { workspaceProfileSetting } = storeToRefs(settingStore);
 watchEffect(() => {
-  const announcement = settingV1Store.workspaceProfileSetting?.announcement;
+  const announcement = workspaceProfileSetting.value?.announcement;
   if (announcement) {
     state.announcement = cloneDeep(announcement);
   }
@@ -179,14 +181,14 @@ const allowSave = computed((): boolean => {
   }
 
   if (
-    settingV1Store.workspaceProfileSetting?.announcement === undefined &&
+    workspaceProfileSetting.value?.announcement === undefined &&
     state.announcement.text === ""
   ) {
     return false;
   }
 
   return !isEqual(
-    settingV1Store.workspaceProfileSetting?.announcement,
+    workspaceProfileSetting.value?.announcement,
     state.announcement
   );
 });
@@ -211,7 +213,7 @@ const updateAnnouncementSetting = async () => {
     announcement = undefined;
   }
 
-  await settingV1Store.updateWorkspaceProfile({
+  await settingStore.updateWorkspaceProfile({
     announcement: announcement,
   });
   pushNotification({
@@ -221,7 +223,7 @@ const updateAnnouncementSetting = async () => {
   });
 
   const currentSetting: Announcement | undefined = cloneDeep(
-    settingV1Store.workspaceProfileSetting?.announcement
+    workspaceProfileSetting.value?.announcement
   );
   if (currentSetting === undefined) {
     state.announcement = defaultAnnouncement();
