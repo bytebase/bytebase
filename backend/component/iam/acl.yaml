@@ -65,6 +65,19 @@ roles:
       - bb.externalVersionControls.delete
       - bb.externalVersionControls.searchProjects
       - bb.externalVersionControls.listProjects
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
+      - bb.taskRuns.list
+      - bb.planCheckRuns.list
+      - bb.planCheckRuns.run
+      - bb.tasks.run
+      - bb.tasks.skip
+      - bb.taskRuns.cancel
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -131,6 +144,19 @@ roles:
       - bb.externalVersionControls.delete
       - bb.externalVersionControls.searchProjects
       - bb.externalVersionControls.listProjects
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
+      - bb.taskRuns.list
+      - bb.planCheckRuns.run
+      - bb.planCheckRuns.list
+      - bb.tasks.run
+      - bb.tasks.skip
+      - bb.taskRuns.cancel
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
