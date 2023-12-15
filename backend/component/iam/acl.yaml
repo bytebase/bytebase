@@ -78,6 +78,14 @@ roles:
       - bb.tasks.run
       - bb.tasks.skip
       - bb.taskRuns.cancel
+      - bb.settings.list
+      - bb.settings.get
+      - bb.settings.set
+      - bb.policies.list
+      - bb.policies.get
+      - bb.policies.create
+      - bb.policies.update
+      - bb.policies.delete
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -157,6 +165,14 @@ roles:
       - bb.tasks.run
       - bb.tasks.skip
       - bb.taskRuns.cancel
+      - bb.settings.list
+      - bb.settings.get
+      - bb.settings.set
+      - bb.policies.list
+      - bb.policies.get
+      - bb.policies.create
+      - bb.policies.update
+      - bb.policies.delete
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list
