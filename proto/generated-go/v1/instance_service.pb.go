@@ -683,7 +683,7 @@ type AddDataSourceRequest struct {
 	// The name of the instance to add a data source to.
 	// Format: instances/{instance}
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// Identified by type.
+	// Identified by data source ID.
 	// Only READ_ONLY data source can be added.
 	DataSource *DataSource `protobuf:"bytes,2,opt,name=data_source,json=dataSource,proto3" json:"data_source,omitempty"`
 	// Validate only also tests the data source connection.
@@ -751,7 +751,7 @@ type RemoveDataSourceRequest struct {
 	// The name of the instance to remove a data source from.
 	// Format: instances/{instance}
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// Identified by type.
+	// Identified by data source ID.
 	// Only READ_ONLY data source can be removed.
 	DataSource *DataSource `protobuf:"bytes,2,opt,name=data_source,json=dataSource,proto3" json:"data_source,omitempty"`
 }
@@ -810,7 +810,7 @@ type UpdateDataSourceRequest struct {
 	// The name of the instance to update a data source.
 	// Format: instances/{instance}
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
-	// Identified by type.
+	// Identified by data source ID.
 	DataSource *DataSource `protobuf:"bytes,2,opt,name=data_source,json=dataSource,proto3" json:"data_source,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,3,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
