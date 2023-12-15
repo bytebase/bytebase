@@ -103,6 +103,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   idFromSlug,
   projectV1Slug,
@@ -251,11 +252,22 @@ const quickActionMapByRole = computed(() => {
       pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
     }
 
-    return new Map([
-      ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
-      ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
+    const map = new Map([
+      ["OWNER", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
+      ["DBA", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
       ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
     ]) as Map<RoleType, QuickActionType[]>;
+
+    if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
+      for (const value of map.values()) {
+        value.push(
+          "quickaction.bb.database.data.update",
+          "quickaction.bb.database.schema.update"
+        );
+      }
+    }
+
+    return map;
   }
 
   return new Map<RoleType, QuickActionType[]>();
