@@ -252,7 +252,7 @@ message Plan {
     // It is automatically generated in the UI workflow.
     string schema_version = 4;
 
-    // If RollbackEnabled, build the RollbackSheetID of the task.
+    // If RollbackEnabled, build the RollbackSheetID of the task after the task is completed..
     bool rollback_enabled = 5;
 
     message RollbackDetail {
@@ -266,6 +266,9 @@ message Plan {
     optional RollbackDetail rollback_detail = 6;
 
     map<string, string> ghost_flags = 7;
+
+    // If set, we will create a task backing up affected table rows before the DML task is executed.
+    string pre_update_backup_database = 8;
   }
 
   message RestoreDatabaseConfig {
