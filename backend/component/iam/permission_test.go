@@ -115,7 +115,12 @@ func permissionExist(p Permission) bool {
 		PermissionPoliciesGet,
 		PermissionPoliciesCreate,
 		PermissionPoliciesUpdate,
-		PermissionPoliciesDelete:
+		PermissionPoliciesDelete,
+		PermissionBranchesList,
+		PermissionBranchesGet,
+		PermissionBranchesCreate,
+		PermissionBranchesUpdate,
+		PermissionBranchesDelete:
 		return true
 	default:
 		return false
