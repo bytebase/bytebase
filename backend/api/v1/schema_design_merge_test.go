@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -58,8 +59,8 @@ func TestTryMerge(t *testing.T) {
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		if record {
 			testCases[idx].Expected = strings.TrimSpace(string(s))
-		} else if e := proto.Equal(mergedSchemaMetadata, expectedSchemaMetadata); !e {
-			a.Equalf(tc.Expected, string(s), "test case %d: %s", idx, tc.Description)
+		} else if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
+			a.Failf("Failed", "mismatch (-want +got):\n%s", diff)
 		}
 	}
 
