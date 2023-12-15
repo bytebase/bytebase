@@ -26,11 +26,11 @@
         :items="valueOptions"
         :key-field="`value`"
         :item-resizable="false"
-        :item-size="32"
+        :item-size="38"
       >
         <template #default="{ item: option, index }: ListItem">
           <div
-            class="h-[32px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden"
+            class="h-[38px] flex gap-x-2 px-3 items-center cursor-pointer border-t border-block-border overflow-hidden"
             :class="[index === menuIndex && 'bg-gray-200/75']"
             :data-index="index"
             :data-value="option.value"
