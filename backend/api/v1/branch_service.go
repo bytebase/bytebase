@@ -609,12 +609,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
+
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
@@ -884,12 +885,24 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 	if s.GetComment() != t.GetComment() {
 		return false
 	}
+	if s.GetUserComment() != t.GetUserComment() {
+		return false
+	}
+	if s.GetClassification() != t.GetClassification() {
+		return false
+	}
 	for i := 0; i < len(s.GetColumns()); i++ {
 		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
 		if sc.Name != tc.Name {
 			return false
 		}
 		if sc.Comment != tc.Comment {
+			return false
+		}
+		if sc.UserComment != tc.UserComment {
+			return false
+		}
+		if sc.Classification != tc.Classification {
 			return false
 		}
 		if sc.Type != tc.Type {
