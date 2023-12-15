@@ -55,13 +55,6 @@ func (c *policyCountCollector) Collect(ctx context.Context) ([]*metric.Metric, e
 		}
 
 		switch policy.Type {
-		case api.PolicyTypePipelineApproval:
-			payload, err := api.UnmarshalPipelineApprovalPolicy(policy.Payload)
-			if err != nil {
-				continue
-			}
-			value = string(payload.Value)
-			key = fmt.Sprintf("%s_%s_%s_%s", policy.Type, environment.Title, value, rowStatus)
 		case api.PolicyTypeBackupPlan:
 			payload, err := api.UnmarshalBackupPlanPolicy(policy.Payload)
 			if err != nil {
