@@ -2336,7 +2336,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "无任何改动",
+    "nothing-changed-for-database": "数据库 {database} 无任何改动",
     "message": {
       "invalid-schema-name": "无效的 Schema 名称",
       "duplicated-schema-name": "重复的 Schema 名称",
