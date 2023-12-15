@@ -127,6 +127,9 @@ func convertToPlanSpecChangeDatabaseConfig(config *storepb.PlanConfig_Spec_Chang
 			RollbackEnabled: c.RollbackEnabled,
 			RollbackDetail:  convertToPlanSpecChangeDatabaseConfigRollbackDetail(c.RollbackDetail),
 			GhostFlags:      c.GhostFlags,
+			PreUpdateBackupDetail: &v1pb.Plan_ChangeDatabaseConfig_PreUpdateBackupDetail{
+				Database: c.PreUpdateBackupDetail.GetDatabase(),
+			},
 		},
 	}
 }
