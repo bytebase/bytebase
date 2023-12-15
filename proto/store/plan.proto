@@ -86,7 +86,7 @@ message PlanConfig {
     // It is automatically generated in the UI workflow.
     string schema_version = 4;
 
-    // If RollbackEnabled, build the RollbackSheetID of the task.
+    // If RollbackEnabled, build the RollbackSheetID of the task after the task is completed.
     bool rollback_enabled = 5;
 
     message RollbackDetail {
@@ -100,6 +100,14 @@ message PlanConfig {
     optional RollbackDetail rollback_detail = 6;
 
     map<string, string> ghost_flags = 7;
+
+    message PreUpdateBackupDetail {
+      // The database for keeping the backup data.
+      // Format: instances/{instance}/databases/{database}
+      string database = 1;
+    }
+    // If set, a backup of the modified data will be created automatically before any changes are applied.
+    optional PreUpdateBackupDetail pre_update_backup_detail = 8;
   }
 
   message RestoreDatabaseConfig {
