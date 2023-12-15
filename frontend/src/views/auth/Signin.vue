@@ -306,7 +306,12 @@ onMounted(async () => {
   }
 
   await identityProviderStore.fetchIdentityProviderList();
-  if (isDemo.value && state.email && state.password) {
+  if (
+    window.location.href.startsWith("https://demo.bytebase.com") &&
+    isDemo.value &&
+    state.email &&
+    state.password
+  ) {
     await trySignin();
   }
 });
