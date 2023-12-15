@@ -1,5 +1,5 @@
 import { pick } from "lodash-es";
-import { Ref, reactive, shallowRef, watch } from "vue";
+import { Ref, reactive, watch } from "vue";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnConfig,
@@ -16,19 +16,6 @@ import { keyForResource, keyForResourceName } from "./common";
 export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
   // Build maps from keys to metadata objects for acceleration
   const buildMaps = (targets: EditTarget[]) => {
-    const schemaConfig = reactive(
-      new Map(
-        targets.flatMap((target) => {
-          return target.metadata.schemaConfigs.map((schemaConfig) => {
-            const key = keyForResourceName(
-              target.database.name,
-              schemaConfig.name
-            );
-            return [key, schemaConfig];
-          });
-        })
-      )
-    );
     const tableConfig = reactive(
       new Map(
         targets.flatMap((target) => {
@@ -64,13 +51,19 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
         })
       )
     );
-    return { schemaConfig, tableConfig, columnConfig };
+    return { tableConfig, columnConfig };
   };
 
-  const maps = shallowRef(buildMaps(targets.value));
-  watch(targets, (targets) => (maps.value = buildMaps(targets)), {
-    deep: false,
-  });
+  const maps = reactive(buildMaps(targets.value));
+  watch(
+    targets,
+    (targets) => {
+      Object.assign(maps, buildMaps(targets));
+    },
+    {
+      deep: false,
+    }
+  );
 
   // TableConfig
   const getTableConfig = (
@@ -81,7 +74,7 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
     }
   ) => {
     const key = keyForResource(database, pick(metadata, "schema", "table"));
-    return maps.value.tableConfig.get(key);
+    return maps.tableConfig.get(key);
   };
   const insertTableConfig = (
     database: ComposedDatabase,
@@ -92,22 +85,20 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
     },
     tableConfig: TableConfig
   ) => {
-    const schemaConfig = metadata.database.schemaConfigs.find(
+    let schemaConfig = metadata.database.schemaConfigs.find(
       (sc) => sc.name === metadata.schema.name
     );
-    if (schemaConfig) {
-      schemaConfig.tableConfigs.push(tableConfig);
-    } else {
-      metadata.database.schemaConfigs.push(
-        SchemaConfig.fromPartial({
-          name: metadata.schema.name,
-          tableConfigs: [tableConfig],
-        })
-      );
+    if (!schemaConfig) {
+      schemaConfig = SchemaConfig.fromPartial({
+        name: metadata.schema.name,
+        tableConfigs: [],
+      });
+      metadata.database.schemaConfigs.push(schemaConfig);
     }
+    schemaConfig.tableConfigs.push(tableConfig);
 
     const key = keyForResource(database, pick(metadata, "schema", "table"));
-    maps.value.tableConfig.set(key, tableConfig);
+    maps.tableConfig.set(key, tableConfig);
   };
   const upsertTableConfig = (
     database: ComposedDatabase,
@@ -134,7 +125,7 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
         metadata.table.name,
         columnConfig.name
       );
-      maps.value.columnConfig.set(key, columnConfig);
+      maps.columnConfig.set(key, columnConfig);
     });
   };
 
@@ -152,7 +143,7 @@ export const useEditConfigs = (targets: Ref<EditTarget[]>) => {
       database,
       pick(metadata, "schema", "table", "column")
     );
-    return maps.value.columnConfig.get(key);
+    return maps.columnConfig.get(key);
   };
   const insertColumnConfig = (
     database: ComposedDatabase,
