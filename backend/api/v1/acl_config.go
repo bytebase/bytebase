@@ -170,6 +170,9 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RolloutService_BatchRunTasks_FullMethodName:                                       iam.PermissionTasksRun,
 	v1pb.RolloutService_BatchSkipTasks_FullMethodName:                                      iam.PermissionTasksSkip,
 	v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName:                                 iam.PermissionTaskRunsCancel,
+	v1pb.SettingService_ListSettings_FullMethodName:                                        iam.PermissionSettingsList,
+	v1pb.SettingService_GetSetting_FullMethodName:                                          iam.PermissionSettingsGet,
+	v1pb.SettingService_SetSetting_FullMethodName:                                          iam.PermissionSettingsSet,
 }
 
 func isOwnerAndDBAMethod(methodName string) bool {

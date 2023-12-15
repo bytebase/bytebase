@@ -96,4 +96,8 @@ const (
 	PermissionTasksRun                              Permission = "bb.tasks.run"
 	PermissionTasksSkip                             Permission = "bb.tasks.skip"
 	PermissionTaskRunsCancel                        Permission = "bb.taskRuns.cancel"
+
+	PermissionSettingsList Permission = "bb.settings.list"
+	PermissionSettingsGet  Permission = "bb.settings.get"
+	PermissionSettingsSet  Permission = "bb.settings.set"
 )
