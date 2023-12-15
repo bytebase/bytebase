@@ -58,6 +58,13 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
       - bb.plans.list
       - bb.plans.get
       - bb.plans.create
@@ -130,6 +137,13 @@ roles:
       - bb.changelists.create
       - bb.changelists.update
       - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
       - bb.plans.list
       - bb.plans.get
       - bb.plans.create
