@@ -99,18 +99,6 @@ watch(
   },
   { immediate: true }
 );
-
-watch(
-  [
-    () => tabStore.currentTab.id,
-    () => tabStore.currentTab.connection.databaseId,
-  ],
-  () => {
-    if (showInfoPane.value) {
-      tab.value = "INFO";
-    }
-  }
-);
 </script>
 
 <style lang="postcss" scoped>
