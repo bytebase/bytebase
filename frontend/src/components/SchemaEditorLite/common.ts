@@ -33,7 +33,15 @@ export const generateDiffDDL = async (
   };
 
   if (isEqual(source, target)) {
-    return finish("", [t("schema-editor.nothing-changed")], true);
+    return finish(
+      "",
+      [
+        t("schema-editor.nothing-changed-for-database", {
+          database: database.databaseName,
+        }),
+      ],
+      true
+    );
   }
 
   const validationMessages = validateDatabaseMetadata(target);
@@ -67,7 +75,15 @@ export const generateDiffDDL = async (
           true
         );
       }
-      return finish("", [t("schema-editor.nothing-changed")], true);
+      return finish(
+        "",
+        [
+          t("schema-editor.nothing-changed-for-database", {
+            database: database.databaseName,
+          }),
+        ],
+        true
+      );
     }
     return finish(diff, [], false);
   } catch (ex) {
