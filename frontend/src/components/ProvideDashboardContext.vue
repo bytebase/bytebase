@@ -26,7 +26,7 @@ const databaseStore = useDatabaseV1Store();
 
 const prepareDatabases = async () => {
   let filter = "";
-  // If projectId is provided in the route, filter the database list by the project.
+  // If `projectId` is provided in the route, filter the database list by the project.
   if (route.params.projectId) {
     filter = `project == "${projectNamePrefix}${route.params.projectId}"`;
   }
