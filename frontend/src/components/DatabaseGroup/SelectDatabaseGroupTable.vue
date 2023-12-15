@@ -5,6 +5,7 @@
     row-key="name"
     class="border"
     :row-clickable="true"
+    :show-placeholder="true"
     @click-row="handleDatabaseGroupSelect"
   >
     <template #item="{ item: dbGroup }: { item: ComposedDatabaseGroup }">

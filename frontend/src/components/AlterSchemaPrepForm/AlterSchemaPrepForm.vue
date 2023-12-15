@@ -91,7 +91,7 @@
                 <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
                   <SelectDatabaseGroupTable
                     :show-selection="true"
-                    :database-group-list="databaseGroupList"
+                    :database-group-list="filteredDatabaseGroupList"
                     :selected-database-group-name="
                       state.selectedDatabaseGroupName
                     "
@@ -114,6 +114,10 @@
                     />
                   </template>
                   <DatabaseLabelFilter
+                    v-if="
+                      state.alterType === 'TENANT' ||
+                      state.databaseSelectedTab === 'DATABASE'
+                    "
                     v-model:selected="state.selectedLabels"
                     :database-list="rawDatabaseList"
                   />
@@ -193,6 +197,7 @@
               <aside class="flex justify-end">
                 <NInputGroup class="py-0.5">
                   <DatabaseLabelFilter
+                    v-if="state.databaseSelectedTab === 'DATABASE'"
                     v-model:selected="state.selectedLabels"
                     :database-list="rawDatabaseList"
                   />
@@ -212,6 +217,7 @@
                 :database-list="selectableDatabaseList"
                 :show-selection-column="true"
                 :show-sql-editor-button="false"
+                :show-placeholder="true"
                 @select-database="
                 (db: ComposedDatabase) =>
                   toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
@@ -255,7 +261,7 @@
             </div>
             <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
               <SelectDatabaseGroupTable
-                :database-group-list="databaseGroupList"
+                :database-group-list="filteredDatabaseGroupList"
                 :selected-database-group-name="state.selectedDatabaseGroupName"
                 @update="(name) => selectDatabaseGroup(name, true)"
               />
@@ -485,11 +491,18 @@ const isTenantProject = computed((): boolean => {
   );
 });
 
-if (isTenantProject.value) {
-  // For tenant mode projects, alter multiple db via DeploymentConfig
-  // is the default suggested way.
-  state.alterType = "TENANT";
-}
+watch(
+  () => isTenantProject.value,
+  (isTenant) => {
+    if (isTenant) {
+      // For tenant mode projects, alter multiple db via DeploymentConfig
+      // is the default suggested way.
+      state.alterType = "TENANT";
+      state.databaseSelectedTab = "DATABASE_GROUP";
+    }
+  },
+  { immediate: true }
+);
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
@@ -574,6 +587,16 @@ const databaseGroupList = computed(() => {
   } else {
     return dbGroupStore.getAllDatabaseGroupList();
   }
+});
+
+const filteredDatabaseGroupList = computed(() => {
+  return databaseGroupList.value.filter((dbGroup) => {
+    const keyword = state.searchText.trim().toLowerCase();
+    if (!keyword) {
+      return true;
+    }
+    return dbGroup.databaseGroupName.toLowerCase().includes(keyword);
+  });
 });
 
 const flattenSelectedDatabaseUidList = computed(() => {

@@ -6,7 +6,6 @@
   >
     <label v-if="label" class="mr-2">{{ label }}</label>
     <SpinnerSelect
-      style="width: 14rem"
       :value="value"
       :on-update="onUpdate"
       :options="options"
