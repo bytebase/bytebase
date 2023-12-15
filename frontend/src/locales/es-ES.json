@@ -2336,7 +2336,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nada ha cambiado",
+    "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",
       "duplicated-schema-name": "Nombre de esquema duplicado",
