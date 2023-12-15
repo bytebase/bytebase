@@ -609,12 +609,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
+	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
+
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
 	}
 
-	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
 	if err != nil {
 		return nil, err
