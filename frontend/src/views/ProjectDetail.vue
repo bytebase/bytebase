@@ -209,6 +209,18 @@ onMounted(() => {
     });
 });
 
+const quickActionForDatabaseGroup = computed((): QuickActionType[] => {
+  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+    return [];
+  }
+  return [
+    "quickaction.bb.group.database-group.create",
+    "quickaction.bb.group.table-group.create",
+    "quickaction.bb.database.data.update",
+    "quickaction.bb.database.schema.update",
+  ];
+});
+
 const quickActionMapByRole = computed(() => {
   if (project.value.state === State.ACTIVE) {
     const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
@@ -252,22 +264,11 @@ const quickActionMapByRole = computed(() => {
       pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
     }
 
-    const map = new Map([
+    return new Map([
       ["OWNER", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
       ["DBA", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
       ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
     ]) as Map<RoleType, QuickActionType[]>;
-
-    if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-      for (const value of map.values()) {
-        value.push(
-          "quickaction.bb.database.data.update",
-          "quickaction.bb.database.schema.update"
-        );
-      }
-    }
-
-    return map;
   }
 
   return new Map<RoleType, QuickActionType[]>();
@@ -280,6 +281,9 @@ const isDatabaseHash = computed(() => {
 const quickActionList = computed(() => {
   if (!isDatabaseHash.value) {
     return [];
+  }
+  if (hash.value === "database-groups") {
+    return quickActionForDatabaseGroup.value;
   }
   return getQuickActionList(quickActionMapByRole.value);
 });
