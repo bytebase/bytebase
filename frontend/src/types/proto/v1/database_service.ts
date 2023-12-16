@@ -427,6 +427,8 @@ export interface SchemaMetadata {
   name: string;
   /** The tables is the list of tables in a schema. */
   tables: TableMetadata[];
+  /** The foreign_tables is the list of foreign tables in a schema. */
+  foreignTables: ForeignTableMetadata[];
   /** The views is the list of views in a schema. */
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
@@ -435,6 +437,13 @@ export interface SchemaMetadata {
   streams: StreamMetadata[];
   /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
   tasks: TaskMetadata[];
+}
+
+export interface ForeignTableMetadata {
+  /** The name is the name of a foreign table. */
+  name: string;
+  /** The columns is the ordered list of columns in a foreign table. */
+  columns: ColumnMetadata[];
 }
 
 /** TableMetadata is the metadata for tables. */
@@ -3397,7 +3406,7 @@ export const DatabaseMetadata = {
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], views: [], functions: [], streams: [], tasks: [] };
+  return { name: "", tables: [], foreignTables: [], views: [], functions: [], streams: [], tasks: [] };
 }
 
 export const SchemaMetadata = {
@@ -3408,17 +3417,20 @@ export const SchemaMetadata = {
     for (const v of message.tables) {
       TableMetadata.encode(v!, writer.uint32(18).fork()).ldelim();
     }
+    for (const v of message.foreignTables) {
+      ForeignTableMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
     for (const v of message.views) {
-      ViewMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+      ViewMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     for (const v of message.functions) {
-      FunctionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+      FunctionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     for (const v of message.streams) {
-      StreamMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+      StreamMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     for (const v of message.tasks) {
-      TaskMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+      TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -3449,24 +3461,31 @@ export const SchemaMetadata = {
             break;
           }
 
-          message.views.push(ViewMetadata.decode(reader, reader.uint32()));
+          message.foreignTables.push(ForeignTableMetadata.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
+          message.views.push(ViewMetadata.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
           continue;
         case 6:
           if (tag !== 50) {
+            break;
+          }
+
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -3485,6 +3504,9 @@ export const SchemaMetadata = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
+      foreignTables: globalThis.Array.isArray(object?.foreignTables)
+        ? object.foreignTables.map((e: any) => ForeignTableMetadata.fromJSON(e))
+        : [],
       views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: globalThis.Array.isArray(object?.functions)
         ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
@@ -3503,6 +3525,9 @@ export const SchemaMetadata = {
     }
     if (message.tables?.length) {
       obj.tables = message.tables.map((e) => TableMetadata.toJSON(e));
+    }
+    if (message.foreignTables?.length) {
+      obj.foreignTables = message.foreignTables.map((e) => ForeignTableMetadata.toJSON(e));
     }
     if (message.views?.length) {
       obj.views = message.views.map((e) => ViewMetadata.toJSON(e));
@@ -3526,10 +3551,87 @@ export const SchemaMetadata = {
     const message = createBaseSchemaMetadata();
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
+    message.foreignTables = object.foreignTables?.map((e) => ForeignTableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseForeignTableMetadata(): ForeignTableMetadata {
+  return { name: "", columns: [] };
+}
+
+export const ForeignTableMetadata = {
+  encode(message: ForeignTableMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    for (const v of message.columns) {
+      ColumnMetadata.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ForeignTableMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseForeignTableMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.columns.push(ColumnMetadata.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ForeignTableMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ForeignTableMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => ColumnMetadata.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ForeignTableMetadata>): ForeignTableMetadata {
+    return ForeignTableMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ForeignTableMetadata>): ForeignTableMetadata {
+    const message = createBaseForeignTableMetadata();
+    message.name = object.name ?? "";
+    message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
     return message;
   },
 };

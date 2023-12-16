@@ -39,6 +39,7 @@
     - [DependentColumn](#bytebase-store-DependentColumn)
     - [ExtensionMetadata](#bytebase-store-ExtensionMetadata)
     - [ForeignKeyMetadata](#bytebase-store-ForeignKeyMetadata)
+    - [ForeignTableMetadata](#bytebase-store-ForeignTableMetadata)
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
@@ -736,6 +737,22 @@ ForeignKeyMetadata is the metadata for foreign keys.
 
 
 
+<a name="bytebase-store-ForeignTableMetadata"></a>
+
+### ForeignTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a foreign table. |
+| columns | [ColumnMetadata](#bytebase-store-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
 <a name="bytebase-store-FunctionMetadata"></a>
 
 ### FunctionMetadata
@@ -816,6 +833,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableMetadata](#bytebase-store-TableMetadata) | repeated | The tables is the list of tables in a schema. |
+| foreign_tables | [ForeignTableMetadata](#bytebase-store-ForeignTableMetadata) | repeated | The foreign_tables is the list of foreign tables in a schema. |
 | views | [ViewMetadata](#bytebase-store-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
