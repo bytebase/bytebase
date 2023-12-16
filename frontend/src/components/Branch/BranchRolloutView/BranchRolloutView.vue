@@ -248,7 +248,7 @@ const handlePreviewIssue = async () => {
 const generateIssueName = (databaseName: string) => {
   const issueNameParts: string[] = [];
   issueNameParts.push(`Apply branch`);
-  issueNameParts.push(`"${props.branch.name}"`);
+  issueNameParts.push(`"${props.branch.branchId}"`);
   issueNameParts.push("to database");
   issueNameParts.push(`[${databaseName}]`);
   const datetime = dayjs().format("@MM-DD HH:mm");
