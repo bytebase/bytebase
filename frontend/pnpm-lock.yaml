@@ -72,8 +72,8 @@ dependencies:
     specifier: ^1.11.11
     version: 1.11.11
   inter-ui:
-    specifier: 3.19.3
-    version: 3.19.3
+    specifier: 4.0.0
+    version: 4.0.0
   is-chinese:
     specifier: ^2.0.0
     version: 2.0.0
@@ -3866,8 +3866,9 @@ packages:
   /inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  /inter-ui@3.19.3:
-    resolution: {integrity: sha512-5FG9fjuYOXocIfjzcCBhICL5cpvwEetseL3FU6tP3d6Bn7g8wODhB+I9RNGRTizCT7CUG4GOK54OPxqq3msQgg==}
+  /inter-ui@4.0.0:
+    resolution: {integrity: sha512-/2XKDS/6DJYZzBHRsFVrZ2l0NYhaRZXki3jUnpJu4DAZtsZdDUtOHfG5msc6ifwKg59eJiyqeIYBDNgvxz+7XQ==}
+    engines: {node: '>=20.0.0'}
     dev: false
 
   /internmap@2.0.3:
