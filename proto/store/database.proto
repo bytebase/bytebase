@@ -188,8 +188,10 @@ message TableMetadata {
 }
 
 message ForeignTableMetadata {
+  // The name is the name of a foreign table.
   string name = 1;
   
+  // The columns is the ordered list of columns in a foreign table.
   repeated ColumnMetadata columns = 2;
 }
 
