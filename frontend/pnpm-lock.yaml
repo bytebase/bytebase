@@ -278,8 +278,8 @@ devDependencies:
     specifier: ^1.5.2
     version: 1.5.2
   '@types/qs':
-    specifier: 6.9.8
-    version: 6.9.8
+    specifier: 6.9.10
+    version: 6.9.10
   '@types/scrollparent':
     specifier: ^2.0.1
     version: 2.0.1
@@ -1981,8 +1981,8 @@ packages:
       '@types/node': 20.10.4
     dev: true
 
-  /@types/qs@6.9.8:
-    resolution: {integrity: sha512-u95svzDlTysU5xecFNTgfFG5RUWu1A9P0VzgpcIiGZA9iraHOdSzcxMxQ55DyeRaGCSxQi7LxXDI4rzq/MYfdg==}
+  /@types/qs@6.9.10:
+    resolution: {integrity: sha512-3Gnx08Ns1sEoCrWssEgTSJs/rsT2vhGP+Ja9cnnk9k4ALxinORlQneLXFeFKOTJMOeZUFD1s7w+w2AphTpvzZw==}
     dev: true
 
   /@types/scrollparent@2.0.1:
