@@ -19,6 +19,7 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-list"
+      @update:checked-row-keys="handleUpdateCheckedRowKeys"
     />
   </div>
 
@@ -74,6 +75,7 @@ import {
 } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
+import { RolloutObject } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { markUUID } from "../common";
 import { NameCell, OperationCell } from "./components";
@@ -96,8 +98,10 @@ interface LocalState {
 const { t } = useI18n();
 const context = useSchemaEditorContext();
 const {
+  events,
   project,
   readonly,
+  selectedRolloutObjects,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -133,6 +137,10 @@ const filteredTables = computed(() => {
 
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
+});
+
+const shouldShowSelectionColumn = computed(() => {
+  return !!selectedRolloutObjects.value;
 });
 
 const classificationConfig = computed(() => {
@@ -183,6 +191,11 @@ const isDroppedSchema = computed(() => {
 
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      width: 32,
+      hide: !shouldShowSelectionColumn.value,
+    },
     {
       key: "name",
       title: t("schema-editor.database.name"),
@@ -317,6 +330,14 @@ const isDroppedTable = (table: TableMetadata) => {
 
 const getTableKey = (table: TableMetadata) => {
   return markUUID(table);
+};
+
+const handleUpdateCheckedRowKeys = (keys: string[], rows: TableMetadata[]) => {
+  const objects = rows.map<RolloutObject>((table) => ({
+    db: props.db,
+    metadata: metadataForTable(table),
+  }));
+  events.emit("update:selected-rollout-objects", objects);
 };
 </script>
 
