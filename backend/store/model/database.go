@@ -406,7 +406,6 @@ func (t *TableMetadata) GetProto() *storepb.TableMetadata {
 type ExternalTableMetadata struct {
 	internal map[string]*storepb.ColumnMetadata
 	columns  []*storepb.ColumnMetadata
-	proto    *storepb.ExternalTableMetadata
 }
 
 // GetColumn gets the column by name.
