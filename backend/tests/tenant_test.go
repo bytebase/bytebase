@@ -21,7 +21,7 @@ import (
 
 var (
 	testTenantNumber = 1
-	prodTenantNumber = 2
+	prodTenantNumber = 1
 	testInstanceName = "testInstanceTest"
 	prodInstanceName = "testInstanceProd"
 )

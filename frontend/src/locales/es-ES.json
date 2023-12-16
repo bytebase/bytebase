@@ -1167,7 +1167,8 @@
       "approvers-of-current-step": "Aprobadores del paso actual"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
-    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
+    "preview": "Problema de vista previa"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -3347,5 +3348,11 @@
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
     "export-format": "Formato de exportación"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Seleccionar base de datos de destino"
+    },
+    "select-tables-to-rollout": "Seleccionar tablas para implementar"
   }
 }
