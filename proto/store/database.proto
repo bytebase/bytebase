@@ -190,7 +190,7 @@ message TableMetadata {
 message ExternalTableMetadata {
   // The name is the name of a external table.
   string name = 1;
-  
+
   // The external_server_name is the name of the external server.
   string external_server_name = 2;
 
