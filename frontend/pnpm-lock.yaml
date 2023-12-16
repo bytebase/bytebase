@@ -225,10 +225,10 @@ devDependencies:
     version: 4.1.2(rollup@3.29.2)
   '@tailwindcss/forms':
     specifier: 0.5.7
-    version: 0.5.7(tailwindcss@3.3.3)
+    version: 0.5.7(tailwindcss@3.3.6)
   '@tailwindcss/typography':
     specifier: 0.5.10
-    version: 0.5.10(tailwindcss@3.3.3)
+    version: 0.5.10(tailwindcss@3.3.6)
   '@trivago/prettier-plugin-sort-imports':
     specifier: ^4.2.0
     version: 4.2.0(@vue/compiler-sfc@3.3.4)(prettier@2.7.1)
@@ -359,8 +359,8 @@ devDependencies:
     specifier: 3.29.2
     version: 3.29.2
   tailwindcss:
-    specifier: 3.3.3
-    version: 3.3.3
+    specifier: 3.3.6
+    version: 3.3.6
   ts-proto:
     specifier: ^1.160.0
     version: 1.160.0
@@ -1213,16 +1213,16 @@ packages:
       clipboard: 2.0.11
     dev: false
 
-  /@tailwindcss/forms@0.5.7(tailwindcss@3.3.3):
+  /@tailwindcss/forms@0.5.7(tailwindcss@3.3.6):
     resolution: {integrity: sha512-QE7X69iQI+ZXwldE+rzasvbJiyV/ju1FGHH0Qn2W3FKbuYtqp8LKcy6iSw79fVUT5/Vvf+0XgLCeYVG+UV6hOw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1'
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.3.3
+      tailwindcss: 3.3.6
     dev: true
 
-  /@tailwindcss/typography@0.5.10(tailwindcss@3.3.3):
+  /@tailwindcss/typography@0.5.10(tailwindcss@3.3.6):
     resolution: {integrity: sha512-Pe8BuPJQJd3FfRnm6H0ulKIGoMEQS+Vq01R6M5aCrFB/ccR/shT+0kXLjouGC1gFLm9hopTFN+DMP0pfwRWzPw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
@@ -1231,7 +1231,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.3.3
+      tailwindcss: 3.3.6
     dev: true
 
   /@tanstack/table-core@8.10.7:
@@ -5423,8 +5423,8 @@ packages:
     engines: {node: '>= 0.4'}
     dev: true
 
-  /tailwindcss@3.3.3:
-    resolution: {integrity: sha512-A0KgSkef7eE4Mf+nKJ83i75TMyq8HqY3qmFIJSWy8bNt0v1lG7jUcpGpoTFxAwYcWOphcTBLPPJg+bDfhDf52w==}
+  /tailwindcss@3.3.6:
+    resolution: {integrity: sha512-AKjF7qbbLvLaPieoKeTjG1+FyNZT6KaJMJPFeQyLfIp7l82ggH1fbHJSsYIvnbTFQOlkh+gBYpyby5GT1LIdLw==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
