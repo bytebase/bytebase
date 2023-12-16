@@ -10,6 +10,7 @@
         v-model:value="state.referencedSchemaName"
         :options="referenceSelectOptions"
         :placeholder="$t('schema-editor.schema.select')"
+        :filterable="true"
         @update:value="
           () => {
             state.referencedTableName = null;
@@ -24,6 +25,7 @@
         v-model:value="state.referencedTableName"
         :options="referencedTableOptions"
         :placeholder="$t('schema-editor.table.select')"
+        :filterable="true"
         @update:value="state.referencedColumnName = null"
       />
     </div>
@@ -33,6 +35,7 @@
         v-model:value="state.referencedColumnName"
         :options="referencedColumnOptions"
         :placeholder="$t('schema-editor.column.select')"
+        :filterable="true"
       />
     </div>
 

@@ -141,6 +141,7 @@ const {
   getTableStatus,
   getColumnStatus,
   upsertColumnConfig,
+  queuePendingScrollToColumn,
 } = useSchemaEditorContext();
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
@@ -236,16 +237,15 @@ const handleAddColumn = () => {
   props.table.columns.push(column);
   markColumnStatus(column, "created");
 
-  // TODO: scroll to the new column and focus its name textbox
-  // table.value.columnList.push(column);
-  // nextTick(() => {
-  //   const container = document.querySelector("#table-editor-container");
-  //   (
-  //     container?.querySelector(
-  //       `.column-${column.id} .column-name-input`
-  //     ) as HTMLInputElement
-  //   )?.focus();
-  // });
+  queuePendingScrollToColumn({
+    db: props.db,
+    metadata: {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+      column,
+    },
+  });
 };
 
 const handleApplyColumnTemplate = (
@@ -271,6 +271,15 @@ const handleApplyColumnTemplate = (
     });
   }
   markColumnStatus(column, "created");
+  queuePendingScrollToColumn({
+    db: props.db,
+    metadata: {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+      column,
+    },
+  });
 };
 
 const gotoForeignKeyReferencedTable = (
@@ -314,17 +323,15 @@ const gotoForeignKeyReferencedTable = (
     },
   });
 
-  // TODO: scroll column into view
-  // nextTick(() => {
-  //   const container = document.querySelector("#table-editor-container");
-  //   const input = container?.querySelector(
-  //     `.column-${referColumn.id} .column-name-input`
-  //   ) as HTMLInputElement | undefined;
-  //   if (input) {
-  //     input.focus();
-  //     scrollIntoView(input);
-  //   }
-  // });
+  queuePendingScrollToColumn({
+    db: props.db,
+    metadata: {
+      database: props.database,
+      schema: referencedSchema,
+      table: referencedTable,
+      column: referencedColumn,
+    },
+  });
 };
 
 const handleEditColumnForeignKey = (

@@ -140,7 +140,7 @@ export const useUserStore = defineStore("user", {
 });
 
 export const extractUserEmail = (emailResource: string) => {
-  const matches = emailResource.match(/^user:(.+)$/);
+  const matches = emailResource.match(/^(?:user:|users\/)(.+)$/);
   return matches?.[1] ?? emailResource;
 };
 
