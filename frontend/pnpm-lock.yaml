@@ -233,8 +233,8 @@ devDependencies:
     specifier: 1.6.1
     version: 1.6.1
   '@types/d3-shape':
-    specifier: ^3.1.3
-    version: 3.1.3
+    specifier: ^3.1.6
+    version: 3.1.6
   '@types/dompurify':
     specifier: 3.0.2
     version: 3.0.2
@@ -263,11 +263,11 @@ devDependencies:
     specifier: 5.3.8
     version: 5.3.8
   '@types/pouchdb':
-    specifier: ^6.4.0
-    version: 6.4.0
+    specifier: ^6.4.2
+    version: 6.4.2
   '@types/pouchdb-find':
-    specifier: ^7.3.1
-    version: 7.3.1
+    specifier: ^7.3.3
+    version: 7.3.3
   '@types/prettier':
     specifier: 2.7.1
     version: 2.7.1
@@ -1686,8 +1686,8 @@ packages:
     resolution: {integrity: sha512-qoj2O7KjfqCobmtFOth8FMvjwMVPUAAmn6xiUbLl1ld7vQCPgffvyV5BBcEFfqWdilAUm+3zciU/3P3vZrUMlg==}
     dev: false
 
-  /@types/d3-shape@3.1.3:
-    resolution: {integrity: sha512-cHMdIq+rhF5IVwAV7t61pcEXfEHsEsrbBUPkFGBwTXuxtTAkBBrnrNA8++6OWm3jwVsXoZYQM8NEekg6CPJ3zw==}
+  /@types/d3-shape@3.1.6:
+    resolution: {integrity: sha512-5KKk5aKGu2I+O6SONMYSNflgiP0WfZIQvVUMan50wHsLG1G94JlxEVnCpQARfTtzytuY0p/9PXXZb3I7giofIA==}
     dependencies:
       '@types/d3-path': 3.0.0
 
@@ -1743,7 +1743,7 @@ packages:
       '@types/d3-scale': 4.0.5
       '@types/d3-scale-chromatic': 3.0.0
       '@types/d3-selection': 3.0.7
-      '@types/d3-shape': 3.1.3
+      '@types/d3-shape': 3.1.6
       '@types/d3-time': 3.0.1
       '@types/d3-time-format': 4.0.1
       '@types/d3-timer': 3.0.0
@@ -1909,11 +1909,11 @@ packages:
     resolution: {integrity: sha512-Y1Ilqu02gJfo191p7uqBpvIkotkRwVORtLZZw9a2rs2YB4N6TdbBqNe/v4Ha5wL53bpV+JSwyg+nIEq2yjNL1Q==}
     dependencies:
       '@types/debug': 4.1.9
-      '@types/pouchdb-find': 7.3.1
+      '@types/pouchdb-find': 7.3.3
     dev: true
 
-  /@types/pouchdb-find@7.3.1:
-    resolution: {integrity: sha512-zCN3M74PS+3c/tc6Cu8y8392L1JzBdvKRDtWyeET0gl2zCPyw0DiYHJX6FEjZBJJzQPVFG36RTpvbCA8zx/XHQ==}
+  /@types/pouchdb-find@7.3.3:
+    resolution: {integrity: sha512-U7zXk67s9Ar+9Pwj5kSbuMnn8zif0AOOIPy4KRFeJ/S/Tk+mNS90soj+3OV21H8xyB7WTxjvS1JLablZC6C6ow==}
     dependencies:
       '@types/pouchdb-core': 7.0.12
     dev: true
@@ -1945,11 +1945,11 @@ packages:
     resolution: {integrity: sha512-2sWCIkRDBe1x4Gmsz+7CpZG1fOgGMG7xXzZQ/TftzF+l5olr9Dj76DEcHIl2vACBC54HyuX78yUmZkrPO8PeHA==}
     dependencies:
       '@types/pouchdb-core': 7.0.12
-      '@types/pouchdb-find': 7.3.1
+      '@types/pouchdb-find': 7.3.3
     dev: true
 
-  /@types/pouchdb@6.4.0:
-    resolution: {integrity: sha512-eGCpX+NXhd5VLJuJMzwe3L79fa9+IDTrAG3CPaf4s/31PD56hOrhDJTSmRELSXuiqXr6+OHzzP0PldSaWsFt7w==}
+  /@types/pouchdb@6.4.2:
+    resolution: {integrity: sha512-YsI47rASdtzR+3V3JE2UKY58snhm0AglHBpyckQBkRYoCbTvGagXHtV0x5n8nzN04jQmvTG+Sm85cIzKT3KXBA==}
     dependencies:
       '@types/pouchdb-adapter-cordova-sqlite': 1.0.2
       '@types/pouchdb-adapter-fruitdown': 6.1.4
