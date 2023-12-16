@@ -424,24 +424,6 @@ const actions = computed((): DatabaseAction[] => {
   }
   resp.unshift(
     {
-      icon: h(PencilIcon),
-      text: t("database.change-data"),
-      disabled:
-        !allowChangeData.value ||
-        !selectedProjectUid.value ||
-        props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
-      click: () => generateMultiDb("bb.issue.database.data.update"),
-      tooltip: (action) => {
-        if (!allowChangeData.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    },
-    {
       icon: h(PenSquareIcon),
       text: t("database.edit-schema"),
       disabled:
@@ -456,6 +438,24 @@ const actions = computed((): DatabaseAction[] => {
           return t("database.batch-action-not-support-alter-schema");
         }
         if (!allowEditSchema.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    },
+    {
+      icon: h(PencilIcon),
+      text: t("database.change-data"),
+      disabled:
+        !allowChangeData.value ||
+        !selectedProjectUid.value ||
+        props.databases.length < 1 ||
+        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+      click: () => generateMultiDb("bb.issue.database.data.update"),
+      tooltip: (action) => {
+        if (!allowChangeData.value) {
           return t("database.batch-action-permission-denied", {
             action,
           });
