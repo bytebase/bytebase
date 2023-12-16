@@ -4,30 +4,28 @@
     v-bind="$attrs"
   >
     <div class="flex flex-row justify-between">
-      <div class="flex flex-col flex-1 gap-y-2">
+      <div class="flex flex-row items-center gap-x-4">
         <div class="textlabel">
           {{ $t("branch.rollout.select-target-database") }}
         </div>
-        <div class="flex flex-row items-center gap-x-4">
-          <div class="flex flex-row items-center gap-x-2">
-            <div class="textlabel">{{ $t("common.environment") }}</div>
-            <EnvironmentSelect
-              :environment="environment?.uid"
-              style="width: 8rem"
-              @update:environment="handleSelectEnvironment"
-            />
-          </div>
-          <div class="flex flex-row items-center gap-x-2">
-            <div class="textlabel">{{ $t("common.database") }}</div>
-            <DatabaseSelect
-              :database="database?.uid"
-              :project="project.uid"
-              :environment="environment?.uid"
-              :filter="filterDatabase"
-              style="width: 16rem"
-              @update:database="handleSelectDatabase"
-            />
-          </div>
+        <div class="flex flex-row items-center gap-x-2">
+          <div class="textlabel">{{ $t("common.environment") }}</div>
+          <EnvironmentSelect
+            :environment="environment?.uid"
+            style="width: 8rem"
+            @update:environment="handleSelectEnvironment"
+          />
+        </div>
+        <div class="flex flex-row items-center gap-x-2">
+          <div class="textlabel">{{ $t("common.database") }}</div>
+          <DatabaseSelect
+            :database="database?.uid"
+            :project="project.uid"
+            :environment="environment?.uid"
+            :filter="filterDatabase"
+            style="width: 16rem"
+            @update:database="handleSelectDatabase"
+          />
         </div>
       </div>
 
