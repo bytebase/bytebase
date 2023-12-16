@@ -112,7 +112,7 @@ dependencies:
     version: 0.44.0(monaco-editor@0.44.0)
   monaco-languageclient:
     specifier: 7.0.0
-    version: 7.0.0(@codingame/monaco-vscode-api@1.83.5)(monaco-editor@0.44.0)
+    version: 7.0.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0)
   naive-ui:
     specifier: 2.35.0
     version: 2.35.0(vue@3.2.47)
@@ -180,8 +180,8 @@ dependencies:
     specifier: ^0.1.8
     version: 0.1.8(vue@3.2.47)
   vscode:
-    specifier: npm:@codingame/monaco-vscode-api@1.83.5
-    version: /@codingame/monaco-vscode-api@1.83.5
+    specifier: npm:@codingame/monaco-vscode-api@1.83.16
+    version: /@codingame/monaco-vscode-api@1.83.16
   vscode-languageclient:
     specifier: 9.0.1
     version: 9.0.1
@@ -293,8 +293,8 @@ devDependencies:
     specifier: 9.0.7
     version: 9.0.7
   '@types/vscode':
-    specifier: 1.84.1
-    version: 1.84.1
+    specifier: 1.85.0
+    version: 1.85.0
   '@typescript-eslint/eslint-plugin':
     specifier: 6.7.3
     version: 6.7.3(@typescript-eslint/parser@6.7.3)(eslint@8.49.0)(typescript@5.3.3)
@@ -585,13 +585,6 @@ packages:
       '@codingame/monaco-vscode-quickaccess-service-override': 1.83.16
       monaco-editor: 0.44.0
       vscode-semver: /semver@5.5.0
-    dev: false
-
-  /@codingame/monaco-vscode-api@1.83.5:
-    resolution: {integrity: sha512-HWmI3e2LooNkJG7AB5KYkzqkFma6G7tlk8QO6RI54HykazMQEFNpOEkrnS9UJHGsvpT+1hDCtIkufalLdxqMzA==}
-    hasBin: true
-    dependencies:
-      monaco-editor: 0.44.0
     dev: false
 
   /@codingame/monaco-vscode-editor-service-override@1.83.16:
@@ -2047,8 +2040,8 @@ packages:
     resolution: {integrity: sha512-WUtIVRUZ9i5dYXefDEAI7sh9/O7jGvHg7Df/5O/gtH3Yabe5odI3UWopVR1qbPXQtvOxWu3mM4XxlYeZtMWF4g==}
     dev: true
 
-  /@types/vscode@1.84.1:
-    resolution: {integrity: sha512-DB10vBRLEPA/us7p3gQilU2Tq5HDu6JWTyCpD9qtb7MKWIvJS5In9HU3YgVGCXf/miwHJiY62aXwjtUSMpT8HA==}
+  /@types/vscode@1.85.0:
+    resolution: {integrity: sha512-CF/RBon/GXwdfmnjZj0WTUMZN5H6YITOfBCP4iEZlOtVQXuzw6t7Le7+cR+7JzdMrnlm7Mfp49Oj2TuSXIWo3g==}
     dev: true
 
   /@types/web-bluetooth@0.0.17:
@@ -4709,7 +4702,7 @@ packages:
     resolution: {integrity: sha512-5SmjNStN6bSuSE5WPT2ZV+iYn1/yI9sd4Igtk23ChvqB7kDk9lZbB9F5frsuvpB+2njdIeGGFf2G4gbE6rCC9Q==}
     dev: false
 
-  /monaco-languageclient@7.0.0(@codingame/monaco-vscode-api@1.83.5)(monaco-editor@0.44.0):
+  /monaco-languageclient@7.0.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0):
     resolution: {integrity: sha512-UuFYGKaZe13HwUfugzRZPTrp9Q95+47g7jGtR7loX5psiuqB/q9H+V5AkBbWfDJ03SOWkw0qPpmJ2ZIomOIvaw==}
     engines: {node: '>=16.11.0', npm: '>=9.0.0'}
     peerDependencies:
@@ -4720,7 +4713,7 @@ packages:
       '@codingame/monaco-vscode-languages-service-override': 1.83.16
       '@codingame/monaco-vscode-model-service-override': 1.83.16
       monaco-editor: 0.44.0
-      vscode: /@codingame/monaco-vscode-api@1.83.5
+      vscode: /@codingame/monaco-vscode-api@1.83.16
       vscode-languageclient: 9.0.1
     dev: false
 
