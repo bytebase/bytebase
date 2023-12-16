@@ -155,6 +155,7 @@ const {
   getSchemaStatus,
   getTableStatus,
   upsertTableConfig,
+  queuePendingScrollToTable,
 } = useSchemaEditorContext();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -468,6 +469,14 @@ const handleDuplicateTable = (schema: SchemaMetadata, table: TableMetadata) => {
   addTab({
     type: "table",
     database: database.value,
+    metadata: {
+      database: metadata.value,
+      schema: schema,
+      table: newTable,
+    },
+  });
+  queuePendingScrollToTable({
+    db: database.value,
     metadata: {
       database: metadata.value,
       schema: schema,

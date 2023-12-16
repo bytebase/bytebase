@@ -8,6 +8,7 @@
   >
     <NDataTable
       v-bind="$attrs"
+      ref="dataTableRef"
       size="small"
       :row-key="getTableKey"
       :columns="columns"
@@ -57,7 +58,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import { DataTableColumn, NDataTable } from "naive-ui";
+import { DataTableColumn, DataTableInst, NDataTable } from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
@@ -97,7 +98,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const context = useSchemaEditorContext();
 const {
   events,
   project,
@@ -109,7 +109,9 @@ const {
   getSchemaStatus,
   getTableStatus,
   upsertTableConfig,
-} = context;
+  useConsumePendingScrollToTable,
+} = useSchemaEditorContext();
+const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -385,6 +387,33 @@ const handleUpdateCheckedRowKeys = (keys: string[], rows: TableMetadata[]) => {
 
   events.emit("update:selected-rollout-objects", mergedObjects);
 };
+
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
+useConsumePendingScrollToTable(
+  computed(() => ({
+    db: props.db,
+    metadata: {
+      database: props.database,
+      schema: props.schema,
+    },
+  })),
+  vlRef,
+  (params, vl) => {
+    const key = getTableKey(params.metadata.table);
+    if (!key) return;
+    requestAnimationFrame(() => {
+      try {
+        console.debug("scroll-to-table", vl, params, key);
+        vl.scrollTo({ key });
+      } catch {
+        // Do nothing
+      }
+    });
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

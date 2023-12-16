@@ -196,6 +196,7 @@ const {
   getSchemaStatus,
   markEditStatus,
   upsertTableConfig,
+  queuePendingScrollToTable,
 } = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
@@ -353,6 +354,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   addTab({
     type: "table",
     database: db,
+    metadata: metadataForTable(),
+  });
+
+  queuePendingScrollToTable({
+    db,
     metadata: metadataForTable(),
   });
 };

@@ -4,6 +4,7 @@ import { ComposedProject } from "@/types";
 import { EditTarget, ResourceType, RolloutObject } from "../types";
 import { useEditConfigs } from "./config";
 import { useEditStatus } from "./edit";
+import { useScrollStatus } from "./scroll";
 import { useTabs } from "./tabs";
 
 export const KEY = Symbol("bb.schema-editor");
@@ -25,6 +26,7 @@ export const provideSchemaEditorContext = (params: {
     ...useTabs(),
     ...useEditStatus(),
     ...useEditConfigs(params.targets),
+    ...useScrollStatus(),
   };
 
   provide(KEY, context);

@@ -8,6 +8,7 @@
   >
     <NDataTable
       v-bind="$attrs"
+      ref="dataTableRef"
       size="small"
       :row-key="getColumnKey"
       :columns="columns"
@@ -62,7 +63,12 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { DataTableColumn, NCheckbox, NDataTable } from "naive-ui";
+import {
+  DataTableColumn,
+  DataTableInst,
+  NCheckbox,
+  NDataTable,
+} from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
@@ -164,14 +170,15 @@ const state = reactive<LocalState>({
   showLabelsDrawer: false,
 });
 
-const context = useSchemaEditorContext();
 const {
   resourceType,
   markEditStatus,
   getColumnStatus,
   getColumnConfig,
   upsertColumnConfig,
-} = context;
+  useConsumePendingScrollToColumn,
+} = useSchemaEditorContext();
+const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
 const tableHeaderElRef = computed(
   () =>
@@ -640,6 +647,35 @@ const isDroppedColumn = (column: ColumnMetadata): boolean => {
 const getColumnKey = (column: ColumnMetadata) => {
   return markUUID(column);
 };
+
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
+useConsumePendingScrollToColumn(
+  computed(() => ({
+    db: props.db,
+    metadata: {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+    },
+  })),
+  vlRef,
+  (params, vl) => {
+    const key = getColumnKey(params.metadata.column);
+    if (!key) return;
+    requestAnimationFrame(() => {
+      try {
+        console.debug("scroll-to-column", vl, params, key);
+        vl.scrollTo({ key });
+        // TODO: focus name or type input element
+      } catch {
+        // Do nothing
+      }
+    });
+  }
+);
 </script>
 
 <style lang="postcss" scoped>
