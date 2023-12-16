@@ -276,7 +276,9 @@
     "show-all": "显示全部",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
-    "nothing-changed": "没有改变"
+    "nothing-changed": "没有改变",
+    "external-database-name": "外部数据库名称",
+    "external-server-name": "外部服务器名称"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1233,7 +1235,8 @@
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
-    "successfully-synced-schema": "Schema 同步完成"
+    "successfully-synced-schema": "Schema 同步完成",
+    "foreign-tables": "外部表"
   },
   "instance": {
     "select": "选择实例",

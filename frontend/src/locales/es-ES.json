@@ -278,7 +278,9 @@
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
-    "nothing-changed": "nada ha cambiado"
+    "nothing-changed": "nada ha cambiado",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1235,7 +1237,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
-    "successfully-synced-schema": "Esquema sincronizado correctamente"
+    "successfully-synced-schema": "Esquema sincronizado correctamente",
+    "foreign-tables": "tabla externa"
   },
   "instance": {
     "select": "Seleccionar instancia",

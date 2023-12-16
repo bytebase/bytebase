@@ -130,9 +130,19 @@
 
         <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.foreign-tables") }}
+          </div>
+          <DBExternalTable :db-external-table-list="dbExternalTableList" />
+        </template>
+
+        <template v-if="databaseEngine === Engine.POSTGRES">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
-          <DBExtensionTable :db-extension-list="dbExtensionList" />
+          <DBExtensionTable
+            :db-extension-list="dbExtensionList"
+            :schema-name="state.selectedSchemaName"
+          />
         </template>
 
         <template v-if="databaseEngine === Engine.POSTGRES">
@@ -304,6 +314,13 @@ const viewList = computed(() => {
 
 const dbExtensionList = computed(() => {
   return dbSchemaStore.getExtensionList(props.database.name);
+});
+
+const dbExternalTableList = computed(() => {
+  return dbSchemaStore.getExternalTableList(
+    props.database.name,
+    state.selectedSchemaName
+  );
 });
 
 const functionList = computed(() => {
