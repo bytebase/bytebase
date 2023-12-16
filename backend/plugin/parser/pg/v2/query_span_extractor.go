@@ -811,7 +811,8 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 	table := schema.GetTable(tableName)
 	view := schema.GetView(tableName)
-	if table == nil && view == nil {
+	foreignTable := schema.GetExternalTable(tableName)
+	if table == nil && view == nil && foreignTable == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.connectedDB,
 			Schema:   &schemaName,
@@ -822,6 +823,20 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	if table != nil {
 		var columns []string
 		for _, column := range table.GetColumns() {
+			columns = append(columns, column.Name)
+		}
+		return &base.PhysicalTable{
+			Server:   "",
+			Database: q.connectedDB,
+			Schema:   schemaName,
+			Name:     tableName,
+			Columns:  columns,
+		}, nil
+	}
+
+	if foreignTable != nil {
+		var columns []string
+		for _, column := range foreignTable.GetColumns() {
 			columns = append(columns, column.Name)
 		}
 		return &base.PhysicalTable{
