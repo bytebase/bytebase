@@ -23,6 +23,7 @@
               :database="database?.uid"
               :project="project.uid"
               :environment="environment?.uid"
+              :filter="filterDatabase"
               style="width: 16rem"
               @update:database="handleSelectDatabase"
             />
@@ -162,6 +163,9 @@ const handleSelectDatabase = (uid: string | undefined) => {
     // Auto select environment if it's not selected
     environment.value = database.value.effectiveEnvironmentEntity;
   }
+};
+const filterDatabase = (db: ComposedDatabase) => {
+  return db.instanceEntity.engine === props.branch.engine;
 };
 
 const allowPreviewIssue = computed(() => {
