@@ -40,16 +40,13 @@
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
               <NButton
-                :disabled="!ready"
-                :loading="!ready"
+                :disabled="!branchListReady"
                 @click="handleMergeBranch"
                 >{{ $t("schema-designer.merge-branch") }}</NButton
               >
-              <NButton
-                type="primary"
-                @click="selectTargetDatabasesContext.show = true"
-                >{{ $t("schema-designer.apply-to-database") }}</NButton
-              >
+              <NButton type="primary" @click="handleApplyBranchToDatabase">{{
+                $t("schema-designer.apply-to-database")
+              }}</NButton>
             </template>
             <template v-else>
               <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
@@ -171,7 +168,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchListByProject(
+const { branchList, ready: branchListReady } = useBranchListByProject(
   computed(() => props.project.name)
 );
 const { runSQLCheck } = provideSQLCheckContext();
@@ -417,6 +414,16 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
     params: {
       projectSlug: projectV1Slug(props.project),
       branchName: branchId,
+    },
+  });
+};
+
+const handleApplyBranchToDatabase = () => {
+  router.push({
+    name: "workspace.project.branch.rollout",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: props.cleanBranch.branchId,
     },
   });
 };
