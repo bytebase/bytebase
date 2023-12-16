@@ -80,10 +80,8 @@ import {
 } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { ComposedDatabase, ComposedInstance } from "@/types";
 import { Engine } from "@/types/proto/v1/common";

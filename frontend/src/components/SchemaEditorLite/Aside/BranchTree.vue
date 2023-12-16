@@ -83,9 +83,8 @@ import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { SchemaIcon, TableIcon } from "@/components/Icon";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
