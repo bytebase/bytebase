@@ -123,8 +123,8 @@
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
+    - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
-    - [ForeignTableMetadata](#bytebase-v1-ForeignTableMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
@@ -2427,6 +2427,24 @@ ExtensionMetadata is the metadata for extensions.
 
 
 
+<a name="bytebase-v1-ExternalTableMetadata"></a>
+
+### ExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
 <a name="bytebase-v1-ForeignKeyMetadata"></a>
 
 ### ForeignKeyMetadata
@@ -2443,22 +2461,6 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | on_delete | [string](#string) |  | The on_delete is the on delete action of a foreign key. |
 | on_update | [string](#string) |  | The on_update is the on update action of a foreign key. |
 | match_type | [string](#string) |  | The match_type is the match type of a foreign key. The match_type is the PostgreSQL specific field. It&#39;s empty string for other databases. |
-
-
-
-
-
-
-<a name="bytebase-v1-ForeignTableMetadata"></a>
-
-### ForeignTableMetadata
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the name of a foreign table. |
-| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
 
 
 
@@ -2788,7 +2790,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
-| foreign_tables | [ForeignTableMetadata](#bytebase-v1-ForeignTableMetadata) | repeated | The foreign_tables is the list of foreign tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |

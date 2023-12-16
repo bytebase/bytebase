@@ -427,8 +427,8 @@ message SchemaMetadata {
   // The tables is the list of tables in a schema.
   repeated TableMetadata tables = 2;
 
-  // The foreign_tables is the list of foreign tables in a schema.
-  repeated ForeignTableMetadata foreign_tables = 3;
+  // The external_tables is the list of external tables in a schema.
+  repeated ExternalTableMetadata external_tables = 3;
 
   // The views is the list of views in a schema.
   repeated ViewMetadata views = 4;
@@ -443,12 +443,18 @@ message SchemaMetadata {
   repeated TaskMetadata tasks = 7;
 }
 
-message ForeignTableMetadata {
-  // The name is the name of a foreign table.
+message ExternalTableMetadata {
+  // The name is the name of a external table.
   string name = 1;
   
+  // The external_server_name is the name of the external server.
+  string external_server_name = 2;
+
+  // The external_database_name is the name of the external database.
+  string external_database_name = 3;
+
   // The columns is the ordered list of columns in a foreign table.
-  repeated ColumnMetadata columns = 2;
+  repeated ColumnMetadata columns = 4;
 }
 
 // TableMetadata is the metadata for tables.
