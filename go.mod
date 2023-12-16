@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.5
 
 require (
-	cloud.google.com/go/spanner v1.53.0
+	cloud.google.com/go/spanner v1.53.1
 	gitee.com/chunanyong/dm v1.8.13
 	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
 	github.com/antlr4-go/antlr/v4 v4.13.0
@@ -16,7 +16,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20231208095055-182de2379272
 	github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a
-	github.com/bytebase/postgresql-parser v0.0.0-20231211065919-9d1484ceb5ae
+	github.com/bytebase/postgresql-parser v0.0.0-20231215073645-f6520e1e2f86
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
@@ -36,7 +36,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.0
-	github.com/jackc/pgx/v5 v5.5.0
+	github.com/jackc/pgx/v5 v5.5.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.3
@@ -56,7 +56,7 @@ require (
 	github.com/sashabaranov/go-openai v1.17.9
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
-	github.com/sijms/go-ora/v2 v2.7.24
+	github.com/sijms/go-ora/v2 v2.7.26
 	github.com/snowflakedb/gosnowflake v1.7.1
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/sourcegraph/jsonrpc2 v0.2.0
@@ -72,15 +72,15 @@ require (
 	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.16.0
-	golang.org/x/exp v0.0.0-20231127185646-65229373498e
+	golang.org/x/exp v0.0.0-20231214170342-aacd6d4b4611
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/sys v0.15.0
 	golang.org/x/text v0.14.0
 	google.golang.org/api v0.152.0
-	google.golang.org/genproto v0.0.0-20231127180814-3a041ad873d4
-	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4
-	google.golang.org/grpc v1.59.0
+	google.golang.org/genproto v0.0.0-20231212172506-995d672761c0
+	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0
+	google.golang.org/grpc v1.60.0
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/yaml.v3 v3.0.1
 )
