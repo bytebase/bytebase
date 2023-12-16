@@ -362,6 +362,9 @@ const handleUpdateCheckedRowKeys = (keys: string[], rows: TableMetadata[]) => {
   :deep(.n-data-table-th .n-data-table-resize-button::after) {
   @apply bg-control-bg h-2/3;
 }
+.schema-editor-table-list :deep(.n-data-table-td.input-cell) {
+  @apply pl-0.5 pr-1 py-0;
+}
 .schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;
 }
