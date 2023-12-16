@@ -290,8 +290,8 @@ devDependencies:
     specifier: 5.0.4
     version: 5.0.4
   '@types/splitpanes':
-    specifier: 2.2.1
-    version: 2.2.1
+    specifier: 2.2.6
+    version: 2.2.6
   '@types/uuid':
     specifier: 9.0.6
     version: 9.0.6
@@ -1997,8 +1997,8 @@ packages:
     resolution: {integrity: sha512-6zl8VXHEDtDsfdSlRsLW3uatVpwPJ17MKIzOy3m2lObF1dtA/dHl71pKvqiJJL1YKhdsB4gJ4WXENSLQ9TjcPQ==}
     dev: true
 
-  /@types/splitpanes@2.2.1:
-    resolution: {integrity: sha512-H5BgO6UdJRzz5ddRzuGvLBiPSPEuuHXb5ET+7avLLrEx1uc7f5Ut5oLMDQsfvGtHBBAFczt1QNYuDf27wHbvDQ==}
+  /@types/splitpanes@2.2.6:
+    resolution: {integrity: sha512-3dV5sO1Ht74iER4jJU03mreL3f+Q2h47ZqXS6Sfbqc6hkCvsDrX1GA0NbYWRdNvZemPyTDzUoApWKeoGbALwkQ==}
     dependencies:
       vue: 2.7.14
     dev: true
