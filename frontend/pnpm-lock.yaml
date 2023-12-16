@@ -217,9 +217,6 @@ devDependencies:
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
     version: 1.2.0(rollup@4.9.0)(vue-i18n@9.4.1)
-  '@popperjs/core':
-    specifier: 2.11.8
-    version: 2.11.8
   '@rollup/plugin-yaml':
     specifier: 4.1.2
     version: 4.1.2(rollup@4.9.0)
@@ -1337,6 +1334,7 @@ packages:
 
   /@popperjs/core@2.11.8:
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
+    dev: false
 
   /@protobufjs/aspromise@1.1.2:
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
