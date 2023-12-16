@@ -18,6 +18,7 @@
       :striped="true"
       :bordered="true"
       :bottom-bordered="true"
+      :checked-row-keys="checkedRowKeys"
       class="schema-editor-table-list"
       @update:checked-row-keys="handleUpdateCheckedRowKeys"
     />
@@ -348,12 +349,37 @@ const getTableKey = (table: TableMetadata) => {
   return markUUID(table);
 };
 
+const checkedRowKeys = computed(() => {
+  return selectedRolloutObjects.value
+    ?.filter((ro) => {
+      return (
+        ro.db.name === props.db.name &&
+        ro.metadata.schema.name === props.schema.name
+      );
+    })
+    .map((ro) => {
+      return getTableKey(ro.metadata.table);
+    });
+});
 const handleUpdateCheckedRowKeys = (keys: string[], rows: TableMetadata[]) => {
-  const objects = rows.map<RolloutObject>((table) => ({
+  const selected = selectedRolloutObjects.value;
+  if (!selected) {
+    return;
+  }
+
+  const objectsInCurrentSchema = rows.map<RolloutObject>((table) => ({
     db: props.db,
     metadata: metadataForTable(table),
   }));
-  events.emit("update:selected-rollout-objects", objects);
+  const objectsOutCurrentSchema = selected.filter((ro) => {
+    return (
+      ro.db.name !== props.db.name ||
+      ro.metadata.schema.name !== props.schema.name
+    );
+  });
+  const mergedObjects = [...objectsOutCurrentSchema, ...objectsInCurrentSchema];
+
+  events.emit("update:selected-rollout-objects", mergedObjects);
 };
 </script>
 
