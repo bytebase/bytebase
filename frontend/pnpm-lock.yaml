@@ -12,8 +12,8 @@ dependencies:
     specifier: ^1.7.0
     version: 1.7.0
   '@markdoc/markdoc':
-    specifier: 0.3.2
-    version: 0.3.2
+    specifier: 0.4.0
+    version: 0.4.0
   '@soerenmartius/vue3-clipboard':
     specifier: 0.1.2
     version: 0.1.2
@@ -1086,8 +1086,8 @@ packages:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
     dev: false
 
-  /@markdoc/markdoc@0.3.2:
-    resolution: {integrity: sha512-D0SaanaSkTIARvQu+zQqPEpKcvYUBR/mfac9e8JzS89P7eXhiNWPonUN7avRS1saZHpIQWIRote97qT+jGk5Gw==}
+  /@markdoc/markdoc@0.4.0:
+    resolution: {integrity: sha512-fSh4P3Y4E7oaKYc2oNzSIJVPDto7SMzAuQN1Iyx53UxzleA6QzRdNWRxmiPqtVDaDi5dELd2yICoG91csrGrAw==}
     engines: {node: '>=14.7.0'}
     peerDependencies:
       '@types/react': '*'
