@@ -173,6 +173,16 @@ export class DiffMerge {
           { ...source, table: sourceTable },
           { ...target, table: targetTable }
         );
+        if (
+          !isEqual(sourceTable.classification, targetTable.classification) ||
+          !isEqual(sourceTable.foreignKeys, targetTable.foreignKeys) ||
+          !isEqual(sourceTable.indexes, targetTable.indexes)
+        ) {
+          // Index and foreignKey changes are considered as table updating by now
+          // for simplification
+          context.markEditStatusByKey(key, "updated");
+        }
+
         continue;
       }
       // dropped table
