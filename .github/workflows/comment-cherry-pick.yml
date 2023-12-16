@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Create backport pull requests
-        uses: korthout/backport-action@v1
+        uses: korthout/backport-action@v2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           pull_title: "cherrypick: [${target_branch}] ${pull_title}"
