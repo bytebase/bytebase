@@ -5,7 +5,7 @@
 
 # $ docker run --init --rm --name bytebase --publish 8080:8080 --volume ~/.bytebase/data:/var/opt/bytebase bytebase/bytebase
 
-FROM node:18 as frontend
+FROM node:20 as frontend
 
 ARG TARGETARCH
 ARG RELEASE="release"
