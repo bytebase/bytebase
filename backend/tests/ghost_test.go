@@ -178,10 +178,11 @@ func TestGhostTenant(t *testing.T) {
 	// Provision instances.
 	var testInstances []*v1pb.Instance
 	var prodInstances []*v1pb.Instance
+	var stoppers []func()
 	for i := 0; i < testTenantNumber; i++ {
 		port, stopper, err := getMySQLInstanceForGhostTest(t)
 		a.NoError(err)
-		defer stopper()
+		stoppers = append(stoppers, stopper)
 		// Add the provisioned instances.
 		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
@@ -199,7 +200,7 @@ func TestGhostTenant(t *testing.T) {
 	for i := 0; i < prodTenantNumber; i++ {
 		port, stopper, err := getMySQLInstanceForGhostTest(t)
 		a.NoError(err)
-		defer stopper()
+		stoppers = append(stoppers, stopper)
 		// Add the provisioned instances.
 		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
@@ -214,6 +215,11 @@ func TestGhostTenant(t *testing.T) {
 		a.NoError(err)
 		prodInstances = append(prodInstances, instance)
 	}
+	defer func() {
+		for _, stopper := range stoppers {
+			stopper()
+		}
+	}()
 
 	// Create deployment configuration.
 	_, err = ctl.projectServiceClient.UpdateDeploymentConfig(ctx, &v1pb.UpdateDeploymentConfigRequest{
