@@ -1,31 +1,43 @@
 <template>
   <div
-    class="flex flex-col gap-y-4 w-full h-full overflow-x-auto relative p-1"
+    class="flex flex-col gap-y-2 w-full h-full overflow-x-auto relative p-1"
     v-bind="$attrs"
   >
-    <div class="flex flex-col gap-y-2">
-      <div class="textlabel">
-        {{ $t("branch.rollout.select-target-database") }}
+    <div class="flex flex-row justify-between">
+      <div class="flex flex-col flex-1 gap-y-2">
+        <div class="textlabel">
+          {{ $t("branch.rollout.select-target-database") }}
+        </div>
+        <div class="flex flex-row items-center gap-x-4">
+          <div class="flex flex-row items-center gap-x-2">
+            <div class="textlabel">{{ $t("common.environment") }}</div>
+            <EnvironmentSelect
+              :environment="environment?.uid"
+              style="width: 8rem"
+              @update:environment="handleSelectEnvironment"
+            />
+          </div>
+          <div class="flex flex-row items-center gap-x-2">
+            <div class="textlabel">{{ $t("common.database") }}</div>
+            <DatabaseSelect
+              :database="database?.uid"
+              :project="project.uid"
+              :environment="environment?.uid"
+              style="width: 16rem"
+              @update:database="handleSelectDatabase"
+            />
+          </div>
+        </div>
       </div>
-      <div class="flex flex-row items-center gap-x-4">
-        <div class="flex flex-row items-center gap-x-2">
-          <div class="textlabel">{{ $t("common.environment") }}</div>
-          <EnvironmentSelect
-            :environment="environment?.uid"
-            style="width: 8rem"
-            @update:environment="handleSelectEnvironment"
-          />
-        </div>
-        <div class="flex flex-row items-center gap-x-2">
-          <div class="textlabel">{{ $t("common.database") }}</div>
-          <DatabaseSelect
-            :database="database?.uid"
-            :project="project.uid"
-            :environment="environment?.uid"
-            style="width: 16rem"
-            @update:database="handleSelectDatabase"
-          />
-        </div>
+
+      <div class="flex flex-row items-end justify-end">
+        <NButton
+          type="primary"
+          :disabled="!allowPreviewIssue"
+          @click="handlePreviewIssue"
+        >
+          {{ $t("issue.preview") }}
+        </NButton>
       </div>
     </div>
     <div class="flex-1 overflow-hidden relative">
@@ -56,18 +68,6 @@
           {{ $t("branch.rollout.select-target-database") }}
         </div>
       </template>
-    </div>
-    <div class="flex flex-row items-center justify-between">
-      <div class="flex flex-row items-center justify-start"></div>
-      <div class="flex flex-row items-center justify-end">
-        <NButton
-          type="primary"
-          :disabled="!allowPreviewIssue"
-          @click="handlePreviewIssue"
-        >
-          {{ $t("issue.preview") }}
-        </NButton>
-      </div>
     </div>
 
     <MaskSpinner
