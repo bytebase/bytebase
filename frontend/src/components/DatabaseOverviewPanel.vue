@@ -139,10 +139,7 @@
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
-          <DBExtensionTable
-            :db-extension-list="dbExtensionList"
-            :schema-name="state.selectedSchemaName"
-          />
+          <DBExtensionTable :db-extension-list="dbExtensionList" />
         </template>
 
         <template v-if="databaseEngine === Engine.POSTGRES">
