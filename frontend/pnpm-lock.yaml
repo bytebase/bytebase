@@ -216,13 +216,13 @@ devDependencies:
     version: 2.2.158
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
-    version: 1.2.0(rollup@3.29.2)(vue-i18n@9.4.1)
+    version: 1.2.0(rollup@3.29.4)(vue-i18n@9.4.1)
   '@popperjs/core':
     specifier: 2.11.8
     version: 2.11.8
   '@rollup/plugin-yaml':
     specifier: 4.1.2
-    version: 4.1.2(rollup@3.29.2)
+    version: 4.1.2(rollup@3.29.4)
   '@tailwindcss/forms':
     specifier: 0.5.7
     version: 0.5.7(tailwindcss@3.3.6)
@@ -356,8 +356,8 @@ devDependencies:
     specifier: ^7.2.5
     version: 7.2.5
   rollup:
-    specifier: 3.29.2
-    version: 3.29.2
+    specifier: 3.29.4
+    version: 3.29.4
   tailwindcss:
     specifier: 3.3.6
     version: 3.3.6
@@ -372,13 +372,13 @@ devDependencies:
     version: 0.18.1(@vue/compiler-sfc@3.3.4)
   unplugin-vue-components:
     specifier: 0.25.2
-    version: 0.25.2(rollup@3.29.2)(vue@3.2.47)
+    version: 0.25.2(rollup@3.29.4)(vue@3.2.47)
   vite:
     specifier: 4.4.12
     version: 4.4.12(@types/node@20.10.4)
   vite-bundle-visualizer:
     specifier: ^0.11.0
-    version: 0.11.0(rollup@3.29.2)
+    version: 0.11.0(rollup@3.29.4)
   vitest:
     specifier: 0.34.4
     version: 0.34.4
@@ -1005,7 +1005,7 @@ packages:
     engines: {node: '>= 16'}
     dev: true
 
-  /@intlify/unplugin-vue-i18n@1.2.0(rollup@3.29.2)(vue-i18n@9.4.1):
+  /@intlify/unplugin-vue-i18n@1.2.0(rollup@3.29.4)(vue-i18n@9.4.1):
     resolution: {integrity: sha512-AzjlMZKj9DG10ICDR2VWjfJudHJ1XK2GNSHxw+VmOUYpUm4S0L/a7OAdvgnuY7S4plk1VnPdT4YilpZk+uQcqg==}
     engines: {node: '>= 14.16'}
     peerDependencies:
@@ -1022,7 +1022,7 @@ packages:
     dependencies:
       '@intlify/bundle-utils': 7.4.0(vue-i18n@9.4.1)
       '@intlify/shared': 9.5.0
-      '@rollup/pluginutils': 5.0.5(rollup@3.29.2)
+      '@rollup/pluginutils': 5.0.5(rollup@3.29.4)
       '@vue/compiler-sfc': 3.3.4
       debug: 4.3.4
       fast-glob: 3.3.1
@@ -1173,7 +1173,7 @@ packages:
   /@protobufjs/utf8@1.1.0:
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
 
-  /@rollup/plugin-yaml@4.1.2(rollup@3.29.2):
+  /@rollup/plugin-yaml@4.1.2(rollup@3.29.4):
     resolution: {integrity: sha512-RpupciIeZMUqhgFE97ba0s98mOFS7CWzN3EJNhJkqSv9XLlWYtwVdtE6cDw6ASOF/sZVFS7kRJXftaqM2Vakdw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -1182,13 +1182,13 @@ packages:
       rollup:
         optional: true
     dependencies:
-      '@rollup/pluginutils': 5.0.5(rollup@3.29.2)
+      '@rollup/pluginutils': 5.0.5(rollup@3.29.4)
       js-yaml: 4.1.0
-      rollup: 3.29.2
+      rollup: 3.29.4
       tosource: 2.0.0-alpha.3
     dev: true
 
-  /@rollup/pluginutils@5.0.5(rollup@3.29.2):
+  /@rollup/pluginutils@5.0.5(rollup@3.29.4):
     resolution: {integrity: sha512-6aEYR910NyP73oHiJglti74iRyOwgFU4x3meH/H8OJx6Ry0j6cOVZ5X/wTvub7G7Ao6qaHBEaNsV3GLJkSsF+Q==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -1200,7 +1200,7 @@ packages:
       '@types/estree': 1.0.2
       estree-walker: 2.0.2
       picomatch: 2.3.1
-      rollup: 3.29.2
+      rollup: 3.29.4
     dev: true
 
   /@sinclair/typebox@0.27.8:
@@ -5141,7 +5141,7 @@ packages:
     resolution: {integrity: sha512-IXgzBWvWQwE6PrDI05OvmXUIruQTcoMDzRsOd5CDvHCVLcLHMTSYvOK5Cm46kWqlV3yAbuSpBZdJ5oP5OUoStg==}
     dev: false
 
-  /rollup-plugin-visualizer@5.9.3(rollup@3.29.2):
+  /rollup-plugin-visualizer@5.9.3(rollup@3.29.4):
     resolution: {integrity: sha512-ieGM5UAbMVqThX67GCuFHu/GkaSXIUZwFKJsSzE+7+k9fibU/6gbUz7SL+9BBzNtv5bIFHj7kEu0TWcqEnT/sQ==}
     engines: {node: '>=14'}
     hasBin: true
@@ -5153,13 +5153,13 @@ packages:
     dependencies:
       open: 8.4.2
       picomatch: 2.3.1
-      rollup: 3.29.2
+      rollup: 3.29.4
       source-map: 0.7.4
       yargs: 17.7.2
     dev: true
 
-  /rollup@3.29.2:
-    resolution: {integrity: sha512-CJouHoZ27v6siztc21eEQGo0kIcE5D1gVPA571ez0mMYb25LGYGKnVNXpEj5MGlepmDWGXNjDB5q7uNiPHC11A==}
+  /rollup@3.29.4:
+    resolution: {integrity: sha512-oWzmBZwvYrU0iJHtDmhsm662rC15FRXmcjCk1xD771dFDx5jJ02ufAQQTn0etB2emNk4J9EZg/yWKpsn9BWGRw==}
     engines: {node: '>=14.18.0', npm: '>=8.0.0'}
     hasBin: true
     optionalDependencies:
@@ -5664,7 +5664,7 @@ packages:
       - supports-color
     dev: true
 
-  /unplugin-vue-components@0.25.2(rollup@3.29.2)(vue@3.2.47):
+  /unplugin-vue-components@0.25.2(rollup@3.29.4)(vue@3.2.47):
     resolution: {integrity: sha512-OVmLFqILH6w+eM8fyt/d/eoJT9A6WO51NZLf1vC5c1FZ4rmq2bbGxTy8WP2Jm7xwFdukaIdv819+UI7RClPyCA==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -5678,7 +5678,7 @@ packages:
         optional: true
     dependencies:
       '@antfu/utils': 0.7.6
-      '@rollup/pluginutils': 5.0.5(rollup@3.29.2)
+      '@rollup/pluginutils': 5.0.5(rollup@3.29.4)
       chokidar: 3.5.3
       debug: 4.3.4
       fast-glob: 3.3.1
@@ -5757,12 +5757,12 @@ packages:
       vue: 3.2.47
     dev: false
 
-  /vite-bundle-visualizer@0.11.0(rollup@3.29.2):
+  /vite-bundle-visualizer@0.11.0(rollup@3.29.4):
     resolution: {integrity: sha512-YKp4AYO/jfCPihL0FPC/kL6lARk+Mi8ohHCYab9cmx5eOmtW8tG6SXOxjaPPjPrf8EwWKi/QcN5xNsLZVlLzUQ==}
     hasBin: true
     dependencies:
       cac: 6.7.14
-      rollup-plugin-visualizer: 5.9.3(rollup@3.29.2)
+      rollup-plugin-visualizer: 5.9.3(rollup@3.29.4)
       tmp: 0.2.1
     transitivePeerDependencies:
       - rollup
@@ -5829,7 +5829,7 @@ packages:
       '@types/node': 20.10.4
       esbuild: 0.18.20
       postcss: 8.4.31
-      rollup: 3.29.2
+      rollup: 3.29.4
     optionalDependencies:
       fsevents: 2.3.3
     dev: true
