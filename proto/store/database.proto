@@ -46,17 +46,20 @@ message SchemaMetadata {
   // The tables is the list of tables in a schema.
   repeated TableMetadata tables = 2;
 
+  // The external_tables is the list of external tables in a schema.
+  repeated ExternalTableMetadata external_tables = 3;
+
   // The views is the list of views in a schema.
-  repeated ViewMetadata views = 3;
+  repeated ViewMetadata views = 4;
 
   // The functions is the list of functions in a schema.
-  repeated FunctionMetadata functions = 4;
+  repeated FunctionMetadata functions = 5;
 
   // The streams is the list of streams in a schema, currently, only used for Snowflake.
-  repeated StreamMetadata streams = 5;
+  repeated StreamMetadata streams = 6;
 
   // The routines is the list of routines in a schema, currently, only used for Snowflake.
-  repeated TaskMetadata tasks = 6;
+  repeated TaskMetadata tasks = 7;
 }
 
 message TaskMetadata {
@@ -182,6 +185,20 @@ message TableMetadata {
 
   // The partitions is the list of partitions in a table.
   repeated TablePartitionMetadata partitions = 15;
+}
+
+message ExternalTableMetadata {
+  // The name is the name of a external table.
+  string name = 1;
+
+  // The external_server_name is the name of the external server.
+  string external_server_name = 2;
+
+  // The external_database_name is the name of the external database.
+  string external_database_name = 3;
+
+  // The columns is the ordered list of columns in a foreign table.
+  repeated ColumnMetadata columns = 4;
 }
 
 // TablePartitionMetadata is the metadata for table partitions.
