@@ -97,11 +97,8 @@
             <div class="mt-6 relative">
               <div class="relative flex justify-center text-sm">
                 <template v-if="isDemo">
-                  <span class="pl-2 bg-white text-accent">{{
-                    $t("auth.sign-in.demo-note", {
-                      username: "demo@example.com",
-                      password: "1024",
-                    })
+                  <span class="pl-2 bg-white text-red-600 text-xl">{{
+                    state.loginHint
                   }}</span>
                 </template>
                 <template v-else-if="!disallowSignup">
@@ -242,6 +239,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
   useActuatorV1Store,
@@ -258,9 +256,11 @@ import AuthFooter from "./AuthFooter.vue";
 interface LocalState {
   email: string;
   password: string;
+  loginHint: string;
   showPassword: boolean;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const actuatorStore = useActuatorV1Store();
@@ -270,6 +270,7 @@ const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   email: "",
   password: "",
+  loginHint: "",
   showPassword: false,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
@@ -293,17 +294,19 @@ onMounted(async () => {
     router.push({ name: "auth.signup", replace: true });
   }
 
-  if (isDemo.value) {
-    state.email = "demo@example.com";
-    state.password = "1024";
-    state.showPassword = true;
-  } else {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    state.email = params.get("email") ?? "";
-    state.password = params.get("password") ?? "";
-    state.showPassword = false;
-  }
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams(url.search);
+  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
+  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
+  state.loginHint =
+    params.get("hint") ??
+    (isDemo.value
+      ? t("auth.sign-in.demo-note", {
+          username: "demo@example.com",
+          password: "1024",
+        })
+      : "");
+  state.showPassword = isDemo.value != null;
 
   await identityProviderStore.fetchIdentityProviderList();
   if (
