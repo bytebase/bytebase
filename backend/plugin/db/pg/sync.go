@@ -411,7 +411,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	if err != nil {
 		// Experimental feature, log error and return.
 		slog.Error("failed to query foreign table: %v", err)
-		return nil, err
+		return nil, nil
 	}
 	defer rows.Close()
 
@@ -421,7 +421,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 		var schemaName, tableName, foreignServerCatalog, foreignServerName string
 		if err := rows.Scan(&schemaName, &tableName, &foreignServerCatalog, &foreignServerName); err != nil {
 			slog.Error("failed to scan foreign table: %v", err)
-			continue
+			return nil, nil
 		}
 		externalTable := &storepb.ExternalTableMetadata{
 			Name:                 tableName,
@@ -432,6 +432,11 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 		externalTable.Columns = columnMap[key]
 
 		foreignTablesMap[schemaName] = append(foreignTablesMap[schemaName], externalTable)
+	}
+
+	if err := rows.Err(); err != nil {
+		slog.Error("failed to scan foreign table: %v", err)
+		return nil, nil
 	}
 
 	return foreignTablesMap, nil
