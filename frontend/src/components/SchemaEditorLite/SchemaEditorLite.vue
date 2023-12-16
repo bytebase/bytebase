@@ -97,7 +97,8 @@ const context = provideSchemaEditorContext({
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
 });
-const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
+const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
+  useAlgorithm(context);
 
 watch(
   [ready, () => props.diffWhenReady],
@@ -126,6 +127,7 @@ useEmitteryEventListener(
 defineExpose({
   rebuildMetadataEdit,
   applyMetadataEdit,
+  applySelectedMetadataEdit,
 });
 </script>
 
