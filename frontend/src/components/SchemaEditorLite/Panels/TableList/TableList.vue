@@ -1,7 +1,7 @@
 <template>
   <div
     ref="containerElRef"
-    class="w-full h-full"
+    class="w-full h-full overflow-x-auto"
     :data-height="containerHeight"
     :data-table-header-height="tableHeaderHeight"
     :data-table-body-height="tableBodyHeight"
