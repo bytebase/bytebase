@@ -46,6 +46,8 @@ export interface SchemaMetadata {
   name: string;
   /** The tables is the list of tables in a schema. */
   tables: TableMetadata[];
+  /** The external_tables is the list of external tables in a schema. */
+  externalTables: ExternalTableMetadata[];
   /** The views is the list of views in a schema. */
   views: ViewMetadata[];
   /** The functions is the list of functions in a schema. */
@@ -253,6 +255,17 @@ export interface TableMetadata {
   foreignKeys: ForeignKeyMetadata[];
   /** The partitions is the list of partitions in a table. */
   partitions: TablePartitionMetadata[];
+}
+
+export interface ExternalTableMetadata {
+  /** The name is the name of a external table. */
+  name: string;
+  /** The external_server_name is the name of the external server. */
+  externalServerName: string;
+  /** The external_database_name is the name of the external database. */
+  externalDatabaseName: string;
+  /** The columns is the ordered list of columns in a foreign table. */
+  columns: ColumnMetadata[];
 }
 
 /** TablePartitionMetadata is the metadata for table partitions. */
@@ -812,7 +825,7 @@ export const DatabaseSchemaMetadata = {
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], views: [], functions: [], streams: [], tasks: [] };
+  return { name: "", tables: [], externalTables: [], views: [], functions: [], streams: [], tasks: [] };
 }
 
 export const SchemaMetadata = {
@@ -823,17 +836,20 @@ export const SchemaMetadata = {
     for (const v of message.tables) {
       TableMetadata.encode(v!, writer.uint32(18).fork()).ldelim();
     }
+    for (const v of message.externalTables) {
+      ExternalTableMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
     for (const v of message.views) {
-      ViewMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+      ViewMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
     }
     for (const v of message.functions) {
-      FunctionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+      FunctionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     for (const v of message.streams) {
-      StreamMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+      StreamMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     for (const v of message.tasks) {
-      TaskMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
+      TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -864,24 +880,31 @@ export const SchemaMetadata = {
             break;
           }
 
-          message.views.push(ViewMetadata.decode(reader, reader.uint32()));
+          message.externalTables.push(ExternalTableMetadata.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
+          message.views.push(ViewMetadata.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          message.functions.push(FunctionMetadata.decode(reader, reader.uint32()));
           continue;
         case 6:
           if (tag !== 50) {
+            break;
+          }
+
+          message.streams.push(StreamMetadata.decode(reader, reader.uint32()));
+          continue;
+        case 7:
+          if (tag !== 58) {
             break;
           }
 
@@ -900,6 +923,9 @@ export const SchemaMetadata = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       tables: globalThis.Array.isArray(object?.tables) ? object.tables.map((e: any) => TableMetadata.fromJSON(e)) : [],
+      externalTables: globalThis.Array.isArray(object?.externalTables)
+        ? object.externalTables.map((e: any) => ExternalTableMetadata.fromJSON(e))
+        : [],
       views: globalThis.Array.isArray(object?.views) ? object.views.map((e: any) => ViewMetadata.fromJSON(e)) : [],
       functions: globalThis.Array.isArray(object?.functions)
         ? object.functions.map((e: any) => FunctionMetadata.fromJSON(e))
@@ -918,6 +944,9 @@ export const SchemaMetadata = {
     }
     if (message.tables?.length) {
       obj.tables = message.tables.map((e) => TableMetadata.toJSON(e));
+    }
+    if (message.externalTables?.length) {
+      obj.externalTables = message.externalTables.map((e) => ExternalTableMetadata.toJSON(e));
     }
     if (message.views?.length) {
       obj.views = message.views.map((e) => ViewMetadata.toJSON(e));
@@ -941,6 +970,7 @@ export const SchemaMetadata = {
     const message = createBaseSchemaMetadata();
     message.name = object.name ?? "";
     message.tables = object.tables?.map((e) => TableMetadata.fromPartial(e)) || [];
+    message.externalTables = object.externalTables?.map((e) => ExternalTableMetadata.fromPartial(e)) || [];
     message.views = object.views?.map((e) => ViewMetadata.fromPartial(e)) || [];
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
@@ -1617,6 +1647,112 @@ export const TableMetadata = {
     message.userComment = object.userComment ?? "";
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExternalTableMetadata(): ExternalTableMetadata {
+  return { name: "", externalServerName: "", externalDatabaseName: "", columns: [] };
+}
+
+export const ExternalTableMetadata = {
+  encode(message: ExternalTableMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.externalServerName !== "") {
+      writer.uint32(18).string(message.externalServerName);
+    }
+    if (message.externalDatabaseName !== "") {
+      writer.uint32(26).string(message.externalDatabaseName);
+    }
+    for (const v of message.columns) {
+      ColumnMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ExternalTableMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExternalTableMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.externalServerName = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.externalDatabaseName = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.columns.push(ColumnMetadata.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExternalTableMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      externalServerName: isSet(object.externalServerName) ? globalThis.String(object.externalServerName) : "",
+      externalDatabaseName: isSet(object.externalDatabaseName) ? globalThis.String(object.externalDatabaseName) : "",
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ExternalTableMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.externalServerName !== "") {
+      obj.externalServerName = message.externalServerName;
+    }
+    if (message.externalDatabaseName !== "") {
+      obj.externalDatabaseName = message.externalDatabaseName;
+    }
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => ColumnMetadata.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExternalTableMetadata>): ExternalTableMetadata {
+    return ExternalTableMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExternalTableMetadata>): ExternalTableMetadata {
+    const message = createBaseExternalTableMetadata();
+    message.name = object.name ?? "";
+    message.externalServerName = object.externalServerName ?? "";
+    message.externalDatabaseName = object.externalDatabaseName ?? "";
+    message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
     return message;
   },
 };
