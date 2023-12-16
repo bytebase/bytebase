@@ -1,6 +1,6 @@
 <template>
   <NSelect
-    :value="database"
+    :value="database ?? null"
     :options="options"
     :placeholder="placeholder ?? $t('database.select')"
     :virtual-scroll="true"
