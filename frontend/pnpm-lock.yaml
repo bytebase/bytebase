@@ -320,8 +320,8 @@ devDependencies:
     specifier: 10.4.15
     version: 10.4.15(postcss@8.4.31)
   code-inspector-plugin:
-    specifier: ^0.1.12
-    version: 0.1.12
+    specifier: ^0.3.0
+    version: 0.3.0
   eslint:
     specifier: 8.49.0
     version: 8.49.0
@@ -2845,23 +2845,23 @@ packages:
     engines: {node: '>= 0.10'}
     dev: false
 
-  /code-inspector-core@0.1.12:
-    resolution: {integrity: sha512-qRkJapiBgUxj/3Z7SXoYcK3Yuts6FCKiALaOud3pL89fZDO8SSsILO+OevXLoMWYMlOkLojdqOBurMsRF5WePA==}
+  /code-inspector-core@0.3.0:
+    resolution: {integrity: sha512-9bMZEh6zEQxW3n/plLcoqJwymFDw6AxExLwS8xV0kzJjGF9K/7fHsJixYwPVGxtvLVIjVpPBd5SFDh09pCcHwA==}
     dependencies:
       '@vue/compiler-dom': 3.3.4
-      chalk: 4.1.1
+      chalk: 4.1.2
       portfinder: 1.0.32
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /code-inspector-plugin@0.1.12:
-    resolution: {integrity: sha512-IQwZVe2RcjBfHXm6RJNM+gePGfvZayKRcdPkRIMboSZgOcgpLj3eNtL9+XxhEbxLtSrlGupAK0B9s+evigar1w==}
+  /code-inspector-plugin@0.3.0:
+    resolution: {integrity: sha512-fuH+D2WZw8dc+akGu61uhq7J6Nq6gAG9Hkyx37cvxr48vpYpSo9PZOa86PNzNKHelkpDXfnD0XNpNO8Nq9u16Q==}
     dependencies:
       chalk: 4.1.1
-      code-inspector-core: 0.1.12
-      vite-code-inspector-plugin: 0.1.12
-      webpack-code-inspector-plugin: 0.1.12
+      code-inspector-core: 0.3.0
+      vite-code-inspector-plugin: 0.3.0
+      webpack-code-inspector-plugin: 0.3.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -6147,10 +6147,10 @@ packages:
       - rollup
     dev: true
 
-  /vite-code-inspector-plugin@0.1.12:
-    resolution: {integrity: sha512-ZPq5Q9xDx2nQZGO4Bo31D/ptpQAdrllT8raEriWYuuxcwk4vgZCvOoZRCE97ZsC6Z5SxejWfiE3CUAVEey04+Q==}
+  /vite-code-inspector-plugin@0.3.0:
+    resolution: {integrity: sha512-j4jomLzjeWVlErgxasUxENPQUUdq3qg6FbOSFQqoxszlOVfd8pXfB3Cryckqk5A4JPLhEF3RWExPLG2ksph4SA==}
     dependencies:
-      code-inspector-core: 0.1.12
+      code-inspector-core: 0.3.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -6524,10 +6524,10 @@ packages:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
     dev: false
 
-  /webpack-code-inspector-plugin@0.1.12:
-    resolution: {integrity: sha512-VXukBQmLgM8IUDpdUGOxrOQ5tO7LDFpHIFVZL9voO1uInmVlYPlbKYeSCRO6fhoZoURrgIarsCfJaoQ7jYoC5w==}
+  /webpack-code-inspector-plugin@0.3.0:
+    resolution: {integrity: sha512-7vDN7oWOt4AdifTHLptTs2FIDor4nDNtiwFiygnwmWwP6OFIqimpQtev4AkdEgIAU/Dua9GNsUcU0Ltr7ZCN1g==}
     dependencies:
-      code-inspector-core: 0.1.12
+      code-inspector-core: 0.3.0
     transitivePeerDependencies:
       - supports-color
     dev: true
