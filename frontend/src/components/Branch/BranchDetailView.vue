@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="flex flex-col gap-y-3 w-full overflow-x-auto relative"
-    v-bind="$attrs"
-  >
+  <div class="flex flex-col gap-y-3 w-full h-full relative" v-bind="$attrs">
     <MaskSpinner
       v-if="state.isReverting || state.savingStatus"
       class="!bg-white/75"
@@ -64,7 +61,7 @@
       </div>
     </div>
 
-    <NDivider />
+    <NDivider class="!my-0" />
 
     <div
       class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
@@ -77,7 +74,7 @@
       </div>
     </div>
 
-    <div class="w-full h-[32rem]">
+    <div class="w-full flex-1 flex flex-col">
       <SchemaDesignEditorLite
         ref="schemaDesignerRef"
         :project="project"
