@@ -48,3 +48,16 @@ export type CoreTabContext =
   | Omit<TableTabContext, "id">;
 
 export type EditStatus = "normal" | "created" | "dropped" | "updated";
+
+/**
+ * Only tables are selectable rollout objects by now
+ */
+export type RolloutObject = {
+  db: ComposedDatabase;
+  metadata: {
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    table: TableMetadata;
+    // column?: ColumnMetadata; // Columns are not selectable by now
+  };
+};

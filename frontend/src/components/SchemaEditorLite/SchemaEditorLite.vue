@@ -21,6 +21,7 @@
 import { Splitpanes, Pane } from "splitpanes";
 import { reactive, computed, onMounted, toRef, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDatabaseV1Store, useSettingV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -29,17 +30,21 @@ import Aside from "./Aside";
 import Editor from "./Editor.vue";
 import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
-import { EditTarget } from "./types";
+import { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;
   resourceType: "database" | "branch";
   readonly?: boolean;
+  selectedRolloutObjects?: RolloutObject[];
   targets?: EditTarget[];
   // NOTE: we only support editing one branch for now.
   branch?: Branch;
   loading?: boolean;
   diffWhenReady?: boolean;
+}>();
+const emit = defineEmits<{
+  (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
 }>();
 
 interface LocalState {
@@ -90,6 +95,7 @@ const context = provideSchemaEditorContext({
   project: toRef(props, "project"),
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
+  selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
 
@@ -107,6 +113,14 @@ watch(
     }
   },
   { immediate: true }
+);
+
+useEmitteryEventListener(
+  context.events,
+  "update:selected-rollout-objects",
+  (objects) => {
+    emit("update:selected-rollout-objects", objects);
+  }
 );
 
 defineExpose({
