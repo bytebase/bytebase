@@ -123,6 +123,7 @@
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
+    - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
@@ -2426,6 +2427,24 @@ ExtensionMetadata is the metadata for extensions.
 
 
 
+<a name="bytebase-v1-ExternalTableMetadata"></a>
+
+### ExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
 <a name="bytebase-v1-ForeignKeyMetadata"></a>
 
 ### ForeignKeyMetadata
@@ -2771,6 +2790,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
