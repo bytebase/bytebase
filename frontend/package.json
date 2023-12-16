@@ -49,7 +49,7 @@
     "libphonenumber-js": "^1.10.47",
     "lodash-es": "4.17.21",
     "lucide-vue-next": "^0.292.0",
-    "markdown-it": "^13.0.2",
+    "markdown-it": "^14.0.0",
     "match-sorter": "6.3.1",
     "maz-ui": "^3.17.0",
     "monaco-editor": "0.44.0",
