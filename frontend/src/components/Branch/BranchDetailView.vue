@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="flex flex-col gap-y-3 w-full overflow-x-auto relative"
-    v-bind="$attrs"
-  >
+  <div class="flex flex-col gap-y-3 w-full h-full relative" v-bind="$attrs">
     <MaskSpinner
       v-if="state.isReverting || state.savingStatus"
       class="!bg-white/75"
@@ -17,15 +14,19 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
+          v-if="!readonly"
           v-model:value="state.branchId"
           class="!w-auto"
           :passively-activated="true"
           :style="branchIdInputStyle"
-          :readonly="!state.isEditingBranchId"
+          :readonly="readonly || !state.isEditingBranchId"
           :placeholder="'feature/add-billing'"
           @focus="state.isEditingBranchId = true"
           @blur="handleBranchIdInputBlur"
         />
+        <span v-else class="text-xl leading-[34px]">{{
+          cleanBranch.branchId
+        }}</span>
         <NTag v-if="parentBranch" round>
           {{ $t("schema-designer.parent-branch") }}:
           {{ parentBranch.branchId }}
@@ -40,16 +41,13 @@
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
               <NButton
-                :disabled="!ready"
-                :loading="!ready"
+                :disabled="!branchListReady"
                 @click="handleMergeBranch"
                 >{{ $t("schema-designer.merge-branch") }}</NButton
               >
-              <NButton
-                type="primary"
-                @click="selectTargetDatabasesContext.show = true"
-                >{{ $t("schema-designer.apply-to-database") }}</NButton
-              >
+              <NButton type="primary" @click="handleApplyBranchToDatabase">{{
+                $t("schema-designer.apply-to-database")
+              }}</NButton>
             </template>
             <template v-else>
               <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
@@ -67,7 +65,7 @@
       </div>
     </div>
 
-    <NDivider />
+    <NDivider class="!my-0" />
 
     <div
       class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
@@ -80,7 +78,7 @@
       </div>
     </div>
 
-    <div class="w-full h-[32rem]">
+    <div class="w-full flex-1 flex flex-col">
       <SchemaDesignEditorLite
         ref="schemaDesignerRef"
         :project="project"
@@ -171,7 +169,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchListByProject(
+const { branchList, ready: branchListReady } = useBranchListByProject(
   computed(() => props.project.name)
 );
 const { runSQLCheck } = provideSQLCheckContext();
@@ -417,6 +415,16 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
     params: {
       projectSlug: projectV1Slug(props.project),
       branchName: branchId,
+    },
+  });
+};
+
+const handleApplyBranchToDatabase = () => {
+  router.push({
+    name: "workspace.project.branch.rollout",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: props.cleanBranch.branchId,
     },
   });
 };
