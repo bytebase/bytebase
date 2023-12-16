@@ -290,8 +290,8 @@ devDependencies:
     specifier: 2.2.6
     version: 2.2.6
   '@types/uuid':
-    specifier: 9.0.6
-    version: 9.0.6
+    specifier: 9.0.7
+    version: 9.0.7
   '@types/vscode':
     specifier: 1.84.1
     version: 1.84.1
@@ -2005,8 +2005,8 @@ packages:
     resolution: {integrity: sha512-IDaobHimLQhjwsQ/NMwRVfa/yL7L/wriQPMhw1ZJall0KX6E1oxk29XMDeilW5qTIg5aoiqf5Udy8U/51aNoQQ==}
     dev: true
 
-  /@types/uuid@9.0.6:
-    resolution: {integrity: sha512-BT2Krtx4xaO6iwzwMFUYvWBWkV2pr37zD68Vmp1CDV196MzczBRxuEpD6Pr395HAgebC/co7hOphs53r8V7jew==}
+  /@types/uuid@9.0.7:
+    resolution: {integrity: sha512-WUtIVRUZ9i5dYXefDEAI7sh9/O7jGvHg7Df/5O/gtH3Yabe5odI3UWopVR1qbPXQtvOxWu3mM4XxlYeZtMWF4g==}
     dev: true
 
   /@types/vscode@1.84.1:
