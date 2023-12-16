@@ -201,7 +201,8 @@ const columns = computed(() => {
       key: "name",
       title: t("schema-editor.database.name"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "truncate",
       render: (table) => {
         return h(NameCell, {
@@ -214,7 +215,8 @@ const columns = computed(() => {
       key: "classification",
       title: t("schema-editor.column.classification"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       hide: !classificationConfig.value,
       render: (table) => {
         return h(ClassificationCell, {
@@ -236,7 +238,8 @@ const columns = computed(() => {
       key: "engine",
       title: t("schema-editor.database.engine"),
       resizable: true,
-      width: 120,
+      minWidth: 120,
+      maxWidth: 180,
       render: (table) => {
         return table.engine;
       },
@@ -245,7 +248,8 @@ const columns = computed(() => {
       key: "collation",
       title: t("schema-editor.database.collation"),
       resizable: true,
-      width: 120,
+      minWidth: 120,
+      maxWidth: 180,
       ellipsis: true,
       ellipsisComponent: "performant-ellipsis",
     },
@@ -253,7 +257,8 @@ const columns = computed(() => {
       key: "comment",
       title: t("schema-editor.database.comment"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "input-cell",
       render: (table) => {
         return h(InlineInput, {
