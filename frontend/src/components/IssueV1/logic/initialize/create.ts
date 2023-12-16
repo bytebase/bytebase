@@ -1,4 +1,4 @@
-import { groupBy, orderBy } from "lodash-es";
+import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { rolloutServiceClient } from "@/grpcweb";
@@ -327,6 +327,23 @@ export const buildSpecForTarget = async (
       type,
       sheet,
     });
+
+    if (query.sheetId) {
+      const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
+        query.sheetId
+      );
+      if (remoteSheet) {
+        // make a local copy for remote sheet for further editing
+        console.debug(
+          "copy remote sheet to local for further editing",
+          remoteSheet
+        );
+        const localSheet = getLocalSheetByName(sheet);
+        localSheet.payload = cloneDeep(remoteSheet.payload);
+        const statement = getSheetStatement(remoteSheet);
+        setSheetStatement(localSheet, statement);
+      }
+    }
   }
   if (template === "bb.issue.database.schema.baseline") {
     spec.changeDatabaseConfig = Plan_ChangeDatabaseConfig.fromJSON({
