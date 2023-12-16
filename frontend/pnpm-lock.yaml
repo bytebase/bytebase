@@ -251,14 +251,14 @@ devDependencies:
     specifier: 4.17.12
     version: 4.17.12
   '@types/markdown-it':
-    specifier: ^13.0.2
-    version: 13.0.2
+    specifier: ^13.0.7
+    version: 13.0.7
   '@types/node':
     specifier: 20.10.4
     version: 20.10.4
   '@types/normalize-wheel':
-    specifier: ^1.0.2
-    version: 1.0.2
+    specifier: ^1.0.4
+    version: 1.0.4
   '@types/papaparse':
     specifier: 5.3.8
     version: 5.3.8
@@ -278,8 +278,8 @@ devDependencies:
     specifier: 6.9.10
     version: 6.9.10
   '@types/scrollparent':
-    specifier: ^2.0.1
-    version: 2.0.1
+    specifier: ^2.0.3
+    version: 2.0.3
   '@types/semver':
     specifier: 7.5.6
     version: 7.5.6
@@ -1805,8 +1805,8 @@ packages:
     dev: false
     optional: true
 
-  /@types/markdown-it@13.0.2:
-    resolution: {integrity: sha512-Tla7hH9oeXHOlJyBFdoqV61xWE9FZf/y2g+gFVwQ2vE1/eBzjUno5JCd3Hdb5oATve5OF6xNjZ/4VIZhVVx+hA==}
+  /@types/markdown-it@13.0.7:
+    resolution: {integrity: sha512-U/CBi2YUUcTHBt5tjO2r5QV/x0Po6nsYwQU4Y04fBS6vfoImaiZ6f8bi3CjTCxBPQSO1LMyUqkByzi8AidyxfA==}
     dependencies:
       '@types/linkify-it': 3.0.3
       '@types/mdurl': 1.0.3
@@ -1824,8 +1824,8 @@ packages:
     dependencies:
       undici-types: 5.26.5
 
-  /@types/normalize-wheel@1.0.2:
-    resolution: {integrity: sha512-BSGYjG5gvxXWMnYJlykd4ESHq/BZM+qQl4+6/St8KPudsP8DKl3uABRAgb729D5V6JVy2Jbrqs1VsTJLj1W8Rw==}
+  /@types/normalize-wheel@1.0.4:
+    resolution: {integrity: sha512-iclKEmOclXH2LGVkMkdal0+ffJphB3kbazakec96z1hW/CfJYmsZNFYLAmkpzePxKoKewXp2HSlsN6G4SG0b0g==}
     dev: true
 
   /@types/papaparse@5.3.8:
@@ -1977,8 +1977,8 @@ packages:
     resolution: {integrity: sha512-3Gnx08Ns1sEoCrWssEgTSJs/rsT2vhGP+Ja9cnnk9k4ALxinORlQneLXFeFKOTJMOeZUFD1s7w+w2AphTpvzZw==}
     dev: true
 
-  /@types/scrollparent@2.0.1:
-    resolution: {integrity: sha512-LcvYdxOG83yL0IoJOmdeoCVlJUgf5WA+cxrBPh2mfYy3bsMoY72fOe87vneW4W/NWuqsdGjoK7fVldUkD1xVSw==}
+  /@types/scrollparent@2.0.3:
+    resolution: {integrity: sha512-hnZEChVDSDCVngnl8j+Dq0/sOzRuoHyqqR5Wc1dF7TFsWO4uQtIKBkrzTb+lakIH+XrR8mlLMHfWR8hfjqc/WA==}
     dev: true
 
   /@types/semver@7.5.6:
