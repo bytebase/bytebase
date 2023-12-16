@@ -175,6 +175,7 @@ export class DiffMerge {
         );
         if (
           !isEqual(sourceTable.classification, targetTable.classification) ||
+          !isEqual(sourceTable.userComment, targetTable.userComment) ||
           !isEqual(sourceTable.foreignKeys, targetTable.foreignKeys) ||
           !isEqual(sourceTable.indexes, targetTable.indexes)
         ) {

@@ -61,7 +61,7 @@ import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import SelectClassificationDrawer from "@/components/SchemaTemplate/SelectClassificationDrawer.vue";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, InlineInput } from "@/components/v2";
 import { hasFeature, useSettingV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import {
@@ -253,8 +253,24 @@ const columns = computed(() => {
       title: t("schema-editor.database.comment"),
       resizable: true,
       width: 140,
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
+      className: "input-cell",
+      render: (table) => {
+        return h(InlineInput, {
+          value: table.userComment,
+          disabled:
+            readonly.value || isDroppedSchema.value || isDroppedTable(table),
+          placeholder: "comment",
+          style: {
+            "--n-padding-left": "6px",
+            "--n-padding-right": "4px",
+            "--n-text-color-disabled": "rgb(var(--color-main))",
+          },
+          "onUpdate:value": (value) => {
+            table.userComment = value;
+            markEditStatus(props.db, metadataForTable(table), "updated");
+          },
+        });
+      },
     },
     {
       key: "operations",
