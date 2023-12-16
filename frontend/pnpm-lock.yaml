@@ -287,8 +287,8 @@ devDependencies:
     specifier: 7.5.6
     version: 7.5.6
   '@types/slug':
-    specifier: 5.0.4
-    version: 5.0.4
+    specifier: 5.0.7
+    version: 5.0.7
   '@types/splitpanes':
     specifier: 2.2.6
     version: 2.2.6
@@ -1993,8 +1993,8 @@ packages:
     resolution: {integrity: sha512-dn1l8LaMea/IjDoHNd9J52uBbInB796CDffS6VdIxvqYCPSG0V0DzHp76GpaWnlhg88uYyPbXCDIowa86ybd5A==}
     dev: true
 
-  /@types/slug@5.0.4:
-    resolution: {integrity: sha512-6zl8VXHEDtDsfdSlRsLW3uatVpwPJ17MKIzOy3m2lObF1dtA/dHl71pKvqiJJL1YKhdsB4gJ4WXENSLQ9TjcPQ==}
+  /@types/slug@5.0.7:
+    resolution: {integrity: sha512-u5T21+PqfRpHszRWSv5gJYDIkm6lmYUXLjZVYvQyWNO9aC0zs+a11qqtbxbsNRiNLTmw0Xi+5NWK/Qz+JjaB9w==}
     dev: true
 
   /@types/splitpanes@2.2.6:
