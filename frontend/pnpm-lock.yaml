@@ -103,7 +103,7 @@ dependencies:
     version: 6.3.1
   maz-ui:
     specifier: ^3.29.10
-    version: 3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.51)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.2.47)
+    version: 3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.51)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.4)(vue@3.2.47)
   monaco-editor:
     specifier: 0.44.0
     version: 0.44.0
@@ -380,8 +380,8 @@ devDependencies:
     specifier: 9.4.1
     version: 9.4.1(vue@3.2.47)
   vue-router:
-    specifier: 4.2.5
-    version: 4.2.5(vue@3.2.47)
+    specifier: 4.2.4
+    version: 4.2.4(vue@3.2.47)
   vue-tsc:
     specifier: 1.8.11
     version: 1.8.11(typescript@5.3.3)
@@ -4567,7 +4567,7 @@ packages:
       remove-accents: 0.4.2
     dev: false
 
-  /maz-ui@3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.51)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.2.47):
+  /maz-ui@3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.51)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.4)(vue@3.2.47):
     resolution: {integrity: sha512-M4lu+gDXdSf0jcW6ac4f+WE4Tidg5PPLbj3hVWyUakuMXJomC0vBtRaiA05nLlqH1t+2p1nwvLrSQBtAD4Rc6Q==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     hasBin: true
@@ -4607,7 +4607,7 @@ packages:
       libphonenumber-js: 1.10.51
       unplugin-vue-components: 0.25.2(rollup@4.9.0)(vue@3.2.47)
       vue: 3.2.47
-      vue-router: 4.2.5(vue@3.2.47)
+      vue-router: 4.2.4(vue@3.2.47)
     transitivePeerDependencies:
       - typescript
     dev: false
@@ -6497,8 +6497,8 @@ packages:
       vue: 3.2.47
     dev: true
 
-  /vue-router@4.2.5(vue@3.2.47):
-    resolution: {integrity: sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw==}
+  /vue-router@4.2.4(vue@3.2.47):
+    resolution: {integrity: sha512-9PISkmaCO02OzPVOMq2w82ilty6+xJmQrarYZDkjZBfl4RvYAlt4PKnEX21oW4KTtWfa9OuO/b3qk1Od3AEdCQ==}
     peerDependencies:
       vue: ^3.2.0
     dependencies:
