@@ -697,6 +697,15 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "branches/:branchName/rollout",
+                name: "workspace.project.branch.rollout",
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () => import("../views/branch/BranchRollout.vue"),
+                props: true,
+              },
+              {
                 path: "changelists/:changelistName",
                 name: "workspace.project.changelist.detail",
                 meta: {

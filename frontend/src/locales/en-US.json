@@ -1168,7 +1168,8 @@
       "approvers-of-current-step": "Approvers of current step"
     },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
-    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)"
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
+    "preview": "Preview issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -3349,5 +3350,11 @@
       "export-rows-must-gt-zero": "Export rows must greater than 0"
     },
     "export-format": "Export format"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Select target database"
+    },
+    "select-tables-to-rollout": "Select tables to rollout"
   }
 }

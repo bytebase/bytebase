@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full flex flex-col border rounded-lg overflow-hidden relative"
+    class="bb-schema-editor w-full h-full flex flex-col border rounded-lg overflow-hidden relative"
     v-bind="$attrs"
   >
     <MaskSpinner v-if="combinedLoading" />
@@ -19,8 +19,10 @@
 
 <script lang="ts" setup>
 import { Splitpanes, Pane } from "splitpanes";
+import "splitpanes/dist/splitpanes.css";
 import { reactive, computed, onMounted, toRef, watch } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDatabaseV1Store, useSettingV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -29,17 +31,21 @@ import Aside from "./Aside";
 import Editor from "./Editor.vue";
 import { useAlgorithm } from "./algorithm";
 import { provideSchemaEditorContext } from "./context";
-import { EditTarget } from "./types";
+import { EditTarget, RolloutObject } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;
   resourceType: "database" | "branch";
   readonly?: boolean;
+  selectedRolloutObjects?: RolloutObject[];
   targets?: EditTarget[];
   // NOTE: we only support editing one branch for now.
   branch?: Branch;
   loading?: boolean;
   diffWhenReady?: boolean;
+}>();
+const emit = defineEmits<{
+  (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
 }>();
 
 interface LocalState {
@@ -90,8 +96,10 @@ const context = provideSchemaEditorContext({
   project: toRef(props, "project"),
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
+  selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
 });
-const { rebuildMetadataEdit, applyMetadataEdit } = useAlgorithm(context);
+const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
+  useAlgorithm(context);
 
 watch(
   [ready, () => props.diffWhenReady],
@@ -109,35 +117,46 @@ watch(
   { immediate: true }
 );
 
+useEmitteryEventListener(
+  context.events,
+  "update:selected-rollout-objects",
+  (objects) => {
+    emit("update:selected-rollout-objects", objects);
+  }
+);
+
 defineExpose({
   rebuildMetadataEdit,
   applyMetadataEdit,
+  applySelectedMetadataEdit,
 });
 </script>
 
-<style>
-@import "splitpanes/dist/splitpanes.css";
-
+<style lang="postcss" scoped>
 /* splitpanes pane style */
-.splitpanes.default-theme .splitpanes__pane {
+.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__pane) {
   @apply bg-transparent !transition-none;
 }
 
-.splitpanes.default-theme .splitpanes__splitter {
+.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter) {
   @apply bg-gray-100 border-none;
 }
 
-.splitpanes.default-theme .splitpanes__splitter:hover {
+.bb-schema-editor :deep(.splitpanes.default-theme .splitpanes__splitter:hover) {
   @apply bg-indigo-300;
 }
 
-.splitpanes.default-theme .splitpanes__splitter::before,
-.splitpanes.default-theme .splitpanes__splitter::after {
+.bb-schema-editor
+  :deep(.splitpanes.default-theme .splitpanes__splitter::before),
+.bb-schema-editor
+  :deep(.splitpanes.default-theme .splitpanes__splitter::after) {
   @apply bg-gray-700 opacity-50 text-white;
 }
 
-.splitpanes.default-theme .splitpanes__splitter:hover::before,
-.splitpanes.default-theme .splitpanes__splitter:hover::after {
+.bb-schema-editor
+  :deep(.splitpanes.default-theme .splitpanes__splitter:hover::before),
+.bb-schema-editor
+  :deep(.splitpanes.default-theme .splitpanes__splitter:hover::after) {
   @apply bg-white opacity-100;
 }
 </style>
