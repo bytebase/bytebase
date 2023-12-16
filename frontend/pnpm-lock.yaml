@@ -124,7 +124,7 @@ dependencies:
     version: 0.2.4
   nice-grpc-web:
     specifier: ^3.3.2
-    version: 3.3.2(ws@8.14.2)
+    version: 3.3.2(ws@8.15.1)
   node-sql-parser:
     specifier: 4.10.0
     version: 4.10.0
@@ -340,9 +340,6 @@ devDependencies:
   long:
     specifier: ^5.2.3
     version: 5.2.3
-  popper.js:
-    specifier: 1.16.1
-    version: 1.16.1
   postcss:
     specifier: 8.4.31
     version: 8.4.31
@@ -359,8 +356,8 @@ devDependencies:
     specifier: 3.3.6
     version: 3.3.6
   ts-proto:
-    specifier: ^1.160.0
-    version: 1.160.0
+    specifier: ^1.165.1
+    version: 1.165.1
   typescript:
     specifier: 5.3.3
     version: 5.3.3
@@ -389,8 +386,8 @@ devDependencies:
     specifier: 1.8.11
     version: 1.8.11(typescript@5.3.3)
   ws:
-    specifier: ^8.14.2
-    version: 8.14.2
+    specifier: ^8.15.1
+    version: 8.15.1
 
 packages:
 
@@ -4169,12 +4166,12 @@ packages:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
     dev: true
 
-  /isomorphic-ws@5.0.0(ws@8.14.2):
+  /isomorphic-ws@5.0.0(ws@8.15.1):
     resolution: {integrity: sha512-muId7Zzn9ywDsyXgTIafTry2sV3nySZeUDe6YedVd1Hvuuep5AsIlqK+XefWpYTyJG5e503F2xIuT2lcU6rCSw==}
     peerDependencies:
       ws: '*'
     dependencies:
-      ws: 8.14.2
+      ws: 8.15.1
     dev: false
 
   /javascript-natural-sort@0.7.1:
@@ -4752,11 +4749,11 @@ packages:
       protobufjs: 7.2.5
     dev: false
 
-  /nice-grpc-web@3.3.2(ws@8.14.2):
+  /nice-grpc-web@3.3.2(ws@8.15.1):
     resolution: {integrity: sha512-qetU+H6y6jVvI5NZdtTls9UdqdCNwhr4UxqL5SfH6v8ISxucxDVPRYxnZaoZyWjMRvRgAKiQDIMu0bB0oedD0A==}
     dependencies:
       abort-controller-x: 0.4.3
-      isomorphic-ws: 5.0.0(ws@8.14.2)
+      isomorphic-ws: 5.0.0(ws@8.15.1)
       js-base64: 3.7.5
       nice-grpc-common: 2.0.2
     transitivePeerDependencies:
@@ -5067,6 +5064,7 @@ packages:
   /popper.js@1.16.1:
     resolution: {integrity: sha512-Wb4p1J4zyFTbM+u6WuO4XstYx4Ky9Cewe4DWrel7B0w6VVICvPwdOpotjzcf6eD8TsckVnIMNONQyPIUFOUbCQ==}
     deprecated: You can find the new Popper v2 at @popperjs/core, this package is dedicated to the legacy v1
+    dev: false
 
   /portfinder@1.0.32:
     resolution: {integrity: sha512-on2ZJVVDXRADWE6jnQaX0ioEylzgBpQk8r55NE4wjXW1ZxO+BgDlY6DXwj20i0V8eB4SenDQ00WEaxfiIQPcxg==}
@@ -5945,8 +5943,8 @@ packages:
       protobufjs: 7.2.5
     dev: true
 
-  /ts-proto@1.160.0:
-    resolution: {integrity: sha512-AUJQ0noLEkLew81MYmNPF/z8QDIBxAIJ4UKt9sH2AwdaywOTk1jh1NoluoCr3cGScpVh0GHWCB/UA4V0fOO8fg==}
+  /ts-proto@1.165.1:
+    resolution: {integrity: sha512-tn/sj9i31Q4d3/HtN2PFMU/OQwrBYP2cfhYo75cPpO2ks7unFxf1/oMdIt/2woCcOwRclxruGCrs7Ljdl9BPkw==}
     hasBin: true
     dependencies:
       case-anything: 2.1.13
@@ -6583,8 +6581,8 @@ packages:
       readable-stream: 0.0.4
     dev: false
 
-  /ws@8.14.2:
-    resolution: {integrity: sha512-wEBG1ftX4jcglPxgFCMJmZ2PLtSbJ2Peg6TmpJFTbe9GZYOQCDPdMYu/Tm0/bGZkw8paZnJY45J4K2PZrLYq8g==}
+  /ws@8.15.1:
+    resolution: {integrity: sha512-W5OZiCjXEmk0yZ66ZN82beM5Sz7l7coYxpRkzS+p9PP+ToQry8szKh+61eNktr7EA9DOwvFGhfC605jDHbP6QQ==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
