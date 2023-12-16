@@ -21,7 +21,7 @@
   "dependencies": {
     "@bytebase/vue-kbar": "0.1.8",
     "@joe-re/sql-parser": "^1.7.0",
-    "@markdoc/markdoc": "0.3.2",
+    "@markdoc/markdoc": "0.4.0",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/table-core": "8.10.7",
     "@tanstack/vue-table": "8.10.7",
