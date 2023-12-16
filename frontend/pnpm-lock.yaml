@@ -317,8 +317,8 @@ devDependencies:
     specifier: 12.0.0
     version: 12.0.0(eslint-plugin-vue@9.17.0)(eslint@8.49.0)(typescript@5.2.2)
   autoprefixer:
-    specifier: 10.4.15
-    version: 10.4.15(postcss@8.4.31)
+    specifier: 10.4.16
+    version: 10.4.16(postcss@8.4.31)
   code-inspector-plugin:
     specifier: ^0.3.0
     version: 0.3.0
@@ -2606,8 +2606,8 @@ packages:
       - supports-color
     dev: false
 
-  /autoprefixer@10.4.15(postcss@8.4.31):
-    resolution: {integrity: sha512-KCuPB8ZCIqFdA4HwKXsvz7j6gvSDNhDP7WnUjBleRkKjPdvCmHFuQ77ocavI8FT6NdvlBnE2UFr2H4Mycn8Vew==}
+  /autoprefixer@10.4.16(postcss@8.4.31):
+    resolution: {integrity: sha512-7vd3UC6xKp0HLfua5IjZlcXvGAGy7cBAXTg2lyQ/8WpNhd6SiZ8Be+xm3FyBSYJx5GKcpRCzBh7RH4/0dnY+uQ==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
