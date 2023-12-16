@@ -267,7 +267,7 @@ const columns = computed(() => {
       key: "name",
       title: t("schema-editor.column.name"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
@@ -290,7 +290,8 @@ const columns = computed(() => {
       key: "semantic-types",
       title: t("settings.sensitive-data.semantic-types.self"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       hide: !showSemanticTypeColumn.value,
       render: (column) => {
         return h(SemanticTypeCell, {
@@ -313,7 +314,8 @@ const columns = computed(() => {
       title: t("schema-editor.column.classification"),
       hide: !classificationConfig.value,
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       render: (column) => {
         return h(ClassificationCell, {
           classification: column.classification,
@@ -334,7 +336,8 @@ const columns = computed(() => {
       key: "type",
       title: t("schema-editor.column.type"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "input-cell",
       render: (column) => {
         return h(DataTypeCell, {
@@ -353,7 +356,8 @@ const columns = computed(() => {
       key: "default-value",
       title: t("schema-editor.column.default"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "input-cell",
       render: (column) => {
         return h(DefaultValueCell, {
@@ -370,7 +374,8 @@ const columns = computed(() => {
       key: "comment",
       title: t("schema-editor.column.comment"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "input-cell",
       render: (column) => {
         return h(InlineInput, {
@@ -393,7 +398,8 @@ const columns = computed(() => {
       key: "not-null",
       title: t("schema-editor.column.not-null"),
       resizable: true,
-      width: 80,
+      minWidth: 80,
+      maxWidth: 160,
       className: "checkbox-cell",
       render: (column) => {
         return h(NCheckbox, {
@@ -413,7 +419,8 @@ const columns = computed(() => {
       key: "primary",
       title: t("schema-editor.column.primary"),
       resizable: true,
-      width: 80,
+      minWidth: 80,
+      maxWidth: 160,
       className: "checkbox-cell",
       render: (column) => {
         return h(NCheckbox, {
@@ -429,7 +436,8 @@ const columns = computed(() => {
       title: t("schema-editor.column.foreign-key"),
       hide: !props.showForeignKey,
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       className: "text-cell",
       render: (column) => {
         return h(ForeignKeyCell, {
@@ -449,7 +457,8 @@ const columns = computed(() => {
       key: "labels",
       title: t("common.labels"),
       resizable: true,
-      width: 140,
+      minWidth: 140,
+      maxWidth: 320,
       hide: !showDatabaseConfigColumn.value,
       render: (column) => {
         return h(LabelsCell, {

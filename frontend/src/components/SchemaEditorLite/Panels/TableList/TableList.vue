@@ -202,7 +202,6 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       minWidth: 140,
-      maxWidth: 320,
       className: "truncate",
       render: (table) => {
         return h(NameCell, {
