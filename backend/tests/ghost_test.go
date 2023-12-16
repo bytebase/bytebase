@@ -179,8 +179,9 @@ func TestGhostTenant(t *testing.T) {
 	var testInstances []*v1pb.Instance
 	var prodInstances []*v1pb.Instance
 	for i := 0; i < testTenantNumber; i++ {
-		port, err := getMySQLInstanceForGhostTest(t)
+		port, stopper, err := getMySQLInstanceForGhostTest(t)
 		a.NoError(err)
+		defer stopper()
 		// Add the provisioned instances.
 		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
@@ -196,8 +197,9 @@ func TestGhostTenant(t *testing.T) {
 		testInstances = append(testInstances, instance)
 	}
 	for i := 0; i < prodTenantNumber; i++ {
-		port, err := getMySQLInstanceForGhostTest(t)
+		port, stopper, err := getMySQLInstanceForGhostTest(t)
 		a.NoError(err)
+		defer stopper()
 		// Add the provisioned instances.
 		instance, err := ctl.instanceServiceClient.CreateInstance(ctx, &v1pb.CreateInstanceRequest{
 			InstanceId: generateRandomString("instance", 10),
@@ -343,27 +345,26 @@ func TestGhostTenant(t *testing.T) {
 	}
 }
 
-func getMySQLInstanceForGhostTest(t *testing.T) (int, error) {
+func getMySQLInstanceForGhostTest(t *testing.T) (int, func(), error) {
 	mysqlPort := getTestPort()
 	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	t.Cleanup(stopInstance)
 
 	mysqlDB, err := connectTestMySQL(mysqlPort, "")
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	defer mysqlDB.Close()
 
 	if _, err := mysqlDB.Exec("DROP USER IF EXISTS bytebase"); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if _, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'"); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	if _, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase"); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	return mysqlPort, nil
+	return mysqlPort, stopInstance, nil
 }
