@@ -14,15 +14,19 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
+          v-if="!readonly"
           v-model:value="state.branchId"
           class="!w-auto"
           :passively-activated="true"
           :style="branchIdInputStyle"
-          :readonly="!state.isEditingBranchId"
+          :readonly="readonly || !state.isEditingBranchId"
           :placeholder="'feature/add-billing'"
           @focus="state.isEditingBranchId = true"
           @blur="handleBranchIdInputBlur"
         />
+        <span v-else class="text-xl leading-[34px]">{{
+          cleanBranch.branchId
+        }}</span>
         <NTag v-if="parentBranch" round>
           {{ $t("schema-designer.parent-branch") }}:
           {{ parentBranch.branchId }}
