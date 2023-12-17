@@ -469,12 +469,19 @@ func (i *indexState) toString(buf *strings.Builder) error {
 		}
 		for j, key := range i.keys {
 			if j > 0 {
-				if _, err := buf.WriteString(", "); err != nil {
+				if _, err := buf.WriteString(","); err != nil {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
-				return err
+			if len(key) > 2 && key[0] == '(' && key[len(key)-1] == ')' {
+				// Expressions are surrounded by parentheses.
+				if _, err := buf.WriteString(key); err != nil {
+					return err
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+					return err
+				}
 			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
