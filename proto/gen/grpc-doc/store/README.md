@@ -786,6 +786,7 @@ IndexMetadata is the metadata for indexes.
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
 | visible | [bool](#bool) |  | The visible is whether the index is visible. |
 | comment | [string](#string) |  | The comment is the comment of an index. |
+| definition | [string](#string) |  | The definition of an index. |
 
 
 
