@@ -699,6 +699,12 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		if !ok {
 			return nil, errors.Errorf("statement %q is not index statement", statement)
 		}
+		deparsed, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
+		if err != nil {
+			return nil, err
+		}
+		// Instead of using indexdef, we use deparsed format so that the definition has quoted identifiers.
+		index.Definition = deparsed
 
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique
