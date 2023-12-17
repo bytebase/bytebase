@@ -321,6 +321,9 @@ message IndexMetadata {
 
   // The comment is the comment of an index.
   string comment = 7;
+
+  // The definition of an index.
+  string definition = 8;
 }
 
 // ExtensionMetadata is the metadata for extensions.

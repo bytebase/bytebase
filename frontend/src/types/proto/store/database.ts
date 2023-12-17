@@ -405,6 +405,8 @@ export interface IndexMetadata {
   visible: boolean;
   /** The comment is the comment of an index. */
   comment: string;
+  /** The definition of an index. */
+  definition: string;
 }
 
 /** ExtensionMetadata is the metadata for extensions. */
@@ -2370,7 +2372,16 @@ export const FunctionMetadata = {
 };
 
 function createBaseIndexMetadata(): IndexMetadata {
-  return { name: "", expressions: [], type: "", unique: false, primary: false, visible: false, comment: "" };
+  return {
+    name: "",
+    expressions: [],
+    type: "",
+    unique: false,
+    primary: false,
+    visible: false,
+    comment: "",
+    definition: "",
+  };
 }
 
 export const IndexMetadata = {
@@ -2395,6 +2406,9 @@ export const IndexMetadata = {
     }
     if (message.comment !== "") {
       writer.uint32(58).string(message.comment);
+    }
+    if (message.definition !== "") {
+      writer.uint32(66).string(message.definition);
     }
     return writer;
   },
@@ -2455,6 +2469,13 @@ export const IndexMetadata = {
 
           message.comment = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2475,6 +2496,7 @@ export const IndexMetadata = {
       primary: isSet(object.primary) ? globalThis.Boolean(object.primary) : false,
       visible: isSet(object.visible) ? globalThis.Boolean(object.visible) : false,
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
     };
   },
 
@@ -2501,6 +2523,9 @@ export const IndexMetadata = {
     if (message.comment !== "") {
       obj.comment = message.comment;
     }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
     return obj;
   },
 
@@ -2516,6 +2541,7 @@ export const IndexMetadata = {
     message.primary = object.primary ?? false;
     message.visible = object.visible ?? false;
     message.comment = object.comment ?? "";
+    message.definition = object.definition ?? "";
     return message;
   },
 };
