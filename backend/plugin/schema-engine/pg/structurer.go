@@ -594,11 +594,12 @@ func (f *foreignKeyState) toString(buf *strings.Builder, schemaName, tableName s
 }
 
 type indexState struct {
-	id      int
-	name    string
-	keys    []string
-	primary bool
-	unique  bool
+	id         int
+	name       string
+	keys       []string
+	primary    bool
+	unique     bool
+	definition string
 }
 
 func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
@@ -607,6 +608,7 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 		Expressions: i.keys,
 		Primary:     i.primary,
 		Unique:      i.unique,
+		Definition:  i.definition,
 		// Unsupported, for tests only.
 		Visible: true,
 	}
@@ -614,11 +616,12 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 
 func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	return &indexState{
-		id:      id,
-		name:    index.Name,
-		keys:    index.Expressions,
-		primary: index.Primary,
-		unique:  index.Unique,
+		id:         id,
+		name:       index.Name,
+		keys:       index.Expressions,
+		primary:    index.Primary,
+		unique:     index.Unique,
+		definition: index.Definition,
 	}
 }
 
@@ -647,31 +650,7 @@ func (i *indexState) toString(buf *strings.Builder, schemaName, tableName string
 			return err
 		}
 	} else {
-		indexType := "INDEX"
-		if i.unique {
-			indexType = "UNIQUE INDEX"
-		}
-
-		if _, err := buf.WriteString(fmt.Sprintf("CREATE %s \"%s\".\"%s\" ON \"%s\".\"%s\" (", indexType, schemaName, i.name, schemaName, tableName)); err != nil {
-			return err
-		}
-		for j, key := range i.keys {
-			if j > 0 {
-				if _, err := buf.WriteString(", "); err != nil {
-					return err
-				}
-			}
-			if _, err := buf.WriteString("\""); err != nil {
-				return err
-			}
-			if _, err := buf.WriteString(key); err != nil {
-				return err
-			}
-			if _, err := buf.WriteString("\""); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(");\n"); err != nil {
+		if _, err := buf.WriteString(i.definition); err != nil {
 			return err
 		}
 	}
