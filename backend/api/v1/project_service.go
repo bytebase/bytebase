@@ -22,6 +22,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	vcsplugin "github.com/bytebase/bytebase/backend/plugin/vcs"
@@ -46,14 +48,18 @@ type ProjectService struct {
 	v1pb.UnimplementedProjectServiceServer
 	store           *store.Store
 	activityManager *activity.Manager
+	profile         *config.Profile
+	iamManager      *iam.Manager
 	licenseService  enterprise.LicenseService
 }
 
 // NewProjectService creates a new ProjectService.
-func NewProjectService(store *store.Store, activityManager *activity.Manager, licenseService enterprise.LicenseService) *ProjectService {
+func NewProjectService(store *store.Store, activityManager *activity.Manager, profile *config.Profile, iamManager *iam.Manager, licenseService enterprise.LicenseService) *ProjectService {
 	return &ProjectService{
 		store:           store,
 		activityManager: activityManager,
+		profile:         profile,
+		iamManager:      iamManager,
 		licenseService:  licenseService,
 	}
 }
@@ -1738,13 +1744,9 @@ func (s *ProjectService) DeleteDatabaseGroup(ctx context.Context, request *v1pb.
 
 // ListDatabaseGroups lists database groups.
 func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.ListDatabaseGroupsRequest) (*v1pb.ListDatabaseGroupsResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
@@ -1788,8 +1790,17 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
+		if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
 			continue
+		}
+		if s.profile.DevelopmentIAM {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+			}
+			if !ok {
+				continue
+			}
 		}
 		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
 	}
