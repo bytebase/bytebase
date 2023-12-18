@@ -1751,57 +1751,47 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	if projectResourceID == "-" {
-		var apiDatabaseGroups []*v1pb.DatabaseGroup
-		databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{})
+
+	find := &store.FindDatabaseGroupMessage{}
+	if projectResourceID != "-" {
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			ResourceID: &projectResourceID,
+		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		for _, databaseGroup := range databaseGroups {
-			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-				UID: &databaseGroup.ProjectUID,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if project == nil {
-				return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
-			}
-			if project.Deleted {
-				continue
-			}
-			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
-				continue
-			}
-			apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 		}
-		return &v1pb.ListDatabaseGroupsResponse{
-			DatabaseGroups: apiDatabaseGroups,
-		}, nil
+		find.ProjectUID = &project.UID
+	}
+	databaseGroups, err := s.store.ListDatabaseGroups(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list database groups, err: %v", err)
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
-	}
-	databaseGroups, err := s.store.ListDatabaseGroups(ctx, &store.FindDatabaseGroupMessage{
-		ProjectUID: &project.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
 	var apiDatabaseGroups []*v1pb.DatabaseGroup
 	for _, databaseGroup := range databaseGroups {
-		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID))
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &databaseGroup.ProjectUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.DataLoss, "project %d not found", databaseGroup.ProjectUID)
+		}
+		if project.Deleted {
+			continue
+		}
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
+			continue
+		}
+		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
 	}
 	return &v1pb.ListDatabaseGroupsResponse{
 		DatabaseGroups: apiDatabaseGroups,
