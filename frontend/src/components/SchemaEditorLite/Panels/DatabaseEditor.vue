@@ -40,6 +40,14 @@
               </template>
               {{ $t("schema-editor.actions.add-from-template") }}
             </NButton>
+            <div
+              v-if="selectedRolloutObjects"
+              class="text-sm flex flex-row items-center gap-x-2"
+            >
+              <span class="text-main">
+                {{ $t("branch.select-tables-to-rollout") }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -79,7 +87,7 @@
     <div class="flex-1 overflow-y-hidden">
       <!-- List view -->
       <template v-if="state.selectedSubTab === 'table-list'">
-        <tables
+        <TableList
           v-if="selectedSchema"
           :db="db"
           :database="database"
@@ -151,7 +159,7 @@ import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_se
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
-import tables from "./TableList";
+import TableList from "./TableList";
 
 const props = withDefaults(
   defineProps<{
@@ -181,8 +189,15 @@ interface LocalState {
 }
 
 const context = useSchemaEditorContext();
-const { readonly, addTab, getSchemaStatus, markEditStatus, upsertTableConfig } =
-  context;
+const {
+  readonly,
+  selectedRolloutObjects,
+  addTab,
+  getSchemaStatus,
+  markEditStatus,
+  upsertTableConfig,
+  queuePendingScrollToTable,
+} = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
   showFeatureModal: false,
@@ -339,6 +354,11 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   addTab({
     type: "table",
     database: db,
+    metadata: metadataForTable(),
+  });
+
+  queuePendingScrollToTable({
+    db,
     metadata: metadataForTable(),
   });
 };

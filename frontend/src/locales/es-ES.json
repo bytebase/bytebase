@@ -278,7 +278,9 @@
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
-    "nothing-changed": "nada ha cambiado"
+    "nothing-changed": "nada ha cambiado",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1167,7 +1169,8 @@
       "approvers-of-current-step": "Aprobadores del paso actual"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
-    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
+    "preview": "Problema de vista previa"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1234,7 +1237,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
-    "successfully-synced-schema": "Esquema sincronizado correctamente"
+    "successfully-synced-schema": "Esquema sincronizado correctamente",
+    "foreign-tables": "tabla externa"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -3347,5 +3351,11 @@
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
     "export-format": "Formato de exportación"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Seleccionar base de datos de destino"
+    },
+    "select-tables-to-rollout": "Seleccionar tablas para implementar"
   }
 }

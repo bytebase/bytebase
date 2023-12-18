@@ -1,6 +1,6 @@
 # This script is for PR preview and demo.bytebase.com on Render ONLY.
 
-FROM node:18 as frontend
+FROM node:20 as frontend
 
 ARG RELEASE="dev"
 

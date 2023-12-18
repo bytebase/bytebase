@@ -10,6 +10,7 @@
         :project="project"
         :clean-branch="branch.clean"
         :dirty-branch="branch.dirty"
+        :readonly="!allowEdit"
         v-bind="$attrs"
         @update:branch-id="handleUpdateBranchId"
       />
@@ -28,10 +29,10 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
-import { useProjectV1Store } from "@/store";
+import { extractUserEmail, useCurrentUserV1, useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { idFromSlug } from "@/utils";
+import { idFromSlug, isOwnerOfProjectV1 } from "@/utils";
 
 const props = defineProps<{
   projectSlug: string;
@@ -40,6 +41,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
@@ -55,6 +57,14 @@ const project = computed(() => {
   return projectStore.getProjectByUID(
     String(idFromSlug(props.projectSlug as string))
   );
+});
+const allowEdit = computed(() => {
+  if (!project.value) return false;
+  if (!branch.value) return false;
+  if (isOwnerOfProjectV1(project.value.iamPolicy, me.value)) {
+    return true;
+  }
+  return extractUserEmail(branch.value.clean.creator) === me.value.email;
 });
 
 const handleUpdateBranchId = (id: string) => {
