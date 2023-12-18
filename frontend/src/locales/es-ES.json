@@ -1924,10 +1924,7 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
-        "btn-text": "Archivar este @.lower:{'common.project'}",
-        "force": {
-          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
-        }
+        "btn-text": "Archivar este @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restaurar proyecto",

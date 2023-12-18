@@ -15,7 +15,7 @@
         <div class="mt-3">
           <NCheckbox v-model:checked="force">
             <div class="text-sm font-normal text-control-light">
-              {{ $t("project.settings.archive.force.description") }}
+              {{ $t("instance.force-archive-description") }}
             </div>
           </NCheckbox>
         </div>

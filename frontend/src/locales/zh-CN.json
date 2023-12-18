@@ -888,7 +888,7 @@
       "set-to": "将 {name} 设置为 \"{newValue}\"",
       "changed-update": "修改 {name}",
       "reopened-issue": "重开工单",
-      "resolved-issue": "解决工单",
+      "resolved-issue": "完成工单",
       "canceled-issue": "取消工单",
       "empty": "",
       "changed": "修改",
@@ -924,14 +924,14 @@
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
     "status-transition": {
       "modal": {
-        "resolve": "解决工单?",
+        "resolve": "完成工单?",
         "cancel": "取消整个工单?",
         "reopen": "重开工单？",
         "title": "{action}{type} [{name}]？",
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决工单",
+        "resolve": "完成工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -1069,8 +1069,8 @@
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "resolve": "解决",
-      "resolved": "解决",
+      "resolve": "完成",
+      "resolved": "完成",
       "cancel": "取消",
       "cancelled": "取消",
       "reopen": "重开",
@@ -1346,7 +1346,7 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
     "all": "所有实例",
-    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。",
+    "force-archive-description": "强制归档。所有关联的工单都将被标记为完成，所有关联的工作表都将被删除。",
     "sync-mode": {
       "self": "同步模式",
       "database": {
@@ -1920,10 +1920,7 @@
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
-        "btn-text": "归档这个@:common.project",
-        "force": {
-          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
-        }
+        "btn-text": "归档这个@:common.project"
       },
       "restore": {
         "title": "恢复项目",
