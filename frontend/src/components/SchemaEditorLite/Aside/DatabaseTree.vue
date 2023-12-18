@@ -513,9 +513,18 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
     return h("span", { class: "flex items-center gap-x-1" }, children);
   } else if (treeNode.type === "database") {
-    return h(DatabaseIcon, {
-      class: "w-4 h-auto text-gray-400",
-    });
+    return h("span", { class: "flex items-center gap-x-1" }, [
+      h(DatabaseIcon, {
+        class: "w-4 h-auto text-gray-400",
+      }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${treeNode.database.effectiveEnvironmentEntity.title})`
+      ),
+    ]);
   } else if (treeNode.type === "schema") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400",
