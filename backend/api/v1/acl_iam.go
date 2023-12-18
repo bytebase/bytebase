@@ -106,7 +106,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_ListSecrets_FullMethodName,
 		v1pb.DatabaseService_UpdateSecret_FullMethodName,
 		v1pb.DatabaseService_DeleteSecret_FullMethodName,
-		v1pb.DatabaseService_AdviseIndex_FullMethodName, // TODO(p0ny): implement.
+		v1pb.DatabaseService_AdviseIndex_FullMethodName,
 		v1pb.DatabaseService_ListChangeHistories_FullMethodName,
 		v1pb.DatabaseService_GetChangeHistory_FullMethodName:
 
@@ -594,6 +594,8 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 		databaseNames = append(databaseNames, r.GetName())
 	case *v1pb.SyncDatabaseRequest:
 		databaseNames = append(databaseNames, r.GetName())
+	case *v1pb.AdviseIndexRequest:
+		databaseNames = append(databaseNames, r.GetParent())
 	case *v1pb.GetDatabaseMetadataRequest:
 		databaseName, err := common.TrimSuffix(r.GetName(), "/metadata")
 		if err != nil {
