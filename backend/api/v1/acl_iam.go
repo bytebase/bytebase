@@ -95,6 +95,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.DatabaseService_GetDatabase_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
 		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
+		v1pb.DatabaseService_DiffSchema_FullMethodName,
 		v1pb.DatabaseService_SyncDatabase_FullMethodName,
 		v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName,
 		v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName,
@@ -261,7 +262,6 @@ func isSkippedMethod(fullMethod string) bool {
 	case
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName, // TODO(p0ny): implement
-		v1pb.DatabaseService_DiffSchema_FullMethodName,    // TODO(p0ny): implement
 		v1pb.IssueService_ListIssues_FullMethodName,       // TODO(p0ny): implement
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
@@ -672,6 +672,19 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 			return nil, errors.Wrapf(err, "failed to get databaseName from %q", r.GetName())
 		}
 		databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
+	case *v1pb.DiffSchemaRequest:
+		if instance, database, _, err := common.GetInstanceDatabaseIDChangeHistory(r.GetName()); err == nil {
+			databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
+		} else {
+			databaseNames = append(databaseNames, r.GetName())
+		}
+		if history := r.GetChangeHistory(); history != "" {
+			instance, database, _, err := common.GetInstanceDatabaseIDChangeHistory(history)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get databaseName from %q", history)
+			}
+			databaseNames = append(databaseNames, common.FormatDatabase(instance, database))
+		}
 	}
 
 	for _, databaseName := range databaseNames {
