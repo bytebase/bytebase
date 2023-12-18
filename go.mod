@@ -26,6 +26,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/cel-go v0.18.2
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.5.0
@@ -111,7 +112,6 @@ require (
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/glog v1.2.0 // indirect
