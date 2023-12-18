@@ -276,9 +276,7 @@
     "show-all": "显示全部",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
-    "nothing-changed": "没有改变",
-    "external-database-name": "外部数据库名称",
-    "external-server-name": "外部服务器名称"
+    "nothing-changed": "没有改变"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1719,7 +1717,9 @@
     },
     "recent": "最近访问",
     "partitioned": "分区",
-    "partition-tabled": "分区表"
+    "partition-tabled": "分区表",
+    "external-server-name": "外部服务器名称",
+    "external-database-name": "外部数据库名称"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",

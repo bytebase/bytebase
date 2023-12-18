@@ -95,8 +95,6 @@
     "creator": "Creator",
     "updater": "Updater",
     "version": "Version",
-    "external-server-name": "External Server Name",
-    "external-database-name": "External Database Name",
     "issue": "Issue",
     "issues": "Issues",
     "duration": "Duration",
@@ -1724,7 +1722,9 @@
     },
     "recent": "Recent",
     "partitioned": "Partitioned",
-    "partition-tables": "Partition tables"
+    "partition-tables": "Partition tables",
+    "external-server-name": "External Server Name",
+    "external-database-name": "External Database Name"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",

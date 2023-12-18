@@ -113,6 +113,9 @@ const columns = computed(() => {
       key: "schema",
       title: t("common.schema"),
       hide: !hasSchemaProperty.value,
+      ellipsis: {
+        tooltip: true,
+      },
       render: () => {
         return props.schemaName;
       },
@@ -120,6 +123,9 @@ const columns = computed(() => {
     {
       key: "name",
       title: t("common.name"),
+      ellipsis: {
+        tooltip: true,
+      },
       render: (row) => {
         return row.name;
       },
