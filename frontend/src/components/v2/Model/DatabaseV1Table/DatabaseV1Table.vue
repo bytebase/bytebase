@@ -169,19 +169,11 @@ import {
 } from "@/utils";
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
-import { isDatabase } from "./utils";
+import { isDatabase, Mode } from "./utils";
 
 const { getCoreRowModel, getPaginationRowModel, useVueTable } = await import(
   "@tanstack/vue-table"
 );
-
-type Mode =
-  | "ALL"
-  | "ALL_SHORT"
-  | "ALL_TINY"
-  | "INSTANCE"
-  | "PROJECT"
-  | "PROJECT_SHORT";
 
 interface LocalState {
   showIncorrectProjectModal: boolean;
