@@ -199,7 +199,10 @@ const {
   currentScope,
   currentScopeOption,
   valueOptions,
-} = useSearchScopeOptions(toRef(props, "params"), props.supportOptionIdList);
+} = useSearchScopeOptions(
+  toRef(props, "params"),
+  toRef(props, "supportOptionIdList")
+);
 
 const visibleScopeOptions = computed(() => {
   if (currentScopeOption.value) {

@@ -61,10 +61,11 @@ import { ComposedDatabase } from "@/types";
 import { isPITRDatabaseV1 } from "@/utils";
 import LabelsColumn from "./LabelsColumn.vue";
 import ProjectCol from "./ProjectCol.vue";
+import { Mode } from "./utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
-  mode: string;
+  mode: Mode;
   showSelectionColumn: boolean;
   showMiscColumn: boolean;
   showSchemaVersionColumn: boolean;

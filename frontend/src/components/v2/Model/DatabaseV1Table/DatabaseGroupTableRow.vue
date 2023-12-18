@@ -45,10 +45,11 @@ import { SQLEditorButtonV1 } from "@/components/DatabaseDetail";
 import { EnvironmentV1Name } from "@/components/v2";
 import { ComposedDatabaseGroup } from "@/types";
 import ProjectCol from "./ProjectCol.vue";
+import { Mode } from "./utils";
 
 defineProps<{
   databaseGroup: ComposedDatabaseGroup;
-  mode: string;
+  mode: Mode;
   showSelectionColumn: boolean;
   showMiscColumn: boolean;
   showSchemaVersionColumn: boolean;

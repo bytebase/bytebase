@@ -45,10 +45,16 @@ import {
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
+import { Mode } from "./utils";
 
-defineProps<{
-  project: Project;
-  mode: string;
-  showTenantIcon: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    project: Project;
+    mode?: Mode;
+    showTenantIcon: boolean;
+  }>(),
+  {
+    mode: "ALL",
+  }
+);
 </script>
