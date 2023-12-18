@@ -8,7 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import { SortDirection } from "@tanstack/table-core";
+import { SortDirection } from "@tanstack/vue-table";
 import { ArrowUpWideNarrow, ArrowDownWideNarrow } from "lucide-vue-next";
 
 defineProps<{
