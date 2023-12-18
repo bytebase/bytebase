@@ -47,7 +47,7 @@ export const usePreBackupContext = () => {
         const database = databaseForTask(issue.value, task.value);
         if (on) {
           spec.changeDatabaseConfig.preUpdateBackupDetail = {
-            database: database.instance + "/databases/todozp",
+            database: database.instance + "/databases/bbdataarchive",
           };
         } else {
           spec.changeDatabaseConfig.preUpdateBackupDetail = undefined;
