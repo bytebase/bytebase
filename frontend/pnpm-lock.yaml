@@ -111,8 +111,8 @@ dependencies:
     specifier: 7.2.0
     version: 7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0)
   naive-ui:
-    specifier: 2.35.0
-    version: 2.35.0(vue@3.2.47)
+    specifier: 2.36.0
+    version: 2.36.0(vue@3.2.47)
   nice-grpc-common:
     specifier: ^2.0.2
     version: 2.0.2
@@ -209,8 +209,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.158
-    version: 2.2.158
+    specifier: 2.2.159
+    version: 2.2.159
   '@intlify/unplugin-vue-i18n':
     specifier: 1.2.0
     version: 1.2.0(rollup@4.9.0)(vue-i18n@9.4.1)
@@ -257,8 +257,8 @@ devDependencies:
     specifier: ^1.0.4
     version: 1.0.4
   '@types/papaparse':
-    specifier: 5.3.8
-    version: 5.3.8
+    specifier: 5.3.14
+    version: 5.3.14
   '@types/pouchdb':
     specifier: ^6.4.2
     version: 6.4.2
@@ -287,8 +287,8 @@ devDependencies:
     specifier: 2.2.6
     version: 2.2.6
   '@types/uuid':
-    specifier: 9.0.6
-    version: 9.0.6
+    specifier: 9.0.7
+    version: 9.0.7
   '@types/vscode':
     specifier: 1.84.1
     version: 1.84.1
@@ -1164,8 +1164,8 @@ packages:
     resolution: {integrity: sha512-dvuCeX5fC9dXgJn9t+X5atfmgQAzUOWqS1254Gh0m6i8wKd10ebXkfNKiRK+1GWi/yTvvLDHpoxLr0xxxeslWw==}
     dev: true
 
-  /@iconify/json@2.2.158:
-    resolution: {integrity: sha512-6foGYcG97nmYpJ7N0MAbtfH7SKf7RvoOCYYSBi8gs+8qopXzplIP2F4lQiLrjpbPQihAoTercmGYWi4ABxLX1A==}
+  /@iconify/json@2.2.159:
+    resolution: {integrity: sha512-Hoc9gxrq3kqdWkdV7ZCpIgOrCgWtOvjyEASmYGpB7PpnCyd3SRCVU0VSX3mEs66qqPRNJz5qwCFK2tmC9zaSLQ==}
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.1
@@ -1862,8 +1862,8 @@ packages:
     resolution: {integrity: sha512-iclKEmOclXH2LGVkMkdal0+ffJphB3kbazakec96z1hW/CfJYmsZNFYLAmkpzePxKoKewXp2HSlsN6G4SG0b0g==}
     dev: true
 
-  /@types/papaparse@5.3.8:
-    resolution: {integrity: sha512-ArKIEOOWULbhi53wkAiRy1ze4wvrTfhpAj7Yfzva+EkmX2sV8PpFB+xqzJfzXNzK4me95FJH9QZt5NXFVGzOoQ==}
+  /@types/papaparse@5.3.14:
+    resolution: {integrity: sha512-LxJ4iEFcpqc6METwp9f6BV6VVc43m6MfH0VqFosHvrUgfXiFe6ww7R3itkOQ+TCK6Y+Iv/+RnnvtRZnkc5Kc9g==}
     dependencies:
       '@types/node': 20.10.4
     dev: true
@@ -2033,8 +2033,8 @@ packages:
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
     dev: true
 
-  /@types/uuid@9.0.6:
-    resolution: {integrity: sha512-BT2Krtx4xaO6iwzwMFUYvWBWkV2pr37zD68Vmp1CDV196MzczBRxuEpD6Pr395HAgebC/co7hOphs53r8V7jew==}
+  /@types/uuid@9.0.7:
+    resolution: {integrity: sha512-WUtIVRUZ9i5dYXefDEAI7sh9/O7jGvHg7Df/5O/gtH3Yabe5odI3UWopVR1qbPXQtvOxWu3mM4XxlYeZtMWF4g==}
     dev: true
 
   /@types/vscode@1.84.1:
@@ -4741,8 +4741,8 @@ packages:
       thenify-all: 1.6.0
     dev: true
 
-  /naive-ui@2.35.0(vue@3.2.47):
-    resolution: {integrity: sha512-PdnLpOip1LQaKs5+rXLZoPDPQkTq26TnHWeABvUA2eOQjtHxE4+TQvj0Jq/W8clM2On/7jptoGmenLt48G3Bhg==}
+  /naive-ui@2.36.0(vue@3.2.47):
+    resolution: {integrity: sha512-r1ydtEm1Ryf/aWpbLCf32mQAGK99jd1eXgpkCtIomcBRZeAtusfy6zCtIpCppoCuIKM3BW5DMafhVxilubk/lQ==}
     peerDependencies:
       vue: ^3.0.0
     dependencies:
@@ -4764,7 +4764,7 @@ packages:
       vdirs: 0.1.8(vue@3.2.47)
       vooks: 0.2.12(vue@3.2.47)
       vue: 3.2.47
-      vueuc: 0.4.51(vue@3.2.47)
+      vueuc: 0.4.54(vue@3.2.47)
     dev: false
 
   /nanoid@3.3.7:
@@ -6550,6 +6550,21 @@ packages:
 
   /vueuc@0.4.51(vue@3.2.47):
     resolution: {integrity: sha512-pLiMChM4f+W8czlIClGvGBYo656lc2Y0/mXFSCydcSmnCR1izlKPGMgiYBGjbY9FDkFG8a2HEVz7t0DNzBWbDw==}
+    peerDependencies:
+      vue: ^3.0.11
+    dependencies:
+      '@css-render/vue3-ssr': 0.15.12(vue@3.2.47)
+      '@juggle/resize-observer': 3.4.0
+      css-render: 0.15.12
+      evtd: 0.2.4
+      seemly: 0.3.8
+      vdirs: 0.1.8(vue@3.2.47)
+      vooks: 0.2.12(vue@3.2.47)
+      vue: 3.2.47
+    dev: false
+
+  /vueuc@0.4.54(vue@3.2.47):
+    resolution: {integrity: sha512-2LED7h1BSnCRPBI6AlSIf+1Yte1shN+Vb2gpspO5wHI7zWzbcq4bAu2f9nFh5yXIUKdzqmLvzRsOXDl4TrDyCw==}
     peerDependencies:
       vue: ^3.0.11
     dependencies:
