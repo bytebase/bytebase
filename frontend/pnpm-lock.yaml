@@ -102,14 +102,14 @@ dependencies:
     specifier: ^3.29.10
     version: 3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.52)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.4)(vue@3.2.47)
   monaco-editor:
-    specifier: 0.44.0
-    version: 0.44.0
+    specifier: 0.45.0
+    version: 0.45.0
   monaco-editor-workers:
     specifier: 0.44.0
-    version: 0.44.0(monaco-editor@0.44.0)
+    version: 0.44.0(monaco-editor@0.45.0)
   monaco-languageclient:
     specifier: 7.2.0
-    version: 7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0)
+    version: 7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.45.0)
   naive-ui:
     specifier: 2.36.0
     version: 2.36.0(vue@3.2.47)
@@ -2881,7 +2881,7 @@ packages:
     resolution: {integrity: sha512-9bMZEh6zEQxW3n/plLcoqJwymFDw6AxExLwS8xV0kzJjGF9K/7fHsJixYwPVGxtvLVIjVpPBd5SFDh09pCcHwA==}
     dependencies:
       '@vue/compiler-dom': 3.3.12
-      chalk: 4.1.1
+      chalk: 4.1.2
       portfinder: 1.0.32
     transitivePeerDependencies:
       - supports-color
@@ -4679,19 +4679,23 @@ packages:
       ufo: 1.3.2
     dev: true
 
-  /monaco-editor-workers@0.44.0(monaco-editor@0.44.0):
+  /monaco-editor-workers@0.44.0(monaco-editor@0.45.0):
     resolution: {integrity: sha512-rvdO292CMnxs9Y3Hl6nAjVx8d0SjcDgmXmZNVoaOCNJrdnTEEzcWcHJzEQsajTAAq4H2oeBmDZRpDE0US5DhXA==}
     peerDependencies:
       monaco-editor: ~0.44.0
     dependencies:
-      monaco-editor: 0.44.0
+      monaco-editor: 0.45.0
     dev: false
 
   /monaco-editor@0.44.0:
     resolution: {integrity: sha512-5SmjNStN6bSuSE5WPT2ZV+iYn1/yI9sd4Igtk23ChvqB7kDk9lZbB9F5frsuvpB+2njdIeGGFf2G4gbE6rCC9Q==}
     dev: false
 
-  /monaco-languageclient@7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0):
+  /monaco-editor@0.45.0:
+    resolution: {integrity: sha512-mjv1G1ZzfEE3k9HZN0dQ2olMdwIfaeAAjFiwNprLfYNRSz7ctv9XuCT7gPtBGrMUeV1/iZzYKj17Khu1hxoHOA==}
+    dev: false
+
+  /monaco-languageclient@7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.45.0):
     resolution: {integrity: sha512-Aequ3Lrq/rc5lGDiJ/0eD9CX+hi5fBaIae+vlzxqVVzrQXxyOrCEg2HpHjKHVSIfVtbUzH/hOAVCWqBeQv/AaA==}
     engines: {node: '>=16.11.0', npm: '>=9.0.0'}
     peerDependencies:
@@ -4701,7 +4705,7 @@ packages:
       '@codingame/monaco-vscode-editor-service-override': 1.83.16
       '@codingame/monaco-vscode-languages-service-override': 1.83.16
       '@codingame/monaco-vscode-model-service-override': 1.83.16
-      monaco-editor: 0.44.0
+      monaco-editor: 0.45.0
       vscode: /@codingame/monaco-vscode-api@1.83.16
       vscode-languageclient: 9.0.1
     dev: false
