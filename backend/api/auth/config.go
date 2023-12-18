@@ -1,16 +1,20 @@
 package auth
 
-import "strings"
+import (
+	"strings"
+
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
+)
 
 var authenticationAllowlistMethods = map[string]bool{
-	"/bytebase.v1.ActuatorService/GetActuatorInfo":               true,
-	"/bytebase.v1.ActuatorService/DeleteCache":                   true,
-	"/bytebase.v1.SubscriptionService/GetSubscription":           true,
-	"/bytebase.v1.SubscriptionService/GetFeatureMatrix":          true,
-	"/bytebase.v1.AuthService/Login":                             true,
-	"/bytebase.v1.AuthService/Logout":                            true,
-	"/bytebase.v1.AuthService/CreateUser":                        true,
-	"/bytebase.v1.IdentityProviderService/ListIdentityProviders": true,
+	v1pb.ActuatorService_GetActuatorInfo_FullMethodName:               true,
+	v1pb.ActuatorService_DeleteCache_FullMethodName:                   true,
+	v1pb.SubscriptionService_GetSubscription_FullMethodName:           true,
+	v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName:          true,
+	v1pb.AuthService_Login_FullMethodName:                             true,
+	v1pb.AuthService_Logout_FullMethodName:                            true,
+	v1pb.AuthService_CreateUser_FullMethodName:                        true,
+	v1pb.IdentityProviderService_ListIdentityProviders_FullMethodName: true,
 }
 
 // IsAuthenticationAllowed returns whether the method is exempted from authentication.
