@@ -46,7 +46,7 @@ type DingTalkReceiver struct {
 
 func (*DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.getMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
 	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))
@@ -66,7 +66,7 @@ func (*DingTalkReceiver) post(context Context) error {
 	post := DingTalkWebhook{
 		MessageType: "markdown",
 		Markdown: DingTalkWebhookMarkdown{
-			Title: context.Title,
+			Title: context.TitleZh,
 			Text:  text,
 		},
 	}
