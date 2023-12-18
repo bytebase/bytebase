@@ -186,8 +186,8 @@ dependencies:
     specifier: 8.0.2
     version: 8.0.2
   vscode-languageserver-protocol:
-    specifier: 3.17.3
-    version: 3.17.3
+    specifier: 3.17.5
+    version: 3.17.5
   vscode-languageserver-textdocument:
     specifier: 1.0.8
     version: 1.0.8
@@ -6390,13 +6390,6 @@ packages:
     dependencies:
       vscode-jsonrpc: 8.0.2
       vscode-languageserver-types: 3.17.2
-    dev: false
-
-  /vscode-languageserver-protocol@3.17.3:
-    resolution: {integrity: sha512-924/h0AqsMtA5yK22GgMtCYiMdCOtWTSGgUOkgEDX+wk2b0x4sAfLiO4NxBxqbiVtz7K7/1/RgVrVI0NClZwqA==}
-    dependencies:
-      vscode-jsonrpc: 8.1.0
-      vscode-languageserver-types: 3.17.3
     dev: false
 
   /vscode-languageserver-protocol@3.17.5:
