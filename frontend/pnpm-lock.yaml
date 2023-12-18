@@ -17,9 +17,6 @@ dependencies:
   '@soerenmartius/vue3-clipboard':
     specifier: 0.1.2
     version: 0.1.2
-  '@tanstack/table-core':
-    specifier: 8.10.7
-    version: 8.10.7
   '@tanstack/vue-table':
     specifier: 8.10.7
     version: 8.10.7(vue@3.2.47)
