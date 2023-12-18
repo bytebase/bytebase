@@ -81,6 +81,7 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import {
   generateUniqueTabId,
   useInstanceV1Store,
+  useDatabaseV1Store,
   useNotificationStore,
   useSchemaEditorV1Store,
 } from "@/store";
@@ -158,6 +159,7 @@ interface LocalState {
 const { t } = useI18n();
 const schemaEditorV1Store = useSchemaEditorV1Store();
 const instanceStore = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -510,9 +512,19 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
     return h("span", { class: "flex items-center gap-x-1" }, children);
   } else if (treeNode.type === "database") {
-    return h(DatabaseIcon, {
-      class: "w-4 h-auto text-gray-400",
-    });
+    const database = databaseStore.getDatabaseByName(treeNode.database);
+    return h("span", { class: "flex items-center gap-x-1" }, [
+      h(DatabaseIcon, {
+        class: "w-4 h-auto text-gray-400",
+      }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${database.effectiveEnvironmentEntity.title})`
+      ),
+    ]);
   } else if (treeNode.type === "schema") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400",

@@ -1,6 +1,6 @@
 <template>
   <Drawer
-    :show="true"
+    :show="show"
     width="auto"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
@@ -67,6 +67,7 @@ import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import { ResourceType } from "./common/ExprEditor/context";
 
 const props = defineProps<{
+  show: boolean;
   project: ComposedProject;
   resourceType: ResourceType;
   databaseGroup?: DatabaseGroup | SchemaGroup;

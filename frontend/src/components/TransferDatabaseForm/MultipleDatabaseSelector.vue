@@ -81,7 +81,7 @@
               >
             </div>
             <div v-if="showProjectColumn" class="bb-grid-cell">
-              {{ database.projectEntity.title }}
+              <ProjectV1Name :project="database.projectEntity" :link="false" />
             </div>
             <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
               <InstanceV1Name
@@ -104,7 +104,11 @@ import { useEnvironmentV1List } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { InstanceV1Name, ProductionEnvironmentV1Icon } from "../v2";
+import {
+  InstanceV1Name,
+  ProjectV1Name,
+  ProductionEnvironmentV1Icon,
+} from "../v2";
 import { TransferSource } from "./utils";
 
 type LocalState = {

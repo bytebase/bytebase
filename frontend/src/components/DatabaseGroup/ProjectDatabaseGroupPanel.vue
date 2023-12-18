@@ -8,7 +8,7 @@
   </div>
 
   <DatabaseGroupPanel
-    v-model:show="state.showDatabaseGroupPanel"
+    :show="state.showDatabaseGroupPanel"
     :project="project"
     :resource-type="'DATABASE_GROUP'"
     :database-group="state.editingDatabaseGroup"
