@@ -12,6 +12,7 @@ roles:
       - bb.databases.get
       - bb.databases.update
       - bb.databases.sync
+      - bb.databases.adviseIndex
       - bb.databases.getMetadata
       - bb.databases.updateMetadata
       - bb.databases.getSchema
@@ -105,6 +106,7 @@ roles:
       - bb.instances.delete
       - bb.instances.undelete
       - bb.instances.sync
+      - bb.databases.adviseIndex
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
