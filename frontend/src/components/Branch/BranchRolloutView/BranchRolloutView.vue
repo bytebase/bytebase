@@ -39,7 +39,7 @@
         </NButton>
       </div>
     </div>
-    <div class="flex items-center flex-start">
+    <div class="flex items-center flex-start bottom-b">
       <button
         class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
@@ -114,15 +114,6 @@
     >
       <div class="text-sm">Generating DDL</div>
     </MaskSpinner>
-  </div>
-
-  <div
-    class="text-xs font-mono fixed bottom-0 left-0 bg-white/50 border p-1 max-w-[40rem]"
-  >
-    <div>ready: {{ virtualBranchReady }}</div>
-    <div>
-      selectedRolloutObjects.length: {{ selectedRolloutObjects.length }}
-    </div>
   </div>
 </template>
 
