@@ -73,7 +73,7 @@
     "semver": "7.5.4",
     "slug": "8.2.3",
     "splitpanes": "3.1.5",
-    "sql-formatter": "13.1.0",
+    "sql-formatter": "15.0.2",
     "uuid": "9.0.1",
     "vdirs": "^0.1.8",
     "vscode": "npm:@codingame/monaco-vscode-api@1.83.16",
