@@ -15,6 +15,7 @@ const (
 	PermissionDatabasesGet                 Permission = "bb.databases.get"
 	PermissionDatabasesUpdate              Permission = "bb.databases.update"
 	PermissionDatabasesSync                Permission = "bb.databases.sync"
+	PermissionDatabasesAdviseIndex         Permission = "bb.databases.adviseIndex"
 	PermissionDatabasesGetMetadata         Permission = "bb.databases.getMetadata"
 	PermissionDatabasesUpdateMetadata      Permission = "bb.databases.updateMetadata"
 	PermissionDatabasesGetSchema           Permission = "bb.databases.getSchema"

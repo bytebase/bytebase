@@ -36,6 +36,7 @@ func permissionExist(p Permission) bool {
 		PermissionDatabasesGet,
 		PermissionDatabasesUpdate,
 		PermissionDatabasesSync,
+		PermissionDatabasesAdviseIndex,
 		PermissionDatabasesGetMetadata,
 		PermissionDatabasesUpdateMetadata,
 		PermissionDatabasesGetSchema,

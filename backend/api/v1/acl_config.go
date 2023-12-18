@@ -73,7 +73,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_ListSecrets_FullMethodName:            iam.PermissionDatabaseSecretsList,
 	v1pb.DatabaseService_UpdateSecret_FullMethodName:           iam.PermissionDatabaseSecretsUpdate,
 	v1pb.DatabaseService_DeleteSecret_FullMethodName:           iam.PermissionDatabaseSecretsDelete,
-	v1pb.DatabaseService_AdviseIndex_FullMethodName:            "", // TODO(p0ny): not critical, implement later.
+	v1pb.DatabaseService_AdviseIndex_FullMethodName:            iam.PermissionDatabasesAdviseIndex,
 	v1pb.DatabaseService_ListChangeHistories_FullMethodName:    iam.PermissionChangeHistoriesList,
 	v1pb.DatabaseService_GetChangeHistory_FullMethodName:       iam.PermissionChangeHistoriesGet,
 	v1pb.EnvironmentService_CreateEnvironment_FullMethodName:   iam.PermissionEnvironmentsCreate,
