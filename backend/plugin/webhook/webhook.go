@@ -68,6 +68,7 @@ type Context struct {
 	Level               Level
 	ActivityType        string
 	Title               string
+	TitleZh             string
 	Description         string
 	Link                string
 	CreatorID           int
@@ -128,6 +129,57 @@ func (c *Context) getMetaList() []meta {
 		if c.TaskResult.SkippedReason != "" {
 			m = append(m, meta{
 				Name:  "Skipped Reason",
+				Value: c.TaskResult.SkippedReason,
+			})
+		}
+	}
+
+	return m
+}
+
+func (c *Context) getMetaListZh() []meta {
+	m := []meta{}
+
+	if c.Project != nil {
+		m = append(m, meta{
+			Name:  "项目",
+			Value: c.Project.Name,
+		})
+	}
+
+	if c.Issue != nil {
+		m = append(m, meta{
+			Name:  "工单",
+			Value: c.Issue.Name,
+		})
+		// For VCS workflow, the generated issue description is composed of file names in the push event.
+		// So the description could be long, which is hard to display if merged into the issue name.
+		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
+		// view it easily in the corresponding webhook client.
+		m = append(m, meta{
+			Name:  "工单描述",
+			Value: common.TruncateStringWithDescription(c.Issue.Description),
+		})
+	}
+
+	if c.TaskResult != nil {
+		m = append(m, meta{
+			Name:  "任务",
+			Value: c.TaskResult.Name,
+		})
+		m = append(m, meta{
+			Name:  "状态",
+			Value: c.TaskResult.Status,
+		})
+		if c.TaskResult.Detail != "" {
+			m = append(m, meta{
+				Name:  "结果详情",
+				Value: common.TruncateStringWithDescription(c.TaskResult.Detail),
+			})
+		}
+		if c.TaskResult.SkippedReason != "" {
+			m = append(m, meta{
+				Name:  "跳过原因",
 				Value: c.TaskResult.SkippedReason,
 			})
 		}

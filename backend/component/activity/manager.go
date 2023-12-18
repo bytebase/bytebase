@@ -384,22 +384,28 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 	level := webhook.WebhookInfo
 	title := ""
+	titleZh := ""
 	link := fmt.Sprintf("%s/issue/%s-%d", setting.ExternalUrl, slug.Make(meta.Issue.Title), meta.Issue.UID)
 	switch activity.Type {
 	case api.ActivityIssueCreate:
 		title = fmt.Sprintf("Issue created - %s", meta.Issue.Title)
+		titleZh = fmt.Sprintf("创建工单 - %s", meta.Issue.Title)
 	case api.ActivityIssueStatusUpdate:
 		switch meta.Issue.Status {
 		case "OPEN":
 			title = fmt.Sprintf("Issue reopened - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单重开 - %s", meta.Issue.Title)
 		case "DONE":
 			level = webhook.WebhookSuccess
 			title = fmt.Sprintf("Issue resolved - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单完成 - %s", meta.Issue.Title)
 		case "CANCELED":
 			title = fmt.Sprintf("Issue canceled - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单取消 - %s", meta.Issue.Title)
 		}
 	case api.ActivityIssueCommentCreate:
 		title = fmt.Sprintf("Comment created - %s", meta.Issue.Title)
+		titleZh = fmt.Sprintf("工单新评论 - %s", meta.Issue.Title)
 		link += fmt.Sprintf("#activity%d", activity.UID)
 	case api.ActivityIssueFieldUpdate:
 		update := new(api.ActivityIssueFieldUpdatePayload)
@@ -460,19 +466,25 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 					if oldAssignee != nil && newAssignee != nil {
 						title = fmt.Sprintf("Reassigned issue from %s to %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Title)
+						titleZh = fmt.Sprintf("转派 %s 的工单给 %s - %s", oldAssignee.Name, newAssignee.Name, meta.Issue.Title)
 					} else if newAssignee != nil {
 						title = fmt.Sprintf("Assigned issue to %s - %s", newAssignee.Name, meta.Issue.Title)
+						titleZh = fmt.Sprintf("给 %s 指派工单 - %s", newAssignee.Name, meta.Issue.Title)
 					} else if oldAssignee != nil {
 						title = fmt.Sprintf("Unassigned issue from %s - %s", oldAssignee.Name, meta.Issue.Title)
+						titleZh = fmt.Sprintf("取消指派给 %s 的工单 - %s", oldAssignee.Name, meta.Issue.Title)
 					}
 				}
 			}
 		case api.IssueFieldDescription:
 			title = fmt.Sprintf("Changed issue description - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单描述变更 - %s", meta.Issue.Title)
 		case api.IssueFieldName:
 			title = fmt.Sprintf("Changed issue name - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单标题变更 - %s", meta.Issue.Title)
 		default:
 			title = fmt.Sprintf("Updated issue - %s", meta.Issue.Title)
+			titleZh = fmt.Sprintf("工单信息变更 - %s", meta.Issue.Title)
 		}
 	case api.ActivityPipelineStageStatusUpdate:
 		payload := &api.ActivityPipelineStageStatusUpdatePayload{}
@@ -486,99 +498,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		link += fmt.Sprintf("?stage=%d", payload.StageID)
 		if payload.StageStatusUpdateType == api.StageStatusUpdateTypeEnd {
 			title = fmt.Sprintf("Stage ends - %s", payload.StageName)
-		}
-	case api.ActivityPipelineTaskStatusUpdate:
-		update := &api.ActivityPipelineTaskStatusUpdatePayload{}
-		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			slog.Warn("Failed to post webhook event after changing the issue task status, failed to unmarshal payload",
-				slog.String("issue_name", meta.Issue.Title),
-				log.BBError(err))
-			return nil, err
-		}
-
-		task, err := m.store.GetTaskV2ByID(ctx, update.TaskID)
-		if err != nil {
-			slog.Warn("Failed to post webhook event after changing the issue task status, failed to find task",
-				slog.String("issue_name", meta.Issue.Title),
-				slog.Int("task_id", update.TaskID),
-				log.BBError(err))
-			return nil, err
-		}
-		if task == nil {
-			err := errors.Errorf("failed to post webhook event after changing the issue task status, task not found for ID %v", update.TaskID)
-			slog.Warn(err.Error(),
-				slog.String("issue_name", meta.Issue.Title),
-				slog.Int("task_id", update.TaskID),
-				log.BBError(err))
-			return nil, err
-		}
-
-		webhookTaskResult = &webhook.TaskResult{
-			Name:   task.Name,
-			Status: string(task.LatestTaskRunStatus),
-		}
-
-		title = "Task changed - " + task.Name
-		switch update.NewStatus {
-		case api.TaskPending:
-			switch update.OldStatus {
-			case api.TaskRunning:
-				title = "Task canceled - " + task.Name
-			case api.TaskPendingApproval:
-				title = "Task approved - " + task.Name
-			}
-		case api.TaskRunning:
-			title = "Task started - " + task.Name
-		case api.TaskDone:
-			level = webhook.WebhookSuccess
-			title = "Task completed - " + task.Name
-
-			skipped, skippedReason, err := getTaskSkippedAndReason(task)
-			if err != nil {
-				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
-				slog.Warn(err.Error(), slog.String("task.Payload", task.Payload), log.BBError(err))
-				return nil, err
-			}
-			if skipped {
-				title = "Task skipped - " + task.Name
-				webhookTaskResult.Status = "SKIPPED"
-				webhookTaskResult.SkippedReason = skippedReason
-			}
-		case api.TaskFailed:
-			level = webhook.WebhookError
-			title = "Task failed - " + task.Name
-
-			taskRuns, err := m.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-				PipelineUID: &task.PipelineID,
-				StageUID:    &task.StageID,
-				TaskUID:     &task.ID,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
-			}
-
-			if len(taskRuns) == 0 {
-				err := errors.Errorf("expect at least 1 TaskRun, get 0")
-				slog.Warn(err.Error(),
-					slog.Any("task", task),
-					log.BBError(err))
-				return nil, err
-			}
-
-			// sort TaskRunList to get the most recent task run result.
-			sort.Slice(taskRuns, func(i int, j int) bool {
-				return taskRuns[i].ID > taskRuns[j].ID
-			})
-
-			var result api.TaskRunResultPayload
-			if err := json.Unmarshal([]byte(taskRuns[0].Result), &result); err != nil {
-				err := errors.Wrap(err, "failed to unmarshal TaskRun Result")
-				slog.Warn(err.Error(),
-					slog.Any("TaskRun", taskRuns[0]),
-					log.BBError(err))
-				return nil, err
-			}
-			webhookTaskResult.Detail = result.Detail
+			titleZh = fmt.Sprintf("阶段结束 - %s", payload.StageName)
 		}
 
 	case api.ActivityPipelineTaskRunStatusUpdate:
@@ -615,14 +535,18 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		switch payload.NewStatus {
 		case api.TaskRunPending:
 			title = "Task run started - " + payload.TaskName
+			titleZh = "任务开始 - " + payload.TaskName
 		case api.TaskRunRunning:
 			title = "Task run started to run - " + payload.TaskName
+			titleZh = "任务开始运行 - " + payload.TaskName
 		case api.TaskRunDone:
 			level = webhook.WebhookSuccess
 			title = "Task run completed - " + payload.TaskName
+			titleZh = "任务完成 - " + payload.TaskName
 		case api.TaskRunFailed:
 			level = webhook.WebhookError
 			title = "Task run failed - " + payload.TaskName
+			titleZh = "任务失败 - " + payload.TaskName
 
 			taskRuns, err := m.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
 				PipelineUID: &task.PipelineID,
@@ -657,8 +581,10 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 		case api.TaskRunCanceled:
 			title = "Task run canceled - " + payload.TaskName
+			titleZh = "任务取消 - " + payload.TaskName
 		case api.TaskRunSkipped:
 			title = "Task skipped - " + payload.TaskName
+			titleZh = "任务跳过 - " + payload.TaskName
 			_, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
 				err := errors.Wrap(err, "failed to get skipped and skippedReason from the task")
@@ -668,10 +594,12 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			webhookTaskResult.SkippedReason = skippedReason
 		default:
 			title = "Task run changed - " + payload.TaskName
+			titleZh = "任务状态变更 - " + payload.TaskName
 		}
 
 	case api.ActivityNotifyIssueApproved:
 		title = "Issue approved - " + meta.Issue.Title
+		titleZh = "工单审批通过 - " + meta.Issue.Title
 
 		phone, err := maybeGetPhoneFromUser(meta.Issue.Creator)
 		if err != nil {
@@ -689,6 +617,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			return nil, err
 		}
 		title = fmt.Sprintf("Issue is waiting for rollout (%s) - %s", payload.StageName, meta.Issue.Title)
+		titleZh = fmt.Sprintf("工单待发布 (%s) - %s", payload.StageName, meta.Issue.Title)
 		var usersGetters []func(context.Context) ([]*store.UserMessage, error)
 		if payload.RolloutPolicy.GetAutomatic() {
 			usersGetters = append(usersGetters, getUsersFromUsers(meta.Issue.Creator))
@@ -752,6 +681,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		pendingStep := protoPayload.ApprovalStep
 
 		title = "Issue approval needed - " + meta.Issue.Title
+		titleZh = "工单待审批 - " + meta.Issue.Title
 
 		if len(pendingStep.Nodes) != 1 {
 			slog.Warn("Failed to post webhook event after changing the issue approval node status, pending step nodes length is not 1")
@@ -814,6 +744,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		Level:        level,
 		ActivityType: string(activity.Type),
 		Title:        title,
+		TitleZh:      titleZh,
 		Issue: &webhook.Issue{
 			ID:          meta.Issue.UID,
 			Name:        meta.Issue.Title,
