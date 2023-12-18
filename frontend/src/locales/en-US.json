@@ -1925,10 +1925,7 @@
       "archive": {
         "title": "Archive project",
         "description": "Archived projects will not be displayed.",
-        "btn-text": "Archive this @.lower:{'common.project'}",
-        "force": {
-          "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
-        }
+        "btn-text": "Archive this @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restore project",
