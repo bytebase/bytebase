@@ -28,7 +28,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/cel-go v0.18.2
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gosimple/slug v1.13.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
