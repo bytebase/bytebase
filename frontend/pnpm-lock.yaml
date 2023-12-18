@@ -111,8 +111,8 @@ dependencies:
     specifier: 7.2.0
     version: 7.2.0(@codingame/monaco-vscode-api@1.83.16)(monaco-editor@0.44.0)
   naive-ui:
-    specifier: 2.35.0
-    version: 2.35.0(vue@3.2.47)
+    specifier: 2.36.0
+    version: 2.36.0(vue@3.2.47)
   nice-grpc-common:
     specifier: ^2.0.2
     version: 2.0.2
@@ -4741,8 +4741,8 @@ packages:
       thenify-all: 1.6.0
     dev: true
 
-  /naive-ui@2.35.0(vue@3.2.47):
-    resolution: {integrity: sha512-PdnLpOip1LQaKs5+rXLZoPDPQkTq26TnHWeABvUA2eOQjtHxE4+TQvj0Jq/W8clM2On/7jptoGmenLt48G3Bhg==}
+  /naive-ui@2.36.0(vue@3.2.47):
+    resolution: {integrity: sha512-r1ydtEm1Ryf/aWpbLCf32mQAGK99jd1eXgpkCtIomcBRZeAtusfy6zCtIpCppoCuIKM3BW5DMafhVxilubk/lQ==}
     peerDependencies:
       vue: ^3.0.0
     dependencies:
@@ -4764,7 +4764,7 @@ packages:
       vdirs: 0.1.8(vue@3.2.47)
       vooks: 0.2.12(vue@3.2.47)
       vue: 3.2.47
-      vueuc: 0.4.51(vue@3.2.47)
+      vueuc: 0.4.54(vue@3.2.47)
     dev: false
 
   /nanoid@3.3.7:
@@ -6550,6 +6550,21 @@ packages:
 
   /vueuc@0.4.51(vue@3.2.47):
     resolution: {integrity: sha512-pLiMChM4f+W8czlIClGvGBYo656lc2Y0/mXFSCydcSmnCR1izlKPGMgiYBGjbY9FDkFG8a2HEVz7t0DNzBWbDw==}
+    peerDependencies:
+      vue: ^3.0.11
+    dependencies:
+      '@css-render/vue3-ssr': 0.15.12(vue@3.2.47)
+      '@juggle/resize-observer': 3.4.0
+      css-render: 0.15.12
+      evtd: 0.2.4
+      seemly: 0.3.8
+      vdirs: 0.1.8(vue@3.2.47)
+      vooks: 0.2.12(vue@3.2.47)
+      vue: 3.2.47
+    dev: false
+
+  /vueuc@0.4.54(vue@3.2.47):
+    resolution: {integrity: sha512-2LED7h1BSnCRPBI6AlSIf+1Yte1shN+Vb2gpspO5wHI7zWzbcq4bAu2f9nFh5yXIUKdzqmLvzRsOXDl4TrDyCw==}
     peerDependencies:
       vue: ^3.0.11
     dependencies:
