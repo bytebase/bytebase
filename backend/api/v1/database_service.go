@@ -2191,21 +2191,6 @@ func convertPeriodTsToDuration(periodTs int) (*durationpb.Duration, error) {
 	return durationpb.New(time.Duration(periodTs) * time.Second), nil
 }
 
-// isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
-func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
-	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Owner && binding.Role != api.Developer {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID == principalID || member.Email == api.AllUsers {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {
 	var serviceSecrets []*v1pb.Secret
 	if secrets == nil || len(secrets.Items) == 0 {

@@ -1,29 +1,18 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="viewList"
-    :show-header="true"
-    :row-clickable="false"
-    class="border"
-  >
-    <template #item="{ item: view }: BBGridRow<ViewMetadata>">
-      <div class="bb-grid-cell">
-        {{ getViewName(view.name) }}
-      </div>
-      <div class="bb-grid-cell break-all">
-        {{ view.definition }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ view.comment }}
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    :columns="columns"
+    :data="viewList"
+    :max-height="640"
+    :virtual-scroll="true"
+    :striped="true"
+    :bordered="true"
+  />
 </template>
 
 <script lang="ts" setup>
+import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ViewMetadata } from "@/types/proto/v1/database_service";
@@ -55,20 +44,33 @@ const hasSchemaProperty = computed(() => {
   );
 });
 
-const columnList = computed((): BBGridColumn[] => [
-  {
-    title: t("common.name"),
-    width: "minmax(auto, 1fr)",
-  },
-  {
-    title: t("common.definition"),
-    width: "3fr",
-  },
-  {
-    title: t("database.comment"),
-    width: "minmax(auto, 12rem)",
-  },
-]);
+const columns = computed(() => {
+  const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
+    {
+      key: "name",
+      title: t("common.name"),
+      render: (row) => {
+        return getViewName(row.name);
+      },
+    },
+    {
+      key: "name",
+      title: t("common.definition"),
+      render: (row) => {
+        return row.definition;
+      },
+    },
+    {
+      key: "name",
+      title: t("common.comment"),
+      render: (row) => {
+        return row.comment;
+      },
+    },
+  ];
+
+  return columns.filter((column) => !column.hide);
+});
 
 const getViewName = (viewName: string) => {
   if (hasSchemaProperty.value) {

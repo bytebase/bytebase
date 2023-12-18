@@ -278,9 +278,7 @@
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
-    "nothing-changed": "nada ha cambiado",
-    "external-database-name": "Nombre de la base de datos externa",
-    "external-server-name": "Nombre del servidor externo"
+    "nothing-changed": "nada ha cambiado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1723,7 +1721,9 @@
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
-    "partition-tabled": "Tabla particionada"
+    "partition-tabled": "Tabla particionada",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
