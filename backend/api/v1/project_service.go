@@ -2032,13 +2032,9 @@ func (s *ProjectService) DeleteSchemaGroup(ctx context.Context, request *v1pb.De
 
 // ListSchemaGroups lists database groups.
 func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.ListSchemaGroupsRequest) (*v1pb.ListSchemaGroupsResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	projectResourceID, databaseResourceID, err := common.GetProjectIDDatabaseGroupID(request.Parent)
@@ -2054,11 +2050,22 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionProjectsGet)
+		}
+	}
+
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if !isOwnerOrDBA(role) && !isProjectOwnerOrDeveloper(principalID, policy) {
+	if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 	}
 

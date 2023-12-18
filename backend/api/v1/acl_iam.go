@@ -266,7 +266,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
 		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
 	}
 	return false
