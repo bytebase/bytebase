@@ -98,6 +98,4 @@ ENV OPENSSL_CONF /etc/ssl/
 
 CMD ["--port", "8080", "--data", "/var/opt/bytebase"]
 
-HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:8080/healthz || exit 1
-
 ENTRYPOINT ["bytebase"]

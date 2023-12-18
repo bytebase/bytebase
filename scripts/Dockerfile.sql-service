@@ -59,6 +59,4 @@ COPY ./scripts /usr/local/bin/
 
 CMD ["--host", "http://localhost", "--port", "8080"]
 
-HEALTHCHECK --interval=5m --timeout=60s CMD curl -f http://localhost:8080/healthz || exit 1
-
 ENTRYPOINT ["sql-service"]
