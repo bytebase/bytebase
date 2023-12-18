@@ -21,7 +21,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 	p, ok := methodPermissionMap[fullMethod]
 	if !ok {
-		return nil
+		return errors.Errorf("method %q not found in method-permission map", fullMethod)
 	}
 	var projectIDsGetter func(context.Context, any) ([]string, error)
 
