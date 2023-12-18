@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	errs "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -148,8 +148,7 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		}
 		return nil, status.Errorf(codes.Unauthenticated, "unexpected access token kid=%v", t.Header["kid"])
 	}); err != nil {
-		var ve *jwt.ValidationError
-		if errors.As(err, &ve) && ve.Errors == jwt.ValidationErrorExpired {
+		if errors.Is(err, jwt.ErrTokenExpired) {
 			return 0, status.Errorf(codes.Unauthenticated, "access token expired")
 		}
 		return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
