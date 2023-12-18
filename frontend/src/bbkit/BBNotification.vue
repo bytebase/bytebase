@@ -26,6 +26,7 @@
         leave-to-class="opacity-0"
       >
         <div
+          v-if="true"
           class="max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
         >
           <div class="p-4">
