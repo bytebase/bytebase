@@ -47,6 +47,7 @@ type TableReference interface {
 
 type PhysicalTableReference struct {
 	Database string
+	Schema   string
 	Table    string
 	Alias    string
 }

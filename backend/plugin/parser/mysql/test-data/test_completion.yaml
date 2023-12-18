@@ -1,3 +1,4 @@
+- input: SELECT | FROM t2 x
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT x.| FROM x;
   want:
     - text: x1

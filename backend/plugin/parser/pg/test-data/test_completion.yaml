@@ -1,0 +1,2 @@
+- input: SELECT | FROM public.t1
+  want:
