@@ -59,7 +59,6 @@
     @close="state.showTransferOutDatabaseForm = false"
   >
     <TransferOutDatabaseForm
-      :project-id="selectedProjectUid"
       :database-list="props.databases"
       :selected-database-uid-list="selectedDatabaseUidList"
       @dismiss="state.showTransferOutDatabaseForm = false"

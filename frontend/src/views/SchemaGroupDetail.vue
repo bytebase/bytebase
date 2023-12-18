@@ -90,7 +90,7 @@
   </div>
 
   <DatabaseGroupPanel
-    v-if="state.showConfigurePanel"
+    :show="state.showConfigurePanel"
     :project="project"
     :resource-type="'SCHEMA_GROUP'"
     :database-group="schemaGroup"
