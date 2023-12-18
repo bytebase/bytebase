@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	cloud.google.com/go/spanner v1.54.0
 	gitee.com/chunanyong/dm v1.8.13
-	github.com/ClickHouse/clickhouse-go/v2 v2.15.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.16.0
 	github.com/antlr4-go/antlr/v4 v4.13.0
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
@@ -28,7 +28,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/cel-go v0.18.2
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gosimple/slug v1.13.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
@@ -40,11 +40,11 @@ require (
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.3
-	github.com/lestrrat-go/jwx/v2 v2.0.12
+	github.com/lestrrat-go/jwx/v2 v2.0.18
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
 	github.com/mattn/go-oci8 v0.1.1
-	github.com/mattn/go-sqlite3 v1.14.18
+	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/nyaruka/phonenumbers v1.2.2
 	github.com/paulmach/orb v0.10.0
@@ -234,7 +234,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.3 // indirect
 	github.com/labstack/gommon v0.4.1 // indirect
-	github.com/lestrrat-go/blackmagic v1.0.1 // indirect
+	github.com/lestrrat-go/blackmagic v1.0.2 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
 	github.com/lestrrat-go/httprc v1.0.4 // indirect
 	github.com/lestrrat-go/iter v1.0.2 // indirect
