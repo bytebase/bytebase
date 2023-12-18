@@ -24,20 +24,22 @@
       <div class="bb-grid-cell">
         {{ dbGroup.databasePlaceholder }}
       </div>
-      <div class="bb-grid-cell">{{ dbGroup.project.title }}</div>
-      <div class="bb-grid-cell">{{ dbGroup.environment.title }}</div>
+      <div class="bb-grid-cell">
+        <ProjectCol :project="dbGroup.project" :show-tenant-icon="true" />
+      </div>
+      <div class="bb-grid-cell">
+        <EnvironmentV1Name :environment="dbGroup.environment" :link="false" />
+      </div>
     </template>
   </BBGrid>
 </template>
 
 <script lang="ts" setup>
 import { NRadio } from "naive-ui";
-import { ref, watch, reactive, computed } from "vue";
+import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGridColumn } from "@/bbkit";
-import { useDBGroupStore } from "@/store";
 import { ComposedDatabaseGroup } from "@/types";
-import { SchemaGroup } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   selectedDatabaseGroupName?: string;
@@ -54,11 +56,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   selectedDatabaseGroupName: props.selectedDatabaseGroupName,
 });
-const schemaGroupListMap = ref<Map<string, SchemaGroup[]>>(new Map());
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -91,19 +91,4 @@ const handleDatabaseGroupSelect = (dbGroup: ComposedDatabaseGroup) => {
   state.selectedDatabaseGroupName = dbGroup.name;
   emit("update", state.selectedDatabaseGroupName || "");
 };
-
-watch(
-  () => props,
-  async () => {
-    for (const dbGroup of props.databaseGroupList) {
-      const schemaGroupList =
-        await dbGroupStore.getOrFetchSchemaGroupListByDBGroupName(dbGroup.name);
-      schemaGroupListMap.value.set(dbGroup.name, schemaGroupList);
-    }
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
 </script>

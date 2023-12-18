@@ -40,7 +40,7 @@
         <template v-else>
           <DeployDatabaseTable
             :database-list="databaseList"
-            :label="state.label"
+            :label="label"
             :environment-list="environmentList"
             :deployment="deploymentConfig"
           />
@@ -51,26 +51,20 @@
 </template>
 
 <script lang="ts" setup>
-/* eslint-disable vue/no-mutating-props */
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import { useDeploymentConfigV1ByProject } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
-import { getPipelineFromDeploymentScheduleV1, projectV1Slug } from "@/utils";
+import { projectV1Slug } from "@/utils";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 
-export type ProjectTenantViewState = {
-  deployingTenantDatabaseList: string[];
-  label: string;
-};
-
 const props = defineProps<{
+  label: string;
   databaseList: ComposedDatabase[];
   environmentList: Environment[];
   project?: Project;
-  state: ProjectTenantViewState;
 }>();
 
 defineEmits<{
@@ -82,22 +76,6 @@ const { deploymentConfig, ready } = useDeploymentConfigV1ByProject(
     return props.project?.name ?? "projects/-1";
   })
 );
-
-watchEffect(() => {
-  if (!deploymentConfig.value) return;
-  const { databaseList } = props;
-
-  // calculate the deployment matching to preview the pipeline
-  const stages = getPipelineFromDeploymentScheduleV1(
-    databaseList,
-    deploymentConfig.value.schedule
-  );
-
-  // flatten all stages' database id list
-  // these databases are to be deployed
-  const databaseIdList = stages.flatMap((stage) => stage.map((db) => db.uid));
-  props.state.deployingTenantDatabaseList = databaseIdList;
-});
 </script>
 
 <style scoped lang="postcss">
