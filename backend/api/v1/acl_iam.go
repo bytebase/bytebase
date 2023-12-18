@@ -240,6 +240,17 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
 		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
 		return true
+	// skip checking for sheet service because we want to
+	// discriminate bytebase artifact sheets and user sheets first.
+	// TODO(p0ny): implement
+	case
+		v1pb.SheetService_CreateSheet_FullMethodName,
+		v1pb.SheetService_GetSheet_FullMethodName,
+		v1pb.SheetService_SearchSheets_FullMethodName,
+		v1pb.SheetService_UpdateSheet_FullMethodName,
+		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
+		v1pb.SheetService_DeleteSheet_FullMethodName:
+		return true
 	// skip checking for custom approval.
 	case
 		v1pb.IssueService_ApproveIssue_FullMethodName,
