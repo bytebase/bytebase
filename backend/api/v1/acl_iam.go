@@ -206,16 +206,40 @@ func isSkippedMethod(fullMethod string) bool {
 
 	// Below are the skipped.
 	switch fullMethod {
-	// TODO(p0ny): explicit skips
-	// skip actuator service
-	// skip anomaly service
-	// skip auth service
-	// skip cel service
-	// skip inbox service
-	// skip logging service
-	// skip sql service
-	// skip subscription service
-
+	// skip methods that are not considered to be resource-related.
+	case
+		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
+		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
+		v1pb.ActuatorService_DeleteCache_FullMethodName,
+		v1pb.ActuatorService_ListDebugLog_FullMethodName,
+		v1pb.AnomalyService_SearchAnomalies_FullMethodName,
+		v1pb.AuthService_GetUser_FullMethodName,
+		v1pb.AuthService_ListUsers_FullMethodName,
+		v1pb.AuthService_CreateUser_FullMethodName,
+		v1pb.AuthService_UpdateUser_FullMethodName,
+		v1pb.AuthService_DeleteUser_FullMethodName,
+		v1pb.AuthService_UndeleteUser_FullMethodName,
+		v1pb.AuthService_Login_FullMethodName,
+		v1pb.AuthService_Logout_FullMethodName,
+		v1pb.CelService_BatchParse_FullMethodName,
+		v1pb.CelService_BatchDeparse_FullMethodName,
+		v1pb.InboxService_GetInboxSummary_FullMethodName,
+		v1pb.InboxService_ListInbox_FullMethodName,
+		v1pb.InboxService_UpdateInbox_FullMethodName,
+		v1pb.LoggingService_ListLogs_FullMethodName,
+		v1pb.LoggingService_GetLog_FullMethodName,
+		v1pb.LoggingService_ExportLogs_FullMethodName,
+		v1pb.SQLService_Query_FullMethodName,
+		v1pb.SQLService_Export_FullMethodName,
+		v1pb.SQLService_AdminExecute_FullMethodName,
+		v1pb.SQLService_DifferPreview_FullMethodName,
+		v1pb.SQLService_Check_FullMethodName,
+		v1pb.SQLService_Pretty_FullMethodName,
+		v1pb.SQLService_StringifyMetadata_FullMethodName,
+		v1pb.SubscriptionService_GetSubscription_FullMethodName,
+		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
+		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
+		return true
 	// skip checking for custom approval.
 	case
 		v1pb.IssueService_ApproveIssue_FullMethodName,
