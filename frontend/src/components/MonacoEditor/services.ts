@@ -1,5 +1,4 @@
 import { languages } from "monaco-editor";
-import { initialize as initializeExtensions } from "vscode/extensions";
 import { initialize as initializeServices } from "vscode/services";
 import { SupportedLanguages } from "./types";
 
@@ -9,7 +8,6 @@ const state = {
 
 const initializeRunner = async () => {
   await initializeServices({});
-  await initializeExtensions();
 
   SupportedLanguages.forEach((lang) => languages.register(lang));
 };
