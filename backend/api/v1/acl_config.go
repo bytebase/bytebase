@@ -2,7 +2,6 @@ package v1
 
 import (
 	"github.com/bytebase/bytebase/backend/component/iam"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -206,8 +205,4 @@ func isProjectOwnerMethod(methodName string) bool {
 
 func isTransferDatabaseMethods(methodName string) bool {
 	return transferDatabaseMethods[methodName]
-}
-
-func isOwnerOrDBA(role api.Role) bool {
-	return role == api.Owner || role == api.DBA
 }
