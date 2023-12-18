@@ -260,13 +260,13 @@ func isSkippedMethod(fullMethod string) bool {
 	// handled in the method because checking is complex.
 	case
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
-		v1pb.DatabaseService_ListDatabases_FullMethodName,     // TODO(p0ny): implement
-		v1pb.DatabaseService_DiffSchema_FullMethodName,        // TODO(p0ny): implement
-		v1pb.IssueService_ListIssues_FullMethodName,           // TODO(p0ny): implement
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName, // TODO(p0ny): implement
+		v1pb.DatabaseService_ListDatabases_FullMethodName, // TODO(p0ny): implement
+		v1pb.DatabaseService_DiffSchema_FullMethodName,    // TODO(p0ny): implement
+		v1pb.IssueService_ListIssues_FullMethodName,       // TODO(p0ny): implement
+		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName, // TODO(p0ny): implement
 		v1pb.RolloutService_ListPlans_FullMethodName,          // TODO(p0ny): implement
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:   // TODO(p0ny): implement
+		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
 		return true
 	}
 	return false
