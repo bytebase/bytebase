@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
