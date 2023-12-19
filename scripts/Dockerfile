@@ -64,7 +64,6 @@ FROM debian:bookworm-slim as uncompress
 
 ARG TARGETARCH
 
-# RUN echo ${TARGETARCH}
 RUN apt-get update && apt-get install -y xz-utils
 COPY ./backend/resources /tmp/bytebase/resources/
 RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
