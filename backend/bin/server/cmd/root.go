@@ -194,7 +194,12 @@ func checkPort(port int) error {
 
 func start() {
 	if flags.debug {
-		log.GLogLevel.Set(slog.LevelDebug)
+		log.LogLevel.Set(slog.LevelDebug)
+	}
+	if flags.saas {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	}
 
 	var err error
