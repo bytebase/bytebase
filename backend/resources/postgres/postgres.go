@@ -23,9 +23,19 @@ import (
 
 const (
 	currentVersion = "16"
-	// This path must be consistent with the Dockerfile.
-	postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
 )
+
+// This path must be consistent with the Dockerfile.
+var postgresUtilSource string
+
+func init() {
+	switch {
+	case runtime.GOARCH == "amd64":
+		postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
+	case runtime.GOARCH == "arm64":
+		postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-arm64-16"
+	}
+}
 
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
