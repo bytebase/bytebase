@@ -1426,7 +1426,8 @@
     },
     "password-forget": {
       "title": "Forgot your password?",
-      "content": "Please contact your Bytebase Admin to reset your password.",
+      "selfhost": "Please contact your Bytebase Admin to reset your password.",
+      "cloud": "Please go to the {link} and reset your password.",
       "return-to-sign-in": "Return to Sign in"
     },
     "password-forgot": "Forgot Password",
