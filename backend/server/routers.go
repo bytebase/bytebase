@@ -17,9 +17,10 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntime.ServeMux) {
+func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntime.ServeMux, profile config.Profile) {
 	// Embed frontend.
 	embedFrontend(e)
 
@@ -67,7 +68,9 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
 	}))
-	pprof.Register(e)
+	if profile.StartupDebug {
+		pprof.Register(e)
+	}
 	p := prometheus.NewPrometheus("api", nil)
 	p.Use(e)
 
