@@ -1,4 +1,4 @@
-//go:build !dockerfile
+//go:build !docker_amd64 && !docker_arm64
 
 package mysqlutil
 

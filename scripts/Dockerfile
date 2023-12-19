@@ -7,7 +7,6 @@
 
 FROM node:20 as frontend
 
-ARG TARGETARCH
 ARG RELEASE="release"
 
 RUN npm i -g pnpm
@@ -23,6 +22,7 @@ FROM golang:1.21.5 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
+ARG TARGETARCH
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
 ARG GO_VERSION="1.21.5"
@@ -54,7 +54,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
   CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
 fi && \
     VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
-    --tags "${RELEASE},embed_frontend,docker_amd64" \
+    --tags "${RELEASE},embed_frontend,docker_${TARGETARCH}" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./backend/bin/server/main.go
@@ -64,19 +64,20 @@ FROM debian:bookworm-slim as uncompress
 
 ARG TARGETARCH
 
-# Our HEALTHCHECK instruction in dockerfile needs curl.
+# RUN echo ${TARGETARCH}
 RUN apt-get update && apt-get install -y xz-utils
 COPY ./backend/resources /tmp/bytebase/resources/
-RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
-RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-amd64.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
-RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
-RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-amd64.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
-RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-amd64-16
-RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-amd64.txz -C /var/opt/bytebase/resources/postgres-linux-amd64-16/
+RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
+RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
+RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-${TARGETARCH}/
+RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-${TARGETARCH}.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-${TARGETARCH}/
+RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16
+RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16/
 
 # Use debian because mysql requires glibc.
 FROM debian:bookworm-slim as monolithic
 
+ARG TARGETARCH
 ARG VERSION="development"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
@@ -100,7 +101,7 @@ RUN apt-get update && apt-get install -y locales curl psmisc procps libncurses5
 # Generate en_US.UTF-8 locale which is needed to start postgres server.
 # Fix the posgres server issue (invalid value for parameter "lc_messages": "en_US.UTF-8").
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
-ENV PATH="${PATH}:/var/opt/bytebase/resources/postgres-linux-amd64-16/bin:/var/opt/bytebase/resources/postgres-linux-arm64-16/bin"
+ENV PATH="${PATH}:/var/opt/bytebase/resources/postgres-linux-${TARGETARCH}-16/bin"
 
 # Copy utility scripts, we have
 # - Demo script to launch Bytebase in readonly demo mode
