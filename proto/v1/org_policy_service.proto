@@ -10,7 +10,6 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/common.proto";
-import "v1/deployment.proto";
 import "v1/iam_policy.proto";
 
 option go_package = "generated-go/v1";
@@ -186,7 +185,7 @@ message ListPoliciesResponse {
 }
 
 message Policy {
-  reserved 10;
+  reserved 7, 10;
 
   // The name of the policy.
   // Format: {resource name}/policies/{policy type}
@@ -205,7 +204,6 @@ message Policy {
 
   oneof policy {
     IamPolicy workspace_iam_policy = 6;
-    DeploymentApprovalPolicy deployment_approval_policy = 7;
     RolloutPolicy rollout_policy = 19;
     BackupPlanPolicy backup_plan_policy = 8;
     MaskingPolicy masking_policy = 9;
@@ -227,11 +225,10 @@ message Policy {
 }
 
 enum PolicyType {
-  reserved 6;
+  reserved 2, 6;
 
   POLICY_TYPE_UNSPECIFIED = 0;
   WORKSPACE_IAM = 1;
-  DEPLOYMENT_APPROVAL = 2;
   ROLLOUT_POLICY = 11;
   BACKUP_PLAN = 3;
   SQL_REVIEW = 4;
@@ -252,11 +249,6 @@ enum PolicyResourceType {
   DATABASE = 5;
 }
 
-message DeploymentApprovalPolicy {
-  ApprovalStrategy default_strategy = 1;
-  repeated DeploymentApprovalStrategy deployment_approval_strategies = 2;
-}
-
 message RolloutPolicy {
   bool automatic = 1;
   repeated string workspace_roles = 2;
@@ -264,24 +256,6 @@ message RolloutPolicy {
   // roles/LAST_APPROVER
   // roles/CREATOR
   repeated string issue_roles = 4;
-}
-
-message DeploymentApprovalStrategy {
-  DeploymentType deployment_type = 1;
-  ApprovalGroup approval_group = 2;
-  ApprovalStrategy approval_strategy = 3;
-}
-
-enum ApprovalGroup {
-  ASSIGNEE_GROUP_UNSPECIFIED = 0;
-  APPROVAL_GROUP_DBA = 1;
-  APPROVAL_GROUP_PROJECT_OWNER = 2;
-}
-
-enum ApprovalStrategy {
-  APPROVAL_STRATEGY_UNSPECIFIED = 0;
-  AUTOMATIC = 1;
-  MANUAL = 2;
 }
 
 message BackupPlanPolicy {

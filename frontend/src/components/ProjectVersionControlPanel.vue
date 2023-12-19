@@ -87,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watchEffect, watch } from "vue";
+import { reactive, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
@@ -122,15 +122,21 @@ const state = reactive<LocalState>({
   showWizardForChange: false,
 });
 
-watchEffect(async () => {
-  const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
-    props.project.name,
-    true /* silent */
-  );
-  if (repo) {
-    await vcsV1Store.fetchVCSByUid(repo.vcsUid);
+watch(
+  () => [props.project.name],
+  async () => {
+    const repo = await repositoryV1Store.getOrFetchRepositoryByProject(
+      props.project.name,
+      true /* silent */
+    );
+    if (repo) {
+      await vcsV1Store.fetchVCSByUid(repo.vcsUid);
+    }
+  },
+  {
+    immediate: true,
   }
-});
+);
 
 watch(
   () => props.project.workflow,

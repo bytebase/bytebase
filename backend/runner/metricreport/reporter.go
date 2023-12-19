@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	metricSchedulerInterval = time.Duration(1) * time.Hour
+	metricSchedulerInterval = 6 * time.Hour
 	// identifyTraitForPlan is the trait key for subscription plan.
 	identifyTraitForPlan = "plan"
 	// identifyTraitForTrial is the trait key for trialing.

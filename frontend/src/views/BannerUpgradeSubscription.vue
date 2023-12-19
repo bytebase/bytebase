@@ -87,7 +87,6 @@ import {
   usePolicyV1Store,
   useSettingV1Store,
   defaultBackupSchedule,
-  defaultApprovalStrategy,
   useDBGroupStore,
   useDatabaseV1Store,
   useDatabaseSecretStore,
@@ -151,7 +150,9 @@ watch(
       set.add("bb.feature.watermark");
     }
     if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
-      set.add("bb.feature.disallow-signup");
+      if (!actuatorStore.isSaaSMode) {
+        set.add("bb.feature.disallow-signup");
+      }
     }
     if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
       set.add("bb.feature.2fa");
@@ -192,21 +193,6 @@ watch(
           backupPolicy?.backupPlanPolicy?.schedule !== defaultBackupSchedule
         ) {
           set.add("bb.feature.backup-policy");
-        }
-      }
-
-      if (!set.has("bb.feature.approval-policy")) {
-        const approvalPolicy =
-          await policyV1Store.getOrFetchPolicyByParentAndType({
-            parentPath: environment.name,
-            policyType: PolicyType.DEPLOYMENT_APPROVAL,
-          });
-        if (
-          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy &&
-          approvalPolicy?.deploymentApprovalPolicy?.defaultStrategy !==
-            defaultApprovalStrategy
-        ) {
-          set.add("bb.feature.approval-policy");
         }
       }
     }

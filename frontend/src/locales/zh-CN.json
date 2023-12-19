@@ -888,7 +888,7 @@
       "set-to": "将 {name} 设置为 \"{newValue}\"",
       "changed-update": "修改 {name}",
       "reopened-issue": "重开工单",
-      "resolved-issue": "解决工单",
+      "resolved-issue": "完成工单",
       "canceled-issue": "取消工单",
       "empty": "",
       "changed": "修改",
@@ -924,14 +924,14 @@
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
     "status-transition": {
       "modal": {
-        "resolve": "解决工单?",
+        "resolve": "完成工单?",
         "cancel": "取消整个工单?",
         "reopen": "重开工单？",
         "title": "{action}{type} [{name}]？",
         "action-to-stage": "{action}阶段（{n}个任务）"
       },
       "dropdown": {
-        "resolve": "解决工单",
+        "resolve": "完成工单",
         "cancel": "取消工单",
         "reopen": "重开"
       },
@@ -1069,8 +1069,8 @@
     "waiting-earliest-allowed-time": "将于 {time} 之后执行",
     "batch-transition": {
       "not-allowed-tips": "部分选中的工单无法被{operation}",
-      "resolve": "解决",
-      "resolved": "解决",
+      "resolve": "完成",
+      "resolved": "完成",
       "cancel": "取消",
       "cancelled": "取消",
       "reopen": "重开",
@@ -1165,7 +1165,8 @@
       "approvers-of-current-step": "当前步骤的审批人"
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
-    "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）"
+    "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
+    "preview": "预览工单"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1232,7 +1233,8 @@
     "successfully-synced-schema-for-database-database-value-name": "成功为数据库'{0}'同步 schema 。",
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
-    "successfully-synced-schema": "Schema 同步完成"
+    "successfully-synced-schema": "Schema 同步完成",
+    "foreign-tables": "外部表"
   },
   "instance": {
     "select": "选择实例",
@@ -1344,7 +1346,7 @@
     "create-gcp-credentials": "创建凭据的方法见",
     "used-for-testing-connection": "仅作测试连接用",
     "all": "所有实例",
-    "force-archive-description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。",
+    "force-archive-description": "强制归档。所有关联的工单都将被标记为完成，所有关联的工作表都将被删除。",
     "sync-mode": {
       "self": "同步模式",
       "database": {
@@ -1509,6 +1511,9 @@
     "sync-status": "同步状态",
     "filter-database": "过滤数据库",
     "transfer-project": "转移项目",
+    "unassign": "取消分配",
+    "unassign-alert-title": "取消分配数据库",
+    "unassign-alert-description": "选定的数据库将从其项目中转出",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
     "edit-labels": "编辑标签",
@@ -1528,6 +1533,7 @@
     "batch-action-permission-denied": "没有权限对数据库{action}",
     "batch-action-disabled": "无法对来自不同项目的数据库{action}",
     "batch-action-disabled-for-unassigned": "无法对未分配的数据库{action}",
+    "successfully-transferred-databases": "数据库转移完成",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "成功将'{0}'转移到项目'{1}'。",
     "database-backup": "数据库备份",
     "backup-name": "备份名称",
@@ -1701,15 +1707,19 @@
         "select-target-project": "选择目标项目",
         "select-at-least-one-database": "至少选择一个数据库"
       },
+      "select-databases": "选择数据库",
       "select-target-project": "选择目标项目"
     },
+    "transfer-database-to": "将数据库转移到目标项目",
     "transfer-database-from-to": "将数据库从源项目转移到目标项目",
     "classification": {
       "self": "分类分级"
     },
     "recent": "最近访问",
     "partitioned": "分区",
-    "partition-tabled": "分区表"
+    "partition-tabled": "分区表",
+    "external-server-name": "外部服务器名称",
+    "external-database-name": "外部数据库名称"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -1910,10 +1920,7 @@
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
-        "btn-text": "归档这个@:common.project",
-        "force": {
-          "description": "强制归档。所有关联的工单都将被解决，所有关联的工作表都将被删除。"
-        }
+        "btn-text": "归档这个@:common.project"
       },
       "restore": {
         "title": "恢复项目",
@@ -2149,7 +2156,9 @@
     "read-replica-host": "只读副本 Host",
     "read-replica-port": "只读副本端口",
     "delete-read-only-data-source": "删除只读数据源",
-    "connection-string-schema": "连接串模式"
+    "connection-string-schema": "连接串模式",
+    "admin": "主库",
+    "read-only": "从库"
   },
   "setting": {
     "project": {
@@ -2265,7 +2274,8 @@
     "executing-query": "执行查询",
     "grouping": "分组",
     "previous-row": "上一行",
-    "next-row": "下一行"
+    "next-row": "下一行",
+    "copy-success": "复制成功"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -2328,7 +2338,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "无任何改动",
+    "nothing-changed-for-database": "数据库 {database} 无任何改动",
     "message": {
       "invalid-schema-name": "无效的 Schema 名称",
       "duplicated-schema-name": "重复的 Schema 名称",
@@ -3333,5 +3343,11 @@
       "export-rows-must-gt-zero": "导出行数必须大于 0"
     },
     "export-format": "导出格式"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "选择目标数据库"
+    },
+    "select-tables-to-rollout": "选择要发布的表"
   }
 }

@@ -94,25 +94,22 @@
               </div>
             </form>
 
-            <div class="mt-6 relative">
-              <div class="relative flex justify-center text-sm">
-                <template v-if="isDemo">
-                  <span class="pl-2 bg-white text-accent">{{
-                    $t("auth.sign-in.demo-note", {
-                      username: "demo@example.com",
-                      password: "1024",
-                    })
-                  }}</span>
+            <div class="mt-3">
+              <div
+                class="flex justify-center items-center text-sm text-control"
+              >
+                <template v-if="state.loginHint">
+                  <span class="text-accent">
+                    {{ state.loginHint }}
+                  </span>
                 </template>
                 <template v-else-if="!disallowSignup">
-                  <span class="pl-2 bg-white text-control">{{
-                    $t("auth.sign-in.new-user")
-                  }}</span>
-                  <router-link
-                    to="/auth/signup"
-                    class="accent-link bg-white px-2"
-                    >{{ $t("common.sign-up") }}</router-link
-                  >
+                  <span>
+                    {{ $t("auth.sign-in.new-user") }}
+                  </span>
+                  <router-link to="/auth/signup" class="accent-link px-2">
+                    {{ $t("common.sign-up") }}
+                  </router-link>
                 </template>
               </div>
             </div>
@@ -242,6 +239,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
   useActuatorV1Store,
@@ -258,9 +256,11 @@ import AuthFooter from "./AuthFooter.vue";
 interface LocalState {
   email: string;
   password: string;
+  loginHint: string;
   showPassword: boolean;
 }
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const actuatorStore = useActuatorV1Store();
@@ -270,6 +270,7 @@ const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   email: "",
   password: "",
+  loginHint: "",
   showPassword: false,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
@@ -293,20 +294,27 @@ onMounted(async () => {
     router.push({ name: "auth.signup", replace: true });
   }
 
-  if (isDemo.value) {
-    state.email = "demo@example.com";
-    state.password = "1024";
-    state.showPassword = true;
-  } else {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    state.email = params.get("email") ?? "";
-    state.password = params.get("password") ?? "";
-    state.showPassword = false;
-  }
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams(url.search);
+  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
+  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
+  state.loginHint =
+    params.get("hint") ??
+    (isDemo.value
+      ? t("auth.sign-in.demo-note", {
+          username: "demo@example.com",
+          password: "1024",
+        })
+      : "");
+  state.showPassword = isDemo.value != null;
 
   await identityProviderStore.fetchIdentityProviderList();
-  if (isDemo.value && state.email && state.password) {
+  if (
+    window.location.href.startsWith("https://demo.bytebase.com") &&
+    isDemo.value &&
+    state.email &&
+    state.password
+  ) {
     await trySignin();
   }
 });

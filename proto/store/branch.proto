@@ -7,9 +7,8 @@ import "store/database.proto";
 option go_package = "generated-go/store";
 
 message BranchSnapshot {
-  bytes schema = 1;
-  DatabaseSchemaMetadata metadata = 2;
-  DatabaseConfig database_config = 3;
+  DatabaseSchemaMetadata metadata = 1;
+  DatabaseConfig database_config = 2;
 }
 
 message BranchConfig {

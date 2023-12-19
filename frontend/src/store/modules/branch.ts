@@ -65,7 +65,7 @@ export const useBranchStore = defineStore("schema_design", () => {
         return cachedEntity;
       }
 
-      // Avoid making duplicated requests concurrently
+      // Avoid making duplicated requests concurrently.
       const cachedRequest = getBranchRequestCacheByName.get(name);
       if (cachedRequest) {
         return cachedRequest;

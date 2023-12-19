@@ -381,7 +381,12 @@ const generateDiffDDLMap = async (silent: boolean) => {
     const editing = cloneDeep(target.metadata);
     await applyMetadataEdit(database, editing);
 
-    const result = await generateSingleDiffDDL(database, source, editing);
+    const result = await generateSingleDiffDDL(
+      database,
+      source,
+      editing,
+      /* !allowEmptyDiffDDLWithConfigChange */ false
+    );
     if (result.fatal && !silent) {
       pushNotification({
         module: "bytebase",
@@ -500,7 +505,18 @@ const handlePreviewIssue = async () => {
 
     const databaseIdList = databaseList.value.map((db) => db.uid);
     const statementList: string[] = [];
-    for (const [_, result] of statementMap.entries()) {
+    for (const [database, result] of statementMap.entries()) {
+      if (!result.statement) {
+        pushNotification({
+          module: "bytebase",
+          style: "WARN",
+          title: t("common.error"),
+          description: t("schema-editor.nothing-changed-for-database", {
+            database,
+          }),
+        });
+        return cleanup();
+      }
       statementList.push(result.statement);
     }
     if (isBatchMode.value) {

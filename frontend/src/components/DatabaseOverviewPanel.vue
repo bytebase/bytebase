@@ -122,7 +122,7 @@
         <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
           {{ $t("db.views") }}
         </div>
-        <ViewTable
+        <ViewDataTable
           :database="database"
           :schema-name="state.selectedSchemaName"
           :view-list="viewList"
@@ -130,16 +130,23 @@
 
         <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.foreign-tables") }}
+          </div>
+          <DBExternalDataTable :db-external-table-list="dbExternalTableList" />
+        </template>
+
+        <template v-if="databaseEngine === Engine.POSTGRES">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.extensions") }}
           </div>
-          <DBExtensionTable :db-extension-list="dbExtensionList" />
+          <DBExtensionDataTable :db-extension-list="dbExtensionList" />
         </template>
 
         <template v-if="databaseEngine === Engine.POSTGRES">
           <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
             {{ $t("db.functions") }}
           </div>
-          <FunctionTable
+          <FunctionDataTable
             :database="database"
             :schema-name="state.selectedSchemaName"
             :function-list="functionList"
@@ -174,15 +181,17 @@
 import { head } from "lodash-es";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
+import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
+import DBExternalDataTable from "@/components/DBExternalDataTable.vue";
+import FunctionDataTable from "@/components/FunctionDataTable.vue";
+import TableDataTable from "@/components/TableDataTable.vue";
+import ViewDataTable from "@/components/ViewDataTable.vue";
 import { useDBSchemaV1Store } from "@/store";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { BBTableSectionDataSource } from "../bbkit/types";
 import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
-import FunctionTable from "../components/FunctionTable.vue";
-import TableDataTable from "../components/TableDataTable.vue";
-import ViewTable from "../components/ViewTable.vue";
 import { ComposedDatabase, DataSource } from "../types";
 import StreamTable from "./StreamTable.vue";
 import TaskTable from "./TaskTable.vue";
@@ -304,6 +313,13 @@ const viewList = computed(() => {
 
 const dbExtensionList = computed(() => {
   return dbSchemaStore.getExtensionList(props.database.name);
+});
+
+const dbExternalTableList = computed(() => {
+  return dbSchemaStore.getExternalTableList(
+    props.database.name,
+    state.selectedSchemaName
+  );
 });
 
 const functionList = computed(() => {

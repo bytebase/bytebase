@@ -13,7 +13,7 @@
     class="bb-user-select"
     style="width: 12rem"
     @update:show="(show: boolean)=>{
-      if (show) showStatus = true
+      showStatus = show
     }"
     @update:value="handleValueUpdated"
   />

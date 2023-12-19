@@ -2,39 +2,37 @@ package log
 
 import (
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/bytebase/bytebase/backend/common/stacktrace"
 )
 
-var GLogLevel *slog.LevelVar
+// LogLevel is the default log severity level.
+var LogLevel = new(slog.LevelVar)
+
+// https://sourcegraph.com/github.com/uber-go/zap/-/blob/zapcore/entry.go?L117
+// Replace is the default replace attribute.
+var Replace = func(groups []string, a slog.Attr) slog.Attr {
+	if a.Key == slog.SourceKey {
+		if source, ok := a.Value.Any().(*slog.Source); ok {
+			idx := strings.LastIndexByte(source.File, '/')
+			if idx == -1 {
+				return a
+			}
+			// Find the penultimate separator.
+			idx = strings.LastIndexByte(source.File[:idx], '/')
+			if idx == -1 {
+				return a
+			}
+			source.File = source.File[idx+1:]
+		}
+	}
+	return a
+}
 
 // Initializes the slog configuration.
 func init() {
-	GLogLevel = new(slog.LevelVar)
-
-	// https://sourcegraph.com/github.com/uber-go/zap/-/blob/zapcore/entry.go?L117
-	replace := func(groups []string, a slog.Attr) slog.Attr {
-		if a.Key == slog.SourceKey {
-			if source, ok := a.Value.Any().(*slog.Source); ok {
-				idx := strings.LastIndexByte(source.File, '/')
-				if idx == -1 {
-					return a
-				}
-				// Find the penultimate separator.
-				idx = strings.LastIndexByte(source.File[:idx], '/')
-				if idx == -1 {
-					return a
-				}
-				source.File = source.File[idx+1:]
-			}
-		}
-		return a
-	}
-
-	textHandler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: GLogLevel, ReplaceAttr: replace})
-	slog.SetDefault(slog.New(textHandler))
+	LogLevel.Set(slog.LevelInfo)
 }
 
 func BBError(err error) slog.Attr {

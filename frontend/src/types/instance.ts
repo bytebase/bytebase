@@ -61,6 +61,14 @@ export function convertEngineType(type: EngineType): Engine {
   return Engine.ENGINE_UNSPECIFIED;
 }
 
+export function isPostgresFamily(type: Engine): boolean {
+  return (
+    type == Engine.POSTGRES ||
+    type == Engine.REDSHIFT ||
+    type == Engine.RISINGWAVE
+  );
+}
+
 export function defaultCharset(type: EngineType): string {
   switch (type) {
     case "CLICKHOUSE":

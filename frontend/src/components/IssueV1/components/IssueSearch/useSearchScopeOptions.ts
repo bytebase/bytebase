@@ -48,7 +48,7 @@ export type ValueOption = {
 
 export const useSearchScopeOptions = (
   params: Ref<SearchParams>,
-  supportOptionIdList: SearchScopeId[]
+  supportOptionIdList: Ref<SearchScopeId[]>
 ) => {
   const { t } = useI18n();
   const me = useCurrentUserV1();
@@ -296,7 +296,7 @@ export const useSearchScopeOptions = (
         ],
       },
     ];
-    const supportOptionIdSet = new Set(supportOptionIdList);
+    const supportOptionIdSet = new Set(supportOptionIdList.value);
     return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 

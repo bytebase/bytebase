@@ -434,11 +434,8 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 		return nil, status.Errorf(codes.InvalidArgument, "metadata is required")
 	}
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
-	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeSchemaMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid metadata: %v", err))
-	}
+	sanitizeCommentForSchemaMetadata(storeSchemaMetadata)
 
-	sanitizeCommentForSchemaMetadata(request.Metadata)
 	schema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSchemaMetadata)
 	if err != nil {
 		return nil, err

@@ -81,7 +81,9 @@ func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
-	if err := start(port, pgBinDir, pgDataDir, false /* serverLog */); err != nil {
+	// TODO(tianzhou): Remove this after debugging completes.
+	// turn on serverlog to debug sample instance startup in SaaS.
+	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
 		return nil, errors.Wrapf(err, "failed to start sample instance")
 	}
 

@@ -20,13 +20,13 @@
         >
           <div class="flex flex-row justify-start items-center mr-1">
             <span class="mr-1">
-              <heroicons-outline:circle-stack
+              <DatabaseIcon
                 v-if="tab.type === 'database'"
-                class="rounded w-4 h-auto text-gray-400"
+                class="w-4 h-4 text-gray-400"
               />
-              <heroicons-outline:table-cells
+              <TableIcon
                 v-if="tab.type === 'table'"
-                class="rounded w-4 h-auto text-gray-400"
+                class="w-4 h-4 text-gray-400"
               />
             </span>
             <NEllipsis
@@ -64,6 +64,7 @@ import { NEllipsis, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { DatabaseIcon, TableIcon } from "../Icon";
 import { useSchemaEditorContext } from "./context";
 import { TabContext } from "./types";
 
@@ -149,9 +150,13 @@ const getTabName = (tab: TabContext) => {
     return database.databaseName;
   } else if (tab.type === "table") {
     const {
-      metadata: { table },
+      metadata: { schema, table },
     } = tab;
-    return table.name;
+    const parts = [table.name];
+    if (schema.name) {
+      parts.unshift(schema.name);
+    }
+    return parts.join(".");
   } else {
     // Should never reach here.
     return "unknown tab";

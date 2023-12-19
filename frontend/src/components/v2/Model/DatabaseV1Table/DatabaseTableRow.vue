@@ -9,7 +9,7 @@
   <div class="bb-grid-cell">
     <div class="flex items-center space-x-2">
       <SQLEditorButtonV1
-        v-if="!isStandaloneMode"
+        v-if="showSqlEditorButton"
         :database="database"
         :disabled="!allowQuery"
         :tooltip="true"
@@ -56,15 +56,16 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { InstanceV1Name, EnvironmentV1Name } from "@/components/v2";
-import { useEnvironmentV1Store, usePageMode } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { isPITRDatabaseV1 } from "@/utils";
 import LabelsColumn from "./LabelsColumn.vue";
 import ProjectCol from "./ProjectCol.vue";
+import { Mode } from "./utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
-  mode: string;
+  mode: Mode;
   showSelectionColumn: boolean;
   showMiscColumn: boolean;
   showSchemaVersionColumn: boolean;
@@ -73,20 +74,15 @@ const props = defineProps<{
   showEnvironmentColumn: boolean;
   showInstanceColumn: boolean;
   showLabelsColumn: boolean;
+  showSqlEditorButton: boolean;
   allowQuery: boolean;
 }>();
 
 defineEmits(["goto-sql-editor-failed"]);
 
-const pageMode = usePageMode();
-
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
     props.database.environment
   );
-});
-
-const isStandaloneMode = computed(() => {
-  return pageMode.value === "STANDALONE";
 });
 </script>

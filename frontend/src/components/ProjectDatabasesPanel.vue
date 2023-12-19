@@ -16,16 +16,18 @@
       />
     </div>
 
-    <DatabaseOperations
-      v-if="showDatabaseOperations"
-      :databases="selectedDatabases"
-    />
+    <div class="space-y-2">
+      <DatabaseOperations
+        v-if="showDatabaseOperations"
+        :project-uid="project.uid"
+        :databases="selectedDatabases"
+      />
 
-    <template v-if="databaseList.length > 0">
       <DatabaseV1Table
         mode="PROJECT"
         table-class="border"
         :show-selection-column="true"
+        :show-placeholder="true"
         :database-list="filteredDatabaseList"
       >
         <template #selection-all="{ databaseList: selectedDatabaseList }">
@@ -55,30 +57,36 @@
             "
           />
         </template>
+        <template v-if="databaseList.length === 0" #placeholder>
+          <div class="p-8 text-center textinfolabel">
+            <i18n-t
+              v-if="showEmptyActions"
+              keypath="project.overview.no-db-prompt"
+              tag="p"
+            >
+              <template #newDb>
+                <span class="text-main font-bold">{{
+                  $t("quick-action.new-db")
+                }}</span>
+              </template>
+              <template #transferInDb>
+                <span class="text-main font-bold">{{
+                  $t("quick-action.transfer-in-db")
+                }}</span>
+              </template>
+            </i18n-t>
+            <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
+          </div>
+        </template>
       </DatabaseV1Table>
-    </template>
-    <div v-else class="text-center textinfolabel">
-      <i18n-t
-        v-if="showEmptyActions"
-        keypath="project.overview.no-db-prompt"
-        tag="p"
-      >
-        <template #newDb>
-          <span class="text-main">{{ $t("quick-action.new-db") }}</span>
-        </template>
-        <template #transferInDb>
-          <span class="text-main">{{ $t("quick-action.transfer-in-db") }}</span>
-        </template>
-      </i18n-t>
-      <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, PropType, computed, ref, watchEffect } from "vue";
+import { reactive, computed, ref, watchEffect } from "vue";
 import { usePageMode, usePolicyV1Store } from "@/store";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
 import {
   Policy,
   PolicyResourceType,
@@ -99,12 +107,10 @@ interface LocalState {
   params: SearchParams;
 }
 
-const props = defineProps({
-  databaseList: {
-    required: true,
-    type: Object as PropType<ComposedDatabase[]>,
-  },
-});
+const props = defineProps<{
+  project: ComposedProject;
+  databaseList: ComposedDatabase[];
+}>();
 
 const pageMode = usePageMode();
 

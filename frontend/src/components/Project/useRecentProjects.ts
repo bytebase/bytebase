@@ -1,6 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { computed } from "vue";
 import { useProjectV1Store, useCurrentUserIamPolicy } from "@/store";
+import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 
 const MAX_RECENT_PROJECT = 5;
 
@@ -35,7 +36,10 @@ export const useRecentProjects = () => {
       .filter((project) => currentUserIamPolicy.isMemberOfProject(project))
       .map((project) => {
         return projectV1Store.getProjectByName(project);
-      });
+      })
+      .filter(
+        (proj) => proj.uid !== `${EMPTY_ID}` && proj.uid !== `${UNKNOWN_ID}`
+      );
   });
 
   return {

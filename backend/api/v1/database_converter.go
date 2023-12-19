@@ -31,6 +31,16 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 			}
 			s.Tables = append(s.Tables, convertStoreTableMetadata(table, requestView))
 		}
+		for _, externalTable := range schema.GetExternalTables() {
+			if externalTable == nil {
+				continue
+			}
+			s.ExternalTables = append(s.ExternalTables, &v1pb.ExternalTableMetadata{
+				Name:                 externalTable.GetName(),
+				ExternalServerName:   externalTable.GetExternalServerName(),
+				ExternalDatabaseName: externalTable.GetExternalDatabaseName(),
+			})
+		}
 		// Only return table for request with a filter.
 		if filter != nil {
 			m.Schemas = append(m.Schemas, s)
@@ -175,6 +185,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseM
 			Primary:     index.Primary,
 			Visible:     index.Visible,
 			Comment:     index.Comment,
+			Definition:  index.Definition,
 		})
 	}
 	for _, foreignKey := range table.GetForeignKeys() {
@@ -433,6 +444,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 			Primary:     index.GetPrimary(),
 			Visible:     index.GetVisible(),
 			Comment:     index.GetComment(),
+			Definition:  index.GetDefinition(),
 		})
 	}
 	for _, foreignKey := range table.ForeignKeys {

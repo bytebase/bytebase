@@ -3,7 +3,7 @@
 --
 
 -- Dumped from database version 16.0
--- Dumped by pg_dump version 16.0
+-- Dumped by pg_dump version 16.0 (Homebrew)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -305,7 +305,10 @@ CREATE TABLE public.branch (
     engine text NOT NULL,
     base jsonb DEFAULT '{}'::jsonb NOT NULL,
     head jsonb DEFAULT '{}'::jsonb NOT NULL,
-    config jsonb DEFAULT '{}'::jsonb NOT NULL
+    config jsonb DEFAULT '{}'::jsonb NOT NULL,
+    base_schema text DEFAULT ''::text NOT NULL,
+    head_schema text DEFAULT ''::text NOT NULL,
+    reconcile_state text DEFAULT ''::text NOT NULL
 );
 
 
@@ -1398,7 +1401,8 @@ CREATE TABLE public.repository (
     webhook_secret_token text NOT NULL,
     access_token text NOT NULL,
     expires_ts bigint NOT NULL,
-    refresh_token text NOT NULL
+    refresh_token text NOT NULL,
+    enable_cd boolean DEFAULT false NOT NULL
 );
 
 
@@ -2308,12 +2312,18 @@ INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id,
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (167, 'NORMAL', 1, 1699110336, 1, 1699110336, 105, 'bb.issue.approval.notify', 'INFO', '', '{"approvalStep": {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (168, 'NORMAL', 101, 1700552743, 101, 1700552743, 102, 'bb.sql-editor.query', 'INFO', 'Executed `"SELECT * FROM employee;"` in database "hr_prod" of instance 102.', '{"error": "", "statement": "SELECT * FROM employee;", "adviceList": null, "databaseId": 102, "durationNs": 10371000, "instanceId": 102, "databaseName": "hr_prod", "instanceName": "Prod Sample Instance"}') ON CONFLICT DO NOTHING;
 INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (169, 'NORMAL', 101, 1700552753, 101, 1700552753, 102, 'bb.sql-editor.query', 'INFO', 'Executed `"SELECT * FROM employee;"` in database "hr_prod" of instance 102.', '{"error": "", "statement": "SELECT * FROM employee;", "adviceList": null, "databaseId": 102, "durationNs": 7757000, "instanceId": 102, "databaseName": "hr_prod", "instanceName": "Prod Sample Instance"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (170, 'NORMAL', 101, 1702562144, 101, 1702562144, 102, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 103, "taskName": "DDL(schema) for database \"hr_prod_vcs\"", "issueName": "[hr_prod_vcs] Alter schema: Add city", "newStatus": "PENDING"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (171, 'NORMAL', 1, 1702562147, 1, 1702562147, 102, 'bb.pipeline.task.file.commit', 'INFO', 'Committed the latest schema after applying migration version 20231101-ddl to "hr_prod_vcs".', '{"branch": "main", "taskId": 103, "commitId": "99552ba95deb0efd81e375aa05312f7d95386d9d", "filePath": "bytebase/prod/.hr_prod_vcs##LATEST.sql", "vcsInstanceUrl": "https://github.com", "repositoryFullPath": "s-bytebase/hr-sample"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (172, 'NORMAL', 1, 1702562147, 1, 1702562147, 102, 'bb.pipeline.taskrun.status.update', 'INFO', '', '{"taskId": 103, "taskName": "DDL(schema) for database \"hr_prod_vcs\"", "issueName": "[hr_prod_vcs] Alter schema: Add city", "newStatus": "DONE"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (173, 'NORMAL', 1, 1702562147, 1, 1702562147, 102, 'bb.pipeline.stage.status.update', 'INFO', '', '{"stageId": 103, "issueName": "[hr_prod_vcs] Alter schema: Add city", "stageName": "Prod Stage", "stageStatusUpdateType": "END"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.activity (id, row_status, creator_id, created_ts, updater_id, updated_ts, container_id, type, level, comment, payload) VALUES (174, 'NORMAL', 1, 1702562147, 1, 1702562147, 102, 'bb.issue.status.update', 'INFO', '', '{"issueName": "[hr_prod_vcs] Alter schema: Add city", "newStatus": "DONE", "oldStatus": "OPEN"}') ON CONFLICT DO NOTHING;
 
 
 --
 -- Data for Name: anomaly; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
+INSERT INTO public.anomaly (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, type, payload) VALUES (101, 'NORMAL', 1, 1702562732, 1, 1702562732, 102, 109, 'bb.anomaly.database.schema.drift', '{"actual": "\nSET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = ''UTF8'';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config(''search_path'', '''', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;\n\nCOMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';\n\nSET default_tablespace = '''';\n\nSET default_table_access_method = heap;\n\nCREATE TABLE public.dept_emp (\n    emp_no integer NOT NULL,\n    dept_no text NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE VIEW public.dept_emp_latest_date AS\n SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;\n\nCREATE VIEW public.current_dept_emp AS\n SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));\n\nCREATE TABLE public.department (\n    dept_no text NOT NULL,\n    dept_name text NOT NULL\n);\n\nCREATE TABLE public.dept_manager (\n    emp_no integer NOT NULL,\n    dept_no text NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE TABLE public.employee (\n    emp_no integer NOT NULL,\n    birth_date date NOT NULL,\n    first_name text NOT NULL,\n    last_name text NOT NULL,\n    gender text NOT NULL,\n    hire_date date NOT NULL,\n    city text,\n    hotfix text,\n    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))\n);\n\nCREATE SEQUENCE public.employee_emp_no_seq\n    AS integer\n    START WITH 1\n    INCREMENT BY 1\n    NO MINVALUE\n    NO MAXVALUE\n    CACHE 1;\n\nALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;\n\nCREATE TABLE public.salary (\n    emp_no integer NOT NULL,\n    amount integer NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE TABLE public.title (\n    emp_no integer NOT NULL,\n    title text NOT NULL,\n    from_date date NOT NULL,\n    to_date date\n);\n\nALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);\n\nALTER TABLE ONLY public.department\n    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);\n\nALTER TABLE ONLY public.department\n    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);\n\nALTER TABLE ONLY public.employee\n    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);\n\nALTER TABLE ONLY public.salary\n    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);\n\nALTER TABLE ONLY public.title\n    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.salary\n    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.title\n    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\n", "expect": "\nSET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = ''UTF8'';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config(''search_path'', '''', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;\n\nCOMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';\n\nSET default_tablespace = '''';\n\nSET default_table_access_method = heap;\n\nCREATE TABLE public.dept_emp (\n    emp_no integer NOT NULL,\n    dept_no text NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE VIEW public.dept_emp_latest_date AS\n SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM public.dept_emp\n  GROUP BY emp_no;\n\nCREATE VIEW public.current_dept_emp AS\n SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (public.dept_emp d\n     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));\n\nCREATE TABLE public.department (\n    dept_no text NOT NULL,\n    dept_name text NOT NULL\n);\n\nCREATE TABLE public.dept_manager (\n    emp_no integer NOT NULL,\n    dept_no text NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE TABLE public.employee (\n    emp_no integer NOT NULL,\n    birth_date date NOT NULL,\n    first_name text NOT NULL,\n    last_name text NOT NULL,\n    gender text NOT NULL,\n    hire_date date NOT NULL,\n    city text,\n    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))\n);\n\nCREATE SEQUENCE public.employee_emp_no_seq\n    AS integer\n    START WITH 1\n    INCREMENT BY 1\n    NO MINVALUE\n    NO MAXVALUE\n    CACHE 1;\n\nALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;\n\nCREATE TABLE public.salary (\n    emp_no integer NOT NULL,\n    amount integer NOT NULL,\n    from_date date NOT NULL,\n    to_date date NOT NULL\n);\n\nCREATE TABLE public.title (\n    emp_no integer NOT NULL,\n    title text NOT NULL,\n    from_date date NOT NULL,\n    to_date date\n);\n\nALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);\n\nALTER TABLE ONLY public.department\n    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);\n\nALTER TABLE ONLY public.department\n    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);\n\nALTER TABLE ONLY public.employee\n    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);\n\nALTER TABLE ONLY public.salary\n    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);\n\nALTER TABLE ONLY public.title\n    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_emp\n    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.dept_manager\n    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.salary\n    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\nALTER TABLE ONLY public.title\n    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;\n\n", "version": "20231101-ddl"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -2339,11 +2349,1321 @@ INSERT INTO public.bookmark (id, row_status, creator_id, created_ts, updater_id,
 -- Data for Name: branch; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
-INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config) VALUES (101, 'NORMAL', 101, 1701937231, 101, 1701937231, 101, 'release/2023-11', 'POSTGRES', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config) VALUES (102, 'NORMAL', 104, 1701945150, 104, 1701945173, 101, 'feature/dev1-city', 'POSTGRES', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgZGVwdF9uYW1lIHRleHQgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwdF9tYW5hZ2VyICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZW1wbG95ZWUgKAogICAgZW1wX25vIGludGVnZXIgREVGQVVMVCBuZXh0dmFsKCdlbXBsb3llZV9lbXBfbm9fc2VxJzo6cmVnY2xhc3MpIE5PVCBOVUxMLAogIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICBmaXJzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgbGFzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgaGlyZV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgImNpdHkiIFRFWFQgTk9UIE5VTEwsCiAgQ09OU1RSQUlOVCBlbXBsb3llZV9nZW5kZXJfY2hlY2sgQ0hFQ0sgKChnZW5kZXIgPSBBTlkgKEFSUkFZWydNJzo6dGV4dCwgJ0YnOjp0ZXh0XSkpKQopOwoKQ1JFQVRFIFNFUVVFTkNFIHB1YmxpYy5lbXBsb3llZV9lbXBfbm9fc2VxCiAgICBBUyBpbnRlZ2VyCiAgICBTVEFSVCBXSVRIIDEKICAgIElOQ1JFTUVOVCBCWSAxCiAgICBOTyBNSU5WQUxVRQogICAgTk8gTUFYVkFMVUUKICAgIENBQ0hFIDE7CgpBTFRFUiBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSBPV05FRCBCWSBwdWJsaWMuZW1wbG95ZWUuZW1wX25vOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5zYWxhcnkgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgdG9fZGF0ZSBkYXRlIE5PVCBOVUxMCik7CgpDUkVBVEUgVEFCTEUgcHVibGljLnRpdGxlICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgdG9fZGF0ZSBkYXRlCik7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5lbXBsb3llZSBBTFRFUiBDT0xVTU4gZW1wX25vIFNFVCBERUZBVUxUIG5leHR2YWwoJ3B1YmxpYy5lbXBsb3llZV9lbXBfbm9fc2VxJzo6cmVnY2xhc3MpOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwYXJ0bWVudAogICAgQUREIENPTlNUUkFJTlQgZGVwYXJ0bWVudF9kZXB0X25hbWVfa2V5IFVOSVFVRSAoZGVwdF9uYW1lKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfcGtleSBQUklNQVJZIEtFWSAoZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCBkZXB0X25vKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5lbXBsb3llZQogICAgQUREIENPTlNUUkFJTlQgZW1wbG95ZWVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLnNhbGFyeQogICAgQUREIENPTlNUUkFJTlQgc2FsYXJ5X3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLnRpdGxlCiAgICBBREQgQ09OU1RSQUlOVCB0aXRsZV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIHRpdGxlLCBmcm9tX2RhdGUpOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9tYW5hZ2VyCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X21hbmFnZXJfZGVwdF9ub19ma2V5IEZPUkVJR04gS0VZIChkZXB0X25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5kZXBhcnRtZW50KGRlcHRfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9tYW5hZ2VyCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X21hbmFnZXJfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLnNhbGFyeQogICAgQUREIENPTlNUUkFJTlQgc2FsYXJ5X2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCgoKCgo=", "metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "city", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "city"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/release/2023-11", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config) VALUES (103, 'NORMAL', 105, 1701945440, 105, 1701945460, 101, 'feature/dev2-phone', 'POSTGRES', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgZGVwdF9uYW1lIHRleHQgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwdF9tYW5hZ2VyICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZW1wbG95ZWUgKAogICAgZW1wX25vIGludGVnZXIgREVGQVVMVCBuZXh0dmFsKCdlbXBsb3llZV9lbXBfbm9fc2VxJzo6cmVnY2xhc3MpIE5PVCBOVUxMLAogIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICBmaXJzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgbGFzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgaGlyZV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgInBob25lIiBURVhUIE5PVCBOVUxMLAogIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGFtb3VudCBpbnRlZ2VyIE5PVCBOVUxMLAogIGZyb21fZGF0ZSBkYXRlIE5PVCBOVUxMLAogIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICB0aXRsZSB0ZXh0IE5PVCBOVUxMLAogIGZyb21fZGF0ZSBkYXRlIE5PVCBOVUxMLAogIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgoKCgoK", "metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "phone", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "phone"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/release/2023-11", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config) VALUES (104, 'NORMAL', 101, 1701945572, 101, 1701945572, 101, 'patch/2023-10', 'POSTGRES', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config) VALUES (105, 'NORMAL', 104, 1701945657, 104, 1701945746, 101, 'dev1', 'POSTGRES', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgZGVwdF9ubyB0ZXh0IE5PVCBOVUxMLAogICAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBkZXB0X25hbWUgdGV4dCBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5kZXB0X21hbmFnZXIgKAogICAgZW1wX25vIGludGVnZXIgTk9UIE5VTEwsCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy5lbXBsb3llZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIGZpcnN0X25hbWUgdGV4dCBOT1QgTlVMTCwKICAgIGxhc3RfbmFtZSB0ZXh0IE5PVCBOVUxMLAogICAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgICBoaXJlX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIENPTlNUUkFJTlQgZW1wbG95ZWVfZ2VuZGVyX2NoZWNrIENIRUNLICgoZ2VuZGVyID0gQU5ZIChBUlJBWVsnTSc6OnRleHQsICdGJzo6dGV4dF0pKSkKKTsKCkNSRUFURSBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcQogICAgQVMgaW50ZWdlcgogICAgU1RBUlQgV0lUSCAxCiAgICBJTkNSRU1FTlQgQlkgMQogICAgTk8gTUlOVkFMVUUKICAgIE5PIE1BWFZBTFVFCiAgICBDQUNIRSAxOwoKQUxURVIgU0VRVUVOQ0UgcHVibGljLmVtcGxveWVlX2VtcF9ub19zZXEgT1dORUQgQlkgcHVibGljLmVtcGxveWVlLmVtcF9ubzsKCkNSRUFURSBUQUJMRSBwdWJsaWMuc2FsYXJ5ICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogICAgYW1vdW50IGludGVnZXIgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZSBOT1QgTlVMTAopOwoKQ1JFQVRFIFRBQkxFIHB1YmxpYy50aXRsZSAoCiAgICBlbXBfbm8gaW50ZWdlciBOT1QgTlVMTCwKICAgIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICAgIHRvX2RhdGUgZGF0ZQopOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUgQUxURVIgQ09MVU1OIGVtcF9ubyBTRVQgREVGQVVMVCBuZXh0dmFsKCdwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSc6OnJlZ2NsYXNzKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfZGVwdF9uYW1lX2tleSBVTklRVUUgKGRlcHRfbmFtZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXBhcnRtZW50CiAgICBBREQgQ09OU1RSQUlOVCBkZXBhcnRtZW50X3BrZXkgUFJJTUFSWSBLRVkgKGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGRlcHRfbm8pOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZW1wbG95ZWUKICAgIEFERCBDT05TVFJBSU5UIGVtcGxveWVlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9wa2V5IFBSSU1BUlkgS0VZIChlbXBfbm8sIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCB0aXRsZSwgZnJvbV9kYXRlKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfZW1wCiAgICBBREQgQ09OU1RSQUlOVCBkZXB0X2VtcF9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2RlcHRfbm9fZmtleSBGT1JFSUdOIEtFWSAoZGVwdF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZGVwYXJ0bWVudChkZXB0X25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5zYWxhcnkKICAgIEFERCBDT05TVFJBSU5UIHNhbGFyeV9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7Cgo=", "metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"schema": "ClNFVCBzdGF0ZW1lbnRfdGltZW91dCA9IDA7ClNFVCBsb2NrX3RpbWVvdXQgPSAwOwpTRVQgaWRsZV9pbl90cmFuc2FjdGlvbl9zZXNzaW9uX3RpbWVvdXQgPSAwOwpTRVQgY2xpZW50X2VuY29kaW5nID0gJ1VURjgnOwpTRVQgc3RhbmRhcmRfY29uZm9ybWluZ19zdHJpbmdzID0gb247ClNFTEVDVCBwZ19jYXRhbG9nLnNldF9jb25maWcoJ3NlYXJjaF9wYXRoJywgJycsIGZhbHNlKTsKU0VUIGNoZWNrX2Z1bmN0aW9uX2JvZGllcyA9IGZhbHNlOwpTRVQgeG1sb3B0aW9uID0gY29udGVudDsKU0VUIGNsaWVudF9taW5fbWVzc2FnZXMgPSB3YXJuaW5nOwpTRVQgcm93X3NlY3VyaXR5ID0gb2ZmOwoKQ1JFQVRFIEVYVEVOU0lPTiBJRiBOT1QgRVhJU1RTIHBnX3N0YXRfc3RhdGVtZW50cyBXSVRIIFNDSEVNQSBwdWJsaWM7CgpDT01NRU5UIE9OIEVYVEVOU0lPTiBwZ19zdGF0X3N0YXRlbWVudHMgSVMgJ3RyYWNrIHBsYW5uaW5nIGFuZCBleGVjdXRpb24gc3RhdGlzdGljcyBvZiBhbGwgU1FMIHN0YXRlbWVudHMgZXhlY3V0ZWQnOwoKU0VUIGRlZmF1bHRfdGFibGVzcGFjZSA9ICcnOwoKU0VUIGRlZmF1bHRfdGFibGVfYWNjZXNzX21ldGhvZCA9IGhlYXA7CgpDUkVBVEUgVEFCTEUgcHVibGljLmRlcHRfZW1wICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBWSUVXIHB1YmxpYy5kZXB0X2VtcF9sYXRlc3RfZGF0ZSBBUwogU0VMRUNUIGVtcF9ubywKICAgIG1heChmcm9tX2RhdGUpIEFTIGZyb21fZGF0ZSwKICAgIG1heCh0b19kYXRlKSBBUyB0b19kYXRlCiAgIEZST00gcHVibGljLmRlcHRfZW1wCiAgR1JPVVAgQlkgZW1wX25vOwoKQ1JFQVRFIFZJRVcgcHVibGljLmN1cnJlbnRfZGVwdF9lbXAgQVMKIFNFTEVDVCBsLmVtcF9ubywKICAgIGQuZGVwdF9ubywKICAgIGwuZnJvbV9kYXRlLAogICAgbC50b19kYXRlCiAgIEZST00gKHB1YmxpYy5kZXB0X2VtcCBkCiAgICAgSk9JTiBwdWJsaWMuZGVwdF9lbXBfbGF0ZXN0X2RhdGUgbCBPTiAoKChkLmVtcF9ubyA9IGwuZW1wX25vKSBBTkQgKGQuZnJvbV9kYXRlID0gbC5mcm9tX2RhdGUpIEFORCAobC50b19kYXRlID0gZC50b19kYXRlKSkpKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwYXJ0bWVudCAoCiAgICBkZXB0X25vIHRleHQgTk9UIE5VTEwsCiAgZGVwdF9uYW1lIHRleHQgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZGVwdF9tYW5hZ2VyICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIGRlcHRfbm8gdGV4dCBOT1QgTlVMTCwKICBmcm9tX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICB0b19kYXRlIGRhdGUgTk9UIE5VTEwKKTsKCkNSRUFURSBUQUJMRSBwdWJsaWMuZW1wbG95ZWUgKAogICAgZW1wX25vIGludGVnZXIgREVGQVVMVCBuZXh0dmFsKCdlbXBsb3llZV9lbXBfbm9fc2VxJzo6cmVnY2xhc3MpIE5PVCBOVUxMLAogIGJpcnRoX2RhdGUgZGF0ZSBOT1QgTlVMTCwKICBmaXJzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgbGFzdF9uYW1lIHRleHQgTk9UIE5VTEwsCiAgZ2VuZGVyIHRleHQgTk9UIE5VTEwsCiAgaGlyZV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgImNpdHkiIFRFWFQgTk9UIE5VTEwsCiAgQ09OU1RSQUlOVCBlbXBsb3llZV9nZW5kZXJfY2hlY2sgQ0hFQ0sgKChnZW5kZXIgPSBBTlkgKEFSUkFZWydNJzo6dGV4dCwgJ0YnOjp0ZXh0XSkpKQopOwoKQ1JFQVRFIFNFUVVFTkNFIHB1YmxpYy5lbXBsb3llZV9lbXBfbm9fc2VxCiAgICBBUyBpbnRlZ2VyCiAgICBTVEFSVCBXSVRIIDEKICAgIElOQ1JFTUVOVCBCWSAxCiAgICBOTyBNSU5WQUxVRQogICAgTk8gTUFYVkFMVUUKICAgIENBQ0hFIDE7CgpBTFRFUiBTRVFVRU5DRSBwdWJsaWMuZW1wbG95ZWVfZW1wX25vX3NlcSBPV05FRCBCWSBwdWJsaWMuZW1wbG95ZWUuZW1wX25vOwoKCgpDUkVBVEUgVEFCTEUgcHVibGljLnRpdGxlICgKICAgIGVtcF9ubyBpbnRlZ2VyIE5PVCBOVUxMLAogIHRpdGxlIHRleHQgTk9UIE5VTEwsCiAgZnJvbV9kYXRlIGRhdGUgTk9UIE5VTEwsCiAgdG9fZGF0ZSBkYXRlCik7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5lbXBsb3llZSBBTFRFUiBDT0xVTU4gZW1wX25vIFNFVCBERUZBVUxUIG5leHR2YWwoJ3B1YmxpYy5lbXBsb3llZV9lbXBfbm9fc2VxJzo6cmVnY2xhc3MpOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwYXJ0bWVudAogICAgQUREIENPTlNUUkFJTlQgZGVwYXJ0bWVudF9kZXB0X25hbWVfa2V5IFVOSVFVRSAoZGVwdF9uYW1lKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcGFydG1lbnQKICAgIEFERCBDT05TVFJBSU5UIGRlcGFydG1lbnRfcGtleSBQUklNQVJZIEtFWSAoZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vLCBkZXB0X25vKTsKCkFMVEVSIFRBQkxFIE9OTFkgcHVibGljLmRlcHRfbWFuYWdlcgogICAgQUREIENPTlNUUkFJTlQgZGVwdF9tYW5hZ2VyX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgZGVwdF9ubyk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5lbXBsb3llZQogICAgQUREIENPTlNUUkFJTlQgZW1wbG95ZWVfcGtleSBQUklNQVJZIEtFWSAoZW1wX25vKTsKCgoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMudGl0bGUKICAgIEFERCBDT05TVFJBSU5UIHRpdGxlX3BrZXkgUFJJTUFSWSBLRVkgKGVtcF9ubywgdGl0bGUsIGZyb21fZGF0ZSk7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X2VtcAogICAgQUREIENPTlNUUkFJTlQgZGVwdF9lbXBfZGVwdF9ub19ma2V5IEZPUkVJR04gS0VZIChkZXB0X25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5kZXBhcnRtZW50KGRlcHRfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKQUxURVIgVEFCTEUgT05MWSBwdWJsaWMuZGVwdF9lbXAKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfZW1wX2VtcF9ub19ma2V5IEZPUkVJR04gS0VZIChlbXBfbm8pIFJFRkVSRU5DRVMgcHVibGljLmVtcGxveWVlKGVtcF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9kZXB0X25vX2ZrZXkgRk9SRUlHTiBLRVkgKGRlcHRfbm8pIFJFRkVSRU5DRVMgcHVibGljLmRlcGFydG1lbnQoZGVwdF9ubykgT04gREVMRVRFIENBU0NBREU7CgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy5kZXB0X21hbmFnZXIKICAgIEFERCBDT05TVFJBSU5UIGRlcHRfbWFuYWdlcl9lbXBfbm9fZmtleSBGT1JFSUdOIEtFWSAoZW1wX25vKSBSRUZFUkVOQ0VTIHB1YmxpYy5lbXBsb3llZShlbXBfbm8pIE9OIERFTEVURSBDQVNDQURFOwoKCgpBTFRFUiBUQUJMRSBPTkxZIHB1YmxpYy50aXRsZQogICAgQUREIENPTlNUUkFJTlQgdGl0bGVfZW1wX25vX2ZrZXkgRk9SRUlHTiBLRVkgKGVtcF9ubykgUkVGRVJFTkNFUyBwdWJsaWMuZW1wbG95ZWUoZW1wX25vKSBPTiBERUxFVEUgQ0FTQ0FERTsKCgoKCkNSRUFURSBUQUJMRSAicHVibGljIi4icGVyZm9ybWFuY2UiICgKICAiY3JlYXRvciIgVEVYVCBOT1QgTlVMTCwKICAiY3JlYXRlZF90cyIgREFURSBOT1QgTlVMTCwKICAidXBkYXRlciIgVEVYVCBOT1QgTlVMTCwKICAidXBkYXRlZF90cyIgREFURSBOT1QgTlVMTCwKICAicXVhcnRlciIgVEVYVCBOT1QgTlVMTCwKICAicmF0aW5nIiBJTlRFR0VSIE5PVCBOVUxMCik7CgpDT01NRU5UIE9OIENPTFVNTiAicHVibGljIi4icGVyZm9ybWFuY2UiLiJjcmVhdG9yIiBJUyAnMS0xJzsKCkNPTU1FTlQgT04gQ09MVU1OICJwdWJsaWMiLiJwZXJmb3JtYW5jZSIuInVwZGF0ZXIiIElTICcxLTEnOwoK", "metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "city", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "performance", "columns": [{"name": "creator", "type": "TEXT", "comment": "1-1", "classification": "1-1"}, {"name": "created_ts", "type": "DATE"}, {"name": "updater", "type": "TEXT", "comment": "1-1", "classification": "1-1"}, {"name": "updated_ts", "type": "DATE"}, {"name": "quarter", "type": "TEXT"}, {"name": "rating", "type": "INTEGER"}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "city"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "performance", "columnConfigs": [{"name": "creator"}, {"name": "created_ts"}, {"name": "updater"}, {"name": "updated_ts"}, {"name": "quarter"}, {"name": "rating"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/patch/2023-10", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config, base_schema, head_schema, reconcile_state) VALUES (101, 'NORMAL', 101, 1701937231, 101, 1702561018, 101, 'release/2023-11', 'POSTGRES', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config, base_schema, head_schema, reconcile_state) VALUES (102, 'NORMAL', 104, 1701945150, 104, 1702561018, 101, 'feature/dev1-city', 'POSTGRES', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "city", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "city"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/release/2023-11", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+  dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer DEFAULT nextval(''employee_emp_no_seq''::regclass) NOT NULL,
+  birth_date date NOT NULL,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  gender text NOT NULL,
+  hire_date date NOT NULL,
+  "city" TEXT NOT NULL,
+  CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+  amount integer NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+  title text NOT NULL,
+  from_date date NOT NULL,
+  to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+
+
+
+
+', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config, base_schema, head_schema, reconcile_state) VALUES (103, 'NORMAL', 105, 1701945440, 105, 1702561018, 101, 'feature/dev2-phone', 'POSTGRES', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "phone", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "phone"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/release/2023-11", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+  dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer DEFAULT nextval(''employee_emp_no_seq''::regclass) NOT NULL,
+  birth_date date NOT NULL,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  gender text NOT NULL,
+  hire_date date NOT NULL,
+  "phone" TEXT NOT NULL,
+  CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+  amount integer NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+  title text NOT NULL,
+  from_date date NOT NULL,
+  to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+
+
+
+
+', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config, base_schema, head_schema, reconcile_state) VALUES (104, 'NORMAL', 101, 1701945572, 101, 1702561018, 101, 'patch/2023-10', 'POSTGRES', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.branch (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config, base_schema, head_schema, reconcile_state) VALUES (105, 'NORMAL', 104, 1701945657, 104, 1702561018, 101, 'dev1', 'POSTGRES', '{"metadata": {"name": "hr_prod", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}}', '{"metadata": {"schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "city", "type": "TEXT"}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "performance", "columns": [{"name": "creator", "type": "TEXT", "comment": "1-1", "classification": "1-1"}, {"name": "created_ts", "type": "DATE"}, {"name": "updater", "type": "TEXT", "comment": "1-1", "classification": "1-1"}, {"name": "updated_ts", "type": "DATE"}, {"name": "quarter", "type": "TEXT"}, {"name": "rating", "type": "INTEGER"}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}, "databaseConfig": {"schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "department", "columnConfigs": [{"name": "dept_no"}, {"name": "dept_name"}]}, {"name": "dept_emp", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "dept_manager", "columnConfigs": [{"name": "emp_no"}, {"name": "dept_no"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "employee", "columnConfigs": [{"name": "emp_no"}, {"name": "birth_date"}, {"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "gender"}, {"name": "hire_date"}, {"name": "city"}]}, {"name": "salary", "columnConfigs": [{"name": "emp_no"}, {"name": "amount"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "title", "columnConfigs": [{"name": "emp_no"}, {"name": "title"}, {"name": "from_date"}, {"name": "to_date"}]}, {"name": "performance", "columnConfigs": [{"name": "creator"}, {"name": "created_ts"}, {"name": "updater"}, {"name": "updated_ts"}, {"name": "quarter"}, {"name": "rating"}]}]}]}}', '{"sourceBranch": "projects/project-sample/branches/patch/2023-10", "sourceDatabase": "instances/prod-sample-instance/databases/hr_prod"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+  dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+  dept_no text NOT NULL,
+  from_date date NOT NULL,
+  to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer DEFAULT nextval(''employee_emp_no_seq''::regclass) NOT NULL,
+  birth_date date NOT NULL,
+  first_name text NOT NULL,
+  last_name text NOT NULL,
+  gender text NOT NULL,
+  hire_date date NOT NULL,
+  "city" TEXT NOT NULL,
+  CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+  title text NOT NULL,
+  from_date date NOT NULL,
+  to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+
+
+
+CREATE TABLE "public"."performance" (
+  "creator" TEXT NOT NULL,
+  "created_ts" DATE NOT NULL,
+  "updater" TEXT NOT NULL,
+  "updated_ts" DATE NOT NULL,
+  "quarter" TEXT NOT NULL,
+  "rating" INTEGER NOT NULL
+);
+
+COMMENT ON COLUMN "public"."performance"."creator" IS ''1-1'';
+
+COMMENT ON COLUMN "public"."performance"."updater" IS ''1-1'';
+
+', '') ON CONFLICT DO NOTHING;
 
 
 --
@@ -2366,14 +3686,14 @@ INSERT INTO public.data_source (id, row_status, creator_id, created_ts, updater_
 --
 
 INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (101, 'NORMAL', 1, 1699026391, 1, 1699027111, 101, 101, NULL, NULL, 'OK', 1699027110, '', 'hr_test', '{}', false, '', '{"lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (102, 'NORMAL', 1, 1699026391, 1, 1699027111, 102, 101, NULL, NULL, 'OK', 1699027110, '', 'hr_prod', '{}', false, '', '{"lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (109, 'NORMAL', 1, 1699027042, 1, 1699027111, 102, 102, NULL, NULL, 'OK', 1699027111, '', 'hr_prod_vcs', '{}', false, '', '{"lastSyncTime": "2023-11-03T15:58:31Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (103, 'NORMAL', 1, 1699026391, 101, 1699027752, 102, 103, NULL, NULL, 'OK', 1699027110, '', 'hr_prod_1', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (104, 'NORMAL', 1, 1699026391, 101, 1699027783, 102, 103, NULL, NULL, 'OK', 1699027110, '', 'hr_prod_2', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (105, 'NORMAL', 1, 1699026391, 101, 1699027798, 102, 103, NULL, NULL, 'OK', 1699027110, '', 'hr_prod_3', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1699026391, 101, 1699027812, 102, 103, NULL, NULL, 'OK', 1699027110, '', 'hr_prod_4', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2023-11-03T15:58:30Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1699026391, 101, 1699027827, 102, 103, NULL, NULL, 'OK', 1699027111, '', 'hr_prod_5', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2023-11-03T15:58:31Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (108, 'NORMAL', 1, 1699026391, 101, 1699027852, 102, 103, NULL, NULL, 'OK', 1699027111, '', 'hr_prod_6', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2023-11-03T15:58:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (102, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 101, NULL, NULL, 'OK', 1702562731, '', 'hr_prod', '{}', false, '', '{"lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (103, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562731, '', 'hr_prod_1', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (104, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562731, '', 'hr_prod_2', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (105, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562731, '', 'hr_prod_3', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (106, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562731, '', 'hr_prod_4', '{}', false, '', '{"labels": {"location": "asia"}, "lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (107, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562731, '', 'hr_prod_5', '{}', false, '', '{"labels": {"location": "eu"}, "lastSyncTime": "2023-12-14T14:05:31Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (108, 'NORMAL', 1, 1699026391, 1, 1702562732, 102, 103, NULL, NULL, 'OK', 1702562732, '', 'hr_prod_6', '{}', false, '', '{"labels": {"location": "na"}, "lastSyncTime": "2023-12-14T14:05:32Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, project_id, environment_id, source_backup_id, sync_status, last_successful_sync_ts, schema_version, name, secrets, datashare, service_name, metadata) VALUES (109, 'NORMAL', 1, 1699027042, 1, 1702562732, 102, 102, NULL, NULL, 'OK', 1702562732, '0000.0000.0000-20231101-ddl', 'hr_prod_vcs', '{}', false, '', '{"lastSyncTime": "2023-12-14T14:05:32Z"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -2387,527 +3707,267 @@ INSERT INTO public.db_group (id, row_status, creator_id, created_ts, updater_id,
 -- Data for Name: db_schema; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (103, 'NORMAL', 1, 1699027042, 1, 1699027042, 103, '{"name": "hr_prod_1", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "98304", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "450560", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "122880", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
-
-COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
-
-SET default_tablespace = '''';
-
-SET default_table_access_method = heap;
-
-CREATE TABLE public.dept_emp (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE VIEW public.dept_emp_latest_date AS
- SELECT emp_no,
-    max(from_date) AS from_date,
-    max(to_date) AS to_date
-   FROM public.dept_emp
-  GROUP BY emp_no;
-
-CREATE VIEW public.current_dept_emp AS
- SELECT l.emp_no,
-    d.dept_no,
-    l.from_date,
-    l.to_date
-   FROM (public.dept_emp d
-     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
-
-CREATE TABLE public.department (
-    dept_no text NOT NULL,
-    dept_name text NOT NULL
-);
-
-CREATE TABLE public.dept_manager (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.employee (
-    emp_no integer NOT NULL,
-    birth_date date NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    gender text NOT NULL,
-    hire_date date NOT NULL,
-    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
-);
-
-CREATE SEQUENCE public.employee_emp_no_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
-
-CREATE TABLE public.salary (
-    emp_no integer NOT NULL,
-    amount integer NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.title (
-    emp_no integer NOT NULL,
-    title text NOT NULL,
-    from_date date NOT NULL,
-    to_date date
-);
-
-ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.employee
-    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (104, 'NORMAL', 1, 1699027042, 1, 1699027042, 104, '{"name": "hr_prod_2", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "98304", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "450560", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "122880", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
-
-COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
-
-SET default_tablespace = '''';
-
-SET default_table_access_method = heap;
-
-CREATE TABLE public.dept_emp (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE VIEW public.dept_emp_latest_date AS
- SELECT emp_no,
-    max(from_date) AS from_date,
-    max(to_date) AS to_date
-   FROM public.dept_emp
-  GROUP BY emp_no;
-
-CREATE VIEW public.current_dept_emp AS
- SELECT l.emp_no,
-    d.dept_no,
-    l.from_date,
-    l.to_date
-   FROM (public.dept_emp d
-     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
-
-CREATE TABLE public.department (
-    dept_no text NOT NULL,
-    dept_name text NOT NULL
-);
-
-CREATE TABLE public.dept_manager (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.employee (
-    emp_no integer NOT NULL,
-    birth_date date NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    gender text NOT NULL,
-    hire_date date NOT NULL,
-    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
-);
-
-CREATE SEQUENCE public.employee_emp_no_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
-
-CREATE TABLE public.salary (
-    emp_no integer NOT NULL,
-    amount integer NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.title (
-    emp_no integer NOT NULL,
-    title text NOT NULL,
-    from_date date NOT NULL,
-    to_date date
-);
-
-ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.employee
-    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (105, 'NORMAL', 1, 1699027042, 1, 1699027042, 105, '{"name": "hr_prod_3", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "98304", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "450560", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "122880", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
-
-COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
-
-SET default_tablespace = '''';
-
-SET default_table_access_method = heap;
-
-CREATE TABLE public.dept_emp (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE VIEW public.dept_emp_latest_date AS
- SELECT emp_no,
-    max(from_date) AS from_date,
-    max(to_date) AS to_date
-   FROM public.dept_emp
-  GROUP BY emp_no;
-
-CREATE VIEW public.current_dept_emp AS
- SELECT l.emp_no,
-    d.dept_no,
-    l.from_date,
-    l.to_date
-   FROM (public.dept_emp d
-     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
-
-CREATE TABLE public.department (
-    dept_no text NOT NULL,
-    dept_name text NOT NULL
-);
-
-CREATE TABLE public.dept_manager (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.employee (
-    emp_no integer NOT NULL,
-    birth_date date NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    gender text NOT NULL,
-    hire_date date NOT NULL,
-    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
-);
-
-CREATE SEQUENCE public.employee_emp_no_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
-
-CREATE TABLE public.salary (
-    emp_no integer NOT NULL,
-    amount integer NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.title (
-    emp_no integer NOT NULL,
-    title text NOT NULL,
-    from_date date NOT NULL,
-    to_date date
-);
-
-ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.employee
-    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-', '{}') ON CONFLICT DO NOTHING;
-INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (109, 'NORMAL', 1, 1699027042, 1, 1699027042, 109, '{"name": "hr_prod_vcs", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "98304", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "450560", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "122880", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = ''UTF8'';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config(''search_path'', '''', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
-
-COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
-
-SET default_tablespace = '''';
-
-SET default_table_access_method = heap;
-
-CREATE TABLE public.dept_emp (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE VIEW public.dept_emp_latest_date AS
- SELECT emp_no,
-    max(from_date) AS from_date,
-    max(to_date) AS to_date
-   FROM public.dept_emp
-  GROUP BY emp_no;
-
-CREATE VIEW public.current_dept_emp AS
- SELECT l.emp_no,
-    d.dept_no,
-    l.from_date,
-    l.to_date
-   FROM (public.dept_emp d
-     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
-
-CREATE TABLE public.department (
-    dept_no text NOT NULL,
-    dept_name text NOT NULL
-);
-
-CREATE TABLE public.dept_manager (
-    emp_no integer NOT NULL,
-    dept_no text NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.employee (
-    emp_no integer NOT NULL,
-    birth_date date NOT NULL,
-    first_name text NOT NULL,
-    last_name text NOT NULL,
-    gender text NOT NULL,
-    hire_date date NOT NULL,
-    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
-);
-
-CREATE SEQUENCE public.employee_emp_no_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
-
-CREATE TABLE public.salary (
-    emp_no integer NOT NULL,
-    amount integer NOT NULL,
-    from_date date NOT NULL,
-    to_date date NOT NULL
-);
-
-CREATE TABLE public.title (
-    emp_no integer NOT NULL,
-    title text NOT NULL,
-    from_date date NOT NULL,
-    to_date date
-);
-
-ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
-
-ALTER TABLE ONLY public.department
-    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
-
-ALTER TABLE ONLY public.employee
-    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_emp
-    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.dept_manager
-    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.salary
-    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-ALTER TABLE ONLY public.title
-    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
-
-', '{}') ON CONFLICT DO NOTHING;
 INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (101, 'NORMAL', 1, 1699026391, 1, 1699027111, 101, '{"name": "hr_test", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (103, 'NORMAL', 1, 1699027042, 1, 1702562732, 103, '{"name": "hr_prod_1", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (105, 'NORMAL', 1, 1699027042, 1, 1702562732, 105, '{"name": "hr_prod_3", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -3557,6 +4617,268 @@ ALTER TABLE ONLY public.title
     ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
 
 ', '{"name": "hr_prod", "schemaConfigs": [{"name": "public", "tableConfigs": [{"name": "employee", "columnConfigs": [{"name": "first_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}, {"name": "last_name", "semanticTypeId": "be433ce5-72e7-4dcf-8b58-e77b52a18e81"}]}]}]}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (104, 'NORMAL', 1, 1699027042, 1, 1702562732, 104, '{"name": "hr_prod_2", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.db_schema (id, row_status, creator_id, created_ts, updater_id, updated_ts, database_id, metadata, raw_dump, config) VALUES (109, 'NORMAL', 1, 1699027042, 1, 1702562732, 109, '{"name": "hr_prod_vcs", "schemas": [{"name": "public", "views": [{"name": "pg_stat_statements_info", "definition": " SELECT dealloc,\n    stats_reset\n   FROM pg_stat_statements_info() pg_stat_statements_info(dealloc, stats_reset);"}, {"name": "pg_stat_statements", "definition": " SELECT userid,\n    dbid,\n    toplevel,\n    queryid,\n    query,\n    plans,\n    total_plan_time,\n    min_plan_time,\n    max_plan_time,\n    mean_plan_time,\n    stddev_plan_time,\n    calls,\n    total_exec_time,\n    min_exec_time,\n    max_exec_time,\n    mean_exec_time,\n    stddev_exec_time,\n    rows,\n    shared_blks_hit,\n    shared_blks_read,\n    shared_blks_dirtied,\n    shared_blks_written,\n    local_blks_hit,\n    local_blks_read,\n    local_blks_dirtied,\n    local_blks_written,\n    temp_blks_read,\n    temp_blks_written,\n    blk_read_time,\n    blk_write_time,\n    temp_blk_read_time,\n    temp_blk_write_time,\n    wal_records,\n    wal_fpi,\n    wal_bytes,\n    jit_functions,\n    jit_generation_time,\n    jit_inlining_count,\n    jit_inlining_time,\n    jit_optimization_count,\n    jit_optimization_time,\n    jit_emission_count,\n    jit_emission_time\n   FROM pg_stat_statements(true) pg_stat_statements(userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time, max_plan_time, mean_plan_time, stddev_plan_time, calls, total_exec_time, min_exec_time, max_exec_time, mean_exec_time, stddev_exec_time, rows, shared_blks_hit, shared_blks_read, shared_blks_dirtied, shared_blks_written, local_blks_hit, local_blks_read, local_blks_dirtied, local_blks_written, temp_blks_read, temp_blks_written, blk_read_time, blk_write_time, temp_blk_read_time, temp_blk_write_time, wal_records, wal_fpi, wal_bytes, jit_functions, jit_generation_time, jit_inlining_count, jit_inlining_time, jit_optimization_count, jit_optimization_time, jit_emission_count, jit_emission_time);"}, {"name": "dept_emp_latest_date", "definition": " SELECT emp_no,\n    max(from_date) AS from_date,\n    max(to_date) AS to_date\n   FROM dept_emp\n  GROUP BY emp_no;", "dependentColumns": [{"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}]}, {"name": "current_dept_emp", "definition": " SELECT l.emp_no,\n    d.dept_no,\n    l.from_date,\n    l.to_date\n   FROM (dept_emp d\n     JOIN dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));", "dependentColumns": [{"table": "dept_emp", "column": "dept_no", "schema": "public"}, {"table": "dept_emp", "column": "emp_no", "schema": "public"}, {"table": "dept_emp", "column": "from_date", "schema": "public"}, {"table": "dept_emp", "column": "to_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "emp_no", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "from_date", "schema": "public"}, {"table": "dept_emp_latest_date", "column": "to_date", "schema": "public"}]}], "tables": [{"name": "department", "columns": [{"name": "dept_no", "type": "text", "position": 1}, {"name": "dept_name", "type": "text", "position": 2}], "indexes": [{"name": "department_dept_name_key", "type": "btree", "unique": true, "expressions": ["dept_name"]}, {"name": "department_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["dept_no"]}], "dataSize": "16384", "indexSize": "32768"}, {"name": "dept_emp", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_emp_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "106496", "rowCount": "1103", "indexSize": "57344", "foreignKeys": [{"name": "dept_emp_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_emp_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "dept_manager", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "dept_no", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "dept_manager_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "dept_no"]}], "dataSize": "16384", "indexSize": "16384", "foreignKeys": [{"name": "dept_manager_dept_no_fkey", "columns": ["dept_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "department", "referencedSchema": "public", "referencedColumns": ["dept_no"]}, {"name": "dept_manager_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "employee", "columns": [{"name": "emp_no", "type": "integer", "position": 1, "defaultExpression": "nextval(''employee_emp_no_seq''::regclass)"}, {"name": "birth_date", "type": "date", "position": 2}, {"name": "first_name", "type": "text", "position": 3}, {"name": "last_name", "type": "text", "position": 4}, {"name": "gender", "type": "text", "position": 5}, {"name": "hire_date", "type": "date", "position": 6}, {"name": "city", "type": "text", "nullable": true, "position": 7}, {"name": "hotfix", "type": "text", "nullable": true, "position": 8}], "indexes": [{"name": "employee_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no"]}], "dataSize": "98304", "rowCount": "1000", "indexSize": "40960"}, {"name": "salary", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "amount", "type": "integer", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "position": 4}], "indexes": [{"name": "salary_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "from_date"]}], "dataSize": "458752", "rowCount": "9488", "indexSize": "229376", "foreignKeys": [{"name": "salary_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}, {"name": "title", "columns": [{"name": "emp_no", "type": "integer", "position": 1}, {"name": "title", "type": "text", "position": 2}, {"name": "from_date", "type": "date", "position": 3}, {"name": "to_date", "type": "date", "nullable": true, "position": 4}], "indexes": [{"name": "title_pkey", "type": "btree", "unique": true, "primary": true, "expressions": ["emp_no", "title", "from_date"]}], "dataSize": "131072", "rowCount": "1470", "indexSize": "73728", "foreignKeys": [{"name": "title_emp_no_fkey", "columns": ["emp_no"], "onDelete": "CASCADE", "onUpdate": "NO ACTION", "matchType": "SIMPLE", "referencedTable": "employee", "referencedSchema": "public", "referencedColumns": ["emp_no"]}]}], "functions": [{"name": "pg_stat_statements", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements(showtext boolean, OUT userid oid, OUT dbid oid, OUT toplevel boolean, OUT queryid bigint, OUT query text, OUT plans bigint, OUT total_plan_time double precision, OUT min_plan_time double precision, OUT max_plan_time double precision, OUT mean_plan_time double precision, OUT stddev_plan_time double precision, OUT calls bigint, OUT total_exec_time double precision, OUT min_exec_time double precision, OUT max_exec_time double precision, OUT mean_exec_time double precision, OUT stddev_exec_time double precision, OUT rows bigint, OUT shared_blks_hit bigint, OUT shared_blks_read bigint, OUT shared_blks_dirtied bigint, OUT shared_blks_written bigint, OUT local_blks_hit bigint, OUT local_blks_read bigint, OUT local_blks_dirtied bigint, OUT local_blks_written bigint, OUT temp_blks_read bigint, OUT temp_blks_written bigint, OUT blk_read_time double precision, OUT blk_write_time double precision, OUT temp_blk_read_time double precision, OUT temp_blk_write_time double precision, OUT wal_records bigint, OUT wal_fpi bigint, OUT wal_bytes numeric, OUT jit_functions bigint, OUT jit_generation_time double precision, OUT jit_inlining_count bigint, OUT jit_inlining_time double precision, OUT jit_optimization_count bigint, OUT jit_optimization_time double precision, OUT jit_emission_count bigint, OUT jit_emission_time double precision)\n RETURNS SETOF record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_1_10$function$\n"}, {"name": "pg_stat_statements_info", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_info(OUT dealloc bigint, OUT stats_reset timestamp with time zone)\n RETURNS record\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_info$function$\n"}, {"name": "pg_stat_statements_reset", "definition": "CREATE OR REPLACE FUNCTION public.pg_stat_statements_reset(userid oid DEFAULT 0, dbid oid DEFAULT 0, queryid bigint DEFAULT 0)\n RETURNS void\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS ''$libdir/pg_stat_statements'', $function$pg_stat_statements_reset_1_7$function$\n"}]}], "collation": "en_US.UTF-8", "extensions": [{"name": "pg_stat_statements", "schema": "public", "version": "1.10", "description": "track planning and execution statistics of all SQL statements executed"}], "characterSet": "UTF8"}', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    city text,
+    hotfix text,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '{}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -3602,7 +4924,7 @@ INSERT INTO public.inbox (id, receiver_id, activity_id, status) VALUES (105, 104
 --
 
 INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (101, 'NORMAL', 101, 1699026391, 1, 1699027111, 101, 'Test Sample Instance', 'POSTGRES', '16.0', '', 'test-sample-instance', true, '{}', '{"lastSyncTime": "2023-11-03T15:58:30.723965Z"}') ON CONFLICT DO NOTHING;
-INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1699026391, 1, 1699027111, 102, 'Prod Sample Instance', 'POSTGRES', '16.0', '', 'prod-sample-instance', true, '{}', '{"lastSyncTime": "2023-11-03T15:58:30.795654Z"}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance (id, row_status, creator_id, created_ts, updater_id, updated_ts, environment_id, name, engine, engine_version, external_link, resource_id, activation, options, metadata) VALUES (102, 'NORMAL', 101, 1699026391, 1, 1702562731, 102, 'Prod Sample Instance', 'POSTGRES', '16.0.0', '', 'prod-sample-instance', true, '{}', '{"lastSyncTime": "2023-12-14T14:05:31.474870Z"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -25220,6 +26542,11850 @@ ALTER TABLE ONLY public.vcs
     ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
 
 ', 74373000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (107, 'NORMAL', 1, 1702561018, 1, 1702561018, NULL, NULL, NULL, 'development', 7, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0012.0002-20231214213658', 'Migrate version 2.12.2 server version development with files migration/prod/2.12/0002##delete_branch_sheet.sql.', 'DELETE FROM sheet
+WHERE sheet.payload->>''type''=''SCHEMA_DESIGN'';', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', 45548000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (108, 'NORMAL', 1, 1702561018, 1, 1702561018, NULL, NULL, NULL, 'development', 8, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0012.0003-20231214213658', 'Migrate version 2.12.3 server version development with files migration/prod/2.12/0003##repo_enable_cd.sql.', 'ALTER TABLE repository ADD COLUMN enable_cd BOOLEAN NOT NULL DEFAULT false;
+UPDATE repository SET enable_cd = true;', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL,
+    enable_cd boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', 45625000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (109, 'NORMAL', 1, 1702561018, 1, 1702561019, NULL, NULL, NULL, 'development', 9, 'LIBRARY', 'MIGRATE', 'DONE', '0002.0012.0004-20231214213658', 'Migrate version 2.12.4 server version development with files migration/prod/2.12/0004##branch_reconcile.sql.', 'ALTER TABLE branch ADD COLUMN base_schema TEXT NOT NULL DEFAULT '''';
+ALTER TABLE branch ADD COLUMN head_schema TEXT NOT NULL DEFAULT '''';
+ALTER TABLE branch ADD COLUMN reconcile_state TEXT NOT NULL DEFAULT '''';
+CREATE INDEX idx_branch_reconcile_state ON branch(reconcile_state);
+
+UPDATE branch SET base_schema = convert_from(decode(base->>''schema'', ''base64''), ''utf8'');
+UPDATE branch SET head_schema = convert_from(decode(head->>''schema'', ''base64''), ''utf8'');
+UPDATE branch SET base = base - ''schema'';
+UPDATE branch SET head = head - ''schema'';
+', NULL, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    base_schema text DEFAULT ''''::text NOT NULL,
+    head_schema text DEFAULT ''''::text NOT NULL,
+    reconcile_state text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL,
+    enable_cd boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE INDEX idx_branch_reconcile_state ON public.branch USING btree (reconcile_state);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE TYPE public.resource_type AS ENUM (
+    ''WORKSPACE'',
+    ''ENVIRONMENT'',
+    ''PROJECT'',
+    ''INSTANCE'',
+    ''DATABASE''
+);
+
+CREATE TYPE public.row_status AS ENUM (
+    ''NORMAL'',
+    ''ARCHIVED''
+);
+
+CREATE FUNCTION public.trigger_update_updated_ts() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  NEW.updated_ts = extract(epoch from now());
+  RETURN NEW;
+END;
+$$;
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.activity (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    container_id integer NOT NULL,
+    type text NOT NULL,
+    level text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT activity_container_id_check CHECK ((container_id > 0)),
+    CONSTRAINT activity_level_check CHECK ((level = ANY (ARRAY[''INFO''::text, ''WARN''::text, ''ERROR''::text]))),
+    CONSTRAINT activity_type_check CHECK ((type ~~ ''bb.%''::text))
+);
+
+CREATE SEQUENCE public.activity_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.activity_id_seq OWNED BY public.activity.id;
+
+CREATE TABLE public.anomaly (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT anomaly_type_check CHECK ((type ~~ ''bb.anomaly.%''::text))
+);
+
+CREATE SEQUENCE public.anomaly_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.anomaly_id_seq OWNED BY public.anomaly.id;
+
+CREATE TABLE public.backup (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    storage_backend text NOT NULL,
+    migration_history_version text NOT NULL,
+    path text NOT NULL,
+    comment text DEFAULT ''''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT backup_status_check CHECK ((status = ANY (ARRAY[''PENDING_CREATE''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT backup_storage_backend_check CHECK ((storage_backend = ANY (ARRAY[''LOCAL''::text, ''S3''::text, ''GCS''::text, ''OSS''::text]))),
+    CONSTRAINT backup_type_check CHECK ((type = ANY (ARRAY[''MANUAL''::text, ''AUTOMATIC''::text, ''PITR''::text])))
+);
+
+CREATE SEQUENCE public.backup_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_id_seq OWNED BY public.backup.id;
+
+CREATE TABLE public.backup_setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    enabled boolean NOT NULL,
+    hour integer NOT NULL,
+    day_of_week integer NOT NULL,
+    retention_period_ts integer DEFAULT 0 NOT NULL,
+    hook_url text NOT NULL,
+    CONSTRAINT backup_setting_day_of_week_check CHECK (((day_of_week >= ''-1''::integer) AND (day_of_week <= 6))),
+    CONSTRAINT backup_setting_hour_check CHECK (((hour >= 0) AND (hour <= 23))),
+    CONSTRAINT backup_setting_retention_period_ts_check CHECK ((retention_period_ts >= 0))
+);
+
+CREATE SEQUENCE public.backup_setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.backup_setting_id_seq OWNED BY public.backup_setting.id;
+
+CREATE TABLE public.bookmark (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    link text NOT NULL
+);
+
+CREATE SEQUENCE public.bookmark_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.bookmark_id_seq OWNED BY public.bookmark.id;
+
+CREATE TABLE public.branch (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    engine text NOT NULL,
+    base jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    head jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.branch_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.branch_id_seq OWNED BY public.branch.id;
+
+CREATE TABLE public.changelist (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.changelist_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.changelist_id_seq OWNED BY public.changelist.id;
+
+CREATE TABLE public.data_source (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    username text NOT NULL,
+    password text NOT NULL,
+    ssl_key text DEFAULT ''''::text NOT NULL,
+    ssl_cert text DEFAULT ''''::text NOT NULL,
+    ssl_ca text DEFAULT ''''::text NOT NULL,
+    host text DEFAULT ''''::text NOT NULL,
+    port text DEFAULT ''''::text NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    database text DEFAULT ''''::text NOT NULL,
+    CONSTRAINT data_source_type_check CHECK ((type = ANY (ARRAY[''ADMIN''::text, ''RW''::text, ''RO''::text])))
+);
+
+CREATE SEQUENCE public.data_source_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.data_source_id_seq OWNED BY public.data_source.id;
+
+CREATE TABLE public.db (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    project_id integer NOT NULL,
+    environment_id integer,
+    source_backup_id integer,
+    sync_status text NOT NULL,
+    last_successful_sync_ts bigint NOT NULL,
+    schema_version text NOT NULL,
+    name text NOT NULL,
+    secrets jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    datashare boolean DEFAULT false NOT NULL,
+    service_name text DEFAULT ''''::text NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT db_sync_status_check CHECK ((sync_status = ANY (ARRAY[''OK''::text, ''NOT_FOUND''::text])))
+);
+
+CREATE TABLE public.db_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_group_id_seq OWNED BY public.db_group.id;
+
+CREATE SEQUENCE public.db_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_id_seq OWNED BY public.db.id;
+
+CREATE TABLE public.db_schema (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    database_id integer NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    raw_dump text DEFAULT ''''::text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.db_schema_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.db_schema_id_seq OWNED BY public.db_schema.id;
+
+CREATE TABLE public.deployment_config (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.deployment_config_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.deployment_config_id_seq OWNED BY public.deployment_config.id;
+
+CREATE TABLE public.environment (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    "order" integer NOT NULL,
+    resource_id text NOT NULL,
+    CONSTRAINT environment_order_check CHECK (("order" >= 0))
+);
+
+CREATE SEQUENCE public.environment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.environment_id_seq OWNED BY public.environment.id;
+
+CREATE TABLE public.external_approval (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    issue_id integer NOT NULL,
+    requester_id integer NOT NULL,
+    approver_id integer NOT NULL,
+    type text NOT NULL,
+    payload jsonb NOT NULL,
+    CONSTRAINT external_approval_type_check CHECK ((type ~~ ''bb.plugin.app.%''::text))
+);
+
+CREATE SEQUENCE public.external_approval_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.external_approval_id_seq OWNED BY public.external_approval.id;
+
+CREATE TABLE public.idp (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    domain text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT idp_type_check CHECK ((type = ANY (ARRAY[''OAUTH2''::text, ''OIDC''::text, ''LDAP''::text])))
+);
+
+CREATE SEQUENCE public.idp_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.idp_id_seq OWNED BY public.idp.id;
+
+CREATE TABLE public.inbox (
+    id integer NOT NULL,
+    receiver_id integer NOT NULL,
+    activity_id integer NOT NULL,
+    status text NOT NULL,
+    CONSTRAINT inbox_status_check CHECK ((status = ANY (ARRAY[''UNREAD''::text, ''READ''::text])))
+);
+
+CREATE SEQUENCE public.inbox_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.inbox_id_seq OWNED BY public.inbox.id;
+
+CREATE TABLE public.instance (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    environment_id integer,
+    name text NOT NULL,
+    engine text NOT NULL,
+    engine_version text DEFAULT ''''::text NOT NULL,
+    external_link text DEFAULT ''''::text NOT NULL,
+    resource_id text NOT NULL,
+    activation boolean DEFAULT false NOT NULL,
+    options jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    metadata jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.instance_change_history (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer,
+    database_id integer,
+    issue_id integer,
+    release_version text NOT NULL,
+    sequence bigint NOT NULL,
+    source text NOT NULL,
+    type text NOT NULL,
+    status text NOT NULL,
+    version text NOT NULL,
+    description text NOT NULL,
+    statement text NOT NULL,
+    sheet_id bigint,
+    schema text NOT NULL,
+    schema_prev text NOT NULL,
+    execution_duration_ns bigint NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT instance_change_history_sequence_check CHECK ((sequence >= 0)),
+    CONSTRAINT instance_change_history_source_check CHECK ((source = ANY (ARRAY[''UI''::text, ''VCS''::text, ''LIBRARY''::text]))),
+    CONSTRAINT instance_change_history_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''DONE''::text, ''FAILED''::text]))),
+    CONSTRAINT instance_change_history_type_check CHECK ((type = ANY (ARRAY[''BASELINE''::text, ''MIGRATE''::text, ''MIGRATE_SDL''::text, ''BRANCH''::text, ''DATA''::text])))
+);
+
+CREATE SEQUENCE public.instance_change_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_change_history_id_seq OWNED BY public.instance_change_history.id;
+
+CREATE SEQUENCE public.instance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_id_seq OWNED BY public.instance.id;
+
+CREATE TABLE public.instance_user (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    name text NOT NULL,
+    "grant" text NOT NULL
+);
+
+CREATE SEQUENCE public.instance_user_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.instance_user_id_seq OWNED BY public.instance_user.id;
+
+CREATE TABLE public.issue (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    plan_id bigint,
+    pipeline_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL,
+    assignee_id integer,
+    assignee_need_attention boolean DEFAULT false NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    ts_vector tsvector,
+    CONSTRAINT issue_status_check CHECK ((status = ANY (ARRAY[''OPEN''::text, ''DONE''::text, ''CANCELED''::text]))),
+    CONSTRAINT issue_type_check CHECK ((type ~~ ''bb.issue.%''::text))
+);
+
+CREATE SEQUENCE public.issue_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.issue_id_seq OWNED BY public.issue.id;
+
+CREATE TABLE public.issue_subscriber (
+    issue_id integer NOT NULL,
+    subscriber_id integer NOT NULL
+);
+
+CREATE TABLE public.member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    status text NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    CONSTRAINT member_role_check CHECK ((role = ANY (ARRAY[''OWNER''::text, ''DBA''::text, ''DEVELOPER''::text]))),
+    CONSTRAINT member_status_check CHECK ((status = ANY (ARRAY[''INVITED''::text, ''ACTIVE''::text])))
+);
+
+CREATE SEQUENCE public.member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.member_id_seq OWNED BY public.member.id;
+
+CREATE TABLE public.pipeline (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.pipeline_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.pipeline_id_seq OWNED BY public.pipeline.id;
+
+CREATE TABLE public.plan (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    pipeline_id integer,
+    name text NOT NULL,
+    description text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE TABLE public.plan_check_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    plan_id bigint NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT plan_check_run_status_check CHECK ((status = ANY (ARRAY[''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT plan_check_run_type_check CHECK ((type ~~ ''bb.plan-check.%''::text))
+);
+
+CREATE SEQUENCE public.plan_check_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_check_run_id_seq OWNED BY public.plan_check_run.id;
+
+CREATE SEQUENCE public.plan_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.plan_id_seq OWNED BY public.plan.id;
+
+CREATE TABLE public.policy (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    resource_type public.resource_type NOT NULL,
+    resource_id integer NOT NULL,
+    inherit_from_parent boolean DEFAULT true NOT NULL,
+    CONSTRAINT policy_type_check CHECK ((type ~~ ''bb.policy.%''::text))
+);
+
+CREATE SEQUENCE public.policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.policy_id_seq OWNED BY public.policy.id;
+
+CREATE TABLE public.principal (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    phone text DEFAULT ''''::text NOT NULL,
+    mfa_config jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT principal_type_check CHECK ((type = ANY (ARRAY[''END_USER''::text, ''SYSTEM_BOT''::text, ''SERVICE_ACCOUNT''::text])))
+);
+
+CREATE SEQUENCE public.principal_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.principal_id_seq OWNED BY public.principal.id;
+
+CREATE TABLE public.project (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    key text NOT NULL,
+    workflow_type text NOT NULL,
+    visibility text NOT NULL,
+    tenant_mode text DEFAULT ''DISABLED''::text NOT NULL,
+    schema_change_type text DEFAULT ''DDL''::text NOT NULL,
+    resource_id text NOT NULL,
+    data_classification_config_id text DEFAULT ''''::text NOT NULL,
+    setting jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    schema_version_type text DEFAULT ''TIMESTAMP''::text NOT NULL,
+    CONSTRAINT project_schema_change_type_check CHECK ((schema_change_type = ANY (ARRAY[''DDL''::text, ''SDL''::text]))),
+    CONSTRAINT project_schema_version_type_check CHECK ((schema_version_type = ANY (ARRAY[''TIMESTAMP''::text, ''SEMANTIC''::text]))),
+    CONSTRAINT project_tenant_mode_check CHECK ((tenant_mode = ANY (ARRAY[''DISABLED''::text, ''TENANT''::text]))),
+    CONSTRAINT project_visibility_check CHECK ((visibility = ANY (ARRAY[''PUBLIC''::text, ''PRIVATE''::text]))),
+    CONSTRAINT project_workflow_type_check CHECK ((workflow_type = ANY (ARRAY[''UI''::text, ''VCS''::text])))
+);
+
+CREATE SEQUENCE public.project_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_id_seq OWNED BY public.project.id;
+
+CREATE TABLE public.project_member (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    role text NOT NULL,
+    principal_id integer NOT NULL,
+    condition jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.project_member_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_member_id_seq OWNED BY public.project_member.id;
+
+CREATE TABLE public.project_webhook (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    type text NOT NULL,
+    name text NOT NULL,
+    url text NOT NULL,
+    activity_list text[] NOT NULL,
+    CONSTRAINT project_webhook_type_check CHECK ((type ~~ ''bb.plugin.webhook.%''::text))
+);
+
+CREATE SEQUENCE public.project_webhook_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.project_webhook_id_seq OWNED BY public.project_webhook.id;
+
+CREATE TABLE public.repository (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    vcs_id integer NOT NULL,
+    project_id integer NOT NULL,
+    name text NOT NULL,
+    full_path text NOT NULL,
+    web_url text NOT NULL,
+    branch_filter text DEFAULT ''''::text NOT NULL,
+    base_directory text DEFAULT ''''::text NOT NULL,
+    file_path_template text DEFAULT ''''::text NOT NULL,
+    enable_sql_review_ci boolean DEFAULT false NOT NULL,
+    schema_path_template text DEFAULT ''''::text NOT NULL,
+    sheet_path_template text DEFAULT ''''::text NOT NULL,
+    external_id text NOT NULL,
+    external_webhook_id text NOT NULL,
+    webhook_url_host text NOT NULL,
+    webhook_endpoint_id text NOT NULL,
+    webhook_secret_token text NOT NULL,
+    access_token text NOT NULL,
+    expires_ts bigint NOT NULL,
+    refresh_token text NOT NULL,
+    enable_cd boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.repository_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.repository_id_seq OWNED BY public.repository.id;
+
+CREATE TABLE public.risk (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    source text NOT NULL,
+    level bigint NOT NULL,
+    name text NOT NULL,
+    active boolean NOT NULL,
+    expression jsonb NOT NULL,
+    CONSTRAINT risk_source_check CHECK ((source ~~ ''bb.risk.%''::text))
+);
+
+CREATE SEQUENCE public.risk_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.risk_id_seq OWNED BY public.risk.id;
+
+CREATE TABLE public.role (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    resource_id text NOT NULL,
+    name text NOT NULL,
+    description text NOT NULL,
+    permissions jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.role_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.role_id_seq OWNED BY public.role.id;
+
+CREATE TABLE public.schema_group (
+    id bigint NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    db_group_id bigint NOT NULL,
+    resource_id text NOT NULL,
+    placeholder text DEFAULT ''''::text NOT NULL,
+    expression jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.schema_group_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.schema_group_id_seq OWNED BY public.schema_group.id;
+
+CREATE TABLE public.setting (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    value text NOT NULL,
+    description text DEFAULT ''''::text NOT NULL
+);
+
+CREATE SEQUENCE public.setting_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.setting_id_seq OWNED BY public.setting.id;
+
+CREATE TABLE public.sheet (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    project_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    statement text NOT NULL,
+    visibility text DEFAULT ''PRIVATE''::text NOT NULL,
+    source text DEFAULT ''BYTEBASE''::text NOT NULL,
+    type text DEFAULT ''SQL''::text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT sheet_source_check CHECK ((source = ANY (ARRAY[''BYTEBASE''::text, ''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text, ''BYTEBASE_ARTIFACT''::text]))),
+    CONSTRAINT sheet_type_check CHECK ((type = ''SQL''::text)),
+    CONSTRAINT sheet_visibility_check CHECK ((visibility = ANY (ARRAY[''PRIVATE''::text, ''PROJECT''::text, ''PUBLIC''::text])))
+);
+
+CREATE SEQUENCE public.sheet_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_id_seq OWNED BY public.sheet.id;
+
+CREATE TABLE public.sheet_organizer (
+    id integer NOT NULL,
+    sheet_id integer NOT NULL,
+    principal_id integer NOT NULL,
+    starred boolean DEFAULT false NOT NULL,
+    pinned boolean DEFAULT false NOT NULL
+);
+
+CREATE SEQUENCE public.sheet_organizer_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.sheet_organizer_id_seq OWNED BY public.sheet_organizer.id;
+
+CREATE TABLE public.slow_query (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    log_date_ts integer NOT NULL,
+    slow_query_statistics jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.slow_query_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.slow_query_id_seq OWNED BY public.slow_query.id;
+
+CREATE TABLE public.stage (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    environment_id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE public.stage_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.stage_id_seq OWNED BY public.stage.id;
+
+CREATE TABLE public.task (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    pipeline_id integer NOT NULL,
+    stage_id integer NOT NULL,
+    instance_id integer NOT NULL,
+    database_id integer,
+    name text NOT NULL,
+    status text NOT NULL,
+    type text NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    earliest_allowed_ts bigint DEFAULT 0 NOT NULL,
+    CONSTRAINT task_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''PENDING_APPROVAL''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text]))),
+    CONSTRAINT task_type_check CHECK ((type ~~ ''bb.task.%''::text))
+);
+
+CREATE TABLE public.task_dag (
+    id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    from_task_id integer NOT NULL,
+    to_task_id integer NOT NULL,
+    payload jsonb DEFAULT ''{}''::jsonb NOT NULL
+);
+
+CREATE SEQUENCE public.task_dag_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_dag_id_seq OWNED BY public.task_dag.id;
+
+CREATE SEQUENCE public.task_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_id_seq OWNED BY public.task.id;
+
+CREATE TABLE public.task_run (
+    id integer NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    task_id integer NOT NULL,
+    attempt integer NOT NULL,
+    name text NOT NULL,
+    status text NOT NULL,
+    started_ts bigint DEFAULT 0 NOT NULL,
+    code integer DEFAULT 0 NOT NULL,
+    result jsonb DEFAULT ''{}''::jsonb NOT NULL,
+    CONSTRAINT task_run_status_check CHECK ((status = ANY (ARRAY[''PENDING''::text, ''RUNNING''::text, ''DONE''::text, ''FAILED''::text, ''CANCELED''::text])))
+);
+
+CREATE SEQUENCE public.task_run_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.task_run_id_seq OWNED BY public.task_run.id;
+
+CREATE TABLE public.vcs (
+    id integer NOT NULL,
+    row_status public.row_status DEFAULT ''NORMAL''::public.row_status NOT NULL,
+    creator_id integer NOT NULL,
+    created_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    updater_id integer NOT NULL,
+    updated_ts bigint DEFAULT EXTRACT(epoch FROM now()) NOT NULL,
+    name text NOT NULL,
+    type text NOT NULL,
+    instance_url text NOT NULL,
+    api_url text NOT NULL,
+    application_id text NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT vcs_api_url_check CHECK ((((api_url ~~ ''http://%''::text) OR (api_url ~~ ''https://%''::text)) AND (api_url = rtrim(api_url, ''/''::text)))),
+    CONSTRAINT vcs_instance_url_check CHECK ((((instance_url ~~ ''http://%''::text) OR (instance_url ~~ ''https://%''::text)) AND (instance_url = rtrim(instance_url, ''/''::text)))),
+    CONSTRAINT vcs_type_check CHECK ((type = ANY (ARRAY[''GITLAB''::text, ''GITHUB''::text, ''BITBUCKET''::text, ''AZURE_DEVOPS''::text])))
+);
+
+CREATE SEQUENCE public.vcs_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.vcs_id_seq OWNED BY public.vcs.id;
+
+ALTER TABLE ONLY public.activity ALTER COLUMN id SET DEFAULT nextval(''public.activity_id_seq''::regclass);
+
+ALTER TABLE ONLY public.anomaly ALTER COLUMN id SET DEFAULT nextval(''public.anomaly_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup ALTER COLUMN id SET DEFAULT nextval(''public.backup_id_seq''::regclass);
+
+ALTER TABLE ONLY public.backup_setting ALTER COLUMN id SET DEFAULT nextval(''public.backup_setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.bookmark ALTER COLUMN id SET DEFAULT nextval(''public.bookmark_id_seq''::regclass);
+
+ALTER TABLE ONLY public.branch ALTER COLUMN id SET DEFAULT nextval(''public.branch_id_seq''::regclass);
+
+ALTER TABLE ONLY public.changelist ALTER COLUMN id SET DEFAULT nextval(''public.changelist_id_seq''::regclass);
+
+ALTER TABLE ONLY public.data_source ALTER COLUMN id SET DEFAULT nextval(''public.data_source_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db ALTER COLUMN id SET DEFAULT nextval(''public.db_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_group ALTER COLUMN id SET DEFAULT nextval(''public.db_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.db_schema ALTER COLUMN id SET DEFAULT nextval(''public.db_schema_id_seq''::regclass);
+
+ALTER TABLE ONLY public.deployment_config ALTER COLUMN id SET DEFAULT nextval(''public.deployment_config_id_seq''::regclass);
+
+ALTER TABLE ONLY public.environment ALTER COLUMN id SET DEFAULT nextval(''public.environment_id_seq''::regclass);
+
+ALTER TABLE ONLY public.external_approval ALTER COLUMN id SET DEFAULT nextval(''public.external_approval_id_seq''::regclass);
+
+ALTER TABLE ONLY public.idp ALTER COLUMN id SET DEFAULT nextval(''public.idp_id_seq''::regclass);
+
+ALTER TABLE ONLY public.inbox ALTER COLUMN id SET DEFAULT nextval(''public.inbox_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance ALTER COLUMN id SET DEFAULT nextval(''public.instance_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_change_history ALTER COLUMN id SET DEFAULT nextval(''public.instance_change_history_id_seq''::regclass);
+
+ALTER TABLE ONLY public.instance_user ALTER COLUMN id SET DEFAULT nextval(''public.instance_user_id_seq''::regclass);
+
+ALTER TABLE ONLY public.issue ALTER COLUMN id SET DEFAULT nextval(''public.issue_id_seq''::regclass);
+
+ALTER TABLE ONLY public.member ALTER COLUMN id SET DEFAULT nextval(''public.member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.pipeline ALTER COLUMN id SET DEFAULT nextval(''public.pipeline_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan ALTER COLUMN id SET DEFAULT nextval(''public.plan_id_seq''::regclass);
+
+ALTER TABLE ONLY public.plan_check_run ALTER COLUMN id SET DEFAULT nextval(''public.plan_check_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.policy ALTER COLUMN id SET DEFAULT nextval(''public.policy_id_seq''::regclass);
+
+ALTER TABLE ONLY public.principal ALTER COLUMN id SET DEFAULT nextval(''public.principal_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project ALTER COLUMN id SET DEFAULT nextval(''public.project_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_member ALTER COLUMN id SET DEFAULT nextval(''public.project_member_id_seq''::regclass);
+
+ALTER TABLE ONLY public.project_webhook ALTER COLUMN id SET DEFAULT nextval(''public.project_webhook_id_seq''::regclass);
+
+ALTER TABLE ONLY public.repository ALTER COLUMN id SET DEFAULT nextval(''public.repository_id_seq''::regclass);
+
+ALTER TABLE ONLY public.risk ALTER COLUMN id SET DEFAULT nextval(''public.risk_id_seq''::regclass);
+
+ALTER TABLE ONLY public.role ALTER COLUMN id SET DEFAULT nextval(''public.role_id_seq''::regclass);
+
+ALTER TABLE ONLY public.schema_group ALTER COLUMN id SET DEFAULT nextval(''public.schema_group_id_seq''::regclass);
+
+ALTER TABLE ONLY public.setting ALTER COLUMN id SET DEFAULT nextval(''public.setting_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet ALTER COLUMN id SET DEFAULT nextval(''public.sheet_id_seq''::regclass);
+
+ALTER TABLE ONLY public.sheet_organizer ALTER COLUMN id SET DEFAULT nextval(''public.sheet_organizer_id_seq''::regclass);
+
+ALTER TABLE ONLY public.slow_query ALTER COLUMN id SET DEFAULT nextval(''public.slow_query_id_seq''::regclass);
+
+ALTER TABLE ONLY public.stage ALTER COLUMN id SET DEFAULT nextval(''public.stage_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task ALTER COLUMN id SET DEFAULT nextval(''public.task_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_dag ALTER COLUMN id SET DEFAULT nextval(''public.task_dag_id_seq''::regclass);
+
+ALTER TABLE ONLY public.task_run ALTER COLUMN id SET DEFAULT nextval(''public.task_run_id_seq''::regclass);
+
+ALTER TABLE ONLY public.vcs ALTER COLUMN id SET DEFAULT nextval(''public.vcs_id_seq''::regclass);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.idp
+    ADD CONSTRAINT idp_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_pkey PRIMARY KEY (issue_id, subscriber_id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_pkey PRIMARY KEY (id);
+
+CREATE INDEX idx_activity_container_id ON public.activity USING btree (container_id);
+
+CREATE INDEX idx_activity_created_ts ON public.activity USING btree (created_ts);
+
+CREATE INDEX idx_anomaly_database_id_row_status_type ON public.anomaly USING btree (database_id, row_status, type);
+
+CREATE INDEX idx_anomaly_instance_id_row_status_type ON public.anomaly USING btree (instance_id, row_status, type);
+
+CREATE INDEX idx_backup_database_id ON public.backup USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_setting_unique_database_id ON public.backup_setting USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING btree (database_id, name);
+
+CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+CREATE UNIQUE INDEX idx_branch_unique_project_id_name ON public.branch USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_changelist_project_id_name ON public.changelist USING btree (project_id, name);
+
+CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON public.data_source USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_placeholder ON public.db_group USING btree (project_id, placeholder);
+
+CREATE UNIQUE INDEX idx_db_group_unique_project_id_resource_id ON public.db_group USING btree (project_id, resource_id);
+
+CREATE INDEX idx_db_instance_id ON public.db USING btree (instance_id);
+
+CREATE INDEX idx_db_project_id ON public.db USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_db_schema_unique_database_id ON public.db_schema USING btree (database_id);
+
+CREATE UNIQUE INDEX idx_db_unique_instance_id_name ON public.db USING btree (instance_id, name);
+
+CREATE UNIQUE INDEX idx_deployment_config_unique_project_id ON public.deployment_config USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_environment_unique_name ON public.environment USING btree (name);
+
+CREATE UNIQUE INDEX idx_environment_unique_resource_id ON public.environment USING btree (resource_id);
+
+CREATE INDEX idx_external_approval_row_status_issue_id ON public.external_approval USING btree (row_status, issue_id);
+
+CREATE UNIQUE INDEX idx_idp_unique_resource_id ON public.idp USING btree (resource_id);
+
+CREATE INDEX idx_inbox_receiver_id_activity_id ON public.inbox USING btree (receiver_id, activity_id);
+
+CREATE INDEX idx_inbox_receiver_id_status ON public.inbox USING btree (receiver_id, status);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_sequ ON public.instance_change_history USING btree (instance_id, database_id, sequence);
+
+CREATE UNIQUE INDEX idx_instance_change_history_unique_instance_id_database_id_vers ON public.instance_change_history USING btree (instance_id, database_id, version);
+
+CREATE UNIQUE INDEX idx_instance_unique_resource_id ON public.instance USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_instance_user_unique_instance_id_name ON public.instance_user USING btree (instance_id, name);
+
+CREATE INDEX idx_issue_assignee_id ON public.issue USING btree (assignee_id);
+
+CREATE INDEX idx_issue_created_ts ON public.issue USING btree (created_ts);
+
+CREATE INDEX idx_issue_creator_id ON public.issue USING btree (creator_id);
+
+CREATE INDEX idx_issue_pipeline_id ON public.issue USING btree (pipeline_id);
+
+CREATE INDEX idx_issue_plan_id ON public.issue USING btree (plan_id);
+
+CREATE INDEX idx_issue_project_id ON public.issue USING btree (project_id);
+
+CREATE INDEX idx_issue_subscriber_subscriber_id ON public.issue_subscriber USING btree (subscriber_id);
+
+CREATE INDEX idx_issue_ts_vector ON public.issue USING gin (ts_vector);
+
+CREATE UNIQUE INDEX idx_member_unique_principal_id ON public.member USING btree (principal_id);
+
+CREATE INDEX idx_plan_check_run_plan_id ON public.plan_check_run USING btree (plan_id);
+
+CREATE INDEX idx_plan_pipeline_id ON public.plan USING btree (pipeline_id);
+
+CREATE INDEX idx_plan_project_id ON public.plan USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_policy_unique_resource_type_resource_id_type ON public.policy USING btree (resource_type, resource_id, type);
+
+CREATE INDEX idx_project_member_project_id ON public.project_member USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_unique_key ON public.project USING btree (key);
+
+CREATE UNIQUE INDEX idx_project_unique_resource_id ON public.project USING btree (resource_id);
+
+CREATE INDEX idx_project_webhook_project_id ON public.project_webhook USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_project_webhook_unique_project_id_url ON public.project_webhook USING btree (project_id, url);
+
+CREATE UNIQUE INDEX idx_repository_unique_project_id ON public.repository USING btree (project_id);
+
+CREATE UNIQUE INDEX idx_role_unique_resource_id ON public.role USING btree (resource_id);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_placeholder ON public.schema_group USING btree (db_group_id, placeholder);
+
+CREATE UNIQUE INDEX idx_schema_group_unique_db_group_id_resource_id ON public.schema_group USING btree (db_group_id, resource_id);
+
+CREATE UNIQUE INDEX idx_setting_unique_name ON public.setting USING btree (name);
+
+CREATE INDEX idx_sheet_creator_id ON public.sheet USING btree (creator_id);
+
+CREATE INDEX idx_sheet_database_id_row_status ON public.sheet USING btree (database_id, row_status);
+
+CREATE INDEX idx_sheet_name ON public.sheet USING btree (name);
+
+CREATE INDEX idx_sheet_organizer_principal_id ON public.sheet_organizer USING btree (principal_id);
+
+CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON public.sheet_organizer USING btree (sheet_id, principal_id);
+
+CREATE INDEX idx_sheet_project_id ON public.sheet USING btree (project_id);
+
+CREATE INDEX idx_sheet_project_id_row_status ON public.sheet USING btree (project_id, row_status);
+
+CREATE INDEX idx_slow_query_instance_id_log_date_ts ON public.slow_query USING btree (instance_id, log_date_ts);
+
+CREATE INDEX idx_stage_pipeline_id ON public.stage USING btree (pipeline_id);
+
+CREATE INDEX idx_task_dag_from_task_id ON public.task_dag USING btree (from_task_id);
+
+CREATE INDEX idx_task_dag_to_task_id ON public.task_dag USING btree (to_task_id);
+
+CREATE INDEX idx_task_earliest_allowed_ts ON public.task USING btree (earliest_allowed_ts);
+
+CREATE INDEX idx_task_pipeline_id_stage_id ON public.task USING btree (pipeline_id, stage_id);
+
+CREATE INDEX idx_task_run_task_id ON public.task_run USING btree (task_id);
+
+CREATE INDEX idx_task_status ON public.task USING btree (status);
+
+CREATE UNIQUE INDEX uk_slow_query_database_id_log_date_ts ON public.slow_query USING btree (database_id, log_date_ts);
+
+CREATE UNIQUE INDEX uk_task_run_task_id_attempt ON public.task_run USING btree (task_id, attempt);
+
+CREATE TRIGGER update_activity_updated_ts BEFORE UPDATE ON public.activity FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_anomaly_updated_ts BEFORE UPDATE ON public.anomaly FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_setting_updated_ts BEFORE UPDATE ON public.backup_setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_backup_updated_ts BEFORE UPDATE ON public.backup FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_bookmark_updated_ts BEFORE UPDATE ON public.bookmark FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_branch_updated_ts BEFORE UPDATE ON public.branch FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_changelist_updated_ts BEFORE UPDATE ON public.changelist FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_data_source_updated_ts BEFORE UPDATE ON public.data_source FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_group_updated_ts BEFORE UPDATE ON public.db_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_schema_updated_ts BEFORE UPDATE ON public.db_schema FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_db_updated_ts BEFORE UPDATE ON public.db FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_deployment_config_updated_ts BEFORE UPDATE ON public.deployment_config FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_environment_updated_ts BEFORE UPDATE ON public.environment FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_external_approval_updated_ts BEFORE UPDATE ON public.external_approval FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_idp_updated_ts BEFORE UPDATE ON public.idp FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_change_history_updated_ts BEFORE UPDATE ON public.instance_change_history FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_updated_ts BEFORE UPDATE ON public.instance FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_instance_user_updated_ts BEFORE UPDATE ON public.instance_user FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_issue_updated_ts BEFORE UPDATE ON public.issue FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_member_updated_ts BEFORE UPDATE ON public.member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_pipeline_updated_ts BEFORE UPDATE ON public.pipeline FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_check_run_updated_ts BEFORE UPDATE ON public.plan_check_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_plan_updated_ts BEFORE UPDATE ON public.plan FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_policy_updated_ts BEFORE UPDATE ON public.policy FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_principal_updated_ts BEFORE UPDATE ON public.principal FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_member_updated_ts BEFORE UPDATE ON public.project_member FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_updated_ts BEFORE UPDATE ON public.project FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_project_webhook_updated_ts BEFORE UPDATE ON public.project_webhook FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_repository_updated_ts BEFORE UPDATE ON public.repository FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_risk_updated_ts BEFORE UPDATE ON public.risk FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_role_updated_ts BEFORE UPDATE ON public.role FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_schema_group_updated_ts BEFORE UPDATE ON public.schema_group FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_setting_updated_ts BEFORE UPDATE ON public.setting FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_sheet_updated_ts BEFORE UPDATE ON public.sheet FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_slow_query_updated_ts BEFORE UPDATE ON public.slow_query FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_stage_updated_ts BEFORE UPDATE ON public.stage FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_dag_updated_ts BEFORE UPDATE ON public.task_dag FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_run_updated_ts BEFORE UPDATE ON public.task_run FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_task_updated_ts BEFORE UPDATE ON public.task FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+CREATE TRIGGER update_vcs_updated_ts BEFORE UPDATE ON public.vcs FOR EACH ROW EXECUTE FUNCTION public.trigger_update_updated_ts();
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.activity
+    ADD CONSTRAINT activity_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.anomaly
+    ADD CONSTRAINT anomaly_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.backup_setting
+    ADD CONSTRAINT backup_setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.backup
+    ADD CONSTRAINT backup_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.bookmark
+    ADD CONSTRAINT bookmark_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.branch
+    ADD CONSTRAINT branch_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.changelist
+    ADD CONSTRAINT changelist_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.data_source
+    ADD CONSTRAINT data_source_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_group
+    ADD CONSTRAINT db_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.db_schema
+    ADD CONSTRAINT db_schema_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.db
+    ADD CONSTRAINT db_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.deployment_config
+    ADD CONSTRAINT deployment_config_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.environment
+    ADD CONSTRAINT environment_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_approver_id_fkey FOREIGN KEY (approver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.external_approval
+    ADD CONSTRAINT external_approval_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_activity_id_fkey FOREIGN KEY (activity_id) REFERENCES public.activity(id);
+
+ALTER TABLE ONLY public.inbox
+    ADD CONSTRAINT inbox_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.instance_change_history
+    ADD CONSTRAINT instance_change_history_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.instance
+    ADD CONSTRAINT instance_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.instance_user
+    ADD CONSTRAINT instance_user_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_assignee_id_fkey FOREIGN KEY (assignee_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_issue_id_fkey FOREIGN KEY (issue_id) REFERENCES public.issue(id);
+
+ALTER TABLE ONLY public.issue_subscriber
+    ADD CONSTRAINT issue_subscriber_subscriber_id_fkey FOREIGN KEY (subscriber_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.issue
+    ADD CONSTRAINT issue_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.member
+    ADD CONSTRAINT member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.pipeline
+    ADD CONSTRAINT pipeline_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plan(id);
+
+ALTER TABLE ONLY public.plan_check_run
+    ADD CONSTRAINT plan_check_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.plan
+    ADD CONSTRAINT plan_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.policy
+    ADD CONSTRAINT policy_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.principal
+    ADD CONSTRAINT principal_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_member
+    ADD CONSTRAINT project_member_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project
+    ADD CONSTRAINT project_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.project_webhook
+    ADD CONSTRAINT project_webhook_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.repository
+    ADD CONSTRAINT repository_vcs_id_fkey FOREIGN KEY (vcs_id) REFERENCES public.vcs(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.risk
+    ADD CONSTRAINT risk_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.role
+    ADD CONSTRAINT role_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_db_group_id_fkey FOREIGN KEY (db_group_id) REFERENCES public.db_group(id);
+
+ALTER TABLE ONLY public.schema_group
+    ADD CONSTRAINT schema_group_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.setting
+    ADD CONSTRAINT setting_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.sheet_organizer
+    ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES public.sheet(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.project(id);
+
+ALTER TABLE ONLY public.sheet
+    ADD CONSTRAINT sheet_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.slow_query
+    ADD CONSTRAINT slow_query_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_environment_id_fkey FOREIGN KEY (environment_id) REFERENCES public.environment(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.stage
+    ADD CONSTRAINT stage_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_from_task_id_fkey FOREIGN KEY (from_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_dag
+    ADD CONSTRAINT task_dag_to_task_id_fkey FOREIGN KEY (to_task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_database_id_fkey FOREIGN KEY (database_id) REFERENCES public.db(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_instance_id_fkey FOREIGN KEY (instance_id) REFERENCES public.instance(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_pipeline_id_fkey FOREIGN KEY (pipeline_id) REFERENCES public.pipeline(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.task(id);
+
+ALTER TABLE ONLY public.task_run
+    ADD CONSTRAINT task_run_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_stage_id_fkey FOREIGN KEY (stage_id) REFERENCES public.stage(id);
+
+ALTER TABLE ONLY public.task
+    ADD CONSTRAINT task_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES public.principal(id);
+
+ALTER TABLE ONLY public.vcs
+    ADD CONSTRAINT vcs_updater_id_fkey FOREIGN KEY (updater_id) REFERENCES public.principal(id);
+
+', 49241000, '{}') ON CONFLICT DO NOTHING;
+INSERT INTO public.instance_change_history (id, row_status, creator_id, created_ts, updater_id, updated_ts, instance_id, database_id, issue_id, release_version, sequence, source, type, status, version, description, statement, sheet_id, schema, schema_prev, execution_duration_ns, payload) VALUES (110, 'NORMAL', 1, 1702562144, 1, 1702562144, 102, 109, 102, 'development', 1, 'UI', 'MIGRATE', 'DONE', '0000.0000.0000-20231101-ddl', '[hr_prod_vcs] Alter schema: Add city - DDL(schema) for database "hr_prod_vcs"', '', 104, '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    city text,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', '
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET client_encoding = ''UTF8'';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config(''search_path'', '''', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements WITH SCHEMA public;
+
+COMMENT ON EXTENSION pg_stat_statements IS ''track planning and execution statistics of all SQL statements executed'';
+
+SET default_tablespace = '''';
+
+SET default_table_access_method = heap;
+
+CREATE TABLE public.dept_emp (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE VIEW public.dept_emp_latest_date AS
+ SELECT emp_no,
+    max(from_date) AS from_date,
+    max(to_date) AS to_date
+   FROM public.dept_emp
+  GROUP BY emp_no;
+
+CREATE VIEW public.current_dept_emp AS
+ SELECT l.emp_no,
+    d.dept_no,
+    l.from_date,
+    l.to_date
+   FROM (public.dept_emp d
+     JOIN public.dept_emp_latest_date l ON (((d.emp_no = l.emp_no) AND (d.from_date = l.from_date) AND (l.to_date = d.to_date))));
+
+CREATE TABLE public.department (
+    dept_no text NOT NULL,
+    dept_name text NOT NULL
+);
+
+CREATE TABLE public.dept_manager (
+    emp_no integer NOT NULL,
+    dept_no text NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.employee (
+    emp_no integer NOT NULL,
+    birth_date date NOT NULL,
+    first_name text NOT NULL,
+    last_name text NOT NULL,
+    gender text NOT NULL,
+    hire_date date NOT NULL,
+    CONSTRAINT employee_gender_check CHECK ((gender = ANY (ARRAY[''M''::text, ''F''::text])))
+);
+
+CREATE SEQUENCE public.employee_emp_no_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.employee_emp_no_seq OWNED BY public.employee.emp_no;
+
+CREATE TABLE public.salary (
+    emp_no integer NOT NULL,
+    amount integer NOT NULL,
+    from_date date NOT NULL,
+    to_date date NOT NULL
+);
+
+CREATE TABLE public.title (
+    emp_no integer NOT NULL,
+    title text NOT NULL,
+    from_date date NOT NULL,
+    to_date date
+);
+
+ALTER TABLE ONLY public.employee ALTER COLUMN emp_no SET DEFAULT nextval(''public.employee_emp_no_seq''::regclass);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_dept_name_key UNIQUE (dept_name);
+
+ALTER TABLE ONLY public.department
+    ADD CONSTRAINT department_pkey PRIMARY KEY (dept_no);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_pkey PRIMARY KEY (emp_no, dept_no);
+
+ALTER TABLE ONLY public.employee
+    ADD CONSTRAINT employee_pkey PRIMARY KEY (emp_no);
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_pkey PRIMARY KEY (emp_no, from_date);
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_pkey PRIMARY KEY (emp_no, title, from_date);
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_emp
+    ADD CONSTRAINT dept_emp_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_dept_no_fkey FOREIGN KEY (dept_no) REFERENCES public.department(dept_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.dept_manager
+    ADD CONSTRAINT dept_manager_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.salary
+    ADD CONSTRAINT salary_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.title
+    ADD CONSTRAINT title_emp_no_fkey FOREIGN KEY (emp_no) REFERENCES public.employee(emp_no) ON DELETE CASCADE;
+
+', 36526000, '{"changedResources": {"databases": [{"name": "hr_prod_vcs", "schemas": [{"name": "public", "tables": [{"name": "employee"}]}]}]}}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -25237,13 +38403,13 @@ INSERT INTO public.instance_user (id, row_status, creator_id, created_ts, update
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (101, 'NORMAL', 101, 1699026391, 1, 1699026392, 101, 101, 101, '👉👉👉 [START HERE] Add email column to Employee table', 'OPEN', 'bb.issue.database.general', 'A sample issue to showcase how to review database schema change.
 
 				Click "Approve" button to apply the schema update.', 101, false, '{"approval": {"approvalFindingDone": true}}', '''a'':9 ''add'':3 ''apply'':24 ''approve'':21 ''button'':22 ''change'':19 ''click'':20 ''column'':5 ''database'':17 ''email'':4 ''employee'':7 ''here'':2 ''how'':14 ''issue'':11 ''review'':16 ''sample'':10 ''schema'':18,26 ''showcase'':13 ''start'':1 ''table'':8 ''the'':25 ''to'':6,12,15,23 ''update'':27') ON CONFLICT DO NOTHING;
-INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (102, 'NORMAL', 1, 1699027633, 1, 1699027634, 102, 102, 102, '[hr_prod_vcs] Alter schema: Add city', 'OPEN', 'bb.issue.database.general', 'By VCS files:
-
-prod/hr_prod_vcs##20231101##ddl##add_city.sql
-', 1, false, '{"approval": {"approvalFindingDone": true}}', '''20231101'':15 ''add'':6,17 ''alter'':4 ''by'':8 ''city'':7,18 ''ddl'':16 ''files'':10 ''hr'':1,12 ''prod'':2,11,13 ''schema'':5 ''sql'':19 ''vcs'':3,9,14') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (103, 'NORMAL', 106, 1699032519, 1, 1699032527, 103, 103, 103, 'Add Investor Relation department', 'OPEN', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalFindingDone": true}}', '''add'':1 ''department'':4 ''investor'':2 ''relation'':3') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (104, 'NORMAL', 104, 1699109832, 104, 1699109967, 101, 104, 104, '[hr_prod] Alter schema @11-04 22:56 UTC+0800', 'CANCELED', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"role": "roles/tester", "type": "ANY_IN_GROUP"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Tester -> Project Owner -> DBA", "creatorId": 101, "description": "Tester -> Project Owner -> DBA"}], "approvalFindingDone": true}}', '''04'':6 ''0800'':10 ''11'':5 ''22'':7 ''56'':8 ''alter'':3 ''hr'':1 ''prod'':2 ''schema'':4 ''utc'':9') ON CONFLICT DO NOTHING;
 INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (105, 'NORMAL', 104, 1699110335, 1, 1699110336, 101, 105, 105, 'Add performance table', 'OPEN', 'bb.issue.database.general', '', 1, false, '{"approval": {"approvalTemplates": [{"flow": {"steps": [{"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "PROJECT_OWNER"}]}, {"type": "ANY", "nodes": [{"type": "ANY_IN_GROUP", "groupValue": "WORKSPACE_DBA"}]}]}, "title": "Project Owner -> DBA", "creatorId": 1, "description": "The system defines the approval process, first the project Owner approves, then the DBA approves."}], "approvalFindingDone": true}}', '''add'':1 ''performance'':2 ''table'':3') ON CONFLICT DO NOTHING;
+INSERT INTO public.issue (id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, plan_id, pipeline_id, name, status, type, description, assignee_id, assignee_need_attention, payload, ts_vector) VALUES (102, 'NORMAL', 1, 1699027633, 1, 1702562147, 102, 102, 102, '[hr_prod_vcs] Alter schema: Add city', 'DONE', 'bb.issue.database.general', 'By VCS files:
+
+prod/hr_prod_vcs##20231101##ddl##add_city.sql
+', 1, false, '{"approval": {"approvalFindingDone": true}}', '''20231101'':15 ''add'':6,17 ''alter'':4 ''by'':8 ''city'':7,18 ''ddl'':16 ''files'':10 ''hr'':1,12 ''prod'':2,11,13 ''schema'':5 ''sql'':19 ''vcs'':3,9,14') ON CONFLICT DO NOTHING;
 
 
 --
@@ -25374,9 +38540,9 @@ INSERT INTO public.principal (id, row_status, creator_id, created_ts, updater_id
 --
 
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, schema_change_type, resource_id, data_classification_config_id, setting, schema_version_type) VALUES (1, 'NORMAL', 1, 1699026378, 101, 1699031713, 'Default', 'DEFAULT', 'UI', 'PUBLIC', 'DISABLED', 'DDL', 'default', '2b599739-41da-4c35-a9ff-4a73c6cfe32c', '{}', 'TIMESTAMP') ON CONFLICT DO NOTHING;
-INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, schema_change_type, resource_id, data_classification_config_id, setting, schema_version_type) VALUES (102, 'NORMAL', 101, 1699026423, 101, 1699031713, 'GitOps Project', 'GITP', 'VCS', 'PUBLIC', 'DISABLED', 'DDL', 'gitops-project', '2b599739-41da-4c35-a9ff-4a73c6cfe32c', '{}', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, schema_change_type, resource_id, data_classification_config_id, setting, schema_version_type) VALUES (103, 'NORMAL', 101, 1699027705, 101, 1699031713, 'Batch Project', 'BATP', 'UI', 'PUBLIC', 'TENANT', 'DDL', 'batch-project', '2b599739-41da-4c35-a9ff-4a73c6cfe32c', '{}', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, schema_change_type, resource_id, data_classification_config_id, setting, schema_version_type) VALUES (101, 'NORMAL', 101, 1699026391, 101, 1699110497, 'Basic Project', 'BASP', 'UI', 'PUBLIC', 'DISABLED', 'DDL', 'project-sample', '2b599739-41da-4c35-a9ff-4a73c6cfe32c', '{"protectionRules": [{"id": "30a07f71-0941-4053-91ee-5b14d4d08c2b", "target": "BRANCH", "nameFilter": "feature/*", "createAllowedRoles": ["roles/OWNER", "roles/DEVELOPER"]}]}', 'TIMESTAMP') ON CONFLICT DO NOTHING;
+INSERT INTO public.project (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, key, workflow_type, visibility, tenant_mode, schema_change_type, resource_id, data_classification_config_id, setting, schema_version_type) VALUES (102, 'NORMAL', 101, 1699026423, 101, 1702562125, 'GitOps Project', 'GITP', 'VCS', 'PUBLIC', 'DISABLED', 'DDL', 'gitops-project', '2b599739-41da-4c35-a9ff-4a73c6cfe32c', '{}', 'TIMESTAMP') ON CONFLICT DO NOTHING;
 
 
 --
@@ -25414,7 +38580,7 @@ INSERT INTO public.project_member (id, row_status, creator_id, created_ts, updat
 -- Data for Name: repository; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
-INSERT INTO public.repository (id, row_status, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, enable_sql_review_ci, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token) VALUES (102, 'NORMAL', 101, 1699027459, 101, 1699027464, 101, 102, 'hr-sample', 's-bytebase/hr-sample', 'https://github.com/s-bytebase/hr-sample', 'main', 'bytebase', '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql', true, '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql', 'script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql', 's-bytebase/hr-sample', '441332162', 'https://demo.bytebase.com', '6c86d081-379d-4366-be6f-481425e6f397-1699027458', 'Zq4WC6YJA3Y2nvJ5', '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', 0, '') ON CONFLICT DO NOTHING;
+INSERT INTO public.repository (id, row_status, creator_id, created_ts, updater_id, updated_ts, vcs_id, project_id, name, full_path, web_url, branch_filter, base_directory, file_path_template, enable_sql_review_ci, schema_path_template, sheet_path_template, external_id, external_webhook_id, webhook_url_host, webhook_endpoint_id, webhook_secret_token, access_token, expires_ts, refresh_token, enable_cd) VALUES (103, 'NORMAL', 101, 1702562125, 101, 1702562125, 101, 102, 'hr-sample', 's-bytebase/hr-sample', 'https://github.com/s-bytebase/hr-sample', 'main', 'bytebase', '{{ENV_ID}}/{{DB_NAME}}##{{VERSION}}##{{TYPE}}##{{DESCRIPTION}}.sql', false, '{{ENV_ID}}/.{{DB_NAME}}##LATEST.sql', 'script/{{ENV_ID}}##{{DB_NAME}}##{{NAME}}.sql', 's-bytebase/hr-sample', '448947515', 'https://da05-149-129-123-75.ngrok-free.app', '6c86d081-379d-4366-be6f-481425e6f397-1702562124', 'q5SSAkeZJ6rrLWcM', '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', 0, '', true) ON CONFLICT DO NOTHING;
 
 
 --
@@ -25455,10 +38621,10 @@ INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, 
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (110, 'NORMAL', 1, 1699026378, 101, 1699031931, 'bb.workspace.schema-template', '{"fieldTemplates":[{"id":"b281c610-7a6c-11ee-bfb8-958ed997c3e9", "engine":"POSTGRES", "category":"common", "column":{"name":"creator", "type":"TEXT", "classification":"1-1"}, "config":{"name":"creator"}}, {"id":"c5ddd410-7a6c-11ee-bfb8-958ed997c3e9", "engine":"POSTGRES", "category":"common", "column":{"name":"updater", "type":"TEXT", "classification":"1-1"}, "config":{"name":"updater"}}, {"id":"ce566850-7a6c-11ee-bfb8-958ed997c3e9", "engine":"POSTGRES", "category":"common", "column":{"name":"created_ts", "type":"DATE"}, "config":{"name":"created_ts"}}, {"id":"d8900d80-7a6c-11ee-bfb8-958ed997c3e9", "engine":"POSTGRES", "category":"common", "column":{"name":"updated_ts", "type":"DATE"}, "config":{"name":"updated_ts"}}], "tableTemplates":[{"id":"f0fca590-7a6c-11ee-bfb8-958ed997c3e9", "engine":"POSTGRES", "category":"common", "table":{"name":"Basic Table", "columns":[{"name":"creator", "type":"TEXT", "classification":"1-1"}, {"name":"created_ts", "type":"DATE"}, {"name":"updater", "type":"TEXT", "classification":"1-1"}, {"name":"updated_ts", "type":"DATE"}]}, "config":{"name":"Basic Table", "columnConfigs":[{"name":"creator"}, {"name":"created_ts"}, {"name":"updater"}, {"name":"updated_ts"}]}}]}', 'The schema template setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (104, 'NORMAL', 1, 1699026378, 101, 1699027105, 'bb.enterprise.license', 'eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA', 'Enterprise license') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (111, 'NORMAL', 1, 1699026378, 101, 1699031713, 'bb.workspace.data-classification', '{"configs":[{"id":"2b599739-41da-4c35-a9ff-4a73c6cfe32c", "title":"PII", "levels":[{"id":"1", "title":"L1"}, {"id":"2", "title":"L2"}, {"id":"3", "title":"L3"}, {"id":"4", "title":"L4"}], "classification":{"1":{"id":"1", "title":"Basic", "description":"Basic infomation"}, "1-1":{"id":"1-1", "title":"Basic", "description":"Name, gender, nationalities.", "levelId":"3"}, "1-2":{"id":"1-2", "title":"Asset", "description":"Income, prorperty, car, tax.", "levelId":"3"}, "1-3":{"id":"1-3", "title":"Contact", "description":"Phone, email address.", "levelId":"3"}, "1-4":{"id":"1-4", "title":"Health", "description":"Health record", "levelId":"4"}, "2":{"id":"2", "title":"Relationship", "description":"Relationship information"}, "2-1":{"id":"2-1", "title":"Social", "description":"Children, parents, sisters, brothers, couples.", "levelId":"3"}, "2-2":{"id":"2-2", "title":"Business", "description":"Owner, employee, contractor.", "levelId":"2"}}}]}', 'The data classification setting') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1699026378, 101, 1699110151, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","role":"roles/tester"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"Tester -> Project Owner -> DBA","description":"Tester -> Project Owner -> DBA","creatorId":101},"condition":{"expression":"source == 1 && level == 300"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"Project Owner -> DBA","description":"The system defines the approval process, first the project Owner approves, then the DBA approves.","creatorId":1},"condition":{"expression":"source == 1 && level == 0 || source == 1 && level == 200"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"Project Owner","description":"The system defines the approval process and only needs the project Owner o approve it.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"The system defines the approval process and only needs DBA approval.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"Workspace Owner","description":"The system defines the approval process and only needs Administrator approval.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"Project Owner -> DBA -> Workspace Owner","description":"The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves.","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (141, 'NORMAL', 101, 1700552703, 101, 1700552703, 'bb.workspace.masking-algorithm', '{"algorithms":[{"id":"ea467836-0dd2-4e93-98c5-cf58ab154e02","title":"Masking first 4 letters","category":"MASK","rangeMask":{"slices":[{"end":4,"substitution":"****"}]}}]}', '') ON CONFLICT DO NOTHING;
 INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (142, 'NORMAL', 101, 1700552719, 101, 1700552719, 'bb.workspace.semantic-types', '{"types":[{"id":"be433ce5-72e7-4dcf-8b58-e77b52a18e81","title":"Person Name","partialMaskAlgorithmId":"ea467836-0dd2-4e93-98c5-cf58ab154e02"}]}', '') ON CONFLICT DO NOTHING;
-INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1699026378, 1, 1701944933, 'bb.workspace.profile', '{"externalUrl":"https://demo.bytebase.com"}', '') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (112, 'NORMAL', 1, 1699026378, 101, 1702561068, 'bb.workspace.approval', '{"rules":[{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"Project Owner -> Workspace Admin","description":"Project Owner -> Workspace Admin","creatorId":101},"condition":{"expression":"source == 1 && level == 300"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","role":"roles/tester"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"Tester -> Project Owner -> DBA","description":"Tester -> Project Owner -> DBA","creatorId":101},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"Project Owner -> DBA","description":"The system defines the approval process, first the project Owner approves, then the DBA approves.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]}]},"title":"Project Owner","description":"The system defines the approval process and only needs the project Owner o approve it.","creatorId":1},"condition":{"expression":"source == 1 && level == 200 || source == 4 && level == 0 || source == 5 && level == 0"}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]}]},"title":"DBA","description":"The system defines the approval process and only needs DBA approval.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"Workspace Admin","description":"The system defines the approval process and only needs Administrator approval.","creatorId":1},"condition":{}},{"template":{"flow":{"steps":[{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"PROJECT_OWNER"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_DBA"}]},{"type":"ANY","nodes":[{"type":"ANY_IN_GROUP","groupValue":"WORKSPACE_OWNER"}]}]},"title":"Project Owner -> DBA -> Workspace Admin","description":"The system defines the approval process, first the project Owner approves, then the DBA approves, and finally the Administrator approves.","creatorId":1},"condition":{}}]}', 'The workspace approval setting') ON CONFLICT DO NOTHING;
+INSERT INTO public.setting (id, row_status, creator_id, created_ts, updater_id, updated_ts, name, value, description) VALUES (113, 'NORMAL', 1, 1699026378, 1, 1702562216, 'bb.workspace.profile', '{"externalUrl":"https://da05-149-129-123-75.ngrok-free.app"}', '') ON CONFLICT DO NOTHING;
 
 
 --
@@ -38702,6 +51868,7 @@ INSERT INTO public.task (id, row_status, creator_id, created_ts, updater_id, upd
 -- Data for Name: task_run; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
+INSERT INTO public.task_run (id, creator_id, created_ts, updater_id, updated_ts, task_id, attempt, name, status, started_ts, code, result) VALUES (101, 101, 1702562144, 1, 1702562147, 103, 0, 'DDL(schema) for database "hr_prod_vcs" 1702562144', 'DONE', 1702562144, 0, '{"detail": "Applied migration version 20231101-ddl to database \"hr_prod_vcs\".", "version": "0000.0000.0000-20231101-ddl", "changeHistory": "instances/prod-sample-instance/databases/hr_prod_vcs/changeHistories/110"}') ON CONFLICT DO NOTHING;
 
 
 --
@@ -38715,14 +51882,14 @@ INSERT INTO public.vcs (id, row_status, creator_id, created_ts, updater_id, upda
 -- Name: activity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.activity_id_seq', 169, true);
+SELECT pg_catalog.setval('public.activity_id_seq', 174, true);
 
 
 --
 -- Name: anomaly_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.anomaly_id_seq', 101, false);
+SELECT pg_catalog.setval('public.anomaly_id_seq', 101, true);
 
 
 --
@@ -38785,7 +51952,7 @@ SELECT pg_catalog.setval('public.db_id_seq', 109, true);
 -- Name: db_schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.db_schema_id_seq', 114, true);
+SELECT pg_catalog.setval('public.db_schema_id_seq', 119, true);
 
 
 --
@@ -38827,7 +51994,7 @@ SELECT pg_catalog.setval('public.inbox_id_seq', 105, true);
 -- Name: instance_change_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.instance_change_history_id_seq', 106, true);
+SELECT pg_catalog.setval('public.instance_change_history_id_seq', 110, true);
 
 
 --
@@ -38918,7 +52085,7 @@ SELECT pg_catalog.setval('public.project_webhook_id_seq', 101, false);
 -- Name: repository_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.repository_id_seq', 102, true);
+SELECT pg_catalog.setval('public.repository_id_seq', 103, true);
 
 
 --
@@ -38946,7 +52113,7 @@ SELECT pg_catalog.setval('public.schema_group_id_seq', 102, true);
 -- Name: setting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.setting_id_seq', 145, true);
+SELECT pg_catalog.setval('public.setting_id_seq', 156, true);
 
 
 --
@@ -38995,7 +52162,7 @@ SELECT pg_catalog.setval('public.task_id_seq', 111, true);
 -- Name: task_run_id_seq; Type: SEQUENCE SET; Schema: public; Owner: bbdev
 --
 
-SELECT pg_catalog.setval('public.task_run_id_seq', 101, false);
+SELECT pg_catalog.setval('public.task_run_id_seq', 101, true);
 
 
 --
@@ -39403,6 +52570,13 @@ CREATE UNIQUE INDEX idx_backup_unique_database_id_name ON public.backup USING bt
 --
 
 CREATE UNIQUE INDEX idx_bookmark_unique_creator_id_link ON public.bookmark USING btree (creator_id, link);
+
+
+--
+-- Name: idx_branch_reconcile_state; Type: INDEX; Schema: public; Owner: bbdev
+--
+
+CREATE INDEX idx_branch_reconcile_state ON public.branch USING btree (reconcile_state);
 
 
 --

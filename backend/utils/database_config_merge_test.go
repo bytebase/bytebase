@@ -1,4 +1,4 @@
-package taskrun
+package utils
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 		description string
 		target      *storepb.DatabaseConfig
 		baseline    *storepb.DatabaseConfig
-		current     *storepb.DatabaseConfig
+		head        *storepb.DatabaseConfig
 		want        *storepb.DatabaseConfig
 	}
 
@@ -65,7 +65,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			current: &storepb.DatabaseConfig{
+			head: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -149,7 +149,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			current: &storepb.DatabaseConfig{
+			head: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -278,7 +278,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 					},
 				},
 			},
-			current: &storepb.DatabaseConfig{
+			head: &storepb.DatabaseConfig{
 				Name: "db1",
 				SchemaConfigs: []*storepb.SchemaConfig{
 					{
@@ -356,7 +356,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range testCases {
-		got := mergeDatabaseConfig(tc.target, tc.baseline, tc.current)
+		got := MergeDatabaseConfig(tc.baseline, tc.head, tc.target)
 		equal := proto.Equal(got, tc.want)
 		a.True(equal, fmt.Sprintf("%s: \ngot:\t%%+v, \nexpected:\t%%+v", tc.description), got, tc.want)
 	}

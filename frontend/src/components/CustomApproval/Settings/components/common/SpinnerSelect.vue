@@ -1,5 +1,5 @@
 <template>
-  <NSelect :loading="loading" @update:value="handleUpdate" />
+  <NSelect v-bind="$attrs" :loading="loading" @update:value="handleUpdate" />
 </template>
 
 <script lang="ts">
@@ -14,7 +14,7 @@ defineComponent({
 import { ref } from "vue";
 import { type SelectProps, NSelect } from "naive-ui";
 
-export interface SpinnerSelectProps extends SelectProps {
+export interface SpinnerSelectProps extends /* @vue-ignore */ SelectProps {
   onUpdate: (value: string | undefined) => Promise<any>;
 }
 const props = defineProps<SpinnerSelectProps>();

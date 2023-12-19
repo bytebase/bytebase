@@ -1167,7 +1167,8 @@
       "approvers-of-current-step": "Aprobadores del paso actual"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
-    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
+    "preview": "Problema de vista previa"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1234,7 +1235,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
-    "successfully-synced-schema": "Esquema sincronizado correctamente"
+    "successfully-synced-schema": "Esquema sincronizado correctamente",
+    "foreign-tables": "tabla externa"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -1512,6 +1514,9 @@
     "filter-database": "Filtrar base de datos",
     "database-backup": "copia de seguridad de la base de datos",
     "transfer-project": "Transferir proyecto",
+    "unassign": "Desasignar",
+    "unassign-alert-title": "Desasignar bases de datos",
+    "unassign-alert-description": "Las bases de datos seleccionadas se transferirán desde su proyecto.",
     "edit-schema": "Modificar esquema",
     "edit-schema-in-vcs": "Modificar esquema en VCS",
     "edit-labels": "Editar etiquetas",
@@ -1531,6 +1536,7 @@
     "batch-action-permission-denied": "No tengo permiso para {action} para bases de datos",
     "batch-action-disabled": "No se puede {action} para las bases de datos de diferentes proyectos",
     "batch-action-disabled-for-unassigned": "No se puede {action} para una base de datos no asignada",
+    "successfully-transferred-databases": "Bases de datos transferidas exitosamente",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Se transfirió correctamente '{0}' al proyecto '{1}'.",
     "backup-name": "Nombre de la copia de seguridad",
     "create-backup": "Crear copia de seguridad",
@@ -1705,15 +1711,19 @@
         "select-target-project": "Seleccionar proyecto de destino",
         "select-at-least-one-database": "Seleccione al menos una base de datos"
       },
+      "select-databases": "Seleccionar bases de datos",
       "select-target-project": "Seleccionar proyecto de destino"
     },
+    "transfer-database-to": "Transferir bases de datos al proyecto de destino",
     "transfer-database-from-to": "Transferir la base de datos del proyecto de origen al proyecto de destino",
     "classification": {
       "self": "Clasificación"
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
-    "partition-tabled": "Tabla particionada"
+    "partition-tabled": "Tabla particionada",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -1914,10 +1924,7 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
-        "btn-text": "Archivar este @.lower:{'common.project'}",
-        "force": {
-          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
-        }
+        "btn-text": "Archivar este @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restaurar proyecto",
@@ -2150,7 +2157,9 @@
       "tunnel": "@:{'data-source.ssh.tunnel'}",
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
       "none": "Ninguno"
-    }
+    },
+    "admin": "Admin",
+    "read-only": "Solo lectura"
   },
   "setting": {
     "project": {
@@ -2266,7 +2275,8 @@
     "executing-query": "Ejecutando consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
-    "next-row": "siguiente fila"
+    "next-row": "siguiente fila",
+    "copy-success": "Copiado al portapapeles"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2328,7 +2338,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nada ha cambiado",
+    "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",
       "duplicated-schema-name": "Nombre de esquema duplicado",
@@ -3338,5 +3348,11 @@
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
     "export-format": "Formato de exportación"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Seleccionar base de datos de destino"
+    },
+    "select-tables-to-rollout": "Seleccionar tablas para implementar"
   }
 }

@@ -54,15 +54,22 @@
       :project-id="projectId"
       @dismiss="state.quickActionType = undefined"
     />
-    <TransferOutDatabaseForm
-      v-if="
-        projectId &&
-        state.quickActionType === 'quickaction.bb.project.database.transfer-out'
-      "
-      :project-id="projectId"
-      @dismiss="state.quickActionType = undefined"
-    />
   </Drawer>
+
+  <DatabaseGroupPanel
+    v-if="project"
+    :show="
+      state.quickActionType === 'quickaction.bb.group.database-group.create' ||
+      state.quickActionType === 'quickaction.bb.group.table-group.create'
+    "
+    :project="project"
+    :resource-type="
+      state.quickActionType === 'quickaction.bb.group.database-group.create'
+        ? 'DATABASE_GROUP'
+        : 'SCHEMA_GROUP'
+    "
+    @close="state.quickActionType = undefined"
+  />
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
@@ -76,9 +83,9 @@
   />
 
   <FeatureModal
-    :open="state.showFeatureModal && !!state.feature"
-    :feature="(state.feature as FeatureType)"
-    @cancel="state.showFeatureModal = false"
+    :open="!!state.feature"
+    :feature="state.feature"
+    @cancel="state.feature = undefined"
   />
 </template>
 
@@ -92,7 +99,6 @@ import {
   ListOrderedIcon,
   GalleryHorizontalEndIcon,
   ChevronsDownIcon,
-  ChevronsUpIcon,
   FileSearchIcon,
   FileDownIcon,
 } from "lucide-vue-next";
@@ -106,7 +112,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
   useInstanceV1Store,
@@ -114,13 +119,17 @@ import {
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
+  useProjectV1Store,
 } from "@/store";
-import { QuickActionType, FeatureType } from "@/types";
+import {
+  QuickActionType,
+  DatabaseGroupQuickActionType,
+  FeatureType,
+} from "@/types";
 import { idFromSlug } from "@/utils";
 
 interface LocalState {
-  feature?: string;
-  showFeatureModal: boolean;
+  feature?: FeatureType;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
@@ -146,13 +155,13 @@ const router = useRouter();
 const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
+const projectStore = useProjectV1Store();
 
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
 });
 
 const state = reactive<LocalState>({
-  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -164,6 +173,13 @@ const projectId = computed((): string | undefined => {
     return String(idFromSlug(parts[parts.length - 1]));
   }
   return undefined;
+});
+
+const project = computed(() => {
+  if (!projectId.value) {
+    return;
+  }
+  return projectStore.getProjectByUID(projectId.value);
 });
 
 // Only show alter schema and change data if the user has permission to alter schema of at least one project.
@@ -189,15 +205,10 @@ const transferDatabase = () => {
   state.quickActionType = "quickaction.bb.project.database.transfer";
 };
 
-const transferOutDatabase = () => {
-  state.quickActionType = "quickaction.bb.project.database.transfer-out";
-};
-
 const createInstance = () => {
   const instanceList = useInstanceV1Store().activeInstanceList;
   if (subscriptionStore.instanceCountLimit <= instanceList.length) {
     state.feature = "bb.feature.instance-count";
-    state.showFeatureModal = true;
     return;
   }
   state.quickActionType = "quickaction.bb.instance.create";
@@ -223,6 +234,14 @@ const reorderEnvironment = () => {
   commandStore.dispatchCommand("bb.environment.reorder");
 };
 
+const openDatabaseGroupDrawer = (quickAction: DatabaseGroupQuickActionType) => {
+  if (!subscriptionStore.hasFeature("bb.feature.database-grouping")) {
+    state.feature = "bb.feature.database-grouping";
+    return;
+  }
+  state.quickActionType = quickAction;
+};
+
 const availableQuickActionList = computed((): QuickAction[] => {
   const fullList: QuickAction[] = [
     {
@@ -237,6 +256,20 @@ const availableQuickActionList = computed((): QuickAction[] => {
       hide: !shouldShowAlterDatabaseEntries.value,
       action: createDatabase,
       icon: h(DatabaseIcon),
+    },
+    {
+      type: "quickaction.bb.group.database-group.create",
+      title: t("database-group.create"),
+      action: () =>
+        openDatabaseGroupDrawer("quickaction.bb.group.database-group.create"),
+      icon: h(PlusIcon),
+    },
+    {
+      type: "quickaction.bb.group.table-group.create",
+      title: t("database-group.table-group.create"),
+      action: () =>
+        openDatabaseGroupDrawer("quickaction.bb.group.table-group.create"),
+      icon: h(PlusIcon),
     },
     {
       type: "quickaction.bb.database.schema.update",
@@ -275,12 +308,6 @@ const availableQuickActionList = computed((): QuickAction[] => {
       title: t("quick-action.transfer-in-db"),
       action: transferDatabase,
       icon: h(ChevronsDownIcon),
-    },
-    {
-      type: "quickaction.bb.project.database.transfer-out",
-      title: t("quick-action.transfer-out-db"),
-      action: transferOutDatabase,
-      icon: h(ChevronsUpIcon),
     },
     {
       type: "quickaction.bb.issue.grant.request.querier",
