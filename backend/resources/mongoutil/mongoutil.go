@@ -55,7 +55,7 @@ func getTarNameAndVersion() (tarname string, version string, err error) {
 func Install(resourceDir string) (string, error) {
 	t1 := time.Now()
 	defer func() {
-		slog.Info("mongoutil", "cost", time.Now().Sub(t1))
+		slog.Info("mongoutil", "cost", time.Since(t1))
 	}()
 	tarName, version, err := getTarNameAndVersion()
 	if err != nil {

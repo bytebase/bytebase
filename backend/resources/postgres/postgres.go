@@ -42,7 +42,7 @@ func init() {
 func Install(resourceDir string) (string, error) {
 	t1 := time.Now()
 	defer func() {
-		slog.Info("postgresutil", "cost", time.Now().Sub(t1))
+		slog.Info("postgresutil", "cost", time.Since(t1))
 	}()
 	pkgNamePrefix, err := getTarName()
 	if err != nil {
