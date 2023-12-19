@@ -150,7 +150,9 @@ watch(
       set.add("bb.feature.watermark");
     }
     if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
-      set.add("bb.feature.disallow-signup");
+      if (!actuatorStore.isSaaSMode) {
+        set.add("bb.feature.disallow-signup");
+      }
     }
     if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
       set.add("bb.feature.2fa");
