@@ -39,7 +39,8 @@ import { VueClass, VueStyle } from "@/utils";
 import { SpinnerSelect } from "../../common";
 import { useCustomApprovalContext } from "../context";
 
-export interface ApprovalTemplateSelectorProps extends SelectProps {
+export interface ApprovalTemplateSelectorProps
+  extends /* @vue-ignore */ SelectProps {
   label?: string;
   link?: boolean;
   disabled?: boolean;
