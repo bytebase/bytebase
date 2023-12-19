@@ -35,7 +35,7 @@ func TestTryMerge(t *testing.T) {
 	testFilepath := "testdata/schema_design_merge/try_merge.yaml"
 	content, err := os.ReadFile(testFilepath)
 	a.NoError(err)
-	testCases := []testCase{}
+	var testCases []testCase
 	err = yaml.Unmarshal(content, &testCases)
 	a.NoError(err)
 
@@ -58,7 +58,7 @@ func TestTryMerge(t *testing.T) {
 		s := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(mergedSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		if record {
-			testCases[idx].Expected = strings.TrimSpace(string(s))
+			testCases[idx].Expected = strings.TrimSpace(s)
 		} else if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
 			a.Failf("Failed", "mismatch (-want +got):\n%s", diff)
 		}
