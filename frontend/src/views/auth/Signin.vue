@@ -94,22 +94,22 @@
               </div>
             </form>
 
-            <div class="mt-6 relative">
-              <div class="relative flex justify-center text-sm">
-                <template v-if="isDemo">
-                  <span class="pl-2 bg-white text-red-600 text-xl">{{
-                    state.loginHint
-                  }}</span>
+            <div class="mt-3">
+              <div
+                class="flex justify-center items-center text-sm text-control"
+              >
+                <template v-if="state.loginHint">
+                  <span class="text-accent">
+                    {{ state.loginHint }}
+                  </span>
                 </template>
                 <template v-else-if="!disallowSignup">
-                  <span class="pl-2 bg-white text-control">{{
-                    $t("auth.sign-in.new-user")
-                  }}</span>
-                  <router-link
-                    to="/auth/signup"
-                    class="accent-link bg-white px-2"
-                    >{{ $t("common.sign-up") }}</router-link
-                  >
+                  <span>
+                    {{ $t("auth.sign-in.new-user") }}
+                  </span>
+                  <router-link to="/auth/signup" class="accent-link px-2">
+                    {{ $t("common.sign-up") }}
+                  </router-link>
                 </template>
               </div>
             </div>
