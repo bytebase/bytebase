@@ -27,5 +27,3 @@ mkdir_output() {
     fi
     echo "$OUTPUT_DIR"
 }
-
-
