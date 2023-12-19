@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	currentVersion     = "16"
+	currentVersion = "16"
+	// This path must be consistent with the Dockerfile.
 	postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
 )
 

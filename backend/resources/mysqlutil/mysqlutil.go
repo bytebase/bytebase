@@ -27,6 +27,7 @@ const (
 	MySQLDump binaryName = "mysqldump"
 )
 
+// This path must be consistent with the Dockerfile.
 const MySQLUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64"
 
 // GetPath returns the binary path specified by `binName`, `binDir` is the path that installed the mysqlutil.

@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
+// This path must be consistent with the Dockerfile.
 const MongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64"
 
 // nolint
