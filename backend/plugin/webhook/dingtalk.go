@@ -46,14 +46,14 @@ type DingTalkReceiver struct {
 
 func (*DingTalkReceiver) post(context Context) error {
 	metaStrList := []string{}
-	for _, meta := range context.getMetaList() {
+	for _, meta := range context.getMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("##### **By:** %s (%s)", context.CreatorName, context.CreatorEmail))
+	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.CreatorName, context.CreatorEmail))
 
-	text := fmt.Sprintf("# %s\n%s\n##### [View in Bytebase](%s)", context.Title, strings.Join(metaStrList, "\n"), context.Link)
+	text := fmt.Sprintf("# %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {
-		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [View in Bytebase](%s)", context.Title, context.Description, strings.Join(metaStrList, "\n"), context.Link)
+		text = fmt.Sprintf("# %s\n> %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, context.Description, strings.Join(metaStrList, "\n"), context.Link)
 	}
 	if len(context.MentionUsersByPhone) > 0 {
 		var ats []string
@@ -66,7 +66,7 @@ func (*DingTalkReceiver) post(context Context) error {
 	post := DingTalkWebhook{
 		MessageType: "markdown",
 		Markdown: DingTalkWebhookMarkdown{
-			Title: context.Title,
+			Title: context.TitleZh,
 			Text:  text,
 		},
 	}
