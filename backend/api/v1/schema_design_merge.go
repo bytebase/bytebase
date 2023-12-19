@@ -34,11 +34,11 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata) (*storepb.Da
 		return nil, errors.Wrap(err, "failed to diff between ancestor and base")
 	}
 
-	if conflict, msg := diffBetweenAncestorAndHead.tryMerge(diffBetweenAncestorAndBase); conflict {
+	if conflict, msg := diffBetweenAncestorAndBase.tryMerge(diffBetweenAncestorAndHead); conflict {
 		return nil, errors.Errorf("merge conflict: %s", msg)
 	}
 
-	if err := diffBetweenAncestorAndHead.applyDiffTo(ancestor); err != nil {
+	if err := diffBetweenAncestorAndBase.applyDiffTo(ancestor); err != nil {
 		return nil, errors.Wrap(err, "failed to apply diff to target")
 	}
 
@@ -206,7 +206,12 @@ type metadataDiffTableNode struct {
 	base *storepb.TableMetadata
 	head *storepb.TableMetadata
 
-	columns     map[string]*metadataDiffColumnNode
+	// columnNames is designed to help to handle the column orders.
+	// The size of columnNames is always equal to the size of columnsMap,
+	// and all the value appeared in columnNames is also the key of columnsMap.
+	columnNames []string
+	columnsMap  map[string]*metadataDiffColumnNode
+
 	foreignKeys map[string]*metadataDiffForeignKeyNode
 	indexes     map[string]*metadataDiffIndexNode
 	// TableMetaData contains other object types, likes trigger, index etc. But we do not support them yet.
@@ -300,8 +305,9 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		}
 	}
 
-	for columnName, columnNode := range n.columns {
-		otherColumnNode, in := other.columns[columnName]
+	for _, columnName := range n.columnNames {
+		columnNode := n.columnsMap[columnName]
+		otherColumnNode, in := other.columnsMap[columnName]
 		if !in {
 			continue
 		}
@@ -309,7 +315,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if conflict {
 			return true, msg
 		}
-		delete(other.columns, columnName)
+		delete(other.columnsMap, columnName)
 	}
 
 	for foreignKeyName, foreignKeyNode := range n.foreignKeys {
@@ -336,8 +342,13 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		delete(other.indexes, indexName)
 	}
 
-	for _, remainingColumn := range other.columns {
-		n.columns[remainingColumn.name] = remainingColumn
+	for _, columnName := range other.columnNames {
+		// We had deleted the column node which appeared in both table nodes.
+		if columnNode, in := other.columnsMap[columnName]; in {
+			n.columnsMap[columnName] = columnNode
+			n.columnNames = append(n.columnNames, columnName)
+			continue
+		}
 	}
 
 	for _, remainingForeignKey := range other.foreignKeys {
@@ -356,12 +367,6 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 		return errors.New("target must not be nil")
 	}
 
-	sortedColumnName := make([]string, 0, len(n.columns))
-	for columnName := range n.columns {
-		sortedColumnName = append(sortedColumnName, columnName)
-	}
-	slices.Sort(sortedColumnName)
-
 	sortedForeignKeyName := make([]string, 0, len(n.foreignKeys))
 	for foreignKeyName := range n.foreignKeys {
 		sortedForeignKeyName = append(sortedForeignKeyName, foreignKeyName)
@@ -376,10 +381,6 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 
 	switch n.action {
 	case diffActionCreate:
-		columnsInHead := make(map[string]bool)
-		for _, column := range n.head.Columns {
-			columnsInHead[column.Name] = true
-		}
 		newTable := &storepb.TableMetadata{
 			Name:           n.name,
 			Engine:         n.head.Engine,
@@ -388,19 +389,10 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 			UserComment:    n.head.UserComment,
 			Classification: n.head.Classification,
 		}
-		for columnName := range columnsInHead {
-			if columnNode, in := n.columns[columnName]; in {
+		for _, columnName := range n.columnNames {
+			if columnNode, in := n.columnsMap[columnName]; in {
 				if err := columnNode.applyDiffTo(newTable); err != nil {
 					return errors.Wrapf(err, "failed to apply diff to column %q", columnNode.name)
-				}
-			}
-		}
-
-		for _, columnName := range sortedColumnName {
-			if _, in := columnsInHead[columnName]; !in {
-				column := n.columns[columnName]
-				if err := column.applyDiffTo(newTable); err != nil {
-					return errors.Wrapf(err, "failed to apply diff to column %q", column.name)
 				}
 			}
 		}
@@ -446,10 +438,11 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 					ForeignKeys:    table.ForeignKeys,
 					Indexes:        table.Indexes,
 				}
-				for _, columnName := range sortedColumnName {
-					column := n.columns[columnName]
-					if err := column.applyDiffTo(newTable); err != nil {
-						return errors.Wrapf(err, "failed to apply diff to column %q", column.name)
+				for _, columnName := range n.columnNames {
+					if columnNode, in := n.columnsMap[columnName]; in {
+						if err := columnNode.applyDiffTo(newTable); err != nil {
+							return errors.Wrapf(err, "failed to apply diff to column %q", columnNode.name)
+						}
 					}
 				}
 				for _, foreignKeyName := range sortedForeignKeyName {
@@ -963,37 +956,56 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		name:        name,
 		base:        base,
 		head:        head,
-		columns:     make(map[string]*metadataDiffColumnNode),
+		columnsMap:  make(map[string]*metadataDiffColumnNode),
 		foreignKeys: make(map[string]*metadataDiffForeignKeyNode),
 		indexes:     make(map[string]*metadataDiffIndexNode),
 	}
 
 	columnNamesMap := make(map[string]bool)
+	var columnNameSlice []string
 
-	baseColumnMap := make(map[string]*storepb.ColumnMetadata)
+	baseColumnMap := make(map[string]int)
 	if base != nil {
-		for _, column := range base.Columns {
-			baseColumnMap[column.Name] = column
+		for idx, column := range base.Columns {
+			baseColumnMap[column.Name] = idx
+			if _, ok := columnNamesMap[column.Name]; !ok {
+				columnNameSlice = append(columnNameSlice, column.Name)
+			}
 			columnNamesMap[column.Name] = true
 		}
 	}
 
-	headColumnMap := make(map[string]*storepb.ColumnMetadata)
+	headColumnMap := make(map[string]int)
 	if head != nil {
-		for _, column := range head.Columns {
-			headColumnMap[column.Name] = column
+		for idx, column := range head.Columns {
+			headColumnMap[column.Name] = idx
+			if _, ok := columnNamesMap[column.Name]; !ok {
+				columnNameSlice = append(columnNameSlice, column.Name)
+			}
 			columnNamesMap[column.Name] = true
 		}
 	}
 
-	for columnName := range columnNamesMap {
-		baseColumn, headColumn := baseColumnMap[columnName], headColumnMap[columnName]
+	for _, columnName := range columnNameSlice {
+		baseColumnIdx, baseColumnOk := baseColumnMap[columnName]
+		headColumnIdx, headColumnOk := headColumnMap[columnName]
+		var baseColumn, headColumn *storepb.ColumnMetadata
+		if baseColumnOk {
+			baseColumn = base.Columns[baseColumnIdx]
+		}
+		if headColumnOk {
+			headColumn = head.Columns[headColumnIdx]
+		}
+		if baseColumnIdx != 0 {
+			baseColumn = base.Columns[baseColumnIdx]
+		}
 		diffNode, err := diffColumnMetadata(baseColumn, headColumn)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to diff column %q", columnName)
 		}
 		if diffNode != nil {
-			tableNode.columns[columnName] = diffNode
+			tableNode.columnsMap[columnName] = diffNode
+			tableNode.columnNames = append(tableNode.columnNames, columnName)
 		}
 	}
 
@@ -1027,7 +1039,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	if action == diffActionUpdate {
-		if len(tableNode.columns) == 0 && len(tableNode.foreignKeys) == 0 {
+		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 {
 			return nil, nil
 		}
 	}
