@@ -54,10 +54,25 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
   CC=aarch64-linux-gnu-gcc && CC_FOR_TARGET=gcc-aarch64-linux-gnu; \
 fi && \
     VERSION=`cat ./scripts/VERSION`${VERSION_SUFFIX} && CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH CC=$CC CC_FOR_TARGET=$CC_FOR_TARGET go build \
-    --tags "${RELEASE},embed_frontend,dockerfile" \
+    --tags "${RELEASE},embed_frontend,docker_amd64" \
     -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.version=${VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.goversion=${GO_VERSION}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=${GIT_COMMIT}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.buildtime=${BUILD_TIME}' -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.builduser=${BUILD_USER}'" \
     -o bytebase \
     ./backend/bin/server/main.go
+
+# Use debian for uncompress tar files.
+FROM debian:bookworm-slim as uncompress
+
+ARG TARGETARCH
+
+# Our HEALTHCHECK instruction in dockerfile needs curl.
+RUN apt-get update && apt-get install -y xz-utils
+COPY ./backend/resources /tmp/bytebase/resources/
+RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-amd64.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64/
+RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+RUN tar -zxf /tmp/bytebase/resources/mysqlutil/mysqlutil-8.0.33-linux-amd64.tar.gz -C /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64/
+RUN mkdir -p /var/opt/bytebase/resources/postgres-linux-amd64-16
+RUN tar -Jxf /tmp/bytebase/resources/postgres/postgres-linux-amd64.txz -C /var/opt/bytebase/resources/postgres-linux-amd64-16/
 
 # Use debian because mysql requires glibc.
 FROM debian:bookworm-slim as monolithic
@@ -93,9 +108,7 @@ COPY ./scripts /usr/local/bin/
 COPY ./scripts/.psqlrc /root/.psqlrc
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
-
-RUN mkdir -p /var/opt/bytebase/resources/
-COPY ./backend/resources/tmp /var/opt/bytebase//resources/
+COPY --from=uncompress /var/opt/bytebase/resources /var/opt/bytebase/resources
 
 ENV OPENSSL_CONF /etc/ssl/
 
