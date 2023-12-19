@@ -98,14 +98,6 @@ func extractTar(r io.Reader, targetDir string) error {
 }
 
 func LinkImpl(storeDir, utilDir string) (bool, error) {
-	/*
-		baseDir := removeLastDir(utilDir)
-		if _, err := os.Stat(baseDir); err != nil {
-			if os.IsNotExist(err) {
-				return false, nil
-			}
-		}
-	*/
 	slog.Info("link impl", "storeDir", storeDir, "utilDir", utilDir)
 	if _, err := os.Stat(storeDir); err != nil {
 		if os.IsNotExist(err) {
