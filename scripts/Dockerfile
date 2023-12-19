@@ -59,7 +59,7 @@ fi && \
     -o bytebase \
     ./backend/bin/server/main.go
 
-# Use debian for uncompress tar files.
+# Use debian to uncompress tar files.
 FROM debian:bookworm-slim as uncompress
 
 ARG TARGETARCH
