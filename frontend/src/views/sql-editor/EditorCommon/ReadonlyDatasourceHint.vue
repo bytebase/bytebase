@@ -8,13 +8,15 @@
     <p class="py-1">
       <template v-if="allowManageInstance">
         {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
-        <span
-          v-if="pageMode === 'BUNDLED'"
-          class="underline text-accent cursor-pointer hover:opacity-80"
-          @click="gotoInstanceDetailPage"
-        >
-          {{ $t("sql-editor.create-read-only-data-source") }}
-        </span>
+
+        <HideInStandaloneMode>
+          <span
+            class="underline text-accent cursor-pointer hover:opacity-80"
+            @click="gotoInstanceDetailPage"
+          >
+            {{ $t("sql-editor.create-read-only-data-source") }}
+          </span>
+        </HideInStandaloneMode>
       </template>
       <template v-else>
         {{ $t("instance.no-read-only-data-source-warn-for-developer") }}
@@ -24,10 +26,9 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useCurrentUserV1, useTabStore, useActuatorV1Store } from "@/store";
+import { useCurrentUserV1, useTabStore } from "@/store";
 import { ComposedInstance, TabMode, UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
@@ -37,7 +38,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { pageMode } = storeToRefs(useActuatorV1Store());
 const tabStore = useTabStore();
 const me = useCurrentUserV1();
 
