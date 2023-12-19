@@ -63,7 +63,7 @@
         </NTooltip>
         <template v-if="showExportButton">
           <DataExportButton
-            v-if="allowToExport"
+            v-if="allowToExportData"
             size="small"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
@@ -75,7 +75,10 @@
             :allow-specify-row-count="true"
             @export="handleExportBtnClick"
           />
-          <NButton v-else @click="state.showRequestExportPanel = true">
+          <NButton
+            v-else-if="allowToRequestExportData"
+            @click="state.showRequestExportPanel = true"
+          >
             {{ $t("quick-action.request-export-data") }}
           </NButton>
         </template>
@@ -155,6 +158,7 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   usePageMode,
+  useCurrentUserIamPolicy,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -211,6 +215,7 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
+const currentUserIamPolicy = useCurrentUserIamPolicy();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const pageMode = usePageMode();
@@ -241,17 +246,13 @@ const showExportButton = computed(() => {
   return customTheme.value !== "lixiang";
 });
 
-const allowToExport = computed(() => {
+const allowToExportData = computed(() => {
+  // The current plan doesn't have access control feature.
+  // Fallback to true.
   if (!featureToRef("bb.feature.access-control").value) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
     return true;
   }
 
-  return allowToExportData.value;
-});
-
-const allowToExportData = computed(() => {
   if (
     hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-access-control",
@@ -262,6 +263,21 @@ const allowToExportData = computed(() => {
   }
 
   return props.sqlResultSet?.allowExport || false;
+});
+
+const allowToRequestExportData = computed(() => {
+  const { databaseId } = tabStore.currentTab.connection;
+  const database =
+    databaseId === String(UNKNOWN_ID)
+      ? undefined
+      : databaseStore.getDatabaseByUID(databaseId);
+  if (!database) {
+    return false;
+  }
+
+  return currentUserIamPolicy.isProjectOwnerOrDeveloperOrViewer(
+    database.project
+  );
 });
 
 // use a debounced value to improve performance when typing rapidly

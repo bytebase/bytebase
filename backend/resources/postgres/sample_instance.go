@@ -49,12 +49,12 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 	for k, v := range dbs {
 		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
 		stopper, err := startOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch)
+		i++
 		if err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
 		stoppers = append(stoppers, stopper)
-		i++
 	}
 	slog.Info("-----Sample Postgres Instance END-----")
 	return stoppers

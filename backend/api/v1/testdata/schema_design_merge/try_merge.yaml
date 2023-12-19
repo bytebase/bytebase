@@ -24,15 +24,15 @@
     What we expect:
       - Table `employee`:
         - DROP COLUMN `name`.
-        - ADD COLUMN `credit_card_number VARCHAR(255)`.
-        - ADD COLUMN `debit_card_number VARCHAR(255)`.
         - ADD COLUMN `gender char(1)`.
+        - ADD COLUMN `debit_card_number VARCHAR(255)`.
+        - ADD COLUMN `credit_card_number VARCHAR(255)`.
       - Table `salary`:
         - DROP TABLE `salary`.
       - Table `hiring_date`:
         - CREATE TABLE `hiring_date`(id INT, employee_id INT).
       - Table `address`:
-        - CREATE TABLE `address` (id INT PRIMARY KEY, employee_id INT REFERENCES employee(id), address VARCHAR(255)).
+        - CREATE TABLE `address` (id INT PRIMARY KEY, address VARCHAR(255), employee_id INT REFERENCES employee(id)).
   ancestor: |-
     {
       "schemas":  [
@@ -125,10 +125,12 @@
               "columns":  [
                 {
                   "name":  "id",
+                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "employee_id",
+                  "position":  2,
                   "type":  "integer"
                 }
               ],
@@ -292,9 +294,9 @@
                   "type":  "integer"
                 },
                 {
-                  "name":  "credit_card_number",
+                  "name":  "gender",
                   "position":  2,
-                  "type":  "varchar(255)"
+                  "type":  "char(1)"
                 },
                 {
                   "name":  "debit_card_number",
@@ -302,9 +304,9 @@
                   "type":  "varchar(255)"
                 },
                 {
-                  "name":  "gender",
+                  "name":  "credit_card_number",
                   "position":  4,
-                  "type":  "char(1)"
+                  "type":  "varchar(255)"
                 }
               ],
               "indexes":  [
@@ -328,14 +330,14 @@
                   "type":  "integer"
                 },
                 {
-                  "name":  "employee_id",
+                  "name":  "address",
                   "position":  2,
-                  "type":  "integer"
+                  "type":  "varchar(255)"
                 },
                 {
-                  "name":  "address",
+                  "name":  "employee_id",
                   "position":  3,
-                  "type":  "varchar(255)"
+                  "type":  "integer"
                 }
               ],
               "foreignKeys":  [

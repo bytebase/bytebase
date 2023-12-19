@@ -335,7 +335,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	configureEchoRouters(s.e, s.grpcServer, mux)
+	configureEchoRouters(s.e, s.grpcServer, mux, profile)
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 		if profile.TestOnlySkipOnboardingData {
 			return nil
