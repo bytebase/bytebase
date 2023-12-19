@@ -8,7 +8,6 @@
     <p class="py-1">
       <template v-if="allowManageInstance">
         {{ $t("instance.no-read-only-data-source-warn-for-admin-dba") }}
-
         <HideInStandaloneMode>
           <span
             class="underline text-accent cursor-pointer hover:opacity-80"
