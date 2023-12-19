@@ -60,7 +60,7 @@ fi && \
     ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
-FROM debian:bookworm-slim as uncompress
+FROM debian:bookworm-slim as decomporessor
 
 ARG TARGETARCH
 
@@ -111,7 +111,7 @@ COPY ./scripts /usr/local/bin/
 COPY ./scripts/.psqlrc /root/.psqlrc
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
-COPY --from=uncompress /var/opt/bytebase/resources /var/opt/bytebase/resources
+COPY --from=decomporessor /var/opt/bytebase/resources /var/opt/bytebase/resources
 
 ENV OPENSSL_CONF /etc/ssl/
 
