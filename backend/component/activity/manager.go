@@ -534,11 +534,11 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 
 		switch payload.NewStatus {
 		case api.TaskRunPending:
-			title = "Task run started - " + payload.TaskName
-			titleZh = "任务开始 - " + payload.TaskName
+			title = "Task run is pending - " + payload.TaskName
+			titleZh = "任务等待中 - " + payload.TaskName
 		case api.TaskRunRunning:
-			title = "Task run started to run - " + payload.TaskName
-			titleZh = "任务开始运行 - " + payload.TaskName
+			title = "Task run is running - " + payload.TaskName
+			titleZh = "任务运行中 - " + payload.TaskName
 		case api.TaskRunDone:
 			level = webhook.WebhookSuccess
 			title = "Task run completed - " + payload.TaskName
@@ -580,10 +580,10 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			webhookTaskResult.Detail = result.Detail
 
 		case api.TaskRunCanceled:
-			title = "Task run canceled - " + payload.TaskName
+			title = "Task run is canceled - " + payload.TaskName
 			titleZh = "任务取消 - " + payload.TaskName
 		case api.TaskRunSkipped:
-			title = "Task skipped - " + payload.TaskName
+			title = "Task is skipped - " + payload.TaskName
 			titleZh = "任务跳过 - " + payload.TaskName
 			_, skippedReason, err := getTaskSkippedAndReason(task)
 			if err != nil {
@@ -593,7 +593,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			}
 			webhookTaskResult.SkippedReason = skippedReason
 		default:
-			title = "Task run changed - " + payload.TaskName
+			title = "Task run status changed - " + payload.TaskName
 			titleZh = "任务状态变更 - " + payload.TaskName
 		}
 
