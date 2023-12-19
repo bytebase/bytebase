@@ -121,7 +121,3 @@ func LinkImpl(storeDir, utilDir string) (bool, error) {
 	// create symbolic link success
 	return true, nil
 }
-
-func removeLastDir(path string) string {
-	return filepath.Dir(path)
-}
