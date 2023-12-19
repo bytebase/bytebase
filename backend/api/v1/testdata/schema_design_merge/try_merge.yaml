@@ -125,10 +125,12 @@
               "columns":  [
                 {
                   "name":  "id",
+                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "employee_id",
+                  "position":  2,
                   "type":  "integer"
                 }
               ],
