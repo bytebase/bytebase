@@ -22,6 +22,7 @@ import {
   isDeveloperOfProjectV1,
   isMemberOfProjectV1,
   isOwnerOfProjectV1,
+  isViewerOfProjectV1,
 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
@@ -176,7 +177,7 @@ export const useCurrentUserIamPolicy = () => {
     return isMemberOfProjectV1(policy, currentUser.value);
   };
 
-  const isProjectOwnerOrDeveloper = (projectName: string) => {
+  const isProjectOwnerOrDeveloper = (projectName: string): boolean => {
     if (hasWorkspaceSuperPrivilege) {
       return true;
     }
@@ -188,6 +189,21 @@ export const useCurrentUserIamPolicy = () => {
     return (
       isOwnerOfProjectV1(policy, currentUser.value) ||
       isDeveloperOfProjectV1(policy, currentUser.value)
+    );
+  };
+
+  const isProjectOwnerOrDeveloperOrViewer = (projectName: string): boolean => {
+    if (hasWorkspaceSuperPrivilege) {
+      return true;
+    }
+
+    const policy = iamPolicyStore.policyMap.get(projectName);
+    if (!policy) {
+      return false;
+    }
+    return (
+      isProjectOwnerOrDeveloper(projectName) ||
+      isViewerOfProjectV1(policy, currentUser.value)
     );
   };
 
@@ -346,6 +362,7 @@ export const useCurrentUserIamPolicy = () => {
   return {
     isMemberOfProject,
     isProjectOwnerOrDeveloper,
+    isProjectOwnerOrDeveloperOrViewer,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabaseV1,
     allowToExportDatabaseV1,
