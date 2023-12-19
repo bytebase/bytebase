@@ -89,12 +89,12 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mysqlutil in resourceDir.
 func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
-	var createSymolic bool
-	var err error
-	if createSymolic, err = utils.LinkImpl(MySQLUtilsDir, mysqlutilDir); err != nil {
+	createSymbolic, err := utils.LinkImpl(MySQLUtilsDir, mysqlutilDir)
+	if err != nil {
 		return err
 	}
-	if createSymolic {
+	// create symbolic successfully. so we don't need to extract the tarball.
+	if createSymbolic {
 		return nil
 	}
 
