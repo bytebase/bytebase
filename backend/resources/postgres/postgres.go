@@ -47,12 +47,14 @@ func Install(resourceDir string) (string, error) {
 		// Install if not exist yet.
 		needInstall = true
 	}
-	createSymbolic, err := utils.LinkImpl(utils.PostgresUtilSource, pgBaseDir)
-	if err != nil {
-		return "", err
-	}
-	if createSymbolic {
-		needInstall = false
+	if needInstall {
+		createSymbolic, err := utils.LinkImpl(utils.PostgresUtilSource, pgBaseDir)
+		if err != nil {
+			return "", err
+		}
+		if createSymbolic {
+			needInstall = false
+		}
 	}
 	if needInstall {
 		slog.Info("Installing PostgreSQL utilities...")
