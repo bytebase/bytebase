@@ -1,4 +1,5 @@
-//go:build docker
+//go:build dockerfile
+
 package postgres
 
 import "embed"
