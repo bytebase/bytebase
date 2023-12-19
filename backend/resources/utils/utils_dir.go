@@ -3,7 +3,8 @@ package utils
 import "runtime"
 
 // These paths must be consistent with the Dockerfile where decompressing the txz files.
-// These paths are used to access the resources from the docker image.
+// we use these magic paths because the resources are extracted at build time.
+// But at runtime we will decide real path according to the user input.
 var MongoUtilsDir string
 var MySQLUtilsDir string
 var PostgresUtilSource string
