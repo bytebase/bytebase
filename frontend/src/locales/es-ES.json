@@ -1425,7 +1425,8 @@
     },
     "password-forget": {
       "title": "¿Olvidaste tu contraseña?",
-      "content": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "selfhost": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "cloud": "Vaya al {link} y restablezca su contraseña.",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
     "password-forgot": "Contraseña olvidada",

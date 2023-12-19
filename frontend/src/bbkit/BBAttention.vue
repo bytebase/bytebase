@@ -23,9 +23,11 @@
         />
       </div>
       <div class="ml-3">
-        <h3 class="text-sm font-medium" :class="`text-${color}-800`">
-          {{ displayTitle }}
-        </h3>
+        <slot name="title">
+          <h3 class="text-sm font-medium" :class="`text-${color}-800`">
+            {{ displayTitle }}
+          </h3>
+        </slot>
         <slot name="default">
           <div
             v-if="description"
