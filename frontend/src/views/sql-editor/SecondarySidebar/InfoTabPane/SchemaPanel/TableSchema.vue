@@ -17,7 +17,7 @@
           :schema="schema"
           :table="table"
         />
-        <template v-if="pageMode === 'BUNDLED'">
+        <HideInStandaloneMode>
           <ExternalLinkButton
             :link="tableDetailLink"
             :tooltip="$t('common.detail')"
@@ -34,7 +34,7 @@
               })
             "
           />
-        </template>
+        </HideInStandaloneMode>
       </div>
     </div>
 
@@ -51,7 +51,6 @@
 <script lang="ts" setup>
 import { stringify } from "qs";
 import { computed } from "vue";
-import { usePageMode } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -78,7 +77,6 @@ const emit = defineEmits<{
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();
-const pageMode = usePageMode();
 
 const tableDetailLink = computed((): string => {
   const { db: database, schema, table } = props;
