@@ -27,7 +27,7 @@ func getBaseProfile(dataDir string) config.Profile {
 		SampleDatabasePort:   sampleDatabasePort,
 		Readonly:             flags.readonly,
 		SaaS:                 flags.saas,
-		StartupDebug:         flags.debug,
+		Debug:                flags.debug,
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
 		DemoName:             flags.demoName,

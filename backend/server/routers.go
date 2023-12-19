@@ -68,7 +68,7 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
 	}))
-	if profile.StartupDebug {
+	if profile.Debug {
 		pprof.Register(e)
 	}
 	p := prometheus.NewPrometheus("api", nil)
