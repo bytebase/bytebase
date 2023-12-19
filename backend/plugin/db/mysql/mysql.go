@@ -340,16 +340,20 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			results = append(results, &v1pb.QueryResult{
 				Error: err.Error(),
 			})
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-				}
-				break
+			slog.Info("query error", log.BBError(err))
+			if errors.Is(err, context.Canceled) {
+				slog.Info("query canceled error")
 			}
-		} else {
-			results = append(results, result)
+			if errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("query deadline exceeded error")
+			}
+			slog.Info("cancel connection", slog.String("connectionID", connectionID))
+			if err := driver.StopConnectionByID(connectionID); err != nil {
+				slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+			}
+			break
 		}
+		results = append(results, result)
 	}
 
 	return results, nil
