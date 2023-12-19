@@ -352,9 +352,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 				slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 			}
 			break
-		} else {
-			results = append(results, result)
 		}
+		results = append(results, result)
 	}
 
 	return results, nil
