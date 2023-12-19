@@ -98,7 +98,6 @@ func extractTar(r io.Reader, targetDir string) error {
 }
 
 func LinkImpl(storeDir, utilDir string) (bool, error) {
-	slog.Info("link impl", "storeDir", storeDir, "utilDir", utilDir)
 	if _, err := os.Stat(storeDir); err != nil {
 		if os.IsNotExist(err) {
 			// source file doesn't exists.'
@@ -108,7 +107,6 @@ func LinkImpl(storeDir, utilDir string) (bool, error) {
 	}
 	if utilDir == storeDir {
 		// they are same, just use it.
-		slog.Info("utilDir is same as storeDir")
 		return true, nil
 	}
 
