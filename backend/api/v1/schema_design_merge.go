@@ -98,7 +98,7 @@ type metadataDiffSchemaNode struct {
 
 	tables map[string]*metadataDiffTableNode
 
-	// SchemaMetadata contains other object types, likes function, view and etc, but we do not support them yet.
+	// SchemaMetadata contains other object types, likes function, view etc. But we do not support them yet.
 }
 
 func (n *metadataDiffSchemaNode) tryMerge(other *metadataDiffSchemaNode) (bool, string) {
@@ -209,7 +209,7 @@ type metadataDiffTableNode struct {
 	columns     map[string]*metadataDiffColumnNode
 	foreignKeys map[string]*metadataDiffForeignKeyNode
 	indexes     map[string]*metadataDiffIndexNode
-	// TableMetaData contains other object types, likes trigger, index and etc, but we do not support them yet.
+	// TableMetaData contains other object types, likes trigger, index etc. But we do not support them yet.
 }
 
 func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, string) {
