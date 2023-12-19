@@ -1,4 +1,4 @@
-//go:build docker_amd64 && !docker_arm64
+//go:build docker
 
 package postgres
 
