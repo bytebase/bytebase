@@ -79,12 +79,11 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mongoutil in resourceDir.
 func installImpl(resourceDir, mongoutilDir, tarName, version string) error {
-	var createSymolic bool
-	var err error
-	if createSymolic, err = utils.LinkImpl(mongoUtilsDir, mongoutilDir); err != nil {
+	createSymbolic, err := utils.LinkImpl(mongoUtilsDir, mongoutilDir)
+	if err != nil {
 		return err
 	}
-	if createSymolic {
+	if createSymbolic {
 		return nil
 	}
 	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))

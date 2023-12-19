@@ -64,11 +64,11 @@ func Install(resourceDir string) (string, error) {
 		// Install if not exist yet.
 		needInstall = true
 	}
-	var createSymolic bool
-	if createSymolic, err = utils.LinkImpl(postgresUtilSource, pgBaseDir); err != nil {
+	createSymbolic, err := utils.LinkImpl(postgresUtilSource, pgBaseDir)
+	if err != nil {
 		return "", err
 	}
-	if createSymolic {
+	if createSymbolic {
 		needInstall = false
 	}
 	if needInstall {
