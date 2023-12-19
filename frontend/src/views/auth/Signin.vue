@@ -47,11 +47,17 @@
                     <span class="text-red-600">*</span>
                   </div>
                   <router-link
-                    to="/auth/password-forgot"
+                    :to="{
+                      path: '/auth/password-forgot',
+                      query: {
+                        hint: route.query.hint,
+                      },
+                    }"
                     class="text-sm font-normal text-control-light hover:underline focus:outline-none"
                     tabindex="-1"
-                    >{{ $t("auth.sign-in.forget-password") }}</router-link
                   >
+                    {{ $t("auth.sign-in.forget-password") }}
+                  </router-link>
                 </label>
                 <div
                   class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
@@ -98,9 +104,14 @@
               <div
                 class="flex justify-center items-center text-sm text-control"
               >
-                <template v-if="state.loginHint">
+                <template v-if="isDemo">
                   <span class="text-accent">
-                    {{ state.loginHint }}
+                    {{
+                      $t("auth.sign-in.demo-note", {
+                        username: "demo@example.com",
+                        password: "1024",
+                      })
+                    }}
                   </span>
                 </template>
                 <template v-else-if="!disallowSignup">
@@ -239,7 +250,6 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
   useActuatorV1Store,
@@ -256,11 +266,9 @@ import AuthFooter from "./AuthFooter.vue";
 interface LocalState {
   email: string;
   password: string;
-  loginHint: string;
   showPassword: boolean;
 }
 
-const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const actuatorStore = useActuatorV1Store();
@@ -270,7 +278,6 @@ const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   email: "",
   password: "",
-  loginHint: "",
   showPassword: false,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
@@ -298,14 +305,6 @@ onMounted(async () => {
   const params = new URLSearchParams(url.search);
   state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
   state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
-  state.loginHint =
-    params.get("hint") ??
-    (isDemo.value
-      ? t("auth.sign-in.demo-note", {
-          username: "demo@example.com",
-          password: "1024",
-        })
-      : "");
   state.showPassword = isDemo.value != null;
 
   await identityProviderStore.fetchIdentityProviderList();

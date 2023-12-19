@@ -1423,7 +1423,8 @@
     },
     "password-forget": {
       "title": "忘记了您的密码？",
-      "content": "请联系的您的 Bytebase 管理员重置密码",
+      "selfhost": "请联系的您的 Bytebase 管理员重置密码",
+      "cloud": "请登录 {link} 并重置密码",
       "return-to-sign-in": "返回登录"
     },
     "password-forgot": "忘记密码",
