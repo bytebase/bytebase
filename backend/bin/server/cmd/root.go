@@ -197,7 +197,7 @@ func start() {
 		log.LogLevel.Set(slog.LevelDebug)
 	}
 	if flags.saas {
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	} else {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	}
