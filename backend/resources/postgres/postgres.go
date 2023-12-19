@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -28,10 +27,6 @@ const (
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
-	t1 := time.Now()
-	defer func() {
-		slog.Info("postgresutil", "cost", time.Since(t1))
-	}()
 	pkgNamePrefix, err := getTarName()
 	if err != nil {
 		return "", err
