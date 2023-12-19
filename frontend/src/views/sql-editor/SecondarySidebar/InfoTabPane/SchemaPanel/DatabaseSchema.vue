@@ -15,25 +15,25 @@
           :database="database"
           :database-metadata="databaseMetadata"
         />
-        <ExternalLinkButton
-          v-if="pageMode === 'BUNDLED'"
-          :link="`/db/${databaseV1Slug(database)}`"
-          :tooltip="$t('common.detail')"
-        />
-        <AlterSchemaButton
-          v-if="
-            pageMode === 'BUNDLED' &&
-            instanceV1HasAlterSchema(database.instanceEntity)
-          "
-          :database="database"
-          @click="
-            editorEvents.emit('alter-schema', {
-              databaseUID: database.uid,
-              schema: '',
-              table: '',
-            })
-          "
-        />
+        <HideInStandaloneMode>
+          <ExternalLinkButton
+            :link="`/db/${databaseV1Slug(database)}`"
+            :tooltip="$t('common.detail')"
+          />
+        </HideInStandaloneMode>
+        <HideInStandaloneMode>
+          <AlterSchemaButton
+            v-if="instanceV1HasAlterSchema(database.instanceEntity)"
+            :database="database"
+            @click="
+              editorEvents.emit('alter-schema', {
+                databaseUID: database.uid,
+                schema: '',
+                table: '',
+              })
+            "
+          />
+        </HideInStandaloneMode>
       </div>
     </div>
 
@@ -50,7 +50,7 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useCurrentUserV1, usePageMode } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -82,7 +82,6 @@ const emit = defineEmits<{
 
 const { events: editorEvents } = useSQLEditorContext();
 const currentUser = useCurrentUserV1();
-const pageMode = usePageMode();
 
 const engine = computed(() => props.database.instanceEntity.engine);
 
