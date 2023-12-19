@@ -25,18 +25,6 @@ const (
 	currentVersion = "16"
 )
 
-// This path must be consistent with the Dockerfile.
-var postgresUtilSource string
-
-func init() {
-	switch {
-	case runtime.GOARCH == "amd64":
-		postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
-	case runtime.GOARCH == "arm64":
-		postgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-arm64-16"
-	}
-}
-
 // Install will extract the postgres and utility tar in resourceDir.
 // Returns the bin directory on success.
 func Install(resourceDir string) (string, error) {
@@ -64,7 +52,7 @@ func Install(resourceDir string) (string, error) {
 		// Install if not exist yet.
 		needInstall = true
 	}
-	createSymbolic, err := utils.LinkImpl(postgresUtilSource, pgBaseDir)
+	createSymbolic, err := utils.LinkImpl(utils.PostgresUtilSource, pgBaseDir)
 	if err != nil {
 		return "", err
 	}

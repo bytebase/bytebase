@@ -66,6 +66,7 @@ ARG TARGETARCH
 
 RUN apt-get update && apt-get install -y xz-utils
 COPY ./backend/resources /tmp/bytebase/resources/
+# these paths must match the paths in backened/resources/utils/utils_dir.go.
 RUN mkdir -p /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
 RUN tar -Jxf /tmp/bytebase/resources/mongoutil/mongoutil-1.6.1-linux-${TARGETARCH}.txz -C /var/opt/bytebase/resources/mongoutil-1.6.1-linux-${TARGETARCH}/
 RUN mkdir -p /var/opt/bytebase/resources/mysqlutil-8.0.33-linux-${TARGETARCH}/

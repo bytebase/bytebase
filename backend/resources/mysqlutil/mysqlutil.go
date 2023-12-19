@@ -27,18 +27,6 @@ const (
 	MySQLDump binaryName = "mysqldump"
 )
 
-// This path must be consistent with the Dockerfile.
-var mysqlUtilsDir string
-
-func init() {
-	switch {
-	case runtime.GOARCH == "amd64":
-		mysqlUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64"
-	case runtime.GOARCH == "arm64":
-		mysqlUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-arm64"
-	}
-}
-
 // GetPath returns the binary path specified by `binName`, `binDir` is the path that installed the mysqlutil.
 func GetPath(binName binaryName, binDir string) string {
 	switch binName {
@@ -98,7 +86,7 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mysqlutil in resourceDir.
 func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
-	createSymbolic, err := utils.LinkImpl(mysqlUtilsDir, mysqlutilDir)
+	createSymbolic, err := utils.LinkImpl(utils.MySQLUtilsDir, mysqlutilDir)
 	if err != nil {
 		return err
 	}

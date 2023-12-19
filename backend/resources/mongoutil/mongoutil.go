@@ -15,18 +15,6 @@ import (
 	"github.com/bytebase/bytebase/backend/resources/utils"
 )
 
-// This path must be consistent with the Dockerfile.
-var mongoUtilsDir string
-
-func init() {
-	switch {
-	case runtime.GOARCH == "amd64":
-		mongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64"
-	case runtime.GOARCH == "arm64":
-		mongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-arm64"
-	}
-}
-
 // nolint
 // GetMongoshPath returns the mongosh path.
 func GetMongoshPath(binDir string) string {
@@ -79,7 +67,7 @@ func Install(resourceDir string) (string, error) {
 
 // installImpl installs mongoutil in resourceDir.
 func installImpl(resourceDir, mongoutilDir, tarName, version string) error {
-	createSymbolic, err := utils.LinkImpl(mongoUtilsDir, mongoutilDir)
+	createSymbolic, err := utils.LinkImpl(utils.MongoUtilsDir, mongoutilDir)
 	if err != nil {
 		return err
 	}
