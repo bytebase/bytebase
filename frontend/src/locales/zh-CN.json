@@ -1219,7 +1219,6 @@
     "select-instance-first": "先选择实例",
     "select-environment-first": "先选择环境",
     "tables": "表",
-    "external-tables": "外部表",
     "collections": "集合",
     "views": "视图",
     "extensions": "插件",
