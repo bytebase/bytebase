@@ -208,7 +208,7 @@ func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetad
 		ExternalServerName:   externalTable.GetExternalServerName(),
 		ExternalDatabaseName: externalTable.GetExternalDatabaseName(),
 	}
-	// Return the column info for all views now.
+	// Now we'd like to return column info for external table by default.
 	for _, column := range externalTable.GetColumns() {
 		if column == nil {
 			continue
