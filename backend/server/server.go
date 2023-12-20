@@ -120,9 +120,6 @@ type Server struct {
 
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
-	// only for test, override the PG_URL environment
-	profile.PgURL = "postgresql://postgres:bytebase@localhost:5455/postgres"
-
 	s := &Server{
 		profile:         profile,
 		startedTs:       time.Now().Unix(),
