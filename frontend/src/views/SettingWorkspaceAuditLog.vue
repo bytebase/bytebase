@@ -9,8 +9,8 @@
       />
       <div class="w-52">
         <TypeSelect
-          :disabled="!hasAuditLogFeature"
           v-model:selected="state.selectedAuditTypeList"
+          :disabled="!hasAuditLogFeature"
         />
       </div>
       <div class="hidden sm:block w-112">
