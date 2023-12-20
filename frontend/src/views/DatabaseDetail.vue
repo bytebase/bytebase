@@ -88,7 +88,15 @@
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
-          <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+          <div
+            v-if="state.syncingSchema"
+            class="flex justify-center items-center space-x-2"
+          >
+            <BBSpin />
+            <span class="text-control text-sm">
+              {{ $t("instance.syncing") }}
+            </span>
+          </div>
           <NButton
             :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"

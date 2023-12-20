@@ -12,7 +12,7 @@
         v-bind="$attrs"
         @click="notifyAssignee"
       >
-        <BBSpin v-if="isUpdating" class="w-4 h-4" />
+        <BBSpin v-if="isUpdating" class="!w-4 !h-4" />
         <heroicons-outline:bell-alert
           v-else
           class="w-4 h-4"

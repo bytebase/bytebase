@@ -1,4 +1,3 @@
-import { VNode } from "vue";
 import { VueClass } from "@/utils";
 import { ColumnWidth } from "./BBGrid";
 
@@ -48,11 +47,6 @@ export type BBTabItem<T = any> = {
   data?: T;
 };
 
-export type BBTabFilterItem = {
-  title: string;
-  alert: boolean;
-};
-
 export type BBStepStatus =
   | "NOT_STARTED"
   | "PENDING"
@@ -73,16 +67,6 @@ export type BBStep = {
 export type BBStepTabItem = {
   title: string;
   hideNext?: boolean;
-};
-
-export type BBOutlineItem = {
-  id: string;
-  name: string;
-  link?: string;
-  childList?: BBOutlineItem[];
-  // Only applicable if childList is specified.
-  childCollapse?: boolean;
-  prefix?: VNode;
 };
 
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";

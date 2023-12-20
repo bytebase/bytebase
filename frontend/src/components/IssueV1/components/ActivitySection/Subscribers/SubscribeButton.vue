@@ -1,6 +1,6 @@
 <template>
   <NButton text :disabled="isLoading" @click="handleClick">
-    <BBSpin v-if="isLoading" class="w-4 h-4 mr-1" />
+    <BBSpin v-if="isLoading" class="!w-4 !h-4 mr-1" />
     <span>
       {{ isSubscribed ? $t("issue.unsubscribe") : $t("issue.subscribe") }}
     </span>

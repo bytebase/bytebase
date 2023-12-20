@@ -18,7 +18,7 @@
         v-if="!ready"
         class="flex items-center gap-x-2 text-sm text-control-placeholder"
       >
-        <BBSpin class="w-4 h-4" />
+        <BBSpin class="!w-4 !h-4" />
         <span>
           {{ $t("custom-approval.issue-review.generating-approval-flow") }}
         </span>
