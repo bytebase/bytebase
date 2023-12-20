@@ -95,29 +95,3 @@ func extractTar(r io.Reader, targetDir string) error {
 
 	return nil
 }
-<<<<<<< Updated upstream
-
-func LinkImpl(storeDir, utilDir string) (bool, error) {
-	if _, err := os.Stat(storeDir); err != nil {
-		if os.IsNotExist(err) {
-			// source file doesn't exist.
-			slog.Info("storeDir does not exists")
-			return false, nil
-		}
-	}
-	if utilDir == storeDir {
-		// they are same, just use it.
-		return true, nil
-	}
-
-	// they are not same, create a symbolic link.
-	if err := os.Symlink(storeDir, utilDir); err != nil {
-		// panic if failed to create symbolic link
-		return false, errors.Wrapf(err, "failed to create a symbolic link for util")
-	}
-
-	// create symbolic link success
-	return true, nil
-}
-=======
->>>>>>> Stashed changes
