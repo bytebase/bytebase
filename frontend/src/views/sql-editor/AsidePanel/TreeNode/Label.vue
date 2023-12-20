@@ -17,6 +17,9 @@
   <template v-if="type === 'table'">
     <TableNode :node="node" :factors="factors" :keyword="keyword" />
   </template>
+  <template v-if="type === 'external-table'">
+    <ExternalTableNode :node="node" :factors="factors" :keyword="keyword" />
+  </template>
   <template v-if="type === 'partition-table'">
     <PartitionTableNode :node="node" :factors="factors" :keyword="keyword" />
   </template>
@@ -43,6 +46,7 @@ import {
 import DatabaseNode from "./DatabaseNode.vue";
 import DummyNode from "./DummyNode.vue";
 import EnvironmentNode from "./EnvironmentNode.vue";
+import ExternalTableNode from "./ExternalTableNode.vue";
 import InstanceNode from "./InstanceNode.vue";
 import LabelNode from "./LabelNode.vue";
 import PartitionTableNode from "./PartitionTableNode.vue";

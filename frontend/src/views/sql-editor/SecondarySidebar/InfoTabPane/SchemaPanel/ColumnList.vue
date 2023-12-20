@@ -37,7 +37,6 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
-  TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { findAncestor, getHighlightHTMLByRegExp } from "@/utils";
 import { useHoverStateContext } from "./HoverPanel";
@@ -52,7 +51,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  columns: ColumnMetadata[];
 }>();
 
 const {
@@ -64,9 +63,9 @@ const { keyword } = useSchemaPanelContext();
 const filteredColumnList = computed(() => {
   const kw = keyword.value.toLowerCase().trim();
   if (!kw) {
-    return props.table.columns;
+    return props.columns;
   }
-  return props.table.columns.filter((column) => {
+  return props.columns.filter((column) => {
     return column.name.toLowerCase().includes(kw);
   });
 });
@@ -84,15 +83,15 @@ const renderColumnName = (column: ColumnMetadata) => {
 };
 
 const handleMouseEnter = (e: MouseEvent, column: ColumnMetadata) => {
-  const { db, database, schema, table } = props;
+  const { db, database, schema } = props;
   if (hoverState.value) {
     updateHoverState(
-      { db, database, schema, table, column },
+      { db, database, schema, column },
       "before",
       0 /* overrideDelay */
     );
   } else {
-    updateHoverState({ db, database, schema, table, column }, "before");
+    updateHoverState({ db, database, schema, column }, "before");
   }
   nextTick().then(() => {
     // Find the node element and put the database panel to the top-left corner

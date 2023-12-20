@@ -228,16 +228,29 @@ const selectedKeys = computed(() => {
       database.name
     );
     if (selected) {
-      const { schema, table } = selected;
-      const tableNode = head(
-        treeStore.nodesByTarget("table", {
-          database,
-          schema,
-          table,
-        })
-      );
-      if (tableNode) {
-        return [tableNode.key];
+      const { schema, table, externalTable } = selected;
+      if (table) {
+        const tableNode = head(
+          treeStore.nodesByTarget("table", {
+            database,
+            schema,
+            table,
+          })
+        );
+        if (tableNode) {
+          return [tableNode.key];
+        }
+      } else if (externalTable) {
+        const externalTableNode = head(
+          treeStore.nodesByTarget("external-table", {
+            database,
+            schema,
+            externalTable,
+          })
+        );
+        if (externalTableNode) {
+          return [externalTableNode.key];
+        }
       }
     }
     return [node.key];
@@ -380,6 +393,32 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
   });
 };
 
+const maybeSelectExternalTable = async (node: SQLEditorTreeNode) => {
+  const target = node.meta.target as SQLEditorTreeNodeTarget<"external-table">;
+  const { database, schema, externalTable } = target;
+  if (database.uid !== tabStore.currentTab.connection.databaseId) {
+    const target: CoreTabInfo = {
+      connection: {
+        instanceId: database.instanceEntity.uid,
+        databaseId: database.uid,
+      },
+      mode: TabMode.ReadOnly,
+    };
+    target.connection.instanceId = database.instanceEntity.uid;
+    target.connection.databaseId = database.uid;
+    connect(target);
+    await nextTick();
+  }
+
+  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
+  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
+    db: database,
+    database: databaseMetadata,
+    schema,
+    externalTable,
+  });
+};
+
 const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
   const { type, target } = (node as SQLEditorTreeNode<"table" | "view">).meta;
   const { database } = target;
@@ -464,6 +503,9 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         }
         if (type === "table" || type === "partition-table") {
           maybeSelectTable(node);
+        }
+        if (type === "external-table") {
+          maybeSelectExternalTable(node);
         }
       }
     },
