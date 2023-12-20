@@ -7,11 +7,13 @@
         >
           <div v-if="ready" class="flex flex-col gap-y-4">
             <ProjectStandardView
-              :state="state"
               :project="project"
               :database-list="schemaDatabaseList"
               :environment-list="environmentList"
-              @select-database="handleSelectDatabase"
+              @select-databases="
+                (...dbUidList) =>
+                  (state.selectedDatabaseUidList = new Set(dbUidList))
+              "
             >
               <template #header>
                 <div class="flex items-center justify-end mx-2">
@@ -83,9 +85,7 @@ import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import ProjectStandardView, {
-  ProjectStandardViewState,
-} from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
+import ProjectStandardView from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
 import { ErrorTipsButton, SearchBox } from "@/components/v2";
 import {
   useDatabaseV1Store,
@@ -103,9 +103,10 @@ import {
 import { generateIssueName } from "../common";
 import { useChangelistDetailContext } from "../context";
 
-type LocalState = ProjectStandardViewState & {
+type LocalState = {
   keyword: string;
   isGenerating: boolean;
+  selectedDatabaseUidList: Set<string>;
 };
 
 const { t } = useI18n();
@@ -118,8 +119,7 @@ const {
 } = useChangelistDetailContext();
 
 const state = reactive<LocalState>({
-  selectedDatabaseUidListForEnvironment: new Map(),
-  alterType: "MULTI_DB",
+  selectedDatabaseUidList: new Set<string>(),
   keyword: "",
   isGenerating: false,
 });
@@ -183,11 +183,7 @@ const schemalessDatabaseList = computed(() => {
 });
 
 const flattenSelectedDatabaseUidList = computed(() => {
-  const flattenDatabaseIdList: string[] = [];
-  for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
-    flattenDatabaseIdList.push(...databaseIdList);
-  }
-  return flattenDatabaseIdList;
+  return [...state.selectedDatabaseUidList];
 });
 
 const nextButtonErrors = computed(() => {
@@ -198,10 +194,6 @@ const nextButtonErrors = computed(() => {
   }
   return errors;
 });
-
-const handleSelectDatabase = (db: ComposedDatabase) => {
-  console.log("handleSelectDatabase", db);
-};
 
 const handleClickNext = async () => {
   state.isGenerating = true;
@@ -238,7 +230,7 @@ const handleClickNext = async () => {
 };
 
 const reset = () => {
-  state.selectedDatabaseUidListForEnvironment = new Map();
+  state.selectedDatabaseUidList = new Set();
   state.keyword = "";
 };
 
