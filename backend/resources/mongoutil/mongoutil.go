@@ -2,7 +2,6 @@
 package mongoutil
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -52,41 +51,10 @@ func Install(resourceDir string) (string, error) {
 		}
 		// Install if not exist yet
 		slog.Info("Installing MongoDB utilities, it may take about several minutes...")
-		if err := installImpl(resourceDir, mongoutilDir, tarName, version); err != nil {
+		if err := utils.InstallImpl(resourceDir, mongoutilDir, tarName, version, resources); err != nil {
 			return "", errors.Wrap(err, "cannot install mongoutil")
 		}
 	}
 
 	return path.Join(mongoutilDir, "bin"), nil
-}
-
-// installImpl installs mongoutil in resourceDir.
-func installImpl(resourceDir, mongoutilDir, tarName, version string) error {
-	createSymbolic, err := utils.LinkImpl(utils.MongoUtilsDir, mongoutilDir)
-	if err != nil {
-		return err
-	}
-	if createSymbolic {
-		return nil
-	}
-	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err = os.RemoveAll(tmpDir); err != nil {
-		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
-	}
-
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
-	}
-	defer f.Close()
-
-	if err := utils.ExtractTarXz(f, tmpDir); err != nil {
-		return errors.Wrap(err, "failed to extract tar.gz file")
-	}
-
-	if err := os.Rename(tmpDir, mongoutilDir); err != nil {
-		return errors.Wrapf(err, "failed to rename mongoutil binaries directory from %q to %q", tmpDir, mongoutilDir)
-	}
-
-	return nil
 }

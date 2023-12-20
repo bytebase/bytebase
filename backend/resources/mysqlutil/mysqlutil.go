@@ -2,7 +2,6 @@
 package mysqlutil
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"path"
@@ -71,43 +70,10 @@ func Install(resourceDir string) (string, error) {
 		}
 		// Install if not exist yet
 		slog.Info("Installing MySQL utilities...")
-		if err := installImpl(resourceDir, mysqlutilDir, tarName, version); err != nil {
+		if err := utils.InstallImpl(resourceDir, mysqlutilDir, tarName, version, resources); err != nil {
 			return "", errors.Wrap(err, "cannot install mysqlutil")
 		}
 	}
 
 	return path.Join(mysqlutilDir, "bin"), nil
-}
-
-// installImpl installs mysqlutil in resourceDir.
-func installImpl(resourceDir, mysqlutilDir, tarName, version string) error {
-	createSymbolic, err := utils.LinkImpl(utils.MySQLUtilsDir, mysqlutilDir)
-	if err != nil {
-		return err
-	}
-	// create symbolic successfully. so we don't need to extract the tarball.
-	if createSymbolic {
-		return nil
-	}
-
-	tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s", version))
-	if err = os.RemoveAll(tmpDir); err != nil {
-		return errors.Wrapf(err, "failed to remove mysqlutil binaries temp directory %q", tmpDir)
-	}
-
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
-	}
-	defer f.Close()
-
-	if err := utils.ExtractTarGz(f, tmpDir); err != nil {
-		return errors.Wrap(err, "failed to extract tar.gz file")
-	}
-
-	if err := os.Rename(tmpDir, mysqlutilDir); err != nil {
-		return errors.Wrapf(err, "failed to rename mysqlutil binaries directory from %q to %q", tmpDir, mysqlutilDir)
-	}
-
-	return nil
 }

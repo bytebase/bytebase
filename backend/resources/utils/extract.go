@@ -5,7 +5,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
-	"log/slog"
 	"os"
 	"path"
 	"path/filepath"
@@ -96,6 +95,7 @@ func extractTar(r io.Reader, targetDir string) error {
 
 	return nil
 }
+<<<<<<< Updated upstream
 
 func LinkImpl(storeDir, utilDir string) (bool, error) {
 	if _, err := os.Stat(storeDir); err != nil {
@@ -119,3 +119,5 @@ func LinkImpl(storeDir, utilDir string) (bool, error) {
 	// create symbolic link success
 	return true, nil
 }
+=======
+>>>>>>> Stashed changes
