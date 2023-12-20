@@ -10,22 +10,16 @@
     <slot name="default"></slot>
 
     <div class="pt-4 border-t border-block-border flex justify-end space-x-3">
-      <button
-        v-if="showNegativeBtn"
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="onNegativeClick"
-      >
+      <NButton v-if="showNegativeBtn" @click.prevent="onNegativeClick">
         {{ negativeText || $t("common.cancel") }}
-      </button>
-      <button
-        type="button"
-        class="btn-primary py-2 px-4"
+      </NButton>
+      <NButton
+        type="primary"
         data-label="bb-modal-confirm-button"
         @click.prevent="onPositiveClick"
       >
         {{ positiveText || $t("common.confirm") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>

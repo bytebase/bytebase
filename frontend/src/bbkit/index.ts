@@ -1,12 +1,9 @@
 import BBAlert from "./BBAlert.vue";
-import BBAlertDialog from "./BBAlertDialog.vue";
 import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
-import BBButtonAdd from "./BBButtonAdd.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBCheckbox from "./BBCheckbox.vue";
-import BBComboBox from "./BBComboBox.vue";
 import BBContextMenu from "./BBContextMenu.vue";
 import BBContextMenuButton from "./BBContextMenuButton.vue";
 import BBDialog from "./BBDialog.vue";
@@ -36,11 +33,9 @@ export * from "./types";
 
 export {
   BBAlert,
-  BBAlertDialog,
   BBAttention,
   BBAvatar,
   BBTooltipButton,
-  BBButtonAdd,
   BBButtonConfirm,
   BBCheckbox,
   BBContextMenu,
@@ -50,7 +45,6 @@ export {
   BBNotification,
   BBOutline,
   BBSelect,
-  BBComboBox,
   BBProgressPie,
   BBSpin,
   BBStepBar,
