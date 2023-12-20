@@ -7,6 +7,7 @@
         <AdvancedSearchBox
           v-model:params="state.params"
           :autofocus="false"
+          :placeholder="''"
           :support-option-id-list="supportOptionIdList"
         />
         <NButton
