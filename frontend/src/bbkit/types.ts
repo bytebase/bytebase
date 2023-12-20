@@ -1,4 +1,3 @@
-import { VNode } from "vue";
 import { VueClass } from "@/utils";
 import { ColumnWidth } from "./BBGrid";
 

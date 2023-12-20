@@ -5,17 +5,15 @@
     style="width: 2.5rem"
     :stroke-width="10"
   >
-    <template>
-      <span
-        v-if="task.status !== Task_Status.DONE"
-        class="text-xs text-info issue-debug"
-      >
-        {{ `${Math.round(percent)}%` }}
-      </span>
-      <span v-else>
-        <heroicons-outline:check class="w-8 h-8 text-success" />
-      </span>
-    </template>
+    <span
+      v-if="task.status !== Task_Status.DONE"
+      class="text-xs text-info issue-debug"
+    >
+      {{ `${Math.round(percent)}%` }}
+    </span>
+    <span v-else>
+      <heroicons-outline:check class="w-8 h-8 text-success" />
+    </span>
   </NProgress>
 </template>
 

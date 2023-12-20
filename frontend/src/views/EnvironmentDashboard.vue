@@ -18,8 +18,8 @@
 
       <template v-for="(env, index) in environmentList" :key="env.uid">
         <div
-          class="flex-1 overflow-y-scroll"
           v-if="index == state.selectedIndex"
+          class="flex-1 overflow-y-scroll"
           :aria-hidden="index !== state.selectedIndex"
         >
           <div v-if="state.reorder" class="flex justify-center pt-5 gap-x-3">
