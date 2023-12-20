@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
+	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -193,7 +193,7 @@ func (s *Store) Close(ctx context.Context) error {
 	return s.db.Close(ctx)
 }
 
-func (s *Store) GetConnectionConfig() db.ConnectionConfig {
+func (s *Store) GetConnectionConfig() dbdriver.ConnectionConfig {
 	return s.db.ConnCfg
 }
 
