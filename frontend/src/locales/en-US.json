@@ -1222,6 +1222,7 @@
     "select-instance-first": "Select instance first",
     "select-environment-first": "Select environment first",
     "tables": "Tables",
+    "external-tables": "External Tables",
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",

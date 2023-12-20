@@ -198,7 +198,7 @@ const buildSchemaNodeChildren = (
     const externalTablesNode = createExpandableTextNode(
       "external-table",
       parent,
-      () => "External Tables"
+      () => t("db.external-tables")
     );
     externalTablesNode.children = mapExternalTableNodes(
       database,

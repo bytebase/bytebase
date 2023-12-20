@@ -1221,6 +1221,7 @@
     "select-instance-first": "Seleccione la instancia primero",
     "select-environment-first": "Seleccione el entorno primero",
     "tables": "Tablas",
+    "external-tables": "Tablas externas",
     "collections": "Colecciones",
     "views": "Vistas",
     "extensions": "Extensiones",
