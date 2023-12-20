@@ -7,17 +7,17 @@ import "runtime"
 // So we extract resources to these specific paths during build and then symlink them to actual paths.
 var MongoUtilsDir string
 var MySQLUtilsDir string
-var PostgresUtilSource string
+var PostgresUtilsSource string
 
 func init() {
 	switch {
 	case runtime.GOARCH == "amd64":
 		MongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-amd64"
 		MySQLUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-amd64"
-		PostgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
+		PostgresUtilsSource = "/var/opt/bytebase/resources/postgres-linux-amd64-16"
 	case runtime.GOARCH == "arm64":
 		MongoUtilsDir = "/var/opt/bytebase/resources/mongoutil-1.6.1-linux-arm64"
 		MySQLUtilsDir = "/var/opt/bytebase/resources/mysqlutil-8.0.33-linux-arm64"
-		PostgresUtilSource = "/var/opt/bytebase/resources/postgres-linux-arm64-16"
+		PostgresUtilsSource = "/var/opt/bytebase/resources/postgres-linux-arm64-16"
 	}
 }

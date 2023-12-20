@@ -48,7 +48,7 @@ func Install(resourceDir string) (string, error) {
 		needInstall = true
 	}
 	if needInstall {
-		createSymbolic, err := utils.LinkImpl(utils.PostgresUtilSource, pgBaseDir)
+		createSymbolic, err := utils.LinkImpl(utils.PostgresUtilsSource, pgBaseDir)
 		if err != nil {
 			return "", err
 		}
