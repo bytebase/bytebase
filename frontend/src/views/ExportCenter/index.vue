@@ -1,29 +1,15 @@
 <template>
   <div class="w-full px-4 py-6">
     <div
-      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-y-2"
+      class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
     >
-      <div class="flex max-w-full items-center gap-x-4">
-        <NInputGroup>
-          <ProjectSelect
-            :project="state.filterParams.project?.uid ?? String(UNKNOWN_ID)"
-            :include-all="true"
-            @update:project="changeProjectId"
-          />
-          <InstanceSelect
-            class="!w-48"
-            :instance="state.filterParams.instance?.uid ?? String(UNKNOWN_ID)"
-            :include-all="true"
-            @update:instance="changeInstanceId"
-          />
-          <DatabaseSelect
-            :database="state.filterParams.database?.uid ?? String(UNKNOWN_ID)"
-            :instance="state.filterParams.instance?.uid"
-            :project="state.filterParams.project?.uid"
-            :include-all="true"
-            @update:database="changeDatabaseId"
-          />
-        </NInputGroup>
+      <div class="flex flex-1 max-w-full items-center gap-x-2">
+        <AdvancedSearchBox
+          v-model:params="state.params"
+          :autofocus="false"
+          :placeholder="''"
+          :support-option-id-list="supportOptionIdList"
+        />
         <NButton
           v-if="filterIssueId !== String(UNKNOWN_ID)"
           @click="clearFilterIssueId"
@@ -47,8 +33,8 @@
 
   <RequestExportPanel
     v-if="state.showRequestExportPanel"
-    :project-id="state.filterParams.project?.uid"
-    :database-id="state.filterParams.database?.uid"
+    :project-id="selectedProject?.uid"
+    :database-id="selectedDatabase?.uid"
     :redirect-to-issue-page="true"
     :statement-only="true"
     @close="state.showRequestExportPanel = false"
@@ -62,12 +48,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInputGroup } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { getExpiredDateTime } from "@/components/ProjectMember/ProjectRoleTable/utils";
-import { ProjectSelect, InstanceSelect, DatabaseSelect } from "@/components/v2";
 import {
   featureToRef,
   useCurrentUserV1,
@@ -78,15 +63,16 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { SearchParams, SearchScopeId } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
-import { FilterParams, ExportRecord } from "./types";
+import { ExportRecord } from "./types";
 
 interface LocalState {
-  filterParams: FilterParams;
   exportRecords: ExportRecord[];
   showRequestExportPanel: boolean;
   showFeatureModal: boolean;
+  params: SearchParams;
 }
 
 const issueDescriptionRegexp = /^#(\d+)$/;
@@ -96,18 +82,50 @@ const router = useRouter();
 const currentUser = useCurrentUserV1();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
+const instanceStore = useInstanceV1Store();
 const { projectList } = useProjectV1ListByCurrentUser();
 const state = reactive<LocalState>({
-  filterParams: {
-    project: undefined,
-    instance: undefined,
-    database: undefined,
-  },
   exportRecords: [],
   showRequestExportPanel: false,
   showFeatureModal: false,
+  params: {
+    query: "",
+    scopes: [],
+  },
 });
 const hasDataAccessControlFeature = featureToRef("bb.feature.access-control");
+
+const selectedProject = computed(() => {
+  const project = state.params.scopes.find(
+    (scope) => scope.id === "project"
+  )?.value;
+  if (!project) {
+    return;
+  }
+  return projectStore.getProjectByName(`projects/${project}`);
+});
+
+const selectedInstance = computed(() => {
+  const instance = state.params.scopes.find(
+    (scope) => scope.id === "instance"
+  )?.value;
+  if (!instance) {
+    return;
+  }
+  return instanceStore.getInstanceByName(`instances/${instance}`);
+});
+
+const selectedDatabase = computed(() => {
+  const database = state.params.scopes.find(
+    (scope) => scope.id === "database"
+  )?.value;
+  if (!database) {
+    return;
+  }
+  const uid = database.split("-").slice(-1)[0];
+  return databaseStore.getDatabaseByUID(uid);
+});
 
 const filterIssueId = computed(() => {
   const hash = route.hash.replace(/^#+/g, "");
@@ -126,18 +144,18 @@ const filterExportRecords = computed(() => {
       }
     }
 
-    if (state.filterParams.project) {
-      if (record.database.project !== state.filterParams.project.name) {
+    if (selectedProject.value) {
+      if (record.database.project !== selectedProject.value.name) {
         return false;
       }
     }
-    if (state.filterParams.instance) {
-      if (record.database.instance !== state.filterParams.instance.name) {
+    if (selectedInstance.value) {
+      if (record.database.instance !== selectedInstance.value.name) {
         return false;
       }
     }
-    if (state.filterParams.database) {
-      if (record.database.name !== state.filterParams.database.name) {
+    if (selectedDatabase.value) {
+      if (record.database.name !== selectedDatabase.value.name) {
         return false;
       }
     }
@@ -224,37 +242,16 @@ const handleRequestExportClick = () => {
   state.showRequestExportPanel = true;
 };
 
-const changeProjectId = (id: string | undefined) => {
-  if (id && id !== String(UNKNOWN_ID)) {
-    const project = useProjectV1Store().getProjectByUID(id);
-    state.filterParams.project = project;
-  } else {
-    state.filterParams.project = undefined;
-  }
-};
-
-const changeInstanceId = (uid: string | undefined) => {
-  if (uid && uid !== String(UNKNOWN_ID)) {
-    const instance = useInstanceV1Store().getInstanceByUID(uid);
-    state.filterParams.instance = instance;
-  } else {
-    state.filterParams.instance = undefined;
-  }
-};
-
-const changeDatabaseId = (uid: string | undefined) => {
-  if (uid && uid !== String(UNKNOWN_ID)) {
-    const database = useDatabaseV1Store().getDatabaseByUID(uid);
-    state.filterParams.database = database;
-  } else {
-    state.filterParams.database = undefined;
-  }
-};
-
 const clearFilterIssueId = () => {
   router.replace({
     ...route,
     hash: "",
   });
 };
+
+const supportOptionIdList = computed((): SearchScopeId[] => [
+  "project",
+  "instance",
+  "database",
+]);
 </script>
