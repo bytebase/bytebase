@@ -3349,6 +3349,10 @@
     "rollout": {
       "select-target-database": "选择目标数据库"
     },
-    "select-tables-to-rollout": "选择要发布的表"
+    "select-tables-to-rollout": "选择要发布的表",
+    "branch-is-protected": "该分支已被保护",
+    "default-branches": "默认分支",
+    "your-branches": "你的分支",
+    "active-branches": "活跃的分支"
   }
 }
