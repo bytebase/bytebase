@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// installImpl installs mongoutil in resourceDir.
+// InstallImpl installs mongoutil, mysqlutil, postgres in resourceDir.
 func InstallImpl(resourceDir, utilDir, tarName, version string, _ embed.FS) error {
 	preloadingDir := getPreloadingUtilDir(utilDir)
 	if _, err := os.Stat(preloadingDir); err != nil {
