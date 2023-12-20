@@ -116,7 +116,6 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 		if err != nil {
 			return err
 		}
-		var anyError error
 		completed := true
 		var runTasks []string
 		for _, stage := range rollout.Stages {
@@ -135,7 +134,7 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 						return err
 					}
 					if len(resp.TaskRuns) > 0 {
-						anyError = errors.Errorf(resp.TaskRuns[0].Detail)
+						return errors.Errorf(resp.TaskRuns[0].Detail)
 					}
 				default:
 					completed = false
@@ -155,7 +154,7 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 		}
 
 		if completed {
-			return anyError
+			break
 		}
 	}
 	return nil
