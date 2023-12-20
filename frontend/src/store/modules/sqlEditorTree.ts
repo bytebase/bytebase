@@ -28,6 +28,7 @@ import {
   RichViewMetadata,
   TextTarget,
   RichPartitionTableMetadata,
+  RichExternalTableMetadata,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
@@ -356,6 +357,13 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
       table.name
     }`;
   }
+  if (type === "external-table") {
+    const { database, schema, externalTable } =
+      target as RichExternalTableMetadata;
+    return `${database.name}/schemas/${schema.name || "-"}/externalTables/${
+      externalTable.name
+    }`;
+  }
   if (type === "partition-table") {
     const { database, schema, table, partition } =
       target as RichPartitionTableMetadata;
@@ -542,6 +550,9 @@ const readableTargetByType = <T extends NodeType>(
   }
   if (type === "table") {
     return (target as RichTableMetadata).table.name;
+  }
+  if (type === "external-table") {
+    return (target as RichExternalTableMetadata).externalTable.name;
   }
   if (type === "partition-table") {
     return (target as RichPartitionTableMetadata).partition.name;
