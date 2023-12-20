@@ -8,7 +8,7 @@
     @click="$emit('run-checks', ($event as ButtonAction).params.taskList)"
   >
     <template #icon>
-      <BBSpin v-if="hasRunningPlanCheck" class="w-4 h-4" />
+      <BBSpin v-if="hasRunningPlanCheck" class="!w-4 !h-4" />
       <heroicons-outline:play v-else class="w-4 h-4" />
     </template>
     <template #default="{ action }">

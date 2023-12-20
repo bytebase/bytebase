@@ -10,16 +10,11 @@ import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
 import BBNotification from "./BBNotification.vue";
-import BBOutline from "./BBOutline.vue";
-import BBProgressPie from "./BBProgressPie.vue";
 import BBSelect from "./BBSelect.vue";
 import BBSpin from "./BBSpin.vue";
-import BBStepBar from "./BBStepBar.vue";
 import BBStepTab from "./BBStepTab.vue";
 import BBSwitch from "./BBSwitch.vue";
 import BBTab from "./BBTab.vue";
-import BBTabFilter from "./BBTabFilter.vue";
-import BBTabPanel from "./BBTabPanel.vue";
 import {
   BBTable,
   BBTableCell,
@@ -43,16 +38,11 @@ export {
   BBModal,
   BBDialog,
   BBNotification,
-  BBOutline,
   BBSelect,
-  BBProgressPie,
   BBSpin,
-  BBStepBar,
   BBStepTab,
   BBSwitch,
   BBTab,
-  BBTabPanel,
-  BBTabFilter,
   BBTable,
   BBTableCell,
   BBTableHeaderCell,

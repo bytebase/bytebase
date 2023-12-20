@@ -56,8 +56,11 @@
       class="ml-3"
     />
   </div>
-  <div v-else class="flex justify-center items-center h-full">
-    <BBSpin :title="$t('sql-editor.loading-databases')" />
+  <div v-else class="flex justify-center items-center h-full space-x-2">
+    <BBSpin />
+    <span class="text-control text-sm">{{
+      $t("sql-editor.loading-databases")
+    }}</span>
   </div>
 </template>
 

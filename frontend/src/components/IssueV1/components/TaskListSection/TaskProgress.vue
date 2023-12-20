@@ -1,25 +1,26 @@
 <template>
-  <BBProgressPie
-    :percent="percent"
-    class="w-10 h-10 issue-debug"
-    :class="task.status === Task_Status.DONE ? 'text-success' : 'text-info'"
-    :thickness="3"
+  <NProgress
+    type="circle"
+    :percentage="percent"
+    style="width: 2.5rem"
+    :stroke-width="10"
   >
-    <!-- eslint-disable vue/no-template-shadow -->
-    <template #default="{ percent }">
-      <span v-if="task.status !== Task_Status.DONE" class="text-xs">
-        {{ percent }}%
+    <template>
+      <span
+        v-if="task.status !== Task_Status.DONE"
+        class="text-xs text-info issue-debug"
+      >
+        {{ `${Math.round(percent)}%` }}
       </span>
       <span v-else>
-        <heroicons-outline:check class="w-8 h-8" />
+        <heroicons-outline:check class="w-8 h-8 text-success" />
       </span>
     </template>
-  </BBProgressPie>
+  </NProgress>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { BBProgressPie } from "@/bbkit";
 import { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 
 defineProps<{

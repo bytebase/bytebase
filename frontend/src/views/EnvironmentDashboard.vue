@@ -16,30 +16,31 @@
         </div>
       </template>
 
-      <BBTabPanel
-        v-for="(env, index) in environmentList"
-        :key="env.uid"
-        :active="index == state.selectedIndex"
-        class="flex-1 overflow-y-scroll"
-      >
-        <div v-if="state.reorder" class="flex justify-center pt-5 gap-x-3">
-          <NButton @click.prevent="discardReorder">
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="!orderChanged"
-            @click.prevent="doReorder"
-          >
-            {{ $t("common.apply") }}
-          </NButton>
+      <template v-for="(env, index) in environmentList" :key="env.uid">
+        <div
+          class="flex-1 overflow-y-scroll"
+          v-if="index == state.selectedIndex"
+          :aria-hidden="index !== state.selectedIndex"
+        >
+          <div v-if="state.reorder" class="flex justify-center pt-5 gap-x-3">
+            <NButton @click.prevent="discardReorder">
+              {{ $t("common.cancel") }}
+            </NButton>
+            <NButton
+              type="primary"
+              :disabled="!orderChanged"
+              @click.prevent="doReorder"
+            >
+              {{ $t("common.apply") }}
+            </NButton>
+          </div>
+          <EnvironmentDetail
+            v-else
+            :environment-slug="environmentV1Slug(env)"
+            @archive="doArchive"
+          />
         </div>
-        <EnvironmentDetail
-          v-else
-          :environment-slug="environmentV1Slug(env)"
-          @archive="doArchive"
-        />
-      </BBTabPanel>
+      </template>
     </BBTab>
   </div>
 
