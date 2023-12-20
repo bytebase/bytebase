@@ -8,6 +8,12 @@ roles:
       - bb.instances.delete
       - bb.instances.undelete
       - bb.instances.sync
+      - bb.instanceRoles.list
+      - bb.instanceRoles.get
+      - bb.instanceRoles.create
+      - bb.instanceRoles.update
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.undelete
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
@@ -106,6 +112,12 @@ roles:
       - bb.instances.delete
       - bb.instances.undelete
       - bb.instances.sync
+      - bb.instanceRoles.list
+      - bb.instanceRoles.get
+      - bb.instanceRoles.create
+      - bb.instanceRoles.update
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.undelete
       - bb.databases.adviseIndex
       - bb.databases.list
       - bb.databases.get
