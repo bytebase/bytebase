@@ -42,7 +42,7 @@
       :db="db"
       :database="database"
       :schema="schema"
-      :table="table"
+      :columns="table.columns"
       class="w-full flex-1 py-1"
     />
   </div>

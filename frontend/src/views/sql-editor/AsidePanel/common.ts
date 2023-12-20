@@ -97,6 +97,24 @@ const mapTableNodes = (
   return children;
 };
 
+const mapExternalTableNodes = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  parent: SQLEditorTreeNode
+) => {
+  const children = schema.externalTables.map((externalTable) => {
+    const node = mapTreeNodeByType(
+      "external-table",
+      { database, schema, externalTable },
+      parent
+    );
+
+    node.isLeaf = true;
+    return node;
+  });
+  return children;
+};
+
 // Map partition-table-level partitions.
 const mapPartitionTableNodes = (
   database: ComposedDatabase,
@@ -175,7 +193,22 @@ const buildSchemaNodeChildren = (
   tablesNode.children = mapTableNodes(database, schema, tablesNode);
   children.push(tablesNode);
 
-  // Only show "Views" node if the schema do have views
+  // Only show "External Tables" node if the schema do have external tables.
+  if (schema.externalTables.length > 0) {
+    const externalTablesNode = createExpandableTextNode(
+      "external-table",
+      parent,
+      () => "External Tables"
+    );
+    externalTablesNode.children = mapExternalTableNodes(
+      database,
+      schema,
+      externalTablesNode
+    );
+    children.push(externalTablesNode);
+  }
+
+  // Only show "Views" node if the schema do have views.
   if (schema.views.length > 0) {
     const viewsNode = createExpandableTextNode("view", parent, () =>
       t("db.views")

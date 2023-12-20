@@ -22,7 +22,10 @@
             "
             @click="handleClickItem(item)"
           >
-            <TableIcon v-if="item.table" class="w-4 h-4 mr-1 shrink-0" />
+            <TableIcon
+              v-if="item.table || item.externalTable"
+              class="w-4 h-4 mr-1 shrink-0"
+            />
             <ViewIcon v-if="item.view" class="w-4 h-4 mr-1 shrink-0" />
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-html="renderItem(item)" />
@@ -41,6 +44,7 @@ import { TableIcon, ViewIcon } from "@/components/Icon";
 import { ComposedDatabase } from "@/types";
 import {
   DatabaseMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
@@ -49,15 +53,16 @@ import { findAncestor, getHighlightHTMLByRegExp } from "@/utils";
 import { useHoverStateContext } from "./HoverPanel";
 import { useSchemaPanelContext } from "./context";
 
-export type SchemaAndTableOrView = {
+export type SchemaAndTableOrExternalTableOrView = {
   key: string;
   schema: SchemaMetadata;
   table?: TableMetadata;
+  externalTable?: ExternalTableMetadata;
   view?: ViewMetadata;
 };
 
 export type VirtualListItem = {
-  item: SchemaAndTableOrView;
+  item: SchemaAndTableOrExternalTableOrView;
   index: number;
 };
 
@@ -70,6 +75,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
+  (
+    e: "select-external-table",
+    schema: SchemaMetadata,
+    externalTable: ExternalTableMetadata
+  ): void;
 }>();
 
 const { keyword } = useSchemaPanelContext();
@@ -82,20 +92,29 @@ const {
 const flattenTableOrViewList = computed(() => {
   const { schemaList } = props;
   const tables = schemaList.flatMap((schema) => {
-    return schema.tables.map<SchemaAndTableOrView>((table) => ({
+    return schema.tables.map<SchemaAndTableOrExternalTableOrView>((table) => ({
       key: `schemas/${schema.name}/tables/${table.name}`,
       schema,
       table,
     }));
   });
+  const externalTables = schemaList.flatMap((schema) => {
+    return schema.externalTables.map<SchemaAndTableOrExternalTableOrView>(
+      (externalTable) => ({
+        key: `schemas/${schema.name}/externalTables/${externalTable.name}`,
+        schema,
+        externalTable,
+      })
+    );
+  });
   const views = schemaList.flatMap((schema) => {
-    return schema.views.map<SchemaAndTableOrView>((view) => ({
+    return schema.views.map<SchemaAndTableOrExternalTableOrView>((view) => ({
       key: `schemas/${schema.name}/views/${view.name}`,
       schema,
       view,
     }));
   });
-  return [...tables, ...views];
+  return [...tables, ...externalTables, ...views];
 });
 
 const filteredTableOrViewList = computed(() => {
@@ -112,20 +131,22 @@ const filteredTableOrViewList = computed(() => {
   });
 });
 
-const handleClickItem = (item: SchemaAndTableOrView) => {
+const handleClickItem = (item: SchemaAndTableOrExternalTableOrView) => {
   if (!props.rowClickable) {
     return;
   }
-  const { schema, table } = item;
+  const { schema, table, externalTable } = item;
   if (table) {
     emit("select-table", schema, table);
+  } else if (externalTable) {
+    emit("select-external-table", schema, externalTable);
   }
 };
 
-const renderItem = (item: SchemaAndTableOrView) => {
+const renderItem = (item: SchemaAndTableOrExternalTableOrView) => {
   const parts: string[] = [];
-  const { schema, table, view } = item;
-  const name = table?.name ?? view?.name ?? "";
+  const { schema, table, externalTable, view } = item;
+  const name = table?.name ?? externalTable?.name ?? view?.name ?? "";
   if (!name) return null;
   if (schema.name) {
     parts.push(`${schema.name}.`);
@@ -142,18 +163,24 @@ const renderItem = (item: SchemaAndTableOrView) => {
   );
 };
 
-const handleMouseEnter = (e: MouseEvent, item: SchemaAndTableOrView) => {
+const handleMouseEnter = (
+  e: MouseEvent,
+  item: SchemaAndTableOrExternalTableOrView
+) => {
   const { db, database } = props;
-  const { schema, table, view } = item;
+  const { schema, table, externalTable, view } = item;
 
   if (hoverState.value) {
     updateHoverState(
-      { db, database, schema, table, view },
+      { db, database, schema, table, externalTable, view },
       "before",
       0 /* overrideDelay */
     );
   } else {
-    updateHoverState({ db, database, schema, table, view }, "before");
+    updateHoverState(
+      { db, database, schema, table, externalTable, view },
+      "before"
+    );
   }
   nextTick().then(() => {
     // Find the node element and put the database panel to the top-left corner
@@ -172,7 +199,10 @@ const handleMouseEnter = (e: MouseEvent, item: SchemaAndTableOrView) => {
   });
 };
 
-const handleMouseLeave = (e: MouseEvent, item: SchemaAndTableOrView) => {
+const handleMouseLeave = (
+  e: MouseEvent,
+  item: SchemaAndTableOrExternalTableOrView
+) => {
   updateHoverState(undefined, "after");
 };
 </script>

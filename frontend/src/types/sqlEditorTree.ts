@@ -4,6 +4,7 @@ import { t } from "@/plugins/i18n";
 import { useSQLEditorTreeStore } from "@/store";
 import { Engine } from "./proto/v1/common";
 import {
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
@@ -30,6 +31,7 @@ export type SQLEditorTreeNodeType =
   | "database"
   | "schema"
   | "table"
+  | "external-table"
   | "label"
   | "view"
   | "partition-table"
@@ -44,6 +46,11 @@ export type RichTableMetadata = {
   database: ComposedDatabase;
   schema: SchemaMetadata;
   table: TableMetadata;
+};
+export type RichExternalTableMetadata = {
+  database: ComposedDatabase;
+  schema: SchemaMetadata;
+  externalTable: ExternalTableMetadata;
 };
 export type RichPartitionTableMetadata = {
   database: ComposedDatabase;
@@ -78,6 +85,8 @@ export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
     ? RichSchemaMetadata
     : T extends "table"
     ? RichTableMetadata
+    : T extends "external-table"
+    ? RichExternalTableMetadata
     : T extends "partition-table"
     ? RichPartitionTableMetadata
     : T extends "view"
@@ -120,6 +129,7 @@ export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "environment",
   "project",
   "table",
+  "external-table",
   "partition-table",
   "expandable-text",
   "label",

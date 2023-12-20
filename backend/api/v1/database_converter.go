@@ -35,11 +35,7 @@ func convertStoreDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata, conf
 			if externalTable == nil {
 				continue
 			}
-			s.ExternalTables = append(s.ExternalTables, &v1pb.ExternalTableMetadata{
-				Name:                 externalTable.GetName(),
-				ExternalServerName:   externalTable.GetExternalServerName(),
-				ExternalDatabaseName: externalTable.GetExternalDatabaseName(),
-			})
+			s.ExternalTables = append(s.ExternalTables, convertStoreExternalTableMetadata(externalTable, requestView))
 		}
 		// Only return table for request with a filter.
 		if filter != nil {
@@ -202,6 +198,22 @@ func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseM
 			OnUpdate:          foreignKey.GetOnUpdate(),
 			MatchType:         foreignKey.GetMatchType(),
 		})
+	}
+	return t
+}
+
+func convertStoreExternalTableMetadata(externalTable *storepb.ExternalTableMetadata, _ v1pb.DatabaseMetadataView) *v1pb.ExternalTableMetadata {
+	t := &v1pb.ExternalTableMetadata{
+		Name:                 externalTable.GetName(),
+		ExternalServerName:   externalTable.GetExternalServerName(),
+		ExternalDatabaseName: externalTable.GetExternalDatabaseName(),
+	}
+	// Return the column info for all views now.
+	for _, column := range externalTable.GetColumns() {
+		if column == nil {
+			continue
+		}
+		t.Columns = append(t.Columns, convertStoreColumnMetadata(column))
 	}
 	return t
 }
