@@ -60,7 +60,7 @@ fi && \
     ./backend/bin/server/main.go
 
 # Use debian to decompress tar files.
-FROM debian:bookworm-slim as decomporessor
+FROM debian:bookworm-slim as decompressor
 
 ARG TARGETARCH
 
