@@ -15,7 +15,6 @@
         :db="state.db"
         :database="state.database"
         :schema="state.schema"
-        :table="state.table!"
         :column="state.column"
       />
       <TableInfo
@@ -24,6 +23,13 @@
         :database="state.database"
         :schema="state.schema"
         :table="state.table"
+      />
+      <ExternalTableInfo
+        v-else-if="state.externalTable"
+        :db="state.db"
+        :database="state.database"
+        :schema="state.schema"
+        :external-table="state.externalTable"
       />
       <ViewInfo
         v-else-if="state.view"
@@ -41,6 +47,7 @@ import { onClickOutside, useElementSize, useEventListener } from "@vueuse/core";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref } from "vue";
 import ColumnInfo from "./ColumnInfo.vue";
+import ExternalTableInfo from "./ExternalTableInfo.vue";
 import TableInfo from "./TableInfo.vue";
 import ViewInfo from "./ViewInfo.vue";
 import { useHoverStateContext } from "./hover-state";
