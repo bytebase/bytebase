@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -29,7 +30,7 @@ import (
 //go:embed migration
 var migrationFS embed.FS
 
-// bytebase only support PostgreSQL 14 or above
+// bytebase only support PostgreSQL 14 or above.
 const PostgresVersion = 14
 
 // MigrateSchema migrates the schema for metadata database.
@@ -45,14 +46,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 		return nil, err
 	}
 	defer metadataDriver.Close(ctx)
-
-	if err := checkMetaDBVersion(ctx, metadataDriver); err != nil {
-		return nil, err
-	}
-	if err := checkMetaDBPermission(ctx, storeDB, metadataDriver); err != nil {
-		slog.Error("permission problem", log.BBError(err))
-		panic("permission problem")
-	}
 
 	storeInstance, err := store.New(storeDB)
 	if err != nil {
@@ -84,89 +77,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 	slog.Info(fmt.Sprintf("Current schema version after migration: %s", verAfter))
 
 	return &verAfter, nil
-}
-
-func checkMetaDBPermission(ctx context.Context, storeDB *store.DB, metadataDriver dbdriver.Driver) error {
-	userName := storeDB.ConnCfg.Username
-	databaseName := storeDB.ConnCfg.Database
-	var result bool
-	permissions := []string{"create", "connect", "temporary"}
-	for _, permission := range permissions {
-		query := fmt.Sprintf("SELECT has_database_privilege('%s', '%s', '%s')", userName, databaseName, permission)
-		slog.Info("meta db check permission", "query", query)
-		if err := metadataDriver.GetDB().QueryRowContext(ctx, query).Scan(&result); err != nil {
-			return err
-		}
-		if !result {
-			slog.Error(fmt.Sprintf("user %s does not has enough permission %s about database %s", userName, permission, databaseName))
-		}
-	}
-	permissions = []string{"create", "usage"}
-	for _, permission := range permissions {
-		query := fmt.Sprintf("SELECT has_schema_privilege('%s', 'public', '%s')", userName, permission)
-		if err := metadataDriver.GetDB().QueryRowContext(ctx, query).Scan(&result); err != nil {
-			return err
-		}
-		if !result {
-			slog.Error(fmt.Sprintf("user %s does not has enough permission %s about schema: public", userName, permission))
-		}
-	}
-	permissions = []string{"select", "insert", "update", "delete", "truncate", "references", "trigger"}
-	tables := []string{"activity", "anomaly", "backup", "backup_setting", "bookmark", "branch", "changelist", "data_source", "db", "db_group"}
-	for _, table := range tables {
-		var tableName string
-		var hasPrivilege bool
-		for _, permission := range permissions {
-			query := fmt.Sprintf(`
-			SELECT
-				table_name,
-				HAS_TABLE_PRIVILEGE('%s', table_name, '%s') AS has_privilege
-			FROM
-				information_schema.tables
-			WHERE
-				table_name = '%s';
-			`, userName, permission, table)
-			sqlResult, err := metadataDriver.GetDB().QueryContext(ctx, query)
-			if err != nil {
-				return err
-			}
-			if sqlResult.Err() != nil {
-				return sqlResult.Err()
-			}
-			defer sqlResult.Close()
-			if sqlResult.Next() {
-				if err := sqlResult.Scan(&tableName, &hasPrivilege); err != nil {
-					return err
-				}
-			}
-			if !hasPrivilege {
-				slog.Error("user %s does not has enough permission %s about schema: public", userName, permission)
-			}
-		}
-	}
-	return nil
-}
-
-func checkMetaDBVersion(ctx context.Context, metadataDriver dbdriver.Driver) error {
-	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
-	// It is more convenient to use SHOW server_version to get the version string.
-	// PostgreSQL supports it since 8.2.
-	// https://www.postgresql.org/docs/current/functions-info.html
-	var version string
-	if err := metadataDriver.GetDB().QueryRowContext(ctx, `SHOW server_version_num`).Scan(&version); err != nil {
-		return err
-	}
-	versionNum, err := strconv.Atoi(version)
-	if err != nil {
-		return err
-	}
-	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
-	// Convert to semantic version.
-	major := versionNum / 1_00_00
-	if major < PostgresVersion {
-		slog.Warn("bytebase only support PostgreSQL 14 or above")
-	}
-	return nil
 }
 
 func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion semver.Version, serverVersion string) error {
@@ -287,6 +197,13 @@ const (
 func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
+
+	if err := checkMetaDBVersion(ctx, metadataDriver); err != nil {
+		return err
+	}
+	if err := checkMetaDBPermission(ctx, storeInstance.GetConnectionConfig(), metadataDriver); err != nil {
+		return err
+	}
 
 	var histories []*store.InstanceChangeHistoryMessage
 	// Because dev migrations don't use semantic versioning, we have to look at all migration history to
@@ -581,4 +498,123 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 		return versions[i].LT(versions[j])
 	})
 	return versions, nil
+}
+
+// checkMetaDBVersion Check if the meta database version matches the expected Postgres version.
+func checkMetaDBVersion(ctx context.Context, metadataDriver dbdriver.Driver) error {
+	// SHOW server_version_num returns an integer such as 100005, which means 10.0.5.
+	// It is more convenient to use SHOW server_version to get the version string.
+	// PostgreSQL supports it since 8.2.
+	// https://www.postgresql.org/docs/current/functions-info.html
+	var version string
+	if err := metadataDriver.GetDB().QueryRowContext(ctx, `SHOW server_version_num`).Scan(&version); err != nil {
+		return err
+	}
+	versionNum, err := strconv.Atoi(version)
+	if err != nil {
+		return err
+	}
+	// https://www.postgresql.org/docs/current/libpq-status.html#LIBPQ-PQSERVERVERSION
+	// Convert to semantic version.
+	major := versionNum / 1_00_00
+	if major < PostgresVersion {
+		slog.Warn("bytebase only support PostgreSQL 14 or above")
+	}
+	return nil
+}
+
+// checkMetaDBPermission Check if the meta database has proper permission for user from PG_URL.
+func checkMetaDBPermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+	if err := checkDatabasePermission(ctx, connCfg, metadataDriver); err != nil {
+		return err
+	}
+	if err := checkPublicSchemaPermission(ctx, connCfg, metadataDriver); err != nil {
+		return err
+	}
+
+	return checkTablePermission(ctx, connCfg, metadataDriver)
+}
+
+// checkTablePermission checks if the user has proper permission on all tables in public schema.
+func checkTablePermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+	userName := connCfg.Username
+	databaseName := connCfg.Database
+	query := `
+		WITH all_tables AS (
+			SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_catalog = $1
+		)
+		SELECT
+			table_name,
+			has_table_privilege($2, table_name, 'select') as select_privilege,
+			has_table_privilege($3, table_name, 'insert') as insert_privilege,
+			has_table_privilege($4, table_name, 'update') as update_privilege,
+			has_table_privilege($5, table_name, 'delete') as delete_privilege,
+			has_table_privilege($6, table_name, 'truncate') as truncate_privilege,
+			has_table_privilege($7, table_name, 'references') as references_privilege,
+			has_table_privilege($8, table_name, 'trigger') as trigger_privilege
+		FROM all_tables
+	`
+
+	rows, err := metadataDriver.GetDB().QueryContext(ctx, query, databaseName, userName, userName, userName, userName, userName, userName, userName)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tableName string
+		selectPrivilege, insertPrivilege, updatePrivilege, deletePrivilege, truncatePrivilege, referencesPrivilege, triggerPrivilege := false, false, false, false, false, false, false
+		if err := rows.Scan(&tableName, &selectPrivilege, &insertPrivilege, &updatePrivilege, &deletePrivilege, &truncatePrivilege, &referencesPrivilege, &triggerPrivilege); err != nil {
+			return err
+		}
+		slog.Debug("table permissions check", "tableName", tableName, "selectPrivilege", selectPrivilege, "insertPrivilege", insertPrivilege, "updatePrivilege", updatePrivilege, "deletePrivilege", deletePrivilege, "truncatePrivilege", truncatePrivilege, "referencesPrivilege", referencesPrivilege, "triggerPrivilege", triggerPrivilege)
+		if !selectPrivilege || !insertPrivilege || !updatePrivilege || !deletePrivilege || !truncatePrivilege || !referencesPrivilege || !triggerPrivilege {
+			return errors.Errorf("user %q does not have sufficient privilege on table %q", userName, tableName)
+		}
+	}
+	return rows.Err()
+}
+
+// checkDabasePermission checks if the user has proper permission on the database.
+func checkDatabasePermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+	userName := connCfg.Username
+	databaseName := connCfg.Database
+	query := `
+			SELECT
+				has_database_privilege($1, $2, 'create') as create_privilege,
+				has_database_privilege($3, $4, 'connect') as connect_privilege,
+				has_database_privilege($5, $6, 'temporary') as temporary_privilege
+		`
+
+	createPrivilege, connectPrivilege, temporaryPrivilege := false, false, false
+	if err := metadataDriver.GetDB().QueryRowContext(ctx, query, userName, databaseName, userName, databaseName, userName, databaseName).Scan(&createPrivilege, &connectPrivilege, &temporaryPrivilege); err != nil {
+		slog.Debug("query error", log.BBError(err))
+		return err
+	}
+	slog.Debug("database permission checked", "user", userName, "database", databaseName, "create", createPrivilege, "connect", connectPrivilege, "temporary", temporaryPrivilege)
+	if !createPrivilege || !connectPrivilege || !temporaryPrivilege {
+		slog.Error(fmt.Sprintf("user %s does not has enough permission about database %s", userName, databaseName), "create", createPrivilege, "connect", connectPrivilege, "temporary", temporaryPrivilege)
+		return errors.Errorf("user %s does not have enough permission on database %s", userName, databaseName)
+	}
+	return nil
+}
+
+// checkPublicSchemaPermission checks if the user has proper permission on public schema.
+func checkPublicSchemaPermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+	userName := connCfg.Username
+	query := `
+		SELECT
+			has_schema_privilege($1, 'public', 'create') as create_privilege,
+			has_schema_privilege($2, 'public', 'usage') as usage_privilege
+	`
+	createPrivilege, usagePrivilege := false, false
+	if err := metadataDriver.GetDB().QueryRowContext(ctx, query, userName, userName).Scan(&createPrivilege, &usagePrivilege); err != nil {
+		return err
+	}
+	slog.Debug("public permission check", "user", userName, "create", createPrivilege, "usage", usagePrivilege)
+	if !createPrivilege || !usagePrivilege {
+		slog.Debug(fmt.Sprintf("user %s does not has enough permission about schema: public", userName), "create", createPrivilege, "usage", usagePrivilege)
+		return errors.Errorf("user %s does not have enough permission on schema public", userName)
+	}
+	return nil
 }

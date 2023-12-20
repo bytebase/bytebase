@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -190,6 +191,10 @@ func New(db *DB) (*Store, error) {
 // Close closes underlying db.
 func (s *Store) Close(ctx context.Context) error {
 	return s.db.Close(ctx)
+}
+
+func (s *Store) GetConnectionConfig() db.ConnectionConfig {
+	return s.db.ConnCfg
 }
 
 func getInstanceCacheKey(instanceID string) string {
