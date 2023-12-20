@@ -10,6 +10,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -18,13 +20,17 @@ import (
 // ChangelistService implements the changelist service.
 type ChangelistService struct {
 	v1pb.UnimplementedChangelistServiceServer
-	store *store.Store
+	store      *store.Store
+	profile    *config.Profile
+	iamManager *iam.Manager
 }
 
 // NewChangelistService creates a new ChangelistService.
-func NewChangelistService(store *store.Store) *ChangelistService {
+func NewChangelistService(store *store.Store, profile *config.Profile, iamManager *iam.Manager) *ChangelistService {
 	return &ChangelistService{
-		store: store,
+		store:      store,
+		profile:    profile,
+		iamManager: iamManager,
 	}
 }
 
@@ -116,7 +122,24 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	find := &store.FindChangelistMessage{}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	projectIDs, err := func() (*[]string, error) {
+		if s.profile.DevelopmentIAM {
+			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
+		}
+		return nil, nil
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
+	}
+
+	find := &store.FindChangelistMessage{
+		ProjectIDs: projectIDs,
+	}
 	if projectResourceID != "-" {
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectResourceID,
