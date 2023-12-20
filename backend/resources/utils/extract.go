@@ -100,7 +100,7 @@ func extractTar(r io.Reader, targetDir string) error {
 func LinkImpl(storeDir, utilDir string) (bool, error) {
 	if _, err := os.Stat(storeDir); err != nil {
 		if os.IsNotExist(err) {
-			// source file doesn't exists.'
+			// source file doesn't exist.
 			slog.Info("storeDir does not exists")
 			return false, nil
 		}
