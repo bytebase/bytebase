@@ -141,19 +141,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 
 	projectIDs, err := func() (*[]string, error) {
 		if s.profile.DevelopmentIAM {
-			projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
-			if err != nil {
-				return nil, err
-			}
-			if requestProjectID == "-" {
-				return projectIDs, nil
-			}
-			for _, projectID := range *projectIDs {
-				if projectID == requestProjectID {
-					return &[]string{projectID}, nil
-				}
-			}
-			return nil, nil
+			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
 		}
 		return getProjectIDsFilter(ctx, s.store, requestProjectID)
 	}()
@@ -182,6 +170,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		ProjectIDs: projectIDs,
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
+	}
+	if requestProjectID != "-" {
+		issueFind.ProjectID = &requestProjectID
 	}
 	if request.Query != "" {
 		issueFind.Query = &request.Query
