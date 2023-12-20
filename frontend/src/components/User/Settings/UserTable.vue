@@ -160,20 +160,13 @@
     @ok="resetServiceKey"
     @cancel="state.showResetKeyAlert = false"
   />
-  <BBAlertDialog
-    ref="removeSelfOwnerDialog"
-    :style="'CRITICAL'"
-    :ok-text="$t('common.confirm')"
-    :title="$t('settings.members.remove-self-admin.title')"
-    :description="$t('settings.members.remove-self-admin.description')"
-  />
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { computed, reactive, ref } from "vue";
+import { useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAlertDialog } from "@/bbkit";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import { WorkspaceRoleSelect } from "@/components/v2";
 import {
@@ -213,10 +206,10 @@ const props = defineProps<{
   userList: User[];
 }>();
 
+const dialog = useDialog();
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
-const removeSelfOwnerDialog = ref<InstanceType<typeof BBAlertDialog>>();
 
 const hasRBACFeature = featureToRef("bb.feature.rbac");
 
@@ -359,20 +352,25 @@ const changeRole = async (user: User, role: UserRole) => {
   const me = currentUserV1.value;
   if (user.name === me.name) {
     if (user.userRole === UserRole.OWNER && role !== UserRole.OWNER) {
-      const dialog = removeSelfOwnerDialog.value;
-      if (!dialog) {
-        throw new Error("dialog is not loaded");
-      }
-      const result = await dialog.open();
-      if (!result) {
-        return;
-      }
+      dialog.warning({
+        title: t("settings.members.remove-self-admin.title"),
+        content: t("settings.members.remove-self-admin.description"),
+        positiveText: t("common.confirm"),
+        onPositiveClick: (_: MouseEvent) => {
+          updateUserRole(user, role);
+        },
+      });
+      return;
     }
   }
 
+  await updateUserRole(user, role);
+};
+
+const updateUserRole = async (user: User, role: UserRole) => {
   const userPatch = cloneDeep(user);
   userPatch.userRole = role;
-  userStore.updateUser({
+  await userStore.updateUser({
     user: userPatch,
     updateMask: ["role"],
     regenerateTempMfaSecret: false,
