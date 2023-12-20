@@ -17,23 +17,23 @@ func InstallImpl(resourceDir, utilDir, tarName, version string, _ embed.FS) erro
 	preloadingDir := getPreloadingUtilDir(utilDir)
 	if _, err := os.Stat(preloadingDir); err != nil {
 		if os.IsNotExist(err) {
-			// source file doesn't exists.'
+			// source file doesn't exist.
 			return errors.Errorf("preloadingDir %q does not exist", preloadingDir)
 		}
 		return errors.Wrapf(err, "preloadingDir %q error", preloadingDir)
 	}
 	if utilDir == preloadingDir {
-		// they are same, just use it.
+		// utilDir and preloadingDir are same, nothing to do.
 		return nil
 	}
 
-	// they are not same, create a symbolic link.
+	// create a symbolic link if utilDir and preloadingDir are different.
 	if err := os.Symlink(preloadingDir, utilDir); err != nil {
-		// panic if failed to create symbolic link
+		// panic if failed to create symbolic link.
 		return errors.Wrapf(err, "failed to create a symbolic link for utilDir %q", utilDir)
 	}
 
-	// create symbolic link success
+	// create symbolic link success.
 	return nil
 }
 

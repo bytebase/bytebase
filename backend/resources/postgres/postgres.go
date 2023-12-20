@@ -46,7 +46,6 @@ func Install(resourceDir string) (string, error) {
 		}
 
 		slog.Info("Installing PostgreSQL utilities...")
-		// The ordering below made Postgres installation atomic.
 		version := fmt.Sprintf("%s%s", pkgNamePrefix, currentVersion)
 		if err := utils.InstallImpl(resourceDir, pgBaseDir, tarName, version, resources); err != nil {
 			return "", errors.Wrap(err, "cannot install postgres")
