@@ -3354,6 +3354,10 @@
     "rollout": {
       "select-target-database": "Seleccionar base de datos de destino"
     },
-    "select-tables-to-rollout": "Seleccionar tablas para implementar"
+    "select-tables-to-rollout": "Seleccionar tablas para implementar",
+    "branch-is-protected": "La rama está protegida",
+    "default-branches": "Ramas por defecto",
+    "your-branches": "Tus ramas",
+    "active-branches": "Ramas activas"
   }
 }

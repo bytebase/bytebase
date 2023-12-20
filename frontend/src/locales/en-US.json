@@ -3356,6 +3356,10 @@
     "rollout": {
       "select-target-database": "Select target database"
     },
-    "select-tables-to-rollout": "Select tables to rollout"
+    "select-tables-to-rollout": "Select tables to rollout",
+    "branch-is-protected": "This branch is protected by branch protection rules.",
+    "default-branches": "Default",
+    "your-branches": "Your branches",
+    "active-branches": "Active branches"
   }
 }
