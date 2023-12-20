@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -524,7 +523,7 @@ func checkMetaDBVersion(ctx context.Context, metadataDriver dbdriver.Driver) err
 }
 
 // checkMetaDBPermission Check if the meta database has proper permission for user from PG_URL.
-func checkMetaDBPermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+func checkMetaDBPermission(ctx context.Context, connCfg dbdriver.ConnectionConfig, metadataDriver dbdriver.Driver) error {
 	if err := checkDatabasePermission(ctx, connCfg, metadataDriver); err != nil {
 		return err
 	}
@@ -536,7 +535,7 @@ func checkMetaDBPermission(ctx context.Context, connCfg db.ConnectionConfig, met
 }
 
 // checkTablePermission checks if the user has proper permission on all tables in public schema.
-func checkTablePermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+func checkTablePermission(ctx context.Context, connCfg dbdriver.ConnectionConfig, metadataDriver dbdriver.Driver) error {
 	userName := connCfg.Username
 	databaseName := connCfg.Database
 	query := `
@@ -576,7 +575,7 @@ func checkTablePermission(ctx context.Context, connCfg db.ConnectionConfig, meta
 }
 
 // checkDabasePermission checks if the user has proper permission on the database.
-func checkDatabasePermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+func checkDatabasePermission(ctx context.Context, connCfg dbdriver.ConnectionConfig, metadataDriver dbdriver.Driver) error {
 	userName := connCfg.Username
 	databaseName := connCfg.Database
 	query := `
@@ -600,7 +599,7 @@ func checkDatabasePermission(ctx context.Context, connCfg db.ConnectionConfig, m
 }
 
 // checkPublicSchemaPermission checks if the user has proper permission on public schema.
-func checkPublicSchemaPermission(ctx context.Context, connCfg db.ConnectionConfig, metadataDriver dbdriver.Driver) error {
+func checkPublicSchemaPermission(ctx context.Context, connCfg dbdriver.ConnectionConfig, metadataDriver dbdriver.Driver) error {
 	userName := connCfg.Username
 	query := `
 		SELECT
