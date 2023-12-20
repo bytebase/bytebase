@@ -18,8 +18,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/ghost"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -39,10 +41,12 @@ type RolloutService struct {
 	planCheckScheduler *plancheck.Scheduler
 	stateCfg           *state.State
 	activityManager    *activity.Manager
+	profile            *config.Profile
+	iamManager         *iam.Manager
 }
 
 // NewRolloutService returns a rollout service instance.
-func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager) *RolloutService {
+func NewRolloutService(store *store.Store, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, activityManager *activity.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
 	return &RolloutService{
 		store:              store,
 		licenseService:     licenseService,
@@ -50,6 +54,8 @@ func NewRolloutService(store *store.Store, licenseService enterprise.LicenseServ
 		planCheckScheduler: planCheckScheduler,
 		stateCfg:           stateCfg,
 		activityManager:    activityManager,
+		profile:            profile,
+		iamManager:         iamManager,
 	}
 }
 
@@ -76,6 +82,21 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	projectIDs, err := func() (*[]string, error) {
+		if s.profile.DevelopmentIAM {
+			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
+		}
+		return nil, nil
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
+	}
+
 	var limit, offset int
 	if request.PageToken != "" {
 		var pageToken storepb.PageToken
@@ -97,8 +118,9 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 	limitPlusOne := limit + 1
 
 	find := &store.FindPlanMessage{
-		Limit:  &limitPlusOne,
-		Offset: &offset,
+		Limit:      &limitPlusOne,
+		Offset:     &offset,
+		ProjectIDs: projectIDs,
 	}
 	if projectID != "-" {
 		find.ProjectID = &projectID
