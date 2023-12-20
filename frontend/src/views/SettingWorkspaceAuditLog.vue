@@ -2,27 +2,21 @@
   <div class="w-full space-y-4">
     <FeatureAttention feature="bb.feature.audit-log" />
     <div class="flex justify-end items-center space-x-2">
-      <MemberSelect
-        class="w-52"
-        :disabled="!hasAuditLogFeature"
-        :show-all="true"
-        :show-system-bot="true"
-        :selected-id="selectedUserUID"
-        @select-user-id="selectUser"
+      <UserSelect
+        v-model:user="state.userUid"
+        :multiple="false"
+        :include-all="true"
       />
       <div class="w-52">
         <TypeSelect
           :disabled="!hasAuditLogFeature"
-          :selected-type-list="selectedAuditTypeList"
-          :item-list="AuditActivityTypeList"
-          @update-selected-type-list="selectAuditType"
+          v-model:selected="state.selectedAuditTypeList"
         />
       </div>
       <div class="hidden sm:block w-112">
         <NDatePicker
           v-model:value="selectedTimeRange"
           type="datetimerange"
-          size="large"
           :on-confirm="confirmDatePicker"
           :on-clear="clearDatePicker"
           clearable
@@ -30,7 +24,7 @@
         </NDatePicker>
       </div>
       <DataExportButton
-        size="large"
+        size="medium"
         :support-formats="[
           ExportFormat.CSV,
           ExportFormat.JSON,
@@ -95,7 +89,7 @@
 import dayjs from "dayjs";
 import { NGrid, NGi, NDatePicker } from "naive-ui";
 import { BinaryLike } from "node:crypto";
-import { reactive, ref, computed } from "vue";
+import { reactive, ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
@@ -115,8 +109,9 @@ import {
 
 const dialog = ref<InstanceType<typeof BBDialog> | null>(null);
 const state = reactive({
-  showModal: false,
   modalContent: {},
+  userUid: String(UNKNOWN_ID),
+  selectedAuditTypeList: [] as LogEntity_Action[],
 });
 
 const { t } = useI18n();
@@ -136,30 +131,36 @@ const logKeyMap = {
   payload: t("audit-log.table.payload"),
 };
 
-const selectedUserUID = computed((): string => {
-  const id = route.query.user as string;
-  if (id) {
-    return id;
+watch(
+  () => state.userUid,
+  (uid) => {
+    router.replace({
+      name: "setting.workspace.audit-log",
+      query: {
+        ...route.query,
+        user: parseInt(uid, 10) > 0 ? uid : undefined,
+      },
+    });
   }
-  return String(UNKNOWN_ID);
-});
+);
+
+watch(
+  () => state.selectedAuditTypeList,
+  (list) => {
+    router.replace({
+      name: "setting.workspace.audit-log",
+      query: {
+        ...route.query,
+        type: list.join(","),
+      },
+    });
+  }
+);
 
 const selectedUserEmail = computed((): string => {
   const id = route.query.user as string;
   const selected = userStore.getUserById(id);
   return selected?.email ?? "";
-});
-
-const selectedAuditTypeList = computed((): LogEntity_Action[] => {
-  const typeList = route.query.type as string;
-  if (typeList) {
-    if (typeList.includes(",")) {
-      return typeList.split(",").map((n) => Number(n) as LogEntity_Action);
-    } else {
-      return [Number(typeList) as LogEntity_Action];
-    }
-  }
-  return [];
 });
 
 const selectedTimeRange = computed((): [number, number] => {
@@ -189,7 +190,10 @@ const handleViewDetail = (log: LogEntity) => {
           case "level":
             return [logKey, logEntity_LevelToJSON(log.level)];
           case "action":
-            return [logKey, t(AuditActivityTypeI18nNameMap[log.action])];
+            return [
+              logKey,
+              t(AuditActivityTypeI18nNameMap.get(log.action) ?? ""),
+            ];
           case "creator":
             return [logKey, log.creator];
           case "comment":
@@ -201,39 +205,7 @@ const handleViewDetail = (log: LogEntity) => {
       })
       .filter((arr) => arr.length === 2)
   );
-  state.showModal = true;
   dialog.value!.open();
-};
-
-const selectUser = (user: string) => {
-  router.replace({
-    name: "setting.workspace.audit-log",
-    query: {
-      ...route.query,
-      user: parseInt(user, 10) > 0 ? user : undefined,
-    },
-  });
-};
-
-const selectAuditType = (typeList: LogEntity_Action[]) => {
-  if (typeList.length === 0) {
-    // Clear `type=` query string if no type selected.
-    const query = Object.assign({}, route.query);
-    delete query.type;
-
-    router.replace({
-      name: "setting.workspace.audit-log",
-      query,
-    });
-  } else {
-    router.replace({
-      name: "setting.workspace.audit-log",
-      query: {
-        ...route.query,
-        type: typeList.join(","),
-      },
-    });
-  }
 };
 
 const confirmDatePicker = (value: [number, number]) => {
@@ -261,8 +233,8 @@ const clearDatePicker = () => {
 const activityFind = computed((): FindActivityMessage => {
   return {
     action:
-      selectedAuditTypeList.value.length > 0
-        ? selectedAuditTypeList.value
+      state.selectedAuditTypeList.length > 0
+        ? state.selectedAuditTypeList
         : AuditActivityTypeList,
     creatorEmail: selectedUserEmail.value,
     order: "desc",
