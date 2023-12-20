@@ -79,7 +79,6 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
-  showAlertModal: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
 }
 
@@ -124,7 +123,6 @@ const state = reactive<LocalState>({
     ? rulesToTemplate(props.policy, false /* withDisabled=false */)
     : undefined,
   ruleUpdated: false,
-  showAlertModal: false,
   pendingApplyTemplate: undefined,
 });
 

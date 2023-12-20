@@ -1,8 +1,9 @@
 <template>
   <div class="flex flex-col space-y-4">
-    <div class="px-4 flex justify-end items-center">
+    <div class="px-4 flex justify-end">
       <SearchBox
         v-model:value="state.searchText"
+        class="!max-w-full md:!max-w-[18rem]"
         :placeholder="$t('common.filter-by-name')"
         :autofocus="true"
       />
