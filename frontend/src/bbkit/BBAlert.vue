@@ -10,7 +10,9 @@
     @update:show="$emit('update:show', $event)"
     @positive-click="() => $emit('ok')"
     @negative-click="() => $emit('cancel')"
-  />
+  >
+    <slot name="default" />
+  </NModal>
 </template>
 
 <script lang="ts" setup>

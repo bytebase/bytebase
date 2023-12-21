@@ -259,24 +259,21 @@
       <!-- Action Button Group -->
       <div v-if="!drawer" class="pt-4">
         <div class="w-full flex justify-between items-center">
-          <div class="w-full flex justify-end items-center gap-x-4">
-            <NButton
-              v-if="allowEdit"
-              :disabled="!allowUpdate || state.isRequesting"
-              :loading="state.isRequesting"
-              type="primary"
-              @click.prevent="doUpdate"
-            >
-              {{ $t("common.update") }}
-            </NButton>
-          </div>
+          <InstanceArchiveRestoreButton
+            v-if="!isCreating && instance"
+            :instance="(instance as ComposedInstance)"
+          />
+          <NButton
+            v-if="allowEdit"
+            :disabled="!allowUpdate || state.isRequesting"
+            :loading="state.isRequesting"
+            type="primary"
+            @click.prevent="doUpdate"
+          >
+            {{ $t("common.update") }}
+          </NButton>
         </div>
       </div>
-
-      <InstanceArchiveRestoreButton
-        v-if="!isCreating && instance"
-        :instance="(instance as ComposedInstance)"
-      />
     </div>
 
     <template v-if="drawer" #footer>
