@@ -63,6 +63,13 @@ const props = defineProps({
     default: "",
     type: String,
   },
+  // isExternalTable shows whether the table is an external table or not.
+  // Mainly used to determine whether to show sensitive column and labels column.
+  isExternalTable: {
+    required: false,
+    default: false,
+    type: Boolean,
+  },
 });
 
 const { t } = useI18n();
@@ -73,11 +80,15 @@ const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();
 
 const hasSensitiveDataFeature = computed(() => {
-  return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
+  return (
+    !props.isExternalTable &&
+    subscriptionV1Store.hasFeature("bb.feature.sensitive-data")
+  );
 });
 
 const showSensitiveColumn = computed(() => {
   return (
+    !props.isExternalTable &&
     hasSensitiveDataFeature.value &&
     (engine.value === Engine.MYSQL ||
       engine.value === Engine.TIDB ||
@@ -92,9 +103,14 @@ const showSensitiveColumn = computed(() => {
 
 const showClassificationColumn = computed(() => {
   return (
+    !props.isExternalTable &&
     (engine.value === Engine.MYSQL || engine.value === Engine.POSTGRES) &&
     props.classificationConfig
   );
+});
+
+const showLabelsColumn = computed(() => {
+  return !props.isExternalTable;
 });
 
 const showCollationColumn = computed(() => {
@@ -239,9 +255,10 @@ const columns = computed(() => {
     },
     {
       key: "labels",
+      title: t("common.labels"),
+      hide: !showLabelsColumn.value,
       resizable: true,
       width: 140,
-      title: t("common.labels"),
       render: (column) => {
         return h(LabelsCell, {
           database: props.database,
