@@ -49,7 +49,3 @@ func BBStack(key string) slog.Attr {
 	stack := stacktrace.TakeStacktrace(20 /* n */, 3 /* skip */)
 	return slog.Any(key, stack)
 }
-
-func BBStrings(key string, ss []string) slog.Attr {
-	return slog.Any(key, ss)
-}
