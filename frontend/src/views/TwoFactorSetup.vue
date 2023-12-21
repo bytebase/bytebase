@@ -5,15 +5,15 @@
       url="https://www.bytebase.com/docs/administration/2fa?source=console"
     />
   </p>
-  <BBStepTab
+  <StepTab
     class="mb-8"
-    :step-item-list="stepTabList"
+    :step-list="stepTabList"
     :allow-next="allowNext"
     :finish-title="$t('two-factor.setup-steps.recovery-codes-saved')"
-    :current-step="state.currentStep"
+    :current-index="state.currentStep"
+    @update:current-index="tryChangeStep"
+    @finish="tryFinishSetup"
     @cancel="cancelSetup"
-    @try-change-step="tryChangeStep"
-    @try-finish="tryFinishSetup"
   >
     <template #0>
       <div
@@ -68,7 +68,7 @@
         @download="state.recoveryCodesDownloaded = true"
       />
     </template>
-  </BBStepTab>
+  </StepTab>
 
   <TwoFactorSecretModal
     v-if="state.showSecretModal"
@@ -85,6 +85,7 @@ import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
+import { StepTab } from "@/components/v2";
 import { pushNotification, useAuthStore, useUserStore } from "@/store";
 import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 
@@ -183,19 +184,14 @@ const cancelSetup = () => {
   }
 };
 
-const tryChangeStep = async (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
-  if (newStep === DOWNLOAD_RECOVERY_CODES_STEP) {
+const tryChangeStep = async (nextStepIndex: number) => {
+  if (nextStepIndex === DOWNLOAD_RECOVERY_CODES_STEP) {
     const result = await verifyTOPCode();
     if (!result) {
       return;
     }
   }
-  state.currentStep = newStep as Step;
-  allowChangeCallback();
+  state.currentStep = nextStepIndex as Step;
 };
 
 const tryFinishSetup = async () => {
