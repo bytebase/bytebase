@@ -47,28 +47,6 @@ export type BBTabItem<T = any> = {
   data?: T;
 };
 
-export type BBStepStatus =
-  | "NOT_STARTED"
-  | "PENDING"
-  | "PENDING_ACTIVE"
-  | "PENDING_APPROVAL"
-  | "PENDING_APPROVAL_ACTIVE"
-  | "RUNNING"
-  | "DONE"
-  | "FAILED"
-  | "CANCELED"
-  | "SKIPPED";
-
-export type BBStep = {
-  status: BBStepStatus;
-  payload: any;
-};
-
-export type BBStepTabItem = {
-  title: string;
-  hideNext?: boolean;
-};
-
 export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 export type BBNotificationPlacement =
   | "TOP_LEFT"

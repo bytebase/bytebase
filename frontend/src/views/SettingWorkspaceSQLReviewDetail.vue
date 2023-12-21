@@ -79,7 +79,7 @@
       @comment-change="onCommentChange"
     />
     <BBButtonConfirm
-      class="my-4"
+      class="!my-4"
       :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"

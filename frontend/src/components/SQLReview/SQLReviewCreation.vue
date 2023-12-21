@@ -1,13 +1,14 @@
 <template>
   <div>
-    <BBStepTab
+    <StepTab
       :sticky="true"
-      :step-item-list="STEP_LIST"
+      :current-index="state.currentStep"
+      :step-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
-      @try-change-step="tryChangeStep"
-      @try-finish="tryFinishSetup"
+      @update:current-index="changeStepIndex"
       @cancel="onCancel"
+      @finish="tryFinishSetup"
     >
       <template #0>
         <SQLReviewInfo
@@ -30,7 +31,7 @@
           @comment-change="onCommentChange"
         />
       </template>
-    </BBStepTab>
+    </StepTab>
   </div>
 </template>
 
@@ -39,8 +40,7 @@ import { useDialog } from "naive-ui";
 import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTab } from "@/bbkit";
-import { BBStepTabItem } from "@/bbkit/types";
+import { StepTab } from "@/components/v2";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -101,7 +101,7 @@ const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
 const ROUTE_NAME = "setting.workspace.sql-review";
 
-const STEP_LIST: BBStepTabItem[] = [
+const STEP_LIST = [
   { title: t("sql-review.create.basic-info.name") },
   { title: t("sql-review.create.configure-rule.name") },
 ];
@@ -180,12 +180,8 @@ const allowNext = computed((): boolean => {
   return false;
 });
 
-const tryChangeStep = (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
-  if (oldStep === 0 && newStep === 1) {
+const changeStepIndex = (nextIndex: number) => {
+  if (state.currentStep === 0 && nextIndex === 1) {
     if (state.pendingApplyTemplate) {
       dialog.warning({
         title: t("sql-review.create.configure-rule.confirm-override-title"),
@@ -195,17 +191,15 @@ const tryChangeStep = (
         positiveText: t("common.confirm"),
         onPositiveClick: (_: MouseEvent) => {
           onTemplateApply(state.pendingApplyTemplate);
-          allowChangeCallback();
         },
       });
       return;
     }
   }
-  state.currentStep = newStep;
-  allowChangeCallback();
+  state.currentStep = nextIndex;
 };
 
-const tryFinishSetup = (allowChangeCallback: () => void) => {
+const tryFinishSetup = () => {
   if (
     !hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-sql-review-policy",
@@ -260,7 +254,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       });
   }
 
-  allowChangeCallback();
   onCancel();
 };
 
