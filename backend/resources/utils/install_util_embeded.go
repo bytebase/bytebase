@@ -29,7 +29,7 @@ func InstallImpl(resourceDir, utilDir, tarName, version string, resources embed.
 		if err := ExtractTarXz(f, tmpDir); err != nil {
 			return errors.Wrap(err, "failed to extract .txz file")
 		}
-	} else {
+	} else if strings.Contains(tarName, ".tar.gz") {
 		if err := ExtractTarGz(f, tmpDir); err != nil {
 			return errors.Wrap(err, "failed to extract tar.gz file")
 		}

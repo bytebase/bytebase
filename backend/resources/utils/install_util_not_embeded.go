@@ -13,7 +13,7 @@ import (
 )
 
 // InstallImpl installs mongoutil, mysqlutil, postgres in resourceDir.
-func InstallImpl(resourceDir, utilDir, tarName, version string, _ embed.FS) error {
+func InstallImpl(_, utilDir, tarName, version string, _ embed.FS) error {
 	preloadingDir := getPreloadingUtilDir(utilDir)
 	if _, err := os.Stat(preloadingDir); err != nil {
 		if os.IsNotExist(err) {
