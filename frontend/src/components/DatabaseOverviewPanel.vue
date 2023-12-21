@@ -129,10 +129,24 @@
         />
 
         <template v-if="databaseEngine === Engine.POSTGRES">
-          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
-            {{ $t("db.foreign-tables") }}
+          <div
+            class="mt-6 w-full flex flex-row justify-between items-center mb-4"
+          >
+            <div class="text-lg leading-6 font-medium text-main">
+              {{ $t("db.foreign-tables") }}
+            </div>
+            <SearchBox
+              :value="state.externalTableNameSearchKeyword"
+              :placeholder="$t('common.filter-by-name')"
+              @update:value="state.externalTableNameSearchKeyword = $event"
+            />
           </div>
-          <DBExternalDataTable :db-external-table-list="dbExternalTableList" />
+          <ExternalTableDataTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :external-table-list="externalTableList"
+            :search="state.externalTableNameSearchKeyword"
+          />
         </template>
 
         <template v-if="databaseEngine === Engine.POSTGRES">
@@ -182,7 +196,7 @@ import { head } from "lodash-es";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
-import DBExternalDataTable from "@/components/DBExternalDataTable.vue";
+import ExternalTableDataTable from "@/components/ExternalTableDataTable.vue";
 import FunctionDataTable from "@/components/FunctionDataTable.vue";
 import TableDataTable from "@/components/TableDataTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
@@ -199,6 +213,7 @@ import TaskTable from "./TaskTable.vue";
 interface LocalState {
   selectedSchemaName: string;
   tableNameSearchKeyword: string;
+  externalTableNameSearchKeyword: string;
   editingDataSource?: DataSource;
 }
 
@@ -216,6 +231,7 @@ const route = useRoute();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
   tableNameSearchKeyword: "",
+  externalTableNameSearchKeyword: "",
 });
 
 const dbSchemaStore = useDBSchemaV1Store();
@@ -315,7 +331,7 @@ const dbExtensionList = computed(() => {
   return dbSchemaStore.getExtensionList(props.database.name);
 });
 
-const dbExternalTableList = computed(() => {
+const externalTableList = computed(() => {
   return dbSchemaStore.getExternalTableList(
     props.database.name,
     state.selectedSchemaName

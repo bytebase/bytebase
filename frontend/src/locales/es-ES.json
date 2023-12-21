@@ -1724,7 +1724,8 @@
     "partitioned": "Particionado",
     "partition-tabled": "Tabla particionada",
     "external-database-name": "Nombre de la base de datos externa",
-    "external-server-name": "Nombre del servidor externo"
+    "external-server-name": "Nombre del servidor externo",
+    "foreign-table-detail": "Detalle de la tabla externa"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
