@@ -1,6 +1,6 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('database.table-detail')">
+    <DrawerContent :title="$t('database.foreign-table-detail')">
       <div
         v-if="externalTable"
         class="flex-1 overflow-auto focus:outline-none w-[calc(100vw-256px)]"
