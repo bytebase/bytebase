@@ -1,5 +1,23 @@
+- input: SELECT x.| FROM (SELECT * FROM t2) x
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: c2
+      type: COLUMN
+      definition: ""
+      comment: ""
 - input: WITH x AS (SELECT * FROM t2) SELECT x.| FROM x;
-  want: []
+  want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: c2
+      type: COLUMN
+      definition: ""
+      comment: ""
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT x.| FROM x;
   want:
     - text: x1
@@ -142,6 +160,10 @@
       comment: ""
     - text: v1
       type: VIEW
+      definition: ""
+      comment: ""
+    - text: c1
+      type: COLUMN
       definition: ""
       comment: ""
 - input: SELECT cc1.| FROM t1 cc1 JOIN t2 on NOT cc1.c1 = t2.c1

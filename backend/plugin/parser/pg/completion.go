@@ -954,7 +954,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 					if span, err := base.GetQuerySpan(
 						l.context.ctx,
 						store.Engine_POSTGRES,
-						fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens())),
+						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
 						l.context.getMetadata,
 					); err == nil && len(span) == 1 {
