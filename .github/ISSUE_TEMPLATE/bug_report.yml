@@ -40,14 +40,14 @@ body:
       required: true
   - type: input
     attributes:
-      label: Provide the database type and version you are using
+      label: Provide the database you are using
       description: |
-        If related with a database operation, provide the database type and version (e.g. MySQL 8.0).
+        Provide the database type and version (e.g. MySQL 8.0) you are using if related to a database operation.
   - type: input
     attributes:
-      label: Provide the GitLab version you are using
+      label: Provide the version control system you are using
       description: |
-        Provide the GitLab version you are using (if related with VCS integration)
+        Provide the version control system type and version (e.g. GitLab CE 16.5.4) you are using if related to GitOps integration
   - type: textarea
     attributes:
       label: Additional context
