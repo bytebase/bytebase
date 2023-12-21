@@ -241,13 +241,11 @@ const buttonActionList = computed((): PITRButtonAction[] => {
     {
       key: "CUSTOM",
       text: t("database.pitr.restore-to-point-in-time"),
-      // type: "NORMAL",
       params: { step: "PITR_FORM", mode: "CUSTOM" },
     },
     {
       key: "LAST_MIGRATION",
       text: t("database.pitr.restore-before-last-migration"),
-      // type: "NORMAL",
       params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
     },
   ];
