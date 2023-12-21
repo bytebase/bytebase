@@ -170,6 +170,20 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
 	}
 
+	uid, gid, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
+		for _, dir := range dirListToChown {
+			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
+			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
+				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
+			}
+		}
+	}
+
 	args := []string{
 		"-U", pgUser,
 		"-D", pgDataDir,
@@ -180,24 +194,12 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
 	)
-	uid, gid, sameUser, err := shouldSwitchUser()
-	if err != nil {
-		return err
-	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
-		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
-		for _, dir := range dirListToChown {
-			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
-			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
-				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
-			}
-		}
 	}
-
 	// Suppress log spam
 	p.Stdout = nil
 	p.Stderr = os.Stderr
