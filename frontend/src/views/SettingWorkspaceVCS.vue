@@ -24,7 +24,7 @@
       </template>
     </div>
     <template v-else>
-      <VCSSetupWizard />
+      <VCSSetupWizard :show-cancel="false" />
     </template>
   </div>
 </template>

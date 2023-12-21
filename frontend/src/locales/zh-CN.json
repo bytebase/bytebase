@@ -1720,7 +1720,8 @@
     "partitioned": "分区",
     "partition-tabled": "分区表",
     "external-server-name": "外部服务器名称",
-    "external-database-name": "外部数据库名称"
+    "external-database-name": "外部数据库名称",
+    "foreign-table-detail": "外部表详情"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
