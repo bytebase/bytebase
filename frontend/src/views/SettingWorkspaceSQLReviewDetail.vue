@@ -61,7 +61,7 @@
     <BBAttention
       v-if="!reviewPolicy.environment"
       class="my-4"
-      :style="`WARN`"
+      type="warning"
       :title="$t('sql-review.create.basic-info.no-linked-environments')"
     />
     <SQLRuleFilter

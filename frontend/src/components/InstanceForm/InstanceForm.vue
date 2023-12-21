@@ -237,7 +237,7 @@
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
           class="my-4 border-none"
-          :style="'INFO'"
+          type="info"
           :title="$t('instance.sentence.outbound-ip-list')"
           :description="outboundIpList"
         />

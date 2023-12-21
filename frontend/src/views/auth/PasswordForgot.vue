@@ -13,7 +13,7 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <BBAttention :style="`WARN`" :title="hint">
+        <BBAttention type="warning" :title="hint">
           <template v-if="actuatorStore.isSaaSMode && !hint" #title>
             <i18n-t
               tag="h3"

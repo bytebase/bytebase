@@ -1,9 +1,8 @@
 <template>
   <div class="w-full">
     <BBAttention
-      :style="'WARN'"
+      type="warning"
       :title="$t('two-factor.messages.2fa-required')"
-      side="CENTER"
     />
     <div class="w-full p-2 sm:p-8 sm:px-16">
       <TwoFactorSetup :cancel-action="handleSetupCancel" />

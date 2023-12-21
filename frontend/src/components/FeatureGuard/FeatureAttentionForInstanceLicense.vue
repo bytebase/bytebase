@@ -6,7 +6,7 @@
       subscriptionV1Store.currentPlan !== PlanType.FREE
     "
     :class="customClass"
-    :style="style ?? `INFO`"
+    :type="type ?? `info`"
     :title="$t(`subscription.features.${featureKey}.desc`)"
     :description="
       $t('subscription.instance-assignment.missing-license-attention')
@@ -16,7 +16,7 @@
         ? $t('subscription.instance-assignment.assign-license')
         : ''
     "
-    @click-action="onClick"
+    @click="onClick"
   />
   <InstanceAssignment
     :show="state.showInstanceAssignmentDrawer"
@@ -26,7 +26,6 @@
 
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
-import { BBAttentionStyle } from "@/bbkit";
 import {
   useSubscriptionV1Store,
   useCurrentUserV1,
@@ -41,7 +40,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  style?: BBAttentionStyle;
+  type?: "warning" | "info";
   feature: FeatureType;
   customClass?: string;
 }>();

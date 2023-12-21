@@ -30,9 +30,8 @@
 
 <script lang="ts" setup>
 import { computed, withDefaults } from "vue";
-import { BBAttentionStyle } from "./types";
 
-export type BBBadgeStyle = BBAttentionStyle | "DISABLED";
+export type BBBadgeStyle = "INFO" | "WARN" | "CRITICAL" | "DISABLED";
 export type BBBadgeSize = "normal" | "small";
 
 const props = withDefaults(
