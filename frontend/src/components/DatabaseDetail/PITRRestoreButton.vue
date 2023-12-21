@@ -246,7 +246,6 @@ const buttonActionList = computed((): PITRButtonAction[] => {
     {
       key: "LAST_MIGRATION",
       text: t("database.pitr.restore-before-last-migration"),
-      // type: "NORMAL",
       params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
     },
   ];
