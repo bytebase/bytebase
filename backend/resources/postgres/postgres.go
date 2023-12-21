@@ -39,24 +39,16 @@ func Install(resourceDir string) (string, error) {
 	} else {
 		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s-%s", pkgNamePrefix, currentVersion))
 	}
-	needInstall := false
+
 	if _, err := os.Stat(pgBaseDir); err != nil {
 		if !os.IsNotExist(err) {
 			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
 		}
-		// Install if not exist yet.
-		needInstall = true
-	}
-	if needInstall {
-		slog.Info("Installing PostgreSQL utilities...")
-		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentVersion))
-		if err := installInDir(tarName, tmpDir); err != nil {
-			return "", err
-		}
 
-		if err := os.Rename(tmpDir, pgBaseDir); err != nil {
-			return "", errors.Wrapf(err, "failed to rename postgres binary base directory from %q to %q", tmpDir, pgBaseDir)
+		slog.Info("Installing PostgreSQL utilities...")
+		version := fmt.Sprintf("%s%s", pkgNamePrefix, currentVersion)
+		if err := utils.InstallImpl(resourceDir, pgBaseDir, tarName, version, resources); err != nil {
+			return "", errors.Wrap(err, "cannot install postgres")
 		}
 	}
 
@@ -255,21 +247,4 @@ func shouldSwitchUser() (int, int, bool, error) {
 		return 0, 0, false, err
 	}
 	return int(uid), int(gid), sameUser, nil
-}
-
-func installInDir(tarName string, dir string) error {
-	if err := os.RemoveAll(dir); err != nil {
-		return errors.Wrapf(err, "failed to remove postgres binary temp directory %q", dir)
-	}
-
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
-	}
-	defer f.Close()
-
-	if err := utils.ExtractTarXz(f, dir); err != nil {
-		return errors.Wrap(err, "failed to extract txz file")
-	}
-	return nil
 }
