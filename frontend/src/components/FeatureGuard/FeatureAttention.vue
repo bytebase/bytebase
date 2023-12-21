@@ -2,11 +2,11 @@
   <BBAttention
     v-if="!hasFeature"
     :class="customClass"
-    :style="`WARN`"
+    type="warning"
     :title="$t(`subscription.features.${featureKey}.title`)"
     :description="descriptionText"
     :action-text="actionText"
-    @click-action="onClick"
+    @click="onClick"
   />
   <WeChatQRModal
     v-if="state.showQRCodeModal"

@@ -237,7 +237,7 @@
         <BBAttention
           v-if="outboundIpList && actuatorStore.isSaaSMode"
           class="my-4 border-none"
-          :style="'INFO'"
+          type="info"
           :title="$t('instance.sentence.outbound-ip-list')"
           :description="outboundIpList"
         />
@@ -259,24 +259,21 @@
       <!-- Action Button Group -->
       <div v-if="!drawer" class="pt-4">
         <div class="w-full flex justify-between items-center">
-          <div class="w-full flex justify-end items-center gap-x-4">
-            <NButton
-              v-if="allowEdit"
-              :disabled="!allowUpdate || state.isRequesting"
-              :loading="state.isRequesting"
-              type="primary"
-              @click.prevent="doUpdate"
-            >
-              {{ $t("common.update") }}
-            </NButton>
-          </div>
+          <InstanceArchiveRestoreButton
+            v-if="!isCreating && instance"
+            :instance="(instance as ComposedInstance)"
+          />
+          <NButton
+            v-if="allowEdit"
+            :disabled="!allowUpdate || state.isRequesting"
+            :loading="state.isRequesting"
+            type="primary"
+            @click.prevent="doUpdate"
+          >
+            {{ $t("common.update") }}
+          </NButton>
         </div>
       </div>
-
-      <InstanceArchiveRestoreButton
-        v-if="!isCreating && instance"
-        :instance="(instance as ComposedInstance)"
-      />
     </div>
 
     <template v-if="drawer" #footer>
@@ -311,15 +308,14 @@
   />
 
   <BBAlert
-    v-if="state.showCreateInstanceWarningModal"
-    :style="'WARN'"
+    v-model:show="state.showCreateInstanceWarningModal"
+    type="warning"
     :ok-text="t('instance.ignore-and-create')"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
-    :progress-text="$t('common.creating')"
     @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
-  ></BBAlert>
+  />
 </template>
 
 <script lang="ts" setup>

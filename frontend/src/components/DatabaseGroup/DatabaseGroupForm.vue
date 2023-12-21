@@ -3,7 +3,7 @@
     <FeatureAttentionForInstanceLicense
       v-if="existMatchedUnactivateInstance"
       custom-class="mb-4"
-      :style="`WARN`"
+      type="warning"
       feature="bb.feature.database-grouping"
     />
     <div class="w-full grid grid-cols-3 gap-x-6 pb-6 mb-4 border-b">
