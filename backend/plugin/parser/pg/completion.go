@@ -209,11 +209,12 @@ func (m CompletionMap) Insert(entry base.Candidate) {
 }
 
 func (m CompletionMap) insertFunctions() {
-	// TODO: Add more functions.
-	m.Insert(base.Candidate{
-		Type: base.CandidateTypeFunction,
-		Text: "abs()",
-	})
+	for _, name := range pg.GetBuiltinFunctions() {
+		m.Insert(base.Candidate{
+			Type: base.CandidateTypeFunction,
+			Text: name + "()",
+		})
+	}
 }
 
 func (m CompletionMap) insertSchemas(c *Completer) {
@@ -357,7 +358,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.scanner.Push()
 
 		switch candidate {
-		case pg.PostgreSQLParserRULE_func_expr:
+		case pg.PostgreSQLParserRULE_func_name:
 			runtimeFunctionEntries.insertFunctions()
 		case pg.PostgreSQLParserRULE_relation_expr, pg.PostgreSQLParserRULE_qualified_name:
 			qualifier, flags := c.determineQualifiedName()
