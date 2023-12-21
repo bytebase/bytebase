@@ -50,7 +50,7 @@
             </NButton>
 
             <BBButtonConfirm
-              class="btn-normal flex justify-center !py-1 !px-3"
+              type="default"
               :disabled="!hasPermission"
               :style="'DELETE'"
               :hide-icon="true"
@@ -118,7 +118,7 @@
             </button>
 
             <BBButtonConfirm
-              class="btn-normal flex justify-center !py-1 !px-3"
+              type="default"
               :disabled="!hasPermission"
               :style="'DELETE'"
               :hide-icon="true"

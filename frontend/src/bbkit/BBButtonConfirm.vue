@@ -2,6 +2,7 @@
   <NButton
     v-bind="$attrs"
     class="text-sm"
+    :type="type"
     :class="[!state.hideIcon && 'btn-icon']"
     @click.prevent.stop="
       () => {
@@ -66,15 +67,21 @@ import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirmStyle } from "./types";
 
-const props = defineProps<{
-  style?: BBButtonConfirmStyle;
-  buttonText?: string;
-  requireConfirm?: boolean;
-  okText?: string;
-  confirmTitle?: string;
-  confirmDescription?: string;
-  hideIcon?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    type?: "text" | "default";
+    style?: BBButtonConfirmStyle;
+    buttonText?: string;
+    requireConfirm?: boolean;
+    okText?: string;
+    confirmTitle?: string;
+    confirmDescription?: string;
+    hideIcon?: boolean;
+  }>(),
+  {
+    type: "text",
+  }
+);
 
 defineEmits<{
   (event: "confirm"): void;
