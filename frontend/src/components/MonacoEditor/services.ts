@@ -1,4 +1,5 @@
 import { languages } from "monaco-editor";
+import "vscode/localExtensionHost";
 import { initialize as initializeServices } from "vscode/services";
 import { SupportedLanguages } from "./types";
 
