@@ -2,6 +2,8 @@ package pg
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -197,7 +199,492 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 		}
 	}
 
-	return nil, nil
+	return c.convertCandidates(candidates)
+}
+
+type CompletionMap map[string]base.Candidate
+
+func (m CompletionMap) Insert(entry base.Candidate) {
+	m[entry.String()] = entry
+}
+
+func (m CompletionMap) insertFunctions() {
+	// TODO: Add more functions.
+	m.Insert(base.Candidate{
+		Type: base.CandidateTypeFunction,
+		Text: "abs()",
+	})
+}
+
+func (m CompletionMap) insertSchemas(c *Completer) {
+	for _, schema := range c.listAllSchemas() {
+		m.Insert(base.Candidate{
+			Type: base.CandidateTypeSchema,
+			Text: schema,
+		})
+	}
+}
+
+func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, table := range c.listTables(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeTable,
+				Text: table,
+			})
+		}
+	}
+}
+
+func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
+	for schema := range schemas {
+		for _, view := range c.listViews(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeView,
+				Text: view,
+			})
+		}
+	}
+}
+
+func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	for schema := range schemas {
+		schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+		if schemaMeta == nil {
+			continue
+		}
+		for table := range tables {
+			tableMeta := schemaMeta.GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				if len(column.Classification) != 0 {
+					comment = column.Classification + "\n" + column.UserComment
+				}
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       column.Name,
+					Definition: definition,
+					Comment:    comment,
+				})
+			}
+		}
+	}
+}
+
+func (m CompletionMap) toSlice() []base.Candidate {
+	var result []base.Candidate
+	for _, candidate := range m {
+		result = append(result, candidate)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Type != result[j].Type {
+			return result[i].Type < result[j].Type
+		}
+		return result[i].Text < result[j].Text
+	})
+	return result
+}
+
+func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {
+	defaultSchema := "public"
+	keywordEntries := make(CompletionMap)
+	runtimeFunctionEntries := make(CompletionMap)
+	schemaEntries := make(CompletionMap)
+	tableEntries := make(CompletionMap)
+	columnEntries := make(CompletionMap)
+	viewEntries := make(CompletionMap)
+
+	for token, value := range candidates.Tokens {
+		if token < 0 {
+			continue
+		}
+		entry := c.parser.SymbolicNames[token]
+		if strings.HasSuffix(entry, "_P") {
+			entry = entry[:len(entry)-2]
+		} else {
+			entry = unquote(entry)
+		}
+
+		list := 0
+		if len(value) > 0 {
+			// For function call:
+			if value[0] == pg.PostgreSQLLexerOPEN_PAREN {
+				list = 1
+			} else {
+				for _, item := range value {
+					subEntry := c.parser.SymbolicNames[item]
+					if strings.HasSuffix(subEntry, "_P") {
+						subEntry = subEntry[:len(subEntry)-2]
+					} else {
+						subEntry = unquote(subEntry)
+					}
+					entry += " " + subEntry
+				}
+			}
+		}
+
+		switch list {
+		case 1:
+			runtimeFunctionEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeFunction,
+				Text: strings.ToLower(entry) + "()",
+			})
+		default:
+			keywordEntries.Insert(base.Candidate{
+				Type: base.CandidateTypeKeyword,
+				Text: entry,
+			})
+		}
+	}
+
+	for candidate := range candidates.Rules {
+		c.scanner.PopAndRestore()
+		c.scanner.Push()
+
+		switch candidate {
+		case pg.PostgreSQLParserRULE_func_expr:
+			runtimeFunctionEntries.insertFunctions()
+		case pg.PostgreSQLParserRULE_relation_expr, pg.PostgreSQLParserRULE_qualified_name:
+			qualifier, flags := c.determineQualifiedName()
+
+			if flags&ObjectFlagsShowFirst != 0 {
+				schemaEntries.insertSchemas(c)
+			}
+
+			if flags&ObjectFlagsShowSecond != 0 {
+				schemas := make(map[string]bool)
+				if len(qualifier) == 0 {
+					schemas[defaultSchema] = true
+				} else {
+					schemas[qualifier] = true
+				}
+
+				tableEntries.insertTables(c, schemas)
+				viewEntries.insertViews(c, schemas)
+			}
+		case pg.PostgreSQLParserRULE_columnref:
+			schema, table, flags := c.determineColumnRef()
+			if flags&ObjectFlagsShowSchemas != 0 {
+				schemaEntries.insertSchemas(c)
+			}
+
+			schemas := make(map[string]bool)
+			if len(schema) != 0 {
+				schemas[schema] = true
+			} else if len(c.references) > 0 {
+				for _, reference := range c.references {
+					if physicalTable, ok := reference.(*base.PhysicalTableReference); ok {
+						if len(physicalTable.Schema) > 0 {
+							schemas[physicalTable.Schema] = true
+						}
+					}
+				}
+			}
+
+			if len(schema) == 0 {
+				schemas[defaultSchema] = true
+			}
+
+			if flags&ObjectFlagsShowTables != 0 {
+				tableEntries.insertTables(c, schemas)
+				viewEntries.insertViews(c, schemas)
+
+				for _, reference := range c.references {
+					switch reference := reference.(type) {
+					case *base.PhysicalTableReference:
+						if len(schema) == 0 && len(reference.Schema) == 0 || schemas[reference.Schema] {
+							if len(reference.Alias) == 0 {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: reference.Table,
+								})
+							} else {
+								tableEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeTable,
+									Text: reference.Alias,
+								})
+							}
+						}
+					case *base.VirtualTableReference:
+						if len(schema) > 0 {
+							// If the schema is specified, we should not show the virtual table.
+							continue
+						}
+						tableEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeTable,
+							Text: reference.Table,
+						})
+					}
+				}
+			}
+
+			if flags&ObjectFlagsShowColumns != 0 {
+				if schema == table {
+					schemas[defaultSchema] = true
+				}
+
+				tables := make(map[string]bool)
+				if len(table) != 0 {
+					tables[table] = true
+
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							if reference.Alias == table {
+								tables[reference.Table] = true
+								schemas[reference.Schema] = true
+							}
+						case *base.VirtualTableReference:
+							if reference.Table == table {
+								for _, column := range reference.Columns {
+									columnEntries.Insert(base.Candidate{
+										Type: base.CandidateTypeColumn,
+										Text: column,
+									})
+								}
+							}
+						}
+					}
+				} else if len(c.references) > 0 {
+					list := c.fetchSelectItemAliases(candidates.Rules[candidate])
+					for _, alias := range list {
+						columnEntries.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: alias,
+						})
+					}
+					for _, reference := range c.references {
+						switch reference := reference.(type) {
+						case *base.PhysicalTableReference:
+							schemas[reference.Schema] = true
+							tables[reference.Table] = true
+						case *base.VirtualTableReference:
+							for _, column := range reference.Columns {
+								columnEntries.Insert(base.Candidate{
+									Type: base.CandidateTypeColumn,
+									Text: column,
+								})
+							}
+						}
+					}
+				}
+
+				if len(tables) > 0 {
+					columnEntries.insertColumns(c, schemas, tables)
+				}
+			}
+		}
+	}
+
+	c.scanner.PopAndRestore()
+	var result []base.Candidate
+	result = append(result, keywordEntries.toSlice()...)
+	result = append(result, runtimeFunctionEntries.toSlice()...)
+	result = append(result, schemaEntries.toSlice()...)
+	result = append(result, tableEntries.toSlice()...)
+	result = append(result, viewEntries.toSlice()...)
+	result = append(result, columnEntries.toSlice()...)
+
+	return result, nil
+}
+
+func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
+	canUseAliases := false
+	for i := len(ruleStack) - 1; i >= 0; i-- {
+		switch ruleStack[i].ID {
+		case pg.PostgreSQLParserRULE_simple_select_pramary, pg.PostgreSQLParserRULE_select_no_parens:
+			if !canUseAliases {
+				return nil
+			}
+			aliasMap := make(map[string]bool)
+			for pos := range ruleStack[i].SelectItemAliases {
+				if aliasText := c.extractAliasText(pos); len(aliasText) > 0 {
+					aliasMap[aliasText] = true
+				}
+			}
+
+			var result []string
+			for alias := range aliasMap {
+				result = append(result, alias)
+			}
+			sort.Slice(result, func(i, j int) bool {
+				return result[i] < result[j]
+			})
+			return result
+		case pg.PostgreSQLParserRULE_opt_sort_clause, pg.PostgreSQLParserRULE_group_clause, pg.PostgreSQLParserRULE_having_clause:
+			canUseAliases = true
+		}
+	}
+
+	return nil
+}
+
+func (c *Completer) extractAliasText(pos int) string {
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return ""
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := pg.NewPostgreSQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pg.NewPostgreSQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	tree := parser.Target_alias()
+
+	listener := &TargetAliasListener{}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	return listener.result
+}
+
+type TargetAliasListener struct {
+	*pg.BasePostgreSQLParserListener
+
+	result string
+}
+
+func (l *TargetAliasListener) EnterTarget_alias(ctx *pg.Target_aliasContext) {
+	if ctx.Identifier() != nil {
+		l.result = normalizePostgreSQLIdentifier(ctx.Identifier())
+	} else if ctx.Collabel() != nil {
+		l.result = normalizePostgreSQLCollabel(ctx.Collabel())
+	}
+}
+
+type ObjectFlags int
+
+const (
+	ObjectFlagsShowSchemas ObjectFlags = 1 << iota
+	ObjectFlagsShowTables
+	ObjectFlagsShowColumns
+	ObjectFlagsShowFirst
+	ObjectFlagsShowSecond
+)
+
+func (c *Completer) determineQualifiedName() (string, ObjectFlags) {
+	position := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != 0 {
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if !c.scanner.IsTokenType(pg.PostgreSQLLexerONLY) && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		// We are at the end of an incomplete identifier spec.
+		// Jump back.
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	// Go left until we hit a non-identifier token.
+	if position > 0 {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+	}
+
+	// The current token is on the leading identifier.
+	qualifier := ""
+	temp := ""
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+		return qualifier, ObjectFlagsShowFirst | ObjectFlagsShowSecond
+	}
+
+	qualifier = temp
+	return qualifier, ObjectFlagsShowSecond
+}
+
+func (c *Completer) determineColumnRef() (schema, table string, flags ObjectFlags) {
+	position := c.scanner.GetIndex()
+	if c.scanner.GetTokenChannel() != 0 {
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	tokenType := c.scanner.GetTokenType()
+	if tokenType != pg.PostgreSQLLexerDOT && !c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		// We are at the end of an incomplete identifier spec.
+		// Jump back.
+		c.scanner.Backward(true /* skipHidden */)
+	}
+
+	if position > 0 {
+		if c.lexer.IsIdentifier(c.scanner.GetTokenType()) && c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+			c.scanner.Backward(true /* skipHidden */)
+		}
+		if c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) && c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+			c.scanner.Backward(true /* skipHidden */)
+
+			if c.scanner.GetPreviousTokenType(false /* skipHidden */) == pg.PostgreSQLLexerDOT {
+				c.scanner.Backward(true /* skipHidden */)
+				if c.lexer.IsIdentifier(c.scanner.GetPreviousTokenType(false /* skipHidden */)) {
+					c.scanner.Backward(true /* skipHidden */)
+				}
+			}
+		}
+	}
+
+	schema = ""
+	table = ""
+	temp := ""
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+	}
+
+	if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+		return schema, table, ObjectFlagsShowSchemas | ObjectFlagsShowTables | ObjectFlagsShowColumns
+	}
+
+	c.scanner.Forward(true /* skipHidden */) // skip dot
+	table = temp
+	schema = temp
+	if c.lexer.IsIdentifier(c.scanner.GetTokenType()) {
+		temp = unquote(c.scanner.GetTokenText())
+		c.scanner.Forward(true /* skipHidden */)
+
+		if !c.scanner.IsTokenType(pg.PostgreSQLLexerDOT) || position <= c.scanner.GetIndex() {
+			return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
+		}
+
+		table = temp
+		return schema, table, ObjectFlagsShowColumns
+	}
+
+	return schema, table, ObjectFlagsShowTables | ObjectFlagsShowColumns
+}
+
+func unquote(s string) string {
+	if len(s) < 2 {
+		return s
+	}
+
+	if (s[0] == '\'' || s[0] == '"') && s[0] == s[len(s)-1] {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 func (c *Completer) takeReferencesSnapshot() {
@@ -311,35 +798,101 @@ type TableRefListener struct {
 }
 
 func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
+	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
+		// if the table reference is nested, we should not process it.
+		l.level++
+	}
+
 	if l.level == 0 {
 		switch {
 		case ctx.Relation_expr() != nil:
-			reference := &base.PhysicalTableReference{}
+			var reference base.TableReference
+			physicalReference := &base.PhysicalTableReference{}
+			// We should use the physical reference as the default reference.
+			reference = physicalReference
 			list := NormalizePostgreSQLQualifiedName(ctx.Relation_expr().Qualified_name())
 			switch len(list) {
 			case 1:
-				reference.Table = list[0]
+				physicalReference.Table = list[0]
 			case 2:
-				reference.Schema = list[0]
-				reference.Table = list[1]
+				physicalReference.Schema = list[0]
+				physicalReference.Table = list[1]
 			case 3:
-				reference.Database = list[0]
-				reference.Schema = list[1]
-				reference.Table = list[2]
+				physicalReference.Database = list[0]
+				physicalReference.Schema = list[1]
+				physicalReference.Table = list[2]
 			default:
 				return
 			}
 
 			if ctx.Opt_alias_clause() != nil {
-
+				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
+				if len(columnAlias) > 0 {
+					virtualReference := &base.VirtualTableReference{
+						Table:   tableAlias,
+						Columns: columnAlias,
+					}
+					// If the table alias has the column alias, we should use the virtual reference.
+					reference = virtualReference
+				} else {
+					physicalReference.Alias = tableAlias
+				}
 			}
 
 			l.context.referencesStack[0] = append(l.context.referencesStack[0], reference)
+		case ctx.Select_with_parens() != nil:
+			if ctx.Opt_alias_clause() != nil {
+				virtualReference := &base.VirtualTableReference{}
+				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
+				virtualReference.Table = tableAlias
+				if len(columnAlias) > 0 {
+					virtualReference.Columns = columnAlias
+				} else {
+					if span, err := base.GetQuerySpan(
+						l.context.ctx,
+						store.Engine_POSTGRES,
+						fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens())),
+						l.context.defaultDatabase,
+						l.context.getMetadata,
+					); err == nil && len(span) == 1 {
+						for _, column := range span[0].Results {
+							virtualReference.Columns = append(virtualReference.Columns, column.Name)
+						}
+					}
+				}
+
+				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
+			}
+		case ctx.OPEN_PAREN() != nil:
+			if ctx.Opt_alias_clause() != nil {
+				virtualReference := &base.VirtualTableReference{}
+				tableAlias, columnAlias := normalizeTableAlias(ctx.Opt_alias_clause())
+				virtualReference.Table = tableAlias
+				if len(columnAlias) > 0 {
+					virtualReference.Columns = columnAlias
+				}
+
+				l.context.referencesStack[0] = append(l.context.referencesStack[0], virtualReference)
+			}
 		}
 	}
 }
 
-func normalizeTableAlias(ctx *pg.Opt_alias_clauseContext) (string, []string) {
+func (l *TableRefListener) ExitTable_ref(ctx *pg.Table_refContext) {
+	if _, ok := ctx.GetParent().(*pg.Table_refContext); ok {
+		l.level--
+	}
+}
+
+func (l *TableRefListener) EnterSelect_with_parens(ctx *pg.Select_with_parensContext) {
+	l.level++
+}
+
+func (l *TableRefListener) ExitSelect_with_parens(ctx *pg.Select_with_parensContext) {
+	l.level--
+}
+
+func normalizeTableAlias(ctx pg.IOpt_alias_clauseContext) (string, []string) {
 	if ctx == nil || ctx.Table_alias_clause() == nil {
 		return "", nil
 	}
@@ -351,6 +904,9 @@ func normalizeTableAlias(ctx *pg.Opt_alias_clauseContext) (string, []string) {
 	}
 
 	var columnAliases []string
+	if aliasClause.Name_list() != nil {
+		columnAliases = append(columnAliases, normalizePostgreSQLNameList(aliasClause.Name_list())...)
+	}
 
 	return tableAlias, columnAliases
 }
@@ -404,4 +960,48 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 	}
 
 	return buf.String(), newCaretLine, newCaretOffset
+}
+
+func (c *Completer) listAllSchemas() []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	return c.metadataCache[c.defaultDatabase].ListSchemaNames()
+}
+
+func (c *Completer) listTables(schema string) []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	if schemaMeta == nil {
+		return nil
+	}
+	return schemaMeta.ListTableNames()
+}
+
+func (c *Completer) listViews(schema string) []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	if schemaMeta == nil {
+		return nil
+	}
+	return schemaMeta.ListViewNames()
 }

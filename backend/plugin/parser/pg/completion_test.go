@@ -23,7 +23,7 @@ func TestCompletion(t *testing.T) {
 	tests := []candidatesTest{}
 
 	const (
-		record = false
+		record = true
 	)
 	var (
 		filepath = "test-data/test_completion.yaml"
@@ -82,6 +82,7 @@ func getMetadataForTest(_ context.Context, databaseName string) (*model.Database
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "c1",
+								Type: "int",
 							},
 						},
 					},
@@ -90,9 +91,11 @@ func getMetadataForTest(_ context.Context, databaseName string) (*model.Database
 						Columns: []*storepb.ColumnMetadata{
 							{
 								Name: "c1",
+								Type: "int",
 							},
 							{
 								Name: "c2",
+								Type: "int",
 							},
 						},
 					},

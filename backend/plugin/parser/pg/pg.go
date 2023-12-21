@@ -64,6 +64,31 @@ func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
 	}
 }
 
+func normalizePostgreSQLNameList(ctx parser.IName_listContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	for _, item := range ctx.AllName() {
+		result = append(result, normalizePostgreSQLName(item))
+	}
+
+	return result
+}
+
+func normalizePostgreSQLName(ctx parser.INameContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.Colid() != nil {
+		return NormalizePostgreSQLColid(ctx.Colid())
+	}
+
+	return ""
+}
+
 // NormalizePostgreSQLAnyName normalizes the given any name.
 func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	if ctx == nil {

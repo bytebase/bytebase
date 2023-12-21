@@ -262,6 +262,15 @@ func (d *DatabaseMetadata) GetSchema(name string) *SchemaMetadata {
 	return d.internal[name]
 }
 
+// ListSchemaNames lists the schema names.
+func (d *DatabaseMetadata) ListSchemaNames() []string {
+	var result []string
+	for schemaName := range d.internal {
+		result = append(result, schemaName)
+	}
+	return result
+}
+
 // SchemaMetadata is the metadata for a schema.
 type SchemaMetadata struct {
 	internalTables map[string]*TableMetadata
