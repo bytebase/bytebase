@@ -22,7 +22,7 @@
       <template v-if="state.ready">
         <BBAttention
           v-if="state.deployment === undefined"
-          :style="'WARN'"
+          type="warning"
           :title="$t('common.deployment-config')"
           :description="
             $t('deployment-config.this-is-example-deployment-config')

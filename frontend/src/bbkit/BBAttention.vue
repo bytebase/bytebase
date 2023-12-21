@@ -1,90 +1,52 @@
 <template>
-  <div
-    class="rounded-md p-4 flex flex-col md:flex-row md:items-center"
-    :class="`bg-${color}-50 ${additionalSideClasses}`"
-  >
-    <div class="flex">
-      <div class="flex-shrink-0">
-        <!-- Heroicon name: solid/information -->
-        <heroicons-solid:information-circle
-          v-if="style == 'INFO'"
-          class="w-5 h-5"
-          :class="`text-${color}-400`"
-        />
-        <heroicons-solid:information-circle
-          v-else-if="style == 'WARN'"
-          class="h-5 w-5"
-          :class="`text-${color}-400`"
-        />
-        <heroicons-solid:information-circle
-          v-else-if="style == 'CRITICAL'"
-          class="w-5 h-5"
-          :class="`text-${color}-400`"
-        />
-      </div>
-      <div class="ml-3">
-        <slot name="title">
-          <h3 class="text-sm font-medium" :class="`text-${color}-800`">
-            {{ displayTitle }}
-          </h3>
-        </slot>
-        <slot name="default">
-          <div
-            v-if="description"
-            class="mt-2 text-sm"
-            :class="`text-${color}-700`"
-          >
-            <p class="whitespace-pre-wrap">
-              {{ $te(description) ? $t(description) : description }}
-              <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
-            </p>
-          </div>
-        </slot>
-      </div>
-    </div>
-    <slot name="action">
-      <div
-        v-if="actionText != ''"
-        class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
-      >
-        <button
-          type="button"
-          class="btn-primary whitespace-nowrap"
-          @click.prevent="$emit('click-action')"
+  <NAlert :title="displayTitle" :type="type">
+    <div class="flex items-center justify-between">
+      <slot name="default">
+        <div v-if="description" class="mt-2 text-sm">
+          <p class="whitespace-pre-wrap">
+            {{ $te(description) ? $t(description) : description }}
+            <LearnMoreLink v-if="link" :url="link" class="ml-1 text-sm" />
+          </p>
+        </div>
+      </slot>
+
+      <slot name="action">
+        <div
+          v-if="actionText != ''"
+          class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
         >
-          {{ $t(actionText) }}
-        </button>
-      </div>
-    </slot>
-  </div>
+          <NButton :type="buttonType" @click.prevent="$emit('click')">
+            {{ $t(actionText) }}
+          </NButton>
+        </div>
+      </slot>
+    </div>
+  </NAlert>
 </template>
 
 <script lang="ts" setup>
+import { NAlert } from "naive-ui";
 import { computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBAttentionSide, BBAttentionStyle } from "./types";
 
 const props = withDefaults(
   defineProps<{
-    style?: BBAttentionStyle;
+    type: "default" | "info" | "success" | "warning" | "error";
     title?: string;
     description?: string;
     link?: string;
     actionText?: string;
-    side?: BBAttentionSide;
   }>(),
   {
-    style: "INFO",
     title: "bbkit.attention.default",
     description: "",
     link: undefined,
     actionText: "",
-    side: "BETWEEN",
   }
 );
 
 defineEmits<{
-  (event: "click-action"): void;
+  (event: "click"): void;
 }>();
 
 const { t, te } = useI18n();
@@ -95,26 +57,14 @@ const displayTitle = computed(() => {
   return title;
 });
 
-// eslint-disable-next-line vue/return-in-computed-property
-const color = computed(() => {
-  switch (props.style) {
-    case "INFO":
-      return "blue";
-    case "WARN":
-      return "yellow";
-    case "CRITICAL":
-      return "red";
-  }
-});
-
-const additionalSideClasses = computed(() => {
-  switch (props.side) {
-    case "BETWEEN":
-      return "justify-between";
-    case "CENTER":
-      return "justify-center";
+const buttonType = computed(() => {
+  switch (props.type) {
+    case "warning":
+      return "warning";
+    case "error":
+      return "default";
     default:
-      return "";
+      return "primary";
   }
 });
 </script>

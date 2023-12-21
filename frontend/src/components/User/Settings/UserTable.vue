@@ -152,8 +152,8 @@
     </template>
   </BBTable>
   <BBAlert
-    v-if="state.showResetKeyAlert"
-    :style="'CRITICAL'"
+    v-model:show="state.showResetKeyAlert"
+    type="warning"
     :ok-text="$t('settings.members.reset-service-key')"
     :title="$t('settings.members.reset-service-key')"
     :description="$t('settings.members.reset-service-key-alert')"

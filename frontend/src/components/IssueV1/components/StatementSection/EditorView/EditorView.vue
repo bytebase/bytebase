@@ -109,7 +109,7 @@
 
     <BBAttention
       v-if="isTaskSheetOversize"
-      :style="`WARN`"
+      type="warning"
       :title="$t('issue.statement-from-sheet-warning')"
     >
       <template #action>

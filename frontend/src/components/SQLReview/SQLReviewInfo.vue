@@ -11,7 +11,7 @@
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         class="mt-2"
-        :style="'WARN'"
+        type="warning"
         :title="$t('common.environment')"
         :description="
           $t('sql-review.create.basic-info.no-available-environment-desc')

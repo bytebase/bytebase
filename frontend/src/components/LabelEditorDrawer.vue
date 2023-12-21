@@ -4,7 +4,7 @@
       <BBAttention
         v-if="showWarning"
         class="mb-5"
-        :style="'WARN'"
+        type="warning"
         :title="$t('database.mixed-label-values-warning')"
       />
       <LabelListEditor
