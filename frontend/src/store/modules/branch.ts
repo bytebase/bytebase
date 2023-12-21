@@ -18,6 +18,9 @@ export const useBranchStore = defineStore("schema_design", () => {
       parent: projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
     });
+    for (const branch of branches) {
+      branchMapByName.set(branch.name, branch);
+    }
     return branches;
   };
 
@@ -31,7 +34,6 @@ export const useBranchStore = defineStore("schema_design", () => {
       branchId: branchId,
       branch,
     });
-    // console.debug("got schema", createdBranch.schema);
     branchMapByName.set(createdBranch.name, createdBranch);
     return createdBranch;
   };

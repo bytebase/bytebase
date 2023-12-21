@@ -21,17 +21,29 @@
           :header-clickable="selected !== undefined"
           @click-header="selected = undefined"
           @select-table="handleSelectTable"
+          @select-external-table="handleSelectExternalTable"
         />
         <Transition name="slide-up">
-          <TableSchema
-            v-if="selected"
-            class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
-            :db="database"
-            :database="databaseMetadata"
-            :schema="selected.schema"
-            :table="selected.table"
-            @close="selected = undefined"
-          />
+          <template v-if="selected">
+            <TableSchema
+              v-if="selected.table"
+              class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
+              :db="database"
+              :database="databaseMetadata"
+              :schema="selected.schema"
+              :table="selected.table"
+              @close="selected = undefined"
+            />
+            <ExternalTableSchema
+              v-else-if="selected.externalTable"
+              class="absolute bottom-0 w-full h-[calc(100%-33px)] bg-white"
+              :db="database"
+              :database="databaseMetadata"
+              :schema="selected.schema"
+              :external-table="selected.externalTable"
+              @close="selected = undefined"
+            />
+          </template>
         </Transition>
       </template>
 
@@ -56,9 +68,11 @@ import {
   SchemaMetadata,
   TableMetadata,
   DatabaseMetadataView,
+  ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import DatabaseSchema from "./DatabaseSchema.vue";
+import ExternalTableSchema from "./ExternalTableSchema.vue";
 import { provideHoverStateContext, HoverPanel } from "./HoverPanel";
 import TableSchema from "./TableSchema.vue";
 import { provideSchemaPanelContext } from "./context";
@@ -123,6 +137,22 @@ const handleSelectTable = async (
     database: databaseMetadata,
     schema,
     table: tableMetadata,
+  };
+};
+
+const handleSelectExternalTable = async (
+  schema: SchemaMetadata,
+  externalTable: ExternalTableMetadata
+) => {
+  const databaseMetadata = useDBSchemaV1Store().getDatabaseMetadata(
+    database.value.name
+  );
+
+  selected.value = {
+    db: database.value,
+    database: databaseMetadata,
+    schema,
+    externalTable,
   };
 };
 </script>

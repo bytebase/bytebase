@@ -36,7 +36,6 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
-  TableMetadata,
 } from "@/types/proto/v1/database_service";
 import InfoItem from "./InfoItem.vue";
 
@@ -44,7 +43,6 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
   column: ColumnMetadata;
 }>();
 

@@ -44,6 +44,10 @@
       :schema-list="availableSchemas"
       :row-clickable="rowClickable"
       @select-table="(schema, table) => $emit('select-table', schema, table)"
+      @select-external-table="
+        (schema, externalTable) =>
+          $emit('select-external-table', schema, externalTable)
+      "
     />
   </div>
 </template>
@@ -55,6 +59,7 @@ import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DatabaseMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -78,6 +83,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "click-header"): void;
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
+  (
+    e: "select-external-table",
+    schema: SchemaMetadata,
+    externalTable: ExternalTableMetadata
+  ): void;
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();

@@ -3,6 +3,7 @@ package iam
 import (
 	"context"
 	_ "embed"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -115,7 +116,15 @@ func (*Manager) getWorkspaceRoles(user *store.UserMessage) ([]string, error) {
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
 	var roles [][]string
 	for _, projectID := range projectIDs {
-		iamPolicy, err := m.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+		find := &store.GetProjectPolicyMessage{}
+		projectUID, isNumber := isNumber(projectID)
+		if isNumber {
+			find.UID = &projectUID
+		} else {
+			projectID := projectID
+			find.ProjectID = &projectID
+		}
+		iamPolicy, err := m.store.GetProjectPolicy(ctx, find)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
 		}
@@ -169,4 +178,12 @@ func convertWorkspaceRole(role string) (string, error) {
 	default:
 		return "", errors.Errorf("unexpected workspace role %q", role)
 	}
+}
+
+func isNumber(v string) (int, bool) {
+	n, err := strconv.Atoi(v)
+	if err == nil {
+		return int(n), true
+	}
+	return 0, false
 }
