@@ -6,17 +6,17 @@
         url="https://www.bytebase.com/docs/change-database/synchronize-schema?source=console"
       />
     </p>
-    <BBStepTab
-      ref="bbStepTabRef"
+    <StepTab
       class="py-4 flex-1 overflow-hidden flex flex-col"
-      :step-item-list="stepTabList"
+      :step-list="stepTabList"
+      :current-index="state.currentStep"
       :show-cancel="false"
       :allow-next="allowNext"
       :finish-title="$t('database.sync-schema.preview-issue')"
       pane-class="flex-1 overflow-y-auto"
       @cancel="cancelSetup"
-      @try-change-step="tryChangeStep"
-      @try-finish="tryFinishSetup"
+      @update:current-index="tryChangeStep"
+      @finish="tryFinishSetup"
     >
       <template #0>
         <div class="mb-4">
@@ -53,7 +53,7 @@
           :raw-sql-state="rawSQLState"
         />
       </template>
-    </BBStepTab>
+    </StepTab>
   </div>
 </template>
 
@@ -64,7 +64,7 @@ import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTab } from "@/bbkit";
+import { StepTab } from "@/components/v2";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -95,7 +95,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
-const bbStepTabRef = ref<InstanceType<typeof BBStepTab>>();
 const projectStore = useProjectV1Store();
 const targetDatabaseViewRef =
   ref<InstanceType<typeof SelectTargetDatabasesView>>();
@@ -179,12 +178,8 @@ const handleRawSQLStateChange = (state: RawSQLState) => {
   Object.assign(rawSQLState, state);
 };
 
-const tryChangeStep = async (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
-  if (oldStep === 1 && newStep === 0) {
+const tryChangeStep = async (nextStepIndex: number) => {
+  if (state.currentStep === 1 && nextStepIndex === 0) {
     const targetDatabaseList =
       targetDatabaseViewRef.value?.targetDatabaseList || [];
     if (targetDatabaseList.length > 0) {
@@ -200,15 +195,13 @@ const tryChangeStep = async (
           // nothing to do
         },
         onPositiveClick: () => {
-          state.currentStep = newStep as Step;
-          allowChangeCallback();
+          state.currentStep = nextStepIndex as Step;
         },
       });
       return;
     }
   }
-  state.currentStep = newStep as Step;
-  allowChangeCallback();
+  state.currentStep = nextStepIndex as Step;
 };
 
 const tryFinishSetup = async () => {

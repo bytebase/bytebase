@@ -1,5 +1,5 @@
 <template>
-  <button
+  <NButton
     v-bind="$attrs"
     class="text-sm"
     :class="[!state.hideIcon && 'btn-icon']"
@@ -36,7 +36,7 @@
     <span v-if="state.buttonText" :class="[!state.hideIcon && 'ml-1']">
       {{ state.buttonText }}
     </span>
-  </button>
+  </NButton>
   <BBAlert
     v-if="state.showModal"
     :style="

@@ -11,7 +11,6 @@ import BBModal from "./BBModal.vue";
 import BBNotification from "./BBNotification.vue";
 import BBSelect from "./BBSelect.vue";
 import BBSpin from "./BBSpin.vue";
-import BBStepTab from "./BBStepTab.vue";
 import BBSwitch from "./BBSwitch.vue";
 import BBTab from "./BBTab.vue";
 import {
@@ -36,7 +35,6 @@ export {
   BBNotification,
   BBSelect,
   BBSpin,
-  BBStepTab,
   BBSwitch,
   BBTab,
   BBTable,
