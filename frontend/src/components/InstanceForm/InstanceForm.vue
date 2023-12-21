@@ -312,14 +312,13 @@
 
   <BBAlert
     v-if="state.showCreateInstanceWarningModal"
-    :style="'WARN'"
+    type="warning"
     :ok-text="t('instance.ignore-and-create')"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"
     :description="state.createInstanceWarning"
-    :progress-text="$t('common.creating')"
     @ok="handleWarningModalOkClick"
     @cancel="state.showCreateInstanceWarningModal = false"
-  ></BBAlert>
+  />
 </template>
 
 <script lang="ts" setup>

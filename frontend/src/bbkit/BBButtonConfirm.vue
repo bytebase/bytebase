@@ -40,12 +40,12 @@
   </NButton>
   <BBAlert
     v-if="state.showModal"
-    :style="
+    :type="
       state.style == 'DELETE' ||
       state.style == 'ARCHIVE' ||
       state.style == 'DISABLE'
-        ? 'CRITICAL'
-        : 'INFO'
+        ? 'warning'
+        : 'info'
     "
     :ok-text="state.okText"
     :title="state.confirmTitle"

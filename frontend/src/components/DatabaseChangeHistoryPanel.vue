@@ -84,7 +84,7 @@
   <BBAlert
     v-if="state.showBaselineModal"
     data-label="bb-change-history-establish-baseline-alert"
-    :style="'INFO'"
+    type="info"
     :ok-text="$t('change-history.establish-baseline')"
     :cancel-text="$t('common.cancel')"
     :title="

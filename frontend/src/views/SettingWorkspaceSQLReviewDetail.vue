@@ -102,7 +102,7 @@
   </div>
   <BBAlert
     v-if="state.showDisableModal"
-    :style="'CRITICAL'"
+    type="warning"
     :ok-text="$t('common.disable')"
     :title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
     description=""
@@ -117,7 +117,7 @@
   </BBAlert>
   <BBAlert
     v-if="state.showEnableModal"
-    :style="'INFO'"
+    type="info"
     :ok-text="$t('common.enable')"
     :title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
     description=""

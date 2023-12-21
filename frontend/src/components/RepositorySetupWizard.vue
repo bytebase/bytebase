@@ -84,7 +84,7 @@
     </BBModal>
     <BBAlert
       v-if="state.showSetupSQLReviewCIFailureModal"
-      :style="'CRITICAL'"
+      type="warning"
       :ok-text="$t('common.retry')"
       :title="$t('repository.sql-review-ci-setup-failed')"
       @ok="

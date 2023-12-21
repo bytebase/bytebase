@@ -62,6 +62,4 @@ export type BBNotificationItem = {
   onClose: () => void;
 };
 
-export type BBAlertStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
-
 export type BBAvatarSizeType = "TINY" | "SMALL" | "NORMAL" | "LARGE" | "HUGE";
