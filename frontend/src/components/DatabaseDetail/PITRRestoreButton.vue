@@ -1,19 +1,19 @@
 <template>
   <div class="flex relative mr-6">
-    <BBTooltipButton
+    <TooltipButton
       type="normal"
       tooltip-mode="DISABLED-ONLY"
       :disabled="pitrButtonDisabled"
       @click="openDialog"
     >
-      <template #button="{ showTooltip, hideTooltip }">
-        <BBContextMenuButton
+      <template #default>
+        <ContextMenuButton
           preference-key="pitr"
+          :default-action-key="'CUSTOM'"
           :action-list="buttonActionList"
           :disabled="pitrButtonDisabled"
-          @pointerenter="showTooltip"
-          @pointerleave="hideTooltip"
-          @click="(action) => onClickPITRButton(action)"
+          :size="'medium'"
+          @click="(action) => onClickPITRButton(action as PITRButtonAction)"
         >
           <template #default="{ action }">
             <span>{{ action.text }}</span>
@@ -23,13 +23,13 @@
               :instance="database.instanceEntity"
             />
           </template>
-        </BBContextMenuButton>
+        </ContextMenuButton>
       </template>
 
       <template v-if="allowAdmin && !pitrAvailable.result" #tooltip>
         {{ pitrAvailable.message }}
       </template>
-    </BBTooltipButton>
+    </TooltipButton>
     <BBBetaBadge corner />
   </div>
 
@@ -150,10 +150,12 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, PropType, reactive, ref, toRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import BBContextMenuButton, {
-  type ButtonAction,
-} from "@/bbkit/BBContextMenuButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import {
+  TooltipButton,
+  ContextMenuButton,
+  ContextMenuButtonAction,
+} from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
 import {
   experimentalCreateIssueByPlan,
@@ -176,7 +178,7 @@ type PITRTarget = "IN-PLACE" | "NEW";
 
 type Mode = "LAST_MIGRATION" | "CUSTOM";
 type Step = "LAST_MIGRATION_INFO" | "PITR_FORM";
-type PITRButtonAction = ButtonAction<{ step: Step; mode: Mode }>;
+type PITRButtonAction = ContextMenuButtonAction<{ step: Step; mode: Mode }>;
 
 interface LocalState {
   showDatabasePITRModal: boolean;
@@ -239,23 +241,21 @@ const buttonActionList = computed((): PITRButtonAction[] => {
     {
       key: "CUSTOM",
       text: t("database.pitr.restore-to-point-in-time"),
-      type: "NORMAL",
       params: { step: "PITR_FORM", mode: "CUSTOM" },
     },
     {
       key: "LAST_MIGRATION",
       text: t("database.pitr.restore-before-last-migration"),
-      type: "NORMAL",
       params: { step: "LAST_MIGRATION_INFO", mode: "LAST_MIGRATION" },
     },
   ];
 });
 
-const onClickPITRButton = (action: ButtonAction) => {
+const onClickPITRButton = (action: PITRButtonAction) => {
   if (!hasPITRFeature.value) {
     return;
   }
-  const { step, mode } = (action as PITRButtonAction).params;
+  const { step, mode } = action.params;
   openDialog(step, mode);
 };
 
