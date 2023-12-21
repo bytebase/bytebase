@@ -241,7 +241,6 @@ const buttonActionList = computed((): PITRButtonAction[] => {
     {
       key: "CUSTOM",
       text: t("database.pitr.restore-to-point-in-time"),
-      // type: "NORMAL",
       params: { step: "PITR_FORM", mode: "CUSTOM" },
     },
     {
