@@ -10,6 +10,7 @@
     :current-index="state.currentStep"
     :step-list="stepList"
     :allow-next="allowNext"
+    :show-cancel="showCancel"
     :finish-title="$t('common.confirm-and-add')"
     @update:current-index="tryChangeStep"
     @finish="tryFinishSetup"
@@ -49,6 +50,15 @@ import { isUrl } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
+
+withDefaults(
+  defineProps<{
+    showCancel?: boolean;
+  }>(),
+  {
+    showCancel: true,
+  }
+);
 
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
