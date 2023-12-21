@@ -92,7 +92,6 @@ withDefaults(
 defineEmits<{
   (event: "cancel"): void;
   (event: "finish"): void;
-  // (event: "change-step", step: number): void;
   (event: "update:currentIndex", step: number): void;
 }>();
 </script>
