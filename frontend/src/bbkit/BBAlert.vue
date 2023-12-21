@@ -38,7 +38,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "ok"): void;
   (event: "cancel"): void;
   (event: "update:show", val: boolean): void;
