@@ -101,7 +101,7 @@
     </div>
   </div>
   <BBAlert
-    v-if="state.showDisableModal"
+    v-model:show="state.showDisableModal"
     type="warning"
     :ok-text="$t('common.disable')"
     :title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
@@ -113,10 +113,9 @@
       }
     "
     @cancel="state.showDisableModal = false"
-  >
-  </BBAlert>
+  />
   <BBAlert
-    v-if="state.showEnableModal"
+    v-model:show="state.showEnableModal"
     type="info"
     :ok-text="$t('common.enable')"
     :title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
@@ -128,8 +127,7 @@
       }
     "
     @cancel="state.showEnableModal = false"
-  >
-  </BBAlert>
+  />
 </template>
 
 <script lang="ts" setup>

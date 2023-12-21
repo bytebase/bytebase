@@ -311,7 +311,7 @@
   />
 
   <BBAlert
-    v-if="state.showCreateInstanceWarningModal"
+    v-model:show="state.showCreateInstanceWarningModal"
     type="warning"
     :ok-text="t('instance.ignore-and-create')"
     :title="$t('instance.connection-info-seems-to-be-incorrect')"

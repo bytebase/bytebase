@@ -83,7 +83,7 @@
       </div>
     </BBModal>
     <BBAlert
-      v-if="state.showSetupSQLReviewCIFailureModal"
+      v-model:show="state.showSetupSQLReviewCIFailureModal"
       type="warning"
       :ok-text="$t('common.retry')"
       :title="$t('repository.sql-review-ci-setup-failed')"
@@ -99,8 +99,7 @@
           $emit('finish');
         }
       "
-    >
-    </BBAlert>
+    />
     <BBModal
       v-if="state.showLoadingSQLReviewPRModal"
       class="relative overflow-hidden"

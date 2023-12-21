@@ -82,7 +82,7 @@
   </div>
 
   <BBAlert
-    v-if="state.showBaselineModal"
+    v-model:show="state.showBaselineModal"
     data-label="bb-change-history-establish-baseline-alert"
     type="info"
     :ok-text="$t('change-history.establish-baseline')"
@@ -95,8 +95,7 @@
     :description="$t('change-history.establish-baseline-description')"
     @ok="doCreateBaseline"
     @cancel="state.showBaselineModal = false"
-  >
-  </BBAlert>
+  />
 </template>
 
 <script lang="ts" setup>

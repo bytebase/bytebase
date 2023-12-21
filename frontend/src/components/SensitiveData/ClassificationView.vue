@@ -40,7 +40,7 @@
   />
 
   <BBAlert
-    v-if="state.showOverrideModal"
+    v-model:show="state.showOverrideModal"
     type="warning"
     :ok-text="$t('settings.sensitive-data.classification.override-confirm')"
     :title="$t('settings.sensitive-data.classification.override-title')"

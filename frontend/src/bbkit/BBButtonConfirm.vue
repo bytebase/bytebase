@@ -39,7 +39,7 @@
     </span>
   </NButton>
   <BBAlert
-    v-if="state.showModal"
+    v-model:show="state.showModal"
     :type="
       state.style == 'DELETE' ||
       state.style == 'ARCHIVE' ||

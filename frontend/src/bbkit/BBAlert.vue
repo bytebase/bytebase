@@ -1,12 +1,13 @@
 <template>
   <NModal
-    :show="true"
+    :show="show"
     preset="dialog"
     :type="type"
     :title="title"
     :content="description"
     :negative-text="negativeText"
     :positive-text="positiveText"
+    @update:show="$emit('update:show', $event)"
     @positive-click="() => $emit('ok')"
     @negative-click="() => $emit('cancel')"
   />
@@ -19,6 +20,7 @@ import { useI18n } from "vue-i18n";
 
 const props = withDefaults(
   defineProps<{
+    show: boolean;
     type: "info" | "warning";
     title: string;
     description?: string;
@@ -37,6 +39,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "ok"): void;
   (event: "cancel"): void;
+  (event: "update:show", val: boolean): void;
 }>();
 
 const { t, te } = useI18n();
