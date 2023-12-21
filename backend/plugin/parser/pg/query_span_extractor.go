@@ -1,4 +1,4 @@
-package v2
+package pg
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 
@@ -116,7 +115,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if err != nil {
 		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
 		content := tableNotFound.FindStringSubmatch(err.Error())
-		if len(content) == 3 && pg.IsSystemSchema(content[1]) {
+		if len(content) == 3 && IsSystemSchema(content[1]) {
 			// skip for system schema
 			return nil, nil
 		}
@@ -1172,13 +1171,13 @@ func isSystemResource(resource base.ColumnResource) string {
 	// Additionally, user can create a table/view with the same name with system table/view and access them
 	// by specify the schema name, for example:
 	// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
-	if pg.IsSystemSchema(resource.Schema) {
+	if IsSystemSchema(resource.Schema) {
 		return fmt.Sprintf("system schema %q", resource.Schema)
 	}
-	if resource.Database == "" && resource.Schema == "" && pg.IsSystemView(resource.Table) {
+	if resource.Database == "" && resource.Schema == "" && IsSystemView(resource.Table) {
 		return fmt.Sprintf("system view %q", resource.Table)
 	}
-	if resource.Database == "" && resource.Schema == "" && pg.IsSystemTable(resource.Table) {
+	if resource.Database == "" && resource.Schema == "" && IsSystemTable(resource.Table) {
 		return fmt.Sprintf("system table %q", resource.Table)
 	}
 	return ""
