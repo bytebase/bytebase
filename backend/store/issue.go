@@ -78,6 +78,7 @@ type UpdateIssueMessage struct {
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID        *int
+	ProjectID  *string
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int
@@ -385,6 +386,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.PlanUID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = ANY($%d))", len(args)+1)), append(args, *v)

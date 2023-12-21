@@ -104,8 +104,9 @@ func init() {
 
 func start() {
 	if flags.debug {
-		log.GLogLevel.Set(slog.LevelDebug)
+		log.LogLevel.Set(slog.LevelDebug)
 	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 
 	// check flags
 	if !common.HasPrefixes(flags.host, "http://", "https://") {

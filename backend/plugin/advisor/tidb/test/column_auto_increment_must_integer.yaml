@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a varchar(255) AUTO_INCREMENT)
   want:
@@ -12,7 +13,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -22,7 +24,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(a int);
@@ -32,7 +35,8 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(b int);
@@ -42,5 +46,6 @@
       code: 410
       title: column.auto-increment-must-integer
       content: Auto-increment column `t`.`a` requires integer type
-      line: 1
+      line: 2
+      column: 0
       details: ""

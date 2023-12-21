@@ -8,6 +8,7 @@
           <IssueStatusIcon
             :issue-status="issue.status"
             :task-status="issueTaskStatus"
+            :issue="issue"
           />
         </div>
 

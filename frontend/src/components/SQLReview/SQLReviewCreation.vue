@@ -31,24 +31,15 @@
         />
       </template>
     </BBStepTab>
-    <BBAlertDialog
-      ref="alertDialog"
-      :style="'CRITICAL'"
-      :ok-text="$t('common.confirm')"
-      :title="$t('sql-review.create.configure-rule.confirm-override-title')"
-      :description="
-        $t('sql-review.create.configure-rule.confirm-override-description')
-      "
-    >
-    </BBAlertDialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, withDefaults, ref } from "vue";
+import { useDialog } from "naive-ui";
+import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAlertDialog, BBStepTab } from "@/bbkit";
+import { BBStepTab } from "@/bbkit";
 import { BBStepTabItem } from "@/bbkit/types";
 import {
   useCurrentUserV1,
@@ -79,7 +70,6 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
-  showAlertModal: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
 }
 
@@ -99,7 +89,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["cancel"]);
 
-const alertDialog = ref<InstanceType<typeof BBAlertDialog>>();
+const dialog = useDialog();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
@@ -124,7 +114,6 @@ const state = reactive<LocalState>({
     ? rulesToTemplate(props.policy, false /* withDisabled=false */)
     : undefined,
   ruleUpdated: false,
-  showAlertModal: false,
   pendingApplyTemplate: undefined,
 });
 
@@ -198,11 +187,16 @@ const tryChangeStep = (
 ) => {
   if (oldStep === 0 && newStep === 1) {
     if (state.pendingApplyTemplate) {
-      alertDialog.value!.open().then((result) => {
-        if (result) {
+      dialog.warning({
+        title: t("sql-review.create.configure-rule.confirm-override-title"),
+        content: t(
+          "sql-review.create.configure-rule.confirm-override-description"
+        ),
+        positiveText: t("common.confirm"),
+        onPositiveClick: (_: MouseEvent) => {
           onTemplateApply(state.pendingApplyTemplate);
           allowChangeCallback();
-        }
+        },
       });
       return;
     }

@@ -83,9 +83,8 @@ import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { SchemaIcon, TableIcon } from "@/components/Icon";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -98,6 +97,7 @@ import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
+import { engineHasSchema } from "../engine-specs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -155,6 +155,7 @@ const {
   getSchemaStatus,
   getTableStatus,
   upsertTableConfig,
+  queuePendingScrollToTable,
 } = useSchemaEditorContext();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -422,6 +423,68 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   );
 };
 
+const handleDuplicateTable = (schema: SchemaMetadata, table: TableMetadata) => {
+  const db = database.value;
+  const matchPattern = new RegExp(
+    `^${getOriginalName(table.name)}` + "(_copy[0-9]{0,}){0,1}$"
+  );
+  const copiedTableNames = flattenTableList.value
+    .filter((table) => {
+      return matchPattern.test(table.name);
+    })
+    .sort((t1, t2) => {
+      return extractDuplicateNumber(t1.name) - extractDuplicateNumber(t2.name);
+    });
+  const targetName = copiedTableNames.slice(-1)[0]?.name ?? table.name;
+
+  const newTable = cloneDeep(table);
+  newTable.name = getDuplicateName(targetName);
+  schema.tables.push(newTable);
+  markEditStatus(db, metadataForTable(schema, newTable), "created");
+  newTable.columns.forEach((newColumn) => {
+    markEditStatus(
+      db,
+      { ...metadataForTable(schema, newTable), column: newColumn },
+      "created"
+    );
+  });
+  const tableConfig = metadata.value.schemaConfigs
+    .find((sc) => sc.name === schema.name)
+    ?.tableConfigs.find((tc) => tc.name === table.name);
+  if (tableConfig) {
+    const tableConfigCopy = cloneDeep(tableConfig);
+    tableConfigCopy.name = newTable.name;
+    upsertTableConfig(
+      db,
+      {
+        database: metadata.value,
+        schema,
+        table: newTable,
+      },
+      (config) => {
+        Object.assign(config, tableConfigCopy);
+      }
+    );
+  }
+  addTab({
+    type: "table",
+    database: database.value,
+    metadata: {
+      database: metadata.value,
+      schema: schema,
+      table: newTable,
+    },
+  });
+  queuePendingScrollToTable({
+    db: database.value,
+    metadata: {
+      database: metadata.value,
+      schema: schema,
+      table: newTable,
+    },
+  });
+};
+
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option }: { option: TreeOption }) => {
   if (readonly.value) {
@@ -442,64 +505,11 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
       e.stopPropagation();
       e.stopImmediatePropagation();
 
-      const db = database.value;
       const { schema, table } = treeNode as TreeNodeForTable;
       if (!schema || !table) {
         return;
       }
-
-      const matchPattern = new RegExp(
-        `^${getOriginalName(table.name)}` + "(_copy[0-9]{0,}){0,1}$"
-      );
-      const copiedTableNames = flattenTableList.value
-        .filter((table) => {
-          return matchPattern.test(table.name);
-        })
-        .sort((t1, t2) => {
-          return (
-            extractDuplicateNumber(t1.name) - extractDuplicateNumber(t2.name)
-          );
-        });
-      const targetName = copiedTableNames.slice(-1)[0]?.name ?? table.name;
-
-      const newTable = cloneDeep(table);
-      newTable.name = getDuplicateName(targetName);
-      schema.tables.push(newTable);
-      markEditStatus(db, metadataForTable(schema, newTable), "created");
-      newTable.columns.forEach((newColumn) => {
-        markEditStatus(
-          db,
-          { ...metadataForTable(schema, newTable), column: newColumn },
-          "created"
-        );
-      });
-      const tableConfig = metadata.value.schemaConfigs
-        .find((sc) => sc.name === schema.name)
-        ?.tableConfigs.find((tc) => tc.name === table.name);
-      if (tableConfig) {
-        const tableConfigCopy = cloneDeep(tableConfig);
-        tableConfigCopy.name = newTable.name;
-        upsertTableConfig(
-          db,
-          {
-            database: metadata.value,
-            schema,
-            table: newTable,
-          },
-          (config) => {
-            Object.assign(config, tableConfigCopy);
-          }
-        );
-      }
-      addTab({
-        type: "table",
-        database: database.value,
-        metadata: {
-          database: metadata.value,
-          schema: schema,
-          table: newTable,
-        },
-      });
+      handleDuplicateTable(schema, table);
     },
   });
   if (treeNode.type === "schema") {
@@ -552,7 +562,7 @@ const handleShowDropdown = (e: MouseEvent, treeNode: TreeNode) => {
 };
 
 const handleCreateSchemaOrTable = () => {
-  if (engine.value === Engine.MYSQL || engine.value === Engine.TIDB) {
+  if (!engineHasSchema(engine.value)) {
     const schema = head(schemaList.value);
     if (schema) {
       state.tableNameModalContext = {
@@ -562,7 +572,7 @@ const handleCreateSchemaOrTable = () => {
         table: undefined,
       };
     }
-  } else if (engine.value === Engine.POSTGRES) {
+  } else {
     state.schemaNameModalContext = {
       database: database.value,
       metadata: metadata.value,

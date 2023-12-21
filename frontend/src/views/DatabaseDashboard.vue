@@ -15,56 +15,53 @@
       />
     </div>
 
-    <DatabaseOperations
-      v-if="selectedDatabases.length > 0 || isStandaloneMode"
-      class="mb-3"
-      :databases="selectedDatabases"
-      @dismiss="state.selectedDatabaseIds.clear()"
-    />
+    <div class="space-y-2">
+      <DatabaseOperations :databases="selectedDatabases" />
 
-    <DatabaseV1Table
-      pagination-class="mb-4"
-      table-class="border-y"
-      :database-list="filteredDatabaseList"
-      :database-group-list="filteredDatabaseGroupList"
-      :show-placeholder="true"
-      :show-selection-column="true"
-      :custom-click="isStandaloneMode"
-      @select-database="(db: ComposedDatabase) =>
+      <DatabaseV1Table
+        pagination-class="mb-4"
+        table-class="border-y"
+        :database-list="filteredDatabaseList"
+        :database-group-list="filteredDatabaseGroupList"
+        :show-placeholder="true"
+        :show-selection-column="true"
+        :custom-click="isStandaloneMode"
+        @select-database="(db: ComposedDatabase) =>
                   toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
-    >
-      <template #selection-all="{ databaseList }">
-        <input
-          v-if="databaseList.length > 0"
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          v-bind="getAllSelectionState(databaseList)"
-          @input="
-            toggleDatabasesSelection(
-              databaseList,
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-      </template>
-      <template #selection="{ database }">
-        <input
-          v-if="isDatabase(database)"
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :checked="isDatabaseSelected(database as ComposedDatabase)"
-          @click.stop="
-            toggleDatabasesSelection(
-              [database],
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-        <div v-else class="text-control-light cursor-not-allowed ml-auto">
-          -
-        </div>
-      </template>
-    </DatabaseV1Table>
+      >
+        <template #selection-all="{ databaseList }">
+          <input
+            v-if="databaseList.length > 0"
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            v-bind="getAllSelectionState(databaseList)"
+            @input="
+              toggleDatabasesSelection(
+                databaseList,
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+        </template>
+        <template #selection="{ database }">
+          <input
+            v-if="isDatabase(database)"
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :checked="isDatabaseSelected(database as ComposedDatabase)"
+            @click.stop="
+              toggleDatabasesSelection(
+                [database],
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+          <div v-else class="text-control-light cursor-not-allowed ml-auto">
+            -
+          </div>
+        </template>
+      </DatabaseV1Table>
+    </div>
 
     <div
       v-if="state.loading"
@@ -166,6 +163,13 @@ const selectedEnvironment = computed(() => {
   );
 });
 
+const selectedProjectAssigned = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "project-assigned")
+      ?.value ?? `${UNKNOWN_ID}`
+  );
+});
+
 const selectedProject = computed(() => {
   return (
     state.params.scopes.find((scope) => scope.id === "project")?.value ??
@@ -226,6 +230,15 @@ const filteredDatabaseList = computed(() => {
         extractEnvironmentResourceName(db.effectiveEnvironment) ===
         selectedEnvironment.value
     );
+  }
+  if (selectedProjectAssigned.value !== `${UNKNOWN_ID}`) {
+    list = list.filter((db) => {
+      if (selectedProjectAssigned.value == "yes") {
+        return db.project !== DEFAULT_PROJECT_V1_NAME;
+      } else {
+        return db.project === DEFAULT_PROJECT_V1_NAME;
+      }
+    });
   }
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
@@ -335,5 +348,6 @@ const selectedDatabases = computed((): ComposedDatabase[] => {
 const supportOptionIdList = computed((): SearchScopeId[] => [
   ...CommonFilterScopeIdList,
   "project",
+  "project-assigned",
 ]);
 </script>

@@ -2,204 +2,18 @@
   <div
     class="pt-1 overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
   >
-    <template v-for="(quickAction, index) in quickActionList" :key="index">
-      <div
-        v-if="quickAction === 'quickaction.bb.instance.create'"
-        class="flex flex-col items-center w-24"
-        data-label="bb-quick-action-add-instance"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="createInstance">
-          <heroicons-outline:plus-sm class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.add-instance") }}
-        </h3>
-      </div>
-
-      <template v-if="shouldShowAlterDatabaseEntries">
-        <div
-          v-if="quickAction === 'quickaction.bb.database.create'"
-          class="flex flex-col items-center w-24"
-          data-label="bb-quick-action-new-db"
-        >
-          <button class="btn-icon-primary p-3" @click.prevent="createDatabase">
-            <heroicons-outline:database class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("quick-action.new-db") }}
-          </h3>
-        </div>
-
-        <div
-          v-if="quickAction === 'quickaction.bb.database.schema.update'"
-          class="flex flex-col items-center w-24"
-        >
-          <button
-            class="btn-icon-primary p-3"
-            data-label="bb-alter-schema-button"
-            @click.prevent="alterSchema"
-          >
-            <heroicons-outline:pencil-alt class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("database.edit-schema") }}
-          </h3>
-        </div>
-
-        <div
-          v-if="quickAction === 'quickaction.bb.database.data.update'"
-          class="flex flex-col items-center w-24"
-        >
-          <button class="btn-icon-primary p-3" @click.prevent="changeData">
-            <heroicons-outline:pencil class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("database.change-data") }}
-          </h3>
-        </div>
-      </template>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.environment.create'"
-        class="flex flex-col items-center w-36"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="createEnvironment">
-          <heroicons-outline:plus-sm class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("environment.create") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.environment.reorder'"
-        class="flex flex-col items-center w-24"
-      >
-        <button
-          class="btn-icon-primary p-3"
-          @click.prevent="reorderEnvironment"
-        >
-          <heroicons-outline:selector class="transform rotate-90 w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("common.reorder") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.project.create'"
-        class="flex flex-col items-center w-24"
-        data-label="bb-quick-action-new-project"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="createProject">
-          <heroicons-outline:template class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.new-project") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.project.database.transfer'"
-        class="flex flex-col items-center w-24"
-      >
-        <button class="btn-icon-primary p-3" @click.prevent="transferDatabase">
-          <heroicons-outline:chevron-double-down class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.transfer-in-db") }}
-        </h3>
-      </div>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.project.database.transfer'"
-        class="flex flex-col items-center w-24"
-      >
-        <button
-          class="btn-icon-primary p-3"
-          @click.prevent="transferOutDatabase"
-        >
-          <heroicons-outline:chevron-double-up class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("quick-action.transfer-out-db") }}
-        </h3>
-      </div>
-
-      <template v-if="hasDBAWorkflowFeature">
-        <div
-          v-if="quickAction === 'quickaction.bb.issue.grant.request.querier'"
-          class="flex flex-col items-center w-24"
-        >
-          <button
-            class="btn-icon-primary p-3"
-            @click.prevent="state.showRequestQueryPanel = true"
-          >
-            <heroicons-outline:document-search class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("quick-action.request-query-permission") }}
-          </h3>
-        </div>
-
-        <div
-          v-if="quickAction === 'quickaction.bb.issue.grant.request.exporter'"
-          class="flex flex-col items-center w-24"
-        >
-          <button
-            class="btn-icon-primary p-3"
-            @click.prevent="state.showRequestExportPanel = true"
-          >
-            <heroicons-outline:document-download class="w-4 h-4" />
-          </button>
-          <h3
-            class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-          >
-            {{ $t("quick-action.request-export-permission") }}
-          </h3>
-        </div>
-      </template>
-
-      <div
-        v-if="quickAction === 'quickaction.bb.subscription.license-assignment'"
-        class="flex flex-col items-center w-24"
-      >
-        <button
-          class="btn-icon-primary p-3"
-          @click.prevent="
-            () =>
-              (state.quickActionType =
-                'quickaction.bb.subscription.license-assignment')
-          "
-        >
-          <heroicons-outline:academic-cap class="w-4 h-4" />
-        </button>
-        <h3
-          class="flex-1 mt-1.5 text-center text-sm font-normal text-main tracking-tight"
-        >
-          {{ $t("subscription.instance-assignment.assign-license") }}
-        </h3>
-      </div>
+    <template
+      v-for="(quickAction, index) in availableQuickActionList"
+      :key="index"
+    >
+      <NButton @click="quickAction.action">
+        <template #icon>
+          <component :is="quickAction.icon" class="h-4 w-4" />
+        </template>
+        <NEllipsis :line-clamp="1">
+          {{ quickAction.title }}
+        </NEllipsis>
+      </NButton>
     </template>
   </div>
 
@@ -242,15 +56,22 @@
       :project-id="projectId"
       @dismiss="state.quickActionType = undefined"
     />
-    <TransferOutDatabaseForm
-      v-if="
-        projectId &&
-        state.quickActionType === 'quickaction.bb.project.database.transfer-out'
-      "
-      :project-id="projectId"
-      @dismiss="state.quickActionType = undefined"
-    />
   </Drawer>
+
+  <DatabaseGroupPanel
+    v-if="project"
+    :show="
+      state.quickActionType === 'quickaction.bb.group.database-group.create' ||
+      state.quickActionType === 'quickaction.bb.group.table-group.create'
+    "
+    :project="project"
+    :resource-type="
+      state.quickActionType === 'quickaction.bb.group.database-group.create'
+        ? 'DATABASE_GROUP'
+        : 'SCHEMA_GROUP'
+    "
+    @close="state.quickActionType = undefined"
+  />
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
@@ -263,23 +84,28 @@
     @close="state.showRequestExportPanel = false"
   />
 
-  <InstanceAssignment
-    :show="
-      state.quickActionType === 'quickaction.bb.subscription.license-assignment'
-    "
-    @dismiss="state.quickActionType = undefined"
-  />
-
   <FeatureModal
-    :open="state.showFeatureModal && !!state.feature"
-    :feature="(state.feature as FeatureType)"
-    @cancel="state.showFeatureModal = false"
+    :open="!!state.feature"
+    :feature="state.feature"
+    @cancel="state.feature = undefined"
   />
 </template>
 
 <script lang="ts" setup>
-import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
-import { reactive, PropType, computed, watch } from "vue";
+import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
+import {
+  PlusIcon,
+  DatabaseIcon,
+  PencilIcon,
+  PenSquareIcon,
+  ListOrderedIcon,
+  GalleryHorizontalEndIcon,
+  ChevronsDownIcon,
+  FileSearchIcon,
+  FileDownIcon,
+} from "lucide-vue-next";
+import { NEllipsis } from "naive-ui";
+import { reactive, PropType, computed, watch, VNode, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
@@ -289,7 +115,6 @@ import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/inde
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
-import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import {
   useInstanceV1Store,
@@ -297,16 +122,28 @@ import {
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
   useSubscriptionV1Store,
+  useProjectV1Store,
 } from "@/store";
-import { QuickActionType, FeatureType } from "@/types";
+import {
+  QuickActionType,
+  DatabaseGroupQuickActionType,
+  FeatureType,
+} from "@/types";
 import { idFromSlug } from "@/utils";
 
 interface LocalState {
-  feature?: string;
-  showFeatureModal: boolean;
+  feature?: FeatureType;
   quickActionType: QuickActionType | undefined;
   showRequestQueryPanel: boolean;
   showRequestExportPanel: boolean;
+}
+
+interface QuickAction {
+  type: QuickActionType;
+  title: string;
+  icon?: VNode;
+  hide?: boolean;
+  action: () => void;
 }
 
 const props = defineProps({
@@ -321,13 +158,13 @@ const router = useRouter();
 const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
+const projectStore = useProjectV1Store();
 
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
 });
 
 const state = reactive<LocalState>({
-  showFeatureModal: false,
   quickActionType: undefined,
   showRequestQueryPanel: false,
   showRequestExportPanel: false,
@@ -339,6 +176,13 @@ const projectId = computed((): string | undefined => {
     return String(idFromSlug(parts[parts.length - 1]));
   }
   return undefined;
+});
+
+const project = computed(() => {
+  if (!projectId.value) {
+    return;
+  }
+  return projectStore.getProjectByUID(projectId.value);
 });
 
 // Only show alter schema and change data if the user has permission to alter schema of at least one project.
@@ -364,15 +208,10 @@ const transferDatabase = () => {
   state.quickActionType = "quickaction.bb.project.database.transfer";
 };
 
-const transferOutDatabase = () => {
-  state.quickActionType = "quickaction.bb.project.database.transfer-out";
-};
-
 const createInstance = () => {
   const instanceList = useInstanceV1Store().activeInstanceList;
   if (subscriptionStore.instanceCountLimit <= instanceList.length) {
     state.feature = "bb.feature.instance-count";
-    state.showFeatureModal = true;
     return;
   }
   state.quickActionType = "quickaction.bb.instance.create";
@@ -398,59 +237,128 @@ const reorderEnvironment = () => {
   commandStore.dispatchCommand("bb.environment.reorder");
 };
 
-const QuickActionMap: Record<string, Partial<Action>> = {
-  "quickaction.bb.instance.create": {
-    name: t("quick-action.add-instance"),
-    perform: () => createInstance(),
-  },
-  "quickaction.bb.database.create": {
-    name: t("quick-action.new-db"),
-    perform: () => createDatabase(),
-  },
-  "quickaction.bb.database.schema.update": {
-    name: t("database.edit-schema"),
-    perform: () => alterSchema(),
-  },
-  "quickaction.bb.environment.create": {
-    name: t("quick-action.add-environment"),
-    perform: () => createEnvironment(),
-  },
-  "quickaction.bb.environment.reorder": {
-    name: t("common.reorder"),
-    perform: () => reorderEnvironment(),
-  },
-  "quickaction.bb.project.create": {
-    name: t("quick-action.new-project"),
-    perform: () => createProject(),
-  },
-  "quickaction.bb.project.database.transfer": {
-    name: t("quick-action.transfer-in-db"),
-    perform: () => transferDatabase(),
-  },
-  "quickaction.bb.subscription.license-assignment": {
-    name: t("subscription.instance-assignment.manage-license"),
-    perform: () =>
-      (state.quickActionType =
-        "quickaction.bb.subscription.license-assignment"),
-  },
+const openDatabaseGroupDrawer = (quickAction: DatabaseGroupQuickActionType) => {
+  if (!subscriptionStore.hasFeature("bb.feature.database-grouping")) {
+    state.feature = "bb.feature.database-grouping";
+    return;
+  }
+  state.quickActionType = quickAction;
 };
 
+const availableQuickActionList = computed((): QuickAction[] => {
+  const fullList: QuickAction[] = [
+    {
+      type: "quickaction.bb.instance.create",
+      title: t("quick-action.add-instance"),
+      action: createInstance,
+      icon: h(PlusIcon),
+    },
+    {
+      type: "quickaction.bb.database.create",
+      title: t("quick-action.new-db"),
+      hide: !shouldShowAlterDatabaseEntries.value,
+      action: createDatabase,
+      icon: h(DatabaseIcon),
+    },
+    {
+      type: "quickaction.bb.group.database-group.create",
+      title: t("database-group.create"),
+      action: () =>
+        openDatabaseGroupDrawer("quickaction.bb.group.database-group.create"),
+      icon: h(PlusIcon),
+    },
+    {
+      type: "quickaction.bb.group.table-group.create",
+      title: t("database-group.table-group.create"),
+      action: () =>
+        openDatabaseGroupDrawer("quickaction.bb.group.table-group.create"),
+      icon: h(PlusIcon),
+    },
+    {
+      type: "quickaction.bb.database.schema.update",
+      title: t("database.edit-schema"),
+      hide: !shouldShowAlterDatabaseEntries.value,
+      action: alterSchema,
+      icon: h(PenSquareIcon),
+    },
+    {
+      type: "quickaction.bb.database.data.update",
+      title: t("database.change-data"),
+      hide: !shouldShowAlterDatabaseEntries.value,
+      action: changeData,
+      icon: h(PencilIcon),
+    },
+    {
+      type: "quickaction.bb.environment.create",
+      title: t("environment.create"),
+      action: createEnvironment,
+      icon: h(PlusIcon),
+    },
+    {
+      type: "quickaction.bb.environment.reorder",
+      title: t("common.reorder"),
+      action: reorderEnvironment,
+      icon: h(ListOrderedIcon),
+    },
+    {
+      type: "quickaction.bb.project.create",
+      title: t("quick-action.new-project"),
+      action: createProject,
+      icon: h(GalleryHorizontalEndIcon),
+    },
+    {
+      type: "quickaction.bb.project.database.transfer",
+      title: t("quick-action.transfer-in-db"),
+      action: transferDatabase,
+      icon: h(ChevronsDownIcon),
+    },
+    {
+      type: "quickaction.bb.issue.grant.request.querier",
+      title: t("quick-action.request-query-permission"),
+      hide: !hasDBAWorkflowFeature.value,
+      action: () => (state.showRequestQueryPanel = true),
+      icon: h(FileSearchIcon),
+    },
+    {
+      type: "quickaction.bb.issue.grant.request.exporter",
+      title: t("quick-action.request-export-permission"),
+      hide: !hasDBAWorkflowFeature.value,
+      action: () => (state.showRequestExportPanel = true),
+      icon: h(FileDownIcon),
+    },
+  ];
+
+  return props.quickActionList.reduce((list, quickAction) => {
+    const filter = fullList.filter(
+      (item) => item.type === quickAction && !item.hide
+    );
+    list.push(...filter);
+    return list;
+  }, [] as QuickAction[]);
+});
+
 const kbarActions = computed(() => {
-  return props.quickActionList
-    .filter((qa) => qa in QuickActionMap)
-    .map((qa) => {
-      // a QuickActionType starts with "quickaction.bb."
-      // it's already namespaced so we don't need prefix here
-      // just re-order the identifier to match other kbar action ids' format
-      // here `id` looks like "bb.quickaction.instance.create"
-      const id = qa.replace(/^quickaction\.bb\.(.+)$/, "bb.quickaction.$1");
-      return defineAction({
-        id,
-        section: t("common.quick-action"),
-        keywords: "quick action",
-        ...QuickActionMap[qa],
-      });
-    });
+  return (
+    availableQuickActionList.value
+      // .filter((qa) => qa in QuickActionMap)
+      .map((item) => {
+        // a QuickActionType starts with "quickaction.bb."
+        // it's already namespaced so we don't need prefix here
+        // just re-order the identifier to match other kbar action ids' format
+        // here `id` looks like "bb.quickaction.instance.create"
+        const id = item.type.replace(
+          /^quickaction\.bb\.(.+)$/,
+          "bb.quickaction.$1"
+        );
+        return defineAction({
+          id,
+          section: t("common.quick-action"),
+          keywords: "quick action",
+          name: item.title,
+          perform: item.action,
+        });
+      })
+  );
 });
 
 useRegisterActions(kbarActions, true);

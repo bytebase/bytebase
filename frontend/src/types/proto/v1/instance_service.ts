@@ -169,7 +169,7 @@ export interface AddDataSourceRequest {
    */
   instance: string;
   /**
-   * Identified by type.
+   * Identified by data source ID.
    * Only READ_ONLY data source can be added.
    */
   dataSource:
@@ -186,7 +186,7 @@ export interface RemoveDataSourceRequest {
    */
   instance: string;
   /**
-   * Identified by type.
+   * Identified by data source ID.
    * Only READ_ONLY data source can be removed.
    */
   dataSource: DataSource | undefined;
@@ -198,7 +198,7 @@ export interface UpdateDataSourceRequest {
    * Format: instances/{instance}
    */
   instance: string;
-  /** Identified by type. */
+  /** Identified by data source ID. */
   dataSource:
     | DataSource
     | undefined;

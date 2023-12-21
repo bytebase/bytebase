@@ -33,8 +33,9 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
-        :on-update:expanded-keys="handleExpandedKeysChange"
+        :show-irrelevant-nodes="false"
         :theme-overrides="{ nodeHeight: '28px' }"
+        @update:expanded-keys="handleExpandedKeysChange"
       />
       <NDropdown
         trigger="manual"
@@ -80,10 +81,8 @@ import {
 } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { ComposedDatabase, ComposedInstance } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -97,6 +96,7 @@ import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
+import { engineHasSchema } from "../engine-specs";
 
 interface BaseTreeNode extends TreeOption {
   key: string;
@@ -225,15 +225,15 @@ const contextMenuOptions = computed(() => {
   const { engine } = treeNode.instance;
   if (treeNode.type === "database") {
     const options: DropdownOption[] = [];
-    if (engine === Engine.MYSQL) {
-      options.push({
-        key: "create-table",
-        label: t("schema-editor.actions.create-table"),
-      });
-    } else if (engine === Engine.POSTGRES) {
+    if (engineHasSchema(engine)) {
       options.push({
         key: "create-schema",
         label: t("schema-editor.actions.create-schema"),
+      });
+    } else {
+      options.push({
+        key: "create-table",
+        label: t("schema-editor.actions.create-table"),
       });
     }
     return options;
@@ -513,9 +513,18 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
     return h("span", { class: "flex items-center gap-x-1" }, children);
   } else if (treeNode.type === "database") {
-    return h(DatabaseIcon, {
-      class: "w-4 h-auto text-gray-400",
-    });
+    return h("span", { class: "flex items-center gap-x-1" }, [
+      h(DatabaseIcon, {
+        class: "w-4 h-auto text-gray-400",
+      }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${treeNode.database.effectiveEnvironmentEntity.title})`
+      ),
+    ]);
   } else if (treeNode.type === "schema") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400",
@@ -637,9 +646,9 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   const treeNode = contextMenu.treeNode;
   if (!treeNode) return;
   if (treeNode.type === "database") {
+    const engine = treeNode.instance.engine;
     if (key === "create-table") {
-      const engine = treeNode.instance.engine;
-      if (engine === Engine.MYSQL) {
+      if (!engineHasSchema(engine)) {
         const schema = head(treeNode.metadata.database.schemas);
         if (!schema) {
           return;
@@ -652,11 +661,13 @@ const handleContextMenuDropdownSelect = async (key: string) => {
         };
       }
     } else if (key === "create-schema") {
-      state.schemaNameModalContext = {
-        db: treeNode.database,
-        database: treeNode.metadata.database,
-        schema: undefined,
-      };
+      if (engineHasSchema(engine)) {
+        state.schemaNameModalContext = {
+          db: treeNode.database,
+          database: treeNode.metadata.database,
+          schema: undefined,
+        };
+      }
     }
   } else if (treeNode.type === "schema") {
     if (key === "create-table") {

@@ -8,10 +8,17 @@ roles:
       - bb.instances.delete
       - bb.instances.undelete
       - bb.instances.sync
+      - bb.instanceRoles.list
+      - bb.instanceRoles.get
+      - bb.instanceRoles.create
+      - bb.instanceRoles.update
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.undelete
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
       - bb.databases.sync
+      - bb.databases.adviseIndex
       - bb.databases.getMetadata
       - bb.databases.updateMetadata
       - bb.databases.getSchema
@@ -37,6 +44,65 @@ roles:
       - bb.issues.update
       - bb.issueComments.create
       - bb.issueComments.update
+      - bb.projects.list
+      - bb.projects.get
+      - bb.projects.create
+      - bb.projects.update
+      - bb.projects.delete
+      - bb.projects.undelete
+      - bb.projects.getIamPolicy
+      - bb.projects.setIamPolicy
+      - bb.risks.list
+      - bb.risks.create
+      - bb.risks.update
+      - bb.risks.delete
+      - bb.roles.list
+      - bb.roles.create
+      - bb.roles.update
+      - bb.roles.delete
+      - bb.changelists.list
+      - bb.changelists.get
+      - bb.changelists.create
+      - bb.changelists.update
+      - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
+      - bb.taskRuns.list
+      - bb.planCheckRuns.list
+      - bb.planCheckRuns.run
+      - bb.tasks.run
+      - bb.tasks.skip
+      - bb.taskRuns.cancel
+      - bb.settings.list
+      - bb.settings.get
+      - bb.settings.set
+      - bb.policies.list
+      - bb.policies.get
+      - bb.policies.create
+      - bb.policies.update
+      - bb.policies.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.create
+      - bb.branches.update
+      - bb.branches.delete
+      - bb.identityProviders.get
+      - bb.identityProviders.create
+      - bb.identityProviders.update
+      - bb.identityProviders.delete
+      - bb.identityProviders.undelete
   - name: roles/workspaceDBA
     permissions:
       - bb.instances.list
@@ -46,6 +112,13 @@ roles:
       - bb.instances.delete
       - bb.instances.undelete
       - bb.instances.sync
+      - bb.instanceRoles.list
+      - bb.instanceRoles.get
+      - bb.instanceRoles.create
+      - bb.instanceRoles.update
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.undelete
+      - bb.databases.adviseIndex
       - bb.databases.list
       - bb.databases.get
       - bb.databases.update
@@ -75,6 +148,65 @@ roles:
       - bb.issues.update
       - bb.issueComments.create
       - bb.issueComments.update
+      - bb.projects.list
+      - bb.projects.get
+      - bb.projects.create
+      - bb.projects.update
+      - bb.projects.delete
+      - bb.projects.undelete
+      - bb.projects.getIamPolicy
+      - bb.projects.setIamPolicy
+      - bb.risks.list
+      - bb.risks.create
+      - bb.risks.update
+      - bb.risks.delete
+      - bb.roles.list
+      - bb.roles.create
+      - bb.roles.update
+      - bb.roles.delete
+      - bb.changelists.list
+      - bb.changelists.get
+      - bb.changelists.create
+      - bb.changelists.update
+      - bb.changelists.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.update
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.listProjects
+      - bb.plans.list
+      - bb.plans.get
+      - bb.plans.create
+      - bb.plans.update
+      - bb.rollouts.get
+      - bb.rollouts.create
+      - bb.rollouts.preview
+      - bb.taskRuns.list
+      - bb.planCheckRuns.run
+      - bb.planCheckRuns.list
+      - bb.tasks.run
+      - bb.tasks.skip
+      - bb.taskRuns.cancel
+      - bb.settings.list
+      - bb.settings.get
+      - bb.settings.set
+      - bb.policies.list
+      - bb.policies.get
+      - bb.policies.create
+      - bb.policies.update
+      - bb.policies.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.create
+      - bb.branches.update
+      - bb.branches.delete
+      - bb.identityProviders.get
+      - bb.identityProviders.create
+      - bb.identityProviders.update
+      - bb.identityProviders.delete
+      - bb.identityProviders.undelete
   - name: roles/workspaceMember
     permissions:
       - bb.environments.list

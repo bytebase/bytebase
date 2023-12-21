@@ -48,7 +48,7 @@ export type ValueOption = {
 
 export const useSearchScopeOptions = (
   params: Ref<SearchParams>,
-  supportOptionIdList: SearchScopeId[]
+  supportOptionIdList: Ref<SearchScopeId[]>
 ) => {
   const { t } = useI18n();
   const me = useCurrentUserV1();
@@ -270,8 +270,33 @@ export const useSearchScopeOptions = (
           },
         ],
       },
+      {
+        id: "project-assigned",
+        title: t("issue.advanced-search.scope.project-assigned.title"),
+        description: t(
+          "issue.advanced-search.scope.project-assigned.description"
+        ),
+        options: [
+          {
+            value: "yes",
+            keywords: ["yes"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.project-assigned.value.yes")
+              ),
+          },
+          {
+            value: "no",
+            keywords: ["no"],
+            render: () =>
+              renderSpan(
+                t("issue.advanced-search.scope.project-assigned.value.no")
+              ),
+          },
+        ],
+      },
     ];
-    const supportOptionIdSet = new Set(supportOptionIdList);
+    const supportOptionIdSet = new Set(supportOptionIdList.value);
     return scopes.filter((scope) => supportOptionIdSet.has(scope.id));
   });
 

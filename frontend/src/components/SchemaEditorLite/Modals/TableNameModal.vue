@@ -63,8 +63,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const context = useSchemaEditorContext();
-const { addTab, markEditStatus } = context;
+const { addTab, markEditStatus, queuePendingScrollToTable } =
+  useSchemaEditorContext();
 const inputRef = ref<InputInst>();
 const notificationStore = useNotificationStore();
 const mode = computed(() => {
@@ -133,6 +133,15 @@ const handleConfirmButtonClick = async () => {
     addTab({
       type: "table",
       database: props.database,
+      metadata: {
+        database: props.metadata,
+        schema: props.schema,
+        table,
+      },
+    });
+
+    queuePendingScrollToTable({
+      db: props.database,
       metadata: {
         database: props.metadata,
         schema: props.schema,

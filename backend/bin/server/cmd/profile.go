@@ -27,6 +27,7 @@ func getBaseProfile(dataDir string) config.Profile {
 		SampleDatabasePort:   sampleDatabasePort,
 		Readonly:             flags.readonly,
 		SaaS:                 flags.saas,
+		Debug:                flags.debug,
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
 		DemoName:             flags.demoName,
@@ -39,6 +40,7 @@ func getBaseProfile(dataDir string) config.Profile {
 		BackupCredentialFile: flags.backupCredential,
 		LastActiveTs:         time.Now().Unix(),
 		Lsp:                  flags.lsp,
+		PreUpdateBackup:      flags.preUpdateBackup,
 		DevelopmentIAM:       flags.developmentIAM,
 	}
 }

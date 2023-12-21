@@ -172,6 +172,7 @@
     "agents": "Agents",
     "billings": "Billings",
     "all": "All",
+    "recent": "Recent",
     "deployment-config": "Deployment Config",
     "by": "by",
     "ok": "OK",
@@ -807,7 +808,7 @@
         "export": "Export"
       },
       "classification": {
-        "self": "Data classification",
+        "self": "Data Classification",
         "upload": "Upload classification",
         "upload-succeed": "Upload succeed",
         "search": "Search classification",
@@ -1017,6 +1018,14 @@
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
+        },
+        "project-assigned": {
+          "title": "Project Assigned",
+          "description": "Search by databases that are assigned to a project.",
+          "value": {
+            "yes": "yes",
+            "no": "no"
+          }
         }
       },
       "hide": "Hide advanced search"
@@ -1157,7 +1166,10 @@
       "project-owners": "Project owners",
       "releasers-of-current-stage": "Releasers of current stage",
       "approvers-of-current-step": "Approvers of current step"
-    }
+    },
+    "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
+    "preview": "Preview issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1213,6 +1225,7 @@
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
+    "foreign-tables": "Foreign tables",
     "functions": "Functions",
     "streams": "Streams",
     "tasks": "Tasks",
@@ -1413,7 +1426,8 @@
     },
     "password-forget": {
       "title": "Forgot your password?",
-      "content": "Please contact your Bytebase Admin to reset your password.",
+      "selfhost": "Please contact your Bytebase Admin to reset your password.",
+      "cloud": "Please go to the {link} and reset your password.",
       "return-to-sign-in": "Return to Sign in"
     },
     "password-forgot": "Forgot Password",
@@ -1502,6 +1516,9 @@
     "filter-database": "Filter database",
     "database-backup": "database backup",
     "transfer-project": "Transfer Project",
+    "unassign": "Unassign",
+    "unassign-alert-title": "Unassign databases",
+    "unassign-alert-description": "Selected databases will transfer out from their project",
     "edit-schema": "Edit Schema",
     "edit-schema-in-vcs": "Edit Schema in VCS",
     "edit-labels": "Edit Labels",
@@ -1517,7 +1534,11 @@
     "select-branch": "Select a branch",
     "delete-this-branch": "Delete this branch",
     "table-detail": "Table detail",
+    "batch-action-not-support-alter-schema": "Some databases don't support altering schema",
+    "batch-action-permission-denied": "Don't have permission to {action} for databases",
     "batch-action-disabled": "Can not {action} for the databases from different projects",
+    "batch-action-disabled-for-unassigned": "Can not {action} for unassigned database",
+    "successfully-transferred-databases": "Successfully transferred databases",
     "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Successfully transferred '{0}' to project '{1}'.",
     "backup-name": "Backup name",
     "create-backup": "Create backup",
@@ -1692,15 +1713,19 @@
         "select-target-project": "Select target project",
         "select-at-least-one-database": "Select at least one database"
       },
+      "select-databases": "Select databases",
       "select-target-project": "Select target project"
     },
+    "transfer-database-to": "Transfer databases to target project",
     "transfer-database-from-to": "Transfer database from source project to target project",
     "classification": {
       "self": "Classification"
     },
     "recent": "Recent",
     "partitioned": "Partitioned",
-    "partition-tables": "Partition tables"
+    "partition-tables": "Partition tables",
+    "external-server-name": "External Server Name",
+    "external-database-name": "External Database Name"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -1901,10 +1926,7 @@
       "archive": {
         "title": "Archive project",
         "description": "Archived projects will not be displayed.",
-        "btn-text": "Archive this @.lower:{'common.project'}",
-        "force": {
-          "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
-        }
+        "btn-text": "Archive this @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restore project",
@@ -2140,7 +2162,9 @@
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
-    "connection-string-schema": "Connection String Schema"
+    "connection-string-schema": "Connection String Schema",
+    "admin": "Admin",
+    "read-only": "RO"
   },
   "setting": {
     "project": {
@@ -2256,7 +2280,8 @@
     "executing-query": "Executing query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
-    "next-row": "Next row"
+    "next-row": "Next row",
+    "copy-success": "Copy success"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2318,7 +2343,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nothing changed",
+    "nothing-changed-for-database": "Nothing changed for database {database}",
     "message": {
       "invalid-schema-name": "Invalid schema name",
       "duplicated-schema-name": "Duplicated schema name",
@@ -3326,5 +3351,15 @@
       "export-rows-must-gt-zero": "Export rows must greater than 0"
     },
     "export-format": "Export format"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Select target database"
+    },
+    "select-tables-to-rollout": "Select tables to rollout",
+    "branch-is-protected": "This branch is protected by branch protection rules.",
+    "default-branches": "Default",
+    "your-branches": "Your branches",
+    "active-branches": "Active branches"
   }
 }

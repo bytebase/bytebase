@@ -88,7 +88,15 @@
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
-          <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+          <div
+            v-if="state.syncingSchema"
+            class="flex justify-center items-center space-x-2"
+          >
+            <BBSpin />
+            <span class="text-control text-sm">
+              {{ $t("instance.syncing") }}
+            </span>
+          </div>
           <NButton
             :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
@@ -170,13 +178,6 @@
       </NTabPane>
     </NTabs>
 
-    <TransferSingleDatabase
-      v-if="state.showTransferDatabaseModal"
-      :database="database"
-      @cancel="state.showTransferDatabaseModal = false"
-      @updated="state.showTransferDatabaseModal = false"
-    />
-
     <BBModal
       v-if="state.showIncorrectProjectModal"
       :title="$t('common.warning')"
@@ -206,6 +207,18 @@
       </div>
     </BBModal>
   </div>
+
+  <Drawer
+    :show="state.showTransferDatabaseModal"
+    :auto-focus="true"
+    @close="state.showTransferDatabaseModal = false"
+  >
+    <TransferOutDatabaseForm
+      :database-list="[database]"
+      :selected-database-uid-list="[database.uid]"
+      @dismiss="state.showTransferDatabaseModal = false"
+    />
+  </Drawer>
 
   <BBModal
     v-if="state.showSchemaDiagram"
@@ -248,7 +261,7 @@ import {
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
+import { Drawer } from "@/components/v2";
 import {
   EnvironmentV1Name,
   InstanceV1Name,

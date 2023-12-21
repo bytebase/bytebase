@@ -18,7 +18,7 @@ import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { sourceText } from "../../common";
 import { useRiskCenterContext } from "../context";
 
-export interface RiskSourceSelectProps extends SelectProps {
+export interface RiskSourceSelectProps extends /* @vue-ignore */ SelectProps {
   value: Risk_Source;
   disabled?: boolean;
 }

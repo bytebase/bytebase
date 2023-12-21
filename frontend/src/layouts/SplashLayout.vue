@@ -2,15 +2,15 @@
   <div class="min-h-screen overflow-hidden flex">
     <div class="hidden bg-white lg:block relative w-0 flex-1">
       <img
-        v-if="route == 'auth.signin'"
+        v-if="route == 'auth.signup'"
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signin.webp"
+        src="../assets/illustration/signup.webp"
         alt=""
       />
       <img
-        v-else-if="route == 'auth.signup'"
+        v-else
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signup.webp"
+        src="../assets/illustration/signin.webp"
         alt=""
       />
     </div>

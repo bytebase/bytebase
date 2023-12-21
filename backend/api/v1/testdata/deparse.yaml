@@ -37,6 +37,18 @@
                   "unique":  true,
                   "primary":  true,
                   "visible":  true
+                },
+                {
+                  "name":  "idx2",
+                  "expressions":  [
+                    "((`a` + `b`))",
+                    "((`a` - `b`))",
+                    "a"
+                  ],
+                  "unique":  false,
+                  "primary":  false,
+                  "visible":  true,
+                  "type": "BTREE"
                 }
               ],
               "foreignKeys":  [
@@ -83,6 +95,7 @@
       `a` int NULL DEFAULT 1 COMMENT 'abcdefg',
       `b` varchar(20) NULL DEFAULT NULL,
       PRIMARY KEY (`a`, `b`),
+      INDEX `idx2` (((`a` + `b`)),((`a` - `b`)),`a`),
       CONSTRAINT `fk1` FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
     CREATE TABLE `t2` (

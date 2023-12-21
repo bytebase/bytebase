@@ -68,7 +68,7 @@ func configureGrpcRouters(
 		stateCfg,
 		dbFactory,
 		schemaSyncer))
-	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, licenseService))
+	v1pb.RegisterProjectServiceServer(grpcServer, apiv1.NewProjectService(stores, activityManager, profile, iamManager, licenseService))
 	v1pb.RegisterDatabaseServiceServer(grpcServer, apiv1.NewDatabaseService(stores, backupRunner, schemaSyncer, licenseService, profile, iamManager))
 	v1pb.RegisterInstanceRoleServiceServer(grpcServer, apiv1.NewInstanceRoleService(stores, dbFactory))
 	v1pb.RegisterOrgPolicyServiceServer(grpcServer, apiv1.NewOrgPolicyService(stores, licenseService))
@@ -78,9 +78,9 @@ func configureGrpcRouters(
 	v1pb.RegisterSQLServiceServer(grpcServer, apiv1.NewSQLService(stores, schemaSyncer, dbFactory, activityManager, licenseService))
 	v1pb.RegisterExternalVersionControlServiceServer(grpcServer, apiv1.NewExternalVersionControlService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
-	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, metricReporter)
+	issueService := apiv1.NewIssueService(stores, activityManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
 	v1pb.RegisterIssueServiceServer(grpcServer, issueService)
-	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager)
+	rolloutService := apiv1.NewRolloutService(stores, licenseService, dbFactory, planCheckScheduler, stateCfg, activityManager, profile, iamManager)
 	v1pb.RegisterRolloutServiceServer(grpcServer, rolloutService)
 	v1pb.RegisterRoleServiceServer(grpcServer, apiv1.NewRoleService(stores, licenseService))
 	v1pb.RegisterSheetServiceServer(grpcServer, apiv1.NewSheetService(stores, licenseService))
@@ -88,7 +88,7 @@ func configureGrpcRouters(
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
 	v1pb.RegisterInboxServiceServer(grpcServer, apiv1.NewInboxService(stores))
-	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores))
+	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 
 	// REST gateway proxy.
 	grpcEndpoint := fmt.Sprintf(":%d", profile.GrpcPort)

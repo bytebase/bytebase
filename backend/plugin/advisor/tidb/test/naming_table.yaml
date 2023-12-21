@@ -4,7 +4,8 @@
       code: 301
       title: naming.table
       content: '`techBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE tech_book_copy(id int, name varchar(255))
   want:
@@ -13,14 +14,16 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde(id int, name varchar(255))
   want:
     - status: WARN
       code: 301
       title: naming.table
-      content: "`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters"
-      line: 0
+      content: '`cjnubexocfhqoogdmihudyahmmghviqkzvpixnwvxtxumvuannpwdcbtsgwrvzpde` mismatches table naming convention, its length should be within 64 characters'
+      line: 1
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book RENAME TO TechBook
   want:
@@ -28,7 +31,8 @@
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: ALTER TABLE tech_book RENAME TO tech_book_copy
   want:
@@ -37,6 +41,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: RENAME TABLE tech_book TO tech_book_copy, tech_book_copy TO LiteraryBook
   want:
@@ -44,7 +49,8 @@
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO TechBook, literary_book TO LiteraryBook
   want:
@@ -52,13 +58,15 @@
       code: 301
       title: naming.table
       content: '`LiteraryBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
     - status: WARN
       code: 301
       title: naming.table
       content: '`TechBook` mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: CREATE TABLE literary_book(a int);RENAME TABLE tech_book TO tech_book_copy, literary_book TO literary_book_copy
   want:
@@ -67,4 +75,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""

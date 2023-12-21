@@ -7,8 +7,8 @@
     class="w-[48rem] max-w-full h-128 max-h-full"
     @close="$emit('dismiss')"
   >
-    <div class="space-y-2 my-4">
-      <div class="w-full sticky top-0 mb-4">
+    <div class="h-full overflow-y-auto relative">
+      <div class="w-full bg-white sticky top-0 z-50">
         <div class="flex items-center justify-between space-x-2">
           <SearchBox
             v-model:value="state.searchText"
@@ -21,12 +21,21 @@
           </NButton>
         </div>
       </div>
-      <ProjectV1Table
-        :project-list="filteredProjectList"
-        :current-project="currentProject"
-        class="border"
-        @click="$emit('dismiss')"
-      />
+      <NTabs v-model:value="state.selectedTab" type="line">
+        <NTabPane
+          v-for="tab in tabList"
+          :key="tab.id"
+          :name="tab.id"
+          :tab="tab.title"
+        >
+          <ProjectV1Table
+            :project-list="tab.list"
+            :current-project="currentProject"
+            class="border"
+            @click="$emit('dismiss')"
+          />
+        </NTabPane>
+      </NTabs>
     </div>
   </BBModal>
   <Drawer
@@ -40,7 +49,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, reactive, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
 import { useProjectV1ListByCurrentUser } from "@/store";
@@ -55,6 +66,7 @@ import { filterProjectV1ListByKeyword } from "@/utils";
 interface LocalState {
   searchText: string;
   showCreateDrawer: boolean;
+  selectedTab: "recent" | "all";
 }
 
 const props = defineProps<{
@@ -65,18 +77,40 @@ const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
 
+const { t } = useI18n();
 const state = reactive<LocalState>({
   searchText: "",
   showCreateDrawer: false,
+  selectedTab: "all",
 });
 const { projectList } = useProjectV1ListByCurrentUser();
+const { recentViewProjects } = useRecentProjects();
 
-const filteredProjectList = computed(() => {
-  const list = projectList.value.filter(
+onMounted(() => {
+  state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";
+});
+
+const getFilteredProjectList = (
+  projectList: ComposedProject[]
+): ComposedProject[] => {
+  const list = projectList.filter(
     (project) => project.uid !== String(DEFAULT_PROJECT_ID)
   );
   return filterProjectV1ListByKeyword(list, state.searchText);
-});
+};
+
+const tabList = computed(() => [
+  {
+    title: t("common.recent"),
+    id: "recent",
+    list: getFilteredProjectList(recentViewProjects.value),
+  },
+  {
+    title: t("common.all"),
+    id: "all",
+    list: getFilteredProjectList(projectList.value),
+  },
+]);
 
 const currentProject = computed(() => {
   if (

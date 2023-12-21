@@ -2,9 +2,13 @@
   <DrawerContent>
     <template #header>
       <div class="flex flex-col gap-y-1">
-        <span>{{
-          isEditSchema ? $t("database.edit-schema") : $t("database.change-data")
-        }}</span>
+        <span>
+          {{
+            isEditSchema
+              ? $t("database.edit-schema")
+              : $t("database.change-data")
+          }}
+        </span>
         <i18n-t
           v-if="isTenantProject"
           class="text-sm textinfolabel"
@@ -13,7 +17,7 @@
         >
           <template #deployment_config>
             <router-link
-              :to="`/project/${projectV1Slug(state.project!)}#setting`"
+              :to="`/project/${projectV1Slug(selectedProject!)}#setting`"
               class="underline hover:bg-link-hover"
               active-class=""
               exact-active-class=""
@@ -26,240 +30,196 @@
     </template>
 
     <div
-      class="space-y-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
+      class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
       <div v-if="ready">
-        <template v-if="projectId">
-          <!-- tenant mode project -->
-          <template v-if="isTenantProject">
-            <NTabs v-model:value="state.alterType">
-              <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
-                <div>
-                  <ProjectTenantView
-                    :state="state"
-                    :database-list="selectableDatabaseList"
-                    :environment-list="environmentList"
-                    :project="state.project"
-                    @dismiss="cancel"
-                  />
-                  <SchemalessDatabaseTable
-                    v-if="isEditSchema"
-                    mode="PROJECT"
-                    :database-list="schemalessDatabaseList"
-                  />
-                </div>
-              </NTabPane>
-              <NTabPane
-                :tab="$t('alter-schema.alter-multiple-db')"
-                name="MULTI_DB"
-              >
-                <div class="px-1 space-x-2 mb-4">
-                  <NRadio
-                    :checked="state.databaseSelectedTab === 'DATABASE'"
-                    value="DATABASE"
-                    name="database-tab"
-                    @update:checked="state.databaseSelectedTab = 'DATABASE'"
-                  >
-                    {{ $t("common.database") }}
-                  </NRadio>
-                  <NRadio
-                    :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
-                    value="DATABASE_GROUP"
-                    name="database-tab"
-                    @update:checked="handleDatabaseGroupTabSelect"
-                  >
-                    <div class="flex flex-row items-center">
-                      <span class="mr-1">{{ $t("database-group.self") }}</span>
-                      <FeatureBadge feature="bb.feature.database-grouping" />
-                    </div>
-                  </NRadio>
-                </div>
-                <div v-if="state.databaseSelectedTab === 'DATABASE'">
-                  <ProjectStandardView
-                    :state="state"
-                    :project="state.project"
-                    :database-list="selectableDatabaseList"
-                    :environment-list="environmentList"
-                    @select-database="selectDatabase"
-                  />
-                  <SchemalessDatabaseTable
-                    v-if="isEditSchema"
-                    mode="PROJECT"
-                    :database-list="schemalessDatabaseList"
-                  />
-                </div>
-                <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-                  <SelectDatabaseGroupTable
-                    :show-selection="true"
-                    :database-group-list="databaseGroupList"
-                    :selected-database-group-name="
-                      state.selectedDatabaseGroupName
-                    "
-                    @update="selectDatabaseGroup"
-                  />
-                </div>
-              </NTabPane>
-              <template #suffix>
-                <NInputGroup class="py-0.5">
-                  <template v-if="state.alterType === 'TENANT'">
-                    <NInputGroupLabel
-                      :bordered="false"
-                      style="--n-group-label-color: transparent"
-                    >
-                      Group by
-                    </NInputGroupLabel>
-                    <YAxisRadioGroup
-                      v-model:label="state.label"
-                      :database-list="filteredDatabaseList"
-                    />
-                  </template>
-                  <DatabaseLabelFilter
-                    v-model:selected="state.selectedLabels"
-                    :database-list="rawDatabaseList"
-                  />
-                  <SearchBox
-                    v-if="state.alterType === 'MULTI_DB'"
-                    v-model:value="state.searchText"
-                    :placeholder="$t('common.filter-by-name')"
-                  />
-                </NInputGroup>
-              </template>
-            </NTabs>
-          </template>
-          <!-- standard mode project, single/multiple databases ui -->
-          <template v-else>
-            <div>
-              <ProjectStandardView
-                :state="state"
-                :project="state.project"
-                :database-list="selectableDatabaseList"
-                :environment-list="environmentList"
-                @select-database="selectDatabase"
-              >
-                <template #header>
-                  <div class="flex items-center justify-end">
-                    <NInputGroup class="py-0.5 pr-2">
-                      <DatabaseLabelFilter
-                        v-model:selected="state.selectedLabels"
-                        :database-list="rawDatabaseList"
-                      />
-                      <SearchBox
-                        v-model:value="state.searchText"
-                        :placeholder="$t('common.filter-by-name')"
-                      />
-                    </NInputGroup>
-                  </div>
-                </template>
-              </ProjectStandardView>
-              <SchemalessDatabaseTable
-                v-if="isEditSchema"
-                mode="PROJECT"
-                class="px-2"
-                :database-list="schemalessDatabaseList"
-              />
-            </div>
-          </template>
-        </template>
-        <template v-else>
-          <div class="flex flex-col gap-y-2 px-0.5">
-            <div class="w-full flex flex-row justify-between items-center">
-              <div class="flex items-center space-x-3">
-                <ProjectSelect
-                  :project="state.project?.uid ?? String(UNKNOWN_ID)"
-                  @update:project="selectProject"
+        <!-- tenant mode project -->
+        <template v-if="isTenantProject">
+          <NTabs v-model:value="state.alterType">
+            <NTabPane :tab="$t('alter-schema.alter-db-group')" name="TENANT">
+              <div>
+                <ProjectTenantView
+                  :label="state.label"
+                  :database-list="selectableDatabaseList"
+                  :environment-list="environmentList"
+                  :project="selectedProject"
+                  @dismiss="cancel"
                 />
-                <div class="px-1 space-x-2">
-                  <NRadio
-                    :checked="state.databaseSelectedTab === 'DATABASE'"
-                    value="DATABASE"
-                    name="database-tab"
-                    @update:checked="state.databaseSelectedTab = 'DATABASE'"
-                  >
-                    {{ $t("common.database") }}
-                  </NRadio>
-                  <NRadio
-                    :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
-                    value="DATABASE_GROUP"
-                    name="database-tab"
-                    @update:checked="handleDatabaseGroupTabSelect"
-                  >
-                    <div class="flex flex-row items-center">
-                      <span class="mr-1">{{ $t("database-group.self") }}</span>
-                      <FeatureBadge feature="bb.feature.database-grouping" />
-                    </div>
-                  </NRadio>
-                </div>
+                <SchemalessDatabaseTable
+                  v-if="isEditSchema"
+                  mode="PROJECT"
+                  :database-list="schemalessDatabaseList"
+                />
               </div>
-              <aside class="flex justify-end">
-                <NInputGroup class="py-0.5">
+            </NTabPane>
+            <NTabPane
+              :tab="$t('alter-schema.alter-multiple-db')"
+              name="MULTI_DB"
+            >
+              <div class="px-1 space-x-2 mb-4">
+                <NRadio
+                  :checked="state.databaseSelectedTab === 'DATABASE'"
+                  value="DATABASE"
+                  name="database-tab"
+                  @update:checked="state.databaseSelectedTab = 'DATABASE'"
+                >
+                  {{ $t("common.database") }}
+                </NRadio>
+                <NRadio
+                  :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
+                  value="DATABASE_GROUP"
+                  name="database-tab"
+                  @update:checked="handleDatabaseGroupTabSelect"
+                >
+                  <div class="flex flex-row items-center">
+                    <span class="mr-1">{{ $t("database-group.self") }}</span>
+                    <FeatureBadge feature="bb.feature.database-grouping" />
+                  </div>
+                </NRadio>
+              </div>
+              <div v-if="state.databaseSelectedTab === 'DATABASE'">
+                <ProjectStandardView
+                  :project="selectedProject"
+                  :database-list="selectableDatabaseList"
+                  :environment-list="environmentList"
+                  @select-databases="
+                    (...dbUidList) =>
+                      (state.selectedDatabaseUidList = new Set(dbUidList))
+                  "
+                />
+                <SchemalessDatabaseTable
+                  v-if="isEditSchema"
+                  mode="PROJECT"
+                  :database-list="schemalessDatabaseList"
+                />
+              </div>
+              <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
+                <SelectDatabaseGroupTable
+                  :show-selection="true"
+                  :database-group-list="filteredDatabaseGroupList"
+                  :selected-database-group-name="
+                    state.selectedDatabaseGroupName
+                  "
+                  @update="(name) => selectDatabaseGroup(name, true)"
+                />
+              </div>
+            </NTabPane>
+            <template #suffix>
+              <NInputGroup class="py-0.5">
+                <template v-if="state.alterType === 'TENANT'">
+                  <NInputGroupLabel
+                    :bordered="false"
+                    style="--n-group-label-color: transparent"
+                  >
+                    Group by
+                  </NInputGroupLabel>
+                  <YAxisRadioGroup
+                    v-model:label="state.label"
+                    :database-list="filteredDatabaseList"
+                  />
+                </template>
+                <DatabaseLabelFilter
+                  v-if="
+                    state.alterType === 'TENANT' ||
+                    state.databaseSelectedTab === 'DATABASE'
+                  "
+                  v-model:selected="state.selectedLabels"
+                  :database-list="rawDatabaseList"
+                />
+                <SearchBox
+                  v-if="state.alterType === 'MULTI_DB'"
+                  v-model:value="state.params.query"
+                  :placeholder="$t('common.filter-by-name')"
+                />
+              </NInputGroup>
+            </template>
+          </NTabs>
+        </template>
+        <template v-else-if="!projectId">
+          <NTabs v-model:value="state.databaseSelectedTab">
+            <NTabPane :tab="$t('common.database')" name="DATABASE">
+              <div class="space-y-3">
+                <div class="w-full flex items-center space-x-2">
+                  <AdvancedSearchBox
+                    v-model:params="state.params"
+                    :autofocus="false"
+                    :placeholder="$t('database.filter-database')"
+                    :support-option-id-list="supportOptionIdList"
+                  />
                   <DatabaseLabelFilter
                     v-model:selected="state.selectedLabels"
                     :database-list="rawDatabaseList"
                   />
-                  <SearchBox
-                    v-model:value="state.searchText"
-                    :placeholder="$t('common.filter-by-name')"
-                  />
-                </NInputGroup>
-              </aside>
-            </div>
-            <!-- a simple table -->
-            <div v-if="state.databaseSelectedTab === 'DATABASE'">
-              <DatabaseV1Table
-                mode="ALL_SHORT"
-                table-class="border"
-                :custom-click="true"
-                :database-list="selectableDatabaseList"
-                :show-selection-column="true"
-                @select-database="
+                </div>
+                <DatabaseV1Table
+                  mode="ALL_SHORT"
+                  table-class="border"
+                  :custom-click="true"
+                  :database-list="selectableDatabaseList"
+                  :show-selection-column="true"
+                  :show-sql-editor-button="false"
+                  :show-placeholder="true"
+                  @select-database="
                 (db: ComposedDatabase) =>
                   toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
               "
-              >
-                <template
-                  #selection-all="{ databaseList: selectedDatabaseList }"
                 >
-                  <input
-                    v-if="selectedDatabaseList.length > 0"
-                    type="checkbox"
-                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                    v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
-                    @input="
-                      toggleDatabasesSelection(
-                        selectedDatabaseList as ComposedDatabase[],
-                        ($event.target as HTMLInputElement).checked
-                      )
-                    "
-                  />
-                </template>
-                <template #selection="{ database }">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                    :checked="isDatabaseSelected(database as ComposedDatabase)"
-                    @click.stop="
-                      toggleDatabasesSelection(
-                        [database as ComposedDatabase],
-                        ($event.target as HTMLInputElement).checked
-                      )
-                    "
-                  />
-                </template>
-              </DatabaseV1Table>
-              <SchemalessDatabaseTable
-                v-if="isEditSchema"
-                mode="ALL"
-                :database-list="schemalessDatabaseList"
-              />
-            </div>
-            <div v-else-if="state.databaseSelectedTab === 'DATABASE_GROUP'">
-              <SelectDatabaseGroupTable
-                :database-group-list="databaseGroupList"
-                :selected-database-group-name="state.selectedDatabaseGroupName"
-                @update="(name) => selectDatabaseGroup(name, true)"
-              />
-            </div>
-          </div>
+                  <template
+                    #selection-all="{ databaseList: selectedDatabaseList }"
+                  >
+                    <input
+                      v-if="selectedDatabaseList.length > 0"
+                      type="checkbox"
+                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                      v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+                      @input="
+                        toggleDatabasesSelection(
+                          selectedDatabaseList as ComposedDatabase[],
+                          ($event.target as HTMLInputElement).checked
+                        )
+                      "
+                    />
+                  </template>
+                  <template #selection="{ database }">
+                    <input
+                      type="checkbox"
+                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                      :checked="isDatabaseSelected(database as ComposedDatabase)"
+                      @click.stop="
+                        toggleDatabasesSelection(
+                          [database as ComposedDatabase],
+                          ($event.target as HTMLInputElement).checked
+                        )
+                      "
+                    />
+                  </template>
+                </DatabaseV1Table>
+                <SchemalessDatabaseTable
+                  v-if="isEditSchema"
+                  mode="ALL"
+                  :database-list="schemalessDatabaseList"
+                />
+              </div>
+            </NTabPane>
+            <NTabPane :tab="$t('database-group.self')" name="DATABASE_GROUP">
+              <div class="space-y-3">
+                <AdvancedSearchBox
+                  v-model:params="state.params"
+                  :autofocus="false"
+                  :placeholder="$t('database.filter-database')"
+                  :support-option-id-list="supportOptionIdList"
+                />
+                <SelectDatabaseGroupTable
+                  :database-group-list="filteredDatabaseGroupList"
+                  :selected-database-group-name="
+                    state.selectedDatabaseGroupName
+                  "
+                  :show-selection="true"
+                  @update="(name) => selectDatabaseGroup(name, true)"
+                />
+              </div>
+            </NTabPane>
+          </NTabs>
         </template>
       </div>
       <div
@@ -293,10 +253,15 @@
           <NButton @click.prevent="cancel">
             {{ $t("common.cancel") }}
           </NButton>
-          <NTooltip
-            v-if="showGenerateMultiDb"
-            :disabled="flattenSelectedProjectSet.size <= 1"
+          <NButton
+            v-if="isTenantProject"
+            type="primary"
+            :disabled="!allowGenerateTenant"
+            @click.prevent="generateTenant"
           >
+            {{ $t("common.next") }}
+          </NButton>
+          <NTooltip v-else :disabled="flattenSelectedProjectSet.size <= 1">
             <template #trigger>
               <NButton
                 type="primary"
@@ -310,14 +275,6 @@
               {{ $t("database.select-databases-from-same-project") }}
             </span>
           </NTooltip>
-          <NButton
-            v-if="showGenerateTenant"
-            type="primary"
-            :disabled="!allowGenerateTenant"
-            @click.prevent="generateTenant"
-          >
-            {{ $t("common.next") }}
-          </NButton>
         </div>
       </div>
     </template>
@@ -373,7 +330,7 @@ import {
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { Project, TenantMode } from "@/types/proto/v1/project_service";
+import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   allowUsingSchemaEditorV1,
   instanceV1HasAlterSchema,
@@ -381,37 +338,32 @@ import {
   sortDatabaseV1List,
   projectV1Slug,
   generateIssueName,
+  SearchScopeId,
+  SearchParams,
+  extractEnvironmentResourceName,
+  extractInstanceResourceName,
 } from "@/utils";
-import SelectDatabaseGroupTable from "../DatabaseGroup/SelectDatabaseGroupTable.vue";
-import {
-  DatabaseLabelFilter,
-  DatabaseV1Table,
-  DrawerContent,
-  ProjectSelect,
-} from "../v2";
+import { DatabaseLabelFilter, DatabaseV1Table, DrawerContent } from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
-import ProjectStandardView, {
-  ProjectStandardViewState,
-} from "./ProjectStandardView.vue";
-import ProjectTenantView, {
-  ProjectTenantViewState,
-} from "./ProjectTenantView.vue";
+import ProjectStandardView from "./ProjectStandardView.vue";
+import ProjectTenantView from "./ProjectTenantView.vue";
 import SchemaEditorModal from "./SchemaEditorModal.vue";
 import SchemalessDatabaseTable from "./SchemalessDatabaseTable.vue";
+import SelectDatabaseGroupTable from "./SelectDatabaseGroupTable.vue";
 
-type LocalState = ProjectStandardViewState &
-  ProjectTenantViewState & {
-    project?: Project;
-    searchText: string;
-    databaseSelectedTab: "DATABASE" | "DATABASE_GROUP";
-    showSchemaLessDatabaseList: boolean;
-    showSchemaEditorModal: boolean;
-    selectedDatabaseGroupName?: string;
-    // Using to display the database group prev editor.
-    selectedDatabaseGroup?: ComposedDatabaseGroup;
-    selectedLabels: { key: string; value: string }[];
-    selectedDatabaseUidList: Set<string>;
-  };
+type LocalState = {
+  label: string;
+  alterType: "MULTI_DB" | "TENANT";
+  databaseSelectedTab: "DATABASE" | "DATABASE_GROUP";
+  showSchemaLessDatabaseList: boolean;
+  showSchemaEditorModal: boolean;
+  selectedDatabaseGroupName?: string;
+  // Using to display the database group prev editor.
+  selectedDatabaseGroup?: ComposedDatabaseGroup;
+  selectedLabels: { key: string; value: string }[];
+  selectedDatabaseUidList: Set<string>;
+  params: SearchParams;
+};
 
 const props = defineProps({
   projectId: {
@@ -446,31 +398,45 @@ const schemaEditorContext = ref<{
 });
 
 const state = reactive<LocalState>({
-  project: props.projectId
-    ? projectV1Store.getProjectByUID(props.projectId)
-    : undefined,
   alterType: "MULTI_DB",
-  selectedDatabaseUidListForEnvironment: new Map<string, string[]>(),
   selectedDatabaseUidList: new Set<string>(),
-  deployingTenantDatabaseList: [],
   label: "environment",
-  searchText: "",
   databaseSelectedTab: "DATABASE",
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
   selectedLabels: [],
+  params: {
+    query: "",
+    scopes: [],
+  },
 });
 
-const selectProject = (projectId: string | undefined) => {
-  state.project = projectId
-    ? projectV1Store.getProjectByUID(projectId)
-    : undefined;
-};
+const selectedProject = computed(() => {
+  if (props.projectId) {
+    return projectV1Store.getProjectByUID(props.projectId);
+  }
+  const filter = state.params.scopes.find(
+    (scope) => scope.id === "project"
+  )?.value;
+  if (filter) {
+    return projectV1Store.getProjectByName(`projects/${filter}`);
+  }
+  return undefined;
+});
 
-watch(
-  () => props.projectId,
-  (projectId) => selectProject(projectId)
-);
+const selectedInstance = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "instance")?.value ??
+    `${UNKNOWN_ID}`
+  );
+});
+
+const selectedEnvironment = computed(() => {
+  return (
+    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
+    `${UNKNOWN_ID}`
+  );
+});
 
 // Returns true if alter schema, false if change data.
 const isEditSchema = computed((): boolean => {
@@ -480,15 +446,22 @@ const isEditSchema = computed((): boolean => {
 const isTenantProject = computed((): boolean => {
   return (
     !!props.projectId &&
-    state.project?.tenantMode === TenantMode.TENANT_MODE_ENABLED
+    selectedProject.value?.tenantMode === TenantMode.TENANT_MODE_ENABLED
   );
 });
 
-if (isTenantProject.value) {
-  // For tenant mode projects, alter multiple db via DeploymentConfig
-  // is the default suggested way.
-  state.alterType = "TENANT";
-}
+watch(
+  () => isTenantProject.value,
+  (isTenant) => {
+    if (isTenant) {
+      // For tenant mode projects, alter multiple db via DeploymentConfig
+      // is the default suggested way.
+      state.alterType = "TENANT";
+      state.databaseSelectedTab = "DATABASE_GROUP";
+    }
+  },
+  { immediate: true }
+);
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
@@ -498,9 +471,9 @@ const { ready } = useSearchDatabaseV1List({
 
 const prepareDatabaseGroupList = async () => {
   let list: ComposedDatabaseGroup[] = [];
-  if (state.project) {
+  if (selectedProject.value) {
     list = await dbGroupStore.getOrFetchDBGroupListByProjectName(
-      state.project.name
+      selectedProject.value.name
     );
   } else {
     list = await dbGroupStore.fetchAllDatabaseGroupList();
@@ -517,8 +490,8 @@ watchEffect(async () => {
 
 const rawDatabaseList = computed(() => {
   let list: ComposedDatabase[] = [];
-  if (state.project) {
-    list = databaseV1Store.databaseListByProject(state.project.name);
+  if (selectedProject.value) {
+    list = databaseV1Store.databaseListByProject(selectedProject.value.name);
   } else {
     list = databaseV1Store.databaseListByUser(currentUserV1.value);
   }
@@ -533,7 +506,18 @@ const filteredDatabaseList = computed(() => {
   let list = [...rawDatabaseList.value];
 
   list = list.filter((db) => {
-    return filterDatabaseV1ByKeyword(db, state.searchText.trim(), [
+    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
+      return (
+        extractEnvironmentResourceName(db.effectiveEnvironment) ===
+        selectedEnvironment.value
+      );
+    }
+    if (selectedInstance.value !== `${UNKNOWN_ID}`) {
+      return (
+        extractInstanceResourceName(db.instance) === selectedInstance.value
+      );
+    }
+    return filterDatabaseV1ByKeyword(db, state.params.query.trim(), [
       "name",
       "environment",
       "instance",
@@ -568,25 +552,31 @@ const schemalessDatabaseList = computed(() => {
 });
 
 const databaseGroupList = computed(() => {
-  if (state.project) {
-    return dbGroupStore.getDBGroupListByProjectName(state.project.name);
+  if (selectedProject.value) {
+    return dbGroupStore.getDBGroupListByProjectName(selectedProject.value.name);
   } else {
     return dbGroupStore.getAllDatabaseGroupList();
   }
 });
 
+const filteredDatabaseGroupList = computed(() => {
+  return databaseGroupList.value.filter((dbGroup) => {
+    if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
+      return (
+        extractEnvironmentResourceName(dbGroup.environment.name) ===
+        selectedEnvironment.value
+      );
+    }
+    const keyword = state.params.query.trim().toLowerCase();
+    if (!keyword) {
+      return true;
+    }
+    return dbGroup.databaseGroupName.toLowerCase().includes(keyword);
+  });
+});
+
 const flattenSelectedDatabaseUidList = computed(() => {
-  const flattenDatabaseIdList: string[] = [];
-  if (!props.projectId) {
-    for (const db of state.selectedDatabaseUidList) {
-      flattenDatabaseIdList.push(db);
-    }
-  } else {
-    for (const databaseIdList of state.selectedDatabaseUidListForEnvironment.values()) {
-      flattenDatabaseIdList.push(...databaseIdList);
-    }
-  }
-  return flattenDatabaseIdList;
+  return [...state.selectedDatabaseUidList];
 });
 
 const flattenSelectedProjectSet = computed(() => {
@@ -596,11 +586,6 @@ const flattenSelectedProjectSet = computed(() => {
     projectSet.add(database.projectEntity.uid);
   }
   return projectSet;
-});
-
-const showGenerateMultiDb = computed(() => {
-  if (isTenantProject.value) return false;
-  return state.alterType === "MULTI_DB";
 });
 
 const allowGenerateMultiDb = computed(() => {
@@ -663,32 +648,18 @@ const generateMultiDb = async () => {
   });
 };
 
-const showGenerateTenant = computed(() => {
-  // True when a tenant project is selected and "TENANT" is selected.
-  if (isTenantProject.value) {
-    return true;
-  }
-  return false;
-});
-
 const allowGenerateTenant = computed(() => {
-  if (state.databaseSelectedTab === "DATABASE") {
-    if (isTenantProject.value && state.alterType === "MULTI_DB") {
-      if (flattenSelectedDatabaseUidList.value.length === 0) {
-        return false;
-      }
-    }
-
-    if (isTenantProject.value) {
-      // not allowed when database list filtered by deployment config is empty
-      // which means no database will be deployed
-      return state.deployingTenantDatabaseList.length > 0;
-    }
-
-    return true;
-  } else {
-    return state.selectedDatabaseGroupName;
+  if (!isTenantProject.value) {
+    return false;
   }
+  if (state.alterType === "MULTI_DB") {
+    if (state.databaseSelectedTab === "DATABASE") {
+      return flattenSelectedDatabaseUidList.value.length > 0;
+    }
+    return !!state.selectedDatabaseGroupName;
+  }
+
+  return true;
 });
 
 const getAllSelectionState = (
@@ -764,17 +735,17 @@ const generateTenant = async () => {
     return;
   }
 
-  if (!state.project) return;
-  if (state.project.uid === String(UNKNOWN_ID)) return;
+  if (!selectedProject.value) return;
+  if (selectedProject.value.uid === String(UNKNOWN_ID)) return;
 
   const query: Record<string, any> = {
     template: props.type,
-    project: state.project.uid,
+    project: selectedProject.value.uid,
     batch: "1",
   };
   if (state.alterType === "TENANT") {
     const databaseList = databaseV1Store.databaseListByProject(
-      state.project.name
+      selectedProject.value.name
     );
     if (isEditSchema.value && allowUsingSchemaEditorV1(databaseList)) {
       schemaEditorContext.value.databaseIdList = databaseList
@@ -787,7 +758,7 @@ const generateTenant = async () => {
     // if more than one databases are to be deployed.
     const name =
       databaseList.length > 1
-        ? state.project.title
+        ? selectedProject.value.title
         : databaseList[0].databaseName;
     query.name = generateIssueName(props.type, [name], false);
     query.databaseName = "";
@@ -826,35 +797,15 @@ const generateTenant = async () => {
   });
 };
 
-const selectDatabase = async (database: ComposedDatabase) => {
-  if (
-    isEditSchema.value &&
-    database.syncState === State.ACTIVE &&
-    allowUsingSchemaEditorV1([database])
-  ) {
-    schemaEditorContext.value.databaseIdList = [database.uid];
-    state.showSchemaEditorModal = true;
-    return;
-  }
-
-  emit("dismiss");
-
-  const query: Record<string, any> = {
-    template: props.type,
-    name: generateIssueName(props.type, [database.databaseName]),
-    project: database.projectEntity.uid,
-    databaseList: database.uid,
-  };
-  router.push({
-    name: "workspace.issue.detail",
-    params: {
-      issueSlug: "new",
-    },
-    query,
-  });
-};
-
 const cancel = () => {
   emit("dismiss");
 };
+
+const supportOptionIdList = computed((): SearchScopeId[] => {
+  if (state.databaseSelectedTab === "DATABASE") {
+    return ["project", "instance", "environment"];
+  }
+
+  return ["project", "environment"];
+});
 </script>

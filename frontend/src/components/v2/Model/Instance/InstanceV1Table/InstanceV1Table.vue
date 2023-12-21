@@ -1,11 +1,6 @@
 <template>
-  <div>
-    <InstanceOperations
-      v-if="state.selectedInstance.size > 0"
-      class="mb-3"
-      :instance-list="selectedInstanceList"
-      @dismiss="state.selectedInstance.clear()"
-    />
+  <div class="space-y-2">
+    <InstanceOperations :instance-list="selectedInstanceList" />
     <BBGrid
       class="border-y"
       :column-list="columnList"

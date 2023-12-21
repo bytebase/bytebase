@@ -37,7 +37,7 @@ import {
   NPopconfirm,
 } from "naive-ui";
 
-export interface SpinnerButtonProps extends ButtonProps {
+export interface SpinnerButtonProps extends /* @vue-ignore */ ButtonProps {
   onConfirm: () => Promise<any>;
   tooltip?: string;
   tooltipClass?: VueClass;

@@ -159,7 +159,7 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 Live demo at https://demo.bytebase.com
 
-You can also [book a 30min product walkthrough](https://cal.com/adela-bytebase/30min) with one of
+You can also [book a 30min product walkthrough](https://cal.com/bytebase/product-walkthrough) with one of
 our product experts.
 
 <br />
@@ -355,4 +355,4 @@ Check out our [FAQ](https://www.bytebase.com/docs/faq).
 # 🙋 Contact Us
 
 - Interested in joining us? Check out our [jobs page](https://bytebase.com/jobs?source=github) for openings.
-- Want to solve your schema change and database management headache? Book a [30min demo](https://cal.com/adela-bytebase/30min) with one of our product experts.
+- Want to solve your schema change and database management headache? Book a [30min demo](https://cal.com/bytebase/product-walkthrough) with one of our product experts.

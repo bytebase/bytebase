@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a JSON, b BLOB, c TEXT)
   want:
@@ -12,7 +13,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(d int);
@@ -22,7 +24,8 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 1
+      line: 2
+      column: 0
       details: ""
 - statement: |-
     CREATE TABLE t(c int, b int);
@@ -32,5 +35,6 @@
       code: 411
       title: column.type-disallow-list
       content: Disallow column type JSON but column `t`.`a` is
-      line: 1
+      line: 2
+      column: 0
       details: ""

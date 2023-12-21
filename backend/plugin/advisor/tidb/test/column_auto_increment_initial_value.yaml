@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 20
   want:
@@ -13,6 +14,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: CREATE TABLE t(a int auto_increment) auto_increment = 2
   want:
@@ -20,5 +22,6 @@
       code: 416
       title: column.auto-increment-initial-value
       content: The initial auto-increment value in table `t` is 2, which doesn't equal 20
-      line: 0
+      line: 1
+      column: 0
       details: ""

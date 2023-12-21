@@ -4,5 +4,6 @@
       code: 701
       title: database.drop-empty-database
       content: Database `test` is not allowed to drop if not empty
-      line: 0
+      line: 1
+      column: 0
       details: ""

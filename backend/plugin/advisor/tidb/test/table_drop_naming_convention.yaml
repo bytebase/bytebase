@@ -5,6 +5,7 @@
       title: OK
       content: ""
       line: 0
+      column: 0
       details: ""
 - statement: DROP TABLE IF EXISTS foo
   want:
@@ -12,7 +13,8 @@
       code: 603
       title: table.drop-naming-convention
       content: '`foo` mismatches drop table naming convention, naming format should be "_delete$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""
 - statement: DROP TABLE IF EXISTS foo_delete, bar
   want:
@@ -20,5 +22,6 @@
       code: 603
       title: table.drop-naming-convention
       content: '`bar` mismatches drop table naming convention, naming format should be "_delete$"'
-      line: 0
+      line: 1
+      column: 0
       details: ""

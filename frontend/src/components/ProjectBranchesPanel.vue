@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 w-full overflow-x-auto">
+  <div class="space-y-6 w-full overflow-x-auto">
     <div class="flex flex-row justify-end items-center gap-x-2 pt-0.5">
       <SearchBox
         v-model:value="state.searchKeyword"
@@ -7,30 +7,44 @@
         :placeholder="$t('common.filter-by-name')"
       />
       <NButton type="primary" @click="handleCreateBranch">
-        <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+        <PlusIcon class="w-4 h-auto mr-0.5" />
         <span>{{ $t("database.new-branch") }}</span>
       </NButton>
     </div>
-
-    <BranchDataTable
-      class="border"
-      :branches="filteredBranches"
-      :ready="ready"
-      @click="handleBranchClick"
-    />
+    <div class="w-full space-y-2">
+      <p class="textlabel">{{ $t("branch.default-branches") }}</p>
+      <BranchDataTable :branches="defaultBranches" :ready="ready" />
+    </div>
+    <div class="w-full space-y-2">
+      <p class="textlabel">{{ $t("branch.your-branches") }}</p>
+      <BranchDataTable
+        :branches="currentUserBranches"
+        :ready="ready"
+        :show-parent-branch-column="true"
+      />
+    </div>
+    <div class="w-full space-y-2">
+      <p class="textlabel">{{ $t("branch.active-branches") }}</p>
+      <BranchDataTable
+        :branches="activeBranches"
+        :ready="ready"
+        :show-parent-branch-column="true"
+      />
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { orderBy } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import BranchDataTable from "@/components/Branch/BranchDataTable.vue";
+import BranchDataTable from "@/components/Branch/BranchDataTable/index.vue";
+import { useCurrentUserV1 } from "@/store";
 import { useBranchListByProject } from "@/store/modules/branch";
-import { getProjectAndBranchId } from "@/store/modules/v1/common";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
-import { Branch } from "@/types/proto/v1/branch_service";
 import { projectV1Slug } from "@/utils";
 
 const props = defineProps<{
@@ -41,7 +55,12 @@ interface LocalState {
   searchKeyword: string;
 }
 
+// BRANCH_DEFAULT_ACTIVE_DURATION is the duration that a branch is considered as active.
+// Currently, it is set to 2 months.
+const BRANCH_DEFAULT_ACTIVE_DURATION = 1000 * 60 * 60 * 24 * 30 * 2;
+
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const { branchList, ready } = useBranchListByProject(
   computed(() => props.project.name)
 );
@@ -57,23 +76,38 @@ const filteredBranches = computed(() => {
   });
 });
 
+// defaultBranches are those branches that are parent branches.
+const defaultBranches = computed(() => {
+  return filteredBranches.value.filter((branch) => {
+    return branch.parentBranch === "";
+  });
+});
+
+// currentUserBranches are those branches that are created by the current user and are not parent branches.
+const currentUserBranches = computed(() => {
+  return filteredBranches.value.filter((branch) => {
+    return (
+      branch.parentBranch !== "" &&
+      branch.creator === `${userNamePrefix}${currentUser.value.email}`
+    );
+  });
+});
+
+// activeBranches are those branches that are active in the last 2 months.
+const activeBranches = computed(() => {
+  return filteredBranches.value.filter((branch) => {
+    return (
+      branch.updateTime!.getTime() > Date.now() - BRANCH_DEFAULT_ACTIVE_DURATION
+    );
+  });
+});
+
 const handleCreateBranch = () => {
   router.push({
     name: "workspace.project.branch.detail",
     params: {
       projectSlug: projectV1Slug(props.project),
       branchName: "new",
-    },
-  });
-};
-
-const handleBranchClick = async (branch: Branch) => {
-  const [_, branchId] = getProjectAndBranchId(branch.name);
-  router.push({
-    name: "workspace.project.branch.detail",
-    params: {
-      projectSlug: projectV1Slug(props.project),
-      branchName: `${branchId}`,
     },
   });
 };

@@ -175,19 +175,6 @@ type tableState struct {
 	comment     string
 }
 
-func (t *tableState) removeUnsupportedIndex() {
-	unsupported := []string{}
-	for name, index := range t.indexes {
-		if index.primary {
-			continue
-		}
-		unsupported = append(unsupported, name)
-	}
-	for _, name := range unsupported {
-		delete(t.indexes, name)
-	}
-}
-
 func (t *tableState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
@@ -211,7 +198,6 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	}
 
 	indexes := []*indexState{}
-	t.removeUnsupportedIndex()
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
@@ -467,8 +453,41 @@ func (i *indexState) toString(buf *strings.Builder) error {
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
+	} else {
+		if i.unique {
+			if _, err := buf.WriteString("UNIQUE INDEX "); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString("INDEX "); err != nil {
+				return err
+			}
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("`%s` (", i.name)); err != nil {
+			return err
+		}
+		for j, key := range i.keys {
+			if j > 0 {
+				if _, err := buf.WriteString(","); err != nil {
+					return err
+				}
+			}
+			if len(key) > 2 && key[0] == '(' && key[len(key)-1] == ')' {
+				// Expressions are surrounded by parentheses.
+				if _, err := buf.WriteString(key); err != nil {
+					return err
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
 	}
-	// TODO: support other type indexes.
 	return nil
 }
 
@@ -1588,143 +1607,77 @@ func nextDefaultChannelTokenIndex(tokens antlr.TokenStream, currentIndex int) in
 }
 
 func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
-	type fkMetadata struct {
-		name                string
-		tableName           string
-		referencedTableName string
-		referencedColumns   []string
-	}
-	fkMap := make(map[string][]*fkMetadata)
 	switch engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES:
 	default:
 		return errors.Errorf("unsupported engine for check database metadata: %v", engine)
 	}
-	for _, schema := range metadata.Schemas {
-		if (engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB) && schema.Name != "" {
+
+	schemaMap := make(map[string]bool)
+	for _, schema := range metadata.GetSchemas() {
+		if (engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB) && schema.GetName() != "" {
 			return errors.Errorf("schema name should be empty for MySQL and TiDB")
 		}
+		if _, ok := schemaMap[schema.GetName()]; ok {
+			return errors.Errorf("duplicate schema name %s", schema.GetName())
+		}
+		schemaMap[schema.GetName()] = true
+
 		tableNameMap := make(map[string]bool)
-		for _, table := range schema.Tables {
-			if table.Name == "" {
+		for _, table := range schema.GetTables() {
+			if table.GetName() == "" {
 				return errors.Errorf("table name should not be empty")
 			}
-			if _, ok := tableNameMap[table.Name]; ok {
-				return errors.Errorf("duplicate table name %s", table.Name)
+			if _, ok := tableNameMap[table.GetName()]; ok {
+				return errors.Errorf("duplicate table name %s", table.GetName())
 			}
-			tableNameMap[table.Name] = true
+			tableNameMap[table.GetName()] = true
+
 			columnNameMap := make(map[string]bool)
-			for _, column := range table.Columns {
-				if column.Name == "" {
-					return errors.Errorf("column name should not be empty in table %s", table.Name)
+			for _, column := range table.GetColumns() {
+				if column.GetName() == "" {
+					return errors.Errorf("column name should not be empty in table %s", table.GetName())
 				}
-				if _, ok := columnNameMap[column.Name]; ok {
-					return errors.Errorf("duplicate column name %s in table %s", column.Name, table.Name)
+				if _, ok := columnNameMap[column.GetName()]; ok {
+					return errors.Errorf("duplicate column name %s in table %s", column.GetName(), table.GetName())
 				}
+				columnNameMap[column.GetName()] = true
 
-				columnNameMap[column.Name] = true
-				if column.Type == "" {
-					return errors.Errorf("column %s type should not be empty in table %s", column.Name, table.Name)
-				}
-
-				if !checkColumnType(engine, column.Type) {
-					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
+				if column.GetType() == "" {
+					return errors.Errorf("column %s type should not be empty in table %s", column.GetName(), table.GetName())
 				}
 			}
 
 			indexNameMap := make(map[string]bool)
-			for _, index := range table.Indexes {
-				if index.Name == "" {
-					return errors.Errorf("index name should not be empty in table %s", table.Name)
+			for _, index := range table.GetIndexes() {
+				if index.GetName() == "" {
+					return errors.Errorf("index name should not be empty in table %s", table.GetName())
 				}
-				if _, ok := indexNameMap[index.Name]; ok {
-					return errors.Errorf("duplicate index name %s in table %s", index.Name, table.Name)
+				if _, ok := indexNameMap[index.GetName()]; ok {
+					return errors.Errorf("duplicate index name %s in table %s", index.GetName(), table.GetName())
 				}
-				indexNameMap[index.Name] = true
+				indexNameMap[index.GetName()] = true
 				if index.Primary {
-					for _, key := range index.Expressions {
+					for _, key := range index.GetExpressions() {
 						if _, ok := columnNameMap[key]; !ok {
-							return errors.Errorf("primary key column %s not found in table %s", key, table.Name)
+							return errors.Errorf("primary key column %s not found in table %s", key, table.GetName())
 						}
 					}
 				}
-			}
-
-			for _, fk := range table.ForeignKeys {
-				if fk.Name == "" {
-					return errors.Errorf("foreign key name should not be empty in table %s", table.Name)
-				}
-				if _, ok := indexNameMap[fk.Name]; ok {
-					return errors.Errorf("duplicate foreign key name %s in table %s", fk.Name, table.Name)
-				}
-				indexNameMap[fk.Name] = true
-				for _, key := range fk.Columns {
-					if _, ok := columnNameMap[key]; !ok {
-						return errors.Errorf("foreign key column %s not found in table %s", key, table.Name)
-					}
-				}
-				fks, ok := fkMap[fk.ReferencedTable]
-				if !ok {
-					fks = []*fkMetadata{}
-					fkMap[fk.ReferencedTable] = fks
-				}
-				meta := &fkMetadata{
-					name:                fk.Name,
-					tableName:           table.Name,
-					referencedTableName: fk.ReferencedTable,
-					referencedColumns:   fk.ReferencedColumns,
-				}
-				fks = append(fks, meta)
-				fkMap[fk.ReferencedTable] = fks
 			}
 		}
+	}
+	return nil
+}
 
-		// check foreign key reference
-		for _, table := range schema.Tables {
-			fks, ok := fkMap[table.Name]
-			if !ok {
-				continue
-			}
-			columnNameMap := make(map[string]bool)
-			for _, column := range table.Columns {
-				columnNameMap[column.Name] = true
-			}
-			for _, fk := range fks {
-				for _, key := range fk.referencedColumns {
-					if _, ok := columnNameMap[key]; !ok {
-						return errors.Errorf("foreign key %s in table %s references column %s in table %s but not found", fk.name, fk.tableName, key, fk.referencedTableName)
-					}
-				}
-				hasIndex := false
-				for _, index := range table.Indexes {
-					if len(index.Expressions) < len(fk.referencedColumns) {
-						continue
-					}
-					for i, key := range fk.referencedColumns {
-						if index.Expressions[i] != key {
-							break
-						}
-						if i == len(fk.referencedColumns)-1 {
-							hasIndex = true
-						}
-					}
-				}
-				if !hasIndex {
-					if engine == storepb.Engine_POSTGRES {
-						// PostgreSQL does not support indexes currently, so we just skip this check.
-						continue
-					}
-					return errors.Errorf("missing index for foreign key %s for table %s in the referenced table '%s'", fk.name, fk.tableName, fk.referencedTableName)
+func checkDatabaseMetadataColumnType(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
+	for _, schema := range metadata.GetSchemas() {
+		for _, table := range schema.GetTables() {
+			for _, column := range table.GetColumns() {
+				if !checkColumnType(engine, column.Type) {
+					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
 				}
 			}
-			delete(fkMap, table.Name)
-		}
-
-		for _, fks := range fkMap {
-			if len(fks) == 0 {
-				continue
-			}
-			return errors.Errorf("foreign key %s in table %s references table %s but not found", fks[0].name, fks[0].tableName, fks[0].referencedTableName)
 		}
 	}
 	return nil
