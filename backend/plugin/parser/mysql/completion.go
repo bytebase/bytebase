@@ -252,7 +252,6 @@ func (c *Completer) completion() ([]base.Candidate, error) {
 	}
 	c.referencesStack = append([][]base.TableReference{{}}, c.referencesStack...)
 	c.parser.Reset()
-	// TODO: we can just skip the head of the caret statement.
 	context := c.parser.Script()
 
 	candidates := c.core.CollectCandidates(caretIndex, context)

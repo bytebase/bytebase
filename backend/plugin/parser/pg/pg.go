@@ -50,6 +50,45 @@ func ParsePostgreSQL(sql string) (*ParseResult, error) {
 	return result, nil
 }
 
+func normalizePostgreSQLTableAlias(ctx parser.ITable_aliasContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	switch {
+	case ctx.Identifier() != nil:
+		return normalizePostgreSQLIdentifier(ctx.Identifier())
+	default:
+		// For non-quote identifier, we just return the lower string for PostgreSQL.
+		return strings.ToLower(ctx.GetText())
+	}
+}
+
+func normalizePostgreSQLNameList(ctx parser.IName_listContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	var result []string
+	for _, item := range ctx.AllName() {
+		result = append(result, normalizePostgreSQLName(item))
+	}
+
+	return result
+}
+
+func normalizePostgreSQLName(ctx parser.INameContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	if ctx.Colid() != nil {
+		return NormalizePostgreSQLColid(ctx.Colid())
+	}
+
+	return ""
+}
+
 // NormalizePostgreSQLAnyName normalizes the given any name.
 func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	if ctx == nil {
