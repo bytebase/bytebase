@@ -214,10 +214,10 @@ const quickActionForDatabaseGroup = computed((): QuickActionType[] => {
     return [];
   }
   return [
+    "quickaction.bb.database.schema.update",
+    "quickaction.bb.database.data.update",
     "quickaction.bb.group.database-group.create",
     "quickaction.bb.group.table-group.create",
-    "quickaction.bb.database.data.update",
-    "quickaction.bb.database.schema.update",
   ];
 });
 
