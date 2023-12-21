@@ -1,7 +1,7 @@
 <template>
   <div v-if="!hideTitle" class="mb-2 flex flex-row items-center">
     <span class="text-base mr-2">{{ $t("common.databases") }}</span>
-    <BBLoader v-show="loading" class="opacity-60" />
+    <BBSpin v-if="loading" class="opacity-60" />
   </div>
   <div
     class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
@@ -102,7 +102,6 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { reactive } from "vue";
-import BBLoader from "@/bbkit/BBLoader.vue";
 import { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "../v2";
 
