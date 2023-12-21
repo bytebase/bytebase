@@ -1,4 +1,4 @@
-package v2
+package pg
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func TestGetQuerySpan(t *testing.T) {
 
 	const (
 		record       = false
-		testDataPath = "testdata/query_span.yaml"
+		testDataPath = "test-data/query_span.yaml"
 	)
 
 	a := require.New(t)
