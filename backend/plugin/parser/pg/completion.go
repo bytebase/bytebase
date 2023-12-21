@@ -148,7 +148,7 @@ type Completer struct {
 	// It's helpful to look up the table reference.
 	references []base.TableReference
 	cteCache   map[int][]*base.VirtualTableReference
-	cteTables  []*base.VirtualTableReference
+	// cteTables  []*base.VirtualTableReference
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc) *Completer {
@@ -884,11 +884,11 @@ func (l *TableRefListener) ExitTable_ref(ctx *pg.Table_refContext) {
 	}
 }
 
-func (l *TableRefListener) EnterSelect_with_parens(ctx *pg.Select_with_parensContext) {
+func (l *TableRefListener) EnterSelect_with_parens(_ *pg.Select_with_parensContext) {
 	l.level++
 }
 
-func (l *TableRefListener) ExitSelect_with_parens(ctx *pg.Select_with_parensContext) {
+func (l *TableRefListener) ExitSelect_with_parens(_ *pg.Select_with_parensContext) {
 	l.level--
 }
 
