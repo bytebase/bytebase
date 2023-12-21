@@ -14,7 +14,7 @@
       <span>{{ $t("common.read-only") }}</span>
       <BBButtonConfirm
         v-if="hasReadOnlyDataSource"
-        class="ml-1"
+        class="!ml-1"
         :style="'DELETE'"
         :disabled="!allowEdit"
         :require-confirm="!ds.pendingCreate"

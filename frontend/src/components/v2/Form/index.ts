@@ -5,6 +5,7 @@ import ResourceIdField from "./ResourceIdField.vue";
 import SearchBox from "./SearchBox.vue";
 import SpinnerButton from "./SpinnerButton.vue";
 import SpinnerSwitch from "./SpinnerSwitch.vue";
+import StepTab from "./StepTab.vue";
 import Switch from "./Switch.vue";
 
 export * from "./types";
@@ -17,4 +18,5 @@ export {
   SearchBox,
   ResourceIdField,
   Switch,
+  StepTab,
 };
