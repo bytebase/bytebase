@@ -27,10 +27,18 @@
         <span v-else class="text-xl leading-[34px]">{{
           cleanBranch.branchId
         }}</span>
-        <NTag v-if="parentBranch" round>
-          {{ $t("schema-designer.parent-branch") }}:
-          {{ parentBranch.branchId }}
-        </NTag>
+        <span
+          v-if="parentBranch"
+          class="group text-sm border rounded-full px-2 py-1 cursor-pointer hover:bg-gray-100"
+          @click="handleParentBranchClick"
+        >
+          <span class="text-gray-500 mr-1"
+            >{{ $t("schema-designer.parent-branch") }}:</span
+          >
+          <span class="group-hover:underline group-hover:text-blue-600">{{
+            parentBranch.branchId
+          }}</span>
+        </span>
       </div>
       <div>
         <div class="w-full flex flex-row justify-between items-center">
@@ -45,9 +53,12 @@
                 @click="handleMergeBranch"
                 >{{ $t("schema-designer.merge-branch") }}</NButton
               >
-              <NButton type="primary" @click="handleApplyBranchToDatabase">{{
-                $t("schema-designer.apply-to-database")
-              }}</NButton>
+              <NButton
+                v-if="showApplyBranchButton"
+                type="primary"
+                @click="handleApplyBranchToDatabase"
+                >{{ $t("schema-designer.apply-to-database") }}</NButton
+              >
             </template>
             <template v-else>
               <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
@@ -121,7 +132,7 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head } from "lodash-es";
-import { NButton, NDivider, NInput, NTag } from "naive-ui";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -209,6 +220,11 @@ const database = computed(() => {
   return databaseStore.getDatabaseByName(props.dirtyBranch.baselineDatabase);
 });
 
+// Only show apply to database button when the branch is main branch.
+const showApplyBranchButton = computed(() => {
+  return !parentBranch.value;
+});
+
 const rebuildMetadataEdit = () => {
   const rebuild = schemaDesignerRef.value?.schemaEditor?.rebuildMetadataEdit;
   if (typeof rebuild !== "function") {
@@ -289,6 +305,21 @@ const handleBranchIdInputBlur = async () => {
   }
   emit("update:branch-id", state.branchId);
   state.isEditingBranchId = false;
+};
+
+const handleParentBranchClick = async () => {
+  if (!parentBranch.value) {
+    return;
+  }
+
+  const [_, branchId] = getProjectAndBranchId(parentBranch.value.name);
+  router.push({
+    name: "workspace.project.branch.detail",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: `${branchId}`,
+    },
+  });
 };
 
 const handleMergeBranch = () => {
