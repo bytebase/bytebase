@@ -80,6 +80,13 @@ const props = withDefaults(
   }>(),
   {
     type: "text",
+    style: "DELETE",
+    buttonText: "",
+    requireConfirm: false,
+    okText: "",
+    confirmTitle: "",
+    confirmDescription: "",
+    hideIcon: false,
   }
 );
 
@@ -91,14 +98,14 @@ const { t } = useI18n();
 
 const state = reactive({
   // computed props with default i18n values.
-  style: props.style || "DELETE",
-  buttonText: props.buttonText || "",
-  requireConfirm: props.requireConfirm || false,
+  style: props.style,
+  buttonText: props.buttonText,
+  requireConfirm: props.requireConfirm,
   okText: props.okText || t("common.delete"),
   confirmTitle: props.confirmTitle || t("bbkit.confirm-button.sure-to-delete"),
   confirmDescription:
     props.confirmDescription || t("bbkit.confirm-button.cannot-undo"),
-  hideIcon: props.hideIcon || false,
+  hideIcon: props.hideIcon,
   // local state.
   showModal: false,
 });
