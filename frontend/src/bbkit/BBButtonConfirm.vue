@@ -39,13 +39,13 @@
     </span>
   </NButton>
   <BBAlert
-    v-if="state.showModal"
-    :style="
+    v-model:show="state.showModal"
+    :type="
       state.style == 'DELETE' ||
       state.style == 'ARCHIVE' ||
       state.style == 'DISABLE'
-        ? 'CRITICAL'
-        : 'INFO'
+        ? 'warning'
+        : 'info'
     "
     :ok-text="state.okText"
     :title="state.confirmTitle"

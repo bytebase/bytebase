@@ -83,7 +83,7 @@
       <template v-else-if="props.engine === Engine.POSTGRES">
         <BBAttention
           class="mb-1"
-          :style="'WARN'"
+          type="warning"
           :title="$t('instance.sentence.create-user-example.postgresql.warn')"
         />
         <i18n-t

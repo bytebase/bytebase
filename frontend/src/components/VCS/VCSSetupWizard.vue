@@ -1,7 +1,7 @@
 <template>
   <BBAttention
     v-if="showAttention"
-    :style="'WARN'"
+    type="warning"
     :description="attentionText"
     :link="link"
   />

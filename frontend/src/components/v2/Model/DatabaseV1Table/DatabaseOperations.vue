@@ -66,8 +66,8 @@
   </Drawer>
 
   <BBAlert
-    v-if="state.showUnassignAlert"
-    :style="'WARN'"
+    v-model:show="state.showUnassignAlert"
+    type="warning"
     :ok-text="$t('database.unassign')"
     :title="$t('database.unassign-alert-title')"
     :description="$t('database.unassign-alert-description')"
