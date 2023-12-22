@@ -492,14 +492,12 @@ func (i *indexState) toString(buf *strings.Builder) error {
 }
 
 type defaultValue interface {
-	isDefaultValue()
 	toString() string
 }
 
 type defaultValueNull struct {
 }
 
-func (*defaultValueNull) isDefaultValue() {}
 func (*defaultValueNull) toString() string {
 	return "NULL"
 }
@@ -508,7 +506,6 @@ type defaultValueString struct {
 	value string
 }
 
-func (*defaultValueString) isDefaultValue() {}
 func (d *defaultValueString) toString() string {
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
 }
@@ -517,7 +514,6 @@ type defaultValueExpression struct {
 	value string
 }
 
-func (*defaultValueExpression) isDefaultValue() {}
 func (d *defaultValueExpression) toString() string {
 	return d.value
 }

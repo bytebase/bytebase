@@ -9,7 +9,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,16 +33,6 @@ const (
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )
-
-// FindString returns the search index of sorted strings.
-func FindString(stringList []string, search string) int {
-	sort.Strings(stringList)
-	i := sort.SearchStrings(stringList, search)
-	if i == len(stringList) {
-		return -1
-	}
-	return i
-}
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
