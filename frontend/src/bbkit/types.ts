@@ -47,19 +47,4 @@ export type BBTabItem<T = any> = {
   data?: T;
 };
 
-export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
-export type BBNotificationPlacement =
-  | "TOP_LEFT"
-  | "TOP_RIGHT"
-  | "BOTTOM_LEFT"
-  | "BOTTOM_RIGHT";
-export type BBNotificationItem = {
-  style: BBNotificationStyle;
-  title: string;
-  description: string;
-  link: string;
-  linkTitle: string;
-  onClose: () => void;
-};
-
 export type BBAvatarSizeType = "TINY" | "SMALL" | "NORMAL" | "LARGE" | "HUGE";
