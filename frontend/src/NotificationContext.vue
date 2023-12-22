@@ -6,7 +6,7 @@
 import { useNotification } from "naive-ui";
 import { watchEffect, h } from "vue";
 import { useNotificationStore } from "@/store";
-import { Notification, BBNotificationStyle } from "@/types";
+import { BBNotificationStyle } from "@/types";
 
 const NOTIFICATION_DURATION = 6000;
 const CRITICAL_NOTIFICATION_DURATION = 10000;

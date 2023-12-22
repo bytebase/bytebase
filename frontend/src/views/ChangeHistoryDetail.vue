@@ -177,8 +177,8 @@
           <div class="flex flex-row items-center gap-x-2">
             <div v-if="allowShowDiff" class="flex space-x-1 items-center">
               <NSwitch
-                size="small"
                 v-model:value="state.showDiff"
+                size="small"
                 data-label="bb-change-history-diff-switch"
               />
               <span class="text-sm font-semibold">
