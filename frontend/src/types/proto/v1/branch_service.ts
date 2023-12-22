@@ -203,32 +203,15 @@ export interface MergeBranchRequest {
    * Format: projects/{project}/branches/{branch}
    */
   headBranch: string;
-  /** For failed merge, we will pass in this addition merged schema and use it for head. */
-  mergedSchema: string;
   /**
    * The current etag of the branch.
    * If an etag is provided and does not match the current etag of the branch,
    * the call will be blocked and an ABORTED error will be returned.
-   * The etag should be specified for using merged_schema. The etag should be the etag from named branch.
+   * The etag should be the etag from named branch.
    */
   etag: string;
   /** validate_only determines if the merge can occur seamlessly without any conflicts. */
   validateOnly: boolean;
-}
-
-export interface MergeBranchResponse {
-  /** The merged branch when merge occurs seamlessly. */
-  branch?:
-    | Branch
-    | undefined;
-  /**
-   * The conflict schema when merge has conflicts.
-   * The conflict section is enclosed by the following.
-   * <<<<< HEAD
-   * ====
-   * >>>>> main
-   */
-  conflictSchema?: string | undefined;
 }
 
 export interface RebaseBranchRequest {
@@ -1039,7 +1022,7 @@ export const UpdateBranchRequest = {
 };
 
 function createBaseMergeBranchRequest(): MergeBranchRequest {
-  return { name: "", headBranch: "", mergedSchema: "", etag: "", validateOnly: false };
+  return { name: "", headBranch: "", etag: "", validateOnly: false };
 }
 
 export const MergeBranchRequest = {
@@ -1050,14 +1033,11 @@ export const MergeBranchRequest = {
     if (message.headBranch !== "") {
       writer.uint32(18).string(message.headBranch);
     }
-    if (message.mergedSchema !== "") {
-      writer.uint32(26).string(message.mergedSchema);
-    }
     if (message.etag !== "") {
-      writer.uint32(34).string(message.etag);
+      writer.uint32(26).string(message.etag);
     }
     if (message.validateOnly === true) {
-      writer.uint32(40).bool(message.validateOnly);
+      writer.uint32(32).bool(message.validateOnly);
     }
     return writer;
   },
@@ -1088,17 +1068,10 @@ export const MergeBranchRequest = {
             break;
           }
 
-          message.mergedSchema = reader.string();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
           message.etag = reader.string();
           continue;
-        case 5:
-          if (tag !== 40) {
+        case 4:
+          if (tag !== 32) {
             break;
           }
 
@@ -1117,7 +1090,6 @@ export const MergeBranchRequest = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       headBranch: isSet(object.headBranch) ? globalThis.String(object.headBranch) : "",
-      mergedSchema: isSet(object.mergedSchema) ? globalThis.String(object.mergedSchema) : "",
       etag: isSet(object.etag) ? globalThis.String(object.etag) : "",
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
     };
@@ -1130,9 +1102,6 @@ export const MergeBranchRequest = {
     }
     if (message.headBranch !== "") {
       obj.headBranch = message.headBranch;
-    }
-    if (message.mergedSchema !== "") {
-      obj.mergedSchema = message.mergedSchema;
     }
     if (message.etag !== "") {
       obj.etag = message.etag;
@@ -1150,85 +1119,8 @@ export const MergeBranchRequest = {
     const message = createBaseMergeBranchRequest();
     message.name = object.name ?? "";
     message.headBranch = object.headBranch ?? "";
-    message.mergedSchema = object.mergedSchema ?? "";
     message.etag = object.etag ?? "";
     message.validateOnly = object.validateOnly ?? false;
-    return message;
-  },
-};
-
-function createBaseMergeBranchResponse(): MergeBranchResponse {
-  return { branch: undefined, conflictSchema: undefined };
-}
-
-export const MergeBranchResponse = {
-  encode(message: MergeBranchResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.branch !== undefined) {
-      Branch.encode(message.branch, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.conflictSchema !== undefined) {
-      writer.uint32(18).string(message.conflictSchema);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): MergeBranchResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMergeBranchResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.branch = Branch.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.conflictSchema = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): MergeBranchResponse {
-    return {
-      branch: isSet(object.branch) ? Branch.fromJSON(object.branch) : undefined,
-      conflictSchema: isSet(object.conflictSchema) ? globalThis.String(object.conflictSchema) : undefined,
-    };
-  },
-
-  toJSON(message: MergeBranchResponse): unknown {
-    const obj: any = {};
-    if (message.branch !== undefined) {
-      obj.branch = Branch.toJSON(message.branch);
-    }
-    if (message.conflictSchema !== undefined) {
-      obj.conflictSchema = message.conflictSchema;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<MergeBranchResponse>): MergeBranchResponse {
-    return MergeBranchResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<MergeBranchResponse>): MergeBranchResponse {
-    const message = createBaseMergeBranchResponse();
-    message.branch = (object.branch !== undefined && object.branch !== null)
-      ? Branch.fromPartial(object.branch)
-      : undefined;
-    message.conflictSchema = object.conflictSchema ?? undefined;
     return message;
   },
 };
@@ -2049,7 +1941,7 @@ export const BranchServiceDefinition = {
       name: "MergeBranch",
       requestType: MergeBranchRequest,
       requestStream: false,
-      responseType: MergeBranchResponse,
+      responseType: Branch,
       responseStream: false,
       options: {
         _unknownFields: {

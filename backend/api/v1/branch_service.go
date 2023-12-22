@@ -311,7 +311,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 }
 
 // MergeBranch merges a personal draft branch to the target branch.
-func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.MergeBranchResponse, error) {
+func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
 	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -334,86 +334,80 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the branch, please refresh and try again.")
 	}
 
-	var mergedSchema string
-	var mergedMetadata *storepb.DatabaseSchemaMetadata
-	var mergedConfig *storepb.DatabaseConfig
-	// While user specify the merged schema, backend would not participate in the merge process,
-	// instead, it would just update the HEAD of the base branch to the merged schema.
-	if request.MergedSchema != "" {
-		mergedSchema = request.MergedSchema
-		metadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), mergedSchema)
-		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
-		}
-		mergedMetadata = metadata
-		// FIXME(zp): Frontend pass the head branch and try merge config again?
-		mergedConfig = baseBranch.Head.DatabaseConfig
-	} else {
-		headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		_, err = s.getProject(ctx, headProjectID)
-		if err != nil {
-			return nil, err
-		}
-		if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
-			return nil, err
-		}
-		headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
-		if err != nil {
-			return nil, err
-		}
-		if headBranch == nil {
-			return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
-		}
-
-		// Restrict merging only when the head branch is not updated.
-		// Maybe we can support auto-merging in the future.
-		mergedMetadata, err = tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
-		if err != nil {
-			slog.Info("cannot merge branches", log.BBError(err))
-			return &v1pb.MergeBranchResponse{Result: &v1pb.MergeBranchResponse_ConflictSchema{ConflictSchema: "TBD"}}, nil
-		}
-		if mergedMetadata == nil {
-			// TODO(zp): bug, this should not be no change.
-			return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
-		}
-		mergedSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
-		}
-		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
-		// metadata in the frontend, and config would be ignored.
-		mergedConfig = utils.MergeDatabaseConfig(headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
+	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+	_, err = s.getProject(ctx, headProjectID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
+		return nil, err
+	}
+	headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
+	if err != nil {
+		return nil, err
+	}
+	if headBranch == nil {
+		return nil, status.Errorf(codes.NotFound, "branch %q not found", headBranchID)
+	}
+
+	// Restrict merging only when the head branch is not updated.
+	// Maybe we can support auto-merging in the future.
+	mergedMetadata, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
+	if err != nil {
+		slog.Info("cannot merge branches", log.BBError(err))
+		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
+	}
+	if mergedMetadata == nil {
+		// TODO(zp): bug, this should not be no change.
+		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
+	}
+	mergedSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
+	}
+	// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
+	// metadata in the frontend, and config would be ignored.
+	mergedConfig := utils.MergeDatabaseConfig(headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	mergedSchemaBytes := []byte(mergedSchema)
-	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-		ProjectID:  baseProject.ResourceID,
-		ResourceID: baseBranchID,
-		UpdaterID:  principalID,
-		Head: &storepb.BranchSnapshot{
-			Metadata:       mergedMetadata,
-			DatabaseConfig: mergedConfig,
-		},
-		HeadSchema: &mergedSchemaBytes,
-	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
+
+	baseBranchNewHead := &storepb.BranchSnapshot{
+		Metadata:       mergedMetadata,
+		DatabaseConfig: mergedConfig,
 	}
-	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
-	if err != nil {
-		return nil, err
+	baseBranchNewHeadSchema := mergedSchemaBytes
+
+	if request.ValidateOnly {
+		baseBranch.Head = baseBranchNewHead
+		baseBranch.HeadSchema = baseBranchNewHeadSchema
+	} else {
+		if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
+			ProjectID:  baseProject.ResourceID,
+			ResourceID: baseBranchID,
+			UpdaterID:  principalID,
+			Head:       baseBranchNewHead,
+			HeadSchema: &baseBranchNewHeadSchema,
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
+		}
+		baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
-	return &v1pb.MergeBranchResponse{Result: &v1pb.MergeBranchResponse_Branch{Branch: v1Branch}}, nil
+	return v1Branch, nil
 }
 
 // RebaseBranch rebases a branch to the target branch.

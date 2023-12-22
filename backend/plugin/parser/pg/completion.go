@@ -23,6 +23,8 @@ var (
 
 func init() {
 	base.RegisterCompleteFunc(store.Engine_POSTGRES, Completion)
+	base.RegisterCompleteFunc(store.Engine_REDSHIFT, Completion)
+	base.RegisterCompleteFunc(store.Engine_RISINGWAVE, Completion)
 }
 
 // Completion is the entry point of PostgreSQL code completion.
@@ -148,7 +150,7 @@ type Completer struct {
 	// It's helpful to look up the table reference.
 	references []base.TableReference
 	cteCache   map[int][]*base.VirtualTableReference
-	// cteTables  []*base.VirtualTableReference
+	cteTables  []*base.VirtualTableReference
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc) *Completer {
@@ -228,6 +230,16 @@ func (m CompletionMap) insertSchemas(c *Completer) {
 
 func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	for schema := range schemas {
+		if len(schema) == 0 {
+			// User didn't specify the schema, we need to append cte tables.
+			for _, table := range c.cteTables {
+				m.Insert(base.Candidate{
+					Type: base.CandidateTypeTable,
+					Text: table.Table,
+				})
+			}
+			continue
+		}
 		for _, table := range c.listTables(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeTable,
@@ -258,6 +270,20 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 	}
 
 	for schema := range schemas {
+		if len(schema) == 0 {
+			// User didn't specify the schema, we need to append cte tables.
+			for _, table := range c.cteTables {
+				if tables[table.Table] {
+					for _, column := range table.Columns {
+						m.Insert(base.Candidate{
+							Type: base.CandidateTypeColumn,
+							Text: column,
+						})
+					}
+				}
+			}
+			continue
+		}
 		schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
 		if schemaMeta == nil {
 			continue
@@ -357,6 +383,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		c.scanner.PopAndRestore()
 		c.scanner.Push()
 
+		c.fetchCommonTableExpression(candidates.Rules[candidate])
+
 		switch candidate {
 		case pg.PostgreSQLParserRULE_func_name:
 			runtimeFunctionEntries.insertFunctions()
@@ -371,6 +399,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 				schemas := make(map[string]bool)
 				if len(qualifier) == 0 {
 					schemas[defaultSchema] = true
+					// User didn't specify the schema, we need to append cte tables.
+					schemas[""] = true
 				} else {
 					schemas[qualifier] = true
 				}
@@ -399,6 +429,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 
 			if len(schema) == 0 {
 				schemas[defaultSchema] = true
+				// User didn't specify the schema, we need to append cte tables.
+				schemas[""] = true
 			}
 
 			if flags&ObjectFlagsShowTables != 0 {
@@ -437,6 +469,8 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 			if flags&ObjectFlagsShowColumns != 0 {
 				if schema == table {
 					schemas[defaultSchema] = true
+					// User didn't specify the schema, we need to append cte tables.
+					schemas[""] = true
 				}
 
 				tables := make(map[string]bool)
@@ -502,6 +536,76 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 	result = append(result, columnEntries.toSlice()...)
 
 	return result, nil
+}
+
+func (c *Completer) fetchCommonTableExpression(ruleStack []*base.RuleContext) {
+	c.cteTables = nil
+	for _, rule := range ruleStack {
+		if rule.ID == pg.PostgreSQLParserRULE_select_no_parens {
+			for _, pos := range rule.CTEList {
+				c.cteTables = append(c.cteTables, c.extractCTETables(pos)...)
+			}
+		}
+	}
+}
+
+func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
+	if metadata, exists := c.cteCache[pos]; exists {
+		return metadata
+	}
+	followingText := c.scanner.GetFollowingTextAfter(pos)
+	if len(followingText) == 0 {
+		return nil
+	}
+
+	input := antlr.NewInputStream(followingText)
+	lexer := pg.NewPostgreSQLLexer(input)
+	tokens := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	parser := pg.NewPostgreSQLParser(tokens)
+
+	parser.BuildParseTrees = true
+	parser.RemoveErrorListeners()
+	lexer.RemoveErrorListeners()
+	tree := parser.With_clause()
+
+	listener := &CTETableListener{context: c}
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+
+	c.cteCache[pos] = listener.tables
+	return listener.tables
+}
+
+type CTETableListener struct {
+	*pg.BasePostgreSQLParserListener
+
+	context *Completer
+	tables  []*base.VirtualTableReference
+}
+
+func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprContext) {
+	table := &base.VirtualTableReference{}
+	if ctx.Name() != nil {
+		table.Table = normalizePostgreSQLName(ctx.Name())
+	}
+	if ctx.Opt_name_list() != nil {
+		for _, column := range ctx.Opt_name_list().Name_list().AllName() {
+			table.Columns = append(table.Columns, normalizePostgreSQLName(column))
+		}
+	} else {
+		if span, err := base.GetQuerySpan(
+			l.context.ctx,
+			store.Engine_POSTGRES,
+			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt()),
+			l.context.defaultDatabase,
+			l.context.getMetadata,
+		); err == nil && len(span) == 1 {
+			for _, column := range span[0].Results {
+				table.Columns = append(table.Columns, column.Name)
+			}
+		}
+	}
+
+	l.tables = append(l.tables, table)
 }
 
 func (c *Completer) fetchSelectItemAliases(ruleStack []*base.RuleContext) []string {
@@ -852,7 +956,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 					if span, err := base.GetQuerySpan(
 						l.context.ctx,
 						store.Engine_POSTGRES,
-						fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens())),
+						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
 						l.context.getMetadata,
 					); err == nil && len(span) == 1 {

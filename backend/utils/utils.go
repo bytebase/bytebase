@@ -171,17 +171,6 @@ func RefreshToken(ctx context.Context, s *store.Store, webURL string) common.Tok
 	}
 }
 
-// GetTaskStatement gets the statement of a task.
-func GetTaskStatement(taskPayload string) (string, error) {
-	var taskStatement struct {
-		Statement string `json:"statement"`
-	}
-	if err := json.Unmarshal([]byte(taskPayload), &taskStatement); err != nil {
-		return "", err
-	}
-	return taskStatement.Statement, nil
-}
-
 // GetTaskSheetID gets the sheetID of a task.
 func GetTaskSheetID(taskPayload string) (int, error) {
 	var taskSheetID struct {
