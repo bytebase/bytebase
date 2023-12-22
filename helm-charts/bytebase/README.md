@@ -33,13 +33,13 @@ $ helm -n <YOUR_NAMESPACE> \
 install <RELEASE_NAME> bytebase-repo/bytebase
 ```
 
-For example:
+For example, when using [Tunnelmole](https://github.com/robbie-cahill/tunnelmole-client), an open source tunnelling tool or [ngrok](https://ngrok.com), a popular closed source tunneling tool:
 
 ```bash
 $ helm -n bytebase \
 --set "bytebase.option.port"=443 \
 --set "bytebase.option.externalPg.url"="postgresql://bytebase:bytebase@database.bytebase.ap-east-1.rds.amazonaws.com/bytebase" \
---set "bytebase.option.external-url"="https://bytebase.ngrok-free.app" \
+--set "bytebase.option.external-url"="<ngrok or tunnelmole HTTPS url e.g. https://abc.tunnelmole.net>" \
 --set "bytebase.version"=2.11.1 \
 --set "bytebase.persistence.enabled"="true" \
 --set "bytebase.persistence.storage"="10Gi" \
@@ -48,6 +48,7 @@ install bytebase-release bytebase-repo/bytebase
 ```
 
 ## Uninstalling the Chart
+
 
 ```bash
 helm delete --namespace <YOUR_NAMESPACE> <RELEASE_NAME>
