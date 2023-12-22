@@ -3361,6 +3361,15 @@
     "branch-is-protected": "This branch is protected by branch protection rules.",
     "default-branches": "Default",
     "your-branches": "Your branches",
-    "active-branches": "Active branches"
+    "active-branches": "Active branches",
+    "select-branch": "Select branch",
+    "merge": {
+      "select-branches-to-merge": "Select branches to merge",
+      "validating-branch": "Validating branches",
+      "able-to-merge": "Able to merge",
+      "cannot-automatically-merge": "Can't automatically merge, please {rebase_branch} first.",
+      "go-rebase": "rebase branch",
+      "changes-of-branch": "Changes of {branch}"
+    }
   }
 }

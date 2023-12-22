@@ -3359,6 +3359,15 @@
     "branch-is-protected": "La rama está protegida",
     "default-branches": "Ramas por defecto",
     "your-branches": "Tus ramas",
-    "active-branches": "Ramas activas"
+    "active-branches": "Ramas activas",
+    "select-branch": "Seleccionar sucursal",
+    "merge": {
+      "select-branches-to-merge": "Seleccionar sucursales para fusionar",
+      "validating-branch": "Validando sucursales",
+      "able-to-merge": "Capaz de fusionarse",
+      "cannot-automatically-merge": "No se puede fusionar automáticamente, {rebase_branch} primero.",
+      "go-rebase": "rama de rebase",
+      "changes-of-branch": "Cambios de {branch}"
+    }
   }
 }
