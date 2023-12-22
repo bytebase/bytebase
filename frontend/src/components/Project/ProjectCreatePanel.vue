@@ -11,10 +11,10 @@
             <span class="text-red-600">*</span>
           </label>
           <BBTextField
+            v-model:value="state.project.title"
             class="mt-4 w-full"
             :required="true"
             :placeholder="$t('project.create-modal.project-name')"
-            v-model:value="state.project.title"
           />
         </div>
         <div class="-mt-2">
@@ -42,9 +42,9 @@
             <span class="text-red-600">*</span>
           </label>
           <BBTextField
+            v-model:value="state.project.key"
             class="mt-4 w-full uppercase"
             :required="true"
-            v-model:value="state.project.key"
           />
         </div>
         <div class="col-span-1">

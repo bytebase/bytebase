@@ -7,10 +7,10 @@
     <div class="w-72">
       <p>{{ $t("schema-editor.schema.name") }}</p>
       <BBTextField
+        v-model:value="state.schemaName"
         class="my-2 w-full"
         :required="true"
         :focus-on-mount="true"
-        v-model:value="state.schemaName"
       />
     </div>
     <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">

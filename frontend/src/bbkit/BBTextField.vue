@@ -1,11 +1,11 @@
 <template>
   <NInput
-    class="!border-none"
     ref="inputField"
+    v-model:value="state.text"
+    class="!border-none"
     :disabled="disabled"
     :clearable="clearable"
     :placeholder="placeholder"
-    v-model:value="state.text"
     :autofocus="focusOnMount"
     :status="state.hasError ? 'error' : undefined"
     @blur="onBlur"

@@ -50,9 +50,9 @@
     {{ $t("gitops.setting.add-git-provider.basic-info.display-name-label") }}
   </p>
   <BBTextField
+    v-model:value="config.name"
     class="mt-2 w-full"
     :placeholder="namePlaceholder"
-    v-model:value="config.name"
   />
 </template>
 
