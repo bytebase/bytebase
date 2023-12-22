@@ -392,11 +392,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 			ProjectID:  baseProject.ResourceID,
 			ResourceID: baseBranchID,
 			UpdaterID:  principalID,
-			Head: &storepb.BranchSnapshot{
-				Metadata:       mergedMetadata,
-				DatabaseConfig: mergedConfig,
-			},
-			HeadSchema: &mergedSchemaBytes,
+			Head:       baseBranchNewHead,
+			HeadSchema: &baseBranchNewHeadSchema,
 		}); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 		}
