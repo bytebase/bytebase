@@ -8,7 +8,6 @@
     v-model:value="state.text"
     :autofocus="focusOnMount"
     :status="state.hasError ? 'error' : undefined"
-    @focus="onFocus"
     @blur="onBlur"
     @input="onInput($event)"
     @keypress.enter="onPressEnter"
@@ -22,7 +21,6 @@ import { reactive, ref, watch, withDefaults } from "vue";
 
 interface LocalState {
   text: string;
-  originalText: string;
   hasError: boolean;
 }
 
@@ -57,7 +55,6 @@ const inputField = ref();
 
 const state = reactive<LocalState>({
   text: props.value,
-  originalText: "",
   hasError: false,
 });
 
@@ -72,10 +69,6 @@ watch(
     }
   }
 );
-
-const onFocus = () => {
-  state.originalText = state.text;
-};
 
 const onBlur = () => {
   if (props.required && isEmpty(state.text.trim())) {
