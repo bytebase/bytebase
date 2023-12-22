@@ -1,4 +1,4 @@
-import { BBNotificationStyle } from "../bbkit/types";
+export type BBNotificationStyle = "INFO" | "SUCCESS" | "WARN" | "CRITICAL";
 
 export type Notification = {
   id: string;
@@ -10,7 +10,6 @@ export type Notification = {
   link?: string;
   linkTitle?: string;
   manualHide?: boolean;
-  onClose?: () => void;
 };
 
 // "id" and "createdTs" is auto generated upon the notification store

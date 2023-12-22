@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
+import { NSwitch } from "naive-ui";
 import { defineComponent, h } from "vue";
-import { BBSwitch } from "@/bbkit";
 import { useActuatorV1Store } from "@/store";
 import { isDev } from "@/utils";
 
@@ -38,18 +38,18 @@ export const LSPTypeSwitch = defineComponent({
   render() {
     const label = h("span", {}, "[DEV] LSP Type");
     const switcher = h(
-      BBSwitch,
+      NSwitch,
       {
         text: true,
         value: StoredLSPType.value === "NEW",
-        onToggle(on: boolean) {
+        onUpdateValue(on: boolean) {
           StoredLSPType.value = on ? "NEW" : "OLD";
           location.reload();
         },
       },
       {
-        on: () => h("span", { class: "font-medium scale-x-75" }, "NEW"),
-        off: () => h("span", { class: "font-medium scale-x-75" }, "OLD"),
+        checked: () => h("span", { class: "font-medium scale-x-75" }, "NEW"),
+        unchecked: () => h("span", { class: "font-medium scale-x-75" }, "OLD"),
       }
     );
     return h(
