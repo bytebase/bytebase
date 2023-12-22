@@ -10,11 +10,6 @@
         <span class="text-sm">{{ database.databaseName }}</span>
       </div>
       <div class="flex justify-end gap-x-0.5">
-        <SchemaDiagramButton
-          v-if="instanceV1HasAlterSchema(database.instanceEntity)"
-          :database="database"
-          :database-metadata="databaseMetadata"
-        />
         <HideInStandaloneMode>
           <ExternalLinkButton
             :link="`/db/${databaseV1Slug(database)}`"
@@ -71,7 +66,6 @@ import {
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
-import SchemaDiagramButton from "./SchemaDiagramButton.vue";
 import TableList from "./TableList.vue";
 
 const props = defineProps<{
