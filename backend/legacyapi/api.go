@@ -1,12 +1,6 @@
 // Package api provides the definition of all APIs.
 package api
 
-import (
-	"strings"
-
-	"github.com/pkg/errors"
-)
-
 // UnknownID is the ID for unknowns.
 const UnknownID = -1
 
@@ -34,14 +28,3 @@ const (
 	// DefaultPageSize is the default number of items in a page.
 	DefaultPageSize = 1000
 )
-
-// StringToSortOrder converts a valid string to SortOrder.
-func StringToSortOrder(s string) (SortOrder, error) {
-	switch strings.ToUpper(s) {
-	case string(ASC):
-		return ASC, nil
-	case string(DESC):
-		return DESC, nil
-	}
-	return SortOrder(""), errors.Errorf("%q cannot be converted to SortOrder", s)
-}

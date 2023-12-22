@@ -84,21 +84,6 @@ var ProjectMemberCELAttributes = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// ConvertParsedRisk converts parsed risk to unparsed format.
-func ConvertParsedRisk(expression *exprproto.ParsedExpr) (*expr.Expr, error) {
-	if expression == nil || expression.Expr == nil {
-		return nil, nil
-	}
-	ast := cel.ParsedExprToAst(expression)
-	expressionStr, err := cel.AstToString(ast)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to deparse expression: %v", err)
-	}
-	return &expr.Expr{
-		Expression: expressionStr,
-	}, nil
-}
-
 // ConvertUnparsedRisk converts unparsed risk to parsed format.
 func ConvertUnparsedRisk(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
 	if expression == nil || expression.Expression == "" {
@@ -118,21 +103,6 @@ func ConvertUnparsedRisk(expression *expr.Expr) (*exprproto.ParsedExpr, error) {
 		return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression: %v", err)
 	}
 	return expr, nil
-}
-
-// ConvertParsedApproval converts parsed approval to unparsed format.
-func ConvertParsedApproval(expression *exprproto.ParsedExpr) (*expr.Expr, error) {
-	if expression == nil || expression.Expr == nil {
-		return nil, nil
-	}
-	ast := cel.ParsedExprToAst(expression)
-	expressionStr, err := cel.AstToString(ast)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to deparse expression: %v", err)
-	}
-	return &expr.Expr{
-		Expression: expressionStr,
-	}, nil
 }
 
 // ConvertUnparsedApproval converts unparsed approval to parsed format.

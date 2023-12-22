@@ -1,9 +1,6 @@
 package api
 
 import (
-	"regexp"
-	"strings"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -164,37 +161,4 @@ func ValidateRepositorySchemaPathTemplate(schemaPathTemplate string, tenantMode 
 		}
 	}
 	return nil
-}
-
-// FormatTemplate formats the template by using the tokens as a replacement mapping.
-// Note that the returned (modified) template should not be used as a regexp.
-func FormatTemplate(template string, tokens map[string]string) (string, error) {
-	keys, _ := common.ParseTemplateTokens(template)
-	for _, key := range keys {
-		if _, ok := tokens[key]; !ok {
-			return "", errors.Errorf("token %q not found", key)
-		}
-		template = strings.ReplaceAll(template, key, tokens[key])
-	}
-	return template, nil
-}
-
-// Similar to FormatTemplate, except that it will also escape special regexp characters in the delimiters
-// of the template string, which will produce the correct regexp string.
-func formatTemplateRegexp(template string, tokens map[string]string) (string, error) {
-	keys, delimiters := common.ParseTemplateTokens(template)
-	for _, key := range keys {
-		if _, ok := tokens[key]; !ok {
-			return "", errors.Errorf("token %q not found", key)
-		}
-		template = strings.ReplaceAll(template, key, tokens[key])
-	}
-	for _, delimiter := range delimiters {
-		quoted := regexp.QuoteMeta(delimiter)
-		if quoted != delimiter {
-			// The delimiter is a special regexp character, we should escape it.
-			template = strings.Replace(template, delimiter, quoted, 1)
-		}
-	}
-	return template, nil
 }
