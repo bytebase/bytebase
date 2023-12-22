@@ -10,8 +10,7 @@
         class="my-2 w-full"
         :required="true"
         :focus-on-mount="true"
-        :value="state.schemaName"
-        @input="handleSchemaNameChange"
+        v-model:value="state.schemaName"
       />
     </div>
     <div class="w-full flex items-center justify-end mt-2 space-x-3 pr-1 pb-1">
@@ -52,10 +51,6 @@ const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",
 });
-
-const handleSchemaNameChange = (event: Event) => {
-  state.schemaName = (event.target as HTMLInputElement).value;
-};
 
 const handleConfirmButtonClick = async () => {
   if (!schemaNameFieldRegexp.test(state.schemaName)) {

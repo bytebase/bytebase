@@ -38,7 +38,7 @@
     :value="config.instanceUrl"
     :placeholder="instanceUrlPlaceholder"
     :disabled="instanceUrlDisabled"
-    @input="changeUrl(($event.target as HTMLInputElement).value)"
+    @update:value="changeUrl($event)"
   />
   <p v-if="state.showUrlError" class="mt-2 text-sm text-error">
     {{ $t("gitops.setting.add-git-provider.basic-info.instance-url-error") }}
@@ -52,8 +52,7 @@
   <BBTextField
     class="mt-2 w-full"
     :placeholder="namePlaceholder"
-    :value="config.name"
-    @input="config.name = ($event.target as HTMLInputElement).value"
+    v-model:value="config.name"
   />
 </template>
 
