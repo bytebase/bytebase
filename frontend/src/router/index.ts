@@ -707,6 +707,15 @@ const routes: Array<RouteRecordRaw> = [
                 props: true,
               },
               {
+                path: "branches/:branchName/merge",
+                name: "workspace.project.branch.merge",
+                meta: {
+                  title: () => t("common.branch"),
+                },
+                component: () => import("../views/branch/BranchMerge.vue"),
+                props: true,
+              },
+              {
                 path: "changelists/:changelistName",
                 name: "workspace.project.changelist.detail",
                 meta: {
