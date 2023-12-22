@@ -1,20 +1,13 @@
 <template>
-  <input
+  <NInput
     ref="inputField"
-    v-model="state.text"
-    type="text"
-    autocomplete="off"
-    class="text-main rounded-md placeholder:text-control-placeholder"
-    :class="
-      state.hasError
-        ? 'border-error focus:ring-error focus:border-error'
-        : bordered
-        ? 'border-control-border focus:ring-control focus:border-control disabled:bg-gray-50'
-        : 'border-transparent focus:ring-control focus:border-control disabled:text-control'
-    "
+    v-model:value="state.text"
+    class="!border-none"
     :disabled="disabled"
+    :clearable="clearable"
     :placeholder="placeholder"
-    @focus="onFocus"
+    :autofocus="focusOnMount"
+    :status="state.hasError ? 'error' : undefined"
     @blur="onBlur"
     @input="onInput($event)"
     @keypress.enter="onPressEnter"
@@ -23,39 +16,38 @@
 
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
-import { nextTick, onMounted, reactive, ref, watch, withDefaults } from "vue";
+import { NInput } from "naive-ui";
+import { reactive, ref, watch, withDefaults } from "vue";
 
 interface LocalState {
   text: string;
-  originalText: string;
   hasError: boolean;
 }
 
 const props = withDefaults(
   defineProps<{
     required?: boolean;
-    forceRequired?: boolean;
     value?: string;
     placeholder?: string;
     disabled?: boolean;
-    bordered?: boolean;
     focusOnMount?: boolean;
     endsOnEnter?: boolean;
+    clearable?: boolean;
   }>(),
   {
     required: false,
-    forceRequired: true,
     value: "",
     placeholder: "",
     disabled: false,
-    bordered: true,
     focusOnMount: false,
     endsOnEnter: false,
+    clearable: false,
   }
 );
 
 const emit = defineEmits<{
   (event: "end-editing", value: string): void;
+  (event: "update:value", value: string): void;
   (event: "input", e: Event): void;
 }>();
 
@@ -63,15 +55,7 @@ const inputField = ref();
 
 const state = reactive<LocalState>({
   text: props.value,
-  originalText: "",
   hasError: false,
-});
-
-onMounted(() => {
-  if (props.focusOnMount) {
-    inputField.value.focus();
-    inputField.value.select();
-  }
 });
 
 watch(
@@ -86,32 +70,18 @@ watch(
   }
 );
 
-const onFocus = () => {
-  state.originalText = state.text;
-};
-
 const onBlur = () => {
   if (props.required && isEmpty(state.text.trim())) {
     state.hasError = true;
-    nextTick(() => {
-      if (props.forceRequired && inputField.value) {
-        state.text = state.originalText;
-        // Since we set focus in the nextTick, inputField might already disappear due to outside state change.
-        inputField.value.focus();
-        nextTick(() => {
-          inputField.value.select();
-        });
-      }
-    });
   } else {
     state.hasError = false;
     emit("end-editing", state.text);
   }
 };
 
-const onInput = (e: Event) => {
+const onInput = (value: string) => {
   state.hasError = false;
-  emit("input", e);
+  emit("update:value", value);
 };
 
 const onPressEnter = (e: Event) => {
