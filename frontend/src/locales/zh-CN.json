@@ -3362,7 +3362,8 @@
       "able-to-merge": "可以合并",
       "cannot-automatically-merge": "无法自动合并，请先 {rebase_branch}。",
       "go-rebase": "rebase 分支",
-      "changes-of-branch": "{branch} 的变更"
+      "changes-of-branch": "{branch} 的变更",
+      "success": "合并成功"
     }
   }
 }

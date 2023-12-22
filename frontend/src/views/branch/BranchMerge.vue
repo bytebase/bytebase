@@ -5,6 +5,7 @@
       :project="project"
       :head-branch-name="branchFullName"
       @update:head-branch-name="handleUpdateHeadBranchName"
+      @merged="handleMerged"
     />
     <MaskSpinner v-else />
   </div>
@@ -16,6 +17,7 @@ import { useRouter } from "vue-router";
 import BranchMergeView from "@/components/Branch/BranchMergeView";
 import { useProjectV1Store } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
@@ -50,6 +52,20 @@ const handleUpdateHeadBranchName = (branchName: string | null) => {
     },
     query: router.currentRoute.value.query,
     hash: router.currentRoute.value.hash,
+  });
+};
+
+const handleMerged = (
+  mergedBranch: Branch,
+  headBranchName: string,
+  headBranch: Branch | undefined
+) => {
+  router.replace({
+    name: "workspace.project.branch.detail",
+    params: {
+      projectSlug: props.projectSlug,
+      branchName: mergedBranch.branchId,
+    },
   });
 };
 </script>

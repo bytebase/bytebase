@@ -47,6 +47,7 @@ import { StepTab } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore } from "@/store";
 import { ComposedProject } from "@/types";
+import { Branch } from "@/types/proto/v1/branch_service";
 import { getErrorCode } from "@/utils/grpcweb";
 import MergeBranchStep from "./MergeBranchStep.vue";
 import SelectBranchStep from "./SelectBranchStep.vue";
@@ -65,7 +66,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "merged", headBranchName: string, targetBranchName: string): void;
+  (
+    event: "merged",
+    mergedBranch: Branch,
+    headBranchName: string,
+    headBranch: Branch | undefined
+  ): void;
   (event: "update:head-branch-name", branchName: string | null): void;
 }>();
 
@@ -191,7 +197,7 @@ const handleMergeBranch = async () => {
   state.isMerging = true;
 
   try {
-    await branchStore.mergeBranch({
+    const mergedBranch = await branchStore.mergeBranch({
       name: target.name,
       headBranch: head.name,
       etag: "",
@@ -204,10 +210,15 @@ const handleMergeBranch = async () => {
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("schema-designer.message.merge-to-main-successfully"),
+      title: t("branch.merge.success"),
     });
 
-    emit("merged", head.name, target.name);
+    emit(
+      "merged",
+      mergedBranch,
+      head.name,
+      state.deleteBranchAfterMerged ? undefined : head
+    );
   } catch (error: any) {
     pushNotification({
       module: "bytebase",

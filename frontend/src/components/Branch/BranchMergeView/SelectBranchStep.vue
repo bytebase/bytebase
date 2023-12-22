@@ -89,6 +89,7 @@
     >
       <SchemaEditorLite
         ref="schemaEditorRef"
+        :key="headBranch?.name"
         resource-type="branch"
         :project="project"
         :readonly="true"

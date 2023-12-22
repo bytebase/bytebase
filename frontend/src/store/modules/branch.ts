@@ -51,9 +51,8 @@ export const useBranchStore = defineStore("schema_design", () => {
     const branch = await branchServiceClient.mergeBranch(request, {
       silent: true,
     });
-    if (branch) {
-      branchMapByName.set(branch.name, branch);
-    }
+    branchMapByName.set(branch.name, branch);
+    return branch;
   };
 
   const fetchBranchByName = async (

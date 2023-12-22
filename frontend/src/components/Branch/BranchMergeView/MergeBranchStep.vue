@@ -26,8 +26,8 @@
     >
       <DiffEditor
         :readonly="true"
-        :original="'-- 合并后的 baseline'"
-        :modified="'-- 合并后的 head'"
+        :original="mergedBranch.baselineSchema"
+        :modified="mergedBranch.schema"
         class="h-full"
       />
     </div>

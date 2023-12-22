@@ -3367,7 +3367,8 @@
       "able-to-merge": "Capaz de fusionarse",
       "cannot-automatically-merge": "No se puede fusionar automáticamente, {rebase_branch} primero.",
       "go-rebase": "rama de rebase",
-      "changes-of-branch": "Cambios de {branch}"
+      "changes-of-branch": "Cambios de {branch}",
+      "success": "Fusión exitosa"
     }
   }
 }

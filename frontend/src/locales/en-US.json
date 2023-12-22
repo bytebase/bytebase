@@ -3369,7 +3369,8 @@
       "able-to-merge": "Able to merge",
       "cannot-automatically-merge": "Can't automatically merge, please {rebase_branch} first.",
       "go-rebase": "rebase branch",
-      "changes-of-branch": "Changes of {branch}"
+      "changes-of-branch": "Changes of {branch}",
+      "success": "Merge succeeded"
     }
   }
 }
