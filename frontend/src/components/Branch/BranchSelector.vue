@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="branch"
+    :value="branch || null"
     :options="options"
     :placeholder="$t('database.select-branch')"
     :filterable="true"
@@ -30,7 +30,7 @@ interface BranchSelectOption extends SelectOption {
 
 const props = defineProps<{
   project: ComposedProject;
-  branch?: string;
+  branch?: string | null;
   clearable?: boolean;
   loading?: boolean;
   disabled?: boolean;
