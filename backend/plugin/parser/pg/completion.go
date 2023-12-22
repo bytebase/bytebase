@@ -23,6 +23,8 @@ var (
 
 func init() {
 	base.RegisterCompleteFunc(store.Engine_POSTGRES, Completion)
+	base.RegisterCompleteFunc(store.Engine_REDSHIFT, Completion)
+	base.RegisterCompleteFunc(store.Engine_RISINGWAVE, Completion)
 }
 
 // Completion is the entry point of PostgreSQL code completion.
