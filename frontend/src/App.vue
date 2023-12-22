@@ -2,32 +2,32 @@
   <CustomThemeProvider>
     <Watermark />
 
-    <NDialogProvider>
-      <OverlayStackManager>
-        <KBarWrapper>
-          <router-view />
-          <template v-if="state.notificationList.length > 0">
-            <BBNotification
-              :placement="'BOTTOM_RIGHT'"
-              :notification-list="state.notificationList"
-              @close="removeNotification"
-            />
-          </template>
-        </KBarWrapper>
-      </OverlayStackManager>
-    </NDialogProvider>
+    <NNotificationProvider
+      :max="MAX_NOTIFICATION_DISPLAY_COUNT"
+      placement="bottom-right"
+    >
+      <NDialogProvider>
+        <OverlayStackManager>
+          <KBarWrapper>
+            <NotificationContext>
+              <router-view />
+            </NotificationContext>
+          </KBarWrapper>
+        </OverlayStackManager>
+      </NDialogProvider>
+    </NNotificationProvider>
   </CustomThemeProvider>
 </template>
 
 <script lang="ts" setup>
-import { NDialogProvider } from "naive-ui";
+import { NDialogProvider, NNotificationProvider } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { reactive, watchEffect, onErrorCaptured } from "vue";
+import { reactive, onErrorCaptured } from "vue";
 import { useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
 import CustomThemeProvider from "./CustomThemeProvider.vue";
-import { BBNotificationItem } from "./bbkit/types";
+import NotificationContext from "./NotificationContext.vue";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { t } from "./plugins/i18n";
@@ -40,11 +40,7 @@ const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 // Check expiration every 30 sec and logout if expired
 const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
 
-const NOTIFICATION_DURATION = 6000;
-const CRITICAL_NOTIFICATION_DURATION = 10000;
-
 interface LocalState {
-  notificationList: BBNotificationItem[];
   prevLoggedIn: boolean;
 }
 
@@ -53,7 +49,6 @@ const notificationStore = useNotificationStore();
 const router = useRouter();
 
 const state = reactive<LocalState>({
-  notificationList: [],
   prevLoggedIn: authStore.isLoggedIn(),
 });
 
@@ -68,48 +63,6 @@ setInterval(() => {
     }
   }
 }, CHECK_LOGGEDIN_STATE_DURATION);
-
-const removeNotification = (item: BBNotificationItem | undefined) => {
-  if (!item) return;
-  item.onClose();
-  const index = state.notificationList.indexOf(item);
-  if (index >= 0) {
-    state.notificationList.splice(index, 1);
-  }
-};
-
-const watchNotification = () => {
-  const notification = notificationStore.tryPopNotification({
-    module: "bytebase",
-  });
-  if (notification) {
-    if (state.notificationList.length >= MAX_NOTIFICATION_DISPLAY_COUNT) {
-      state.notificationList.pop();
-    }
-
-    const item: BBNotificationItem = {
-      style: notification.style,
-      title: notification.title,
-      description: notification.description || "",
-      link: notification.link || "",
-      linkTitle: notification.linkTitle || "",
-      onClose: notification.onClose || (() => {}),
-    };
-    state.notificationList.unshift(item);
-    if (!notification.manualHide) {
-      setTimeout(
-        () => {
-          removeNotification(item);
-        },
-        notification.style == "CRITICAL"
-          ? CRITICAL_NOTIFICATION_DURATION
-          : NOTIFICATION_DURATION
-      );
-    }
-  }
-};
-
-watchEffect(watchNotification);
 
 onErrorCaptured((error: any /* , _, info */) => {
   // Handle grpc request error.

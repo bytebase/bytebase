@@ -17,12 +17,11 @@
       >
         <template #item="{ item: rule }: { item: RuleTemplate }">
           <div class="bb-grid-cell justify-center">
-            <BBSwitch
-              :class="[!editable && 'pointer-events-none']"
-              :disabled="!isRuleAvailable(rule)"
-              :value="rule.level !== SQLReviewRuleLevel.DISABLED"
+            <NSwitch
               size="small"
-              @toggle="toggleActivity(rule, $event)"
+              :disabled="!editable || !isRuleAvailable(rule)"
+              :value="rule.level !== SQLReviewRuleLevel.DISABLED"
+              @update-value="(val) => toggleActivity(rule, val)"
             />
           </div>
           <div class="bb-grid-cell gap-x-1">
@@ -140,12 +139,11 @@
                 class="w-4 h-4"
                 @click="setActiveRule(rule)"
               />
-              <BBSwitch
-                :class="[!editable && 'pointer-events-none']"
-                :disabled="!isRuleAvailable(rule)"
-                :value="rule.level !== SQLReviewRuleLevel.DISABLED"
+              <NSwitch
                 size="small"
-                @toggle="toggleActivity(rule, $event)"
+                :disabled="!editable || !isRuleAvailable(rule)"
+                :value="rule.level !== SQLReviewRuleLevel.DISABLED"
+                @update-value="(val) => toggleActivity(rule, val)"
               />
             </div>
           </div>
@@ -181,9 +179,10 @@
 
 <script lang="ts" setup>
 import { ExternalLinkIcon, PencilIcon } from "lucide-vue-next";
+import { NSwitch } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBSwitch, BBGrid, type BBGridColumn } from "@/bbkit";
+import { BBGrid, type BBGridColumn } from "@/bbkit";
 import { useCurrentPlan } from "@/store";
 import {
   convertToCategoryList,
