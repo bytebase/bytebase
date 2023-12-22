@@ -3,8 +3,7 @@
   <div class="relative px-2 py-1" :class="classes" @click="handleClick">
     <div
       ref="wrapperRef"
-      class="overflow-hidden whitespace-pre font-mono"
-      :class="valueContainerAdditionalClass"
+      class="whitespace-nowrap font-mono text-start line-clamp-1"
       v-html="html"
     ></div>
     <div v-if="clickable" class="absolute right-1 top-1/2 translate-y-[-45%]">
@@ -58,14 +57,6 @@ useResizeObserver(wrapperRef, (entries) => {
 const database = computed(() => {
   const conn = useTabStore().currentTab.connection;
   return useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
-});
-
-const valueContainerAdditionalClass = computed(() => {
-  // Always only show the first line for MongoDB.
-  if (database.value.instanceEntity.engine === Engine.MONGODB) {
-    return "!whitespace-nowrap";
-  }
-  return "";
 });
 
 const clickable = computed(() => {
