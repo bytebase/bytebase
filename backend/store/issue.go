@@ -481,7 +481,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			Payload: &storepb.IssuePayload{},
 		}
 		var payload []byte
-		var pipelineUID sql.NullInt32
 		var subscriberUIDs pgtype.Int4Array
 		if err := rows.Scan(
 			&issue.UID,
@@ -490,7 +489,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.updaterUID,
 			&issue.updatedTs,
 			&issue.projectUID,
-			&pipelineUID,
+			&issue.PipelineUID,
 			&issue.PlanUID,
 			&issue.Title,
 			&issue.Status,
@@ -504,10 +503,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		if err := subscriberUIDs.AssignTo(&issue.subscriberUIDs); err != nil {
 			return nil, err
-		}
-		if pipelineUID.Valid {
-			v := int(pipelineUID.Int32)
-			issue.PipelineUID = &v
 		}
 		if err := protojson.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
