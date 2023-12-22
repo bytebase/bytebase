@@ -186,15 +186,6 @@ type DisableCopyDataPolicy struct {
 	Active bool `json:"active"`
 }
 
-// UnmarshalDisableCopyDataPolicyPolicy will unmarshal payload to disable copy data policy.
-func UnmarshalDisableCopyDataPolicyPolicy(payload string) (*DisableCopyDataPolicy, error) {
-	var p DisableCopyDataPolicy
-	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal disable copy data policy %q", payload)
-	}
-	return &p, nil
-}
-
 // String will return the string representation of the policy.
 func (p *DisableCopyDataPolicy) String() (string, error) {
 	s, err := json.Marshal(p)
@@ -233,24 +224,4 @@ func UnmarshalEnvironmentTierPolicy(payload string) (*EnvironmentTierPolicy, err
 		return nil, errors.Wrapf(err, "failed to unmarshal environment tier policy %q", payload)
 	}
 	return &p, nil
-}
-
-// GetPolicyResourceType gets the policy resource type.
-func GetPolicyResourceType(resourceType string) (PolicyResourceType, error) {
-	var rt PolicyResourceType
-	switch resourceType {
-	case "workspace":
-		rt = PolicyResourceTypeWorkspace
-	case "environment":
-		rt = PolicyResourceTypeEnvironment
-	case "project":
-		rt = PolicyResourceTypeProject
-	case "instance":
-		rt = PolicyResourceTypeInstance
-	case "database":
-		rt = PolicyResourceTypeDatabase
-	default:
-		return PolicyResourceTypeUnknown, errors.Errorf("invalid policy resource type %q", rt)
-	}
-	return rt, nil
 }

@@ -988,12 +988,6 @@ func getViewDefinition(checkContext SQLReviewCheckContext, viewList []string) (s
 	return buf.String(), nil
 }
 
-// RuleExists returns true if rule exists.
-func RuleExists(ruleType SQLReviewRuleType, engine storepb.Engine) bool {
-	_, err := getAdvisorTypeByRule(ruleType, engine)
-	return err == nil
-}
-
 func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Type, error) {
 	switch ruleType {
 	case SchemaRuleStatementRequireWhere:
