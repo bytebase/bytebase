@@ -175,13 +175,16 @@
           </div>
 
           <div class="flex flex-row items-center gap-x-2">
-            <BBSwitch
-              v-if="allowShowDiff"
-              :label="$t('change-history.show-diff')"
-              :value="state.showDiff"
-              data-label="bb-change-history-diff-switch"
-              @toggle="state.showDiff = $event"
-            />
+            <div v-if="allowShowDiff" class="flex space-x-1 items-center">
+              <NSwitch
+                size="small"
+                v-model:value="state.showDiff"
+                data-label="bb-change-history-diff-switch"
+              />
+              <span class="text-sm font-semibold">
+                {{ $t("change-history.show-diff") }}
+              </span>
+            </div>
             <div class="textinfolabel">
               <i18n-t
                 v-if="state.showDiff"
@@ -279,6 +282,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
