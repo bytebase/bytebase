@@ -40,7 +40,7 @@ service BranchService {
     option (google.api.method_signature) = "branch,update_mask";
   }
 
-  rpc MergeBranch(MergeBranchRequest) returns (MergeBranchResponse) {
+  rpc MergeBranch(MergeBranchRequest) returns (Branch) {
     option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:merge"};
     option (google.api.method_signature) = "name";
   }
@@ -214,30 +214,14 @@ message MergeBranchRequest {
   // Format: projects/{project}/branches/{branch}
   string head_branch = 2;
 
-  // For failed merge, we will pass in this addition merged schema and use it for head.
-  string merged_schema = 3;
-
   // The current etag of the branch.
   // If an etag is provided and does not match the current etag of the branch,
   // the call will be blocked and an ABORTED error will be returned.
-  // The etag should be specified for using merged_schema. The etag should be the etag from named branch.
-  string etag = 4 [(google.api.field_behavior) = OPTIONAL];
+  // The etag should be the etag from named branch.
+  string etag = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // validate_only determines if the merge can occur seamlessly without any conflicts.
-  bool validate_only = 5;
-}
-
-message MergeBranchResponse {
-  oneof result {
-    // The merged branch when merge occurs seamlessly.
-    Branch branch = 1;
-    // The conflict schema when merge has conflicts.
-    // The conflict section is enclosed by the following.
-    // <<<<< HEAD
-    // ====
-    // >>>>> main
-    string conflict_schema = 2;
-  }
+  bool validate_only = 4;
 }
 
 message RebaseBranchRequest {
