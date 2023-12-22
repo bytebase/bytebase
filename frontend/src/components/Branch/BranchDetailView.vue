@@ -48,11 +48,9 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton
-                :disabled="!branchListReady"
-                @click="handleMergeBranch"
-                >{{ $t("schema-designer.merge-branch") }}</NButton
-              >
+              <NButton @click="handleGotoMergeBranch">{{
+                $t("schema-designer.merge-branch")
+              }}</NButton>
               <NButton
                 v-if="showApplyBranchButton"
                 type="primary"
@@ -117,21 +115,12 @@
     @close="selectTargetDatabasesContext.show = false"
     @update="handleApplyToDatabase"
   />
-
-  <MergeBranchPanel
-    v-if="state.showDiffEditor && mergeBranchPanelContext"
-    :project="project"
-    :head-branch-name="mergeBranchPanelContext.headBranchName"
-    :branch-name="mergeBranchPanelContext.branchName"
-    @dismiss="state.showDiffEditor = false"
-    @merged="handleMergeAfterConflictResolved"
-  />
 </template>
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
-import { cloneDeep, head } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NButton, NDivider, NInput } from "naive-ui";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -140,11 +129,8 @@ import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import { pushNotification, useDatabaseV1Store } from "@/store";
-import { useBranchListByProject, useBranchStore } from "@/store/modules/branch";
-import {
-  getProjectAndBranchId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
+import { useBranchStore } from "@/store/modules/branch";
+import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -152,7 +138,6 @@ import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
-import MergeBranchPanel from "./MergeBranchPanel.vue";
 import SchemaDesignEditorLite from "./SchemaDesignEditorLite.vue";
 import { validateBranchName } from "./utils";
 
@@ -180,9 +165,6 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready: branchListReady } = useBranchListByProject(
-  computed(() => props.project.name)
-);
 const { runSQLCheck } = provideSQLCheckContext();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
@@ -194,10 +176,6 @@ const state = reactive<LocalState>({
   savingStatus: "",
   applyingToDatabaseStatus: false,
 });
-const mergeBranchPanelContext = ref<{
-  headBranchName: string;
-  branchName: string;
-}>();
 const selectTargetDatabasesContext = ref<{
   show: boolean;
 }>({
@@ -322,35 +300,6 @@ const handleParentBranchClick = async () => {
   });
 };
 
-const handleMergeBranch = () => {
-  const branch = props.dirtyBranch;
-  const tempList = branchList.value.filter((item) => {
-    const [projectName] = getProjectAndBranchId(item.name);
-    return (
-      `${projectNamePrefix}${projectName}` === props.project.name &&
-      item.engine === branch.engine &&
-      item.name !== branch.name
-    );
-  });
-  const branchName = parentBranch.value
-    ? parentBranch.value.name
-    : head(tempList)?.name;
-  if (!branchName) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "No branch to merge.",
-    });
-    return;
-  }
-
-  mergeBranchPanelContext.value = {
-    headBranchName: branch.name,
-    branchName: branchName,
-  };
-  state.showDiffEditor = true;
-};
-
 const handleEdit = async () => {
   state.isEditing = true;
 };
@@ -437,15 +386,12 @@ const handleSaveBranch = async () => {
   cleanup(/* success */ true);
 };
 
-const handleMergeAfterConflictResolved = (branchName: string) => {
-  state.showDiffEditor = false;
-  state.isEditing = false;
-  const [_, branchId] = getProjectAndBranchId(branchName);
-  router.replace({
-    name: "workspace.project.branch.detail",
+const handleGotoMergeBranch = () => {
+  router.push({
+    name: "workspace.project.branch.merge",
     params: {
       projectSlug: projectV1Slug(props.project),
-      branchName: branchId,
+      branchName: props.cleanBranch.branchId,
     },
   });
 };
