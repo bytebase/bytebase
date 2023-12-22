@@ -39,7 +39,7 @@ type BranchServiceClient interface {
 	ListBranches(ctx context.Context, in *ListBranchesRequest, opts ...grpc.CallOption) (*ListBranchesResponse, error)
 	CreateBranch(ctx context.Context, in *CreateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	UpdateBranch(ctx context.Context, in *UpdateBranchRequest, opts ...grpc.CallOption) (*Branch, error)
-	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*MergeBranchResponse, error)
+	MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*Branch, error)
 	RebaseBranch(ctx context.Context, in *RebaseBranchRequest, opts ...grpc.CallOption) (*RebaseBranchResponse, error)
 	DeleteBranch(ctx context.Context, in *DeleteBranchRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// DiffDatabase works similar to branch rebase.
@@ -96,8 +96,8 @@ func (c *branchServiceClient) UpdateBranch(ctx context.Context, in *UpdateBranch
 	return out, nil
 }
 
-func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*MergeBranchResponse, error) {
-	out := new(MergeBranchResponse)
+func (c *branchServiceClient) MergeBranch(ctx context.Context, in *MergeBranchRequest, opts ...grpc.CallOption) (*Branch, error) {
+	out := new(Branch)
 	err := c.cc.Invoke(ctx, BranchService_MergeBranch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ type BranchServiceServer interface {
 	ListBranches(context.Context, *ListBranchesRequest) (*ListBranchesResponse, error)
 	CreateBranch(context.Context, *CreateBranchRequest) (*Branch, error)
 	UpdateBranch(context.Context, *UpdateBranchRequest) (*Branch, error)
-	MergeBranch(context.Context, *MergeBranchRequest) (*MergeBranchResponse, error)
+	MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error)
 	RebaseBranch(context.Context, *RebaseBranchRequest) (*RebaseBranchResponse, error)
 	DeleteBranch(context.Context, *DeleteBranchRequest) (*emptypb.Empty, error)
 	// DiffDatabase works similar to branch rebase.
@@ -179,7 +179,7 @@ func (UnimplementedBranchServiceServer) CreateBranch(context.Context, *CreateBra
 func (UnimplementedBranchServiceServer) UpdateBranch(context.Context, *UpdateBranchRequest) (*Branch, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateBranch not implemented")
 }
-func (UnimplementedBranchServiceServer) MergeBranch(context.Context, *MergeBranchRequest) (*MergeBranchResponse, error) {
+func (UnimplementedBranchServiceServer) MergeBranch(context.Context, *MergeBranchRequest) (*Branch, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method MergeBranch not implemented")
 }
 func (UnimplementedBranchServiceServer) RebaseBranch(context.Context, *RebaseBranchRequest) (*RebaseBranchResponse, error) {
