@@ -59,8 +59,6 @@ const displayTitle = computed(() => {
 
 const buttonType = computed(() => {
   switch (props.type) {
-    case "warning":
-      return "warning";
     case "error":
       return "default";
     default:

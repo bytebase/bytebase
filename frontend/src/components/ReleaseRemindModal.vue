@@ -18,11 +18,11 @@
             </template>
           </i18n-t>
         </p>
-        <BBCheckbox
+        <NCheckbox
           class="mt-3 ml-1"
-          :title="$t('settings.release.not-show-till-next-release')"
-          :value="actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease"
-          @toggle="
+          :label="$t('settings.release.not-show-till-next-release')"
+          :checked="actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease"
+          @update:checked="
             (on: boolean) =>
               (actuatorStore.releaseInfo.ignoreRemindModalTillNextRelease = on)
           "
@@ -51,6 +51,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 

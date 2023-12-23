@@ -13,15 +13,14 @@
         </a>
       </div>
       <div>
-        <button
+        <NButton
           v-if="identityProviderList.length > 0"
-          type="button"
-          class="btn-primary"
+          type="primary"
           @click="handleCreateSSO"
         >
           {{ $t("common.create") }}
           <FeatureBadge :feature="'bb.feature.sso'" custom-class="ml-2" />
-        </button>
+        </NButton>
       </div>
     </div>
     <NoDataPlaceholder v-if="identityProviderList.length === 0">
@@ -45,9 +44,9 @@
         >
           <div class="w-full flex flex-row justify-between items-center">
             <span class="truncate">{{ identityProvider.title }}</span>
-            <button class="btn-normal" @click="handleViewSSO(identityProvider)">
+            <NButton @click="handleViewSSO(identityProvider)">
               {{ $t("common.view") }}
-            </button>
+            </NButton>
           </div>
 
           <div

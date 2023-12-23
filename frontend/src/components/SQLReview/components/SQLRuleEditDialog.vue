@@ -141,21 +141,16 @@
           "
         />
       </div>
-      <div v-if="editable" class="mt-4 pt-2 border-t flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="$emit('cancel')"
-        >
+      <div
+        v-if="editable"
+        class="mt-4 pt-2 border-t flex justify-end space-x-3"
+      >
+        <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-          :disabled="disabled"
-          @click.prevent="confirm"
-        >
+        </NButton>
+        <NButton type="primary" :disabled="disabled" @click.prevent="confirm">
           {{ $t("common.confirm") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

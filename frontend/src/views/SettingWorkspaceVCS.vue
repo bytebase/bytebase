@@ -8,14 +8,10 @@
         >{{ $t("gitops.setting.description-highlight") }}</a
       >
     </div>
-    <div v-if="vcsList.length > 0" class="flex items-center justify-end">
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click.prevent="addVCSProvider"
-      >
+    <div v-if="vcsList.length > 0" class="ml-3">
+      <NButton type="primary" @click.prevent="addVCSProvider">
         {{ $t("gitops.setting.add-git-provider.self") }}
-      </button>
+      </NButton>
     </div>
 
     <div v-if="vcsList.length > 0" class="space-y-6">
