@@ -336,10 +336,6 @@ const onTextName = () => {
   state.nameManuallyEdited = name.length > 0;
 };
 
-const onToggleAcceptTermsAndPolicyCheckbox = () => {
-  state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy;
-};
-
 const trySignup = async () => {
   if (!passwordMatch.value) {
     state.showPasswordMismatchError = true;

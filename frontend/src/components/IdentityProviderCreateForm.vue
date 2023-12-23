@@ -264,8 +264,8 @@
         </p>
         <p class="textinfolabel mt-1">
           <NCheckbox
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             v-model:checked="configForOAuth2.skipTlsVerify"
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             :disabled="!allowEdit"
           />
         </p>
@@ -458,8 +458,8 @@
         </p>
         <p class="textinfolabel mt-1">
           <NCheckbox
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             v-model:checked="configForOIDC.skipTlsVerify"
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             :disabled="!allowEdit"
           />
         </p>
@@ -657,8 +657,8 @@
         </p>
         <p class="textinfolabel mt-1">
           <NCheckbox
-            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             v-model:checked="configForLDAP.skipTlsVerify"
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
             :disabled="!allowEdit"
           />
         </p>
