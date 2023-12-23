@@ -1,16 +1,16 @@
 <template>
-  <BBCheckbox
-    :title="title"
-    :value="value"
+  <NCheckbox
+    :label="title"
+    :checked="value"
     :disabled="disabled"
-    @toggle="$emit('update:value', $event)"
+    @update:checked="$emit('update:value', $event)"
   />
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBCheckbox } from "@/bbkit";
 import type { RuleConfigComponent, RuleTemplate } from "@/types";
 import { getRuleLocalizationKey } from "@/types/sqlReview";
 

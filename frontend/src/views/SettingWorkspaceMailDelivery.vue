@@ -98,10 +98,10 @@
                 {{ $t("settings.mail-delivery.field.smtp-password") }}
                 <span class="text-red-600">*</span>
               </label>
-              <BBCheckbox
-                :title="$t('common.empty')"
-                :value="state.useEmptyPassword"
-                @toggle="handleToggleUseEmptyPassword"
+              <NCheckbox
+                :label="$t('common.empty')"
+                :checked="state.useEmptyPassword"
+                @update:checked="handleToggleUseEmptyPassword"
               />
             </div>
             <NInput
@@ -178,11 +178,10 @@
 </template>
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
-import { SelectOption } from "naive-ui";
+import { SelectOption, NCheckbox } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBCheckbox } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {

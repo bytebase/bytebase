@@ -305,11 +305,11 @@
         @click="state.showInstanceAssignmentDrawer = true"
       />
       <div class="flex space-x-4 mt-2">
-        <BBCheckbox
+        <NCheckbox
           :disabled="!allowEdit"
-          :title="enableSQLReviewTitle"
-          :value="repositoryConfig.enableSQLReviewCI"
-          @toggle="(on: boolean) => {
+          :label="enableSQLReviewTitle"
+          :checked="repositoryConfig.enableSQLReviewCI"
+          @update:checked="(on: boolean) => {
             repositoryConfig.enableSQLReviewCI = on;
             onSQLReviewCIToggle(on);
           }"
@@ -329,6 +329,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, PropType, computed } from "vue";
 import { useI18n } from "vue-i18n";

@@ -215,16 +215,18 @@
         :key="index"
         class="mt-4 space-y-4"
       >
-        <BBCheckbox
-          :title="item.title"
-          :label="item.label"
-          :value="isEventOn(item.activity)"
-          @toggle="
+        <div>
+          <NCheckbox
+            :label="item.title"
+            :checked="isEventOn(item.activity)"
+            @update:checked="
             (on: boolean) => {
               toggleEvent(item.activity, on);
             }
           "
-        />
+          />
+          <div class="textinfolabel">{{ item.label }}</div>
+        </div>
       </div>
     </div>
     <NButton @click.prevent="testWebhook">
@@ -246,31 +248,29 @@
         :require-confirm="true"
         @confirm="deleteWebhook"
       />
-      <div>
-        <button type="button" class="btn-normal" @click.prevent="cancel">
+      <div class="space-x-3">
+        <NButton @click.prevent="cancel">
           {{ allowEdit ? $t("common.cancel") : $t("common.back") }}
-        </button>
+        </NButton>
         <template v-if="allowEdit">
-          <button
+          <NButton
             v-if="create"
-            type="submit"
-            class="btn-primary ml-3"
+            type="primary"
             :disabled="!allowCreate"
             @click.prevent="createWebhook"
           >
             {{ $t("common.create") }}
-          </button>
-          <button
+          </NButton>
+          <NButton
             v-else
-            type="submit"
-            class="btn-primary ml-3"
+            type="primary"
             :disabled="
               !valueChanged || state.webhook.notificationTypes.length === 0
             "
             @click.prevent="updateWebhook"
           >
             {{ $t("common.update") }}
-          </button>
+          </NButton>
         </template>
       </div>
     </div>
@@ -279,6 +279,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
+import { NCheckbox } from "naive-ui";
 import { reactive, computed, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -390,7 +391,7 @@ const allowCreate = computed(() => {
 });
 
 const isEventOn = (type: Activity_Type) => {
-  return props.webhook.notificationTypes.includes(type);
+  return state.webhook.notificationTypes.includes(type);
 };
 
 const toggleEvent = (type: Activity_Type, on: boolean) => {
