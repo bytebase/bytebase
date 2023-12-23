@@ -129,22 +129,17 @@
           {{ $t("gitops.setting.git-provider.delete-forbidden") }}
         </div>
       </template>
-      <div>
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
+      <div class="space-x-3">
+        <NButton @click.prevent="cancel">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!allowUpdate"
           @click.prevent="doUpdate"
         >
           {{ $t("common.update") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </div>

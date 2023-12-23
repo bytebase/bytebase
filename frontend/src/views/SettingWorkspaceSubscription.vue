@@ -81,17 +81,13 @@
         </dt>
 
         <dd class="mt-1">
-          <button
-            type="button"
-            class="btn-primary inline-flex justify-center ml-auto"
-            @click="state.showTrialModal = true"
-          >
+          <NButton type="primary" @click="state.showTrialModal = true">
             {{
               $t("subscription.enterprise-free-trial", {
                 days: subscriptionStore.trialingDays,
               })
             }}
-          </button>
+          </NButton>
         </dd>
       </div>
       <div
@@ -105,14 +101,10 @@
           {{ $t("subscription.inquire-enterprise-plan") }}
         </dt>
 
-        <dd class="mt-1">
-          <button
-            type="button"
-            class="btn-primary inline-flex justify-center ml-auto"
-            @click="inquireEnterprise"
-          >
+        <dd class="mt-1 ml-auto">
+          <NButton type="primary" @click="inquireEnterprise">
             {{ $t("subscription.contact-us") }}
-          </button>
+          </NButton>
         </dd>
       </div>
     </dl>
@@ -128,15 +120,11 @@
         :placeholder="$t('subscription.sensitive-placeholder')"
         class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
       />
-      <button
-        type="button"
-        class="btn-primary inline-flex justify-center ml-auto mt-3"
-        :disabled="disabled"
-        target="_blank"
-        @click="uploadLicense"
-      >
-        {{ $t("subscription.upload-license") }}
-      </button>
+      <div class="ml-auto mt-3">
+        <NButton type="primary" :disabled="disabled" @click="uploadLicense">
+          {{ $t("subscription.upload-license") }}
+        </NButton>
+      </div>
     </div>
     <div class="sm:flex sm:flex-col sm:align-center pt-5 mt-4 border-t">
       <div class="textinfolabel">
