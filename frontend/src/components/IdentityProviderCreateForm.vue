@@ -263,14 +263,10 @@
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
-          <BBCheckbox
-            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :v-model="configForOAuth2.skipTlsVerify"
+          <NCheckbox
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            v-model:checked="configForOAuth2.skipTlsVerify"
             :disabled="!allowEdit"
-            @toggle="
-              () =>
-                (configForOAuth2.skipTlsVerify = !configForOAuth2.skipTlsVerify)
-            "
           />
         </p>
       </div>
@@ -461,13 +457,10 @@
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
-          <BBCheckbox
-            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :value="configForOIDC.skipTlsVerify"
+          <NCheckbox
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            v-model:checked="configForOIDC.skipTlsVerify"
             :disabled="!allowEdit"
-            @toggle="
-              () => (configForOIDC.skipTlsVerify = !configForOIDC.skipTlsVerify)
-            "
           />
         </p>
       </div>
@@ -663,13 +656,10 @@
           {{ $t("settings.sso.form.connection-security") }}
         </p>
         <p class="textinfolabel mt-1">
-          <BBCheckbox
-            :title="$t('settings.sso.form.connection-security-skip-tls-verify')"
-            :value="configForLDAP.skipTlsVerify"
+          <NCheckbox
+            :label="$t('settings.sso.form.connection-security-skip-tls-verify')"
+            v-model:checked="configForLDAP.skipTlsVerify"
             :disabled="!allowEdit"
-            @toggle="
-              () => (configForLDAP.skipTlsVerify = !configForLDAP.skipTlsVerify)
-            "
           />
         </p>
       </div>
@@ -760,14 +750,13 @@
       class="mt-4 space-x-4 w-full flex flex-row justify-between items-center"
     >
       <div class="space-x-4 flex flex-row justify-start items-center">
-        <button
+        <NButton
           v-if="!isDeleted"
           :disabled="!allowTestConnection"
-          class="btn-normal"
           @click="testConnection"
         >
           {{ $t("identity-provider.test-connection") }}
-        </button>
+        </NButton>
         <template v-if="!isCreating">
           <BBButtonConfirm
             v-if="!isDeleted"
@@ -796,32 +785,31 @@
         class="space-x-4 flex flex-row justify-end items-center"
       >
         <template v-if="isCreating">
-          <button class="btn-normal" @click="handleCancelButtonClick">
+          <NButton @click="handleCancelButtonClick">
             {{ $t("common.cancel") }}
-          </button>
-          <button
-            class="btn-primary"
+          </NButton>
+          <NButton
+            type="primary"
             :disabled="!allowCreate"
             @click="handleCreateButtonClick"
           >
             {{ $t("common.create") }}
-          </button>
+          </NButton>
         </template>
         <template v-else>
-          <button
-            class="btn-normal"
+          <NButton
             :disabled="!allowUpdate"
             @click="handleDiscardChangesButtonClick"
           >
             {{ $t("common.discard-changes") }}
-          </button>
-          <button
-            class="btn-primary"
+          </NButton>
+          <NButton
+            class="primary"
             :disabled="!allowUpdate"
             @click="handleUpdateButtonClick"
           >
             {{ $t("common.update") }}
-          </button>
+          </NButton>
         </template>
       </div>
     </div>
@@ -830,7 +818,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, head, isEqual } from "lodash-es";
-import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { NRadioGroup, NCheckbox, NRadio, NTooltip } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
 import { computed, reactive, ref, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";

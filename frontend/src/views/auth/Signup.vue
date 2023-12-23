@@ -152,16 +152,17 @@
             v-if="needAdminSetup"
             class="w-full flex flex-row justify-start items-start"
           >
-            <BBCheckbox
-              :value="state.acceptTermsAndPolicy"
+            <NCheckbox
+              v-model:checked="state.acceptTermsAndPolicy"
               class="mt-0.5"
-              @toggle="onToggleAcceptTermsAndPolicyCheckbox"
             />
             <i18n-t
               tag="span"
               keypath="auth.sign-up.accept-terms-and-policy"
               class="ml-1 select-none"
-              @click="onToggleAcceptTermsAndPolicyCheckbox"
+              @click="
+                () => (state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy)
+              "
             >
               <template #terms>
                 <a
@@ -217,15 +218,10 @@
   <AuthFooter />
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
-import {
-  computed,
-  defineComponent,
-  onMounted,
-  onUnmounted,
-  reactive,
-} from "vue";
+import { computed, onMounted, onUnmounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
   useActuatorV1Store,
@@ -248,138 +244,121 @@ interface LocalState {
   showPassword: boolean;
 }
 
-export default defineComponent({
-  name: "SignupPage",
-  components: { AuthFooter },
-  setup() {
-    const actuatorStore = useActuatorV1Store();
-    const router = useRouter();
+const actuatorStore = useActuatorV1Store();
+const router = useRouter();
 
-    const state = reactive<LocalState>({
-      email: "",
-      password: "",
-      passwordConfirm: "",
-      showPasswordMismatchError: false,
-      name: "",
-      nameManuallyEdited: false,
-      acceptTermsAndPolicy: true,
-      showPassword: false,
-    });
-
-    onUnmounted(() => {
-      if (state.passwordValidationTimer) {
-        clearInterval(state.passwordValidationTimer);
-      }
-    });
-
-    const { needAdminSetup, disallowSignup } = storeToRefs(actuatorStore);
-
-    const allowSignup = computed(() => {
-      return (
-        isValidEmail(state.email) &&
-        state.password &&
-        !state.showPasswordMismatchError &&
-        state.acceptTermsAndPolicy &&
-        !disallowSignup.value
-      );
-    });
-
-    const passwordMatch = computed(() => {
-      return state.password == state.passwordConfirm;
-    });
-
-    onMounted(() => {
-      if (needAdminSetup.value) {
-        state.acceptTermsAndPolicy = false;
-      }
-    });
-
-    const refreshPasswordValidation = () => {
-      if (state.passwordValidationTimer) {
-        clearInterval(state.passwordValidationTimer);
-      }
-
-      if (passwordMatch.value) {
-        state.showPasswordMismatchError = false;
-      } else {
-        state.passwordValidationTimer = setTimeout(() => {
-          // If error is already displayed, we hide the error only if there is valid input.
-          // Otherwise, we hide the error if input is either empty or valid.
-          if (state.showPasswordMismatchError) {
-            state.showPasswordMismatchError = !passwordMatch.value;
-          } else {
-            state.showPasswordMismatchError =
-              state.password != "" &&
-              state.passwordConfirm != "" &&
-              !passwordMatch.value;
-          }
-        }, TEXT_VALIDATION_DELAY);
-      }
-    };
-
-    const onTextEmail = () => {
-      const email = state.email.trim().toLowerCase();
-      state.email = email;
-      if (!state.nameManuallyEdited) {
-        const emailParts = email.split("@");
-        if (emailParts.length > 0) {
-          if (emailParts[0].length > 0) {
-            const name = emailParts[0].replace("_", ".");
-            const nameParts = name.split(".");
-            if (nameParts.length >= 2) {
-              state.name = [
-                nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1),
-                nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1),
-              ].join(" ");
-            } else {
-              state.name = name.charAt(0).toUpperCase() + name.slice(1);
-            }
-          }
-        }
-      }
-    };
-
-    const onTextName = () => {
-      const name = state.name.trim();
-      state.nameManuallyEdited = name.length > 0;
-    };
-
-    const onToggleAcceptTermsAndPolicyCheckbox = () => {
-      state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy;
-    };
-
-    const trySignup = async () => {
-      if (!passwordMatch.value) {
-        state.showPasswordMismatchError = true;
-      } else {
-        const signupInfo: SignupInfo = {
-          email: state.email,
-          password: state.password,
-          name: state.name,
-        };
-        await useAuthStore().signup(signupInfo);
-        if (needAdminSetup.value) {
-          await actuatorStore.fetchServerInfo();
-          // When the first time we created an end user, the server-side will
-          // generate onboarding data.
-          // We write a flag here to indicate that the workspace is just created
-          // and we can consume this flag somewhere else if needed.
-          useOnboardingStateStore().initialize();
-        }
-        router.replace("/");
-      }
-    };
-
-    return {
-      state,
-      needAdminSetup,
-      allowSignup,
-      onTextEmail,
-      onTextName,
-      onToggleAcceptTermsAndPolicyCheckbox,
-      trySignup,
-      refreshPasswordValidation,
-    };
-  },
+const state = reactive<LocalState>({
+  email: "",
+  password: "",
+  passwordConfirm: "",
+  showPasswordMismatchError: false,
+  name: "",
+  nameManuallyEdited: false,
+  acceptTermsAndPolicy: true,
+  showPassword: false,
 });
+
+onUnmounted(() => {
+  if (state.passwordValidationTimer) {
+    clearInterval(state.passwordValidationTimer);
+  }
+});
+
+const { needAdminSetup, disallowSignup } = storeToRefs(actuatorStore);
+
+const allowSignup = computed(() => {
+  return (
+    isValidEmail(state.email) &&
+    state.password &&
+    !state.showPasswordMismatchError &&
+    state.acceptTermsAndPolicy &&
+    !disallowSignup.value
+  );
+});
+
+const passwordMatch = computed(() => {
+  return state.password == state.passwordConfirm;
+});
+
+onMounted(() => {
+  if (needAdminSetup.value) {
+    state.acceptTermsAndPolicy = false;
+  }
+});
+
+const refreshPasswordValidation = () => {
+  if (state.passwordValidationTimer) {
+    clearInterval(state.passwordValidationTimer);
+  }
+
+  if (passwordMatch.value) {
+    state.showPasswordMismatchError = false;
+  } else {
+    state.passwordValidationTimer = setTimeout(() => {
+      // If error is already displayed, we hide the error only if there is valid input.
+      // Otherwise, we hide the error if input is either empty or valid.
+      if (state.showPasswordMismatchError) {
+        state.showPasswordMismatchError = !passwordMatch.value;
+      } else {
+        state.showPasswordMismatchError =
+          state.password != "" &&
+          state.passwordConfirm != "" &&
+          !passwordMatch.value;
+      }
+    }, TEXT_VALIDATION_DELAY);
+  }
+};
+
+const onTextEmail = () => {
+  const email = state.email.trim().toLowerCase();
+  state.email = email;
+  if (!state.nameManuallyEdited) {
+    const emailParts = email.split("@");
+    if (emailParts.length > 0) {
+      if (emailParts[0].length > 0) {
+        const name = emailParts[0].replace("_", ".");
+        const nameParts = name.split(".");
+        if (nameParts.length >= 2) {
+          state.name = [
+            nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1),
+            nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1),
+          ].join(" ");
+        } else {
+          state.name = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+      }
+    }
+  }
+};
+
+const onTextName = () => {
+  const name = state.name.trim();
+  state.nameManuallyEdited = name.length > 0;
+};
+
+const onToggleAcceptTermsAndPolicyCheckbox = () => {
+  state.acceptTermsAndPolicy = !state.acceptTermsAndPolicy;
+};
+
+const trySignup = async () => {
+  if (!passwordMatch.value) {
+    state.showPasswordMismatchError = true;
+  } else {
+    const signupInfo: SignupInfo = {
+      email: state.email,
+      password: state.password,
+      name: state.name,
+    };
+    await useAuthStore().signup(signupInfo);
+    if (needAdminSetup.value) {
+      await actuatorStore.fetchServerInfo();
+      // When the first time we created an end user, the server-side will
+      // generate onboarding data.
+      // We write a flag here to indicate that the workspace is just created
+      // and we can consume this flag somewhere else if needed.
+      useOnboardingStateStore().initialize();
+    }
+    router.replace("/");
+  }
+};
 </script>
