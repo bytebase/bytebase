@@ -77,34 +77,29 @@
         </p>
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <button
+        <NButton
           v-if="!hasPermission"
-          type="button"
-          class="btn-primary"
+          type="primary"
           @click.prevent="$emit('cancel')"
         >
           {{ $t("common.ok") }}
-        </button>
+        </NButton>
         <template v-else-if="subscriptionStore.canTrial">
-          <button
-            type="button"
-            class="btn-primary"
-            @click.prevent="trialSubscription"
-          >
+          <NButton type="primary" @click.prevent="trialSubscription">
             {{
               $t("subscription.request-n-days-trial", {
                 days: subscriptionStore.trialingDays,
               })
             }}
-          </button>
+          </NButton>
         </template>
-        <button v-else type="button" class="btn-primary" @click.prevent="ok">
+        <NButton v-else type="primary" @click.prevent="ok">
           {{
             instanceMissingLicense
               ? $t("subscription.instance-assignment.assign-license")
               : $t("common.learn-more")
           }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

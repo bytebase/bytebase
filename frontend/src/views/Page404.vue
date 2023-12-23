@@ -7,9 +7,9 @@
           <div
             class="mt-6 flex space-x-3 sm:border-l sm:border-transparent sm:pl-6"
           >
-            <button class="btn-primary" @click.prevent="goHome">
+            <NButton type="primary" @click.prevent="goHome">
               {{ $t("error-page.go-back-home") }}
-            </button>
+            </NButton>
           </div>
         </div>
       </main>

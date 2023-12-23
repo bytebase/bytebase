@@ -7,13 +7,10 @@
             count: debugLogList.length,
           })
         }}
-        <button
-          class="group btn-normal items-center !border-0 !bg-accent !text-white hover:!bg-indigo-500"
-          @click="handleExport"
-        >
+        <NButton type="primary" @click="handleExport">
           <heroicons-outline:document-arrow-down class="h-4 w-4 mr-1" />
           {{ $t("debug-log.table.operation.export") }}
-        </button>
+        </NButton>
       </div>
       <DebugLogTable
         :debug-log-list="
