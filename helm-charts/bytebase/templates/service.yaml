@@ -12,5 +12,5 @@ spec:
     app: bytebase
   ports:
   - protocol: TCP
-    port: {{ $port }}
+    port: 80
     targetPort: {{ $port }}
