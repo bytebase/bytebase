@@ -37,26 +37,20 @@
         </div>
         <div class="bb-grid-cell gap-x-2 !pr-[3rem]">
           <template v-if="!review">
-            <button
-              type="button"
-              class="btn-normal flex justify-center !py-1 !px-3"
+            <NButton
               :disabled="!hasPermission"
               @click.prevent="handleClickCreate(environment)"
             >
               {{ $t("sql-review.configure-policy") }}
-            </button>
+            </NButton>
           </template>
           <template v-else>
-            <button
-              type="button"
-              class="btn-normal flex justify-center !py-1 !px-3"
-              @click.prevent="handleClickEdit(review)"
-            >
+            <NButton @click.prevent="handleClickEdit(review)">
               {{ hasPermission ? $t("common.edit") : $t("common.view") }}
-            </button>
+            </NButton>
 
             <BBButtonConfirm
-              class="btn-normal flex justify-center !py-1 !px-3"
+              type="default"
               :disabled="!hasPermission"
               :style="'DELETE'"
               :hide-icon="true"
@@ -124,7 +118,7 @@
             </button>
 
             <BBButtonConfirm
-              class="btn-normal flex justify-center !py-1 !px-3"
+              type="default"
               :disabled="!hasPermission"
               :style="'DELETE'"
               :hide-icon="true"

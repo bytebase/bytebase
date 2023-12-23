@@ -1168,7 +1168,8 @@
       "approvers-of-current-step": "Approvers of current step"
     },
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
-    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)"
+    "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
+    "preview": "Preview issue"
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -1224,6 +1225,7 @@
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
+    "foreign-tables": "Foreign tables",
     "functions": "Functions",
     "streams": "Streams",
     "tasks": "Tasks",
@@ -1424,7 +1426,8 @@
     },
     "password-forget": {
       "title": "Forgot your password?",
-      "content": "Please contact your Bytebase Admin to reset your password.",
+      "selfhost": "Please contact your Bytebase Admin to reset your password.",
+      "cloud": "Please go to the {link} and reset your password.",
       "return-to-sign-in": "Return to Sign in"
     },
     "password-forgot": "Forgot Password",
@@ -1720,7 +1723,10 @@
     },
     "recent": "Recent",
     "partitioned": "Partitioned",
-    "partition-tables": "Partition tables"
+    "partition-tables": "Partition tables",
+    "external-server-name": "External Server Name",
+    "external-database-name": "External Database Name",
+    "foreign-table-detail": "Foreign table detail"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -1921,10 +1927,7 @@
       "archive": {
         "title": "Archive project",
         "description": "Archived projects will not be displayed.",
-        "btn-text": "Archive this @.lower:{'common.project'}",
-        "force": {
-          "description": "Force to archive. All releated issues will be resolved, and all related sheets will be deleted."
-        }
+        "btn-text": "Archive this @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restore project",
@@ -2160,7 +2163,9 @@
     "read-replica-host": "Read-replica Host",
     "read-replica-port": "Read-replica Port",
     "delete-read-only-data-source": "Delete read-only data source",
-    "connection-string-schema": "Connection String Schema"
+    "connection-string-schema": "Connection String Schema",
+    "admin": "Admin",
+    "read-only": "RO"
   },
   "setting": {
     "project": {
@@ -2276,7 +2281,8 @@
     "executing-query": "Executing query",
     "grouping": "Grouping",
     "previous-row": "Previous row",
-    "next-row": "Next row"
+    "next-row": "Next row",
+    "copy-success": "Copy success"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2338,7 +2344,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nothing changed",
+    "nothing-changed-for-database": "Nothing changed for database {database}",
     "message": {
       "invalid-schema-name": "Invalid schema name",
       "duplicated-schema-name": "Duplicated schema name",
@@ -3346,5 +3352,15 @@
       "export-rows-must-gt-zero": "Export rows must greater than 0"
     },
     "export-format": "Export format"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Select target database"
+    },
+    "select-tables-to-rollout": "Select tables to rollout",
+    "branch-is-protected": "This branch is protected by branch protection rules.",
+    "default-branches": "Default",
+    "your-branches": "Your branches",
+    "active-branches": "Active branches"
   }
 }

@@ -6,7 +6,7 @@
       {{ $t("two-factor.setup-steps.download-recovery-codes.tips") }}
     </p>
     <BBAttention
-      :style="'INFO'"
+      type="info"
       :title="
         $t('two-factor.setup-steps.download-recovery-codes.keep-safe.self')
       "

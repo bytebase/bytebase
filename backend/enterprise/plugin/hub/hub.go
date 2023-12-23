@@ -3,9 +3,10 @@ package hub
 import (
 	"context"
 	"log/slog"
+	"slices"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -177,13 +178,10 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 
 // parseClaims will valid and parse JWT claims to license instance.
 func (p *Provider) parseClaims(claim *claims) (*enterprise.License, error) {
-	verifyIssuer := claim.VerifyIssuer(p.config.Issuer, true)
-	if !verifyIssuer {
+	if p.config.Issuer != claim.Issuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", p.config.Issuer, claim.Issuer)
 	}
-
-	verifyAudience := claim.VerifyAudience(p.config.Audience, true)
-	if !verifyAudience {
+	if !slices.Contains(claim.Audience, p.config.Audience) {
 		return nil, common.Errorf(common.Invalid, "aud is not valid, expect %s but found '%v'", p.config.Audience, claim.Audience)
 	}
 

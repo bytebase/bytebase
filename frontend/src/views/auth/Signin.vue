@@ -47,11 +47,17 @@
                     <span class="text-red-600">*</span>
                   </div>
                   <router-link
-                    to="/auth/password-forgot"
+                    :to="{
+                      path: '/auth/password-forgot',
+                      query: {
+                        hint: route.query.hint,
+                      },
+                    }"
                     class="text-sm font-normal text-control-light hover:underline focus:outline-none"
                     tabindex="-1"
-                    >{{ $t("auth.sign-in.forget-password") }}</router-link
                   >
+                    {{ $t("auth.sign-in.forget-password") }}
+                  </router-link>
                 </label>
                 <div
                   class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
@@ -94,25 +100,27 @@
               </div>
             </form>
 
-            <div class="mt-6 relative">
-              <div class="relative flex justify-center text-sm">
+            <div class="mt-3">
+              <div
+                class="flex justify-center items-center text-sm text-control"
+              >
                 <template v-if="isDemo">
-                  <span class="pl-2 bg-white text-accent">{{
-                    $t("auth.sign-in.demo-note", {
-                      username: "demo@example.com",
-                      password: "1024",
-                    })
-                  }}</span>
+                  <span class="text-accent">
+                    {{
+                      $t("auth.sign-in.demo-note", {
+                        username: "demo@example.com",
+                        password: "1024",
+                      })
+                    }}
+                  </span>
                 </template>
                 <template v-else-if="!disallowSignup">
-                  <span class="pl-2 bg-white text-control">{{
-                    $t("auth.sign-in.new-user")
-                  }}</span>
-                  <router-link
-                    to="/auth/signup"
-                    class="accent-link bg-white px-2"
-                    >{{ $t("common.sign-up") }}</router-link
-                  >
+                  <span>
+                    {{ $t("auth.sign-in.new-user") }}
+                  </span>
+                  <router-link to="/auth/signup" class="accent-link px-2">
+                    {{ $t("common.sign-up") }}
+                  </router-link>
                 </template>
               </div>
             </div>
@@ -293,20 +301,19 @@ onMounted(async () => {
     router.push({ name: "auth.signup", replace: true });
   }
 
-  if (isDemo.value) {
-    state.email = "demo@example.com";
-    state.password = "1024";
-    state.showPassword = true;
-  } else {
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams(url.search);
-    state.email = params.get("email") ?? "";
-    state.password = params.get("password") ?? "";
-    state.showPassword = false;
-  }
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams(url.search);
+  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
+  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
+  state.showPassword = isDemo.value != null;
 
   await identityProviderStore.fetchIdentityProviderList();
-  if (isDemo.value && state.email && state.password) {
+  if (
+    window.location.href.startsWith("https://demo.bytebase.com") &&
+    isDemo.value &&
+    state.email &&
+    state.password
+  ) {
     await trySignin();
   }
 });

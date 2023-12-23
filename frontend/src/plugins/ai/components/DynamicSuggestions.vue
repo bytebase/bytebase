@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center overflow-hidden h-[22px]">
     <template v-if="dynamicSuggestions && !ready">
-      <BBSpin class="w-4 h-4 mr-2" />
+      <BBSpin class="!w-4 !h-4 mr-2" />
       <span class="text-sm">{{
         $t("plugin.ai.conversation.tips.suggest-prompt")
       }}</span>
@@ -25,7 +25,7 @@
           </NEllipsis>
 
           <div class="shrink-0 flex items-center">
-            <BBSpin v-if="state === 'LOADING'" class="w-4 h-4" />
+            <BBSpin v-if="state === 'LOADING'" class="!w-4 !h-4" />
             <button
               v-if="state === 'IDLE'"
               class="text-gray-500 cursor-pointer py-0.5 px-1 rounded-md hover:bg-gray-200"

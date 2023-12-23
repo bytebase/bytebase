@@ -8,7 +8,7 @@
         n: instanceList.length,
       })
     }}
-    <div class="flex items-center gap-x-4 text-sm ml-5 text-accent">
+    <div class="flex items-center">
       <template v-for="action in actions" :key="action.text">
         <NButton
           quaternary

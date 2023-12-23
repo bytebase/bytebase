@@ -1,7 +1,7 @@
 package hub
 
 import (
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/bytebase/bytebase/backend/common"
 )
@@ -32,5 +32,5 @@ func parseJWTToken(tokenString, expectVersion, publicKey string, claims jwt.Clai
 		return common.Errorf(common.Invalid, "invalid token")
 	}
 
-	return claims.Valid()
+	return nil
 }

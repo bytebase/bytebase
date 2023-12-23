@@ -205,7 +205,7 @@
           hasFeature('bb.feature.vcs-schema-write-back')
         "
         class="my-4"
-        :style="`WARN`"
+        type="warning"
         :title="
           $t('subscription.features.bb-feature-vcs-schema-write-back.title')
         "
@@ -216,7 +216,7 @@
           })
         "
         :action-text="$t('subscription.instance-assignment.assign-license')"
-        @click-action="state.showInstanceAssignmentDrawer = true"
+        @click="state.showInstanceAssignmentDrawer = true"
       />
       <input
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
@@ -293,7 +293,7 @@
           hasFeature('bb.feature.vcs-sql-review')
         "
         class="my-4"
-        :style="`WARN`"
+        type="warning"
         :title="$t('subscription.features.bb-feature-vcs-sql-review.title')"
         :description="
           $t('subscription.instance-assignment.missing-license-for-instances', {
@@ -302,7 +302,7 @@
           })
         "
         :action-text="$t('subscription.instance-assignment.assign-license')"
-        @click-action="state.showInstanceAssignmentDrawer = true"
+        @click="state.showInstanceAssignmentDrawer = true"
       />
       <div class="flex space-x-4 mt-2">
         <BBCheckbox

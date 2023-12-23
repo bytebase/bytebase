@@ -25,7 +25,7 @@ We prefer templates rather than JSX. Since templates are better optimized in com
 
 We recommend using a "local state" pattern when components mutate their properties or provide a `v-model` property. This also helps us to avoid complaints from [vue/no-mutating-props](https://eslint.vuejs.org/rules/no-mutating-props.html).
 
-See [BBSwitch](https://github.com/bytebase/bytebase/blob/main/frontend/src/bbkit/BBSwitch.vue) as an example of this pattern.
+See [BBAlert](https://github.com/bytebase/bytebase/blob/main/frontend/src/bbkit/BBAlert.vue) as an example of this pattern.
 
 # Linting and formatting
 

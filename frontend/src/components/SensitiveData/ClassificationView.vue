@@ -40,8 +40,8 @@
   />
 
   <BBAlert
-    v-if="state.showOverrideModal"
-    :style="'WARN'"
+    v-model:show="state.showOverrideModal"
+    type="warning"
     :ok-text="$t('settings.sensitive-data.classification.override-confirm')"
     :title="$t('settings.sensitive-data.classification.override-title')"
     :description="$t('settings.sensitive-data.classification.override-desc')"
@@ -60,10 +60,20 @@ import {
   useSettingV1Store,
   pushNotification,
 } from "@/store";
-import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import {
+  DataClassificationSetting_DataClassificationConfig,
+  DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
+  DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
+} from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV1 } from "@/utils";
 
 const uploader = ref<HTMLInputElement | null>(null);
+
+interface UploadClassificationConfig {
+  title: string;
+  levels: ClassificationLevel[];
+  classifications: DataClassification[];
+}
 
 interface LocalState {
   classification?: DataClassificationSetting_DataClassificationConfig;
@@ -135,10 +145,35 @@ const onFileChange = () => {
     if (!fr.result) {
       return;
     }
+    const data: UploadClassificationConfig = JSON.parse(fr.result as string);
+    if (
+      !Array.isArray(data.classifications) ||
+      data.classifications.length === 0
+    ) {
+      return pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Read file error`,
+        description: "should has classifications array field",
+      });
+    }
+    if (!Array.isArray(data.levels) || data.levels.length === 0) {
+      return pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Read file error`,
+        description: "should has levels array field",
+      });
+    }
     state.classification =
       DataClassificationSetting_DataClassificationConfig.fromPartial({
-        ...JSON.parse(fr.result as string),
         id: uuidv4(),
+        title: data.title || "",
+        levels: data.levels,
+        classification: data.classifications.reduce((obj, item) => {
+          obj[item.id] = item;
+          return obj;
+        }, {} as { [key: string]: DataClassification }),
       });
   };
   fr.onerror = () => {

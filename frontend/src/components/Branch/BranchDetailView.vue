@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="flex flex-col gap-y-3 w-full overflow-x-auto relative"
-    v-bind="$attrs"
-  >
+  <div class="flex flex-col gap-y-3 w-full h-full relative" v-bind="$attrs">
     <MaskSpinner
       v-if="state.isReverting || state.savingStatus"
       class="!bg-white/75"
@@ -17,19 +14,31 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
+          v-if="!readonly"
           v-model:value="state.branchId"
           class="!w-auto"
           :passively-activated="true"
           :style="branchIdInputStyle"
-          :readonly="!state.isEditingBranchId"
+          :readonly="readonly || !state.isEditingBranchId"
           :placeholder="'feature/add-billing'"
           @focus="state.isEditingBranchId = true"
           @blur="handleBranchIdInputBlur"
         />
-        <NTag v-if="parentBranch" round>
-          {{ $t("schema-designer.parent-branch") }}:
-          {{ parentBranch.branchId }}
-        </NTag>
+        <span v-else class="text-xl leading-[34px]">{{
+          cleanBranch.branchId
+        }}</span>
+        <span
+          v-if="parentBranch"
+          class="group text-sm border rounded-full px-2 py-1 cursor-pointer hover:bg-gray-100"
+          @click="handleParentBranchClick"
+        >
+          <span class="text-gray-500 mr-1"
+            >{{ $t("schema-designer.parent-branch") }}:</span
+          >
+          <span class="group-hover:underline group-hover:text-blue-600">{{
+            parentBranch.branchId
+          }}</span>
+        </span>
       </div>
       <div>
         <div class="w-full flex flex-row justify-between items-center">
@@ -40,14 +49,14 @@
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
               <NButton
-                :disabled="!ready"
-                :loading="!ready"
+                :disabled="!branchListReady"
                 @click="handleMergeBranch"
                 >{{ $t("schema-designer.merge-branch") }}</NButton
               >
               <NButton
+                v-if="showApplyBranchButton"
                 type="primary"
-                @click="selectTargetDatabasesContext.show = true"
+                @click="handleApplyBranchToDatabase"
                 >{{ $t("schema-designer.apply-to-database") }}</NButton
               >
             </template>
@@ -67,7 +76,7 @@
       </div>
     </div>
 
-    <NDivider />
+    <NDivider class="!my-0" />
 
     <div
       class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
@@ -80,7 +89,7 @@
       </div>
     </div>
 
-    <div class="w-full h-[32rem]">
+    <div class="w-full flex-1 flex flex-col">
       <SchemaDesignEditorLite
         ref="schemaDesignerRef"
         :project="project"
@@ -123,7 +132,7 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep, head } from "lodash-es";
-import { NButton, NDivider, NInput, NTag } from "naive-ui";
+import { NButton, NDivider, NInput } from "naive-ui";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -171,7 +180,7 @@ const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
-const { branchList, ready } = useBranchListByProject(
+const { branchList, ready: branchListReady } = useBranchListByProject(
   computed(() => props.project.name)
 );
 const { runSQLCheck } = provideSQLCheckContext();
@@ -209,6 +218,11 @@ const parentBranch = asyncComputed(async () => {
 
 const database = computed(() => {
   return databaseStore.getDatabaseByName(props.dirtyBranch.baselineDatabase);
+});
+
+// Only show apply to database button when the branch is main branch.
+const showApplyBranchButton = computed(() => {
+  return !parentBranch.value;
 });
 
 const rebuildMetadataEdit = () => {
@@ -291,6 +305,21 @@ const handleBranchIdInputBlur = async () => {
   }
   emit("update:branch-id", state.branchId);
   state.isEditingBranchId = false;
+};
+
+const handleParentBranchClick = async () => {
+  if (!parentBranch.value) {
+    return;
+  }
+
+  const [_, branchId] = getProjectAndBranchId(parentBranch.value.name);
+  router.push({
+    name: "workspace.project.branch.detail",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: `${branchId}`,
+    },
+  });
 };
 
 const handleMergeBranch = () => {
@@ -421,6 +450,16 @@ const handleMergeAfterConflictResolved = (branchName: string) => {
   });
 };
 
+const handleApplyBranchToDatabase = () => {
+  router.push({
+    name: "workspace.project.branch.rollout",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: props.cleanBranch.branchId,
+    },
+  });
+};
+
 const handleApplyToDatabase = async (databaseIdList: string[]) => {
   const cleanup = () => {
     state.applyingToDatabaseStatus = false;
@@ -433,7 +472,12 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
   const source =
     branch.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({});
   const target = branch.schemaMetadata ?? DatabaseMetadata.fromPartial({});
-  const result = await generateDiffDDL(database.value, source, target);
+  const result = await generateDiffDDL(
+    database.value,
+    source,
+    target,
+    /* !allowEmptyDiffDDLWithConfigChange */ false
+  );
 
   if (result.fatal) {
     pushNotification({

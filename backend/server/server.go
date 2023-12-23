@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -52,9 +53,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
 	_ "github.com/bytebase/bytebase/docs/openapi" // initial the swagger doc
-
-	// Register PostgreSQL get query span.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg/v2"
 )
 
 const (
@@ -147,12 +145,16 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}()
 
 	var err error
-	// Install mysqlutil
+	if err = os.MkdirAll(profile.ResourceDir, os.ModePerm); err != nil {
+		return nil, errors.Wrapf(err, "failed to create directory: %q", profile.ResourceDir)
+	}
+	// Install mysqlutil.
 	s.mysqlBinDir, err = mysqlutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mysql utility binaries")
 	}
 
+	// Install mongoutil.
 	s.mongoBinDir, err = mongoutil.Install(profile.ResourceDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot install mongo utility binaries")
@@ -279,7 +281,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaBaseline, taskrun.NewSchemaBaselineExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdate, taskrun.NewSchemaUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateSDL, taskrun.NewSchemaUpdateSDLExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
-		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, profile))
+		s.taskSchedulerV2.Register(api.TaskDatabaseDataUpdate, taskrun.NewDataUpdateExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseBackup, taskrun.NewDatabaseBackupExecutor(storeInstance, s.dbFactory, s.s3Client, s.stateCfg, profile))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostSync, taskrun.NewSchemaUpdateGhostSyncExecutor(storeInstance, s.stateCfg, s.secret))
 		s.taskSchedulerV2.Register(api.TaskDatabaseSchemaUpdateGhostCutover, taskrun.NewSchemaUpdateGhostCutoverExecutor(storeInstance, s.dbFactory, s.activityManager, s.licenseService, s.stateCfg, s.schemaSyncer, profile))
@@ -335,7 +337,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 			recoveryStreamInterceptor,
 		),
 	)
-	configureEchoRouters(s.e, s.grpcServer, mux)
+	configureEchoRouters(s.e, s.grpcServer, mux, profile)
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 		if profile.TestOnlySkipOnboardingData {
 			return nil

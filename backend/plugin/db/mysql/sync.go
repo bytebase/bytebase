@@ -201,7 +201,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if columnName.Valid {
 			expression = columnName.String
 		} else if expressionName.Valid {
-			expression = expressionName.String
+			// It's a bit late or not necessary to differentiate the column name or expression.
+			// We add parentheses around expression.
+			expression = fmt.Sprintf("(%s)", expressionName.String)
 		}
 
 		key := db.TableKey{Schema: "", Table: tableName}

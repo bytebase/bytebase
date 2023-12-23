@@ -13,12 +13,14 @@
         </template>
       </i18n-t>
     </div>
-    <BBStepTab
+
+    <StepTab
       class="mt-4 mb-8"
-      :step-item-list="stepList"
+      :current-index="state.currentStep"
+      :step-list="stepList"
       :allow-next="allowNext"
-      @try-change-step="tryChangeStep"
-      @try-finish="tryFinishSetup"
+      @update:current-index="tryChangeStep"
+      @finish="tryFinishSetup"
       @cancel="cancel"
     >
       <template #0="{ next }">
@@ -43,7 +45,7 @@
           @change-schema-change-type="setSchemaChangeType"
         />
       </template>
-    </BBStepTab>
+    </StepTab>
     <BBModal
       v-if="state.showSetupSQLReviewCIModal"
       class="relative overflow-hidden"
@@ -81,8 +83,8 @@
       </div>
     </BBModal>
     <BBAlert
-      v-if="state.showSetupSQLReviewCIFailureModal"
-      :style="'CRITICAL'"
+      v-model:show="state.showSetupSQLReviewCIFailureModal"
+      type="warning"
       :ok-text="$t('common.retry')"
       :title="$t('repository.sql-review-ci-setup-failed')"
       @ok="
@@ -97,8 +99,7 @@
           $emit('finish');
         }
       "
-    >
-    </BBAlert>
+    />
     <BBModal
       v-if="state.showLoadingSQLReviewPRModal"
       class="relative overflow-hidden"
@@ -134,6 +135,7 @@ import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { StepTab } from "@/components/v2";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import { getVCSUid } from "@/store/modules/v1/common";
 import {
@@ -147,7 +149,6 @@ import {
   TenantMode,
   SchemaChange,
 } from "@/types/proto/v1/project_service";
-import { BBStepTabItem } from "../bbkit/types";
 import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
 import { projectSlugV1 } from "../utils";
 
@@ -204,7 +205,7 @@ const router = useRouter();
 const repositoryV1Store = useRepositoryV1Store();
 const projectV1Store = useProjectV1Store();
 
-const stepList: BBStepTabItem[] = [
+const stepList = [
   { title: t("repository.choose-git-provider"), hideNext: true },
   { title: t("repository.select-repository"), hideNext: true },
   { title: t("repository.configure-deploy") },
@@ -264,16 +265,11 @@ const allowNext = computed((): boolean => {
   return true;
 });
 
-const tryChangeStep = (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
+const tryChangeStep = (nextStepIndex: number) => {
   if (state.processing) {
     return;
   }
-  state.currentStep = newStep;
-  allowChangeCallback();
+  state.currentStep = nextStepIndex;
 };
 
 const createSQLReviewCI = async () => {
@@ -295,7 +291,7 @@ const createSQLReviewCI = async () => {
   }
 };
 
-const tryFinishSetup = async (allowFinishCallback: () => void) => {
+const tryFinishSetup = async () => {
   if (
     state.config.repositoryConfig.enableSQLReviewCI &&
     !hasFeature("bb.feature.vcs-sql-review")
@@ -354,8 +350,6 @@ const tryFinishSetup = async (allowFinishCallback: () => void) => {
     } else {
       emit("finish");
     }
-
-    allowFinishCallback();
   };
 
   try {

@@ -1,6 +1,9 @@
 <template>
   <div class="flex flex-row items-center gap-x-1">
-    <TableIcon v-if="type === 'table'" class="w-4" />
+    <TableIcon
+      v-if="type === 'table' || type === 'external-table'"
+      class="w-4"
+    />
     <ViewIcon v-if="type === 'view'" class="w-4 h-4" />
     <component :is="render" v-if="render" />
     <span v-else>{{ text }}</span>

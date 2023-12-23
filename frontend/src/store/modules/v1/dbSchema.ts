@@ -5,6 +5,7 @@ import { MaybeRef, UNKNOWN_ID, EMPTY_ID } from "@/types";
 import {
   DatabaseMetadata,
   ExtensionMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
@@ -252,6 +253,33 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
 
       const tableList = this.getTableList(name);
       return tableList.find((table) => table.name === tableName);
+    },
+    async getOrFetchExternalTableList(
+      dbName: string,
+      schemaName: string
+    ): Promise<ExternalTableMetadata[]> {
+      if (!this.getFromCache(dbName)) {
+        await this.getOrFetchDatabaseMetadata({ database: dbName });
+      }
+      return this.getExternalTableList(dbName, schemaName);
+    },
+    getExternalTableList(
+      dbName: string,
+      schemaName: string
+    ): ExternalTableMetadata[] {
+      const databaseMetadata = this.getFromCache(dbName);
+      if (!databaseMetadata) {
+        return [];
+      }
+
+      const externalTableList: ExternalTableMetadata[] = [];
+      for (const schema of databaseMetadata.schemas) {
+        if (schema.name !== schemaName) {
+          continue;
+        }
+        externalTableList.push(...schema.externalTables);
+      }
+      return externalTableList;
     },
     async getOrFetchViewList(name: string): Promise<ViewMetadata[]> {
       if (!this.getFromCache(name)) {

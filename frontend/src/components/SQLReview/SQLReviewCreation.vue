@@ -1,13 +1,14 @@
 <template>
   <div>
-    <BBStepTab
+    <StepTab
       :sticky="true"
-      :step-item-list="STEP_LIST"
+      :current-index="state.currentStep"
+      :step-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
-      @try-change-step="tryChangeStep"
-      @try-finish="tryFinishSetup"
+      @update:current-index="changeStepIndex"
       @cancel="onCancel"
+      @finish="tryFinishSetup"
     >
       <template #0>
         <SQLReviewInfo
@@ -30,26 +31,16 @@
           @comment-change="onCommentChange"
         />
       </template>
-    </BBStepTab>
-    <BBAlertDialog
-      ref="alertDialog"
-      :style="'CRITICAL'"
-      :ok-text="$t('common.confirm')"
-      :title="$t('sql-review.create.configure-rule.confirm-override-title')"
-      :description="
-        $t('sql-review.create.configure-rule.confirm-override-description')
-      "
-    >
-    </BBAlertDialog>
+    </StepTab>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed, withDefaults, ref } from "vue";
+import { useDialog } from "naive-ui";
+import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBAlertDialog, BBStepTab } from "@/bbkit";
-import { BBStepTabItem } from "@/bbkit/types";
+import { StepTab } from "@/components/v2";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -79,7 +70,6 @@ interface LocalState {
   selectedRuleList: RuleTemplate[];
   selectedTemplate: SQLReviewPolicyTemplate | undefined;
   ruleUpdated: boolean;
-  showAlertModal: boolean;
   pendingApplyTemplate: SQLReviewPolicyTemplate | undefined;
 }
 
@@ -99,7 +89,7 @@ const props = withDefaults(
 
 const emit = defineEmits(["cancel"]);
 
-const alertDialog = ref<InstanceType<typeof BBAlertDialog>>();
+const dialog = useDialog();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
@@ -111,7 +101,7 @@ const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
 const ROUTE_NAME = "setting.workspace.sql-review";
 
-const STEP_LIST: BBStepTabItem[] = [
+const STEP_LIST = [
   { title: t("sql-review.create.basic-info.name") },
   { title: t("sql-review.create.configure-rule.name") },
 ];
@@ -124,7 +114,6 @@ const state = reactive<LocalState>({
     ? rulesToTemplate(props.policy, false /* withDisabled=false */)
     : undefined,
   ruleUpdated: false,
-  showAlertModal: false,
   pendingApplyTemplate: undefined,
 });
 
@@ -191,27 +180,26 @@ const allowNext = computed((): boolean => {
   return false;
 });
 
-const tryChangeStep = (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
-  if (oldStep === 0 && newStep === 1) {
+const changeStepIndex = (nextIndex: number) => {
+  if (state.currentStep === 0 && nextIndex === 1) {
     if (state.pendingApplyTemplate) {
-      alertDialog.value!.open().then((result) => {
-        if (result) {
+      dialog.warning({
+        title: t("sql-review.create.configure-rule.confirm-override-title"),
+        content: t(
+          "sql-review.create.configure-rule.confirm-override-description"
+        ),
+        positiveText: t("common.confirm"),
+        onPositiveClick: (_: MouseEvent) => {
           onTemplateApply(state.pendingApplyTemplate);
-          allowChangeCallback();
-        }
+        },
       });
       return;
     }
   }
-  state.currentStep = newStep;
-  allowChangeCallback();
+  state.currentStep = nextIndex;
 };
 
-const tryFinishSetup = (allowChangeCallback: () => void) => {
+const tryFinishSetup = () => {
   if (
     !hasWorkspacePermissionV1(
       "bb.permission.workspace.manage-sql-review-policy",
@@ -266,7 +254,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       });
   }
 
-  allowChangeCallback();
   onCancel();
 };
 

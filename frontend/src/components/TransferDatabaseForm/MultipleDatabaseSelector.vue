@@ -77,11 +77,15 @@
               <span
                 class="font-medium text-main"
                 :class="database.syncState !== State.ACTIVE && 'opacity-40'"
-                >{{ database.databaseName }}</span
               >
+                {{ database.databaseName }}
+              </span>
             </div>
             <div v-if="showProjectColumn" class="bb-grid-cell">
-              {{ database.projectEntity.title }}
+              <ProjectCol
+                :project="database.projectEntity"
+                :show-tenant-icon="true"
+              />
             </div>
             <div class="bb-grid-cell gap-x-1 textinfolabel justify-end">
               <InstanceV1Name

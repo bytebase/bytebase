@@ -6,7 +6,6 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Expr } from "../google/type/expr";
 import { Engine, engineFromJSON, engineToJSON, MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON } from "./common";
-import { DeploymentType, deploymentTypeFromJSON, deploymentTypeToJSON } from "./deployment";
 import { IamPolicy } from "./iam_policy";
 
 export const protobufPackage = "bytebase.v1";
@@ -14,7 +13,6 @@ export const protobufPackage = "bytebase.v1";
 export enum PolicyType {
   POLICY_TYPE_UNSPECIFIED = 0,
   WORKSPACE_IAM = 1,
-  DEPLOYMENT_APPROVAL = 2,
   ROLLOUT_POLICY = 11,
   BACKUP_PLAN = 3,
   SQL_REVIEW = 4,
@@ -35,9 +33,6 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 1:
     case "WORKSPACE_IAM":
       return PolicyType.WORKSPACE_IAM;
-    case 2:
-    case "DEPLOYMENT_APPROVAL":
-      return PolicyType.DEPLOYMENT_APPROVAL;
     case 11:
     case "ROLLOUT_POLICY":
       return PolicyType.ROLLOUT_POLICY;
@@ -78,8 +73,6 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "POLICY_TYPE_UNSPECIFIED";
     case PolicyType.WORKSPACE_IAM:
       return "WORKSPACE_IAM";
-    case PolicyType.DEPLOYMENT_APPROVAL:
-      return "DEPLOYMENT_APPROVAL";
     case PolicyType.ROLLOUT_POLICY:
       return "ROLLOUT_POLICY";
     case PolicyType.BACKUP_PLAN:
@@ -156,84 +149,6 @@ export function policyResourceTypeToJSON(object: PolicyResourceType): string {
     case PolicyResourceType.DATABASE:
       return "DATABASE";
     case PolicyResourceType.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum ApprovalGroup {
-  ASSIGNEE_GROUP_UNSPECIFIED = 0,
-  APPROVAL_GROUP_DBA = 1,
-  APPROVAL_GROUP_PROJECT_OWNER = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalGroupFromJSON(object: any): ApprovalGroup {
-  switch (object) {
-    case 0:
-    case "ASSIGNEE_GROUP_UNSPECIFIED":
-      return ApprovalGroup.ASSIGNEE_GROUP_UNSPECIFIED;
-    case 1:
-    case "APPROVAL_GROUP_DBA":
-      return ApprovalGroup.APPROVAL_GROUP_DBA;
-    case 2:
-    case "APPROVAL_GROUP_PROJECT_OWNER":
-      return ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalGroup.UNRECOGNIZED;
-  }
-}
-
-export function approvalGroupToJSON(object: ApprovalGroup): string {
-  switch (object) {
-    case ApprovalGroup.ASSIGNEE_GROUP_UNSPECIFIED:
-      return "ASSIGNEE_GROUP_UNSPECIFIED";
-    case ApprovalGroup.APPROVAL_GROUP_DBA:
-      return "APPROVAL_GROUP_DBA";
-    case ApprovalGroup.APPROVAL_GROUP_PROJECT_OWNER:
-      return "APPROVAL_GROUP_PROJECT_OWNER";
-    case ApprovalGroup.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum ApprovalStrategy {
-  APPROVAL_STRATEGY_UNSPECIFIED = 0,
-  AUTOMATIC = 1,
-  MANUAL = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function approvalStrategyFromJSON(object: any): ApprovalStrategy {
-  switch (object) {
-    case 0:
-    case "APPROVAL_STRATEGY_UNSPECIFIED":
-      return ApprovalStrategy.APPROVAL_STRATEGY_UNSPECIFIED;
-    case 1:
-    case "AUTOMATIC":
-      return ApprovalStrategy.AUTOMATIC;
-    case 2:
-    case "MANUAL":
-      return ApprovalStrategy.MANUAL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return ApprovalStrategy.UNRECOGNIZED;
-  }
-}
-
-export function approvalStrategyToJSON(object: ApprovalStrategy): string {
-  switch (object) {
-    case ApprovalStrategy.APPROVAL_STRATEGY_UNSPECIFIED:
-      return "APPROVAL_STRATEGY_UNSPECIFIED";
-    case ApprovalStrategy.AUTOMATIC:
-      return "AUTOMATIC";
-    case ApprovalStrategy.MANUAL:
-      return "MANUAL";
-    case ApprovalStrategy.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -441,7 +356,6 @@ export interface Policy {
   inheritFromParent: boolean;
   type: PolicyType;
   workspaceIamPolicy?: IamPolicy | undefined;
-  deploymentApprovalPolicy?: DeploymentApprovalPolicy | undefined;
   rolloutPolicy?: RolloutPolicy | undefined;
   backupPlanPolicy?: BackupPlanPolicy | undefined;
   maskingPolicy?: MaskingPolicy | undefined;
@@ -458,11 +372,6 @@ export interface Policy {
   resourceUid: string;
 }
 
-export interface DeploymentApprovalPolicy {
-  defaultStrategy: ApprovalStrategy;
-  deploymentApprovalStrategies: DeploymentApprovalStrategy[];
-}
-
 export interface RolloutPolicy {
   automatic: boolean;
   workspaceRoles: string[];
@@ -472,12 +381,6 @@ export interface RolloutPolicy {
    * roles/CREATOR
    */
   issueRoles: string[];
-}
-
-export interface DeploymentApprovalStrategy {
-  deploymentType: DeploymentType;
-  approvalGroup: ApprovalGroup;
-  approvalStrategy: ApprovalStrategy;
 }
 
 export interface BackupPlanPolicy {
@@ -1093,7 +996,6 @@ function createBasePolicy(): Policy {
     inheritFromParent: false,
     type: 0,
     workspaceIamPolicy: undefined,
-    deploymentApprovalPolicy: undefined,
     rolloutPolicy: undefined,
     backupPlanPolicy: undefined,
     maskingPolicy: undefined,
@@ -1125,9 +1027,6 @@ export const Policy = {
     }
     if (message.workspaceIamPolicy !== undefined) {
       IamPolicy.encode(message.workspaceIamPolicy, writer.uint32(50).fork()).ldelim();
-    }
-    if (message.deploymentApprovalPolicy !== undefined) {
-      DeploymentApprovalPolicy.encode(message.deploymentApprovalPolicy, writer.uint32(58).fork()).ldelim();
     }
     if (message.rolloutPolicy !== undefined) {
       RolloutPolicy.encode(message.rolloutPolicy, writer.uint32(154).fork()).ldelim();
@@ -1212,13 +1111,6 @@ export const Policy = {
           }
 
           message.workspaceIamPolicy = IamPolicy.decode(reader, reader.uint32());
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.deploymentApprovalPolicy = DeploymentApprovalPolicy.decode(reader, reader.uint32());
           continue;
         case 19:
           if (tag !== 154) {
@@ -1323,9 +1215,6 @@ export const Policy = {
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : 0,
       workspaceIamPolicy: isSet(object.workspaceIamPolicy) ? IamPolicy.fromJSON(object.workspaceIamPolicy) : undefined,
-      deploymentApprovalPolicy: isSet(object.deploymentApprovalPolicy)
-        ? DeploymentApprovalPolicy.fromJSON(object.deploymentApprovalPolicy)
-        : undefined,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
       backupPlanPolicy: isSet(object.backupPlanPolicy) ? BackupPlanPolicy.fromJSON(object.backupPlanPolicy) : undefined,
       maskingPolicy: isSet(object.maskingPolicy) ? MaskingPolicy.fromJSON(object.maskingPolicy) : undefined,
@@ -1365,9 +1254,6 @@ export const Policy = {
     }
     if (message.workspaceIamPolicy !== undefined) {
       obj.workspaceIamPolicy = IamPolicy.toJSON(message.workspaceIamPolicy);
-    }
-    if (message.deploymentApprovalPolicy !== undefined) {
-      obj.deploymentApprovalPolicy = DeploymentApprovalPolicy.toJSON(message.deploymentApprovalPolicy);
     }
     if (message.rolloutPolicy !== undefined) {
       obj.rolloutPolicy = RolloutPolicy.toJSON(message.rolloutPolicy);
@@ -1422,10 +1308,6 @@ export const Policy = {
     message.workspaceIamPolicy = (object.workspaceIamPolicy !== undefined && object.workspaceIamPolicy !== null)
       ? IamPolicy.fromPartial(object.workspaceIamPolicy)
       : undefined;
-    message.deploymentApprovalPolicy =
-      (object.deploymentApprovalPolicy !== undefined && object.deploymentApprovalPolicy !== null)
-        ? DeploymentApprovalPolicy.fromPartial(object.deploymentApprovalPolicy)
-        : undefined;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)
       ? RolloutPolicy.fromPartial(object.rolloutPolicy)
       : undefined;
@@ -1460,85 +1342,6 @@ export const Policy = {
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? 0;
     message.resourceUid = object.resourceUid ?? "";
-    return message;
-  },
-};
-
-function createBaseDeploymentApprovalPolicy(): DeploymentApprovalPolicy {
-  return { defaultStrategy: 0, deploymentApprovalStrategies: [] };
-}
-
-export const DeploymentApprovalPolicy = {
-  encode(message: DeploymentApprovalPolicy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.defaultStrategy !== 0) {
-      writer.uint32(8).int32(message.defaultStrategy);
-    }
-    for (const v of message.deploymentApprovalStrategies) {
-      DeploymentApprovalStrategy.encode(v!, writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentApprovalPolicy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeploymentApprovalPolicy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.defaultStrategy = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.deploymentApprovalStrategies.push(DeploymentApprovalStrategy.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeploymentApprovalPolicy {
-    return {
-      defaultStrategy: isSet(object.defaultStrategy) ? approvalStrategyFromJSON(object.defaultStrategy) : 0,
-      deploymentApprovalStrategies: globalThis.Array.isArray(object?.deploymentApprovalStrategies)
-        ? object.deploymentApprovalStrategies.map((e: any) => DeploymentApprovalStrategy.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: DeploymentApprovalPolicy): unknown {
-    const obj: any = {};
-    if (message.defaultStrategy !== 0) {
-      obj.defaultStrategy = approvalStrategyToJSON(message.defaultStrategy);
-    }
-    if (message.deploymentApprovalStrategies?.length) {
-      obj.deploymentApprovalStrategies = message.deploymentApprovalStrategies.map((e) =>
-        DeploymentApprovalStrategy.toJSON(e)
-      );
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeploymentApprovalPolicy>): DeploymentApprovalPolicy {
-    return DeploymentApprovalPolicy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeploymentApprovalPolicy>): DeploymentApprovalPolicy {
-    const message = createBaseDeploymentApprovalPolicy();
-    message.defaultStrategy = object.defaultStrategy ?? 0;
-    message.deploymentApprovalStrategies =
-      object.deploymentApprovalStrategies?.map((e) => DeploymentApprovalStrategy.fromPartial(e)) || [];
     return message;
   },
 };
@@ -1649,95 +1452,6 @@ export const RolloutPolicy = {
     message.workspaceRoles = object.workspaceRoles?.map((e) => e) || [];
     message.projectRoles = object.projectRoles?.map((e) => e) || [];
     message.issueRoles = object.issueRoles?.map((e) => e) || [];
-    return message;
-  },
-};
-
-function createBaseDeploymentApprovalStrategy(): DeploymentApprovalStrategy {
-  return { deploymentType: 0, approvalGroup: 0, approvalStrategy: 0 };
-}
-
-export const DeploymentApprovalStrategy = {
-  encode(message: DeploymentApprovalStrategy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.deploymentType !== 0) {
-      writer.uint32(8).int32(message.deploymentType);
-    }
-    if (message.approvalGroup !== 0) {
-      writer.uint32(16).int32(message.approvalGroup);
-    }
-    if (message.approvalStrategy !== 0) {
-      writer.uint32(24).int32(message.approvalStrategy);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeploymentApprovalStrategy {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeploymentApprovalStrategy();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 8) {
-            break;
-          }
-
-          message.deploymentType = reader.int32() as any;
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.approvalGroup = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.approvalStrategy = reader.int32() as any;
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeploymentApprovalStrategy {
-    return {
-      deploymentType: isSet(object.deploymentType) ? deploymentTypeFromJSON(object.deploymentType) : 0,
-      approvalGroup: isSet(object.approvalGroup) ? approvalGroupFromJSON(object.approvalGroup) : 0,
-      approvalStrategy: isSet(object.approvalStrategy) ? approvalStrategyFromJSON(object.approvalStrategy) : 0,
-    };
-  },
-
-  toJSON(message: DeploymentApprovalStrategy): unknown {
-    const obj: any = {};
-    if (message.deploymentType !== 0) {
-      obj.deploymentType = deploymentTypeToJSON(message.deploymentType);
-    }
-    if (message.approvalGroup !== 0) {
-      obj.approvalGroup = approvalGroupToJSON(message.approvalGroup);
-    }
-    if (message.approvalStrategy !== 0) {
-      obj.approvalStrategy = approvalStrategyToJSON(message.approvalStrategy);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeploymentApprovalStrategy>): DeploymentApprovalStrategy {
-    return DeploymentApprovalStrategy.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeploymentApprovalStrategy>): DeploymentApprovalStrategy {
-    const message = createBaseDeploymentApprovalStrategy();
-    message.deploymentType = object.deploymentType ?? 0;
-    message.approvalGroup = object.approvalGroup ?? 0;
-    message.approvalStrategy = object.approvalStrategy ?? 0;
     return message;
   },
 };

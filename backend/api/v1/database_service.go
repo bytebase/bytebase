@@ -158,16 +158,21 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if isOwnerOrDBA(role) {
+	if isOwnerOrDBA(user.Role) {
 		return databases, nil
 	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	if s.profile.DevelopmentIAM {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to check permission %q", iam.PermissionDatabasesList)
+		}
+		if ok {
+			return databases, nil
+		}
 	}
 
 	var filteredDatabases []*store.DatabaseMessage
@@ -176,12 +181,22 @@ func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*stor
 		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
 	}
 	for projectID, dbs := range projectDatabases {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+		if s.profile.DevelopmentIAM {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user, projectID)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to check permission %q", iam.PermissionDatabasesList)
+			}
+			if ok {
+				filteredDatabases = append(filteredDatabases, dbs...)
+			}
+		} else {
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			filteredDBs := filterPolicyDatabases(user.ID, policy, dbs)
+			filteredDatabases = append(filteredDatabases, filteredDBs...)
 		}
-		filteredDBs := filterPolicyDatabases(principalID, policy, dbs)
-		filteredDatabases = append(filteredDatabases, filteredDBs...)
 	}
 
 	return filteredDatabases, nil
@@ -2189,21 +2204,6 @@ func convertPeriodTsToDuration(periodTs int) (*durationpb.Duration, error) {
 		return nil, errors.New("invalid period")
 	}
 	return durationpb.New(time.Duration(periodTs) * time.Second), nil
-}
-
-// isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
-func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
-	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Owner && binding.Role != api.Developer {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID == principalID || member.Email == api.AllUsers {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func stripeAndConvertToServiceSecrets(secrets *storepb.Secrets, instanceID, databaseName string) []*v1pb.Secret {

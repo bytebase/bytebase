@@ -17,7 +17,7 @@ import { PresetRiskLevelList } from "@/types";
 import { levelText } from "../../common";
 import { useRiskCenterContext } from "../context";
 
-export interface RiskLevelSelectorProps extends SelectProps {
+export interface RiskLevelSelectorProps extends /* @vue-ignore */ SelectProps {
   value: number;
   disabled?: boolean;
 }

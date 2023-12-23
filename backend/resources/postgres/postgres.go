@@ -39,24 +39,16 @@ func Install(resourceDir string) (string, error) {
 	} else {
 		pgBaseDir = path.Join(resourceDir, fmt.Sprintf("%s-%s", pkgNamePrefix, currentVersion))
 	}
-	needInstall := false
+
 	if _, err := os.Stat(pgBaseDir); err != nil {
 		if !os.IsNotExist(err) {
 			return "", errors.Wrapf(err, "failed to check postgres binary base directory path %q", pgBaseDir)
 		}
-		// Install if not exist yet.
-		needInstall = true
-	}
-	if needInstall {
-		slog.Info("Installing PostgreSQL utilities...")
-		// The ordering below made Postgres installation atomic.
-		tmpDir := path.Join(resourceDir, fmt.Sprintf("tmp-%s%s", pkgNamePrefix, currentVersion))
-		if err := installInDir(tarName, tmpDir); err != nil {
-			return "", err
-		}
 
-		if err := os.Rename(tmpDir, pgBaseDir); err != nil {
-			return "", errors.Wrapf(err, "failed to rename postgres binary base directory from %q to %q", tmpDir, pgBaseDir)
+		slog.Info("Installing PostgreSQL utilities...")
+		version := fmt.Sprintf("%s%s", pkgNamePrefix, currentVersion)
+		if err := utils.InstallImpl(resourceDir, pgBaseDir, tarName, version, resources); err != nil {
+			return "", errors.Wrap(err, "cannot install postgres")
 		}
 	}
 
@@ -178,6 +170,20 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		return errors.Wrapf(err, "failed to make postgres data directory %q", pgDataDir)
 	}
 
+	uid, gid, sameUser, err := shouldSwitchUser()
+	if err != nil {
+		return err
+	}
+	if !sameUser {
+		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
+		for _, dir := range dirListToChown {
+			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
+			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
+				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
+			}
+		}
+	}
+
 	args := []string{
 		"-U", pgUser,
 		"-D", pgDataDir,
@@ -188,24 +194,12 @@ func initDB(pgBinDir, pgDataDir, pgUser string) error {
 		"LC_ALL=en_US.UTF-8",
 		"LC_CTYPE=en_US.UTF-8",
 	)
-	uid, gid, sameUser, err := shouldSwitchUser()
-	if err != nil {
-		return err
-	}
 	if !sameUser {
 		p.SysProcAttr = &syscall.SysProcAttr{
 			Setpgid:    true,
 			Credential: &syscall.Credential{Uid: uint32(uid)},
 		}
-		slog.Info(fmt.Sprintf("Recursively change owner of data directory %q to bytebase...", pgDataDir))
-		for _, dir := range dirListToChown {
-			slog.Info(fmt.Sprintf("Change owner of %q to bytebase", dir))
-			if err := os.Chown(dir, int(uid), int(gid)); err != nil {
-				return errors.Wrapf(err, "failed to change owner of %q to bytebase", dir)
-			}
-		}
 	}
-
 	// Suppress log spam
 	p.Stdout = nil
 	p.Stderr = os.Stderr
@@ -255,21 +249,4 @@ func shouldSwitchUser() (int, int, bool, error) {
 		return 0, 0, false, err
 	}
 	return int(uid), int(gid), sameUser, nil
-}
-
-func installInDir(tarName string, dir string) error {
-	if err := os.RemoveAll(dir); err != nil {
-		return errors.Wrapf(err, "failed to remove postgres binary temp directory %q", dir)
-	}
-
-	f, err := resources.Open(tarName)
-	if err != nil {
-		return errors.Wrapf(err, "failed to find %q in embedded resources", tarName)
-	}
-	defer f.Close()
-
-	if err := utils.ExtractTarXz(f, dir); err != nil {
-		return errors.Wrap(err, "failed to extract txz file")
-	}
-	return nil
 }

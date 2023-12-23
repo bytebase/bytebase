@@ -93,18 +93,6 @@ func ErrorCode(err error) Code {
 	return Internal
 }
 
-// ErrorMessage unwraps an application error and returns its message.
-// Non-application errors always return "Internal error".
-func ErrorMessage(err error) string {
-	var e *Error
-	if err == nil {
-		return ""
-	} else if errors.As(err, &e) {
-		return e.Err.Error()
-	}
-	return "Internal error."
-}
-
 // Wrapf is a helper function to wrap an Error with given code and formatted message.
 func Wrapf(err error, code Code, format string, args ...any) *Error {
 	return &Error{

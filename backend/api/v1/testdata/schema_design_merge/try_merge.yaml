@@ -1,0 +1,613 @@
+- description: |-
+    Complex Case:
+    Head:
+      - Table `employee`:
+        - DROP COLUMN `name`.
+        - ADD COLUMN `gender char(1)`.
+        - ADD COLUMN `credit_card_number VARCHAR(255)`.
+      - Table `salary`:
+        - DROP TABLE `salary`.
+      - Table `address`:
+        - CREATE TABLE `address` (id INT PRIMARY KEY, employee_id INT REFERENCES employee(id)).
+
+    Base:
+      - Table `employee`:
+        - ADD COLUMN `gender char(1)`.
+        - ADD COLUMN `debit_card_number VARCHAR(255)`.
+      - Table `salary`:
+        - NO CHANGE.
+      - Table `hiring_date`:
+        - CREATE TABLE `hiring_date`(id INT, employee_id INT).
+      - Table `address`:
+        - CREATE TABLE `address` (id INT PRIMARY KEY, address VARCHAR(255), employee_id INT REFERENCES employee(id)).
+
+    What we expect:
+      - Table `employee`:
+        - DROP COLUMN `name`.
+        - ADD COLUMN `gender char(1)`.
+        - ADD COLUMN `debit_card_number VARCHAR(255)`.
+        - ADD COLUMN `credit_card_number VARCHAR(255)`.
+      - Table `salary`:
+        - DROP TABLE `salary`.
+      - Table `hiring_date`:
+        - CREATE TABLE `hiring_date`(id INT, employee_id INT).
+      - Table `address`:
+        - CREATE TABLE `address` (id INT PRIMARY KEY, address VARCHAR(255), employee_id INT REFERENCES employee(id)).
+  ancestor: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "name",
+                  "position":  2,
+                  "type":  "varchar(255)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "type":  "btree",
+                  "unique":  true,
+                  "primary":  true
+                }
+              ],
+              "indexSize":  "8192"
+            },
+            {
+              "name":  "salary",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  head: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name": "gender",
+                  "position": 2,
+                  "type": "char(1)"
+                },
+                {
+                  "name": "credit_card_number",
+                  "position": 3,
+                  "type": "varchar(255)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "type":  "btree",
+                  "unique":  true,
+                  "primary":  true
+                }
+              ],
+              "indexSize":  "8192"
+            },
+            {
+              "name":  "address",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "employee_id",
+                  "position":  2,
+                  "type":  "integer"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "primary":  true
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "address-fk-sc4rcmkp",
+                  "columns":  [
+                    "employee_id"
+                  ],
+                  "referencedSchema":  "public",
+                  "referencedTable":  "employee",
+                  "referencedColumns":  [
+                    "id"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  base: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "name",
+                  "position":  2,
+                  "type":  "varchar(255)"
+                },
+                {
+                  "name": "gender",
+                  "position": 3,
+                  "type": "char(1)"
+                },
+                {
+                  "name": "debit_card_number",
+                  "position": 4,
+                  "type": "varchar(255)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "type":  "btree",
+                  "unique":  true,
+                  "primary":  true
+                }
+              ],
+              "indexSize":  "8192"
+            },
+            {
+              "name":  "salary",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "hiring_date",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "employee_id",
+                  "position":  2,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "address",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "address",
+                  "position":  2,
+                  "type":  "varchar(255)"
+                },
+                {
+                  "name":  "employee_id",
+                  "position":  3,
+                  "type":  "integer"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "primary":  true
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "address-fk-sc4rcmkp",
+                  "columns":  [
+                    "employee_id"
+                  ],
+                  "referencedSchema":  "public",
+                  "referencedTable":  "employee",
+                  "referencedColumns":  [
+                    "id"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  expected: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "gender",
+                  "position":  2,
+                  "type":  "char(1)"
+                },
+                {
+                  "name":  "debit_card_number",
+                  "position":  3,
+                  "type":  "varchar(255)"
+                },
+                {
+                  "name":  "credit_card_number",
+                  "position":  4,
+                  "type":  "varchar(255)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "type":  "btree",
+                  "unique":  true,
+                  "primary":  true
+                }
+              ]
+            },
+            {
+              "name":  "address",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "address",
+                  "position":  2,
+                  "type":  "varchar(255)"
+                },
+                {
+                  "name":  "employee_id",
+                  "position":  3,
+                  "type":  "integer"
+                }
+              ],
+              "foreignKeys":  [
+                {
+                  "name":  "address-fk-sc4rcmkp",
+                  "columns":  [
+                    "employee_id"
+                  ],
+                  "referencedSchema":  "public",
+                  "referencedTable":  "employee",
+                  "referencedColumns":  [
+                    "id"
+                  ]
+                }
+              ]
+            },
+            {
+              "name":  "hiring_date",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "employee_id",
+                  "position":  2,
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+- description: Add different column on the same table
+  ancestor: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  head: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "name",
+                  "position":  2,
+                  "type":  "varchar(255)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  base: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "gender",
+                  "position":  2,
+                  "type":  "char(1)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  expected: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "gender",
+                  "position":  2,
+                  "type":  "char(1)"
+                },
+                {
+                  "name":  "name",
+                  "position":  3,
+                  "type":  "varchar(255)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+- description: Create different table
+  ancestor: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  head: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "address",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  base: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "salary",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  expected: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "address",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            },
+            {
+              "name":  "salary",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }

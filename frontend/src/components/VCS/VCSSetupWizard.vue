@@ -1,17 +1,19 @@
 <template>
   <BBAttention
     v-if="showAttention"
-    :style="'WARN'"
+    type="warning"
     :description="attentionText"
     :link="link"
   />
-  <BBStepTab
+  <StepTab
     class="mt-4 mb-8"
-    :step-item-list="stepList"
+    :current-index="state.currentStep"
+    :step-list="stepList"
     :allow-next="allowNext"
+    :show-cancel="showCancel"
     :finish-title="$t('common.confirm-and-add')"
-    @try-change-step="tryChangeStep"
-    @try-finish="tryFinishSetup"
+    @update:current-index="tryChangeStep"
+    @finish="tryFinishSetup"
     @cancel="cancelSetup"
   >
     <template #0>
@@ -23,7 +25,7 @@
     <template #2>
       <VCSProviderConfirmPanel :config="state.config" />
     </template>
-  </BBStepTab>
+  </StepTab>
 </template>
 
 <script lang="ts" setup>
@@ -31,7 +33,7 @@ import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, onUnmounted, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBStepTabItem } from "@/bbkit/types";
+import { StepTab } from "@/components/v2";
 import { pushNotification, useVCSV1Store } from "@/store";
 import {
   isValidVCSApplicationIdOrSecret,
@@ -49,6 +51,15 @@ import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 import VCSProviderConfirmPanel from "./VCSProviderConfirmPanel.vue";
 import VCSProviderOAuthPanel from "./VCSProviderOAuthPanel.vue";
 
+withDefaults(
+  defineProps<{
+    showCancel?: boolean;
+  }>(),
+  {
+    showCancel: true,
+  }
+);
+
 const BASIC_INFO_STEP = 0;
 const OAUTH_INFO_STEP = 1;
 const CONFIRM_STEP = 2;
@@ -63,7 +74,7 @@ const { t } = useI18n();
 const router = useRouter();
 const vcsV1Store = useVCSV1Store();
 
-const stepList: BBStepTabItem[] = [
+const stepList = [
   { title: t("gitops.setting.add-git-provider.basic-info.self") },
   { title: t("gitops.setting.add-git-provider.oauth-info.self") },
   { title: t("common.confirm") },
@@ -174,16 +185,15 @@ const showAttention = computed((): boolean => {
   return state.currentStep != CONFIRM_STEP;
 });
 
-const tryChangeStep = (
-  oldStep: number,
-  newStep: number,
-  allowChangeCallback: () => void
-) => {
+const tryChangeStep = (nextStepIndex: number) => {
   // If we are trying to move from OAuth step to Confirm step, we first verify
   // the OAuth info is correct. We achieve this by:
   // 1. Kicking of the OAuth workflow to verify the current user can login to the GitLab instance and the application id is correct.
   // 2. If step 1 succeeds, we will get a code, we use this code together with the secret to exchange for the access token. (see eventListener)
-  if (state.currentStep == OAUTH_INFO_STEP && newStep > oldStep) {
+  if (
+    state.currentStep == OAUTH_INFO_STEP &&
+    nextStepIndex > state.currentStep
+  ) {
     let authorizeUrl = `${state.config.instanceUrl}/oauth/authorize`;
     if (state.config.type === ExternalVersionControl_Type.GITHUB) {
       authorizeUrl = `${state.config.instanceUrl}/login/oauth/authorize`;
@@ -201,8 +211,7 @@ const tryChangeStep = (
     if (newWindow) {
       state.oAuthResultCallback = (token: OAuthToken | undefined) => {
         if (token) {
-          state.currentStep = newStep;
-          allowChangeCallback();
+          state.currentStep = nextStepIndex;
           pushNotification({
             module: "bytebase",
             style: "SUCCESS",
@@ -228,12 +237,11 @@ const tryChangeStep = (
       };
     }
   } else {
-    state.currentStep = newStep;
-    allowChangeCallback();
+    state.currentStep = nextStepIndex;
   }
 };
 
-const tryFinishSetup = (allowChangeCallback: () => void) => {
+const tryFinishSetup = () => {
   vcsV1Store
     .createVCS({
       name: "",
@@ -245,7 +253,6 @@ const tryFinishSetup = (allowChangeCallback: () => void) => {
       apiUrl: "",
     })
     .then((vcs: ExternalVersionControl) => {
-      allowChangeCallback();
       router.push({
         name: "setting.workspace.gitops",
       });

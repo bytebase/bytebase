@@ -10,7 +10,7 @@
       <BBAttention
         v-if="isDefaultProject"
         class="mb-4"
-        :style="'INFO'"
+        type="info"
         :title="$t('project.overview.info-slot-content')"
       />
     </HideInStandaloneMode>

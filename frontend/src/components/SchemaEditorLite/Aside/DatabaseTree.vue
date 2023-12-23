@@ -33,8 +33,9 @@
         :node-props="nodeProps"
         :expanded-keys="expandedKeysRef"
         :selected-keys="selectedKeysRef"
-        :on-update:expanded-keys="handleExpandedKeysChange"
+        :show-irrelevant-nodes="false"
         :theme-overrides="{ nodeHeight: '28px' }"
+        @update:expanded-keys="handleExpandedKeysChange"
       />
       <NDropdown
         trigger="manual"
@@ -80,10 +81,8 @@ import {
 } from "naive-ui";
 import { computed, onMounted, watch, ref, h, reactive, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
-import TableIcon from "~icons/heroicons-outline/table-cells";
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
+import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { ComposedDatabase, ComposedInstance } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -514,9 +513,18 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
 
     return h("span", { class: "flex items-center gap-x-1" }, children);
   } else if (treeNode.type === "database") {
-    return h(DatabaseIcon, {
-      class: "w-4 h-auto text-gray-400",
-    });
+    return h("span", { class: "flex items-center gap-x-1" }, [
+      h(DatabaseIcon, {
+        class: "w-4 h-auto text-gray-400",
+      }),
+      h(
+        "span",
+        {
+          class: "text-gray-500 text-sm",
+        },
+        `(${treeNode.database.effectiveEnvironmentEntity.title})`
+      ),
+    ]);
   } else if (treeNode.type === "schema") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400",

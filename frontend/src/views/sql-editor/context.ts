@@ -3,6 +3,7 @@ import { InjectionKey, inject, provide, Ref, ref } from "vue";
 import { ComposedDatabase } from "@/types";
 import {
   DatabaseMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -20,7 +21,8 @@ export type SelectedDatabaseSchema = {
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  table?: TableMetadata;
+  externalTable?: ExternalTableMetadata;
 };
 
 export type SQLEditorContext = {

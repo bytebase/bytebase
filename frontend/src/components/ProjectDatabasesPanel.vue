@@ -16,68 +16,70 @@
       />
     </div>
 
-    <DatabaseOperations
-      v-if="showDatabaseOperations"
-      :project-uid="project.uid"
-      :databases="selectedDatabases"
-    />
+    <div class="space-y-2">
+      <DatabaseOperations
+        v-if="showDatabaseOperations"
+        :project-uid="project.uid"
+        :databases="selectedDatabases"
+      />
 
-    <DatabaseV1Table
-      mode="PROJECT"
-      table-class="border"
-      :show-selection-column="true"
-      :show-placeholder="true"
-      :database-list="filteredDatabaseList"
-    >
-      <template #selection-all="{ databaseList: selectedDatabaseList }">
-        <input
-          v-if="selectedDatabaseList.length > 0"
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
-          @input="
-            toggleDatabasesSelection(
-              selectedDatabaseList as ComposedDatabase[],
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-      </template>
-      <template #selection="{ database }">
-        <input
-          type="checkbox"
-          class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-          :checked="isDatabaseSelected(database as ComposedDatabase)"
-          @click.stop="
-            toggleDatabasesSelection(
-              [database as ComposedDatabase],
-              ($event.target as HTMLInputElement).checked
-            )
-          "
-        />
-      </template>
-      <template v-if="databaseList.length === 0" #placeholder>
-        <div class="p-8 text-center textinfolabel">
-          <i18n-t
-            v-if="showEmptyActions"
-            keypath="project.overview.no-db-prompt"
-            tag="p"
-          >
-            <template #newDb>
-              <span class="text-main font-bold">{{
-                $t("quick-action.new-db")
-              }}</span>
-            </template>
-            <template #transferInDb>
-              <span class="text-main font-bold">{{
-                $t("quick-action.transfer-in-db")
-              }}</span>
-            </template>
-          </i18n-t>
-          <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
-        </div>
-      </template>
-    </DatabaseV1Table>
+      <DatabaseV1Table
+        mode="PROJECT"
+        table-class="border"
+        :show-selection-column="true"
+        :show-placeholder="true"
+        :database-list="filteredDatabaseList"
+      >
+        <template #selection-all="{ databaseList: selectedDatabaseList }">
+          <input
+            v-if="selectedDatabaseList.length > 0"
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+            @input="
+              toggleDatabasesSelection(
+                selectedDatabaseList as ComposedDatabase[],
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+        </template>
+        <template #selection="{ database }">
+          <input
+            type="checkbox"
+            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            :checked="isDatabaseSelected(database as ComposedDatabase)"
+            @click.stop="
+              toggleDatabasesSelection(
+                [database as ComposedDatabase],
+                ($event.target as HTMLInputElement).checked
+              )
+            "
+          />
+        </template>
+        <template v-if="databaseList.length === 0" #placeholder>
+          <div class="p-8 text-center textinfolabel">
+            <i18n-t
+              v-if="showEmptyActions"
+              keypath="project.overview.no-db-prompt"
+              tag="p"
+            >
+              <template #newDb>
+                <span class="text-main font-bold">{{
+                  $t("quick-action.new-db")
+                }}</span>
+              </template>
+              <template #transferInDb>
+                <span class="text-main font-bold">{{
+                  $t("quick-action.transfer-in-db")
+                }}</span>
+              </template>
+            </i18n-t>
+            <i18n-t v-else keypath="common.no-data" tag="p"></i18n-t>
+          </div>
+        </template>
+      </DatabaseV1Table>
+    </div>
   </div>
 </template>
 

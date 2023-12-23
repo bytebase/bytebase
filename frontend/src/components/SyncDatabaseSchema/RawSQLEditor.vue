@@ -53,7 +53,7 @@
     <BBAttention
       v-if="isSheetOversized && !viewMode"
       :class="'my-2'"
-      :style="`WARN`"
+      type="warning"
       :title="$t('issue.statement-from-sheet-warning')"
     >
       <template v-if="sheet?.name" #action>

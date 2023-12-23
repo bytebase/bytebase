@@ -2,7 +2,6 @@ import { cloneDeep, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBNotificationStyle } from "@/bbkit/types";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import {
   pushNotification,
@@ -17,6 +16,7 @@ import {
   ExecuteOption,
   SQLResultSetV1,
   UNKNOWN_ID,
+  BBNotificationStyle,
 } from "@/types";
 import {
   Advice_Status,

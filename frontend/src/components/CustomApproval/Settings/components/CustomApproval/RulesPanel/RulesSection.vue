@@ -17,8 +17,9 @@
           <div class="bb-grid-cell">
             {{ levelText(row.level) }}
           </div>
-          <div class="bb-grid-cell">
+          <div class="bb-grid-cell flex items-center space-x-2">
             <RuleSelect
+              class="flex-1 max-w-md min-w-[10rem]"
               :value="row.rule"
               :link="true"
               :on-update="(rule) => updateRow(row, rule)"

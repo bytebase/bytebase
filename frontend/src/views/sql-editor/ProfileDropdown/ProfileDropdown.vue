@@ -98,13 +98,10 @@
         </a>
       </div>
       <div class="border-t border-gray-100"></div>
-      <div v-if="isDev" class="py-1 menu-item">
-        <LSPTypeSwitch />
-      </div>
       <div v-if="allowToggleDebug" class="py-1 menu-item">
         <div class="flex flex-row items-center space-x-2 justify-between">
           <span>Debug</span>
-          <BBSwitch :value="isDebug" @toggle="switchDebug" />
+          <NSwitch size="small" :value="isDebug" @update-value="switchDebug" />
         </div>
       </div>
       <div class="border-t border-gray-100"></div>
@@ -118,11 +115,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NSwitch } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import { BBContextMenu, BBSwitch } from "@/bbkit";
-import { LSPTypeSwitch } from "@/components/MonacoEditor/dev";
+import { BBContextMenu } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {

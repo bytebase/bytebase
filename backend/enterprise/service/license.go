@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -64,9 +64,11 @@ func (s *LicenseService) StoreLicense(ctx context.Context, patch *enterprise.Sub
 
 // LoadSubscription will load subscription.
 func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subscription {
-	if s.cachedSubscription != nil && s.cachedSubscription.IsExpired() {
-		// refresh expired subscription
-		s.cachedSubscription = nil
+	if s.cachedSubscription != nil {
+		if s.cachedSubscription.Plan == api.FREE || s.cachedSubscription.IsExpired() {
+			// refresh expired subscription
+			s.cachedSubscription = nil
+		}
 	}
 	if s.cachedSubscription != nil {
 		return s.cachedSubscription

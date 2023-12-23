@@ -20,7 +20,8 @@ export type GenerateDiffDDLResult = {
 export const generateDiffDDL = async (
   database: ComposedDatabase,
   source: DatabaseMetadata,
-  target: DatabaseMetadata
+  target: DatabaseMetadata,
+  allowEmptyDiffDDLWithConfigChange = true
 ): Promise<GenerateDiffDDLResult> => {
   const finish = (statement: string, errors: string[], fatal: boolean) => {
     _generateDiffDDLTimer.end("generateDiffDDL");
@@ -32,7 +33,15 @@ export const generateDiffDDL = async (
   };
 
   if (isEqual(source, target)) {
-    return finish("", [t("schema-editor.nothing-changed")], true);
+    return finish(
+      "",
+      [
+        t("schema-editor.nothing-changed-for-database", {
+          database: database.databaseName,
+        }),
+      ],
+      true
+    );
   }
 
   const validationMessages = validateDatabaseMetadata(target);
@@ -56,14 +65,25 @@ export const generateDiffDDL = async (
     );
     const { diff } = diffResponse;
     if (diff.length === 0) {
-      if (!isEqual(source.schemaConfigs, target.schemaConfigs)) {
+      if (
+        !allowEmptyDiffDDLWithConfigChange &&
+        !isEqual(source.schemaConfigs, target.schemaConfigs)
+      ) {
         return finish(
           "",
           [t("schema-editor.message.cannot-change-config")],
           true
         );
       }
-      return finish("", [t("schema-editor.nothing-changed")], true);
+      return finish(
+        "",
+        [
+          t("schema-editor.nothing-changed-for-database", {
+            database: database.databaseName,
+          }),
+        ],
+        true
+      );
     }
     return finish(diff, [], false);
   } catch (ex) {

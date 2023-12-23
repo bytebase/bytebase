@@ -198,6 +198,10 @@ func (*columnMaximumCharacterLengthChecker) getCharLength(ctx mysql.IDataTypeCon
 	}
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserCHAR_SYMBOL:
+		// for mysql: create table tt(a char) == create table tt(a char(1));
+		if ctx.FieldLength() == nil || ctx.FieldLength().Real_ulonglong_number() == nil {
+			return 1
+		}
 		charLengthStr := ctx.FieldLength().Real_ulonglong_number().GetText()
 		charLengthInt, err := strconv.Atoi(charLengthStr)
 		if err != nil {

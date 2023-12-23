@@ -79,8 +79,9 @@ var (
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
-		disableSample bool
-		lsp           bool
+		disableSample   bool
+		lsp             bool
+		preUpdateBackup bool
 
 		// Cloud backup configs.
 		backupRegion     string
@@ -125,7 +126,8 @@ func init() {
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", false, "whether to enable lsp in SQL Editor")
+	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", true, "whether to enable lsp in SQL Editor")
+	rootCmd.PersistentFlags().BoolVar(&flags.preUpdateBackup, "pre-update-backup", false, "whether to enable feature of data backup prior to data update")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
@@ -192,7 +194,12 @@ func checkPort(port int) error {
 
 func start() {
 	if flags.debug {
-		log.GLogLevel.Set(slog.LevelDebug)
+		log.LogLevel.Set(slog.LevelDebug)
+	}
+	if flags.saas {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	}
 
 	var err error

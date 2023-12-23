@@ -17,15 +17,15 @@
         to="/setting/profile"
         role="menuitem"
       >
-        <p class="text-sm flex justify-between">
-          <span class="text-main font-medium truncate">
+        <p class="text-sm flex justify-between space-x-2">
+          <span class="text-main font-medium truncate text-ellipsis">
             {{ currentUserV1.title }}
           </span>
           <span class="text-control">
             {{ roleNameV1(currentUserV1.userRole) }}
           </span>
         </p>
-        <p class="text-sm text-control truncate">
+        <p class="text-sm text-control truncate text-ellipsis">
           {{ currentUserV1.email }}
         </p>
       </router-link>
@@ -154,7 +154,7 @@
       <div v-if="allowToggleDebug" class="py-1 menu-item">
         <div class="flex flex-row items-center space-x-2 justify-between">
           <span>Debug</span>
-          <BBSwitch :value="isDebug" @toggle="switchDebug" />
+          <NSwitch size="small" :value="isDebug" @update-value="switchDebug" />
         </div>
       </div>
       <div class="border-t border-gray-100"></div>
@@ -168,6 +168,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NSwitch } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";

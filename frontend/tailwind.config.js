@@ -10,7 +10,6 @@ module.exports = {
   mode: "jit",
   safelist: [
     // "w-xxx" is used by BBTab
-    // "pl-xxx" is used by BBOutline
     // "bg-xxx", "text-xxx" is used by BBAttention TaskCheckBadgeBar BBBadge
     // "hover:bg-xxx" is used by TaskCheckBadgeBar BBBadge
     // "grid-cols-xxx" is used by AnomalyCenterDashboard

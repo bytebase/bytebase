@@ -29,11 +29,10 @@
           {{ $t("sql-review.rule.active") }}
         </h3>
         <div class="flex items-center gap-x-2 text-sm">
-          <BBSwitch
+          <NSwitch
             :disabled="disabled"
             :value="state.level !== SQLReviewRuleLevel.DISABLED"
-            size="small"
-            @toggle="toggleActivity(rule, $event)"
+            @update-value="(val) => toggleActivity(rule, val)"
           />
         </div>
       </div>
@@ -163,6 +162,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NSwitch } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";

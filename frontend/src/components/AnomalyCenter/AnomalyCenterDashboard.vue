@@ -99,7 +99,7 @@
       <div v-else class="text-center text-control-light">
         {{
           $t("anomaly.table-placeholder", {
-            type: $t("common.database"),
+            type: $t("common.database").toLocaleLowerCase(),
           })
         }}
       </div>
@@ -113,7 +113,7 @@
       <div v-else class="text-center text-control-light">
         {{
           $t("anomaly.table-placeholder", {
-            type: $t("common.instance"),
+            type: $t("common.instance").toLocaleLowerCase(),
           })
         }}
       </div>

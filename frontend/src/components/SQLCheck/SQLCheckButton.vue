@@ -13,7 +13,7 @@
           @click="runChecks"
         >
           <template #icon>
-            <BBSpin v-if="isRunning" class="w-4 h-4" />
+            <BBSpin v-if="isRunning" class="!w-4 !h-4" />
             <heroicons-outline:play v-else class="w-4 h-4" />
           </template>
           <template #default>

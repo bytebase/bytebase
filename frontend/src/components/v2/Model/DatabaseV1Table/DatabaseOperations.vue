@@ -59,7 +59,6 @@
     @close="state.showTransferOutDatabaseForm = false"
   >
     <TransferOutDatabaseForm
-      :project-id="selectedProjectUid"
       :database-list="props.databases"
       :selected-database-uid-list="selectedDatabaseUidList"
       @dismiss="state.showTransferOutDatabaseForm = false"
@@ -67,8 +66,8 @@
   </Drawer>
 
   <BBAlert
-    v-if="state.showUnassignAlert"
-    :style="'WARN'"
+    v-model:show="state.showUnassignAlert"
+    type="warning"
     :ok-text="$t('database.unassign')"
     :title="$t('database.unassign-alert-title')"
     :description="$t('database.unassign-alert-description')"
@@ -424,24 +423,6 @@ const actions = computed((): DatabaseAction[] => {
   }
   resp.unshift(
     {
-      icon: h(PencilIcon),
-      text: t("database.change-data"),
-      disabled:
-        !allowChangeData.value ||
-        !selectedProjectUid.value ||
-        props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
-      click: () => generateMultiDb("bb.issue.database.data.update"),
-      tooltip: (action) => {
-        if (!allowChangeData.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    },
-    {
       icon: h(PenSquareIcon),
       text: t("database.edit-schema"),
       disabled:
@@ -456,6 +437,24 @@ const actions = computed((): DatabaseAction[] => {
           return t("database.batch-action-not-support-alter-schema");
         }
         if (!allowEditSchema.value) {
+          return t("database.batch-action-permission-denied", {
+            action,
+          });
+        }
+        return getDisabledTooltip(action);
+      },
+    },
+    {
+      icon: h(PencilIcon),
+      text: t("database.change-data"),
+      disabled:
+        !allowChangeData.value ||
+        !selectedProjectUid.value ||
+        props.databases.length < 1 ||
+        selectedProjectNames.value.has(DEFAULT_PROJECT_V1_NAME),
+      click: () => generateMultiDb("bb.issue.database.data.update"),
+      tooltip: (action) => {
+        if (!allowChangeData.value) {
           return t("database.batch-action-permission-denied", {
             action,
           });

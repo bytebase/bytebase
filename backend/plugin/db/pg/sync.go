@@ -87,7 +87,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn, isAtLeastPG10)
+	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
@@ -118,11 +118,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	for _, schemaName := range schemas {
 		var tables []*storepb.TableMetadata
+		var externalTables []*storepb.ExternalTableMetadata
 		var views []*storepb.ViewMetadata
 		var functions []*storepb.FunctionMetadata
 		var exists bool
 		if tables, exists = tableMap[schemaName]; !exists {
 			tables = []*storepb.TableMetadata{}
+		}
+		if externalTables, exists = externalTableMap[schemaName]; !exists {
+			externalTables = []*storepb.ExternalTableMetadata{}
 		}
 		for _, table := range tables {
 			if isAtLeastPG10 {
@@ -136,10 +140,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			functions = []*storepb.FunctionMetadata{}
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:      schemaName,
-			Tables:    tables,
-			Views:     views,
-			Functions: functions,
+			Name:           schemaName,
+			Tables:         tables,
+			ExternalTables: externalTables,
+			Views:          views,
+			Functions:      functions,
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -321,6 +326,14 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	return result, nil
 }
 
+func getListForeignTableQuery() string {
+	return `SELECT
+		foreign_table.foreign_table_schema,
+		foreign_table.foreign_table_name,
+		foreign_table.foreign_server_catalog,
+		foreign_table.foreign_server_name
+	FROM information_schema.foreign_tables AS foreign_table;`
+}
 func getListTableQuery(isAtLeastPG10 bool) string {
 	relisPartition := ""
 	if isAtLeastPG10 {
@@ -339,25 +352,29 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
 	columnMap, err := getTableColumns(txn)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get table columns")
+		return nil, nil, errors.Wrapf(err, "failed to get columns")
 	}
 	indexMap, err := getIndexes(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get indices")
+		return nil, nil, errors.Wrapf(err, "failed to get indexes")
 	}
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get foreign keys")
+		return nil, nil, errors.Wrapf(err, "failed to get foreign keys")
+	}
+	foreignTablesMap, err := getForeignTables(txn, columnMap)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get foreign tables")
 	}
 
 	tableMap := make(map[string][]*storepb.TableMetadata)
 	query := getListTableQuery(isAtLeastPG10)
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 
@@ -366,7 +383,7 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMeta
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if pgparser.IsSystemTable(table.Name) {
 			continue
@@ -382,10 +399,47 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMeta
 		tableMap[schemaName] = append(tableMap[schemaName], table)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return tableMap, nil
+	return tableMap, foreignTablesMap, nil
+}
+
+func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ExternalTableMetadata, error) {
+	query := getListForeignTableQuery()
+	rows, err := txn.Query(query)
+	if err != nil {
+		// Experimental feature, log error and return.
+		slog.Error("failed to query foreign table: %v", err)
+		return nil, nil
+	}
+	defer rows.Close()
+
+	foreignTablesMap := make(map[string][]*storepb.ExternalTableMetadata)
+
+	for rows.Next() {
+		var schemaName, tableName, foreignServerCatalog, foreignServerName string
+		if err := rows.Scan(&schemaName, &tableName, &foreignServerCatalog, &foreignServerName); err != nil {
+			slog.Error("failed to scan foreign table: %v", err)
+			return nil, nil
+		}
+		externalTable := &storepb.ExternalTableMetadata{
+			Name:                 tableName,
+			ExternalServerName:   foreignServerName,
+			ExternalDatabaseName: foreignServerCatalog,
+		}
+		key := db.TableKey{Schema: schemaName, Table: externalTable.Name}
+		externalTable.Columns = columnMap[key]
+
+		foreignTablesMap[schemaName] = append(foreignTablesMap[schemaName], externalTable)
+	}
+
+	if err := rows.Err(); err != nil {
+		slog.Error("failed to scan foreign table: %v", err)
+		return nil, nil
+	}
+
+	return foreignTablesMap, nil
 }
 
 var listTablePartitionQuery = `
@@ -691,6 +745,12 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		if !ok {
 			return nil, errors.Errorf("statement %q is not index statement", statement)
 		}
+		deparsed, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
+		if err != nil {
+			return nil, err
+		}
+		// Instead of using indexdef, we use deparsed format so that the definition has quoted identifiers.
+		index.Definition = deparsed
 
 		index.Type = getIndexMethodType(statement)
 		index.Unique = node.Index.Unique

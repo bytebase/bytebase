@@ -53,9 +53,9 @@ import {
   isSimilarTab,
 } from "@/utils";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const { t } = useI18n();
 const isLoading = ref<boolean>(true);
 
 const currentUserV1 = useCurrentUserV1();

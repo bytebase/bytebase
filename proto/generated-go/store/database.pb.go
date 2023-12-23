@@ -218,7 +218,7 @@ func (x TablePartitionMetadata_Type) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TablePartitionMetadata_Type.Descriptor instead.
 func (TablePartitionMetadata_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{6, 0}
+	return file_store_database_proto_rawDescGZIP(), []int{7, 0}
 }
 
 // DatabaseMetadata is the metadata for databases.
@@ -391,14 +391,16 @@ type SchemaMetadata struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The tables is the list of tables in a schema.
 	Tables []*TableMetadata `protobuf:"bytes,2,rep,name=tables,proto3" json:"tables,omitempty"`
+	// The external_tables is the list of external tables in a schema.
+	ExternalTables []*ExternalTableMetadata `protobuf:"bytes,3,rep,name=external_tables,json=externalTables,proto3" json:"external_tables,omitempty"`
 	// The views is the list of views in a schema.
-	Views []*ViewMetadata `protobuf:"bytes,3,rep,name=views,proto3" json:"views,omitempty"`
+	Views []*ViewMetadata `protobuf:"bytes,4,rep,name=views,proto3" json:"views,omitempty"`
 	// The functions is the list of functions in a schema.
-	Functions []*FunctionMetadata `protobuf:"bytes,4,rep,name=functions,proto3" json:"functions,omitempty"`
+	Functions []*FunctionMetadata `protobuf:"bytes,5,rep,name=functions,proto3" json:"functions,omitempty"`
 	// The streams is the list of streams in a schema, currently, only used for Snowflake.
-	Streams []*StreamMetadata `protobuf:"bytes,5,rep,name=streams,proto3" json:"streams,omitempty"`
+	Streams []*StreamMetadata `protobuf:"bytes,6,rep,name=streams,proto3" json:"streams,omitempty"`
 	// The routines is the list of routines in a schema, currently, only used for Snowflake.
-	Tasks []*TaskMetadata `protobuf:"bytes,6,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	Tasks []*TaskMetadata `protobuf:"bytes,7,rep,name=tasks,proto3" json:"tasks,omitempty"`
 }
 
 func (x *SchemaMetadata) Reset() {
@@ -443,6 +445,13 @@ func (x *SchemaMetadata) GetName() string {
 func (x *SchemaMetadata) GetTables() []*TableMetadata {
 	if x != nil {
 		return x.Tables
+	}
+	return nil
+}
+
+func (x *SchemaMetadata) GetExternalTables() []*ExternalTableMetadata {
+	if x != nil {
+		return x.ExternalTables
 	}
 	return nil
 }
@@ -892,6 +901,81 @@ func (x *TableMetadata) GetPartitions() []*TablePartitionMetadata {
 	return nil
 }
 
+type ExternalTableMetadata struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// The name is the name of a external table.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The external_server_name is the name of the external server.
+	ExternalServerName string `protobuf:"bytes,2,opt,name=external_server_name,json=externalServerName,proto3" json:"external_server_name,omitempty"`
+	// The external_database_name is the name of the external database.
+	ExternalDatabaseName string `protobuf:"bytes,3,opt,name=external_database_name,json=externalDatabaseName,proto3" json:"external_database_name,omitempty"`
+	// The columns is the ordered list of columns in a foreign table.
+	Columns []*ColumnMetadata `protobuf:"bytes,4,rep,name=columns,proto3" json:"columns,omitempty"`
+}
+
+func (x *ExternalTableMetadata) Reset() {
+	*x = ExternalTableMetadata{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_database_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExternalTableMetadata) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExternalTableMetadata) ProtoMessage() {}
+
+func (x *ExternalTableMetadata) ProtoReflect() protoreflect.Message {
+	mi := &file_store_database_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExternalTableMetadata.ProtoReflect.Descriptor instead.
+func (*ExternalTableMetadata) Descriptor() ([]byte, []int) {
+	return file_store_database_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ExternalTableMetadata) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ExternalTableMetadata) GetExternalServerName() string {
+	if x != nil {
+		return x.ExternalServerName
+	}
+	return ""
+}
+
+func (x *ExternalTableMetadata) GetExternalDatabaseName() string {
+	if x != nil {
+		return x.ExternalDatabaseName
+	}
+	return ""
+}
+
+func (x *ExternalTableMetadata) GetColumns() []*ColumnMetadata {
+	if x != nil {
+		return x.Columns
+	}
+	return nil
+}
+
 // TablePartitionMetadata is the metadata for table partitions.
 type TablePartitionMetadata struct {
 	state         protoimpl.MessageState
@@ -911,7 +995,7 @@ type TablePartitionMetadata struct {
 func (x *TablePartitionMetadata) Reset() {
 	*x = TablePartitionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[6]
+		mi := &file_store_database_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -924,7 +1008,7 @@ func (x *TablePartitionMetadata) String() string {
 func (*TablePartitionMetadata) ProtoMessage() {}
 
 func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[6]
+	mi := &file_store_database_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,7 +1021,7 @@ func (x *TablePartitionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TablePartitionMetadata.ProtoReflect.Descriptor instead.
 func (*TablePartitionMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{6}
+	return file_store_database_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *TablePartitionMetadata) GetName() string {
@@ -1006,7 +1090,7 @@ type ColumnMetadata struct {
 func (x *ColumnMetadata) Reset() {
 	*x = ColumnMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[7]
+		mi := &file_store_database_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1019,7 +1103,7 @@ func (x *ColumnMetadata) String() string {
 func (*ColumnMetadata) ProtoMessage() {}
 
 func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[7]
+	mi := &file_store_database_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1032,7 +1116,7 @@ func (x *ColumnMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnMetadata.ProtoReflect.Descriptor instead.
 func (*ColumnMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{7}
+	return file_store_database_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ColumnMetadata) GetName() string {
@@ -1168,7 +1252,7 @@ type ViewMetadata struct {
 func (x *ViewMetadata) Reset() {
 	*x = ViewMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[8]
+		mi := &file_store_database_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1181,7 +1265,7 @@ func (x *ViewMetadata) String() string {
 func (*ViewMetadata) ProtoMessage() {}
 
 func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[8]
+	mi := &file_store_database_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1194,7 +1278,7 @@ func (x *ViewMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ViewMetadata.ProtoReflect.Descriptor instead.
 func (*ViewMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{8}
+	return file_store_database_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ViewMetadata) GetName() string {
@@ -1242,7 +1326,7 @@ type DependentColumn struct {
 func (x *DependentColumn) Reset() {
 	*x = DependentColumn{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[9]
+		mi := &file_store_database_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1255,7 +1339,7 @@ func (x *DependentColumn) String() string {
 func (*DependentColumn) ProtoMessage() {}
 
 func (x *DependentColumn) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[9]
+	mi := &file_store_database_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1268,7 +1352,7 @@ func (x *DependentColumn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DependentColumn.ProtoReflect.Descriptor instead.
 func (*DependentColumn) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{9}
+	return file_store_database_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *DependentColumn) GetSchema() string {
@@ -1307,7 +1391,7 @@ type FunctionMetadata struct {
 func (x *FunctionMetadata) Reset() {
 	*x = FunctionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[10]
+		mi := &file_store_database_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1320,7 +1404,7 @@ func (x *FunctionMetadata) String() string {
 func (*FunctionMetadata) ProtoMessage() {}
 
 func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[10]
+	mi := &file_store_database_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1333,7 +1417,7 @@ func (x *FunctionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FunctionMetadata.ProtoReflect.Descriptor instead.
 func (*FunctionMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{10}
+	return file_store_database_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *FunctionMetadata) GetName() string {
@@ -1371,12 +1455,14 @@ type IndexMetadata struct {
 	Visible bool `protobuf:"varint,6,opt,name=visible,proto3" json:"visible,omitempty"`
 	// The comment is the comment of an index.
 	Comment string `protobuf:"bytes,7,opt,name=comment,proto3" json:"comment,omitempty"`
+	// The definition of an index.
+	Definition string `protobuf:"bytes,8,opt,name=definition,proto3" json:"definition,omitempty"`
 }
 
 func (x *IndexMetadata) Reset() {
 	*x = IndexMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[11]
+		mi := &file_store_database_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1389,7 +1475,7 @@ func (x *IndexMetadata) String() string {
 func (*IndexMetadata) ProtoMessage() {}
 
 func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[11]
+	mi := &file_store_database_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1402,7 +1488,7 @@ func (x *IndexMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IndexMetadata.ProtoReflect.Descriptor instead.
 func (*IndexMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{11}
+	return file_store_database_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *IndexMetadata) GetName() string {
@@ -1454,6 +1540,13 @@ func (x *IndexMetadata) GetComment() string {
 	return ""
 }
 
+func (x *IndexMetadata) GetDefinition() string {
+	if x != nil {
+		return x.Definition
+	}
+	return ""
+}
+
 // ExtensionMetadata is the metadata for extensions.
 type ExtensionMetadata struct {
 	state         protoimpl.MessageState
@@ -1473,7 +1566,7 @@ type ExtensionMetadata struct {
 func (x *ExtensionMetadata) Reset() {
 	*x = ExtensionMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[12]
+		mi := &file_store_database_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1486,7 +1579,7 @@ func (x *ExtensionMetadata) String() string {
 func (*ExtensionMetadata) ProtoMessage() {}
 
 func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[12]
+	mi := &file_store_database_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1499,7 +1592,7 @@ func (x *ExtensionMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtensionMetadata.ProtoReflect.Descriptor instead.
 func (*ExtensionMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{12}
+	return file_store_database_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ExtensionMetadata) GetName() string {
@@ -1560,7 +1653,7 @@ type ForeignKeyMetadata struct {
 func (x *ForeignKeyMetadata) Reset() {
 	*x = ForeignKeyMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[13]
+		mi := &file_store_database_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1573,7 +1666,7 @@ func (x *ForeignKeyMetadata) String() string {
 func (*ForeignKeyMetadata) ProtoMessage() {}
 
 func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[13]
+	mi := &file_store_database_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1586,7 +1679,7 @@ func (x *ForeignKeyMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ForeignKeyMetadata.ProtoReflect.Descriptor instead.
 func (*ForeignKeyMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{13}
+	return file_store_database_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ForeignKeyMetadata) GetName() string {
@@ -1660,7 +1753,7 @@ type InstanceRoleMetadata struct {
 func (x *InstanceRoleMetadata) Reset() {
 	*x = InstanceRoleMetadata{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[14]
+		mi := &file_store_database_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1673,7 +1766,7 @@ func (x *InstanceRoleMetadata) String() string {
 func (*InstanceRoleMetadata) ProtoMessage() {}
 
 func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[14]
+	mi := &file_store_database_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1686,7 +1779,7 @@ func (x *InstanceRoleMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceRoleMetadata.ProtoReflect.Descriptor instead.
 func (*InstanceRoleMetadata) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{14}
+	return file_store_database_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *InstanceRoleMetadata) GetName() string {
@@ -1715,7 +1808,7 @@ type Secrets struct {
 func (x *Secrets) Reset() {
 	*x = Secrets{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[15]
+		mi := &file_store_database_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1728,7 +1821,7 @@ func (x *Secrets) String() string {
 func (*Secrets) ProtoMessage() {}
 
 func (x *Secrets) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[15]
+	mi := &file_store_database_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1741,7 +1834,7 @@ func (x *Secrets) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Secrets.ProtoReflect.Descriptor instead.
 func (*Secrets) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{15}
+	return file_store_database_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *Secrets) GetItems() []*SecretItem {
@@ -1767,7 +1860,7 @@ type SecretItem struct {
 func (x *SecretItem) Reset() {
 	*x = SecretItem{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[16]
+		mi := &file_store_database_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1780,7 +1873,7 @@ func (x *SecretItem) String() string {
 func (*SecretItem) ProtoMessage() {}
 
 func (x *SecretItem) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[16]
+	mi := &file_store_database_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1793,7 +1886,7 @@ func (x *SecretItem) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SecretItem.ProtoReflect.Descriptor instead.
 func (*SecretItem) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{16}
+	return file_store_database_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *SecretItem) GetName() string {
@@ -1830,7 +1923,7 @@ type DatabaseConfig struct {
 func (x *DatabaseConfig) Reset() {
 	*x = DatabaseConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[17]
+		mi := &file_store_database_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1843,7 +1936,7 @@ func (x *DatabaseConfig) String() string {
 func (*DatabaseConfig) ProtoMessage() {}
 
 func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[17]
+	mi := &file_store_database_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +1949,7 @@ func (x *DatabaseConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DatabaseConfig.ProtoReflect.Descriptor instead.
 func (*DatabaseConfig) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{17}
+	return file_store_database_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *DatabaseConfig) GetName() string {
@@ -1888,7 +1981,7 @@ type SchemaConfig struct {
 func (x *SchemaConfig) Reset() {
 	*x = SchemaConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[18]
+		mi := &file_store_database_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1901,7 +1994,7 @@ func (x *SchemaConfig) String() string {
 func (*SchemaConfig) ProtoMessage() {}
 
 func (x *SchemaConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[18]
+	mi := &file_store_database_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1914,7 +2007,7 @@ func (x *SchemaConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SchemaConfig.ProtoReflect.Descriptor instead.
 func (*SchemaConfig) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{18}
+	return file_store_database_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SchemaConfig) GetName() string {
@@ -1945,7 +2038,7 @@ type TableConfig struct {
 func (x *TableConfig) Reset() {
 	*x = TableConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[19]
+		mi := &file_store_database_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1958,7 +2051,7 @@ func (x *TableConfig) String() string {
 func (*TableConfig) ProtoMessage() {}
 
 func (x *TableConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[19]
+	mi := &file_store_database_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1971,7 +2064,7 @@ func (x *TableConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TableConfig.ProtoReflect.Descriptor instead.
 func (*TableConfig) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{19}
+	return file_store_database_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *TableConfig) GetName() string {
@@ -2003,7 +2096,7 @@ type ColumnConfig struct {
 func (x *ColumnConfig) Reset() {
 	*x = ColumnConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_database_proto_msgTypes[20]
+		mi := &file_store_database_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2016,7 +2109,7 @@ func (x *ColumnConfig) String() string {
 func (*ColumnConfig) ProtoMessage() {}
 
 func (x *ColumnConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_database_proto_msgTypes[20]
+	mi := &file_store_database_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2029,7 +2122,7 @@ func (x *ColumnConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ColumnConfig.ProtoReflect.Descriptor instead.
 func (*ColumnConfig) Descriptor() ([]byte, []int) {
-	return file_store_database_proto_rawDescGZIP(), []int{20}
+	return file_store_database_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ColumnConfig) GetName() string {
@@ -2095,24 +2188,29 @@ var file_store_database_proto_rawDesc = []byte{
 	0x08, 0x52, 0x09, 0x64, 0x61, 0x74, 0x61, 0x73, 0x68, 0x61, 0x72, 0x65, 0x12, 0x21, 0x0a, 0x0c,
 	0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x07, 0x20, 0x01,
 	0x28, 0x09, 0x52, 0x0b, 0x73, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x22,
-	0xbd, 0x02, 0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
+	0x8d, 0x03, 0x0a, 0x0e, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
 	0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x35, 0x0a, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73,
 	0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74,
-	0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a,
-	0x05, 0x76, 0x69, 0x65, 0x77, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62,
+	0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x06, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x4e, 0x0a,
+	0x0f, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x45, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
+	0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x0e, 0x65,
+	0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a,
+	0x05, 0x76, 0x69, 0x65, 0x77, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62,
 	0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x56, 0x69,
 	0x65, 0x77, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x05, 0x76, 0x69, 0x65, 0x77,
-	0x73, 0x12, 0x3e, 0x0a, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x04,
+	0x73, 0x12, 0x3e, 0x0a, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x05,
 	0x20, 0x03, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e,
 	0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x46, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x4d, 0x65,
 	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x09, 0x66, 0x75, 0x6e, 0x63, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x12, 0x38, 0x0a, 0x07, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x18, 0x05, 0x20, 0x03,
+	0x73, 0x12, 0x38, 0x0a, 0x07, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x18, 0x06, 0x20, 0x03,
 	0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74,
 	0x6f, 0x72, 0x65, 0x2e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61,
 	0x74, 0x61, 0x52, 0x07, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x12, 0x32, 0x0a, 0x05, 0x74,
-	0x61, 0x73, 0x6b, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74,
+	0x61, 0x73, 0x6b, 0x73, 0x18, 0x07, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x62, 0x79, 0x74,
 	0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x61, 0x73, 0x6b,
 	0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x05, 0x74, 0x61, 0x73, 0x6b, 0x73, 0x22,
 	0x80, 0x03, 0x0a, 0x0c, 0x54, 0x61, 0x73, 0x6b, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
@@ -2203,7 +2301,20 @@ var file_store_database_proto_rawDesc = []byte{
 	0x18, 0x0f, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x2e, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x50, 0x61, 0x72,
 	0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x52, 0x0a,
-	0x70, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x98, 0x02, 0x0a, 0x16, 0x54,
+	0x70, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0xcd, 0x01, 0x0a, 0x15, 0x45,
+	0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x54, 0x61, 0x62, 0x6c, 0x65, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x30, 0x0a, 0x14, 0x65, 0x78, 0x74, 0x65,
+	0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x73, 0x65, 0x72, 0x76, 0x65, 0x72, 0x5f, 0x6e, 0x61, 0x6d, 0x65,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x12, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c,
+	0x53, 0x65, 0x72, 0x76, 0x65, 0x72, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x34, 0x0a, 0x16, 0x65, 0x78,
+	0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x5f, 0x64, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x5f,
+	0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x14, 0x65, 0x78, 0x74, 0x65,
+	0x72, 0x6e, 0x61, 0x6c, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x38, 0x0a, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28,
+	0x0b, 0x32, 0x1e, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x73, 0x74, 0x6f,
+	0x72, 0x65, 0x2e, 0x43, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0x52, 0x07, 0x63, 0x6f, 0x6c, 0x75, 0x6d, 0x6e, 0x73, 0x22, 0x98, 0x02, 0x0a, 0x16, 0x54,
 	0x61, 0x62, 0x6c, 0x65, 0x50, 0x61, 0x72, 0x74, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x4d, 0x65, 0x74,
 	0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x3f, 0x0a, 0x04, 0x74, 0x79, 0x70,
@@ -2270,7 +2381,7 @@ var file_store_database_proto_rawDesc = []byte{
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12,
 	0x1e, 0x0a, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x22,
-	0xbf, 0x01, 0x0a, 0x0d, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0xdf, 0x01, 0x0a, 0x0d, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
 	0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x65, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73,
 	0x69, 0x6f, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0b, 0x65, 0x78, 0x70, 0x72,
@@ -2282,7 +2393,9 @@ var file_store_database_proto_rawDesc = []byte{
 	0x07, 0x76, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07,
 	0x76, 0x69, 0x73, 0x69, 0x62, 0x6c, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65,
 	0x6e, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x65, 0x6e,
-	0x74, 0x22, 0x7b, 0x0a, 0x11, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4d, 0x65,
+	0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x64, 0x65, 0x66, 0x69, 0x6e, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x22, 0x7b, 0x0a, 0x11, 0x45, 0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x4d, 0x65,
 	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x73, 0x63,
 	0x68, 0x65, 0x6d, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x73, 0x63, 0x68, 0x65,
@@ -2371,7 +2484,7 @@ func file_store_database_proto_rawDescGZIP() []byte {
 }
 
 var file_store_database_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_store_database_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
 var file_store_database_proto_goTypes = []interface{}{
 	(TaskMetadata_State)(0),          // 0: bytebase.store.TaskMetadata.State
 	(StreamMetadata_Type)(0),         // 1: bytebase.store.StreamMetadata.Type
@@ -2383,57 +2496,60 @@ var file_store_database_proto_goTypes = []interface{}{
 	(*TaskMetadata)(nil),             // 7: bytebase.store.TaskMetadata
 	(*StreamMetadata)(nil),           // 8: bytebase.store.StreamMetadata
 	(*TableMetadata)(nil),            // 9: bytebase.store.TableMetadata
-	(*TablePartitionMetadata)(nil),   // 10: bytebase.store.TablePartitionMetadata
-	(*ColumnMetadata)(nil),           // 11: bytebase.store.ColumnMetadata
-	(*ViewMetadata)(nil),             // 12: bytebase.store.ViewMetadata
-	(*DependentColumn)(nil),          // 13: bytebase.store.DependentColumn
-	(*FunctionMetadata)(nil),         // 14: bytebase.store.FunctionMetadata
-	(*IndexMetadata)(nil),            // 15: bytebase.store.IndexMetadata
-	(*ExtensionMetadata)(nil),        // 16: bytebase.store.ExtensionMetadata
-	(*ForeignKeyMetadata)(nil),       // 17: bytebase.store.ForeignKeyMetadata
-	(*InstanceRoleMetadata)(nil),     // 18: bytebase.store.InstanceRoleMetadata
-	(*Secrets)(nil),                  // 19: bytebase.store.Secrets
-	(*SecretItem)(nil),               // 20: bytebase.store.SecretItem
-	(*DatabaseConfig)(nil),           // 21: bytebase.store.DatabaseConfig
-	(*SchemaConfig)(nil),             // 22: bytebase.store.SchemaConfig
-	(*TableConfig)(nil),              // 23: bytebase.store.TableConfig
-	(*ColumnConfig)(nil),             // 24: bytebase.store.ColumnConfig
-	nil,                              // 25: bytebase.store.DatabaseMetadata.LabelsEntry
-	nil,                              // 26: bytebase.store.ColumnConfig.LabelsEntry
-	(*timestamppb.Timestamp)(nil),    // 27: google.protobuf.Timestamp
-	(*wrapperspb.StringValue)(nil),   // 28: google.protobuf.StringValue
+	(*ExternalTableMetadata)(nil),    // 10: bytebase.store.ExternalTableMetadata
+	(*TablePartitionMetadata)(nil),   // 11: bytebase.store.TablePartitionMetadata
+	(*ColumnMetadata)(nil),           // 12: bytebase.store.ColumnMetadata
+	(*ViewMetadata)(nil),             // 13: bytebase.store.ViewMetadata
+	(*DependentColumn)(nil),          // 14: bytebase.store.DependentColumn
+	(*FunctionMetadata)(nil),         // 15: bytebase.store.FunctionMetadata
+	(*IndexMetadata)(nil),            // 16: bytebase.store.IndexMetadata
+	(*ExtensionMetadata)(nil),        // 17: bytebase.store.ExtensionMetadata
+	(*ForeignKeyMetadata)(nil),       // 18: bytebase.store.ForeignKeyMetadata
+	(*InstanceRoleMetadata)(nil),     // 19: bytebase.store.InstanceRoleMetadata
+	(*Secrets)(nil),                  // 20: bytebase.store.Secrets
+	(*SecretItem)(nil),               // 21: bytebase.store.SecretItem
+	(*DatabaseConfig)(nil),           // 22: bytebase.store.DatabaseConfig
+	(*SchemaConfig)(nil),             // 23: bytebase.store.SchemaConfig
+	(*TableConfig)(nil),              // 24: bytebase.store.TableConfig
+	(*ColumnConfig)(nil),             // 25: bytebase.store.ColumnConfig
+	nil,                              // 26: bytebase.store.DatabaseMetadata.LabelsEntry
+	nil,                              // 27: bytebase.store.ColumnConfig.LabelsEntry
+	(*timestamppb.Timestamp)(nil),    // 28: google.protobuf.Timestamp
+	(*wrapperspb.StringValue)(nil),   // 29: google.protobuf.StringValue
 }
 var file_store_database_proto_depIdxs = []int32{
-	25, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
-	27, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
+	26, // 0: bytebase.store.DatabaseMetadata.labels:type_name -> bytebase.store.DatabaseMetadata.LabelsEntry
+	28, // 1: bytebase.store.DatabaseMetadata.last_sync_time:type_name -> google.protobuf.Timestamp
 	6,  // 2: bytebase.store.DatabaseSchemaMetadata.schemas:type_name -> bytebase.store.SchemaMetadata
-	16, // 3: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
+	17, // 3: bytebase.store.DatabaseSchemaMetadata.extensions:type_name -> bytebase.store.ExtensionMetadata
 	9,  // 4: bytebase.store.SchemaMetadata.tables:type_name -> bytebase.store.TableMetadata
-	12, // 5: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
-	14, // 6: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
-	8,  // 7: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
-	7,  // 8: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
-	0,  // 9: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
-	1,  // 10: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
-	2,  // 11: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
-	11, // 12: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
-	15, // 13: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
-	17, // 14: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
-	10, // 15: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
-	3,  // 16: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
-	10, // 17: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
-	28, // 18: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
-	13, // 19: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
-	20, // 20: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
-	22, // 21: bytebase.store.DatabaseConfig.schema_configs:type_name -> bytebase.store.SchemaConfig
-	23, // 22: bytebase.store.SchemaConfig.table_configs:type_name -> bytebase.store.TableConfig
-	24, // 23: bytebase.store.TableConfig.column_configs:type_name -> bytebase.store.ColumnConfig
-	26, // 24: bytebase.store.ColumnConfig.labels:type_name -> bytebase.store.ColumnConfig.LabelsEntry
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	10, // 5: bytebase.store.SchemaMetadata.external_tables:type_name -> bytebase.store.ExternalTableMetadata
+	13, // 6: bytebase.store.SchemaMetadata.views:type_name -> bytebase.store.ViewMetadata
+	15, // 7: bytebase.store.SchemaMetadata.functions:type_name -> bytebase.store.FunctionMetadata
+	8,  // 8: bytebase.store.SchemaMetadata.streams:type_name -> bytebase.store.StreamMetadata
+	7,  // 9: bytebase.store.SchemaMetadata.tasks:type_name -> bytebase.store.TaskMetadata
+	0,  // 10: bytebase.store.TaskMetadata.state:type_name -> bytebase.store.TaskMetadata.State
+	1,  // 11: bytebase.store.StreamMetadata.type:type_name -> bytebase.store.StreamMetadata.Type
+	2,  // 12: bytebase.store.StreamMetadata.mode:type_name -> bytebase.store.StreamMetadata.Mode
+	12, // 13: bytebase.store.TableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	16, // 14: bytebase.store.TableMetadata.indexes:type_name -> bytebase.store.IndexMetadata
+	18, // 15: bytebase.store.TableMetadata.foreign_keys:type_name -> bytebase.store.ForeignKeyMetadata
+	11, // 16: bytebase.store.TableMetadata.partitions:type_name -> bytebase.store.TablePartitionMetadata
+	12, // 17: bytebase.store.ExternalTableMetadata.columns:type_name -> bytebase.store.ColumnMetadata
+	3,  // 18: bytebase.store.TablePartitionMetadata.type:type_name -> bytebase.store.TablePartitionMetadata.Type
+	11, // 19: bytebase.store.TablePartitionMetadata.subpartitions:type_name -> bytebase.store.TablePartitionMetadata
+	29, // 20: bytebase.store.ColumnMetadata.default:type_name -> google.protobuf.StringValue
+	14, // 21: bytebase.store.ViewMetadata.dependent_columns:type_name -> bytebase.store.DependentColumn
+	21, // 22: bytebase.store.Secrets.items:type_name -> bytebase.store.SecretItem
+	23, // 23: bytebase.store.DatabaseConfig.schema_configs:type_name -> bytebase.store.SchemaConfig
+	24, // 24: bytebase.store.SchemaConfig.table_configs:type_name -> bytebase.store.TableConfig
+	25, // 25: bytebase.store.TableConfig.column_configs:type_name -> bytebase.store.ColumnConfig
+	27, // 26: bytebase.store.ColumnConfig.labels:type_name -> bytebase.store.ColumnConfig.LabelsEntry
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_store_database_proto_init() }
@@ -2515,7 +2631,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TablePartitionMetadata); i {
+			switch v := v.(*ExternalTableMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2527,7 +2643,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ColumnMetadata); i {
+			switch v := v.(*TablePartitionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2539,7 +2655,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ViewMetadata); i {
+			switch v := v.(*ColumnMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2551,7 +2667,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DependentColumn); i {
+			switch v := v.(*ViewMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2563,7 +2679,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FunctionMetadata); i {
+			switch v := v.(*DependentColumn); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2575,7 +2691,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*IndexMetadata); i {
+			switch v := v.(*FunctionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2587,7 +2703,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ExtensionMetadata); i {
+			switch v := v.(*IndexMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2599,7 +2715,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ForeignKeyMetadata); i {
+			switch v := v.(*ExtensionMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2611,7 +2727,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*InstanceRoleMetadata); i {
+			switch v := v.(*ForeignKeyMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2623,7 +2739,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Secrets); i {
+			switch v := v.(*InstanceRoleMetadata); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2635,7 +2751,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SecretItem); i {
+			switch v := v.(*Secrets); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2647,7 +2763,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DatabaseConfig); i {
+			switch v := v.(*SecretItem); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2659,7 +2775,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SchemaConfig); i {
+			switch v := v.(*DatabaseConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2671,7 +2787,7 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TableConfig); i {
+			switch v := v.(*SchemaConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2683,6 +2799,18 @@ func file_store_database_proto_init() {
 			}
 		}
 		file_store_database_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*TableConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_database_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ColumnConfig); i {
 			case 0:
 				return &v.state
@@ -2695,7 +2823,7 @@ func file_store_database_proto_init() {
 			}
 		}
 	}
-	file_store_database_proto_msgTypes[7].OneofWrappers = []interface{}{
+	file_store_database_proto_msgTypes[8].OneofWrappers = []interface{}{
 		(*ColumnMetadata_Default)(nil),
 		(*ColumnMetadata_DefaultNull)(nil),
 		(*ColumnMetadata_DefaultExpression)(nil),
@@ -2706,7 +2834,7 @@ func file_store_database_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_database_proto_rawDesc,
 			NumEnums:      4,
-			NumMessages:   23,
+			NumMessages:   24,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

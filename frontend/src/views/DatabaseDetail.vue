@@ -73,14 +73,11 @@
               :disabled="!allowQuery"
               @failed="handleGotoSQLEditorFailed"
             />
-            <dd
+            <SchemaDiagramButton
               v-if="hasSchemaDiagramFeature"
-              class="flex items-center text-sm md:mr-4 textlabel cursor-pointer hover:text-accent"
-              @click.prevent="state.showSchemaDiagram = true"
-            >
-              <span class="mr-1">{{ $t("schema-diagram.self") }}</span>
-              <SchemaDiagramIcon />
-            </dd>
+              class="md:mr-4"
+              :database="database"
+            />
           </dl>
         </div>
         <div
@@ -88,7 +85,15 @@
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
-          <BBSpin v-if="state.syncingSchema" :title="$t('instance.syncing')" />
+          <div
+            v-if="state.syncingSchema"
+            class="flex justify-center items-center space-x-2"
+          >
+            <BBSpin />
+            <span class="text-control text-sm">
+              {{ $t("instance.syncing") }}
+            </span>
+          </div>
           <NButton
             :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
@@ -170,13 +175,6 @@
       </NTabPane>
     </NTabs>
 
-    <TransferSingleDatabase
-      v-if="state.showTransferDatabaseModal"
-      :database="database"
-      @cancel="state.showTransferDatabaseModal = false"
-      @updated="state.showTransferDatabaseModal = false"
-    />
-
     <BBModal
       v-if="state.showIncorrectProjectModal"
       :title="$t('common.warning')"
@@ -207,21 +205,17 @@
     </BBModal>
   </div>
 
-  <BBModal
-    v-if="state.showSchemaDiagram"
-    :title="$t('schema-diagram.self')"
-    class="h-[calc(100vh-40px)] !max-h-[calc(100vh-40px)]"
-    header-class="!border-0"
-    container-class="flex-1 !pt-0"
-    @close="state.showSchemaDiagram = false"
+  <Drawer
+    :show="state.showTransferDatabaseModal"
+    :auto-focus="true"
+    @close="state.showTransferDatabaseModal = false"
   >
-    <div class="w-[80vw] h-full">
-      <SchemaDiagram
-        :database="database"
-        :database-metadata="dbSchemaStore.getDatabaseMetadata(database.name)"
-      />
-    </div>
-  </BBModal>
+    <TransferOutDatabaseForm
+      :database-list="[database]"
+      :selected-database-uid-list="[database.uid]"
+      @dismiss="state.showTransferDatabaseModal = false"
+    />
+  </Drawer>
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
@@ -245,10 +239,10 @@ import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
 } from "@/components/DatabaseDetail";
+import SchemaDiagramButton from "@/components/DatabaseDetail/SchemaDiagramButton.vue";
 import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
-import { SchemaDiagram, SchemaDiagramIcon } from "@/components/SchemaDiagram";
-import { TransferSingleDatabase } from "@/components/TransferDatabaseForm";
+import { Drawer } from "@/components/v2";
 import {
   EnvironmentV1Name,
   InstanceV1Name,
@@ -303,7 +297,6 @@ interface LocalState {
   currentProjectId: string;
   selectedIndex: number;
   syncingSchema: boolean;
-  showSchemaDiagram: boolean;
   selectedTab: DatabaseHash;
 }
 
@@ -326,7 +319,6 @@ const state = reactive<LocalState>({
   currentProjectId: String(UNKNOWN_ID),
   selectedIndex: 0,
   syncingSchema: false,
-  showSchemaDiagram: false,
   selectedTab: "overview",
 });
 const route = useRoute();

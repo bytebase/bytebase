@@ -69,7 +69,7 @@
 
       <FeatureAttentionForInstanceLicense
         v-if="existMatchedUnactivateInstance"
-        :style="`WARN`"
+        type="warning"
         feature="bb.feature.database-grouping"
       />
 
@@ -112,11 +112,12 @@
   </div>
 
   <DatabaseGroupPanel
-    v-model:show="editState.showConfigurePanel"
+    :show="editState.showConfigurePanel"
     :project="project"
     :resource-type="editState.type"
     :database-group="editState.databaseGroup"
     :parent-database-group="editState.parentDatabaseGroup"
+    @close="editState.showConfigurePanel = false"
   />
 
   <DatabaseGroupPrevEditorModal

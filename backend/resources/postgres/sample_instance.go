@@ -36,7 +36,7 @@ const (
 	SampleDatabaseProd = "hr_prod"
 )
 
-var dbs = map[string][]string{
+var dbsPerEnv = map[string][]string{
 	"test": {SampleDatabaseTest},
 	"prod": {SampleDatabaseProd, SampleDatabaseProd + "_vcs", SampleDatabaseProd + "_1", SampleDatabaseProd + "_2", SampleDatabaseProd + "_3", SampleDatabaseProd + "_4", SampleDatabaseProd + "_5", SampleDatabaseProd + "_6"},
 }
@@ -46,15 +46,15 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 	stoppers := []func(){}
 	slog.Info("-----Sample Postgres Instance BEGIN-----")
 	i := 0
-	for k, v := range dbs {
+	for k, v := range dbsPerEnv {
 		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
 		stopper, err := startOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch)
+		i++
 		if err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
 		stoppers = append(stoppers, stopper)
-		i++
 	}
 	slog.Info("-----Sample Postgres Instance END-----")
 	return stoppers
@@ -81,7 +81,9 @@ func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
 	}
 
-	if err := start(port, pgBinDir, pgDataDir, false /* serverLog */); err != nil {
+	// TODO(tianzhou): Remove this after debugging completes.
+	// turn on serverlog to debug sample instance startup in SaaS.
+	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
 		return nil, errors.Wrapf(err, "failed to start sample instance")
 	}
 
@@ -138,6 +140,7 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 // prepareSampleDatabaseIfNeeded creates sample database if needed.
 func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database string) error {
 	if !needSetupSampleDatabase(ctx, pgUser, port, database) {
+		slog.Info(fmt.Sprintf("Sample database %v already exists, skip setup", database))
 		return nil
 	}
 

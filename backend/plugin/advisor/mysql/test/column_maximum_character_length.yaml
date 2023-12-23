@@ -1,3 +1,11 @@
+- statement: CREATE TABLE t1(name char);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
 - statement: CREATE TABLE t(name char(20));
   want:
     - status: SUCCESS

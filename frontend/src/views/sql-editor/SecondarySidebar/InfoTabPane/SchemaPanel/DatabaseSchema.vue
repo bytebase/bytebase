@@ -10,30 +10,25 @@
         <span class="text-sm">{{ database.databaseName }}</span>
       </div>
       <div class="flex justify-end gap-x-0.5">
-        <SchemaDiagramButton
-          v-if="instanceV1HasAlterSchema(database.instanceEntity)"
-          :database="database"
-          :database-metadata="databaseMetadata"
-        />
-        <ExternalLinkButton
-          v-if="pageMode === 'BUNDLED'"
-          :link="`/db/${databaseV1Slug(database)}`"
-          :tooltip="$t('common.detail')"
-        />
-        <AlterSchemaButton
-          v-if="
-            pageMode === 'BUNDLED' &&
-            instanceV1HasAlterSchema(database.instanceEntity)
-          "
-          :database="database"
-          @click="
-            editorEvents.emit('alter-schema', {
-              databaseUID: database.uid,
-              schema: '',
-              table: '',
-            })
-          "
-        />
+        <HideInStandaloneMode>
+          <ExternalLinkButton
+            :link="`/db/${databaseV1Slug(database)}`"
+            :tooltip="$t('common.detail')"
+          />
+        </HideInStandaloneMode>
+        <HideInStandaloneMode>
+          <AlterSchemaButton
+            v-if="instanceV1HasAlterSchema(database.instanceEntity)"
+            :database="database"
+            @click="
+              editorEvents.emit('alter-schema', {
+                databaseUID: database.uid,
+                schema: '',
+                table: '',
+              })
+            "
+          />
+        </HideInStandaloneMode>
       </div>
     </div>
 
@@ -44,17 +39,22 @@
       :schema-list="availableSchemas"
       :row-clickable="rowClickable"
       @select-table="(schema, table) => $emit('select-table', schema, table)"
+      @select-external-table="
+        (schema, externalTable) =>
+          $emit('select-external-table', schema, externalTable)
+      "
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useCurrentUserV1, usePageMode } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DatabaseMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
@@ -66,7 +66,6 @@ import {
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
-import SchemaDiagramButton from "./SchemaDiagramButton.vue";
 import TableList from "./TableList.vue";
 
 const props = defineProps<{
@@ -78,11 +77,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: "click-header"): void;
   (e: "select-table", schema: SchemaMetadata, table: TableMetadata): void;
+  (
+    e: "select-external-table",
+    schema: SchemaMetadata,
+    externalTable: ExternalTableMetadata
+  ): void;
 }>();
 
 const { events: editorEvents } = useSQLEditorContext();
 const currentUser = useCurrentUserV1();
-const pageMode = usePageMode();
 
 const engine = computed(() => props.database.instanceEntity.engine);
 

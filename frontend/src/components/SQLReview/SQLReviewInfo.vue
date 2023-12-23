@@ -11,7 +11,7 @@
       <BBAttention
         v-if="availableEnvironmentList.length === 0"
         class="mt-2"
-        :style="'WARN'"
+        type="warning"
         :title="$t('common.environment')"
         :description="
           $t('sql-review.create.basic-info.no-available-environment-desc')
@@ -37,7 +37,7 @@
           $t('sql-review.create.basic-info.display-name-placeholder')
         "
         :value="name"
-        @input="(e) => onNameChange(e)"
+        @update:value="onNameChange($event)"
       />
     </div>
     <div>
@@ -87,8 +87,8 @@ const emit = defineEmits<{
   (event: "select-template", template: SQLReviewPolicyTemplate): void;
 }>();
 
-const onNameChange = (event: Event) => {
-  emit("name-change", (event.target as HTMLInputElement).value);
+const onNameChange = (value: string) => {
+  emit("name-change", value);
 };
 
 const onTemplatesChange = (templates: {

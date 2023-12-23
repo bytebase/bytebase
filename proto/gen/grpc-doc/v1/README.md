@@ -20,9 +20,6 @@
     - [MaskingLevel](#bytebase-v1-MaskingLevel)
     - [State](#bytebase-v1-State)
   
-- [v1/deployment.proto](#v1_deployment-proto)
-    - [DeploymentType](#bytebase-v1-DeploymentType)
-  
 - [v1/iam_policy.proto](#v1_iam_policy-proto)
     - [Binding](#bytebase-v1-Binding)
     - [IamPolicy](#bytebase-v1-IamPolicy)
@@ -31,8 +28,6 @@
     - [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
-    - [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy)
-    - [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
@@ -51,8 +46,6 @@
     - [SlowQueryPolicy](#bytebase-v1-SlowQueryPolicy)
     - [UpdatePolicyRequest](#bytebase-v1-UpdatePolicyRequest)
   
-    - [ApprovalGroup](#bytebase-v1-ApprovalGroup)
-    - [ApprovalStrategy](#bytebase-v1-ApprovalStrategy)
     - [BackupPlanSchedule](#bytebase-v1-BackupPlanSchedule)
     - [MaskingExceptionPolicy.MaskingException.Action](#bytebase-v1-MaskingExceptionPolicy-MaskingException-Action)
     - [PolicyResourceType](#bytebase-v1-PolicyResourceType)
@@ -130,6 +123,7 @@
     - [DiffSchemaRequest](#bytebase-v1-DiffSchemaRequest)
     - [DiffSchemaResponse](#bytebase-v1-DiffSchemaResponse)
     - [ExtensionMetadata](#bytebase-v1-ExtensionMetadata)
+    - [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata)
     - [ForeignKeyMetadata](#bytebase-v1-ForeignKeyMetadata)
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GetBackupSettingRequest](#bytebase-v1-GetBackupSettingRequest)
@@ -195,7 +189,6 @@
     - [ListBranchesRequest](#bytebase-v1-ListBranchesRequest)
     - [ListBranchesResponse](#bytebase-v1-ListBranchesResponse)
     - [MergeBranchRequest](#bytebase-v1-MergeBranchRequest)
-    - [MergeBranchResponse](#bytebase-v1-MergeBranchResponse)
     - [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest)
     - [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse)
     - [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest)
@@ -488,6 +481,7 @@
     - [Plan](#bytebase-v1-Plan)
     - [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig)
     - [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry)
+    - [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail)
     - [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail)
     - [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig)
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
@@ -665,6 +659,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | gitops_webhook_url | [string](#string) |  | gitops_webhook_url is the webhook URL for GitOps. |
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
 | lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
+| pre_update_backup | [bool](#bool) |  | lsp is the enablement of data backup prior to data update. |
 
 
 
@@ -868,38 +863,6 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 
 
-<a name="v1_deployment-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/deployment.proto
-
-
- 
-
-
-<a name="bytebase-v1-DeploymentType"></a>
-
-### DeploymentType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DEPLOYMENT_TYPE_UNSPECIFIED | 0 |  |
-| DATABASE_CREATE | 1 |  |
-| DATABASE_DDL | 2 |  |
-| DATABASE_DDL_GHOST | 3 |  |
-| DATABASE_DML | 4 |  |
-| DATABASE_RESTORE_PITR | 5 |  |
-
-
- 
-
- 
-
- 
-
-
-
 <a name="v1_iam_policy-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -998,39 +961,6 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The policy&#39;s `name` field is used to identify the instance to update. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalPolicy"></a>
-
-### DeploymentApprovalPolicy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| default_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
-| deployment_approval_strategies | [DeploymentApprovalStrategy](#bytebase-v1-DeploymentApprovalStrategy) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DeploymentApprovalStrategy"></a>
-
-### DeploymentApprovalStrategy
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| deployment_type | [DeploymentType](#bytebase-v1-DeploymentType) |  |  |
-| approval_group | [ApprovalGroup](#bytebase-v1-ApprovalGroup) |  |  |
-| approval_strategy | [ApprovalStrategy](#bytebase-v1-ApprovalStrategy) |  |  |
 
 
 
@@ -1219,7 +1149,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | workspace_iam_policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| deployment_approval_policy | [DeploymentApprovalPolicy](#bytebase-v1-DeploymentApprovalPolicy) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
 | backup_plan_policy | [BackupPlanPolicy](#bytebase-v1-BackupPlanPolicy) |  |  |
 | masking_policy | [MaskingPolicy](#bytebase-v1-MaskingPolicy) |  |  |
@@ -1342,32 +1271,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
  
 
 
-<a name="bytebase-v1-ApprovalGroup"></a>
-
-### ApprovalGroup
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ASSIGNEE_GROUP_UNSPECIFIED | 0 |  |
-| APPROVAL_GROUP_DBA | 1 |  |
-| APPROVAL_GROUP_PROJECT_OWNER | 2 |  |
-
-
-
-<a name="bytebase-v1-ApprovalStrategy"></a>
-
-### ApprovalStrategy
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| APPROVAL_STRATEGY_UNSPECIFIED | 0 |  |
-| AUTOMATIC | 1 |  |
-| MANUAL | 2 |  |
-
-
-
 <a name="bytebase-v1-BackupPlanSchedule"></a>
 
 ### BackupPlanSchedule
@@ -1420,7 +1323,6 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | ---- | ------ | ----------- |
 | POLICY_TYPE_UNSPECIFIED | 0 |  |
 | WORKSPACE_IAM | 1 |  |
-| DEPLOYMENT_APPROVAL | 2 |  |
 | ROLLOUT_POLICY | 11 |  |
 | BACKUP_PLAN | 3 |  |
 | SQL_REVIEW | 4 |  |
@@ -2524,6 +2426,24 @@ ExtensionMetadata is the metadata for extensions.
 
 
 
+<a name="bytebase-v1-ExternalTableMetadata"></a>
+
+### ExternalTableMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a external table. |
+| external_server_name | [string](#string) |  | The external_server_name is the name of the external server. |
+| external_database_name | [string](#string) |  | The external_database_name is the name of the external database. |
+| columns | [ColumnMetadata](#bytebase-v1-ColumnMetadata) | repeated | The columns is the ordered list of columns in a foreign table. |
+
+
+
+
+
+
 <a name="bytebase-v1-ForeignKeyMetadata"></a>
 
 ### ForeignKeyMetadata
@@ -2657,6 +2577,7 @@ IndexMetadata is the metadata for indexes.
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |
 | visible | [bool](#bool) |  | The visible is whether the index is visible. |
 | comment | [string](#string) |  | The comment is the comment of an index. |
+| definition | [string](#string) |  | The definition of an index. |
 
 
 
@@ -2869,6 +2790,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the schema name. It is an empty string for databases without such concept such as MySQL. |
 | tables | [TableMetadata](#bytebase-v1-TableMetadata) | repeated | The tables is the list of tables in a schema. |
+| external_tables | [ExternalTableMetadata](#bytebase-v1-ExternalTableMetadata) | repeated | The external_tables is the list of external tables in a schema. |
 | views | [ViewMetadata](#bytebase-v1-ViewMetadata) | repeated | The views is the list of views in a schema. |
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
@@ -3601,25 +3523,8 @@ When paginating, all other parameters provided to `ListBranches` must match the 
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the base branch to merge to. Format: projects/{project}/branches/{branch} |
 | head_branch | [string](#string) |  | The head branch to merge from. Format: projects/{project}/branches/{branch} |
-| merged_schema | [string](#string) |  | For failed merge, we will pass in this addition merged schema and use it for head. |
-| etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be specified for using merged_schema. The etag should be the etag from named branch. |
+| etag | [string](#string) |  | The current etag of the branch. If an etag is provided and does not match the current etag of the branch, the call will be blocked and an ABORTED error will be returned. The etag should be the etag from named branch. |
 | validate_only | [bool](#bool) |  | validate_only determines if the merge can occur seamlessly without any conflicts. |
-
-
-
-
-
-
-<a name="bytebase-v1-MergeBranchResponse"></a>
-
-### MergeBranchResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| branch | [Branch](#bytebase-v1-Branch) |  | The merged branch when merge occurs seamlessly. |
-| conflict_schema | [string](#string) |  | The conflict schema when merge has conflicts. The conflict section is enclosed by the following. &lt;&lt;&lt;&lt;&lt; HEAD ==== &gt;&gt;&gt;&gt;&gt; main |
 
 
 
@@ -3711,7 +3616,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | ListBranches | [ListBranchesRequest](#bytebase-v1-ListBranchesRequest) | [ListBranchesResponse](#bytebase-v1-ListBranchesResponse) |  |
 | CreateBranch | [CreateBranchRequest](#bytebase-v1-CreateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | UpdateBranch | [UpdateBranchRequest](#bytebase-v1-UpdateBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
-| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [MergeBranchResponse](#bytebase-v1-MergeBranchResponse) |  |
+| MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | DiffDatabase | [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest) | [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse) | DiffDatabase works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) return the diff DDLs similar to DiffSchema in database service. 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user will call DiffSchema() in database service to get diff DDLs. |
@@ -5362,7 +5267,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be added. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
 
@@ -5564,7 +5469,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. Only READ_ONLY data source can be removed. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
 
 
 
@@ -5635,7 +5540,7 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by type. |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
 | validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
 
@@ -7850,9 +7755,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | sheet | [string](#string) |  | The resource name of the sheet. Format: projects/{project}/sheets/{sheet} |
 | type | [Plan.ChangeDatabaseConfig.Type](#bytebase-v1-Plan-ChangeDatabaseConfig-Type) |  |  |
 | schema_version | [string](#string) |  | schema_version is parsed from VCS file name. It is automatically generated in the UI workflow. |
-| rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task. |
+| rollback_enabled | [bool](#bool) |  | If RollbackEnabled, build the RollbackSheetID of the task after the task is completed. |
 | rollback_detail | [Plan.ChangeDatabaseConfig.RollbackDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-RollbackDetail) | optional |  |
 | ghost_flags | [Plan.ChangeDatabaseConfig.GhostFlagsEntry](#bytebase-v1-Plan-ChangeDatabaseConfig-GhostFlagsEntry) | repeated |  |
+| pre_update_backup_detail | [Plan.ChangeDatabaseConfig.PreUpdateBackupDetail](#bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 
 
 
@@ -7869,6 +7775,21 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ChangeDatabaseConfig-PreUpdateBackupDetail"></a>
+
+### Plan.ChangeDatabaseConfig.PreUpdateBackupDetail
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  | The database for keeping the backup data. Format: instances/{instance}/databases/{database} |
 
 
 

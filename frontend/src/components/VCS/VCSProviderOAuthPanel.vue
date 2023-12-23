@@ -524,7 +524,7 @@
         class="mt-2 w-full"
         :placeholder="'ex. 5333b60a6c9f234272dac2ee6b3422aaf224e0a66def54e0d243b77bexa8edda'"
         :value="config.applicationId"
-        @input="(e: any) => changeApplicationId(e.target.value)"
+        @update:value="changeApplicationId($event)"
       />
       <p v-if="state.showApplicationIdError" class="mt-2 text-sm text-error">
         {{ applicationIdErrorDescription }}
@@ -536,7 +536,7 @@
         class="mt-2 w-full"
         :placeholder="'ex. b9e0efc7a233403799b42620c60ff98c146895a27b6219912a215f4e2251cc3a'"
         :value="config.secret"
-        @input="(e: any) => changeSecret(e.target.value)"
+        @update:value="changeSecret($event)"
       />
       <p v-if="state.showSecretError" class="mt-2 text-sm text-error">
         {{ secretErrorDescription }}

@@ -4,6 +4,7 @@ import { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
   DatabaseMetadata,
+  ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
   ViewMetadata,
@@ -21,6 +22,7 @@ export type HoverState = {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table?: TableMetadata;
+  externalTable?: ExternalTableMetadata;
   view?: ViewMetadata;
   column?: ColumnMetadata;
 };

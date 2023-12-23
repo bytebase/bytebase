@@ -1,7 +1,7 @@
 <template>
   <DrawerContent
     :title="$t('common.detail')"
-    class="w-[100vw-4rem] min-w-[20rem] max-w-[100vw-4rem] md:w-[33vw]"
+    class="w-[100vw-4rem] min-w-[24rem] max-w-[100vw-4rem] md:w-[33vw]"
   >
     <div
       class="h-full flex flex-col gap-y-2"
@@ -56,19 +56,17 @@
         </div>
 
         <div>
-          <NButton
-            v-if="!disallowCopyingData"
-            size="small"
-            type="primary"
-            @click="handleCopy"
-          >
+          <NButton v-if="!disallowCopyingData" size="small" @click="handleCopy">
+            <template #icon>
+              <ClipboardIcon class="w-4 h-4" />
+            </template>
             {{ $t("common.copy") }}
           </NButton>
         </div>
       </div>
       <!-- eslint-disable vue/no-v-html -->
       <div
-        class="flex-1 overflow-auto whitespace-pre-wrap text-sm"
+        class="flex-1 overflow-auto whitespace-pre-wrap text-sm font-mono border p-2"
         :class="disallowCopyingData && 'select-none'"
         v-html="html"
       ></div>
@@ -79,7 +77,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useClipboard } from "@vueuse/core";
 import { escape, get } from "lodash-es";
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-vue-next";
+import { ChevronDownIcon, ChevronUpIcon, ClipboardIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

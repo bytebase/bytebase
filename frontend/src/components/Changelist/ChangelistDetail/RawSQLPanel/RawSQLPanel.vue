@@ -9,7 +9,7 @@
         <div class="h-full flex flex-col gap-y-4 flex-1 overflow-hidden">
           <BBAttention
             v-if="isSheetOversize"
-            :style="`WARN`"
+            type="warning"
             :title="$t('issue.statement-from-sheet-warning')"
           >
             <template #action>

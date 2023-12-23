@@ -21,16 +21,9 @@
   </NTooltip>
 </template>
 
-<script lang="ts">
-export default {
-  name: "BBTooltipButton",
-  inheritAttrs: false,
-};
-</script>
-
 <script lang="ts" setup>
-import { withDefaults, computed, useSlots } from "vue";
 import { NTooltip, type TooltipProps } from "naive-ui";
+import { withDefaults, computed, useSlots } from "vue";
 import { TooltipMode } from "./types";
 
 const props = withDefaults(

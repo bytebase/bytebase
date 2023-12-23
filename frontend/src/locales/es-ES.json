@@ -1167,7 +1167,8 @@
       "approvers-of-current-step": "Aprobadores del paso actual"
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
-    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)"
+    "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
+    "preview": "Problema de vista previa"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1234,7 +1235,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Esquema sincronizado correctamente para la base de datos '{0}'.",
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
-    "successfully-synced-schema": "Esquema sincronizado correctamente"
+    "successfully-synced-schema": "Esquema sincronizado correctamente",
+    "foreign-tables": "tabla externa"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -1423,7 +1425,8 @@
     },
     "password-forget": {
       "title": "¿Olvidaste tu contraseña?",
-      "content": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "selfhost": "Póngase en contacto con su administrador de Bytebase para restablecer su contraseña.",
+      "cloud": "Vaya al {link} y restablezca su contraseña.",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
     "password-forgot": "Contraseña olvidada",
@@ -1719,7 +1722,10 @@
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
-    "partition-tabled": "Tabla particionada"
+    "partition-tabled": "Tabla particionada",
+    "external-database-name": "Nombre de la base de datos externa",
+    "external-server-name": "Nombre del servidor externo",
+    "foreign-table-detail": "Detalle de la tabla externa"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -1920,10 +1926,7 @@
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
-        "btn-text": "Archivar este @.lower:{'common.project'}",
-        "force": {
-          "description": "Forzar a archivar. \nTodos los problemas relacionados se resolverán y todas las hojas relacionadas se eliminarán."
-        }
+        "btn-text": "Archivar este @.lower:{'common.project'}"
       },
       "restore": {
         "title": "Restaurar proyecto",
@@ -2156,7 +2159,9 @@
       "tunnel": "@:{'data-source.ssh.tunnel'}",
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
       "none": "Ninguno"
-    }
+    },
+    "admin": "Admin",
+    "read-only": "Solo lectura"
   },
   "setting": {
     "project": {
@@ -2272,7 +2277,8 @@
     "executing-query": "Ejecutando consulta",
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
-    "next-row": "siguiente fila"
+    "next-row": "siguiente fila",
+    "copy-success": "Copiado al portapapeles"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -2334,7 +2340,7 @@
       "true": "True",
       "false": "False"
     },
-    "nothing-changed": "Nada ha cambiado",
+    "nothing-changed-for-database": "Nada cambió para la base de datos {database}",
     "message": {
       "invalid-schema-name": "Nombre de esquema inválido",
       "duplicated-schema-name": "Nombre de esquema duplicado",
@@ -3344,5 +3350,15 @@
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
     "export-format": "Formato de exportación"
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Seleccionar base de datos de destino"
+    },
+    "select-tables-to-rollout": "Seleccionar tablas para implementar",
+    "branch-is-protected": "La rama está protegida",
+    "default-branches": "Ramas por defecto",
+    "your-branches": "Tus ramas",
+    "active-branches": "Ramas activas"
   }
 }

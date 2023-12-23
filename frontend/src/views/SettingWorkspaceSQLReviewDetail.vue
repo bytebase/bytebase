@@ -61,7 +61,7 @@
     <BBAttention
       v-if="!reviewPolicy.environment"
       class="my-4"
-      :style="`WARN`"
+      type="warning"
       :title="$t('sql-review.create.basic-info.no-linked-environments')"
     />
     <SQLRuleFilter
@@ -79,7 +79,7 @@
       @comment-change="onCommentChange"
     />
     <BBButtonConfirm
-      class="my-4"
+      class="!my-4"
       :disabled="!hasPermission"
       :style="'DELETE'"
       :button-text="$t('sql-review.delete')"
@@ -101,8 +101,8 @@
     </div>
   </div>
   <BBAlert
-    v-if="state.showDisableModal"
-    :style="'CRITICAL'"
+    v-model:show="state.showDisableModal"
+    type="warning"
     :ok-text="$t('common.disable')"
     :title="$t('common.disable') + ` '${reviewPolicy.name}'?`"
     description=""
@@ -113,11 +113,10 @@
       }
     "
     @cancel="state.showDisableModal = false"
-  >
-  </BBAlert>
+  />
   <BBAlert
-    v-if="state.showEnableModal"
-    :style="'INFO'"
+    v-model:show="state.showEnableModal"
+    type="info"
     :ok-text="$t('common.enable')"
     :title="$t('common.enable') + ` '${reviewPolicy.name}'?`"
     description=""
@@ -128,8 +127,7 @@
       }
     "
     @cancel="state.showEnableModal = false"
-  >
-  </BBAlert>
+  />
 </template>
 
 <script lang="ts" setup>
