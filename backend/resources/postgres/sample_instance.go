@@ -148,12 +148,12 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 		// nolint
 		return true, nil
 	}
-	row := driver.GetDB().QueryRowContext(ctx, "SELECT EXISTS ( SELECT 1 FROM pg_tables WHERE tablename = 'employee');")
-	var exists bool
-	if err := row.Scan(&exists); err != nil {
+	row := driver.GetDB().QueryRowContext(ctx, "select count(1) from pg_tables where schemaname='public';")
+	var count int
+	if err := row.Scan(&count); err != nil {
 		return false, err
 	}
-	return !exists, nil
+	return count == 0, nil
 }
 
 // prepareSampleDatabaseIfNeeded creates sample database if needed.
