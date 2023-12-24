@@ -465,7 +465,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
-			conflictSchema, err := diff3.Merge(strings.NewReader(string(baseBranch.BaseSchema)), strings.NewReader(string(baseBranch.HeadSchema)), strings.NewReader(newBaseSchema), true, fmt.Sprint("<<<<<<< HEAD"), fmt.Sprint(">>>>>>>>>>>>"))
+			conflictSchema, err := diff3.Merge(strings.NewReader(string(baseBranch.BaseSchema)), strings.NewReader(string(baseBranch.HeadSchema)), strings.NewReader(newBaseSchema), true, "<<<<<<< HEAD", ">>>>>>>>>>>>")
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute conflict schema, %v", err))
 			}
@@ -475,7 +475,6 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			}
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
-
 		}
 		if mergedTarget == nil {
 			// TODO(zp): bug, this should not be no change.
