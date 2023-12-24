@@ -1,5 +1,6 @@
 import { ComposedDatabase } from "@/types";
 import {
+  ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -58,6 +59,6 @@ export type RolloutObject = {
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
-    // column?: ColumnMetadata; // Columns are not selectable by now
+    column?: ColumnMetadata;
   };
 };
