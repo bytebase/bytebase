@@ -20,6 +20,7 @@ require (
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/epiclabs-io/diff3 v0.0.0-20181217103619-05282cece609
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.2
 	github.com/go-ldap/ldap/v3 v3.4.6
@@ -105,7 +106,6 @@ require (
 	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
-	github.com/epiclabs-io/diff3 v0.0.0-20181217103619-05282cece609 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
