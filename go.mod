@@ -20,6 +20,7 @@ require (
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/epiclabs-io/diff3 v0.0.0-20181217103619-05282cece609
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.2
 	github.com/go-ldap/ldap/v3 v3.4.6
