@@ -44,20 +44,21 @@ var dbsPerEnv = map[string][]string{
 
 // StartAllSampleInstances starts all postgres sample instances.
 func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port int, includeBatch bool) []func() {
-	stoppers := []func(){}
 	slog.Info("-----Sample Postgres Instance BEGIN-----")
-	for k := range dbsPerEnv {
+	i := 0
+	for k, v := range dbsPerEnv {
 		slog.Info(fmt.Sprintf("Setup sample instance %v", k))
-		if err := setupOneSampleInstance(pgBinDir, path.Join(dataDir, "pgdata-sample", k)); err != nil {
+		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch); err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
 	}
 
-	i := 0
-	for k, v := range dbsPerEnv {
+	i = 0
+	stoppers := []func(){}
+	for k := range dbsPerEnv {
 		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
-		stopper, err := startOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch)
+		stopper, err := startOneSampleInstance(pgBinDir, path.Join(dataDir, "pgdata-sample", k), port+i)
 		i++
 		if err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
@@ -69,8 +70,8 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 	return stoppers
 }
 
-// setupOneSampleInstance sets up a single postgres sample instance.
-func setupOneSampleInstance(pgBinDir, pgDataDir string) error {
+// setupOneSampleInstance starts a single postgres sample instance.
+func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool) error {
 	v, err := getVersion(pgDataDir)
 	if err != nil {
 		return err
@@ -87,23 +88,19 @@ func setupOneSampleInstance(pgBinDir, pgDataDir string) error {
 	}
 
 	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
+		return errors.Wrapf(err, "failed to turn on pg_stat_statements")
 	}
-	return nil
-}
 
-// startOneSampleInstance starts a single postgres sample instance.
-func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool) (func(), error) {
 	// TODO(tianzhou): Remove this after debugging completes.
 	// turn on serverlog to debug sample instance startup in SaaS.
 	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
-		return nil, errors.Wrapf(err, "failed to start sample instance")
+		return errors.Wrapf(err, "failed to start sample instance")
 	}
 
 	host := common.GetPostgresSocketDir()
 	for _, v := range dbs {
 		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v); err != nil {
-			return nil, errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
+			return errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
 		}
 		if !includeBatch {
 			break
@@ -115,6 +112,14 @@ func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 		slog.Warn("Failed to drop default postgres database", log.BBError(err))
 	}
 
+	return stop(pgBinDir, pgDataDir)
+}
+
+// startOneSampleInstance starts a single postgres sample instance.
+func startOneSampleInstance(pgBinDir, pgDataDir string, port int) (func(), error) {
+	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
+		return nil, errors.Wrapf(err, "failed to start sample instance")
+	}
 	return func() {
 		if err := stop(pgBinDir, pgDataDir); err != nil {
 			panic(err)
