@@ -1,4 +1,5 @@
 import NameCell from "./NameCell.vue";
 import OperationCell from "./OperationCell.vue";
+import SelectionCell from "./SelectionCell.vue";
 
-export { NameCell, OperationCell };
+export { SelectionCell, NameCell, OperationCell };
