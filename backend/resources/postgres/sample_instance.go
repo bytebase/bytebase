@@ -44,11 +44,18 @@ var dbsPerEnv = map[string][]string{
 
 // StartAllSampleInstances starts all postgres sample instances.
 func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port int, includeBatch bool) []func() {
+	// Load sample data
+	sampleData, err := loadSampleData()
+	if err != nil {
+		slog.Error("failed to load sample data", log.BBError(err))
+		return nil
+	}
+
 	slog.Info("-----Sample Postgres Instance BEGIN-----")
 	i := 0
 	for k, v := range dbsPerEnv {
 		slog.Info(fmt.Sprintf("Setup sample instance %v", k))
-		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch); err != nil {
+		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch, sampleData); err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
 			continue
 		}
@@ -70,8 +77,30 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 	return stoppers
 }
 
+func loadSampleData() (string, error) {
+	// Load sample data
+	names, err := fs.Glob(sampleFS, "sample/*.sql")
+	if err != nil {
+		return "", err
+	}
+	sort.Strings(names)
+	names = names[:2]
+
+	var builder strings.Builder
+	for _, name := range names {
+		buf, err := fs.ReadFile(sampleFS, name)
+		if err != nil {
+			return "", errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
+		}
+		if _, err := builder.Write(buf); err != nil {
+			return "", err
+		}
+	}
+	return builder.String(), nil
+}
+
 // setupOneSampleInstance starts a single postgres sample instance.
-func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool) error {
+func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool, sampleData string) error {
 	v, err := getVersion(pgDataDir)
 	if err != nil {
 		return err
@@ -99,7 +128,7 @@ func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 
 	host := common.GetPostgresSocketDir()
 	for _, v := range dbs {
-		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v); err != nil {
+		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v, sampleData); err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
 		}
 		if !includeBatch {
@@ -163,7 +192,7 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 }
 
 // prepareSampleDatabaseIfNeeded creates sample database if needed.
-func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database string) error {
+func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database, sampleData string) error {
 	needSetup, err := needSetupSampleDatabase(ctx, pgUser, port, database)
 	if err != nil {
 		return err
@@ -201,25 +230,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 	defer driver.Close(ctx)
 
-	// Load sample data
-	names, err := fs.Glob(sampleFS, "sample/*.sql")
-	if err != nil {
-		return err
-	}
-	sort.Strings(names)
-	names = names[:2]
-
-	var builder strings.Builder
-	for _, name := range names {
-		buf, err := fs.ReadFile(sampleFS, name)
-		if err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		}
-		if _, err := builder.Write(buf); err != nil {
-			return err
-		}
-	}
-	if _, err := driver.Execute(ctx, builder.String(), false, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(ctx, sampleData, false, db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to load sample database data")
 	}
 	return nil
