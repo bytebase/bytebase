@@ -156,6 +156,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 		exec.stateCfg.GhostTaskState.Store(task.ID, sharedGhostState{migrationContext: migrationContext, errCh: migrationError})
 		return true, &api.TaskRunResultPayload{Detail: "sync done"}, nil
 	case err := <-migrationError:
+		migrationContext.PanicAbort <- err
 		return true, nil, err
 	case <-ctx.Done():
 		migrationContext.PanicAbort <- errors.New("task canceled")
