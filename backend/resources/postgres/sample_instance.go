@@ -84,7 +84,6 @@ func loadSampleData() (string, error) {
 		return "", err
 	}
 	sort.Strings(names)
-	names = names[:2]
 
 	var builder strings.Builder
 	for _, name := range names {
