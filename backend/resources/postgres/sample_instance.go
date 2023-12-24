@@ -55,7 +55,6 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 			continue
 		}
 		stoppers = append(stoppers, stopper)
-		break
 	}
 	slog.Info("-----Sample Postgres Instance END-----")
 	return stoppers
