@@ -354,7 +354,6 @@ func TestGhostTenant(t *testing.T) {
 func getMySQLInstanceForGhostTest(t *testing.T) (int, func(), error) {
 	mysqlPort := getTestPort()
 	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-	defer stopInstance()
 
 	mysqlDB, err := connectTestMySQL(mysqlPort, "")
 	if err != nil {
