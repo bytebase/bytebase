@@ -7,10 +7,10 @@ metadata:
   labels:
     {{- include "bytebase.labels" . | nindent 4}}
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: bytebase
   ports:
   - protocol: TCP
-    port: {{ $port }}
+    port: 80
     targetPort: {{ $port }}
