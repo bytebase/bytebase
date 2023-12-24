@@ -44,15 +44,15 @@ func getPreloadingUtilDir(utilDir string) string {
 	// So we extract resources to these specific paths during build and then symlink them to actual paths.
 	if strings.Contains(utilDir, "mysql") {
 		// we only support linux/amd64 or linux/arm64 now.
-		return fmt.Sprintf("/var/bytebase/resources/mysqlutil-8.0.33-linux-%s", runtime.GOARCH)
+		return fmt.Sprintf("/root/bytebase/resources/mysqlutil-8.0.33-linux-%s", runtime.GOARCH)
 	}
 	if strings.Contains(utilDir, "mongoutil") {
 		// we only support linux/amd64 or linux/arm64 now.
-		return fmt.Sprintf("/var/bytebase/resources/mongoutil-1.6.1-linux-%s", runtime.GOARCH)
+		return fmt.Sprintf("/root/bytebase/resources/mongoutil-1.6.1-linux-%s", runtime.GOARCH)
 	}
 	if strings.Contains(utilDir, "postgres") {
 		// we only support linux/amd64 or linux/arm64 now.
-		return fmt.Sprintf("/var/bytebase/resources/postgres-linux-%s-16", runtime.GOARCH)
+		return fmt.Sprintf("/root/bytebase/resources/postgres-linux-%s-16", runtime.GOARCH)
 	}
 	return utilDir
 }
