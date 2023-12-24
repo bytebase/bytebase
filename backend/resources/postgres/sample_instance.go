@@ -229,7 +229,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 	defer driver.Close(ctx)
 
-	if _, err := driver.Execute(ctx, sampleData, false, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.GetDB().ExecContext(ctx, sampleData); err != nil {
 		return errors.Wrapf(err, "failed to load sample database data")
 	}
 	return nil
