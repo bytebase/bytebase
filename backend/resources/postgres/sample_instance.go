@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -200,22 +201,22 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	if err != nil {
 		return err
 	}
-
 	sort.Strings(names)
 
-	tx, err := driver.GetDB().Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	var builder strings.Builder
 	for _, name := range names {
-		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
+		buf, err := fs.ReadFile(sampleFS, name)
+		if err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		} else if _, err := tx.ExecContext(ctx, string(buf), false, db.ExecuteOptions{}); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
+		}
+		if _, err := builder.Write(buf); err != nil {
+			return err
 		}
 	}
-	return tx.Commit()
+	if _, err := driver.Execute(ctx, builder.String(), false, db.ExecuteOptions{}); err != nil {
+		return errors.Wrapf(err, "failed to load sample database data")
+	}
+	return nil
 }
 
 func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database string) error {
