@@ -102,7 +102,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 
 	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
+	if _, err := metadataDriver.Execute(ctx, stmt, false /* createDatabase */, dbdriver.ExecuteOptions{}); err != nil {
 		return err
 	}
 	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
