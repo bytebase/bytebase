@@ -3251,7 +3251,6 @@
     "parent-branch": "父分支",
     "save-draft": "保存草稿",
     "merge-branch": "合并分支",
-    "delete-branch-after-merged": "合并后删除分支",
     "raw-sql-preview": "原始 SQL 预览",
     "diff-editor": {
       "self": "Diff 编辑器",
@@ -3356,14 +3355,21 @@
     "your-branches": "你的分支",
     "active-branches": "活跃的分支",
     "select-branch": "选择分支",
-    "merge": {
+    "merge-rebase": {
       "select-branches-to-merge": "选择要合并的分支",
+      "select-branches-to-rebase": "选择要 rebase 的分支",
       "validating-branch": "正在验证分支",
       "able-to-merge": "可以合并",
+      "able-to-rebase": "可以 rebase",
       "cannot-automatically-merge": "无法自动合并，请先 {rebase_branch}。",
+      "cannot-automatically-rebase": "无法自动 rebase，请手动解决冲突。",
       "go-rebase": "rebase 分支",
       "changes-of-branch": "{branch} 的变更",
-      "success": "合并成功"
+      "merge-succeeded": "合并成功",
+      "rebase-succeeded": "Rebase 成功",
+      "delete-branch-after-merged": "合并后删除分支",
+      "merge-branch": "合并分支",
+      "rebase-branch": "Rebase 分支"
     }
   }
 }

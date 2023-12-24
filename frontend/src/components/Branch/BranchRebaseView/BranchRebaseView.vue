@@ -9,37 +9,35 @@
       pane-class="flex-1 flex flex-col gap-y-2 relative"
       footer-class="!space-y-0 !border-0 !pt-0"
       @update:current-index="tryChangeStep"
-      @finish="handleMergeBranch"
+      @finish="handleRebaseBranch"
     >
       <template #0>
         <SelectBranchStep
-          v-model:delete-branch-after-merged="state.deleteBranchAfterMerged"
           :project="project"
           :head-branch="headBranch"
-          :target-branch="targetBranch"
+          :source-branch="sourceBranch"
           :is-loading-head-branch="isLoadingHeadBranch"
-          :is-loading-target-branch="isLoadingTargetBranch"
+          :is-loading-source-branch="isLoadingSourceBranch"
           :is-validating="isValidating"
           :validation-state="validationState"
           @update:head-branch-name="handleUpdateHeadBranch"
-          @update:target-branch-name="state.targetBranchName = $event || null"
+          @update:source-branch-name="state.sourceBranchName = $event || null"
         />
       </template>
       <template #1>
-        <MergeBranchStep
-          v-if="targetBranch && headBranch && validationState?.branch"
+        <RebaseBranchStep
+          v-if="sourceBranch && headBranch && validationState"
           :project="project"
-          :merged-branch="validationState.branch"
+          :validation-state="validationState"
         />
       </template>
     </StepTab>
-    <MaskSpinner v-if="state.isMerging" />
+    <MaskSpinner v-if="state.isRebasing" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -48,16 +46,14 @@ import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { getErrorCode } from "@/utils/grpcweb";
-import MergeBranchStep from "./MergeBranchStep.vue";
+import RebaseBranchStep from "./RebaseBranchStep.vue";
 import SelectBranchStep from "./SelectBranchStep.vue";
-import { MergeBranchValidationState } from "./types";
+import { RebaseBranchValidationState } from "./types";
 
 interface LocalState {
   currentStepIndex: number;
-  targetBranchName: string | null;
-  deleteBranchAfterMerged: boolean;
-  isMerging: boolean;
+  sourceBranchName: string | null;
+  isRebasing: boolean;
 }
 
 const props = defineProps<{
@@ -67,8 +63,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (
-    event: "merged",
-    mergedBranch: Branch,
+    event: "rebased",
+    rebasedBranch: Branch,
     headBranchName: string,
     headBranch: Branch | undefined
   ): void;
@@ -77,17 +73,16 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   currentStepIndex: 0,
-  targetBranchName: null,
-  deleteBranchAfterMerged: false,
-  isMerging: false,
+  sourceBranchName: null,
+  isRebasing: false,
 });
 const { t } = useI18n();
 const branchStore = useBranchStore();
 const isLoadingHeadBranch = ref(false);
-const isLoadingTargetBranch = ref(false);
+const isLoadingSourceBranch = ref(false);
 const isValidating = ref(false);
 const combinedIsLoadingBranch = computed(() => {
-  return isLoadingHeadBranch.value || isLoadingTargetBranch.value;
+  return isLoadingHeadBranch.value || isLoadingSourceBranch.value;
 });
 
 const stepList = computed(() => [
@@ -95,7 +90,7 @@ const stepList = computed(() => [
   { title: t("common.preview") },
 ]);
 const STEP_SELECT_BRANCH = 0;
-const STEP_MERGE_BRANCH = 1;
+const STEP_REBASE_BRANCH = 1;
 
 const headBranch = computedAsync(
   async () => {
@@ -113,9 +108,9 @@ const headBranch = computedAsync(
   }
 );
 
-const targetBranch = computedAsync(
+const sourceBranch = computedAsync(
   async () => {
-    const name = state.targetBranchName;
+    const name = state.sourceBranchName;
     if (!name) {
       return undefined;
     }
@@ -125,37 +120,21 @@ const targetBranch = computedAsync(
   },
   undefined,
   {
-    evaluating: isLoadingTargetBranch,
+    evaluating: isLoadingSourceBranch,
   }
 );
 
 const validationState = computedAsync(
-  async (): Promise<MergeBranchValidationState | undefined> => {
+  async (): Promise<RebaseBranchValidationState | undefined> => {
     const head = headBranch.value;
-    const target = targetBranch.value;
+    const source = sourceBranch.value;
     if (!head) return;
-    if (!target) return;
-    try {
-      const branch = await branchServiceClient.mergeBranch(
-        {
-          name: target.name,
-          headBranch: head.name,
-          validateOnly: true,
-        },
-        {
-          silent: true,
-        }
-      );
-      return {
-        status: Status.OK,
-        branch,
-      };
-    } catch (err) {
-      const status = getErrorCode(err);
-      return {
-        status,
-      };
-    }
+    if (!source) return;
+    const response = await branchServiceClient.rebaseBranch({
+      name: head.name,
+      sourceBranch: source.name,
+    });
+    return response;
   },
   undefined,
   {
@@ -177,48 +156,42 @@ const allowNextStep = computed(() => {
   if (state.currentStepIndex === STEP_SELECT_BRANCH) {
     return (
       headBranch.value !== undefined &&
-      targetBranch.value !== undefined &&
-      validationState.value?.status === Status.OK
+      sourceBranch.value !== undefined &&
+      validationState.value !== undefined
     );
   }
-  if (state.currentStepIndex === STEP_MERGE_BRANCH) {
+  if (state.currentStepIndex === STEP_REBASE_BRANCH) {
     return true;
   }
 
-  console.error("[BranchMergeView.allowNextStep] should never reach this line");
+  console.error(
+    "[BranchRebaseView.allowNextStep] should never reach this line"
+  );
   return false;
 });
 
-const handleMergeBranch = async () => {
-  const target = targetBranch.value;
+const handleRebaseBranch = async () => {
+  const target = sourceBranch.value;
   if (!target) return;
   const head = headBranch.value;
   if (!head) return;
-  state.isMerging = true;
+  state.isRebasing = true;
 
   try {
-    const mergedBranch = await branchStore.mergeBranch({
+    const rebasedBranch = await branchStore.mergeBranch({
       name: target.name,
       headBranch: head.name,
       etag: "",
       validateOnly: false,
     });
-    if (state.deleteBranchAfterMerged) {
-      await branchStore.deleteBranch(head.name);
-    }
 
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
-      title: t("branch.merge-rebase.merge-succeeded"),
+      title: t("branch.merge-rebase.rebase-succeeded"),
     });
 
-    emit(
-      "merged",
-      mergedBranch,
-      head.name,
-      state.deleteBranchAfterMerged ? undefined : head
-    );
+    emit("rebased", rebasedBranch, head.name, head);
   } catch (error: any) {
     pushNotification({
       module: "bytebase",
@@ -227,7 +200,7 @@ const handleMergeBranch = async () => {
       description: error.details,
     });
   } finally {
-    state.isMerging = false;
+    state.isRebasing = false;
   }
 };
 </script>

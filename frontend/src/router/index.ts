@@ -710,9 +710,18 @@ const routes: Array<RouteRecordRaw> = [
                 path: "branches/:branchName/merge",
                 name: "workspace.project.branch.merge",
                 meta: {
-                  title: () => t("common.branch"),
+                  title: () => t("branch.merge-rebase.merge-branch"),
                 },
                 component: () => import("../views/branch/BranchMerge.vue"),
+                props: true,
+              },
+              {
+                path: "branches/:branchName/rebase",
+                name: "workspace.project.branch.rebase",
+                meta: {
+                  title: () => t("branch.merge-rebase.rebase-branch"),
+                },
+                component: () => import("../views/branch/BranchRebase.vue"),
                 props: true,
               },
               {

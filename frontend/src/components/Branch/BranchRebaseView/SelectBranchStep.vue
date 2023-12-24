@@ -1,19 +1,8 @@
 <template>
   <div
-    class="w-full grid grid-cols-4 items-center text-sm gap-x-2"
-    style="grid-template-columns: 1fr auto 1fr auto"
+    class="w-full grid grid-cols-3 items-center text-sm gap-x-2"
+    style="grid-template-columns: 1fr auto 1fr"
   >
-    <BranchSelector
-      class="!w-full text-center"
-      :clearable="false"
-      :project="project"
-      :branch="targetBranch?.name"
-      :filter="targetBranchFilter"
-      @update:branch="$emit('update:target-branch-name', $event)"
-    />
-    <div class="flex flex-row justify-center px-2">
-      <MoveLeftIcon :size="40" stroke-width="1" />
-    </div>
     <BranchSelector
       class="!full text-center"
       :clearable="false"
@@ -22,19 +11,22 @@
       :filter="headBranchFilter"
       @update:branch="$emit('update:head-branch-name', $event)"
     />
-    <NCheckbox
-      value="deleteBranchAfterMerged"
-      @update:value="
-        $emit('update:delete-branch-after-merged', $event as boolean)
-      "
-    >
-      {{ $t("branch.merge-rebase.delete-branch-after-merged") }}
-    </NCheckbox>
+    <div class="flex flex-row justify-center px-2">
+      <MoveLeftIcon :size="40" stroke-width="1" />
+    </div>
+    <BranchSelector
+      class="!w-full text-center"
+      :clearable="false"
+      :project="project"
+      :branch="sourceBranch?.name"
+      :filter="sourceBranchFilter"
+      @update:branch="$emit('update:source-branch-name', $event)"
+    />
   </div>
   <div class="w-full flex-1 flex flex-col relative text-sm gap-y-1">
     <div class="flex flex-row items-center gap-x-1">
-      <span v-if="!headBranch || !targetBranch">
-        {{ $t("branch.merge-rebase.select-branches-to-merge") }}
+      <span v-if="!headBranch || !sourceBranch">
+        {{ $t("branch.merge-rebase.select-branches-to-rebase") }}
       </span>
       <template v-else>
         <template v-if="isValidating">
@@ -42,26 +34,15 @@
           <span>{{ $t("branch.merge-rebase.validating-branch") }}</span>
         </template>
         <template v-else-if="validationState">
-          <template v-if="validationState.status === Status.OK">
+          <template v-if="validationState.branch">
             <CheckIcon class="w-4 h-4 text-success" />
-            <span>{{ $t("branch.merge-rebase.able-to-merge") }}</span>
+            <span>{{ $t("branch.merge-rebase.able-to-rebase") }}</span>
           </template>
           <template v-else>
             <XCircleIcon class="w-4 h-4 text-error" />
-            <i18n-t
-              keypath="branch.merge-rebase.cannot-automatically-merge"
-              tag="span"
-              class="text-error"
-            >
-              <template #rebase_branch>
-                <router-link
-                  :to="rebaseLink(headBranch, targetBranch)"
-                  class="normal-link"
-                >
-                  {{ $t("branch.merge-rebase.go-rebase") }}
-                </router-link>
-              </template>
-            </i18n-t>
+            <span>
+              {{ $t("branch.merge-rebase.cannot-automatically-rebase") }}
+            </span>
           </template>
         </template>
       </template>
@@ -109,15 +90,14 @@
         class="h-full"
       />
 
-      <MaskSpinner v-if="isLoadingHeadBranch || isLoadingTargetBranch" />
+      <MaskSpinner v-if="isLoadingHeadBranch || isLoadingSourceBranch" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon, MoveLeftIcon } from "lucide-vue-next";
-import { NCheckbox, NTab, NTabs } from "naive-ui";
-import { Status } from "nice-grpc-common";
+import { NTab, NTabs } from "naive-ui";
 import { ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
@@ -126,31 +106,29 @@ import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { MergeBranchValidationState } from "./types";
+import { RebaseBranchValidationState } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
 
 const props = defineProps<{
   project: ComposedProject;
-  targetBranch: Branch | undefined;
+  sourceBranch: Branch | undefined;
   headBranch: Branch | undefined;
-  isLoadingTargetBranch?: boolean;
+  isLoadingSourceBranch?: boolean;
   isLoadingHeadBranch?: boolean;
   isValidating?: boolean;
-  validationState: MergeBranchValidationState | undefined;
-  deleteBranchAfterMerged: boolean;
+  validationState: RebaseBranchValidationState | undefined;
 }>();
 
 defineEmits<{
   (event: "update:head-branch-name", branch: string | undefined): void;
-  (event: "update:target-branch-name", branch: string | undefined): void;
-  (event: "update:delete-branch-after-merged", on: boolean): void;
+  (event: "update:source-branch-name", branch: string | undefined): void;
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const tab = ref<TabValue>("schema-editor");
 
-const targetBranchFilter = (branch: Branch) => {
+const sourceBranchFilter = (branch: Branch) => {
   const { headBranch } = props;
   if (!headBranch) {
     return true;
@@ -158,17 +136,13 @@ const targetBranchFilter = (branch: Branch) => {
   return branch.engine === headBranch.engine && branch.name !== headBranch.name;
 };
 const headBranchFilter = (branch: Branch) => {
-  const { targetBranch } = props;
-  if (!targetBranch) {
+  const { sourceBranch } = props;
+  if (!sourceBranch) {
     return true;
   }
   return (
-    branch.engine === targetBranch.engine && branch.name !== targetBranch.name
+    branch.engine === sourceBranch.engine && branch.name !== sourceBranch.name
   );
-};
-
-const rebaseLink = (headBranch: Branch, targetBranch: Branch) => {
-  return "/";
 };
 
 // re-calculate diff for coloring when branch changed
