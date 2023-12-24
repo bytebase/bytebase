@@ -131,13 +131,9 @@
         </div>
       </div>
       <div class="flex justify-end space-x-2 pb-4">
-        <button
-          type="button"
-          class="btn-primary"
-          @click.prevent="onTrialingModalClose"
-        >
+        <NButton type="primary" @click.prevent="onTrialingModalClose">
           {{ $t("subscription.trial-start-modal.button") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

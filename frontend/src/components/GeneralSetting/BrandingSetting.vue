@@ -81,9 +81,9 @@
       <div class="flex justify-end gap-x-3">
         <NPopconfirm v-if="allowDelete" @positive-click="deleteLogo">
           <template #trigger>
-            <button type="button" class="btn-normal" :disabled="!allowEdit">
+            <NButton :disabled="!allowEdit">
               {{ $t("common.delete") }}
-            </button>
+            </NButton>
           </template>
           <template #default>
             {{ t("settings.general.workspace.confirm-delete-custom-logo") }}
