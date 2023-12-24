@@ -207,6 +207,7 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		return err
 	}
 	sort.Strings(names)
+	names = names[:2]
 
 	var builder strings.Builder
 	for _, name := range names {
