@@ -1,4 +1,7 @@
+import { ComposedDatabase } from "@/types";
 import {
+  ColumnConfig,
+  ColumnMetadata,
   DatabaseMetadata,
   SchemaConfig,
   SchemaMetadata,
@@ -6,6 +9,27 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { keyBy } from "@/utils";
+import { keyForResource, keyForResourceName } from "../context/common";
+
+type RichSchemaMetadata = {
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+};
+type RichTableMetadata = RichSchemaMetadata & {
+  table: TableMetadata;
+};
+type RichColumnMetadata = RichTableMetadata & {
+  column: ColumnMetadata;
+};
+type RichSchemaConfig = {
+  schemaConfig: SchemaConfig;
+};
+type RichTableConfig = RichSchemaConfig & {
+  tableConfig: TableConfig;
+};
+type RichColumnConfig = RichTableConfig & {
+  columnConfig: ColumnConfig;
+};
 
 export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
   const cleanupColumnConfigs = (
@@ -53,4 +77,44 @@ export const cleanupUnusedConfigs = (metadata: DatabaseMetadata) => {
   };
 
   cleanupSchemaConfigs(metadata);
+};
+
+export const buildColumnMap = (
+  db: ComposedDatabase,
+  database: DatabaseMetadata
+) => {
+  return new Map<string, RichColumnMetadata>(
+    database.schemas.flatMap((schema) => {
+      return schema.tables.flatMap((table) => {
+        return table.columns.map((column) => {
+          const key = keyForResource(db, {
+            schema,
+            table,
+            column,
+          });
+          return [key, { database, schema, table, column }];
+        });
+      });
+    })
+  );
+};
+export const buildColumnConfigMap = (
+  db: ComposedDatabase,
+  database: DatabaseMetadata
+) => {
+  return new Map<string, RichColumnConfig>(
+    database.schemaConfigs.flatMap((schemaConfig) => {
+      return schemaConfig.tableConfigs.flatMap((tableConfig) => {
+        return tableConfig.columnConfigs.map((columnConfig) => {
+          const key = keyForResourceName(
+            db.name,
+            schemaConfig.name,
+            tableConfig.name,
+            columnConfig.name
+          );
+          return [key, { schemaConfig, tableConfig, columnConfig }];
+        });
+      });
+    })
+  );
 };

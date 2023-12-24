@@ -1,14 +1,18 @@
 import { cloneDeep } from "lodash-es";
 import { ComposedDatabase } from "@/types";
 import {
+  ColumnConfig,
+  ColumnMetadata,
   DatabaseMetadata,
   SchemaConfig,
   SchemaMetadata,
+  TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { RolloutObject } from "../types";
+import { buildColumnConfigMap, buildColumnMap } from "./utils";
 
 export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
   const { getTableStatus, getColumnStatus } = context;
@@ -45,22 +49,70 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
         });
       })
     );
+    const sourceColumnMap = buildColumnMap(db, source);
+    const sourceColumnConfigMap = buildColumnConfigMap(db, source);
 
-    const applyTableEdits = (schema: SchemaMetadata, table: TableMetadata) => {
-      // Drop columns
-      target.schemas.forEach((schema) => {
-        schema.tables.forEach((table) => {
-          table.columns = table.columns.filter((column) => {
-            const status = getColumnStatus(db, {
-              database: target,
-              schema,
-              table,
-              column,
-            });
-            return status !== "dropped";
+    const applyTableEdits = (
+      schema: SchemaMetadata,
+      table: TableMetadata,
+      schemaConfig: SchemaConfig,
+      tableConfig: TableConfig | undefined
+    ) => {
+      const targetTableConfigMap = new Map(
+        tableConfig?.columnConfigs.map((cc) => [cc.name, cc])
+      );
+      const pickedColumns: ColumnMetadata[] = [];
+      const pickedColumnConfigs: ColumnConfig[] = [];
+      for (let i = 0; i < table.columns.length; i++) {
+        const column = table.columns[i];
+        const key = keyForResourceName(
+          db.name,
+          schema.name,
+          table.name,
+          column.name
+        );
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getColumnStatus(db, {
+            database: target,
+            schema,
+            table,
+            column,
           });
-        });
-      });
+          if (status === "dropped") {
+            // Don't collect dropped columns
+            continue;
+          } else {
+            // collect the column
+            // maybe it's clean, updated or created
+            pickedColumns.push(column);
+            // Together with its column config, if found
+            const columnConfig = targetTableConfigMap.get(column.name);
+            if (columnConfig) {
+              pickedColumnConfigs.push(columnConfig);
+            }
+          }
+        } else {
+          // for non-picked columns, collect the original version of the column
+          const sourceColumn = sourceColumnMap.get(key);
+          if (sourceColumn) {
+            // collect the original column
+            pickedColumns.push(cloneDeep(sourceColumn.column));
+            // together with its original columnConfig
+            const columnConfig = sourceColumnConfigMap.get(key)?.columnConfig;
+            if (columnConfig) {
+              pickedColumnConfigs.push(cloneDeep(columnConfig));
+            }
+          }
+        }
+      }
+      table.columns = pickedColumns;
+      schemaConfig.tableConfigs.push(
+        TableConfig.fromPartial({
+          name: table.name,
+          columnConfigs: pickedColumnConfigs,
+        })
+      );
     };
 
     const schemaConfigs: SchemaConfig[] = [];
@@ -88,17 +140,12 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
           } else {
             // Collect the edited table
             tables.push(table);
-            // Together with its tableConfig
             const tableConfig = targetSchemaConfig?.tableConfigs.find(
               (tc) => tc.name === table.name
             );
-            if (tableConfig) {
-              schemaConfig.tableConfigs.push(tableConfig);
-            }
-            // apply column edits for non-pending-creating (existed and updated) tables
-            if (status !== "created") {
-              applyTableEdits(schema, table);
-            }
+            // apply column edits for picked table
+            // Together with its tableConfig and columnConfigs
+            applyTableEdits(schema, table, schemaConfig, tableConfig);
           }
         } else {
           const sourceTable = sourceTableMap.get(key);
