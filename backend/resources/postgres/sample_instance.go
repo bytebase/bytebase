@@ -203,15 +203,19 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 
 	sort.Strings(names)
 
+	tx, err := driver.GetDB().Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 	for _, name := range names {
 		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		} else if _, err := driver.Execute(ctx, string(buf), false, db.ExecuteOptions{}); err != nil {
+		} else if _, err := tx.ExecContext(ctx, string(buf), false, db.ExecuteOptions{}); err != nil {
 			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
 		}
 	}
-
-	return nil
+	return tx.Commit()
 }
 
 func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database string) error {
