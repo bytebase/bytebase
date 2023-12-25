@@ -3,7 +3,6 @@ import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
-import BBContextMenu from "./BBContextMenu.vue";
 import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
@@ -25,7 +24,6 @@ export {
   BBAttention,
   BBAvatar,
   BBButtonConfirm,
-  BBContextMenu,
   BBModal,
   BBDialog,
   BBSelect,
