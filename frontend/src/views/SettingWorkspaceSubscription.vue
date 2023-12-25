@@ -46,9 +46,9 @@
         <dd
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
         >
-          <span class="group-hover:underline">{{
-            subscriptionStore.instanceCountLimit
-          }}</span>
+          <span class="group-hover:underline">
+            {{ subscriptionStore.instanceCountLimit }}
+          </span>
         </dd>
       </div>
       <div v-else class="my-3">
@@ -112,13 +112,10 @@
       v-if="canManageSubscription && subscriptionStore.isSelfHostLicense"
       class="w-full mt-4 flex flex-col"
     >
-      <textarea
-        id="license"
-        v-model="state.license"
-        type="text"
-        name="license"
+      <NInput
+        v-model:value="state.license"
+        type="textarea"
         :placeholder="$t('subscription.sensitive-placeholder')"
-        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
       />
       <div class="ml-auto mt-3">
         <NButton type="primary" :disabled="disabled" @click="uploadLicense">

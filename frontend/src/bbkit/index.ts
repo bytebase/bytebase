@@ -6,7 +6,6 @@ import BBButtonConfirm from "./BBButtonConfirm.vue";
 import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
-import BBSelect from "./BBSelect.vue";
 import BBSpin from "./BBSpin.vue";
 import BBTab from "./BBTab.vue";
 import {
@@ -26,7 +25,6 @@ export {
   BBButtonConfirm,
   BBModal,
   BBDialog,
-  BBSelect,
   BBSpin,
   BBTab,
   BBTable,

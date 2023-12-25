@@ -60,12 +60,11 @@
               <heroicons-outline:external-link class="w-4 h-4" />
             </a>
           </div>
-          <input
+          <BBTextField
             id="hookUrl"
-            v-model="state.autoBackupUpdatedHookUrl"
+            v-model:value="state.autoBackupUpdatedHookUrl"
             name="hookUrl"
-            type="text"
-            class="textfield mt-1 w-full"
+            class="mt-1 w-full"
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
             :disabled="!allowEdit"
           />
