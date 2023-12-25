@@ -23,8 +23,8 @@
       @update:branch="$emit('update:head-branch-name', $event)"
     />
     <NCheckbox
-      value="deleteBranchAfterMerged"
-      @update:value="
+      :checked="deleteBranchAfterMerged"
+      @update:checked="
         $emit('update:delete-branch-after-merged', $event as boolean)
       "
     >
