@@ -62,6 +62,7 @@ export interface Role {
   name: string;
   title: string;
   description: string;
+  permissions: string[];
 }
 
 function createBaseListRolesRequest(): ListRolesRequest {
@@ -418,7 +419,7 @@ export const DeleteRoleRequest = {
 };
 
 function createBaseRole(): Role {
-  return { name: "", title: "", description: "" };
+  return { name: "", title: "", description: "", permissions: [] };
 }
 
 export const Role = {
@@ -431,6 +432,9 @@ export const Role = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
+    }
+    for (const v of message.permissions) {
+      writer.uint32(34).string(v!);
     }
     return writer;
   },
@@ -463,6 +467,13 @@ export const Role = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.permissions.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -477,6 +488,9 @@ export const Role = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -491,6 +505,9 @@ export const Role = {
     if (message.description !== "") {
       obj.description = message.description;
     }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions;
+    }
     return obj;
   },
 
@@ -502,6 +519,7 @@ export const Role = {
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
+    message.permissions = object.permissions?.map((e) => e) || [];
     return message;
   },
 };

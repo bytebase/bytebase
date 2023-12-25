@@ -82,4 +82,5 @@ message Role {
   string name = 1;
   string title = 2;
   string description = 3;
+  repeated string permissions = 4;
 }
