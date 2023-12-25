@@ -27,13 +27,12 @@
             </template>
           </i18n-t>
         </div>
-        <button
-          class="btn btn-normal btn-small flex flex-row justify-center items-center ml-2 !py-1 px-2"
-          @click="gotoSubscriptionPage"
-        >
-          {{ $t("subscription.button.upgrade") }}
-          <heroicons-outline:sparkles class="w-4 h-auto text-accent ml-1" />
-        </button>
+        <div class="ml-2">
+          <NButton size="small" @click="gotoSubscriptionPage">
+            {{ $t("subscription.button.upgrade") }}
+            <heroicons-outline:sparkles class="w-4 h-auto text-accent ml-1" />
+          </NButton>
+        </div>
       </div>
     </div>
   </div>
@@ -63,14 +62,11 @@
         </li>
       </ul>
     </div>
-    <button
-      class="mt-3 mb-4 w-full btn btn-primary"
-      @click="gotoSubscriptionPage"
-    >
-      <span class="w-full text-center">{{
-        $t("subscription.upgrade-now")
-      }}</span>
-    </button>
+    <div class="mt-3 mb-4 w-full">
+      <NButton type="primary" @click="gotoSubscriptionPage" style="width: 100%">
+        {{ $t("subscription.upgrade-now") }}
+      </NButton>
+    </div>
   </BBModal>
 </template>
 

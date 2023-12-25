@@ -11,7 +11,7 @@
               {{ $t("database.backup.enabled") }}
             </span>
           </div>
-          <div class="flex items-center">
+          <div class="flex items-center space-x-3">
             <router-link
               v-if="hasBackupPolicyViolation"
               class="flex items-center normal-link text-sm"
@@ -20,16 +20,14 @@
               <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
               <span>{{ $t("database.backup-policy-violation") }}</span>
             </router-link>
-            <button
+            <NButton
               v-if="allowAdmin"
-              type="button"
-              class="ml-4 btn-normal"
               @click.prevent="state.showBackupSettingModal = true"
             >
               {{
                 hasBackupPolicyViolation ? $t("common.fix") : $t("common.edit")
               }}
-            </button>
+            </NButton>
           </div>
         </div>
         <div class="mt-2 text-control">
@@ -71,14 +69,17 @@
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
             :disabled="!allowEdit"
           />
-          <button
-            v-if="allowEdit"
-            class="btn-primary mt-2"
-            :disabled="!allowEdit || !urlChanged"
-            @click.prevent="updateBackupHookUrl()"
-          >
-            {{ $t("common.update") }}
-          </button>
+          <div class="mt-2">
+            <NButton
+              v-if="allowEdit"
+              type="primary"
+              class="mt-2"
+              :disabled="!allowEdit || !urlChanged"
+              @click.prevent="updateBackupHookUrl()"
+            >
+              {{ $t("common.update") }}
+            </NButton>
+          </div>
         </div>
       </div>
       <div

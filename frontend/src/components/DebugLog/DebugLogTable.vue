@@ -29,9 +29,7 @@
       <BBTableCell class="table-cell w-28">
         <NTooltip>
           <template #trigger>
-            <button
-              type="button"
-              class="group btn-normal items-center !px-3 !text-accent hover:!bg-gray-50"
+            <NButton
               @click.stop="
                 () => {
                   $emit('view-detail', debugLog);
@@ -39,7 +37,7 @@
               "
             >
               <heroicons-outline:document-magnifying-glass class="h-5 w-5" />
-            </button>
+            </NButton>
           </template>
           <span class="whitespace-nowrap">
             {{ $t("debug-log.table.operation.view-details") }}

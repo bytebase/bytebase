@@ -70,15 +70,10 @@
             </div>
           </div>
 
-          <div>
-            <span class="block w-full rounded-md shadow-sm">
-              <button
-                type="submit"
-                class="btn-success w-full flex justify-center py-2 px-4"
-              >
-                {{ $t("common.activate") }}
-              </button>
-            </span>
+          <div class="w-full">
+            <NButton attr-type="submit" type="primary" style="width: 100%">
+              {{ $t("common.activate") }}
+            </NButton>
           </div>
         </form>
       </div>

@@ -131,22 +131,18 @@
       </div>
 
       <div
-        class="w-full mt-4 pt-4 flex justify-end border-t border-block-border"
+        class="w-full mt-4 pt-4 flex justify-end border-t border-block-border space-x-3"
       >
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="$emit('cancel')"
-        >
+        <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!isValid"
           @click.prevent="handleSave"
         >
           {{ $t("common.save") }}
-        </button>
+        </NButton>
       </div>
 
       <div

@@ -34,9 +34,11 @@
             type="text"
           />
         </template>
-        <button type="submit" class="btn-success w-full mt-4">
-          <span class="w-full text-center">{{ $t("common.verify") }}</span>
-        </button>
+        <div class="w-full mt-4">
+          <NButton attr-type="submit" type="primary">
+            {{ $t("common.verify") }}
+          </NButton>
+        </div>
         <p class="textinfolabel mt-2">
           {{ challengeDescription }}
         </p>

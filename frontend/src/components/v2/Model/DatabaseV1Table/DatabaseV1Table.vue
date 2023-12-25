@@ -115,21 +115,16 @@
     <div class="col-span-1 w-96">
       {{ $t("database.incorrect-project-warning") }}
     </div>
-    <div class="pt-6 flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="handleIncorrectProjectModalCancel"
-      >
+    <div class="pt-6 flex justify-end space-x-3">
+      <NButton @click.prevent="handleIncorrectProjectModalCancel">
         {{ $t("common.cancel") }}
-      </button>
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+      </NButton>
+      <NButton
+        type="primary"
         @click.prevent="handleIncorrectProjectModalConfirm"
       >
         {{ $t("database.go-to-transfer") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>

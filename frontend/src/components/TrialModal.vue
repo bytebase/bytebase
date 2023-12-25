@@ -26,11 +26,10 @@
           </template>
         </i18n-t>
       </p>
-      <div class="mt-7 flex justify-end space-x-2">
-        <button
+      <div class="mt-7 flex justify-end">
+        <NButton
           v-if="subscriptionStore.canTrial"
-          type="button"
-          class="btn-primary"
+          type="primary"
           @click.prevent="trialSubscription"
         >
           {{
@@ -38,15 +37,10 @@
               days: subscriptionStore.trialingDays,
             })
           }}
-        </button>
-        <button
-          v-else
-          type="button"
-          class="btn-primary"
-          @click.prevent="learnMore"
-        >
+        </NButton>
+        <NButton v-else type="primary" @click.prevent="learnMore">
           {{ $t("common.learn-more") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
