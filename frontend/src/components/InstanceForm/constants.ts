@@ -27,6 +27,8 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "1521";
   } else if (engine === Engine.DM) {
     return "5236";
+  } else if (engine === Engine.STARROCKS) {
+    return "9030";
   }
   return "3306";
 };
@@ -60,6 +62,8 @@ export const EngineIconPath: Record<number, string> = {
     import.meta.url
   ).href,
   [Engine.RISINGWAVE]: new URL("@/assets/db-risingwave.png", import.meta.url)
+    .href,
+  [Engine.STARROCKS]: new URL("@/assets/db-starrocks.png", import.meta.url)
     .href,
 };
 
