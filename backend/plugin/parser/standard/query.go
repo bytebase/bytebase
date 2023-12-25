@@ -19,14 +19,12 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_MSSQL, ValidateSQLForEditor)
-	base.RegisterQueryValidator(storepb.Engine_STARROCKS, ValidateSQLForEditor)
 
 	base.RegisterExtractResourceListFunc(storepb.Engine_CLICKHOUSE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SQLITE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SPANNER, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_MONGODB, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_REDIS, ExtractResourceList)
-	base.RegisterExtractResourceListFunc(storepb.Engine_STARROCKS, ExtractResourceList)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.
