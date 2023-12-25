@@ -1,23 +1,28 @@
 <template>
-  <div
-    class="w-full max-w-2xl mx-auto flex flex-col justify-start items-start space-y-4 my-8"
-  >
-    <p>
-      {{ $t("two-factor.setup-steps.download-recovery-codes.tips") }}
-    </p>
+  <div class="w-full space-y-4 my-8">
     <BBAttention
       type="info"
       :title="
         $t('two-factor.setup-steps.download-recovery-codes.keep-safe.self')
       "
-      :description="
-        $t(
-          'two-factor.setup-steps.download-recovery-codes.keep-safe.description'
-        )
-      "
-    />
+    >
+      <template #default>
+        <div class="text-sm">
+          <p>
+            {{ $t("two-factor.setup-steps.download-recovery-codes.tips") }}
+          </p>
+          <p>
+            {{
+              $t(
+                "two-factor.setup-steps.download-recovery-codes.keep-safe.description"
+              )
+            }}
+          </p>
+        </div>
+      </template>
+    </BBAttention>
     <div
-      class="mt-8 w-112 mx-auto flex flex-col justify-start items-start"
+      class="mt-8 w-full mx-auto flex flex-col justify-start items-start"
       v-bind="$attrs"
     >
       <ul
@@ -28,11 +33,13 @@
         </li>
       </ul>
     </div>
-    <div class="w-112 mx-auto flex flex-row justify-end items-center">
-      <button class="btn-success" @click="downloadRecoveryCodes">
-        <heroicons-outline:download class="w-5 h-auto mr-1 text-white" />
+    <div class="w-full mx-auto flex flex-row justify-end items-center">
+      <NButton type="success" @click="downloadRecoveryCodes">
+        <template #icon>
+          <heroicons-outline:download class="w-5 h-auto text-white" />
+        </template>
         {{ $t("common.download") }}
-      </button>
+      </NButton>
     </div>
   </div>
 </template>
