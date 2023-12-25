@@ -1214,6 +1214,7 @@ Used internally for obfuscating the page token.
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
 | OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
 
 
 

@@ -29,6 +29,7 @@ enum Engine {
   DM = 15;
   RISINGWAVE = 16;
   OCEANBASE_ORACLE = 17;
+  STARROCKS = 18;
 }
 
 enum VcsType {
