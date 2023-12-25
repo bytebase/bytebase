@@ -811,6 +811,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
 | OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
 
 
 
@@ -7424,6 +7425,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | name | [string](#string) |  | Format: roles/{role} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+| permissions | [string](#string) | repeated |  |
 
 
 

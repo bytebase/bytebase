@@ -70,7 +70,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { escape, head } from "lodash-es";
+import { debounce, escape, head } from "lodash-es";
 import {
   TreeOption,
   NEllipsis,
@@ -84,6 +84,7 @@ import { useI18n } from "vue-i18n";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { ComposedDatabase, ComposedInstance } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -177,6 +178,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const {
+  events,
   targets,
   currentTab,
   addTab,
@@ -400,13 +402,19 @@ const buildDatabaseTreeData = () => {
     });
   }
 };
+const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
+useEmitteryEventListener(
+  events,
+  "rebuild-tree",
+  debouncedBuildDatabaseTreeData
+);
 watch(
   [
     () => databaseList.value.length,
     () => flattenSchemaList.value.length,
     () => flattenTableList.value.length,
   ],
-  buildDatabaseTreeData,
+  debouncedBuildDatabaseTreeData,
   {
     deep: false,
   }
@@ -488,7 +496,7 @@ const openTabForTreeNode = (node: TreeNode) => {
   state.shouldRelocateTreeNode = true;
 };
 
-onMounted(async () => {
+onMounted(() => {
   buildDatabaseTreeData();
 });
 

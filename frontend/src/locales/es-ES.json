@@ -3256,7 +3256,6 @@
     "parent-branch": "Rama principal",
     "save-draft": "Guardar borrador",
     "merge-branch": "Fusionar rama",
-    "delete-branch-after-merged": "Eliminar rama después de la fusión",
     "raw-sql-preview": "vista previa de sql sin formato",
     "diff-editor": {
       "self": "Editor de diferencias",
@@ -3359,6 +3358,25 @@
     "branch-is-protected": "La rama está protegida",
     "default-branches": "Ramas por defecto",
     "your-branches": "Tus ramas",
-    "active-branches": "Ramas activas"
+    "active-branches": "Ramas activas",
+    "select-branch": "Seleccionar sucursal",
+    "merge-rebase": {
+      "select-branches-to-merge": "Seleccionar sucursales para fusionar",
+      "select-branches-to-rebase": "Seleccione sucursales para rebase",
+      "validating-branch": "Validando sucursales",
+      "able-to-merge": "Capaz de fusionarse",
+      "able-to-rebase": "Capaz de rebase",
+      "cannot-automatically-merge": "No se puede fusionar automáticamente, {rebase_branch} primero.",
+      "cannot-automatically-rebase": "No se puede cambiar la base automáticamente. \nResuelva los conflictos manualmente.",
+      "go-rebase": "rama de rebase",
+      "changes-of-branch": "Cambios de {branch}",
+      "merge-succeeded": "Fusión exitosa",
+      "rebase-succeeded": "Rebase exitoso",
+      "delete-branch-after-merged": "Eliminar rama después de la fusión",
+      "merge-branch": "Fusionar rama",
+      "rebase-branch": "rama de rebase",
+      "confirm-rebase": "¿Confirmar rebase?",
+      "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto."
+    }
   }
 }

@@ -10,7 +10,7 @@
         <template #icon>
           <component :is="quickAction.icon" class="h-4 w-4" />
         </template>
-        <NEllipsis :line-clamp="1">
+        <NEllipsis>
           {{ quickAction.title }}
         </NEllipsis>
       </NButton>
@@ -104,7 +104,7 @@ import {
   FileSearchIcon,
   FileDownIcon,
 } from "lucide-vue-next";
-import { NEllipsis } from "naive-ui";
+import { NButton, NEllipsis } from "naive-ui";
 import { reactive, PropType, computed, watch, VNode, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
