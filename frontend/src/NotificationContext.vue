@@ -45,8 +45,18 @@ const watchNotification = () => {
     type: getNotificationType(item.style),
     keepAliveOnHover: true,
     duration,
-    title: item.title,
-    content: item.description,
+    title: () =>
+      h(
+        "div",
+        { class: "text-sm font-medium text-gray-900 whitespace-pre-wrap" },
+        item.title
+      ),
+    content: () =>
+      h(
+        "div",
+        { class: "text-sm text-gray-500 whitespace-pre-wrap" },
+        item.description
+      ),
     meta: () => {
       if (!item.link || !item.linkTitle) {
         return undefined;

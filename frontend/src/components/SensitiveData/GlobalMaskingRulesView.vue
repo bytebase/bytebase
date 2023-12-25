@@ -104,9 +104,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PencilIcon } from "lucide-vue-next";
-import { ChevronUpIcon } from "lucide-vue-next";
-import { ChevronDownIcon } from "lucide-vue-next";
+import { PencilIcon, ChevronUpIcon, ChevronDownIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, nextTick, onMounted } from "vue";

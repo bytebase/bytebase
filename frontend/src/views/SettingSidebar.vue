@@ -45,6 +45,13 @@ const getItemClass = (path: string | undefined) => {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
+    case "setting.workspace.gitop":
+    case "setting.workspace.gitops.create":
+    case "setting.workspace.gitops.detail":
+      if (path === "/setting/gitops") {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
   }
   return list;
 };

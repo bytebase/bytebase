@@ -185,6 +185,7 @@
             <NButton
               attr-type="submit"
               type="primary"
+              size="large"
               :disabled="!allowSignup"
               style="width: 100%"
             >
