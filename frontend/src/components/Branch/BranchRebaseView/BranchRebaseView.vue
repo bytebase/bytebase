@@ -30,7 +30,7 @@
       </template>
       <template #1>
         <RebaseBranchStep
-          v-if="sourceBranch && headBranch && validationState"
+          v-if="headBranch && sourceBranchOrDatabase && validationState"
           ref="rebaseBranchStepRef"
           :project="project"
           :validation-state="validationState"

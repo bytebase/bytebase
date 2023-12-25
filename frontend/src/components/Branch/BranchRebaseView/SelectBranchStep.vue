@@ -44,7 +44,7 @@
   </div>
   <div class="w-full flex-1 flex flex-col relative text-sm gap-y-1">
     <div class="flex flex-row items-center gap-x-1">
-      <span v-if="!headBranch || !sourceBranch">
+      <span v-if="!headBranch || !sourceBranchOrDatabase">
         {{ $t("branch.merge-rebase.select-branches-to-rebase") }}
       </span>
       <template v-else>
@@ -117,7 +117,7 @@
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon, MoveLeftIcon } from "lucide-vue-next";
 import { NRadioGroup, NTab, NTabs } from "naive-ui";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -151,6 +151,11 @@ defineEmits<{
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const tab = ref<TabValue>("schema-editor");
+const sourceBranchOrDatabase = computed(() => {
+  return props.sourceType === "BRANCH"
+    ? props.sourceBranch
+    : props.sourceDatabase;
+});
 
 const sourceBranchFilter = (branch: Branch) => {
   const { headBranch } = props;
@@ -160,13 +165,19 @@ const sourceBranchFilter = (branch: Branch) => {
   return branch.engine === headBranch.engine && branch.name !== headBranch.name;
 };
 const headBranchFilter = (branch: Branch) => {
-  const { sourceBranch } = props;
-  if (!sourceBranch) {
+  const source = sourceBranchOrDatabase.value;
+  if (!source) {
     return true;
   }
-  return (
-    branch.engine === sourceBranch.engine && branch.name !== sourceBranch.name
-  );
+  if (props.sourceType === "BRANCH") {
+    const sourceBranch = source as Branch;
+    return (
+      branch.engine === sourceBranch.engine && branch.name !== sourceBranch.name
+    );
+  } else {
+    const sourceDatabase = source as ComposedDatabase;
+    return branch.engine === sourceDatabase.instanceEntity.engine;
+  }
 };
 
 // re-calculate diff for coloring when branch changed
