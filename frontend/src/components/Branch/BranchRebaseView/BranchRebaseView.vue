@@ -25,7 +25,7 @@
           @update:source-type="state.sourceType = $event"
           @update:head-branch-name="handleUpdateHeadBranch"
           @update:source-branch-name="state.sourceBranchName = $event || null"
-          @update:source-database-uid="state.sourceDatabaseUID = $event"
+          @update:source-database-uid="state.sourceDatabaseUID = $event || null"
         />
       </template>
       <template #1>

@@ -38,6 +38,7 @@
         :project="project.uid"
         :allowed-engine-type-list="headBranch ? [headBranch.engine] : undefined"
         style="width: 100%"
+        @update:database="$emit('update:source-database-uid', $event)"
       />
     </div>
   </div>
@@ -145,7 +146,7 @@ defineEmits<{
   (event: "update:source-type", type: RebaseSourceType): void;
   (event: "update:head-branch-name", branch: string | undefined): void;
   (event: "update:source-branch-name", branch: string | undefined): void;
-  (event: "update:source-database-uid", uid: string): void;
+  (event: "update:source-database-uid", uid: string | undefined): void;
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
