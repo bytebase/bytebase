@@ -91,31 +91,13 @@
           class="ml-1"
         />
       </div>
-      <BBSelect
-        id="schemamigrationtype"
-        :disabled="!allowEdit"
-        :selected-item="schemaChangeType"
-        :item-list="[SchemaChange.DDL, SchemaChange.SDL]"
+      <NSelect
+        :options="schemaChangeTypeOptions"
+        :value="schemaChangeType"
+        :render-label="renderLabel"
         class="mt-1"
-        @select-item="
-          (type: SchemaChange) => {
-            $emit('change-schema-change-type', type);
-          }
-        "
-      >
-        <template #menuItem="{ item }">
-          <div class="flex items-center gap-x-2">
-            {{
-              $t(
-                `project.settings.select-schema-change-type-${schemaChangeToJSON(
-                  item
-                ).toLowerCase()}`
-              )
-            }}
-            <BBBetaBadge v-if="item === SchemaChange.SDL" class="!leading-3" />
-          </div>
-        </template>
-      </BBSelect>
+        @update:value="$emit('change-schema-change-type', $event)"
+      />
     </div>
     <div>
       <div class="textlabel">
@@ -329,10 +311,11 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { NCheckbox, NSelect, SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { reactive, PropType, computed } from "vue";
+import { reactive, PropType, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBBetaBadge } from "@/bbkit";
 import {
   hasFeature,
   useSubscriptionV1Store,
@@ -584,4 +567,31 @@ const onSQLReviewCIToggle = (on: boolean) => {
 const actuatorStore = useActuatorV1Store();
 
 const isDebug = storeToRefs(actuatorStore).isDebug;
+
+const renderLabel = (option: SelectOption) => {
+  const value = option.value as SchemaChange;
+  const child = [
+    h(
+      "span",
+      {},
+      t(
+        `project.settings.select-schema-change-type-${schemaChangeToJSON(
+          value
+        ).toLowerCase()}`
+      )
+    ),
+  ];
+  if (value === SchemaChange.SDL) {
+    child.push(h(BBBetaBadge, { class: "!leading-3" }));
+  }
+
+  return h("div", { class: "flex items-center gap-x-2" }, child);
+};
+
+const schemaChangeTypeOptions = computed(() => {
+  return [SchemaChange.DDL, SchemaChange.SDL].map((val) => ({
+    value: val,
+    label: schemaChangeToJSON(val),
+  }));
+});
 </script>

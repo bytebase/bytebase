@@ -83,18 +83,12 @@
         class="flex flex-row justify-start items-center mb-4"
       >
         <span class="text-lg leading-6 font-medium text-main mr-2">Schema</span>
-        <BBSelect
-          class="!w-auto min-w-[12rem]"
-          :selected-item="state.selectedSchemaName"
-          :item-list="schemaNameList"
+        <NSelect
+          v-model:value="state.selectedSchemaName"
+          :options="schemaNameOptions"
           :placeholder="$t('database.schema.select')"
-          :show-prefix-item="true"
-          @select-item="(schema: string) => state.selectedSchemaName = schema"
-        >
-          <template #menuItem="{ item: schema }">
-            {{ schema }}
-          </template>
-        </BBSelect>
+          class="!w-auto min-w-[12rem]"
+        />
       </div>
 
       <template v-if="databaseEngine !== Engine.REDIS">
@@ -193,6 +187,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
+import { NSelect } from "naive-ui";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
@@ -297,8 +292,11 @@ const schemaList = computed(() => {
   return dbSchemaStore.getSchemaList(props.database.name);
 });
 
-const schemaNameList = computed(() => {
-  return schemaList.value.map((schema) => schema.name);
+const schemaNameOptions = computed(() => {
+  return schemaList.value.map((schema) => ({
+    value: schema.name,
+    label: schema.name,
+  }));
 });
 
 const databaseSchemaMetadata = computed(() => {

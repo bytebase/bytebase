@@ -62,20 +62,19 @@
           <label class="textlabel">
             {{ $t("database.backup-setting.form.day-of-week") }}
           </label>
-          <div class="w-[16rem]">
-            <BBSelect
-              :selected-item="
-                localFromUTC(state.setting.hour, state.setting.dayOfWeek)
-                  .dayOfWeek
-              "
-              :item-list="AVAILABLE_DAYS_OF_WEEK"
-              @select-item="setDayOfWeek"
-            >
-              <template #menuItem="{ item: day }">
-                {{ nameOfDay(day) }}
-              </template>
-            </BBSelect>
-          </div>
+          <NSelect
+            :value="
+              localFromUTC(state.setting.hour, state.setting.dayOfWeek)
+                .dayOfWeek
+            "
+            :options="
+              AVAILABLE_DAYS_OF_WEEK.map((item) => ({
+                value: item,
+                label: nameOfDay(item),
+              }))
+            "
+            @update:value="setDayOfWeek"
+          />
         </div>
 
         <div
@@ -93,19 +92,18 @@
               ({{ Intl.DateTimeFormat().resolvedOptions().timeZone }})
             </span>
           </label>
-          <div class="w-[16rem]">
-            <BBSelect
-              :selected-item="
-                localFromUTC(state.setting.hour, state.setting.dayOfWeek).hour
-              "
-              :item-list="AVAILABLE_HOURS_OF_DAY"
-              @select-item="setHour"
-            >
-              <template #menuItem="{ item: hour }">
-                {{ nameOfHour(hour) }}
-              </template>
-            </BBSelect>
-          </div>
+          <NSelect
+            :value="
+              localFromUTC(state.setting.hour, state.setting.dayOfWeek).hour
+            "
+            :options="
+              AVAILABLE_HOURS_OF_DAY.map((item) => ({
+                value: item,
+                label: nameOfHour(item),
+              }))
+            "
+            @update:value="setHour"
+          />
         </div>
 
         <div
@@ -118,15 +116,11 @@
           <label class="textlabel">
             {{ $t("database.backup-setting.form.retention-period") }}
           </label>
-          <div class="w-[16rem]">
-            <input
-              type="number"
-              class="textfield w-full hide-ticker"
-              :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
-              :value="retentionPeriodDaysInputValue"
-              @input="(e: any) => setRetentionPeriodDays(e.target.value)"
-            />
-          </div>
+          <NInputNumber
+            :placeholder="String(DEFAULT_BACKUP_RETENTION_PERIOD_DAYS)"
+            :value="retentionPeriodDaysInputValue"
+            @update:value="setRetentionPeriodDays"
+          />
         </div>
       </div>
 
@@ -156,7 +150,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NPopover } from "naive-ui";
+import { NPopover, NSelect, NInputNumber } from "naive-ui";
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
@@ -260,10 +254,10 @@ const checkedSchedule = computed((): BackupPlanSchedule => {
   );
 });
 
-const retentionPeriodDaysInputValue = computed((): string => {
+const retentionPeriodDaysInputValue = computed(() => {
   const seconds = state.setting.retentionPeriodTs;
-  if (!seconds || seconds <= 0) return "";
-  return String(Math.floor(seconds / 3600 / 24));
+  if (!seconds || seconds <= 0) return null;
+  return Math.floor(seconds / 3600 / 24);
 });
 
 const isValid = computed((): boolean => {
@@ -394,12 +388,13 @@ function setHour(hour: number) {
   state.setting.dayOfWeek = utc.dayOfWeek;
 }
 
-function setRetentionPeriodDays(input: string) {
-  const days = parseInt(input, 10);
-  if (days <= 0 || Number.isNaN(days)) {
+function setRetentionPeriodDays(input: number | null) {
+  if (!input) {
+    state.setting.retentionPeriodTs = -1;
+  } else if (input <= 0 || Number.isNaN(input)) {
     state.setting.retentionPeriodTs = -1;
   } else {
-    state.setting.retentionPeriodTs = days * 3600 * 24;
+    state.setting.retentionPeriodTs = input * 3600 * 24;
   }
 }
 
