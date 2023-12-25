@@ -46,6 +46,7 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
   switch (engine) {
     case Engine.CLICKHOUSE:
     case Engine.SNOWFLAKE:
+    case Engine.STARROCKS:
       return "";
     case Engine.MYSQL:
     case Engine.TIDB:
@@ -76,6 +77,7 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
   switch (engine) {
     case Engine.CLICKHOUSE:
     case Engine.SNOWFLAKE:
+    case Engine.STARROCKS:
       return "";
     case Engine.MYSQL:
     case Engine.TIDB:
