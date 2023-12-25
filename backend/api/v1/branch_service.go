@@ -3,14 +3,18 @@ package v1
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"path"
+	"strings"
 
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/epiclabs-io/diff3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -455,7 +459,16 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
-			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: "TBD"}}, nil
+			conflictSchema, err := diff3.Merge(strings.NewReader(string(baseBranch.BaseSchema)), strings.NewReader(string(baseBranch.HeadSchema)), strings.NewReader(newBaseSchema), true, "<<<<<<< HEAD", ">>>>>>>>>>>>")
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute conflict schema, %v", err))
+			}
+			sb, err := io.ReadAll(conflictSchema.Result)
+			if err != nil {
+				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to read conflict schema, %v", err))
+			}
+			conflictSchemaString := string(sb)
+			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
 		}
 		if mergedTarget == nil {
 			// TODO(zp): bug, this should not be no change.

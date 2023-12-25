@@ -1,29 +1,46 @@
 <template>
   <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
     <div
-      v-if="!readonly"
+      v-if="!readonly || selectedRolloutObjects"
       class="w-full flex flex-row justify-between items-center"
     >
-      <div>
-        <div class="w-full flex justify-between items-center space-x-2">
-          <NButton
-            size="small"
-            :disabled="disableChangeTable"
-            @click="handleAddColumn"
-          >
-            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-            {{ $t("schema-editor.actions.add-column") }}
-          </NButton>
-          <NButton
-            size="small"
-            :disabled="disableChangeTable"
-            @click="state.showSchemaTemplateDrawer = true"
-          >
-            <FeatureBadge feature="bb.feature.schema-template" />
-            <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-            {{ $t("schema-editor.actions.add-from-template") }}
-          </NButton>
-        </div>
+      <div
+        v-if="!readonly"
+        class="w-full flex justify-between items-center space-x-2"
+      >
+        <NButton
+          size="small"
+          :disabled="disableChangeTable"
+          @click="handleAddColumn"
+        >
+          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+          {{ $t("schema-editor.actions.add-column") }}
+        </NButton>
+        <NButton
+          size="small"
+          :disabled="disableChangeTable"
+          @click="state.showSchemaTemplateDrawer = true"
+        >
+          <FeatureBadge feature="bb.feature.schema-template" />
+          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
+          {{ $t("schema-editor.actions.add-from-template") }}
+        </NButton>
+      </div>
+      <div
+        v-if="selectedRolloutObjects"
+        class="text-sm flex flex-row items-center gap-x-2 h-[28px] whitespace-nowrap"
+      >
+        <span class="text-main">
+          {{ $t("branch.select-tables-to-rollout") }}
+        </span>
+        <ColumnSelectionSummary
+          :db="db"
+          :metadata="{
+            database,
+            schema,
+            table,
+          }"
+        />
       </div>
     </div>
 
@@ -109,6 +126,7 @@ import {
   upsertColumnPrimaryKey,
 } from "../edit";
 import { EditStatus } from "../types";
+import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import TableColumnEditor from "./TableColumnEditor";
 
 const props = withDefaults(
@@ -142,6 +160,7 @@ const {
   getColumnStatus,
   upsertColumnConfig,
   queuePendingScrollToColumn,
+  selectedRolloutObjects,
 } = useSchemaEditorContext();
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
