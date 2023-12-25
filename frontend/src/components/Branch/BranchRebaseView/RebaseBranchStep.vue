@@ -5,41 +5,39 @@
         <CheckIcon class="w-4 h-4 text-success" />
         <span>{{ $t("branch.merge-rebase.able-to-merge") }}</span>
       </div>
-      <template v-if="false">
-        <!-- BranchService.RebaseBranch now returns empty schema and metadata -->
-        <!-- so we have nothing to show by now -->
-        <NTabs v-model:value="tab">
-          <NTab name="schema-editor">
-            {{ $t("schema-editor.self") }}
-          </NTab>
-          <NTab name="raw-schema-text">
-            {{ $t("schema-editor.raw-sql") }}
-          </NTab>
-        </NTabs>
-        <div
-          v-show="tab === 'schema-editor'"
-          class="w-full flex-1 relative text-sm"
-        >
-          <SchemaEditorLite
-            ref="schemaEditorRef"
-            resource-type="branch"
-            :project="project"
-            :readonly="true"
-            :branch="validationState.branch"
-          />
-        </div>
-        <div
-          v-show="tab === 'raw-schema-text'"
-          class="w-full flex-1 relative text-sm border rounded overflow-clip"
-        >
-          <DiffEditor
-            :readonly="true"
-            :original="validationState.branch.baselineSchema"
-            :modified="validationState.branch.schema"
-            class="h-full"
-          />
-        </div>
-      </template>
+      <!-- BranchService.RebaseBranch now returns empty schema and metadata -->
+      <!-- so we have nothing to show by now -->
+      <NTabs v-model:value="tab">
+        <NTab name="schema-editor">
+          {{ $t("schema-editor.self") }}
+        </NTab>
+        <NTab name="raw-schema-text">
+          {{ $t("schema-editor.raw-sql") }}
+        </NTab>
+      </NTabs>
+      <div
+        v-show="tab === 'schema-editor'"
+        class="w-full flex-1 relative text-sm"
+      >
+        <SchemaEditorLite
+          ref="schemaEditorRef"
+          resource-type="branch"
+          :project="project"
+          :readonly="true"
+          :branch="validationState.branch"
+        />
+      </div>
+      <div
+        v-show="tab === 'raw-schema-text'"
+        class="w-full flex-1 relative text-sm border rounded overflow-clip"
+      >
+        <DiffEditor
+          :readonly="true"
+          :original="validationState.branch.baselineSchema"
+          :modified="validationState.branch.schema"
+          class="h-full"
+        />
+      </div>
     </template>
     <template v-else>
       <div class="text-error">解决冲突以进行 rebase</div>
