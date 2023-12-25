@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full overflow-hidden flex flex-col">
+  <div class="h-full flex flex-col">
     <NTabs
       type="line"
       :bar-width="200"
