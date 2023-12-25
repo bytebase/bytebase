@@ -63,7 +63,7 @@
       </ul>
     </div>
     <div class="mt-3 mb-4 w-full">
-      <NButton type="primary" @click="gotoSubscriptionPage" style="width: 100%">
+      <NButton type="primary" style="width: 100%" @click="gotoSubscriptionPage">
         {{ $t("subscription.upgrade-now") }}
       </NButton>
     </div>

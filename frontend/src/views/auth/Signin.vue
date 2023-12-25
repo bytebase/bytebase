@@ -228,8 +228,8 @@
       >
         <div class="w-full mb-2">
           <NButton
-            @click.prevent="trySigninWithIdentityProvider(identityProvider)"
             style="width: 100%"
+            @click.prevent="trySigninWithIdentityProvider(identityProvider)"
           >
             {{
               $t("auth.sign-in.sign-in-with-idp", {

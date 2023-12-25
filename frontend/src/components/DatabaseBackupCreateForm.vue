@@ -10,8 +10,8 @@
             {{ $t("database.backup-name") }} <span class="text-red-600">*</span>
           </label>
           <BBTextField
-            required
             v-model:value="state.backupName"
+            required
             class="mt-1 w-full"
           />
         </div>

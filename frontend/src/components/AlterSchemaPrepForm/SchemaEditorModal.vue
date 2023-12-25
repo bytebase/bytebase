@@ -79,8 +79,8 @@
               </template>
               {{ $t("issue.upload-sql") }}
               <input
-                ref="sqlFileUploader"
                 id="sql-file-input"
+                ref="sqlFileUploader"
                 type="file"
                 accept=".sql,.txt,application/sql,text/plain"
                 class="hidden"
