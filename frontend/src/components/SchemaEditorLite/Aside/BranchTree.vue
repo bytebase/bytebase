@@ -78,13 +78,14 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep, escape, head } from "lodash-es";
+import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { TreeOption, NEllipsis, NInput, NDropdown, NTree } from "naive-ui";
 import { computed, watch, ref, h, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
 import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { SchemaIcon, TableIcon } from "@/components/Icon";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -146,6 +147,7 @@ const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
 const {
+  events,
   targets,
   readonly,
   currentTab,
@@ -270,10 +272,6 @@ const contextMenuOptions = computed(() => {
   return [];
 });
 
-onMounted(() => {
-  buildBranchTreeData();
-});
-
 const buildBranchTreeData = () => {
   const db = database.value;
   const treeNodeList: TreeNode[] = [];
@@ -313,6 +311,13 @@ const buildBranchTreeData = () => {
     });
   }
 };
+
+onMounted(() => {
+  buildBranchTreeData();
+});
+
+const debouncedBuildBranchTreeData = debounce(buildBranchTreeData, 100);
+useEmitteryEventListener(events, "rebuild-tree", debouncedBuildBranchTreeData);
 
 watch(
   [() => schemaList.value.length, () => flattenTableList.value.length],
