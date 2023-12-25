@@ -1,47 +1,39 @@
 <template>
   <div class="h-full overflow-hidden flex flex-col">
-    <BBTab
-      :tab-item-list="tabItemList"
-      :selected-index="state.selectedIndex"
-      :reorder-model="state.reorder ? 'ALWAYS' : 'NEVER'"
-      @reorder-index="reorderEnvironment"
-      @select-index="selectEnvironment"
+    <NTabs
+      type="line"
+      :bar-width="200"
+      :value="state.selectedUid"
+      size="large"
+      justify-content="start"
+      tab-style="margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;"
+      @update:value="onTabChange"
     >
-      <template
-        #item="{ item }: { item: BBTabItem<Environment>, index: number }"
+      <NTabPane
+        v-for="(item, index) in tabItemList"
+        :key="item.id"
+        :name="item.id"
+        :tab="() => renderTab(item.data, index)"
       >
-        <div class="flex items-center">
-          {{ item.title }}
-          <ProductionEnvironmentV1Icon :environment="item.data!" class="ml-1" />
-        </div>
-      </template>
-
-      <template v-for="(env, index) in environmentList" :key="env.uid">
-        <div
-          v-if="index == state.selectedIndex"
-          class="flex-1 overflow-y-scroll"
-          :aria-hidden="index !== state.selectedIndex"
-        >
-          <div v-if="state.reorder" class="flex justify-center pt-5 gap-x-3">
-            <NButton @click.prevent="discardReorder">
-              {{ $t("common.cancel") }}
-            </NButton>
-            <NButton
-              type="primary"
-              :disabled="!orderChanged"
-              @click.prevent="doReorder"
-            >
-              {{ $t("common.apply") }}
-            </NButton>
-          </div>
-          <EnvironmentDetail
-            v-else
-            :environment-slug="environmentV1Slug(env)"
-            @archive="doArchive"
-          />
-        </div>
-      </template>
-    </BBTab>
+        <EnvironmentDetail
+          v-if="!state.reorder"
+          :environment-slug="environmentV1Slug(item.data)"
+          @archive="doArchive"
+        />
+      </NTabPane>
+    </NTabs>
+    <div v-if="state.reorder" class="flex justify-start pt-5 gap-x-3 px-5">
+      <NButton @click.prevent="discardReorder">
+        {{ $t("common.cancel") }}
+      </NButton>
+      <NButton
+        type="primary"
+        :disabled="!orderChanged"
+        @click.prevent="doReorder"
+      >
+        {{ $t("common.apply") }}
+      </NButton>
+    </div>
   </div>
 
   <Drawer v-model:show="state.showCreateModal">
@@ -65,9 +57,12 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, computed, reactive, watch } from "vue";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-vue-next";
+import { NTabs, NTabPane } from "naive-ui";
+import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
-import { Drawer, ProductionEnvironmentV1Icon } from "@/components/v2";
+import { Drawer } from "@/components/v2";
+import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
 import {
   useRegisterCommand,
   useUIStateStore,
@@ -108,8 +103,8 @@ const DEFAULT_NEW_BACKUP_PLAN_POLICY: Policy = getDefaultBackupPlanPolicy(
 );
 
 interface LocalState {
+  selectedUid: string;
   reorderedEnvironmentList: Environment[];
-  selectedIndex: number;
   showCreateModal: boolean;
   reorder: boolean;
   missingRequiredFeature?:
@@ -125,8 +120,8 @@ const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 
 const state = reactive<LocalState>({
+  selectedUid: "",
   reorderedEnvironmentList: [],
-  selectedIndex: -1,
   showCreateModal: false,
   reorder: false,
 });
@@ -311,10 +306,50 @@ const doArchive = (/* environment: Environment */) => {
 };
 
 const selectEnvironment = (index: number) => {
-  state.selectedIndex = index;
+  onTabChange(environmentList.value[index].uid);
+};
+
+const onTabChange = (uid: string) => {
+  state.selectedUid = uid;
   router.replace({
     name: "workspace.environment",
-    hash: "#" + environmentList.value[index].uid,
+    hash: "#" + uid,
   });
+};
+
+const renderTab = (env: Environment, index: number) => {
+  const child = [
+    h(EnvironmentV1Name, {
+      environment: env,
+      link: false,
+      prefix: state.reorder ? "" : `${index + 1}.`,
+    }),
+  ];
+  if (state.reorder) {
+    if (index > 0) {
+      child.unshift(
+        h(
+          MiniActionButton,
+          {
+            onClick: () => reorderEnvironment(index, index - 1),
+          },
+          h(ChevronLeftIcon, { class: "w-4 h-4" })
+        )
+      );
+    }
+    if (index < tabItemList.value.length - 1) {
+      child.push(
+        h(
+          MiniActionButton,
+          {
+            onClick: () => reorderEnvironment(index, index + 1),
+          },
+          h(ChevronRightIcon, { class: "w-4 h-4" })
+        )
+      );
+    }
+  }
+
+  return h("div", { class: "flex items-center space-x-2" }, child);
 };
 </script>

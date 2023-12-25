@@ -16,117 +16,107 @@
         <template v-else-if="state.isGeneratingDDL">Generating DDL</template>
       </span>
     </MaskSpinner>
-    <div
-      class="w-full flex flex-row justify-between items-center border-b pl-1 border-b-gray-300"
-    >
-      <div class="flex items-center flex-start">
-        <button
-          class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
-          :class="
-            state.selectedTab === 'schema-editor' &&
-            'bg-white !border-gray-300 text-gray-800'
-          "
-          @click="handleChangeTab('schema-editor')"
+
+    <div class="w-full h-[46rem] max-h-full overflow-auto flex flex-col">
+      <div class="flex-1">
+        <NTabs
+          type="card"
+          v-model:value="state.selectedTab"
+          style="height: 100%"
         >
-          {{ $t("schema-editor.self") }}
-        </button>
-        <button
-          class="-mb-px px-3 leading-9 rounded-t-md text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
-          :class="
-            state.selectedTab === 'raw-sql' &&
-            'bg-white !border-gray-300 text-gray-800'
-          "
-          @click="handleChangeTab('raw-sql')"
-        >
-          {{ $t("schema-editor.raw-sql") }}
-        </button>
-      </div>
-      <div class="flex items-center flex-end">
-        <SchemaEditorSQLCheckButton
-          :database-list="databaseList"
-          :get-statement="generateOrGetEditingDDL"
-        />
-      </div>
-    </div>
-    <div class="w-full h-full max-h-full overflow-auto border-b mb-4">
-      <div
-        v-show="state.selectedTab === 'schema-editor'"
-        class="w-full h-full py-2"
-      >
-        <SchemaEditorLite
-          ref="schemaEditorRef"
-          resource-type="database"
-          :project="project"
-          :targets="state.targets"
-          :loading="state.isPreparingMetadata"
-          :diff-when-ready="false"
-        />
-      </div>
-      <div
-        v-show="state.selectedTab === 'raw-sql'"
-        class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
-      >
-        <div
-          class="w-full h-full pl-3 shrink-0 flex flex-row justify-between items-center"
-        >
-          <div>{{ $t("sql-editor.self") }}</div>
-          <div class="flex flex-row justify-end items-center space-x-3">
-            <NButton @click="onUploaderClick">
-              <template #icon>
-                <heroicons-outline:arrow-up-tray
-                  class="w-4 h-auto text-gray-500"
-                />
-              </template>
-              {{ $t("issue.upload-sql") }}
-              <input
-                id="sql-file-input"
-                ref="sqlFileUploader"
-                type="file"
-                accept=".sql,.txt,application/sql,text/plain"
-                class="hidden"
-                @change="handleUploadFile"
+          <NTabPane
+            name="schema-editor"
+            :tab="$t('schema-editor.self')"
+            style="height: 100%"
+          >
+            <SchemaEditorLite
+              ref="schemaEditorRef"
+              resource-type="database"
+              :project="project"
+              :targets="state.targets"
+              :loading="state.isPreparingMetadata"
+              :diff-when-ready="false"
+            />
+          </NTabPane>
+          <NTabPane
+            name="raw-sql"
+            :tab="$t('schema-editor.raw-sql')"
+            style="height: 100%"
+          >
+            <div
+              class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
+            >
+              <div
+                class="w-full h-full shrink-0 flex flex-row justify-between items-center"
+              >
+                <div>{{ $t("sql-editor.self") }}</div>
+                <div class="flex flex-row justify-end items-center space-x-3">
+                  <NButton @click="onUploaderClick">
+                    <template #icon>
+                      <heroicons-outline:arrow-up-tray
+                        class="w-4 h-auto text-gray-500"
+                      />
+                    </template>
+                    {{ $t("issue.upload-sql") }}
+                    <input
+                      id="sql-file-input"
+                      ref="sqlFileUploader"
+                      type="file"
+                      accept=".sql,.txt,application/sql,text/plain"
+                      class="hidden"
+                      @change="handleUploadFile"
+                    />
+                  </NButton>
+                  <NButton @click="handleSyncSQLFromSchemaEditor">
+                    <template #icon>
+                      <heroicons-outline:arrow-path
+                        class="w-4 h-auto text-gray-500"
+                      />
+                    </template>
+                    {{ $t("schema-editor.sync-sql-from-schema-editor") }}
+                  </NButton>
+                </div>
+              </div>
+              <MonacoEditor
+                v-model:content="state.editStatement"
+                class="border w-[calc(100%-2px)] h-[calc(100%-2px)]"
+                data-label="bb-schema-editor-sql-editor"
+                :auto-focus="false"
+                :dialect="dialectOfEngineV1(databaseEngine)"
               />
-            </NButton>
-            <NButton @click="handleSyncSQLFromSchemaEditor">
-              <template #icon>
-                <heroicons-outline:arrow-path
-                  class="w-4 h-auto text-gray-500"
-                />
-              </template>
-              {{ $t("schema-editor.sync-sql-from-schema-editor") }}
-            </NButton>
+            </div>
+          </NTabPane>
+          <template #suffix>
+            <SchemaEditorSQLCheckButton
+              :database-list="databaseList"
+              :get-statement="generateOrGetEditingDDL"
+            />
+          </template>
+        </NTabs>
+      </div>
+
+      <div class="w-full flex flex-row justify-between items-center mt-4 pr-px">
+        <div class="">
+          <div
+            v-if="isBatchMode"
+            class="flex flex-row items-center text-sm text-gray-500"
+          >
+            <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
+            {{ $t("schema-editor.tenant-mode-tips") }}
           </div>
         </div>
-        <MonacoEditor
-          v-model:content="state.editStatement"
-          class="w-full h-full border border-b-0"
-          data-label="bb-schema-editor-sql-editor"
-          :auto-focus="false"
-          :dialect="dialectOfEngineV1(databaseEngine)"
-        />
-      </div>
-    </div>
-    <div class="w-full flex flex-row justify-between items-center mt-4 pr-px">
-      <div class="">
-        <div
-          v-if="isBatchMode"
-          class="flex flex-row items-center text-sm text-gray-500"
-        >
-          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
-          {{ $t("schema-editor.tenant-mode-tips") }}
+        <div class="flex justify-end items-center space-x-3">
+          <NButton @click="dismissModal">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="!allowPreviewIssue"
+            @click="handlePreviewIssue"
+          >
+            {{ $t("schema-editor.preview-issue") }}
+          </NButton>
         </div>
-      </div>
-      <div class="flex justify-end items-center space-x-3">
-        <NButton @click="dismissModal">
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NButton
-          type="primary"
-          :disabled="!allowPreviewIssue"
-          @click="handlePreviewIssue"
-        >
-          {{ $t("schema-editor.preview-issue") }}
-        </NButton>
       </div>
     </div>
   </BBModal>
@@ -143,6 +133,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
+import { NTabs, NTabPane } from "naive-ui";
 import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
