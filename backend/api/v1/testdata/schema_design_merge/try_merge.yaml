@@ -281,99 +281,99 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "gender",
-                  "position":  2,
-                  "type":  "char(1)"
+                  "name": "gender",
+                  "position": 2,
+                  "type": "char(1)"
                 },
                 {
-                  "name":  "debit_card_number",
-                  "position":  3,
-                  "type":  "varchar(255)"
+                  "name": "debit_card_number",
+                  "position": 3,
+                  "type": "varchar(255)"
                 },
                 {
-                  "name":  "credit_card_number",
-                  "position":  4,
-                  "type":  "varchar(255)"
+                  "name": "credit_card_number",
+                  "position": 4,
+                  "type": "varchar(255)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "id"
                   ],
-                  "type":  "btree",
-                  "unique":  true,
-                  "primary":  true
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true
                 }
               ]
             },
             {
-              "name":  "address",
-              "columns":  [
+              "name": "address",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "address",
-                  "position":  2,
-                  "type":  "varchar(255)"
+                  "name": "address",
+                  "position": 2,
+                  "type": "varchar(255)"
                 },
                 {
-                  "name":  "employee_id",
-                  "position":  3,
-                  "type":  "integer"
+                  "name": "employee_id",
+                  "position": 3,
+                  "type": "integer"
                 }
               ],
-              "foreignKeys":  [
+              "foreignKeys": [
                 {
-                  "name":  "address-fk-sc4rcmkp",
-                  "columns":  [
+                  "name": "address-fk-sc4rcmkp",
+                  "columns": [
                     "employee_id"
                   ],
-                  "referencedSchema":  "public",
-                  "referencedTable":  "employee",
-                  "referencedColumns":  [
+                  "referencedSchema": "public",
+                  "referencedTable": "employee",
+                  "referencedColumns": [
                     "id"
                   ]
                 }
               ]
             },
             {
-              "name":  "hiring_date",
-              "columns":  [
+              "name": "hiring_date",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 },
                 {
-                  "name":  "employee_id",
-                  "position":  2,
-                  "type":  "integer"
+                  "name": "employee_id",
+                  "position": 2,
+                  "type": "integer"
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: Add different column on the same table
   ancestor: |-
@@ -454,6 +454,39 @@
     }
   expected: |-
     {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employee",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
+                },
+                {
+                  "name": "gender",
+                  "position": 2,
+                  "type": "char(1)"
+                },
+                {
+                  "name": "name",
+                  "position": 3,
+                  "type": "varchar(255)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
+    }
+- description: Add index in base
+  ancestor: |-
+    {
       "schemas":  [
         {
           "name":  "public",
@@ -467,14 +500,9 @@
                   "type":  "integer"
                 },
                 {
-                  "name":  "gender",
-                  "position":  2,
-                  "type":  "char(1)"
-                },
-                {
                   "name":  "name",
-                  "position":  3,
-                  "type":  "varchar(255)"
+                  "position":  2,
+                  "type":  "text"
                 }
               ]
             }
@@ -483,6 +511,96 @@
       ],
       "characterSet":  "UTF8",
       "collation":  "en_US.utf8"
+    }
+  head: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name":  "name",
+                  "position":  2,
+                  "type":  "text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet":  "UTF8",
+      "collation":  "en_US.utf8"
+    }
+  base: |-
+    {
+      "schemas":  [
+        {
+          "name":  "public",
+          "tables":  [
+            {
+              "name":  "employee",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "type":  "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "text"
+                }
+              ],
+              "indexes": [
+                {
+                  "name":  "address_name_idx",
+                  "visible": true,
+                  "expressions": [
+                    "name"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
+    }
+  expected: |-
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employee",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
 - description: Create different table
   ancestor: |-
@@ -571,43 +689,43 @@
     }
   expected: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "name":  "public",
-          "tables":  [
+          "name": "public",
+          "tables": [
             {
-              "name":  "employee",
-              "columns":  [
+              "name": "employee",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             },
             {
-              "name":  "address",
-              "columns":  [
+              "name": "address",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             },
             {
-              "name":  "salary",
-              "columns":  [
+              "name": "salary",
+              "columns": [
                 {
-                  "name":  "id",
-                  "position":  1,
-                  "type":  "integer"
+                  "name": "id",
+                  "position": 1,
+                  "type": "integer"
                 }
               ]
             }
           ]
         }
       ],
-      "characterSet":  "UTF8",
-      "collation":  "en_US.utf8"
+      "characterSet": "UTF8",
+      "collation": "en_US.utf8"
     }
