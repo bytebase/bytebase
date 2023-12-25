@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -459,7 +460,14 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
-			conflictSchema, err := diff3.Merge(strings.NewReader(string(baseBranch.BaseSchema)), strings.NewReader(string(baseBranch.HeadSchema)), strings.NewReader(newBaseSchema), true, "<<<<<<< HEAD", ">>>>>>>>>>>>")
+			conflictSchema, err := diff3.Merge(
+				strings.NewReader(newBaseSchema),
+				bytes.NewReader(baseBranch.BaseSchema),
+				bytes.NewReader(baseBranch.HeadSchema),
+				true,
+				"HEAD",
+				baseBranch.ResourceID,
+			)
 			if err != nil {
 				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute conflict schema, %v", err))
 			}
