@@ -3369,7 +3369,9 @@
       "rebase-succeeded": "Rebase 成功",
       "delete-branch-after-merged": "合并后删除分支",
       "merge-branch": "合并分支",
-      "rebase-branch": "Rebase 分支"
+      "rebase-branch": "Rebase 分支",
+      "confirm-rebase": "确认 rebase？",
+      "conflict-not-resolved": "似乎还有尚未解决的冲突。"
     }
   }
 }

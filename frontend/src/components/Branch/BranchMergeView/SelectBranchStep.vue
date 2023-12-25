@@ -126,6 +126,7 @@ import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { projectSlugV1 } from "@/utils";
 import { MergeBranchValidationState } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
@@ -168,7 +169,13 @@ const headBranchFilter = (branch: Branch) => {
 };
 
 const rebaseLink = (headBranch: Branch, targetBranch: Branch) => {
-  return "/";
+  return {
+    name: "workspace.project.branch.rebase",
+    params: {
+      projectSlug: projectSlugV1(props.project),
+      branchName: headBranch.branchId,
+    },
+  };
 };
 
 // re-calculate diff for coloring when branch changed

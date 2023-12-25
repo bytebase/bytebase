@@ -5,7 +5,7 @@
       :current-index="state.currentStepIndex"
       :show-cancel="false"
       :allow-next="allowNextStep"
-      class="h-full flex flex-col !space-y-0 gap-y-4"
+      class="h-full flex flex-col !space-y-0 gap-y-2"
       pane-class="flex-1 flex flex-col gap-y-2 relative"
       footer-class="!space-y-0 !border-0 !pt-0"
       @update:current-index="tryChangeStep"
@@ -14,45 +14,55 @@
       <template #0>
         <SelectBranchStep
           :project="project"
+          :source-type="state.sourceType"
           :head-branch="headBranch"
           :source-branch="sourceBranch"
+          :source-database="sourceDatabase"
           :is-loading-head-branch="isLoadingHeadBranch"
           :is-loading-source-branch="isLoadingSourceBranch"
           :is-validating="isValidating"
           :validation-state="validationState"
+          @update:source-type="state.sourceType = $event"
           @update:head-branch-name="handleUpdateHeadBranch"
           @update:source-branch-name="state.sourceBranchName = $event || null"
+          @update:source-database-uid="state.sourceDatabaseUID = $event"
         />
       </template>
       <template #1>
         <RebaseBranchStep
           v-if="sourceBranch && headBranch && validationState"
+          ref="rebaseBranchStepRef"
           :project="project"
           :validation-state="validationState"
         />
       </template>
     </StepTab>
-    <MaskSpinner v-if="state.isRebasing" />
+    <MaskSpinner v-if="state.isRebasing" :zindexable="false" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { computed, reactive, ref } from "vue";
+import { useDialog } from "naive-ui";
+import { ClientError, Status } from "nice-grpc-common";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { StepTab } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
-import { pushNotification, useBranchStore } from "@/store";
-import { ComposedProject } from "@/types";
+import { pushNotification, useBranchStore, useDatabaseV1Store } from "@/store";
+import { ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { defer } from "@/utils";
 import RebaseBranchStep from "./RebaseBranchStep.vue";
 import SelectBranchStep from "./SelectBranchStep.vue";
-import { RebaseBranchValidationState } from "./types";
+import { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 interface LocalState {
   currentStepIndex: number;
   sourceBranchName: string | null;
+  sourceDatabaseUID: string | null;
+  sourceType: RebaseSourceType;
   isRebasing: boolean;
 }
 
@@ -62,21 +72,20 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (
-    event: "rebased",
-    rebasedBranch: Branch,
-    headBranchName: string,
-    headBranch: Branch | undefined
-  ): void;
+  (event: "rebased", rebasedBranch: Branch): void;
   (event: "update:head-branch-name", branchName: string | null): void;
 }>();
 
 const state = reactive<LocalState>({
   currentStepIndex: 0,
   sourceBranchName: null,
+  sourceDatabaseUID: null,
+  sourceType: "BRANCH",
   isRebasing: false,
 });
 const { t } = useI18n();
+const $dialog = useDialog();
+const rebaseBranchStepRef = ref<InstanceType<typeof RebaseBranchStep>>();
 const branchStore = useBranchStore();
 const isLoadingHeadBranch = ref(false);
 const isLoadingSourceBranch = ref(false);
@@ -110,6 +119,9 @@ const headBranch = computedAsync(
 
 const sourceBranch = computedAsync(
   async () => {
+    if (state.sourceType === "DATABASE") {
+      return undefined;
+    }
     const name = state.sourceBranchName;
     if (!name) {
       return undefined;
@@ -123,16 +135,33 @@ const sourceBranch = computedAsync(
     evaluating: isLoadingSourceBranch,
   }
 );
+const sourceDatabase = computed(() => {
+  if (state.sourceType === "BRANCH") {
+    return undefined;
+  }
+  const uid = state.sourceDatabaseUID;
+  if (!uid || uid === String(UNKNOWN_ID)) {
+    return undefined;
+  }
+  return useDatabaseV1Store().getDatabaseByUID(uid);
+});
+const sourceBranchOrDatabase = computed(() => {
+  if (state.sourceType === "BRANCH") {
+    return sourceBranch.value;
+  }
+  return sourceDatabase.value;
+});
 
 const validationState = computedAsync(
   async (): Promise<RebaseBranchValidationState | undefined> => {
     const head = headBranch.value;
-    const source = sourceBranch.value;
+    const source = sourceBranchOrDatabase.value;
     if (!head) return;
     if (!source) return;
     const response = await branchServiceClient.rebaseBranch({
       name: head.name,
-      sourceBranch: source.name,
+      sourceBranch: state.sourceType === "BRANCH" ? source.name : undefined,
+      sourceDatabase: state.sourceType === "DATABASE" ? source.name : undefined,
     });
     return response;
   },
@@ -156,7 +185,7 @@ const allowNextStep = computed(() => {
   if (state.currentStepIndex === STEP_SELECT_BRANCH) {
     return (
       headBranch.value !== undefined &&
-      sourceBranch.value !== undefined &&
+      sourceBranchOrDatabase.value !== undefined &&
       validationState.value !== undefined
     );
   }
@@ -170,20 +199,54 @@ const allowNextStep = computed(() => {
   return false;
 });
 
+const confirmRebaseWithMaybeConflict = () => {
+  const d = defer<boolean>();
+  $dialog.warning({
+    title: t("branch.merge-rebase.confirm-rebase"),
+    content: t("branch.merge-rebase.conflict-not-resolved"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.confirm"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
+};
+
 const handleRebaseBranch = async () => {
-  const target = sourceBranch.value;
-  if (!target) return;
+  const source = sourceBranchOrDatabase.value;
+  if (!source) return;
   const head = headBranch.value;
   if (!head) return;
+  const rebaseBranchStep = rebaseBranchStepRef.value;
+  if (!rebaseBranchStep) return;
   state.isRebasing = true;
 
   try {
-    const rebasedBranch = await branchStore.mergeBranch({
-      name: target.name,
-      headBranch: head.name,
+    const validation = rebaseBranchStep.validateConflictSchema();
+    if (!validation.valid) {
+      const confirmed = await confirmRebaseWithMaybeConflict();
+      if (!confirmed) return;
+    }
+    const response = await branchStore.rebaseBranch({
+      name: head.name,
+      sourceBranch: state.sourceType === "BRANCH" ? source.name : "",
+      sourceDatabase: state.sourceType === "DATABASE" ? source.name : "",
+      mergedSchema: validation.schema ?? "",
       etag: "",
       validateOnly: false,
     });
+    if (!response.branch) {
+      throw new ClientError(
+        "BranchService.RebaseBranch",
+        Status.ABORTED,
+        "rebase failed"
+      );
+    }
 
     pushNotification({
       module: "bytebase",
@@ -191,7 +254,7 @@ const handleRebaseBranch = async () => {
       title: t("branch.merge-rebase.rebase-succeeded"),
     });
 
-    emit("rebased", rebasedBranch, head.name, head);
+    emit("rebased", response.branch);
   } catch (error: any) {
     pushNotification({
       module: "bytebase",
@@ -203,4 +266,29 @@ const handleRebaseBranch = async () => {
     state.isRebasing = false;
   }
 };
+
+watch(
+  headBranch,
+  (head) => {
+    if (head) {
+      // Automatically set the sourceDatabase to the branch's baselineDatabase
+      // if sourceDatabase is empty
+      if (!state.sourceDatabaseUID) {
+        const db = useDatabaseV1Store().getDatabaseByName(
+          head.baselineDatabase
+        );
+        state.sourceDatabaseUID = db.uid;
+      }
+
+      // Automatically select the branch's parent as rebase source branch
+      // if rebase source is empty
+      if (head.parentBranch && !state.sourceBranchName) {
+        state.sourceBranchName = head.parentBranch;
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>

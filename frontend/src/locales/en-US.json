@@ -3376,7 +3376,9 @@
       "rebase-succeeded": "Rebase succeeded",
       "delete-branch-after-merged": "Delete branch after merged",
       "merge-branch": "Merge branch",
-      "rebase-branch": "Rebase branch"
+      "rebase-branch": "Rebase branch",
+      "confirm-rebase": "Confirm rebase?",
+      "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet."
     }
   }
 }

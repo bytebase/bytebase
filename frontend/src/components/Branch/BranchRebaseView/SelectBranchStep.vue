@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full grid grid-cols-3 items-center text-sm gap-x-2"
+    class="w-full grid grid-cols-3 items-end text-sm gap-x-2"
     style="grid-template-columns: 1fr auto 1fr"
   >
     <BranchSelector
@@ -11,17 +11,35 @@
       :filter="headBranchFilter"
       @update:branch="$emit('update:head-branch-name', $event)"
     />
-    <div class="flex flex-row justify-center px-2">
+    <div class="flex flex-row justify-center px-2 h-[34px]">
       <MoveLeftIcon :size="40" stroke-width="1" />
     </div>
-    <BranchSelector
-      class="!w-full text-center"
-      :clearable="false"
-      :project="project"
-      :branch="sourceBranch?.name"
-      :filter="sourceBranchFilter"
-      @update:branch="$emit('update:source-branch-name', $event)"
-    />
+    <div class="flex flex-col">
+      <NRadioGroup
+        :value="sourceType"
+        class="space-x-2"
+        @update:value="$emit('update:source-type', $event as RebaseSourceType)"
+      >
+        <NRadio value="BRANCH">分支</NRadio>
+        <NRadio value="DATABASE">数据库</NRadio>
+      </NRadioGroup>
+      <BranchSelector
+        v-if="sourceType === 'BRANCH'"
+        class="!w-full text-center"
+        :clearable="false"
+        :project="project"
+        :branch="sourceBranch?.name"
+        :filter="sourceBranchFilter"
+        @update:branch="$emit('update:source-branch-name', $event)"
+      />
+      <DatabaseSelect
+        v-if="sourceType === 'DATABASE'"
+        :database="sourceDatabase?.uid"
+        :project="project.uid"
+        :allowed-engine-type-list="headBranch ? [headBranch.engine] : undefined"
+        style="width: 100%"
+      />
+    </div>
   </div>
   <div class="w-full flex-1 flex flex-col relative text-sm gap-y-1">
     <div class="flex flex-row items-center gap-x-1">
@@ -97,23 +115,26 @@
 
 <script setup lang="ts">
 import { CheckIcon, XCircleIcon, MoveLeftIcon } from "lucide-vue-next";
-import { NTab, NTabs } from "naive-ui";
+import { NRadioGroup, NTab, NTabs } from "naive-ui";
 import { ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { DatabaseSelect } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { ComposedProject } from "@/types";
+import { ComposedDatabase, ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { RebaseBranchValidationState } from "./types";
+import { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
 
 const props = defineProps<{
   project: ComposedProject;
-  sourceBranch: Branch | undefined;
+  sourceType: RebaseSourceType;
   headBranch: Branch | undefined;
+  sourceBranch: Branch | undefined;
+  sourceDatabase: ComposedDatabase | undefined;
   isLoadingSourceBranch?: boolean;
   isLoadingHeadBranch?: boolean;
   isValidating?: boolean;
@@ -121,8 +142,10 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
+  (event: "update:source-type", type: RebaseSourceType): void;
   (event: "update:head-branch-name", branch: string | undefined): void;
   (event: "update:source-branch-name", branch: string | undefined): void;
+  (event: "update:source-database-uid", uid: string): void;
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
