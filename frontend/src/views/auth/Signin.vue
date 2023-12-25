@@ -92,6 +92,7 @@
                   attr-type="submit"
                   type="primary"
                   :disabled="!allowSignin()"
+                  size="large"
                   style="width: 100%"
                 >
                   {{ $t("common.sign-in") }}
@@ -200,6 +201,7 @@
                   <NButton
                     attr-type="submit"
                     type="primary"
+                    size="large"
                     :disabled="!allowSignin(identityProvider.name)"
                     style="width: 100%"
                   >
@@ -229,6 +231,7 @@
         <div class="w-full mb-2">
           <NButton
             style="width: 100%"
+            size="large"
             @click.prevent="trySigninWithIdentityProvider(identityProvider)"
           >
             {{
