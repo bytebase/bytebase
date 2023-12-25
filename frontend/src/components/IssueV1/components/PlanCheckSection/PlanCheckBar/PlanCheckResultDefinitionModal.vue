@@ -7,13 +7,9 @@
         </div>
       </div>
       <div class="mt-4 pt-2 border-t flex justify-end">
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="emit('cancel')"
-        >
+        <NButton @click.prevent="emit('cancel')">
           {{ $t("common.cancel") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

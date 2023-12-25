@@ -259,13 +259,9 @@
           :readonly="true"
         />
         <div class="flex justify-end">
-          <button
-            type="button"
-            class="btn-primary"
-            @click.prevent="state.viewDrift = false"
-          >
+          <NButton type="primary" @click.prevent="state.viewDrift = false">
             {{ $t("common.close") }}
-          </button>
+          </NButton>
         </div>
       </div>
     </BBModal>
