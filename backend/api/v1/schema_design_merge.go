@@ -1173,7 +1173,7 @@ func diffIndexMetadata(base, head *storepb.IndexMetadata) (*metadataDiffIndexNod
 	}
 
 	if action == diffActionUpdate {
-		if proto.Equal(base, head) {
+		if !proto.Equal(base, head) {
 			return indexNode, nil
 		}
 		return nil, nil
