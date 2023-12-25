@@ -242,7 +242,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBranchRequest) (*v1pb.Branch, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Branch.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid branch name: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid branch name: %v", err)
 	}
 	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
@@ -277,7 +277,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		}
 		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: project.ResourceID, ResourceID: branchID, UpdaterID: principalID, UpdateResourceID: &request.Branch.BranchId}
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+			return nil, status.Errorf(codes.Internal, "failed to update branch, error %v", err)
 		}
 		// Update the branchID for getting branch in the end.
 		branchID = request.Branch.BranchId
@@ -300,7 +300,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		updateBranchMessage.Head = headUpdate
 		updateBranchMessage.HeadSchema = &schemaBytes
 		if err := s.store.UpdateBranch(ctx, updateBranchMessage); err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update branch, error %v", err))
+			return nil, status.Errorf(codes.Internal, "failed to update branch, error %v", err)
 		}
 	}
 
@@ -450,12 +450,12 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		newHeadSchema = request.MergedSchema
 		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert merged schema to metadata, %v", err))
+			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 	} else {
 		upstreamMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 		if err != nil {
-			return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert upstream schema to metadata, %v", err))
+			return nil, status.Errorf(codes.Internal, "failed to convert upstream schema to metadata, %v", err)
 		}
 		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, upstreamMetadata)
 		if err != nil {
@@ -469,11 +469,11 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 				baseBranch.ResourceID,
 			)
 			if err != nil {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to compute conflict schema, %v", err))
+				return nil, status.Errorf(codes.Internal, "failed to compute conflict schema, %v", err)
 			}
 			sb, err := io.ReadAll(conflictSchema.Result)
 			if err != nil {
-				return nil, status.Error(codes.Internal, fmt.Sprintf("failed to read conflict schema, %v", err))
+				return nil, status.Errorf(codes.Internal, "failed to read conflict schema, %v", err)
 			}
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
@@ -494,7 +494,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseMetadata, err := TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newBaseSchema)
 	if err != nil {
-		return nil, status.Error(codes.Internal, fmt.Sprintf("failed to convert new base schema to metadata, %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to convert new base schema to metadata, %v", err)
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -553,7 +553,7 @@ func (s *BranchService) getNewBaseFromRebaseRequest(ctx context.Context, request
 			return "", status.Errorf(codes.Internal, err.Error())
 		}
 		if database == nil {
-			return "", status.Errorf(codes.NotFound, "database %q not found or had been archieve", databaseName)
+			return "", status.Errorf(codes.NotFound, "database %q not found or had been archive", databaseName)
 		}
 		databaseSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
@@ -622,13 +622,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 	storeSourceMetadata, _ := convertV1DatabaseMetadata(request.SourceMetadata)
 	storeTargetMetadata, _ := convertV1DatabaseMetadata(request.TargetMetadata)
 	if err := checkDatabaseMetadata(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 	sanitizeCommentForSchemaMetadata(storeTargetMetadata)
 
 	storeSourceMetadata, storeTargetMetadata = trimDatabaseMetadata(storeSourceMetadata, storeTargetMetadata)
 	if err := checkDatabaseMetadataColumnType(storepb.Engine(request.Engine), storeTargetMetadata); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid target metadata: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
 	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
