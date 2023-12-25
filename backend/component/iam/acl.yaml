@@ -1,338 +1,338 @@
 roles:
   - name: roles/workspaceAdmin
     permissions:
-      - bb.instances.list
-      - bb.instances.get
-      - bb.instances.create
-      - bb.instances.update
-      - bb.instances.delete
-      - bb.instances.undelete
-      - bb.instances.sync
-      - bb.instanceRoles.list
-      - bb.instanceRoles.get
-      - bb.instanceRoles.create
-      - bb.instanceRoles.update
-      - bb.instanceRoles.delete
-      - bb.instanceRoles.undelete
-      - bb.databases.list
-      - bb.databases.get
-      - bb.databases.update
-      - bb.databases.sync
-      - bb.databases.adviseIndex
-      - bb.databases.getMetadata
-      - bb.databases.updateMetadata
-      - bb.databases.getSchema
-      - bb.databases.getBackupSetting
-      - bb.databases.updateBackupSetting
-      - bb.backups.list
       - bb.backups.create
-      - bb.changeHistories.list
-      - bb.changeHistories.get
-      - bb.databaseSecrets.list
-      - bb.databaseSecrets.update
-      - bb.databaseSecrets.delete
-      - bb.slowQueries.list
-      - bb.environments.list
-      - bb.environments.get
-      - bb.environments.create
-      - bb.environments.update
-      - bb.environments.delete
-      - bb.environments.undelete
-      - bb.issues.list
-      - bb.issues.get
-      - bb.issues.create
-      - bb.issues.update
-      - bb.issueComments.create
-      - bb.issueComments.update
-      - bb.projects.list
-      - bb.projects.get
-      - bb.projects.create
-      - bb.projects.update
-      - bb.projects.delete
-      - bb.projects.undelete
-      - bb.projects.getIamPolicy
-      - bb.projects.setIamPolicy
-      - bb.risks.list
-      - bb.risks.create
-      - bb.risks.update
-      - bb.risks.delete
-      - bb.roles.list
-      - bb.roles.create
-      - bb.roles.update
-      - bb.roles.delete
-      - bb.changelists.list
-      - bb.changelists.get
-      - bb.changelists.create
-      - bb.changelists.update
-      - bb.changelists.delete
-      - bb.externalVersionControls.get
-      - bb.externalVersionControls.list
-      - bb.externalVersionControls.create
-      - bb.externalVersionControls.update
-      - bb.externalVersionControls.delete
-      - bb.externalVersionControls.searchProjects
-      - bb.externalVersionControls.listProjects
-      - bb.plans.list
-      - bb.plans.get
-      - bb.plans.create
-      - bb.plans.update
-      - bb.rollouts.get
-      - bb.rollouts.create
-      - bb.rollouts.preview
-      - bb.taskRuns.list
-      - bb.planCheckRuns.list
-      - bb.planCheckRuns.run
-      - bb.tasks.run
-      - bb.tasks.skip
-      - bb.taskRuns.cancel
-      - bb.settings.list
-      - bb.settings.get
-      - bb.settings.set
-      - bb.policies.list
-      - bb.policies.get
-      - bb.policies.create
-      - bb.policies.update
-      - bb.policies.delete
+      - bb.backups.list
+      - bb.branches.create
+      - bb.branches.delete
       - bb.branches.get
       - bb.branches.list
-      - bb.branches.create
       - bb.branches.update
-      - bb.branches.delete
-      - bb.identityProviders.get
+      - bb.changeHistories.get
+      - bb.changeHistories.list
+      - bb.changelists.create
+      - bb.changelists.delete
+      - bb.changelists.get
+      - bb.changelists.list
+      - bb.changelists.update
+      - bb.databaseSecrets.delete
+      - bb.databaseSecrets.list
+      - bb.databaseSecrets.update
+      - bb.databases.adviseIndex
+      - bb.databases.get
+      - bb.databases.getBackupSetting
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.list
+      - bb.databases.sync
+      - bb.databases.update
+      - bb.databases.updateBackupSetting
+      - bb.databases.updateMetadata
+      - bb.environments.create
+      - bb.environments.delete
+      - bb.environments.get
+      - bb.environments.list
+      - bb.environments.undelete
+      - bb.environments.update
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.delete
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.listProjects
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.update
       - bb.identityProviders.create
-      - bb.identityProviders.update
       - bb.identityProviders.delete
+      - bb.identityProviders.get
       - bb.identityProviders.undelete
+      - bb.identityProviders.update
+      - bb.instanceRoles.create
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.get
+      - bb.instanceRoles.list
+      - bb.instanceRoles.undelete
+      - bb.instanceRoles.update
+      - bb.instances.create
+      - bb.instances.delete
+      - bb.instances.get
+      - bb.instances.list
+      - bb.instances.sync
+      - bb.instances.undelete
+      - bb.instances.update
+      - bb.issueComments.create
+      - bb.issueComments.update
+      - bb.issues.create
+      - bb.issues.get
+      - bb.issues.list
+      - bb.issues.update
+      - bb.planCheckRuns.list
+      - bb.planCheckRuns.run
+      - bb.plans.create
+      - bb.plans.get
+      - bb.plans.list
+      - bb.plans.update
+      - bb.policies.create
+      - bb.policies.delete
+      - bb.policies.get
+      - bb.policies.list
+      - bb.policies.update
+      - bb.projects.create
+      - bb.projects.delete
+      - bb.projects.get
+      - bb.projects.getIamPolicy
+      - bb.projects.list
+      - bb.projects.setIamPolicy
+      - bb.projects.undelete
+      - bb.projects.update
+      - bb.risks.create
+      - bb.risks.delete
+      - bb.risks.list
+      - bb.risks.update
+      - bb.roles.create
+      - bb.roles.delete
+      - bb.roles.list
+      - bb.roles.update
+      - bb.rollouts.create
+      - bb.rollouts.get
+      - bb.rollouts.preview
+      - bb.settings.get
+      - bb.settings.list
+      - bb.settings.set
+      - bb.slowQueries.list
+      - bb.taskRuns.cancel
+      - bb.taskRuns.list
+      - bb.tasks.run
+      - bb.tasks.skip
   - name: roles/workspaceDBA
     permissions:
-      - bb.instances.list
-      - bb.instances.get
-      - bb.instances.create
-      - bb.instances.update
-      - bb.instances.delete
-      - bb.instances.undelete
-      - bb.instances.sync
-      - bb.instanceRoles.list
-      - bb.instanceRoles.get
-      - bb.instanceRoles.create
-      - bb.instanceRoles.update
-      - bb.instanceRoles.delete
-      - bb.instanceRoles.undelete
-      - bb.databases.adviseIndex
-      - bb.databases.list
-      - bb.databases.get
-      - bb.databases.update
-      - bb.databases.sync
-      - bb.databases.getMetadata
-      - bb.databases.updateMetadata
-      - bb.databases.getSchema
-      - bb.databases.getBackupSetting
-      - bb.databases.updateBackupSetting
-      - bb.backups.list
       - bb.backups.create
-      - bb.changeHistories.list
+      - bb.backups.list
+      - bb.branches.create
+      - bb.branches.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.update
       - bb.changeHistories.get
+      - bb.changeHistories.list
+      - bb.changelists.create
+      - bb.changelists.delete
+      - bb.changelists.get
+      - bb.changelists.list
+      - bb.changelists.update
+      - bb.databaseSecrets.delete
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
-      - bb.databaseSecrets.delete
-      - bb.slowQueries.list
-      - bb.environments.list
-      - bb.environments.get
+      - bb.databases.adviseIndex
+      - bb.databases.get
+      - bb.databases.getBackupSetting
+      - bb.databases.getMetadata
+      - bb.databases.getSchema
+      - bb.databases.list
+      - bb.databases.sync
+      - bb.databases.update
+      - bb.databases.updateBackupSetting
+      - bb.databases.updateMetadata
       - bb.environments.create
-      - bb.environments.update
       - bb.environments.delete
+      - bb.environments.get
+      - bb.environments.list
       - bb.environments.undelete
-      - bb.issues.list
-      - bb.issues.get
-      - bb.issues.create
-      - bb.issues.update
-      - bb.issueComments.create
-      - bb.issueComments.update
-      - bb.projects.list
-      - bb.projects.get
-      - bb.projects.create
-      - bb.projects.update
-      - bb.projects.delete
-      - bb.projects.undelete
-      - bb.projects.getIamPolicy
-      - bb.projects.setIamPolicy
-      - bb.risks.list
-      - bb.risks.create
-      - bb.risks.update
-      - bb.risks.delete
-      - bb.roles.list
-      - bb.roles.create
-      - bb.roles.update
-      - bb.roles.delete
-      - bb.changelists.list
-      - bb.changelists.get
-      - bb.changelists.create
-      - bb.changelists.update
-      - bb.changelists.delete
+      - bb.environments.update
+      - bb.externalVersionControls.create
+      - bb.externalVersionControls.delete
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
-      - bb.externalVersionControls.create
-      - bb.externalVersionControls.update
-      - bb.externalVersionControls.delete
-      - bb.externalVersionControls.searchProjects
       - bb.externalVersionControls.listProjects
-      - bb.plans.list
-      - bb.plans.get
-      - bb.plans.create
-      - bb.plans.update
-      - bb.rollouts.get
-      - bb.rollouts.create
-      - bb.rollouts.preview
-      - bb.taskRuns.list
-      - bb.planCheckRuns.run
+      - bb.externalVersionControls.searchProjects
+      - bb.externalVersionControls.update
+      - bb.identityProviders.create
+      - bb.identityProviders.delete
+      - bb.identityProviders.get
+      - bb.identityProviders.undelete
+      - bb.identityProviders.update
+      - bb.instanceRoles.create
+      - bb.instanceRoles.delete
+      - bb.instanceRoles.get
+      - bb.instanceRoles.list
+      - bb.instanceRoles.undelete
+      - bb.instanceRoles.update
+      - bb.instances.create
+      - bb.instances.delete
+      - bb.instances.get
+      - bb.instances.list
+      - bb.instances.sync
+      - bb.instances.undelete
+      - bb.instances.update
+      - bb.issueComments.create
+      - bb.issueComments.update
+      - bb.issues.create
+      - bb.issues.get
+      - bb.issues.list
+      - bb.issues.update
       - bb.planCheckRuns.list
+      - bb.planCheckRuns.run
+      - bb.plans.create
+      - bb.plans.get
+      - bb.plans.list
+      - bb.plans.update
+      - bb.policies.create
+      - bb.policies.delete
+      - bb.policies.get
+      - bb.policies.list
+      - bb.policies.update
+      - bb.projects.create
+      - bb.projects.delete
+      - bb.projects.get
+      - bb.projects.getIamPolicy
+      - bb.projects.list
+      - bb.projects.setIamPolicy
+      - bb.projects.undelete
+      - bb.projects.update
+      - bb.risks.create
+      - bb.risks.delete
+      - bb.risks.list
+      - bb.risks.update
+      - bb.roles.create
+      - bb.roles.delete
+      - bb.roles.list
+      - bb.roles.update
+      - bb.rollouts.create
+      - bb.rollouts.get
+      - bb.rollouts.preview
+      - bb.settings.get
+      - bb.settings.list
+      - bb.settings.set
+      - bb.slowQueries.list
+      - bb.taskRuns.cancel
+      - bb.taskRuns.list
       - bb.tasks.run
       - bb.tasks.skip
-      - bb.taskRuns.cancel
-      - bb.settings.list
-      - bb.settings.get
-      - bb.settings.set
-      - bb.policies.list
-      - bb.policies.get
-      - bb.policies.create
-      - bb.policies.update
-      - bb.policies.delete
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.create
-      - bb.branches.update
-      - bb.branches.delete
-      - bb.identityProviders.get
-      - bb.identityProviders.create
-      - bb.identityProviders.update
-      - bb.identityProviders.delete
-      - bb.identityProviders.undelete
   - name: roles/workspaceMember
     permissions:
-      - bb.environments.list
       - bb.environments.get
+      - bb.environments.list
+      - bb.instances.get
+      - bb.policies.list
       - bb.risks.list
       - bb.roles.list
       - bb.settings.list
-      - bb.instances.get
-      - bb.policies.list
   - name: roles/projectOwner
     permissions:
-      - bb.databases.list
-      - bb.databases.get
-      - bb.databases.getSchema
-      - bb.databases.sync
-      - bb.databases.adviseIndex
-      - bb.databases.updateMetadata
-      - bb.databases.getBackupSetting
-      - bb.databases.updateBackupSetting
-      - bb.backups.list
       - bb.backups.create
-      - bb.changeHistories.list
+      - bb.backups.list
+      - bb.branches.create
+      - bb.branches.delete
+      - bb.branches.get
+      - bb.branches.list
+      - bb.branches.update
       - bb.changeHistories.get
+      - bb.changeHistories.list
+      - bb.changelists.create
+      - bb.changelists.delete
+      - bb.changelists.get
+      - bb.changelists.list
+      - bb.changelists.update
+      - bb.databaseSecrets.delete
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
-      - bb.databaseSecrets.delete
-      - bb.slowQueries.list
-      - bb.projects.get
-      - bb.projects.create
-      - bb.projects.update
-      - bb.projects.delete
-      - bb.projects.undelete
-      - bb.projects.getIamPolicy
-      - bb.projects.setIamPolicy
-      - bb.issues.list
-      - bb.issues.get
-      - bb.issues.create
-      - bb.issues.update
+      - bb.databases.adviseIndex
+      - bb.databases.get
+      - bb.databases.getBackupSetting
+      - bb.databases.getSchema
+      - bb.databases.list
+      - bb.databases.sync
+      - bb.databases.updateBackupSetting
+      - bb.databases.updateMetadata
       - bb.issueComments.create
       - bb.issueComments.update
-      - bb.changelists.list
-      - bb.changelists.get
-      - bb.changelists.create
-      - bb.changelists.update
-      - bb.changelists.delete
-      - bb.plans.list
-      - bb.plans.get
-      - bb.plans.create
-      - bb.plans.update
-      - bb.rollouts.get
-      - bb.rollouts.create
-      - bb.rollouts.preview
-      - bb.taskRuns.list
+      - bb.issues.create
+      - bb.issues.get
+      - bb.issues.list
+      - bb.issues.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
-      - bb.branches.get
-      - bb.branches.list
-      - bb.branches.create
-      - bb.branches.update
-      - bb.branches.delete
-  - name: roles/projectDeveloper
-    permissions:
-      - bb.databases.list
-      - bb.databases.get
-      - bb.databases.getSchema
-      - bb.databases.sync
-      - bb.changeHistories.list
-      - bb.changeHistories.get
+      - bb.plans.create
+      - bb.plans.get
+      - bb.plans.list
+      - bb.plans.update
+      - bb.projects.create
+      - bb.projects.delete
       - bb.projects.get
       - bb.projects.getIamPolicy
-      - bb.slowQueries.list
-      - bb.issues.list
-      - bb.issues.get
-      - bb.issues.create
-      - bb.issueComments.create
-      - bb.changelists.list
-      - bb.changelists.get
-      - bb.changelists.create
-      - bb.plans.list
-      - bb.plans.get
-      - bb.plans.create
-      - bb.rollouts.get
+      - bb.projects.setIamPolicy
+      - bb.projects.undelete
+      - bb.projects.update
       - bb.rollouts.create
+      - bb.rollouts.get
       - bb.rollouts.preview
+      - bb.slowQueries.list
       - bb.taskRuns.list
-      - bb.planCheckRuns.list
-      - bb.planCheckRuns.run
+  - name: roles/projectDeveloper
+    permissions:
+      - bb.branches.create
       - bb.branches.get
       - bb.branches.list
-      - bb.branches.create
-  - name: roles/projectQuerier
-    permissions:
-      - bb.databases.list
+      - bb.changeHistories.get
+      - bb.changeHistories.list
+      - bb.changelists.create
+      - bb.changelists.get
+      - bb.changelists.list
       - bb.databases.get
       - bb.databases.getSchema
+      - bb.databases.list
+      - bb.databases.sync
+      - bb.issueComments.create
+      - bb.issues.create
+      - bb.issues.get
+      - bb.issues.list
+      - bb.planCheckRuns.list
+      - bb.planCheckRuns.run
+      - bb.plans.create
+      - bb.plans.get
+      - bb.plans.list
+      - bb.projects.get
+      - bb.projects.getIamPolicy
+      - bb.rollouts.create
+      - bb.rollouts.get
+      - bb.rollouts.preview
+      - bb.slowQueries.list
+      - bb.taskRuns.list
+  - name: roles/projectQuerier
+    permissions:
+      - bb.databases.get
+      - bb.databases.getSchema
+      - bb.databases.list
       - bb.databases.query
   - name: roles/projectExporter
     permissions:
-      - bb.databases.list
+      - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
-      - bb.databases.export
+      - bb.databases.list
   - name: roles/projectReleaser
     permissions:
-      - bb.databases.list
+      - bb.branches.get
+      - bb.changeHistories.get
       - bb.databases.get
       - bb.databases.getSchema
-      - bb.changeHistories.get
-      - bb.projects.get
-      - bb.projects.getIamPolicy
-      - bb.issues.list # only database change issues
+      - bb.databases.list
       - bb.issues.get
-      - bb.plans.get
-      - bb.rollouts.get
-      - bb.taskRuns.list
+      - bb.issues.list
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
-      - bb.tasks.run
-      - bb.tasks.skip
-      - bb.taskRuns.cancel
-      - bb.branches.get
-  - name: roles/projectViewer
-    permissions:
-      - bb.databases.list
-      - bb.databases.get
-      - bb.databases.getSchema
+      - bb.plans.get
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.rollouts.get
+      - bb.taskRuns.cancel
+      - bb.taskRuns.list
+      - bb.tasks.run
+      - bb.tasks.skip
+  - name: roles/projectViewer
+    permissions:
+      - bb.databases.get
+      - bb.databases.getSchema
+      - bb.databases.list
       - bb.issues.create
+      - bb.projects.get
+      - bb.projects.getIamPolicy
