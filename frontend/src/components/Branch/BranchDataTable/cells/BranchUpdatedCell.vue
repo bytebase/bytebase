@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row justify-start items-center gap-1">
+  <div class="flex flex-row justify-start items-center gap-1 whitespace-nowrap">
     <div
       class="flex flex-row gap-x-1 mr-1 justify-start items-center border border-gray-200 rounded-md p-0.5 px-2"
     >
