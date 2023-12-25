@@ -1,176 +1,23 @@
 <template>
-  <div class="relative">
-    <button
-      id="user-menu"
-      type="button"
-      class="flex text-sm text-white focus:outline-none focus:shadow-solid"
-      aria-label="User menu"
-      aria-haspopup="true"
-      @click.prevent="menu.toggle()"
-      @contextmenu.capture.prevent="menu.toggle()"
-    >
-      <UserAvatar :size="'SMALL'" :user="currentUserV1" />
-    </button>
-    <BBContextMenu ref="menu" class="origin-top-left mt-2 w-48">
-      <router-link
-        class="px-4 py-3 menu-item"
-        to="/setting/profile"
-        role="menuitem"
-      >
-        <p class="text-sm flex justify-between space-x-2">
-          <span class="text-main font-medium truncate text-ellipsis">
-            {{ currentUserV1.title }}
-          </span>
-          <span class="text-control">
-            {{ roleNameV1(currentUserV1.userRole) }}
-          </span>
-        </p>
-        <p class="text-sm text-control truncate text-ellipsis">
-          {{ currentUserV1.email }}
-        </p>
-      </router-link>
-      <div class="border-t border-gray-100"></div>
-      <div class="py-1">
-        <router-link to="/setting" class="menu-item" role="menuitem">{{
-          $t("settings.sidebar.profile")
-        }}</router-link>
-        <div
-          class="menu-item relative"
-          @mouseenter="languageMenu.toggle()"
-          @mouseleave="languageMenu.toggle()"
-          @click.capture.prevent="languageMenu.toggle()"
-        >
-          <span>{{ $t("common.language") }}</span>
-          <BBContextMenu
-            ref="languageMenu"
-            class="origin-left absolute left-0 -top-1 -translate-x-48 transform"
-          >
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': locale === 'en-US' }"
-              @click.prevent="toggleLocale('en-US')"
-            >
-              <div class="radio text-sm">
-                <input type="radio" class="btn" :checked="locale === 'en-US'" />
-                <label class="ml-2">English</label>
-              </div>
-            </div>
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': locale === 'zh-CN' }"
-              @click.prevent="toggleLocale('zh-CN')"
-            >
-              <div class="radio text-sm">
-                <input type="radio" class="btn" :checked="locale === 'zh-CN'" />
-                <label class="ml-2">简体中文</label>
-              </div>
-            </div>
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': locale === 'es-ES' }"
-              @click.prevent="toggleLocale('es-ES')"
-            >
-              <div class="radio text-sm">
-                <input type="radio" class="btn" :checked="locale === 'es-ES'" />
-                <label class="ml-2">Español</label>
-              </div>
-            </div>
-          </BBContextMenu>
-        </div>
-        <div
-          v-if="isDev"
-          class="menu-item relative"
-          @mouseenter="licenseMenu.toggle()"
-          @mouseleave="licenseMenu.toggle()"
-          @click.capture.prevent="licenseMenu.toggle()"
-        >
-          <span>{{ $t("common.license") }}</span>
-          <BBContextMenu
-            ref="licenseMenu"
-            class="origin-left absolute left-0 -top-1 -translate-x-48 transform"
-          >
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': currentPlan == PlanType.FREE }"
-              @click.prevent="switchToFree()"
-            >
-              <div class="radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="currentPlan == PlanType.FREE"
-                />
-                <label class="ml-2">{{
-                  $t("subscription.plan.free.title")
-                }}</label>
-              </div>
-            </div>
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': currentPlan == PlanType.TEAM }"
-              @click.prevent="switchToTeam()"
-            >
-              <div class="radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="currentPlan == PlanType.TEAM"
-                />
-                <label class="ml-2">{{
-                  $t("subscription.plan.team.title")
-                }}</label>
-              </div>
-            </div>
-            <div
-              class="menu-item px-3 py-1 hover:bg-gray-100"
-              :class="{ 'bg-gray-100': currentPlan == PlanType.ENTERPRISE }"
-              @click.prevent="switchToEnterprise()"
-            >
-              <div class="radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="currentPlan == PlanType.ENTERPRISE"
-                />
-                <label class="ml-2">
-                  {{ $t("subscription.plan.enterprise.title") }}
-                </label>
-              </div>
-            </div>
-          </BBContextMenu>
-        </div>
-        <a class="menu-item" role="menuitem" @click.prevent="resetQuickstart">{{
-          $t("quick-start.self")
-        }}</a>
-        <a
-          href="https://bytebase.com/docs?source=console"
-          target="_blank"
-          class="menu-item"
-        >
-          {{ $t("common.help") }}
-        </a>
-      </div>
-      <div class="border-t border-gray-100"></div>
-      <div v-if="allowToggleDebug" class="py-1 menu-item">
-        <div class="flex flex-row items-center space-x-2 justify-between">
-          <span>Debug</span>
-          <NSwitch size="small" :value="isDebug" @update-value="switchDebug" />
-        </div>
-      </div>
-      <div class="border-t border-gray-100"></div>
-      <div class="py-1">
-        <a class="menu-item" role="menuitem" @click.prevent="logout">{{
-          $t("common.logout")
-        }}</a>
-      </div>
-    </BBContextMenu>
-  </div>
+  <NDropdown
+    :show="showDropdown"
+    :options="options"
+    @clickoutside="showDropdown = false"
+  >
+    <UserAvatar
+      class="cursor-pointer"
+      :size="'SMALL'"
+      :user="currentUserV1"
+      @click="showDropdown = true"
+    />
+  </NDropdown>
 </template>
 
 <script lang="ts" setup>
-import { NSwitch } from "naive-ui";
+import { NSwitch, NDropdown, DropdownOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
 import {
@@ -181,8 +28,11 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1, roleNameV1 } from "@/utils";
+import { hasWorkspacePermissionV1, isDev } from "@/utils";
+import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
+
+const { t } = useI18n();
 
 const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
@@ -190,10 +40,8 @@ const subscriptionStore = useSubscriptionV1Store();
 const uiStateStore = useUIStateStore();
 const router = useRouter();
 const { setLocale, locale } = useLanguage();
-const menu = ref();
-const languageMenu = ref();
-const licenseMenu = ref();
 const currentUserV1 = useCurrentUserV1();
+const showDropdown = ref(false);
 
 // For now, debug mode is a global setting and will affect all users.
 // So we only allow DBA and Owner to toggle it.
@@ -204,22 +52,6 @@ const allowToggleDebug = computed(() => {
   );
 });
 const { currentPlan } = storeToRefs(subscriptionStore);
-
-const switchToFree = () => {
-  subscriptionStore.patchSubscription("");
-};
-
-const switchToTeam = () => {
-  subscriptionStore.patchSubscription(
-    import.meta.env.BB_DEV_TEAM_LICENSE as string
-  );
-};
-
-const switchToEnterprise = () => {
-  subscriptionStore.patchSubscription(
-    import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string
-  );
-};
 
 const logout = () => {
   authStore.logout().then(() => {
@@ -251,6 +83,7 @@ const resetQuickstart = () => {
       newState: false,
     });
   });
+  showDropdown.value = false;
 };
 
 const { isDebug } = storeToRefs(actuatorStore);
@@ -263,6 +96,252 @@ const switchDebug = () => {
 
 const toggleLocale = (lang: string) => {
   setLocale(lang);
-  languageMenu.value.toggle();
+  showDropdown.value = false;
 };
+
+const switchPlan = (license: string) => {
+  subscriptionStore.patchSubscription(license);
+  showDropdown.value = false;
+};
+
+const languageOptions = computed((): DropdownOption[] => {
+  const languages = [
+    {
+      label: "English",
+      value: "en-US",
+    },
+    {
+      label: "简体中文",
+      value: "zh-CN",
+    },
+    {
+      label: "Español",
+      value: "es-ES",
+    },
+  ];
+
+  return languages.map((item) => {
+    const classes: string[] = [
+      "menu-item cursor-pointer px-3 py-1 hover:bg-gray-100 w-48",
+    ];
+    if (locale.value === item.value) {
+      classes.push("bg-gray-100");
+    }
+
+    return {
+      key: item.value,
+      type: "render",
+      render() {
+        return h(
+          "div",
+          {
+            key: item.value,
+            class: classes.join(" "),
+            onClick: () => toggleLocale(item.value),
+          },
+          h("div", { class: "radio cursor-pointer text-sm" }, [
+            h("input", {
+              type: "radio",
+              class: "btn",
+              checked: locale.value === item.value,
+            }),
+            h("label", { class: "ml-2 cursor-pointer" }, item.label),
+          ])
+        );
+      },
+    };
+  });
+});
+
+const licenseOptions = computed((): DropdownOption[] => {
+  const options = [
+    {
+      label: t("subscription.plan.free.title"),
+      value: "",
+      plan: PlanType.FREE,
+    },
+    {
+      label: t("subscription.plan.team.title"),
+      value: import.meta.env.BB_DEV_TEAM_LICENSE as string,
+      plan: PlanType.TEAM,
+    },
+    {
+      label: t("subscription.plan.enterprise.title"),
+      value: import.meta.env.BB_DEV_ENTERPRISE_LICENSE as string,
+      plan: PlanType.ENTERPRISE,
+    },
+  ];
+
+  return options.map((item) => {
+    const classes = ["menu-item px-3 py-1 hover:bg-gray-100 w-48"];
+    if (item.plan === currentPlan.value) {
+      classes.push("bg-gray-100");
+    }
+
+    return {
+      key: item.plan,
+      type: "render",
+      render() {
+        return h(
+          "div",
+          {
+            key: item.value,
+            class: classes.join(" "),
+            onClick: () => switchPlan(item.value),
+          },
+          h("div", { class: "radio cursor-pointer text-sm" }, [
+            h("input", {
+              type: "radio",
+              class: "btn",
+              checked: currentPlan.value === item.plan,
+            }),
+            h("label", { class: "ml-2 cursor-pointer" }, item.label),
+          ])
+        );
+      },
+    };
+  });
+});
+
+const options = computed((): DropdownOption[] => [
+  {
+    key: "profile",
+    type: "render",
+    render() {
+      return h(ProfilePreview, {
+        onClick: () => (showDropdown.value = false),
+      });
+    },
+  },
+  {
+    key: "header-divider",
+    type: "divider",
+  },
+  {
+    key: "language",
+    type: "render",
+    render() {
+      return h(
+        NDropdown,
+        {
+          key: "switch-language",
+          options: languageOptions.value,
+          placement: "left-start",
+        },
+        () =>
+          h(
+            "div",
+            {
+              class: "menu-item",
+            },
+            t("common.language")
+          )
+      );
+    },
+  },
+  {
+    key: "license",
+    type: "render",
+    show: isDev(),
+    render() {
+      return h(
+        NDropdown,
+        {
+          key: "switch-license",
+          options: licenseOptions.value,
+          placement: "left-start",
+        },
+        () =>
+          h(
+            "div",
+            {
+              class: "menu-item",
+            },
+            t("common.license")
+          )
+      );
+    },
+  },
+  {
+    key: "quick-start",
+    type: "render",
+    render() {
+      return h(
+        "div",
+        {
+          class: "menu-item",
+          onClick: resetQuickstart,
+        },
+        t("quick-start.self")
+      );
+    },
+  },
+  {
+    key: "help",
+    type: "render",
+    render() {
+      return h(
+        "a",
+        {
+          class: "menu-item",
+          target: "_blank",
+          href: "https://bytebase.com/docs?source=console",
+        },
+        t("common.help")
+      );
+    },
+  },
+  {
+    key: "header-divider",
+    type: "divider",
+  },
+  {
+    key: "debug",
+    type: "render",
+    show: allowToggleDebug.value,
+    render() {
+      return h(
+        "div",
+        {
+          class: "menu-item",
+        },
+        [
+          h(
+            "div",
+            {
+              class: "flex flex-row items-center space-x-2 justify-between",
+            },
+            [
+              h("span", {}, "Debug"),
+              h(NSwitch, {
+                size: "small",
+                value: isDebug.value,
+                "onUpdate:value": switchDebug,
+              }),
+            ]
+          ),
+        ]
+      );
+    },
+  },
+  {
+    key: "header-divider",
+    type: "divider",
+    show: allowToggleDebug.value,
+  },
+  {
+    key: "logout",
+    type: "render",
+    render() {
+      return h(
+        "div",
+        {
+          class: "menu-item",
+          onClick: logout,
+        },
+        t("common.logout")
+      );
+    },
+  },
+]);
 </script>

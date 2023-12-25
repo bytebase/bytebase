@@ -53,20 +53,22 @@
           <span class="mt-4 mb-2 text-sm font-medium">{{
             $t("two-factor.setup-steps.setup-auth-app.verify-code")
           }}</span>
-          <input
-            v-model="state.otpCode"
-            class="textfield w-64"
+          <BBTextField
+            v-model:value="state.otpCode"
+            required
+            style="width: 16rem"
             placeholder="XXXXXX"
-            type="text"
           />
         </div>
       </div>
     </template>
     <template #1>
-      <RecoveryCodesView
-        :recovery-codes="currentUser.recoveryCodes"
-        @download="state.recoveryCodesDownloaded = true"
-      />
+      <div class="w-full max-w-2xl mx-auto">
+        <RecoveryCodesView
+          :recovery-codes="currentUser.recoveryCodes"
+          @download="state.recoveryCodesDownloaded = true"
+        />
+      </div>
     </template>
   </StepTab>
 

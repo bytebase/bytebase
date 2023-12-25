@@ -191,29 +191,19 @@
       </p>
       <template v-if="showRegenerateRecoveryCodes">
         <div class="w-full flex flex-row justify-between items-center mt-8">
-          <span class="text-lg font-medium">{{
-            $t("two-factor.recovery-codes.self")
-          }}</span>
+          <span class="text-lg font-medium">
+            {{ $t("two-factor.recovery-codes.self") }}
+          </span>
           <div v-if="!state.showRegenerateRecoveryCodesView" class="relative">
-            <heroicons-outline:ellipsis-horizontal
-              class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded"
-              @click.prevent="recoveryCodesMenu.toggle()"
-              @contextmenu.capture.prevent="recoveryCodesMenu.toggle()"
-            />
-            <BBContextMenu
-              ref="recoveryCodesMenu"
-              class="origin-top-left mt-1 w-32 shadow"
+            <NDropdown
+              trigger="click"
+              :options="dropDownOptions"
+              placement="bottom-end"
             >
-              <div class="py-1">
-                <a
-                  class="menu-item"
-                  role="menuitem"
-                  @click="state.showRegenerateRecoveryCodesView = true"
-                >
-                  {{ $t("common.regenerate") }}
-                </a>
-              </div>
-            </BBContextMenu>
+              <heroicons-outline:ellipsis-horizontal
+                class="w-8 p-1 h-auto cursor-pointer hover:bg-gray-100 rounded"
+              />
+            </NDropdown>
           </div>
         </div>
         <p class="mt-4 text-sm text-gray-500">
@@ -248,7 +238,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
+import { NButton, NInput, NDropdown, DropdownOption } from "naive-ui";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -300,7 +290,6 @@ const state = reactive<LocalState>({
 });
 
 const editNameTextField = ref<InstanceType<typeof NInput>>();
-const recoveryCodesMenu = ref();
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (state.editing) {
@@ -481,4 +470,16 @@ const handleDisable2FA = async () => {
     title: t("two-factor.messages.2fa-disabled"),
   });
 };
+
+const dropDownOptions = computed((): DropdownOption[] => [
+  {
+    label: t("common.regenerate"),
+    key: "regenerate",
+    props: {
+      onClick: () => {
+        state.showRegenerateRecoveryCodesView = true;
+      },
+    },
+  },
+]);
 </script>
