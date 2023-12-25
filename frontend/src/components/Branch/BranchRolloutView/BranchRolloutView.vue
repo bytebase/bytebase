@@ -73,7 +73,7 @@
         :project="project"
         :readonly="true"
         :resource-type="'branch'"
-        :branch="virtualBranchForPreview"
+        :branch="virtualBranch"
         :loading="isLoadingVirtualBranch"
       />
 
@@ -180,7 +180,6 @@ const {
   ready: virtualBranchReady,
   branch: virtualBranch,
 } = useVirtualBranch(toRef(props, "project"), toRef(props, "branch"), database);
-const virtualBranchForPreview = ref<Branch>(cloneDeep(virtualBranch.value));
 const selectedRolloutObjects = ref<RolloutObject[]>([]);
 const emptyBranch = Branch.fromJSON({});
 const isGeneratingDDL = ref(false);
@@ -229,11 +228,6 @@ const handleChangeTab = async (tab: TabType) => {
 };
 
 const fetchRawSQLPreview = async () => {
-  if (rawSQLPreviewState.isFetching) {
-    return;
-  }
-  rawSQLPreviewState.isFetching = true;
-
   const cleanup = (errors: string[], fatal: boolean) => {
     if (errors.length > 0) {
       pushNotification({
@@ -245,10 +239,18 @@ const fetchRawSQLPreview = async () => {
     }
     rawSQLPreviewState.isFetching = false;
   };
-  const source = cloneDeep(
-    virtualBranchForPreview.value.baselineSchemaMetadata
-  );
-  const target = cloneDeep(virtualBranchForPreview.value.schemaMetadata);
+
+  if (rawSQLPreviewState.isFetching) {
+    return;
+  }
+  const vb = virtualBranch.value;
+  if (!vb) {
+    return;
+  }
+  rawSQLPreviewState.isFetching = true;
+
+  const source = cloneDeep(vb.baselineSchemaMetadata);
+  const target = cloneDeep(vb.schemaMetadata);
   const db = database.value;
   const editor = schemaEditorRef.value;
   if (!source) return;
@@ -289,8 +291,12 @@ const handlePreviewIssue = async () => {
     isGeneratingDDL.value = false;
   };
 
-  const source = cloneDeep(virtualBranch.value.baselineSchemaMetadata);
-  const target = cloneDeep(virtualBranch.value.schemaMetadata);
+  const vb = virtualBranch.value;
+  if (!vb) {
+    return;
+  }
+  const source = cloneDeep(vb.baselineSchemaMetadata);
+  const target = cloneDeep(vb.schemaMetadata);
   const db = database.value;
   const editor = schemaEditorRef.value;
   if (!source) return;
@@ -375,18 +381,22 @@ watch(
   { immediate: true }
 );
 watch(
-  () => virtualBranch.value.name,
-  () => {
-    virtualBranchForPreview.value = cloneDeep(virtualBranch.value);
-    requestAnimationFrame(() => {
-      const vb = virtualBranchForPreview.value;
-      const db = useDatabaseV1Store().getDatabaseByName(vb.baselineDatabase);
-      schemaEditorRef.value?.rebuildMetadataEdit(
-        db,
-        vb.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
-        vb.schemaMetadata ?? DatabaseMetadata.fromPartial({})
-      );
-    });
+  () => virtualBranch.value,
+  (vb) => {
+    if (!vb) return;
+    if ((vb as any).__rebuildMetadataEditFinished) {
+      console.warn("unexpected: should never reach this line");
+      return;
+    }
+    (vb as any).__rebuildMetadataEditFinished = true;
+
+    selectedRolloutObjects.value = [];
+    const db = useDatabaseV1Store().getDatabaseByName(vb.baselineDatabase);
+    schemaEditorRef.value?.rebuildMetadataEdit(
+      db,
+      vb.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+      vb.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+    );
   }
 );
 </script>
