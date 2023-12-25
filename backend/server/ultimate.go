@@ -13,6 +13,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/risingwave"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/starrocks"
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
