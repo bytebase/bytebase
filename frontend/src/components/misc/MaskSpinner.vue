@@ -1,6 +1,6 @@
 <template>
   <div
-    v-zindexable="{ enabled: true }"
+    v-zindexable="{ enabled: zindexable }"
     class="absolute inset-0 bg-white/50 flex flex-col items-center justify-center gap-y-2"
   >
     <NSpin v-bind="spinProps" />
@@ -12,7 +12,11 @@
 import { NSpin, SpinProps } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 
-defineProps<{
-  spinProps?: SpinProps;
-}>();
+withDefaults(
+  defineProps<{
+    spinProps?: SpinProps;
+    zindexable?: boolean;
+  }>(),
+  { spinProps: undefined, zindexable: true }
+);
 </script>
