@@ -21,6 +21,21 @@ export type AdviceOption = {
   endColumn: number; // starts from 1
 };
 
+export type LineHighlightOverviewRulerPosition =
+  | "FULL"
+  | "CENTER"
+  | "LEFT"
+  | "RIGHT";
+export type LineHighlightOverviewRulerOption = {
+  color: string;
+  position: LineHighlightOverviewRulerPosition;
+};
+export type LineHighlightOption = {
+  className: string;
+  lineNumber: number; // starts from 1
+  overviewRuler?: LineHighlightOverviewRulerOption;
+};
+
 export const SupportedLanguages: monaco.languages.ILanguageExtensionPoint[] = [
   {
     id: "sql",

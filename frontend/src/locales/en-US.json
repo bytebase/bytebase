@@ -3258,7 +3258,6 @@
     "parent-branch": "Parent",
     "save-draft": "Save draft",
     "merge-branch": "Merge branch",
-    "delete-branch-after-merged": "Delete branch after merged",
     "raw-sql-preview": "Raw SQL Preview",
     "diff-editor": {
       "self": "Diff editor",
@@ -3361,6 +3360,25 @@
     "branch-is-protected": "This branch is protected by branch protection rules.",
     "default-branches": "Default",
     "your-branches": "Your branches",
-    "active-branches": "Active branches"
+    "active-branches": "Active branches",
+    "select-branch": "Select branch",
+    "merge-rebase": {
+      "select-branches-to-merge": "Select branches to merge",
+      "select-branches-to-rebase": "Select branches to rebase",
+      "validating-branch": "Validating branches",
+      "able-to-merge": "Able to merge",
+      "able-to-rebase": "Able to rebase",
+      "cannot-automatically-merge": "Can't automatically merge, please {rebase_branch} first.",
+      "cannot-automatically-rebase": "Can't rebase automatically. Please resolve the conflicts manually.",
+      "go-rebase": "rebase branch",
+      "changes-of-branch": "Changes of {branch}",
+      "merge-succeeded": "Merge succeeded",
+      "rebase-succeeded": "Rebase succeeded",
+      "delete-branch-after-merged": "Delete branch after merged",
+      "merge-branch": "Merge branch",
+      "rebase-branch": "Rebase branch",
+      "confirm-rebase": "Confirm rebase?",
+      "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet."
+    }
   }
 }

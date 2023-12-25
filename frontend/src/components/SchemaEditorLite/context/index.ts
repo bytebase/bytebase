@@ -12,6 +12,8 @@ export const KEY = Symbol("bb.schema-editor");
 
 export type SchemaEditorEvents = Emittery<{
   ["update:selected-rollout-objects"]: RolloutObject[];
+  ["rebuild-tree"]: undefined;
+  ["clear-tabs"]: undefined;
 }>;
 
 export const provideSchemaEditorContext = (params: {
@@ -25,7 +27,7 @@ export const provideSchemaEditorContext = (params: {
   const context = {
     events,
     ...params,
-    ...useTabs(),
+    ...useTabs(events),
     ...useEditStatus(),
     ...useEditConfigs(params.targets),
     ...useScrollStatus(),

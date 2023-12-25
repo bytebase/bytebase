@@ -1,8 +1,10 @@
 import { v1 as uuidv1 } from "uuid";
 import { computed, ref } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { CoreTabContext, TabContext } from "../types";
+import { SchemaEditorEvents } from "./index";
 
-export const useTabs = () => {
+export const useTabs = (events: SchemaEditorEvents) => {
   const tabMap = ref(new Map<string, TabContext>());
   const tabList = computed(() => {
     return Array.from(tabMap.value.values());
@@ -82,6 +84,10 @@ export const useTabs = () => {
       return false;
     });
   };
+  useEmitteryEventListener(events, "clear-tabs", () => {
+    tabMap.value.clear();
+    currentTabId.value = "";
+  });
 
   return {
     tabMap,

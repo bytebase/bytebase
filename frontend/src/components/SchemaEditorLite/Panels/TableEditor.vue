@@ -6,7 +6,7 @@
     >
       <div
         v-if="!readonly"
-        class="w-full flex justify-between items-center space-x-2"
+        class="w-full flex justify-start items-center space-x-2"
       >
         <NButton
           size="small"
