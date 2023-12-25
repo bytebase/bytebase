@@ -3,13 +3,9 @@
     v-if="actionText != ''"
     class="flex items-center justify-end mt-2 md:mt-0 md:ml-2"
   >
-    <button
-      type="button"
-      class="btn-primary whitespace-nowrap"
-      @click.prevent="onClick"
-    >
+    <NButton type="primary" class="whitespace-nowrap" @click.prevent="onClick">
       {{ $t(actionText) }}
-    </button>
+    </NButton>
   </div>
 
   <WeChatQRModal

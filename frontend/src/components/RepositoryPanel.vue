@@ -105,15 +105,14 @@
       :confirm-description="$t('repository.restore-ui-workflow-description')"
       @confirm="() => restoreToUIWorkflowType(true)"
     />
-    <div>
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+    <div class="ml-3">
+      <NButton
+        type="primary"
         :disabled="!allowUpdate"
         @click.prevent="doUpdate"
       >
         {{ $t("common.update") }}
-      </button>
+      </NButton>
     </div>
   </div>
   <BBModal
@@ -216,13 +215,9 @@
       </div>
 
       <div class="flex justify-end pt-4 gap-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="onSQLReviewCIModalClose"
-        >
+        <NButton @click.prevent="onSQLReviewCIModalClose">
           {{ $t("common.close") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
@@ -251,13 +246,9 @@
       </div>
 
       <div class="flex justify-end pt-4 gap-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="state.showDisableSQLReviewCIModal = false"
-        >
+        <NButton @click.prevent="state.showDisableSQLReviewCIModal = false">
           {{ $t("common.close") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

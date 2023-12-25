@@ -18,16 +18,17 @@
           <slot name="title"><component :is="renderTitle" /></slot>
           <slot name="subtitle"><component :is="renderSubtitle" /></slot>
         </div>
-        <button
+        <NButton
           v-if="showClose"
-          class="text-control-light"
+          quaternary
+          size="small"
           aria-label="close"
           @click.prevent="tryClose()"
         >
           <span class="sr-only">Close</span>
           <!-- Heroicons name: x -->
           <X class="w-5 h-auto hover:opacity-80" />
-        </button>
+        </NButton>
       </div>
 
       <div class="modal-container" :class="containerClass">
