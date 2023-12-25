@@ -527,7 +527,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	}); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 	}
-	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
+	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
