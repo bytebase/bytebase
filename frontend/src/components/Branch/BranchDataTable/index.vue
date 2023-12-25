@@ -62,7 +62,7 @@ const columns = computed(() => {
     {
       title: t("schema-designer.baseline-version"),
       key: "baselineVersion",
-      width: 256,
+      width: 300,
       render: (row: Branch) => {
         return h(BranchBaseline, {
           branch: row,
@@ -73,7 +73,7 @@ const columns = computed(() => {
     {
       title: t("common.updated"),
       key: "updated",
-      width: 256,
+      width: 200,
       render: (row: Branch) => {
         return h(BranchUpdatedCell, {
           branch: row,
