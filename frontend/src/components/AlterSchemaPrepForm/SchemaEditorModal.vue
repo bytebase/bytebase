@@ -20,8 +20,8 @@
     <div class="w-full h-[46rem] max-h-full overflow-auto flex flex-col">
       <div class="flex-1">
         <NTabs
-          type="card"
           v-model:value="state.selectedTab"
+          type="card"
           style="height: 100%"
         >
           <NTabPane
@@ -310,10 +310,6 @@ onMounted(async () => {
     return;
   }
 });
-
-const handleChangeTab = (tab: TabType) => {
-  state.selectedTab = tab;
-};
 
 const dismissModal = () => {
   if (allowPreviewIssue.value) {
