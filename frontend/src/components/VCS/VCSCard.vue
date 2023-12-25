@@ -9,13 +9,9 @@
           {{ vcs.title }}
         </h3>
       </div>
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="editVCS"
-      >
+      <NButton @click.prevent="editVCS">
         {{ $t("common.edit") }}
-      </button>
+      </NButton>
     </div>
     <div class="border-t border-block-border">
       <dl class="divide-y divide-block-border">

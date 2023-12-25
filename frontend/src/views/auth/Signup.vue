@@ -181,20 +181,19 @@
             </i18n-t>
           </div>
 
-          <div>
-            <span class="block w-full rounded-md shadow-sm">
-              <button
-                type="submit"
-                :disabled="!allowSignup"
-                class="btn-primary w-full flex justify-center py-2 px-4"
-              >
-                {{
-                  needAdminSetup
-                    ? $t("auth.sign-up.create-admin-account")
-                    : $t("common.sign-up")
-                }}
-              </button>
-            </span>
+          <div class="w-full">
+            <NButton
+              attr-type="submit"
+              type="primary"
+              :disabled="!allowSignup"
+              style="width: 100%"
+            >
+              {{
+                needAdminSetup
+                  ? $t("auth.sign-up.create-admin-account")
+                  : $t("common.sign-up")
+              }}
+            </NButton>
           </div>
         </form>
       </div>

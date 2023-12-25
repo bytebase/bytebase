@@ -58,6 +58,7 @@ import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
+import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useTabStore, useActuatorV1Store } from "@/store";
 import type { TabInfo } from "@/types";
@@ -67,7 +68,6 @@ import {
   getSuggestedTabNameFromConnection,
   sheetTypeForTab,
 } from "@/utils";
-import ProfileDropdown from "../ProfileDropdown";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";

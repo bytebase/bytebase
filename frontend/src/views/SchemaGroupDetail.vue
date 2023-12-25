@@ -49,13 +49,9 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <button
-            type="button"
-            class="btn-normal"
-            @click.prevent="state.showConfigurePanel = true"
-          >
+          <NButton @click.prevent="state.showConfigurePanel = true">
             {{ $t("common.configure") }}
-          </button>
+          </NButton>
         </div>
       </div>
 
