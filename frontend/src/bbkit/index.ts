@@ -7,7 +7,6 @@ import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
 import BBSpin from "./BBSpin.vue";
-import BBTab from "./BBTab.vue";
 import {
   BBTable,
   BBTableCell,
@@ -26,7 +25,6 @@ export {
   BBModal,
   BBDialog,
   BBSpin,
-  BBTab,
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
