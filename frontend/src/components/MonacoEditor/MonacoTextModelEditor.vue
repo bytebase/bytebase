@@ -35,6 +35,7 @@ import {
   useOptions,
   useSelectedContent,
   useSuggestOptionByLanguage,
+  useLineHighlights,
 } from "./composables";
 import { shouldUseNewLSP } from "./dev";
 import monaco, { createMonacoEditor } from "./editor";
@@ -43,6 +44,7 @@ import type {
   IStandaloneCodeEditor,
   IStandaloneEditorConstructionOptions,
   ITextModel,
+  LineHighlightOption,
   MonacoModule,
 } from "./types";
 
@@ -55,6 +57,7 @@ const props = withDefaults(
     autoHeight?: AutoHeightOptions;
     autoCompleteContext?: AutoCompleteContext;
     advices?: AdviceOption[];
+    lineHighlights?: LineHighlightOption[];
     options?: IStandaloneEditorConstructionOptions;
   }>(),
   {
@@ -65,6 +68,7 @@ const props = withDefaults(
     autoHeight: undefined,
     autoCompleteContext: undefined,
     advices: () => [],
+    lineHighlights: () => [],
     options: undefined,
   }
 );
@@ -110,6 +114,7 @@ onMounted(async () => {
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
+    useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
     if (shouldUseNewLSP()) {
       useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));

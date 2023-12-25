@@ -27,7 +27,7 @@
 
     <div
       class="pt-4 border-t border-block-border flex items-center space-x-2 justify-between"
-      :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10']"
+      :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10', footerClass]"
     >
       <div>
         <NButton v-if="showCancel" @click.prevent="$emit('cancel')">
@@ -78,6 +78,7 @@ withDefaults(
     sticky?: boolean;
     finishTitle?: string;
     paneClass?: VueClass;
+    footerClass?: VueClass;
     stepList: { title: string; description?: string; hideNext?: boolean }[];
   }>(),
   {
@@ -86,6 +87,7 @@ withDefaults(
     sticky: false,
     finishTitle: "bbkit.common.finish",
     paneClass: undefined,
+    footerClass: undefined,
   }
 );
 

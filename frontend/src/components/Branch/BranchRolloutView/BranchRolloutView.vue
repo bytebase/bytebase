@@ -63,12 +63,11 @@
     </div>
 
     <div
-      v-if="state.selectedTab === 'schema-editor'"
+      v-show="state.selectedTab === 'schema-editor'"
       class="flex-1 overflow-hidden relative"
     >
       <SchemaEditorLite
-        v-if="database"
-        :key="virtualBranch.name"
+        v-show="database"
         ref="schemaEditorRef"
         v-model:selected-rollout-objects="selectedRolloutObjects"
         :project="project"
@@ -76,27 +75,26 @@
         :resource-type="'branch'"
         :branch="virtualBranch"
         :loading="isLoadingVirtualBranch"
-        :diff-when-ready="true"
       />
 
       <!-- used as a placeholder -->
-      <template v-else>
-        <SchemaEditorLite
-          :project="project"
-          :readonly="true"
-          :resource-type="'branch'"
-          :branch="emptyBranch"
-        />
-        <div
-          class="absolute inset-0 bg-white/75 text-sm flex flex-col items-center justify-center"
-        >
-          {{ $t("branch.rollout.select-target-database") }}
-        </div>
-      </template>
+      <SchemaEditorLite
+        v-show="!database"
+        :project="project"
+        :readonly="true"
+        :resource-type="'branch'"
+        :branch="emptyBranch"
+      />
+      <div
+        v-show="!database"
+        class="absolute inset-0 bg-white/75 text-sm flex flex-col items-center justify-center"
+      >
+        {{ $t("branch.rollout.select-target-database") }}
+      </div>
     </div>
 
     <div
-      v-if="state.selectedTab === 'raw-sql-preview'"
+      v-show="state.selectedTab === 'raw-sql-preview'"
       class="w-full h-full overflow-y-auto relative"
     >
       <MaskSpinner v-if="rawSQLPreviewState.isFetching">
@@ -141,6 +139,7 @@ import {
 } from "@/store";
 import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
   Sheet,
@@ -220,18 +219,15 @@ const allowPreviewIssue = computed(() => {
 });
 
 const handleChangeTab = async (tab: TabType) => {
+  if (state.selectedTab === tab) return;
   state.selectedTab = tab;
+
   if (tab === "raw-sql-preview") {
     await fetchRawSQLPreview();
   }
 };
 
 const fetchRawSQLPreview = async () => {
-  if (rawSQLPreviewState.isFetching) {
-    return;
-  }
-  rawSQLPreviewState.isFetching = true;
-
   const cleanup = (errors: string[], fatal: boolean) => {
     if (errors.length > 0) {
       pushNotification({
@@ -243,8 +239,18 @@ const fetchRawSQLPreview = async () => {
     }
     rawSQLPreviewState.isFetching = false;
   };
-  const source = cloneDeep(virtualBranch.value.baselineSchemaMetadata);
-  const target = cloneDeep(virtualBranch.value.schemaMetadata);
+
+  if (rawSQLPreviewState.isFetching) {
+    return;
+  }
+  const vb = virtualBranch.value;
+  if (!vb) {
+    return;
+  }
+  rawSQLPreviewState.isFetching = true;
+
+  const source = cloneDeep(vb.baselineSchemaMetadata);
+  const target = cloneDeep(vb.schemaMetadata);
   const db = database.value;
   const editor = schemaEditorRef.value;
   if (!source) return;
@@ -285,8 +291,12 @@ const handlePreviewIssue = async () => {
     isGeneratingDDL.value = false;
   };
 
-  const source = cloneDeep(virtualBranch.value.baselineSchemaMetadata);
-  const target = cloneDeep(virtualBranch.value.schemaMetadata);
+  const vb = virtualBranch.value;
+  if (!vb) {
+    return;
+  }
+  const source = cloneDeep(vb.baselineSchemaMetadata);
+  const target = cloneDeep(vb.schemaMetadata);
   const db = database.value;
   const editor = schemaEditorRef.value;
   if (!source) return;
@@ -369,5 +379,24 @@ watch(
     handleSelectDatabase(db.uid);
   },
   { immediate: true }
+);
+watch(
+  () => virtualBranch.value,
+  (vb) => {
+    if (!vb) return;
+    if ((vb as any).__rebuildMetadataEditFinished) {
+      console.warn("unexpected: should never reach this line");
+      return;
+    }
+    (vb as any).__rebuildMetadataEditFinished = true;
+
+    selectedRolloutObjects.value = [];
+    const db = useDatabaseV1Store().getDatabaseByName(vb.baselineDatabase);
+    schemaEditorRef.value?.rebuildMetadataEdit(
+      db,
+      vb.baselineSchemaMetadata ?? DatabaseMetadata.fromPartial({}),
+      vb.schemaMetadata ?? DatabaseMetadata.fromPartial({})
+    );
+  }
 );
 </script>
