@@ -20,8 +20,8 @@
         class="space-x-2"
         @update:value="$emit('update:source-type', $event as RebaseSourceType)"
       >
-        <NRadio value="BRANCH">分支</NRadio>
-        <NRadio value="DATABASE">数据库</NRadio>
+        <NRadio value="BRANCH">{{ $t("common.branch") }}</NRadio>
+        <NRadio value="DATABASE">{{ $t("common.database") }}</NRadio>
       </NRadioGroup>
       <BranchSelector
         v-if="sourceType === 'BRANCH'"
