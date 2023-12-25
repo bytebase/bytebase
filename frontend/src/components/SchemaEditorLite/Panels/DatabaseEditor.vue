@@ -47,6 +47,14 @@
               <span class="text-main">
                 {{ $t("branch.select-tables-to-rollout") }}
               </span>
+              <TableSelectionSummary
+                v-if="selectedSchema"
+                :db="db"
+                :metadata="{
+                  database,
+                  schema: selectedSchema,
+                }"
+              />
             </div>
           </div>
         </div>
@@ -93,6 +101,7 @@
           :database="database"
           :schema="selectedSchema"
           :tables="selectedSchema.tables"
+          :search-pattern="searchPattern"
         />
       </template>
       <template v-else-if="state.selectedSubTab === 'schema-diagram'">
@@ -160,6 +169,7 @@ import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import TableList from "./TableList";
+import TableSelectionSummary from "./TableSelectionSummary.vue";
 
 const props = withDefaults(
   defineProps<{

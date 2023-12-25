@@ -39,7 +39,7 @@
         </NButton>
       </div>
     </div>
-    <div class="flex items-center flex-start bottom-b">
+    <div class="flex items-center flex-start border-b">
       <button
         class="-mb-px px-3 leading-9 rounded-t-md flex items-center text-sm text-gray-500 border border-b-0 border-transparent cursor-pointer select-none outline-none"
         :class="
@@ -62,7 +62,10 @@
       </button>
     </div>
 
-    <div class="flex-1 overflow-hidden relative">
+    <div
+      v-if="state.selectedTab === 'schema-editor'"
+      class="flex-1 overflow-hidden relative"
+    >
       <SchemaEditorLite
         v-if="database"
         :key="virtualBranch.name"
@@ -94,7 +97,7 @@
 
     <div
       v-if="state.selectedTab === 'raw-sql-preview'"
-      class="w-full h-full pt-2 overflow-y-auto relative"
+      class="w-full h-full overflow-y-auto relative"
     >
       <MaskSpinner v-if="rawSQLPreviewState.isFetching">
         <div class="text-sm">Generating diff DDL</div>

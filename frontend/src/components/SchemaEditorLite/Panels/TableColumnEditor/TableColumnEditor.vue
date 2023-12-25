@@ -63,6 +63,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { pick } from "lodash-es";
 import {
   DataTableColumn,
   DataTableInst,
@@ -97,6 +98,7 @@ import {
   ForeignKeyCell,
   OperationCell,
   ReorderCell,
+  SelectionCell,
   SemanticTypeCell,
 } from "./components";
 import DefaultValueCell from "./components/DefaultValueCell.vue";
@@ -177,6 +179,9 @@ const {
   getColumnConfig,
   upsertColumnConfig,
   useConsumePendingScrollToColumn,
+  selectedRolloutObjects,
+  getAllColumnsSelectionState,
+  updateAllColumnsSelection,
 } = useSchemaEditorContext();
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
@@ -251,8 +256,45 @@ const showSemanticTypeColumn = computed(() => {
   );
 });
 
+const shouldShowSelectionColumn = computed(() => {
+  return !!selectedRolloutObjects.value;
+});
+
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
+    {
+      key: "__selected__",
+      width: 32,
+      hide: !shouldShowSelectionColumn.value,
+      title: () => {
+        const state = getAllColumnsSelectionState(
+          props.db,
+          pick(props, "database", "schema", "table"),
+          shownColumnList.value
+        );
+        return h(NCheckbox, {
+          checked: state.checked,
+          indeterminate: state.indeterminate,
+          onUpdateChecked: (on: boolean) => {
+            updateAllColumnsSelection(
+              props.db,
+              pick(props, "database", "schema", "table"),
+              shownColumnList.value,
+              on
+            );
+          },
+        });
+      },
+      render: (column) => {
+        return h(SelectionCell, {
+          db: props.db,
+          metadata: {
+            ...pick(props, "database", "schema", "table"),
+            column,
+          },
+        });
+      },
+    },
     {
       key: "reorder",
       title: "",
