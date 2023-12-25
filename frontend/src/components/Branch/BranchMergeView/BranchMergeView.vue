@@ -40,7 +40,7 @@
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { StepTab } from "@/components/v2";
@@ -205,6 +205,11 @@ const handleMergeBranch = async () => {
     });
     if (state.deleteBranchAfterMerged) {
       await branchStore.deleteBranch(head.name);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
     }
 
     pushNotification({
@@ -230,4 +235,20 @@ const handleMergeBranch = async () => {
     state.isMerging = false;
   }
 };
+
+watch(
+  headBranch,
+  (head) => {
+    if (head) {
+      // Automatically select the branch's parent as merge target branch
+      // if merge target is empty
+      if (head.parentBranch && !state.targetBranchName) {
+        state.targetBranchName = head.parentBranch;
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
