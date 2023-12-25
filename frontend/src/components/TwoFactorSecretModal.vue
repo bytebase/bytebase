@@ -9,12 +9,12 @@
       <code class="pr-4">{{ props.secret }}</code>
     </div>
     <div class="w-full flex items-center justify-end space-x-3 pr-1 pb-1">
-      <button type="button" class="btn-cancel" @click="dismissModal">
+      <NButton @click="dismissModal">
         {{ $t("common.close") }}
-      </button>
-      <button class="btn-primary" @click="copySecret">
+      </NButton>
+      <NButton type="primary" @click="copySecret">
         {{ $t("common.copy") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>

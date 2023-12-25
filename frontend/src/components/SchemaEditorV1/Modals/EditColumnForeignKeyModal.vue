@@ -6,45 +6,31 @@
   >
     <div v-if="shouldShowSchemaSelector" class="w-72">
       <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
-      <BBSelect
-        :selected-item="selectedSchema"
-        :item-list="schemas"
+      <NSelect
+        v-model:value="state.referencedSchemaId"
         :placeholder="$t('schema-editor.schema.select')"
-        :show-prefix-item="true"
-        @select-item="(schema) => (state.referencedSchemaId = schema.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+        :options="schemas.map((item) => ({ value: item.id, label: item.name }))"
+      />
     </div>
     <div class="w-72">
       <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-table") }}</p>
-      <BBSelect
-        :selected-item="selectedTable"
-        :item-list="tableList"
+      <NSelect
+        v-model:value="state.referencedTableId"
         :placeholder="$t('schema-editor.table.select')"
-        :show-prefix-item="true"
-        @select-item="(table) => (state.referencedTableId = table.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+        :options="
+          tableList.map((item) => ({ value: item.id, label: item.name }))
+        "
+      />
     </div>
     <div class="w-72">
       <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-column") }}</p>
-      <BBSelect
-        :selected-item="selectedColumn"
-        :item-list="columnList"
+      <NSelect
+        v-model:value="state.referencedColumnId"
         :placeholder="$t('schema-editor.column.select')"
-        :show-prefix-item="true"
-        @select-item="(column) => (state.referencedColumnId = column.id)"
-      >
-        <template #menuItem="{ item }">
-          {{ item.name }}
-        </template>
-      </BBSelect>
+        :options="
+          columnList.map((item) => ({ value: item.id, label: item.name }))
+        "
+      />
     </div>
     <div
       class="w-full flex items-center justify-between mt-6 space-x-2 pr-1 pb-1"
@@ -73,8 +59,9 @@
 
 <script lang="ts" setup>
 import { isUndefined } from "lodash-es";
+import { NSelect } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
-import { BBModal, BBSelect } from "@/bbkit";
+import { BBModal } from "@/bbkit";
 import { useSchemaEditorV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Column, ForeignKey } from "@/types/v1/schemaEditor";
@@ -158,12 +145,6 @@ const columnList = computed(() => {
     (column) =>
       column.id !== props.columnId &&
       column.type.toUpperCase() === propsColumn.value?.type.toUpperCase()
-  );
-});
-
-const selectedColumn = computed(() => {
-  return columnList.value.find(
-    (column) => column.id === state.referencedColumnId
   );
 });
 
