@@ -47,7 +47,7 @@
         class="w-full flex-1 relative text-sm border rounded overflow-clip bb-resolve-conflict-editor"
       >
         <MonacoEditor
-          :content="state.editingSchema"
+          v-model:content="state.editingSchema"
           :line-highlights="lineHighlightOptions"
           class="h-full"
         />

@@ -24,10 +24,6 @@ export const useLineHighlights = (
           options: {
             isWholeLine: true,
             inlineClassName: opt.className,
-            // minimap: {
-            //   color: { id: "minimap.errorHighlight" },
-            //   position: monaco.editor.MinimapPosition.Inline,
-            // },
             overviewRuler: opt.overviewRuler
               ? {
                   color: opt.overviewRuler.color,
@@ -35,24 +31,8 @@ export const useLineHighlights = (
                     OverviewRulerPositionMap[opt.overviewRuler.position],
                 }
               : undefined,
-            // className:
-            //   maxSeverity === "ERROR" ? "squiggly-error" : "squiggly-warning",
-            // minimap: {
-            //   color: { id: "minimap.errorHighlight" },
-            //   position: monaco.editor.MinimapPosition.Inline,
-            // },
-            // overviewRuler: {
-            //   color: { id: "editorOverviewRuler.errorForeground" },
-            //   position: monaco.editor.OverviewRulerLane.Right,
-            // },
-            // showIfCollapsed: true,
-            // stickiness:
-            //   monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
-            // zIndex: 30,
-            // hoverMessage: {
-            //   value: buildHoverMessage(opt),
-            //   isTrusted: true,
-            // },
+            stickiness:
+              monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
           },
         };
       })

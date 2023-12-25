@@ -48,9 +48,12 @@
           >
             <template v-if="!state.isEditing">
               <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton @click="handleGotoMergeBranch">{{
-                $t("schema-designer.merge-branch")
-              }}</NButton>
+              <NButton @click="handleGotoMergeBranch">
+                {{ $t("branch.merge-rebase.merge-branch") }}
+              </NButton>
+              <NButton @click="handleGotoRebaseBranch">
+                {{ $t("branch.merge-rebase.rebase-branch") }}
+              </NButton>
               <NButton
                 v-if="showApplyBranchButton"
                 type="primary"
@@ -389,6 +392,15 @@ const handleSaveBranch = async () => {
 const handleGotoMergeBranch = () => {
   router.push({
     name: "workspace.project.branch.merge",
+    params: {
+      projectSlug: projectV1Slug(props.project),
+      branchName: props.cleanBranch.branchId,
+    },
+  });
+};
+const handleGotoRebaseBranch = () => {
+  router.push({
+    name: "workspace.project.branch.rebase",
     params: {
       projectSlug: projectV1Slug(props.project),
       branchName: props.cleanBranch.branchId,
