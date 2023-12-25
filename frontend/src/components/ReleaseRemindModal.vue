@@ -29,22 +29,12 @@
         />
       </div>
       <div class="mt-7 flex justify-end space-x-2">
-        <button
-          type="button"
-          class="btn-normal"
-          @click.prevent="$emit('cancel')"
-        >
+        <NButton @click="$emit('cancel')">
           {{ $t("common.dismiss") }}
-        </button>
-        <a
-          type="button"
-          class="btn-primary"
-          target="_blank"
-          :href="link"
-          @click="$emit('cancel')"
-        >
+        </NButton>
+        <NButton type="primary" @click="onClick">
           {{ $t("common.learn-more") }}
-        </a>
+        </NButton>
       </div>
     </div>
   </BBModal>
@@ -55,7 +45,7 @@ import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { useActuatorV1Store, useSubscriptionV1Store } from "@/store";
 
-defineEmits(["cancel"]);
+const emit = defineEmits(["cancel"]);
 
 const actuatorStore = useActuatorV1Store();
 const subscriptionStore = useSubscriptionV1Store();
@@ -66,4 +56,9 @@ const link = computed(() => {
   }
   return subscriptionStore.purchaseLicenseUrl;
 });
+
+const onClick = () => {
+  window.open(link.value, "_blank");
+  emit("cancel");
+};
 </script>

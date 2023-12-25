@@ -22,9 +22,9 @@
       </div>
       <InboxList class="opacity-70" :inbox-list="state.readList" />
       <div class="mt-2 flex justify-end">
-        <button type="button" class="normal-link" @click.prevent="viewOlder">
+        <NButton quaternary type="primary" @click.prevent="viewOlder">
           {{ $t("inbox.view-older") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </div>

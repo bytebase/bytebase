@@ -1,5 +1,5 @@
 <template>
-  <form
+  <div
     class="space-y-6 divide-y divide-block-border"
     @submit.prevent="$emit('create', state.backupName)"
   >
@@ -9,35 +9,28 @@
           <label for="name" class="textlabel">
             {{ $t("database.backup-name") }} <span class="text-red-600">*</span>
           </label>
-          <input
-            id="name"
-            v-model="state.backupName"
+          <BBTextField
+            v-model:value="state.backupName"
             required
-            name="name"
-            type="text"
-            class="textfield mt-1 w-full"
+            class="mt-1 w-full"
           />
         </div>
       </div>
     </div>
     <!-- Create button group -->
-    <div class="pt-4 flex justify-end">
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="$emit('cancel')"
-      >
+    <div class="pt-4 flex justify-end space-x-3">
+      <NButton @click.prevent="$emit('cancel')">
         {{ $t("common.cancel") }}
-      </button>
-      <button
-        type="submit"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+      </NButton>
+      <NButton
+        type="primary"
         :disabled="!allowCreate"
+        @click="$emit('create', state.backupName)"
       >
         {{ $t("database.create-backup") }}
-      </button>
+      </NButton>
     </div>
-  </form>
+  </div>
 </template>
 
 <script lang="ts" setup>

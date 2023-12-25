@@ -87,16 +87,15 @@
                 </div>
               </div>
 
-              <div>
-                <span class="flex w-full rounded-md items-center">
-                  <button
-                    type="submit"
-                    :disabled="!allowSignin()"
-                    class="btn-primary justify-center flex-grow py-2 px-4"
-                  >
-                    {{ $t("common.sign-in") }}
-                  </button>
-                </span>
+              <div class="w-full">
+                <NButton
+                  attr-type="submit"
+                  type="primary"
+                  :disabled="!allowSignin()"
+                  style="width: 100%"
+                >
+                  {{ $t("common.sign-in") }}
+                </NButton>
               </div>
             </form>
 
@@ -197,16 +196,15 @@
                   </div>
                 </div>
 
-                <div>
-                  <span class="flex w-full rounded-md items-center">
-                    <button
-                      type="submit"
-                      :disabled="!allowSignin(identityProvider.name)"
-                      class="btn-primary justify-center flex-grow py-2 px-4"
-                    >
-                      {{ $t("common.sign-in") }}
-                    </button>
-                  </span>
+                <div class="w-full">
+                  <NButton
+                    attr-type="submit"
+                    type="primary"
+                    :disabled="!allowSignin(identityProvider.name)"
+                    style="width: 100%"
+                  >
+                    {{ $t("common.sign-in") }}
+                  </NButton>
                 </div>
               </form>
             </n-tab-pane>
@@ -228,19 +226,18 @@
         v-for="identityProvider in separatedIdentityProviderList"
         :key="identityProvider.name"
       >
-        <button
-          type="button"
-          class="btn-normal flex justify-center w-full h-10 mb-2"
-          @click.prevent="trySigninWithIdentityProvider(identityProvider)"
-        >
-          <span class="text-center align-middle">
+        <div class="w-full mb-2">
+          <NButton
+            style="width: 100%"
+            @click.prevent="trySigninWithIdentityProvider(identityProvider)"
+          >
             {{
               $t("auth.sign-in.sign-in-with-idp", {
                 idp: identityProvider.title,
               })
             }}
-          </span>
-        </button>
+          </NButton>
+        </div>
       </template>
     </div>
   </div>

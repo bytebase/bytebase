@@ -61,14 +61,12 @@
         </div>
         <template v-if="allowEdit && state.workflowType == Workflow.VCS">
           <div class="mt-4 flex items-center justify-end">
-            <button
-              type="button"
-              class="btn-primary inline-flex justify-center py-2 px-2"
-              @click.prevent="enterWizard(true)"
-            >
+            <NButton type="primary" @click.prevent="enterWizard(true)">
               {{ $t("workflow.configure-gitops") }}
-              <heroicons-outline:chevron-right class="ml-1 w-5 h-5" />
-            </button>
+              <template #icon>
+                <heroicons-outline:chevron-right class="w-5 h-5" />
+              </template>
+            </NButton>
           </div>
         </template>
       </template>

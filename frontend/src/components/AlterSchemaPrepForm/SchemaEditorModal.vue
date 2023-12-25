@@ -71,31 +71,30 @@
         >
           <div>{{ $t("sql-editor.self") }}</div>
           <div class="flex flex-row justify-end items-center space-x-3">
-            <label
-              for="sql-file-input"
-              class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <heroicons-outline:arrow-up-tray
-                class="w-4 h-auto mr-1 text-gray-500"
-              />
+            <NButton @click="onUploaderClick">
+              <template #icon>
+                <heroicons-outline:arrow-up-tray
+                  class="w-4 h-auto text-gray-500"
+                />
+              </template>
               {{ $t("issue.upload-sql") }}
               <input
                 id="sql-file-input"
+                ref="sqlFileUploader"
                 type="file"
                 accept=".sql,.txt,application/sql,text/plain"
                 class="hidden"
                 @change="handleUploadFile"
               />
-            </label>
-            <button
-              class="text-sm border px-3 leading-8 flex items-center rounded cursor-pointer hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
-              @click="handleSyncSQLFromSchemaEditor"
-            >
-              <heroicons-outline:arrow-path
-                class="w-4 h-auto mr-1 text-gray-500"
-              />
+            </NButton>
+            <NButton @click="handleSyncSQLFromSchemaEditor">
+              <template #icon>
+                <heroicons-outline:arrow-path
+                  class="w-4 h-auto text-gray-500"
+                />
+              </template>
               {{ $t("schema-editor.sync-sql-from-schema-editor") }}
-            </button>
+            </NButton>
           </div>
         </div>
         <MonacoEditor
@@ -118,16 +117,16 @@
         </div>
       </div>
       <div class="flex justify-end items-center space-x-3">
-        <button type="button" class="btn-normal" @click="dismissModal">
+        <NButton @click="dismissModal">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          class="btn-primary whitespace-nowrap"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!allowPreviewIssue"
           @click="handlePreviewIssue"
         >
           {{ $t("schema-editor.preview-issue") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>
@@ -211,6 +210,7 @@ const emit = defineEmits<{
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
+const sqlFileUploader = ref<HTMLInputElement | null>(null);
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
@@ -225,6 +225,10 @@ const state = reactive<LocalState>({
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const { runSQLCheck } = provideSQLCheckContext();
+
+const onUploaderClick = () => {
+  sqlFileUploader.value?.click();
+};
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
