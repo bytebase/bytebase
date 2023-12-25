@@ -175,6 +175,9 @@ const rebaseLink = (headBranch: Branch, targetBranch: Branch) => {
       projectSlug: projectSlugV1(props.project),
       branchName: headBranch.branchId,
     },
+    query: {
+      source: targetBranch.branchId,
+    },
   };
 };
 

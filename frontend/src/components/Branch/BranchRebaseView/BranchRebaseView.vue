@@ -45,8 +45,9 @@
 import { computedAsync } from "@vueuse/core";
 import { useDialog } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-common";
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { StepTab } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
@@ -84,6 +85,7 @@ const state = reactive<LocalState>({
   isRebasing: false,
 });
 const { t } = useI18n();
+const route = useRoute();
 const $dialog = useDialog();
 const rebaseBranchStepRef = ref<InstanceType<typeof RebaseBranchStep>>();
 const branchStore = useBranchStore();
@@ -291,4 +293,11 @@ watch(
     immediate: true,
   }
 );
+
+onMounted(() => {
+  if (route.query.source) {
+    const source = `${props.project.name}/branches/${route.query.source}`;
+    state.sourceBranchName = source;
+  }
+});
 </script>
