@@ -40,7 +40,9 @@
       </div>
     </template>
     <template v-else>
-      <div class="text-error">解决冲突以进行 rebase</div>
+      <div class="text-error">
+        {{ $t("branch.merge-rebase.resolve-conflicts-to-rebase") }}
+      </div>
       <div
         class="w-full flex-1 relative text-sm border rounded overflow-clip bb-resolve-conflict-editor"
       >
