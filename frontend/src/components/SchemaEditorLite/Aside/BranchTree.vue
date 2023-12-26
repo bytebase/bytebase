@@ -148,6 +148,7 @@ const {
   upsertTableConfig,
   selectionEnabled,
   queuePendingScrollToTable,
+  queuePendingScrollToColumn,
 } = useSchemaEditorContext();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -684,7 +685,14 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 const openTabForTreeNode = (node: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
-  if (node.type === "table") {
+  if (node.type === "column") {
+    openTabForTreeNode(node.parent);
+    queuePendingScrollToColumn({
+      db: node.db,
+      metadata: node.metadata,
+    });
+    return;
+  } else if (node.type === "table") {
     addTab({
       type: "table",
       database: database.value,

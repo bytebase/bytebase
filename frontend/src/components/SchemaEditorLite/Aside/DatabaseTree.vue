@@ -173,6 +173,7 @@ const {
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
+  queuePendingScrollToColumn,
 } = useSchemaEditorContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
@@ -472,7 +473,14 @@ watch(tabWatchKey, () => {
 const openTabForTreeNode = (node: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
-  if (node.type === "table") {
+  if (node.type === "column") {
+    openTabForTreeNode(node.parent);
+    queuePendingScrollToColumn({
+      db: node.db,
+      metadata: node.metadata,
+    });
+    return;
+  } else if (node.type === "table") {
     expandNodeRecursively(node);
     addTab({
       type: "table",
@@ -568,7 +576,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       label = name;
     } else {
       label = `<${t("common.untitled")}>`;
-      additionalClassList.push("!text-control-placeholder italic");
+      additionalClassList.push("text-control-placeholder italic");
     }
   }
 
@@ -642,6 +650,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         } else if (treeNode.type === "schema") {
           openTabForTreeNode(treeNode);
         } else if (treeNode.type === "table") {
+          openTabForTreeNode(treeNode);
+        } else if (treeNode.type === "column") {
           openTabForTreeNode(treeNode);
         }
       } else {
