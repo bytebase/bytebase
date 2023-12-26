@@ -196,10 +196,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			SSHConfig:              sshConfig,
 			ReadOnly:               readOnly,
 			SchemaTenantMode:       schemaTenantMode,
-		},
-		db.ConnectionContext{
-			InstanceID:    instance.ResourceID,
-			EngineVersion: instance.EngineVersion,
+			ConnectionContext: db.ConnectionContext{
+				InstanceID:    instance.ResourceID,
+				EngineVersion: instance.EngineVersion,
+			},
 		},
 	)
 	if err != nil {
