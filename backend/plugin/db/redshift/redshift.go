@@ -65,7 +65,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {

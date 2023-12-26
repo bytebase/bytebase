@@ -30,8 +30,7 @@
             <template v-if="index === 0">
               <NCheckbox
                 v-if="issueList.length > 0"
-                :checked="allSelectionState.checked"
-                :indeterminate="allSelectionState.indeterminate"
+                v-bind="allSelectionState"
                 @update:checked="setAllIssuesSelection"
               />
             </template>
@@ -40,11 +39,11 @@
         </div>
       </template>
       <template #item="{ item: issue }: { item: ComposedIssue }">
-        <div
-          class="bb-grid-cell"
-          @click.stop="setIssueSelection(issue, !isIssueSelected(issue))"
-        >
-          <NCheckbox :checked="isIssueSelected(issue)" />
+        <div class="bb-grid-cell" @click.stop.prevent>
+          <NCheckbox
+            :checked="isIssueSelected(issue)"
+            @update:checked="setIssueSelection(issue, $event)"
+          />
         </div>
         <div class="bb-grid-cell !px-1">
           <IssueStatusIcon

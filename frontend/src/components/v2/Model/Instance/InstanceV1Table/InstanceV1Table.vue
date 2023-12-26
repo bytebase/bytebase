@@ -22,8 +22,7 @@
               v-if="index === 0 && allowSelection && instanceList.length > 0"
             >
               <NCheckbox
-                :checked="allSelectionState.checked"
-                :indeterminate="allSelectionState.indeterminate"
+                v-bind="allSelectionState"
                 @update:checked="selectAllInstances($event)"
               />
             </template>
@@ -32,7 +31,7 @@
         </div>
       </template>
       <template #item="{ item: instance }: InstanceRow">
-        <div v-if="allowSelection" class="bb-grid-cell">
+        <div v-if="allowSelection" class="bb-grid-cell" @click.stop.prevent>
           <NCheckbox
             :checked="isInstanceSelected(instance)"
             @update:checked="toggleSelectInstance(instance, $event)"

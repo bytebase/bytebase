@@ -154,6 +154,9 @@ func (v *indexTypeNoBlobChecker) addNewColumn(tableName string, line int, colDef
 }
 
 func (v *indexTypeNoBlobChecker) addIndex(tableName string, line int, indexSpec *ast.IndexPartSpecification) []pkData {
+	if indexSpec.Column == nil {
+		return nil
+	}
 	var pkDataList []pkData
 	columnName := indexSpec.Column.Name.String()
 	columnType, err := v.getColumnType(tableName, columnName)
@@ -196,6 +199,9 @@ func (v *indexTypeNoBlobChecker) addConstraint(tableName string, line int, const
 	if constraint.Tp == ast.ConstraintPrimaryKey || constraint.Tp == ast.ConstraintUniqKey || constraint.Tp == ast.ConstraintKey ||
 		constraint.Tp == ast.ConstraintIndex || constraint.Tp == ast.ConstraintUniqIndex || constraint.Tp == ast.ConstraintUniq {
 		for _, key := range constraint.Keys {
+			if key.Column == nil {
+				continue
+			}
 			columnName := key.Column.Name.String()
 			columnType, err := v.getColumnType(tableName, columnName)
 			if err != nil {

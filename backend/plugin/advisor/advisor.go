@@ -6,10 +6,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/catalog"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -558,7 +560,13 @@ func Register(dbType storepb.Engine, advType Type, f Advisor) {
 func Check(dbType storepb.Engine, advType Type, ctx Context, statement string) (adviceList []Advice, err error) {
 	defer func() {
 		if panicErr := recover(); panicErr != nil {
-			err = errors.Errorf("panic in advisor check, in type: %v, because: %v", advType, panicErr)
+			panicErr, ok := panicErr.(error)
+			if !ok {
+				panicErr = errors.Errorf("%v", panicErr)
+			}
+			err = errors.Errorf("advisor check PANIC RECOVER, type: %v, err: %v", advType, panicErr)
+
+			slog.Error("advisor check PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 		}
 	}()
 

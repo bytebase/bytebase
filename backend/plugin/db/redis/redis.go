@@ -45,7 +45,7 @@ func newDriver(_ db.DriverConfig) db.Driver {
 }
 
 // Open opens the redis driver.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
 	if err != nil {

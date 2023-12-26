@@ -63,7 +63,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connectionCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -139,7 +139,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, err
 	}
 	driver.db = db
-	driver.connectionCtx = connectionCtx
+	driver.connectionCtx = config.ConnectionContext
 	return driver, nil
 }
 

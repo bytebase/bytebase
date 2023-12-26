@@ -408,7 +408,7 @@ func TestCreateTableGroup(t *testing.T) {
 					dbDriver, err := db.Open(ctx, storepb.Engine_SQLITE, db.DriverConfig{}, db.ConnectionConfig{
 						Host:     instanceDir,
 						Database: preCreateDatabase,
-					}, db.ConnectionContext{})
+					})
 					a.NoError(err)
 
 					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].matched {

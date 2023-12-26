@@ -361,6 +361,7 @@
     "skip": "Skip",
     "skip-modal-title": "Skip task [{name}]?",
     "task-checks": "Task checks",
+    "prior-backup": "Prior Backup",
     "rollback": {
       "sql-rollback": "SQL Rollback",
       "failed": "Failed",

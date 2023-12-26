@@ -164,6 +164,7 @@ const validationState = computedAsync(
       name: head.name,
       sourceBranch: state.sourceType === "BRANCH" ? source.name : undefined,
       sourceDatabase: state.sourceType === "DATABASE" ? source.name : undefined,
+      validateOnly: true,
     });
     return response;
   },
