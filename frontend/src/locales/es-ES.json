@@ -361,6 +361,7 @@
     "skip": "Saltar",
     "skip-modal-title": "¿Saltar tarea [{name}]?",
     "task-checks": "Comprobaciones de tarea",
+    "prior-backup": "Respaldo Previo",
     "rollback": {
       "sql-rollback": "Reversión SQL",
       "failed": "Fallido",
