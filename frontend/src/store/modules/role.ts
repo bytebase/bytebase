@@ -9,8 +9,8 @@ export const useRoleStore = defineStore("role", () => {
   const roleList = ref<Role[]>([]);
 
   const fetchRoleList = async () => {
-    const response = await roleServiceClient.listRoles({});
-    roleList.value = response.roles;
+    const { roles } = await roleServiceClient.listRoles({});
+    roleList.value = roles;
     return roleList.value;
   };
 
