@@ -37,7 +37,7 @@ func newDriver(db.DriverConfig) db.Driver {
 	return &Driver{}
 }
 
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, _ db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	databaseName := func() string {
 		if config.Database != "" {
 			return config.Database

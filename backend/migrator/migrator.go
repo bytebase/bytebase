@@ -35,7 +35,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		storeDB.ConnCfg,
-		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
 		return nil, err

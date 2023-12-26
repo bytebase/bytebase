@@ -163,7 +163,6 @@ func TestMigrationCompatibility(t *testing.T) {
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		connCfg,
-		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
 	defer defaultDriver.Close(ctx)
@@ -179,7 +178,6 @@ func TestMigrationCompatibility(t *testing.T) {
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: pgBinDir},
 		metadataConnConfig,
-		dbdriver.ConnectionContext{},
 	)
 	require.NoError(t, err)
 
