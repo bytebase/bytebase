@@ -46,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a SQLite driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Host is the directory (instance) containing all SQLite databases.
 	driver.dir = config.Host
 
@@ -56,7 +56,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, err
 	}
 	driver.db = db
-	driver.connectionCtx = connCtx
+	driver.connectionCtx = config.ConnectionContext
 	driver.databaseName = config.Database
 	return driver, nil
 }

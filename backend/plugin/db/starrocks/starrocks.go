@@ -58,7 +58,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MySQL driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	protocol := "tcp"
 	if strings.HasPrefix(connCfg.Host, "/") {
 		protocol = "unix"
@@ -104,7 +104,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 	db.SetConnMaxLifetime(2 * time.Hour)
 	db.SetMaxOpenConns(50)
 	db.SetMaxIdleConns(15)
-	driver.connectionCtx = connCtx
+	driver.connectionCtx = connCfg.ConnectionContext
 	driver.connCfg = connCfg
 	driver.databaseName = connCfg.Database
 

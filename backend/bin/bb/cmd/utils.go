@@ -67,7 +67,6 @@ func open(ctx context.Context, u *dburl.URL) (db.Driver, error) {
 				SslKey:  u.Query().Get("ssl-key"),
 			},
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open database")
