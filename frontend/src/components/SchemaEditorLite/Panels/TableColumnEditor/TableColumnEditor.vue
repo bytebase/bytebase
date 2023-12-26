@@ -179,7 +179,7 @@ const {
   getColumnConfig,
   upsertColumnConfig,
   useConsumePendingScrollToColumn,
-  selectedRolloutObjects,
+  selectionEnabled,
   getAllColumnsSelectionState,
   updateAllColumnsSelection,
 } = useSchemaEditorContext();
@@ -256,16 +256,12 @@ const showSemanticTypeColumn = computed(() => {
   );
 });
 
-const shouldShowSelectionColumn = computed(() => {
-  return !!selectedRolloutObjects.value;
-});
-
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {
       key: "__selected__",
       width: 32,
-      hide: !shouldShowSelectionColumn.value,
+      hide: !selectionEnabled.value,
       title: () => {
         const state = getAllColumnsSelectionState(
           props.db,

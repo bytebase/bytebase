@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
     <div
-      v-if="!readonly || selectedRolloutObjects"
+      v-if="!readonly || selectionEnabled"
       class="w-full flex flex-row justify-between items-center"
     >
       <div
@@ -27,7 +27,7 @@
         </NButton>
       </div>
       <div
-        v-if="selectedRolloutObjects"
+        v-if="selectionEnabled"
         class="text-sm flex flex-row items-center gap-x-2 h-[28px] whitespace-nowrap"
       >
         <span class="text-main">
@@ -160,7 +160,7 @@ const {
   getColumnStatus,
   upsertColumnConfig,
   queuePendingScrollToColumn,
-  selectedRolloutObjects,
+  selectionEnabled,
 } = useSchemaEditorContext();
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
