@@ -15,6 +15,10 @@ export const useSelection = (
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>,
   events: SchemaEditorEvents
 ) => {
+  const selectionEnabled = computed(() => {
+    return selectedRolloutObjects.value !== undefined;
+  });
+
   const selectedRolloutObjectMap = computed(() => {
     return new Map(
       selectedRolloutObjects.value?.map((ro) => {
@@ -95,7 +99,7 @@ export const useSelection = (
       table: TableMetadata;
     }
   ) => {
-    if (!selectedRolloutObjects.value) {
+    if (!selectionEnabled.value) {
       return { checked: false, indeterminate: false };
     }
 
@@ -140,7 +144,7 @@ export const useSelection = (
     },
     on: boolean
   ) => {
-    if (!selectedRolloutObjects.value) return;
+    if (!selectionEnabled.value) return;
     const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
     updateTableSelectionImpl(updatedMap, db, metadata, on);
     emit(updatedMap);
@@ -153,7 +157,7 @@ export const useSelection = (
     },
     tables: TableMetadata[]
   ) => {
-    if (!selectedRolloutObjects.value || tables.length === 0) {
+    if (!selectionEnabled.value || tables.length === 0) {
       return { checked: false, indeterminate: false };
     }
     const selectedTables = tables.filter((table) => {
@@ -203,7 +207,7 @@ export const useSelection = (
       column: ColumnMetadata;
     }
   ) => {
-    if (!selectedRolloutObjects.value) {
+    if (!selectionEnabled.value) {
       return { checked: false, indeterminate: false };
     }
 
@@ -222,7 +226,7 @@ export const useSelection = (
     },
     on: boolean
   ) => {
-    if (!selectedRolloutObjects.value) return;
+    if (!selectionEnabled.value) return;
     const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
     updateColumnSelectionImpl(updatedMap, db, metadata, on);
     emit(updatedMap);
@@ -236,7 +240,7 @@ export const useSelection = (
     },
     columns: ColumnMetadata[]
   ) => {
-    if (!selectedRolloutObjects.value || columns.length === 0) {
+    if (!selectionEnabled.value || columns.length === 0) {
       return { checked: false, indeterminate: false };
     }
     const selectedColumns = columns.filter((column) => {
@@ -280,6 +284,7 @@ export const useSelection = (
   };
 
   return {
+    selectionEnabled,
     getTableSelectionState,
     updateTableSelection,
     getAllTablesSelectionState,

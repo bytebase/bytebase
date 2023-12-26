@@ -98,13 +98,13 @@ import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineHasSchema } from "../engine-specs";
-
-interface BaseTreeNode extends TreeOption {
-  key: string;
-  label: string;
-  isLeaf: boolean;
-  children?: TreeNode[];
-}
+import {
+  BaseTreeNode,
+  TreeNodeForDatabase as CommonDatabaseNode,
+  TreeNodeForSchema as CommonSchemaNode,
+  TreeNodeForTable as CommonTableNode,
+  TreeNodeForColumn as CommonColumnNode,
+} from "./types";
 
 interface TreeNodeForInstance extends BaseTreeNode {
   type: "instance";
@@ -112,39 +112,24 @@ interface TreeNodeForInstance extends BaseTreeNode {
   children: TreeNodeForDatabase[];
 }
 
-interface TreeNodeForDatabase extends BaseTreeNode {
-  type: "database";
+interface TreeNodeForDatabase extends CommonDatabaseNode {
   parent: TreeNodeForInstance;
   instance: ComposedInstance;
-  database: ComposedDatabase;
-  metadata: {
-    database: DatabaseMetadata;
-  };
   children: TreeNodeForSchema[];
 }
-
-interface TreeNodeForSchema extends BaseTreeNode {
-  type: "schema";
+interface TreeNodeForSchema extends CommonSchemaNode {
   parent: TreeNodeForDatabase;
   instance: ComposedInstance;
-  database: ComposedDatabase;
-  metadata: {
-    database: DatabaseMetadata;
-    schema: SchemaMetadata;
-  };
   children: TreeNodeForTable[];
 }
-
-interface TreeNodeForTable extends BaseTreeNode {
-  type: "table";
+interface TreeNodeForTable extends CommonTableNode {
   parent: TreeNodeForSchema;
   instance: ComposedInstance;
-  database: ComposedDatabase;
-  metadata: {
-    database: DatabaseMetadata;
-    schema: SchemaMetadata;
-    table: TableMetadata;
-  };
+  children: TreeNodeForColumn[];
+}
+interface TreeNodeForColumn extends CommonColumnNode {
+  parent: TreeNodeForTable;
+  instance: ComposedInstance;
   isLeaf: true;
 }
 
@@ -152,7 +137,8 @@ type TreeNode =
   | TreeNodeForInstance
   | TreeNodeForDatabase
   | TreeNodeForSchema
-  | TreeNodeForTable;
+  | TreeNodeForTable
+  | TreeNodeForColumn;
 
 interface TreeContextMenu {
   showDropdown: boolean;
@@ -186,6 +172,8 @@ const {
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
+  getColumnStatus,
+  queuePendingScrollToColumn,
 } = useSchemaEditorContext();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
@@ -211,15 +199,6 @@ const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 const treeNodeMap = new Map<string, TreeNode>();
-const databaseList = computed(() => {
-  return targets.value.map((target) => target.database);
-});
-const flattenSchemaList = computed(() => {
-  return targets.value.flatMap((target) => target.metadata.schemas);
-});
-const flattenTableList = computed(() => {
-  return flattenSchemaList.value.flatMap((schema) => schema.tables);
-});
 
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
@@ -242,7 +221,7 @@ const contextMenuOptions = computed(() => {
   } else if (treeNode.type === "schema") {
     const options: DropdownOption[] = [];
     if (engine === Engine.POSTGRES) {
-      const status = getSchemaStatus(treeNode.database, treeNode.metadata);
+      const status = getSchemaStatus(treeNode.db, treeNode.metadata);
       if (status === "dropped") {
         options.push({
           key: "restore",
@@ -266,7 +245,7 @@ const contextMenuOptions = computed(() => {
     return options;
   } else if (treeNode.type === "table") {
     const options: DropdownOption[] = [];
-    const status = getTableStatus(treeNode.database, treeNode.metadata);
+    const status = getTableStatus(treeNode.db, treeNode.metadata);
     if (status === "dropped") {
       options.push({
         key: "restore",
@@ -293,17 +272,22 @@ const upsertExpandedKeys = (key: string) => {
   expandedKeysRef.value.push(key);
 };
 const expandNodeRecursively = (node: TreeNode) => {
+  if (node.type === "column") {
+    // column nodes are not expandable
+    expandNodeRecursively(node.parent);
+  }
   if (node.type === "table") {
-    // table nodes are not expandable
+    const key = keyForResource(node.db, node.metadata);
+    upsertExpandedKeys(key);
     expandNodeRecursively(node.parent);
   }
   if (node.type === "schema") {
-    const key = keyForResource(node.database, node.metadata);
+    const key = keyForResource(node.db, node.metadata);
     upsertExpandedKeys(key);
     expandNodeRecursively(node.parent);
   }
   if (node.type === "database") {
-    const key = node.database.name;
+    const key = node.db.name;
     upsertExpandedKeys(key);
     expandNodeRecursively(node.parent);
   }
@@ -312,7 +296,7 @@ const expandNodeRecursively = (node: TreeNode) => {
     upsertExpandedKeys(key);
   }
 };
-const buildDatabaseTreeData = () => {
+const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const groupedByInstance = groupBy(
     targets.value,
     (target) => target.database.instance
@@ -329,15 +313,15 @@ const buildDatabaseTreeData = () => {
       children: [],
     };
     instanceNode.children = targets.map((target) => {
-      const { database } = target;
+      const db = target.database;
       const databaseNode: TreeNodeForDatabase = {
         type: "database",
-        key: database.name,
+        key: db.name,
         parent: instanceNode,
-        label: database.databaseName,
+        label: db.databaseName,
         isLeaf: false,
         instance,
-        database,
+        db,
         metadata: {
           database: target.metadata,
         },
@@ -351,11 +335,11 @@ const buildDatabaseTreeData = () => {
         const schemaNode: TreeNodeForSchema = {
           type: "schema",
           parent: databaseNode,
-          key: keyForResource(database, metadata),
+          key: keyForResource(db, metadata),
           label: schema.name,
           isLeaf: false,
           instance,
-          database,
+          db,
           metadata,
           children: [],
         };
@@ -368,13 +352,39 @@ const buildDatabaseTreeData = () => {
           const tableNode: TreeNodeForTable = {
             type: "table",
             parent: schemaNode,
-            key: keyForResource(database, metadata),
+            key: keyForResource(db, metadata),
             label: table.name,
-            isLeaf: true,
+            isLeaf: false,
             instance,
-            database,
+            db,
             metadata,
+            children: [],
           };
+          tableNode.children = table.columns.map((column) => {
+            const metadata = {
+              database: target.metadata,
+              schema,
+              table,
+              column,
+            };
+            const columnNode: TreeNodeForColumn = {
+              type: "column",
+              key: keyForResource(db, {
+                schema,
+                table,
+                column,
+              }),
+              parent: tableNode,
+              label: column.name,
+              children: [],
+              isLeaf: true,
+              db,
+              instance,
+              metadata,
+            };
+            treeNodeMap.set(columnNode.key, columnNode);
+            return columnNode;
+          });
           treeNodeMap.set(tableNode.key, tableNode);
           return tableNode;
         });
@@ -390,35 +400,24 @@ const buildDatabaseTreeData = () => {
 
   treeDataRef.value = treeNodeList;
 
-  const firstInstanceNode = head(treeNodeList) as
-    | TreeNodeForInstance
-    | undefined;
-  const firstDatabaseNode = head(firstInstanceNode?.children);
-  const firstSchemaNode = head(firstDatabaseNode?.children);
-  if (firstSchemaNode) {
-    nextTick(() => {
-      // Auto expand the first tree node.
-      openTabForTreeNode(firstSchemaNode);
-    });
+  if (openFirstChild) {
+    const firstInstanceNode = head(treeNodeList) as
+      | TreeNodeForInstance
+      | undefined;
+    const firstDatabaseNode = head(firstInstanceNode?.children);
+    const firstSchemaNode = head(firstDatabaseNode?.children);
+    if (firstSchemaNode) {
+      nextTick(() => {
+        // Auto expand the first tree node.
+        openTabForTreeNode(firstSchemaNode);
+      });
+    }
   }
 };
 const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
-useEmitteryEventListener(
-  events,
-  "rebuild-tree",
-  debouncedBuildDatabaseTreeData
-);
-watch(
-  [
-    () => databaseList.value.length,
-    () => flattenSchemaList.value.length,
-    () => flattenTableList.value.length,
-  ],
-  debouncedBuildDatabaseTreeData,
-  {
-    deep: false,
-  }
-);
+useEmitteryEventListener(events, "rebuild-tree", (params) => {
+  debouncedBuildDatabaseTreeData(params.openFirstChild);
+});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
@@ -430,66 +429,71 @@ const tabWatchKey = computed(() => {
 });
 // Sync tree expandedKeys and selectedKeys with tabs
 watch(tabWatchKey, () => {
-  const tab = currentTab.value;
-  if (!tab) {
-    selectedKeysRef.value = [];
-    return;
-  }
+  requestAnimationFrame(() => {
+    const tab = currentTab.value;
+    if (!tab) {
+      selectedKeysRef.value = [];
+      return;
+    }
 
-  if (tab.type === "database") {
-    const { database, selectedSchema: schema } = tab;
-    if (schema) {
-      const key = keyForResourceName(database.name, schema);
-      const node = treeNodeMap.get(key);
-      if (node) {
-        expandNodeRecursively(node);
+    if (tab.type === "database") {
+      const { database, selectedSchema: schema } = tab;
+      if (schema) {
+        const key = keyForResourceName(database.name, schema);
+        const node = treeNodeMap.get(key);
+        if (node) {
+          expandNodeRecursively(node);
+        }
+        selectedKeysRef.value = [key];
       }
-      selectedKeysRef.value = [key];
+    } else if (tab.type === "table") {
+      const {
+        database,
+        metadata: { schema, table },
+      } = tab;
+      const schemaKey = keyForResource(database, { schema });
+      const schemaNode = treeNodeMap.get(schemaKey);
+      if (schemaNode) {
+        expandNodeRecursively(schemaNode);
+      }
+      const tableKey = keyForResource(database, { schema, table });
+      selectedKeysRef.value = [tableKey];
     }
-  } else if (tab.type === "table") {
-    const {
-      database,
-      metadata: { schema, table },
-    } = tab;
-    const schemaKey = keyForResource(database, { schema });
-    const schemaNode = treeNodeMap.get(schemaKey);
-    if (schemaNode) {
-      expandNodeRecursively(schemaNode);
-    }
-    const tableKey = keyForResource(database, { schema, table });
-    selectedKeysRef.value = [tableKey];
-  }
 
-  if (state.shouldRelocateTreeNode) {
-    nextTick(() => {
-      treeRef.value?.scrollTo({
-        key: selectedKeysRef.value[0],
+    if (state.shouldRelocateTreeNode) {
+      nextTick(() => {
+        treeRef.value?.scrollTo({
+          key: selectedKeysRef.value[0],
+        });
       });
-    });
-  }
+    }
+  });
 });
 
 const openTabForTreeNode = (node: TreeNode) => {
   state.shouldRelocateTreeNode = false;
 
-  if (node.type === "table") {
-    const { database, metadata } = node;
+  if (node.type === "column") {
+    openTabForTreeNode(node.parent);
+    queuePendingScrollToColumn({
+      db: node.db,
+      metadata: node.metadata,
+    });
+    return;
+  } else if (node.type === "table") {
     expandNodeRecursively(node);
     addTab({
       type: "table",
-      database,
-      metadata,
+      database: node.db,
+      metadata: node.metadata,
     });
   } else if (node.type === "schema") {
     expandNodeRecursively(node);
-    const { database, metadata } = node;
     addTab({
       type: "database",
-      database,
-      metadata: {
-        database: metadata.database,
-      },
-      selectedSchema: metadata.schema.name,
+      database: node.db,
+      metadata: node.metadata,
+      selectedSchema: node.metadata.schema.name,
     });
   }
 
@@ -497,7 +501,7 @@ const openTabForTreeNode = (node: TreeNode) => {
 };
 
 onMounted(() => {
-  buildDatabaseTreeData();
+  buildDatabaseTreeData(/* openFirstChild */ true);
 });
 
 // Render prefix icons before label text.
@@ -530,7 +534,7 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
         {
           class: "text-gray-500 text-sm",
         },
-        `(${treeNode.database.effectiveEnvironmentEntity.title})`
+        `(${treeNode.db.effectiveEnvironmentEntity.title})`
       ),
     ]);
   } else if (treeNode.type === "schema") {
@@ -552,18 +556,28 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   let label = treeNode.label;
 
   if (treeNode.type === "schema") {
-    const { database, metadata } = treeNode;
-    additionalClassList.push(getSchemaStatus(database, metadata));
+    const { db, metadata } = treeNode;
+    additionalClassList.push(getSchemaStatus(db, metadata));
 
-    if (database.instanceEntity.engine !== Engine.POSTGRES) {
+    if (db.instanceEntity.engine !== Engine.POSTGRES) {
       label = t("db.tables");
     } else {
       label = metadata.schema.name;
     }
   } else if (treeNode.type === "table") {
-    const { database, metadata } = treeNode;
-    additionalClassList.push(getTableStatus(database, metadata));
+    const { db, metadata } = treeNode;
+    additionalClassList.push(getTableStatus(db, metadata));
     label = metadata.table.name;
+  } else if (treeNode.type === "column") {
+    const { db, metadata } = treeNode;
+    additionalClassList.push(getColumnStatus(db, metadata));
+    const { name } = metadata.column;
+    if (name) {
+      label = name;
+    } else {
+      label = `<${t("common.untitled")}>`;
+      additionalClassList.push("text-control-placeholder italic");
+    }
   }
 
   return h(
@@ -629,13 +643,15 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
           expandNodeRecursively(treeNode);
           addTab({
             type: "database",
-            database: treeNode.database,
+            database: treeNode.db,
             metadata: treeNode.metadata,
             selectedSchema: head(treeNode.metadata.database.schemas)?.name,
           });
         } else if (treeNode.type === "schema") {
           openTabForTreeNode(treeNode);
         } else if (treeNode.type === "table") {
+          openTabForTreeNode(treeNode);
+        } else if (treeNode.type === "column") {
           openTabForTreeNode(treeNode);
         }
       } else {
@@ -662,7 +678,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
           return;
         }
         state.tableNameModalContext = {
-          db: treeNode.database,
+          db: treeNode.db,
           database: treeNode.metadata.database,
           schema: schema,
           table: undefined,
@@ -671,7 +687,7 @@ const handleContextMenuDropdownSelect = async (key: string) => {
     } else if (key === "create-schema") {
       if (engineHasSchema(engine)) {
         state.schemaNameModalContext = {
-          db: treeNode.database,
+          db: treeNode.db,
           database: treeNode.metadata.database,
           schema: undefined,
         };
@@ -680,36 +696,28 @@ const handleContextMenuDropdownSelect = async (key: string) => {
   } else if (treeNode.type === "schema") {
     if (key === "create-table") {
       state.tableNameModalContext = {
-        db: treeNode.database,
+        db: treeNode.db,
         database: treeNode.metadata.database,
         schema: treeNode.metadata.schema,
         table: undefined,
       };
     } else if (key === "drop-schema") {
-      markEditStatus(treeNode.database, treeNode.metadata, "dropped");
+      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
     } else if (key === "restore") {
-      removeEditStatus(
-        treeNode.database,
-        treeNode.metadata,
-        /* recursive */ false
-      );
+      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
     }
   } else if (treeNode.type === "table") {
     if (key === "rename") {
       state.tableNameModalContext = {
-        db: treeNode.database,
+        db: treeNode.db,
         database: treeNode.metadata.database,
         schema: treeNode.metadata.schema,
         table: treeNode.metadata.table,
       };
     } else if (key === "drop") {
-      markEditStatus(treeNode.database, treeNode.metadata, "dropped");
+      markEditStatus(treeNode.db, treeNode.metadata, "dropped");
     } else if (key === "restore") {
-      removeEditStatus(
-        treeNode.database,
-        treeNode.metadata,
-        /* recursive */ false
-      );
+      removeEditStatus(treeNode.db, treeNode.metadata, /* recursive */ false);
     }
   }
   contextMenu.showDropdown = false;

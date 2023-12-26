@@ -101,6 +101,22 @@ const context = provideSchemaEditorContext({
 const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
   useAlgorithm(context);
 
+useEmitteryEventListener(context.events, "rebuild-edit-status", (params) => {
+  if (
+    ready.value &&
+    (props.diffWhenReady || props.resourceType === "database")
+  ) {
+    targets.value.forEach((target) => {
+      rebuildMetadataEdit(
+        target.database,
+        target.baselineMetadata,
+        target.metadata,
+        params.resets
+      );
+    });
+  }
+});
+
 watch(
   [ready, () => props.diffWhenReady],
   ([ready, diffWhenReady]) => {
