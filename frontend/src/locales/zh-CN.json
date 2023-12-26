@@ -3371,7 +3371,9 @@
       "merge-branch": "合并分支",
       "rebase-branch": "Rebase 分支",
       "confirm-rebase": "确认 rebase？",
-      "conflict-not-resolved": "似乎还有尚未解决的冲突。"
+      "conflict-not-resolved": "似乎还有尚未解决的冲突。",
+      "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
+      "preview-merge-result": "预览合并结果"
     }
   }
 }

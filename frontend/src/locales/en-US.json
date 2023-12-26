@@ -3378,7 +3378,9 @@
       "merge-branch": "Merge branch",
       "rebase-branch": "Rebase branch",
       "confirm-rebase": "Confirm rebase?",
-      "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet."
+      "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
+      "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
+      "preview-merge-result": "Preview merge result"
     }
   }
 }
