@@ -52,8 +52,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const context = useSchemaEditorContext();
-const { addTab, markEditStatus } = context;
+const { events, addTab, markEditStatus } = useSchemaEditorContext();
 const notificationStore = useNotificationStore();
 const state = reactive<LocalState>({
   schemaName: "",
@@ -91,6 +90,7 @@ const handleConfirmButtonClick = async () => {
       },
       selectedSchema: schema.name,
     });
+    events.emit("rebuild-tree");
   });
 
   dismissModal();

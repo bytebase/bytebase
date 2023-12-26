@@ -152,6 +152,7 @@ const { t } = useI18n();
 const {
   project,
   readonly,
+  events,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -299,6 +300,7 @@ const handleApplyColumnTemplate = (
       column,
     },
   });
+  events.emit("rebuild-tree");
 };
 
 const gotoForeignKeyReferencedTable = (

@@ -144,6 +144,7 @@ const {
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
+  getColumnStatus,
   upsertTableConfig,
   selectionEnabled,
   queuePendingScrollToTable,
@@ -199,9 +200,6 @@ const metadataForTable = (schema: SchemaMetadata, table: TableMetadata) => {
 const statusForSchema = (schema: SchemaMetadata) => {
   return getSchemaStatus(database.value, metadataForSchema(schema));
 };
-const statusForTable = (schema: SchemaMetadata, table: TableMetadata) => {
-  return getTableStatus(database.value, metadataForTable(schema, table));
-};
 
 const contextMenuOptions = computed(() => {
   const { treeNode } = contextMenu;
@@ -234,9 +232,7 @@ const contextMenuOptions = computed(() => {
     }
     return options;
   } else if (treeNode.type === "table") {
-    const { schema, table } = treeNode.metadata;
-
-    const status = statusForTable(schema, table);
+    const status = getTableStatus(treeNode.db, treeNode.metadata);
     const options = [];
     if (status === "dropped") {
       options.push({
@@ -377,13 +373,13 @@ onMounted(() => {
 const debouncedBuildBranchTreeData = debounce(buildBranchTreeData, 100);
 useEmitteryEventListener(events, "rebuild-tree", debouncedBuildBranchTreeData);
 
-watch(
-  [() => schemaList.value.length, () => flattenTableList.value.length],
-  buildBranchTreeData,
-  {
-    deep: false,
-  }
-);
+// watch(
+//   [() => schemaList.value.length, () => flattenTableList.value.length],
+//   buildBranchTreeData,
+//   {
+//     deep: false,
+//   }
+// );
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
@@ -469,21 +465,17 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   let label = treeNode.label;
 
   if (treeNode.type === "schema") {
-    const { schema } = treeNode.metadata;
-    if (schema) {
-      if (engine.value !== Engine.POSTGRES) {
-        label = t("db.tables");
-      }
-      const status = statusForSchema(schema);
-      additionalClassList.push(status);
+    if (engine.value !== Engine.POSTGRES) {
+      label = t("db.tables");
     }
+    const status = getSchemaStatus(treeNode.db, treeNode.metadata);
+    additionalClassList.push(status);
   } else if (treeNode.type === "table") {
-    const { schema, table } = treeNode.metadata;
-
-    if (table) {
-      const status = statusForTable(schema, table);
-      additionalClassList.push(status);
-    }
+    const status = getTableStatus(treeNode.db, treeNode.metadata);
+    additionalClassList.push(status);
+  } else if (treeNode.type === "column") {
+    const status = getColumnStatus(treeNode.db, treeNode.metadata);
+    additionalClassList.push(status);
   }
 
   return h(
@@ -562,6 +554,7 @@ const handleDuplicateTable = (schema: SchemaMetadata, table: TableMetadata) => {
       table: newTable,
     },
   });
+  events.emit("rebuild-tree");
 };
 
 // Render a 'menu' icon in the right of the node

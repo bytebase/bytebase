@@ -202,6 +202,7 @@ const context = useSchemaEditorContext();
 const {
   readonly,
   selectionEnabled,
+  events,
   addTab,
   getSchemaStatus,
   markEditStatus,
@@ -371,5 +372,7 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     db,
     metadata: metadataForTable(),
   });
+
+  events.emit("rebuild-tree");
 };
 </script>
