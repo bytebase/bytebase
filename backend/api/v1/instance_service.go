@@ -20,6 +20,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	metricapi "github.com/bytebase/bytebase/backend/metric"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
@@ -115,7 +116,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if request.ValidateOnly {
 		for _, ds := range instanceMessage.DataSources {
 			err := func() error {
-				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */)
+				driver, err := s.dbFactory.GetDataSourceDriver(ctx, instanceMessage, ds, "", false /* datashare */, ds.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 				if err != nil {
 					return err
 				}
@@ -160,7 +161,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
 		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
@@ -308,7 +309,7 @@ func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instan
 func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *store.ProjectMessage, instance *store.InstanceMessage) error {
 	switch instance.Engine {
 	case storepb.Engine_MYSQL:
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 		if err != nil {
 			return err
 		}
@@ -347,7 +348,7 @@ func (s *InstanceService) syncSlowQueriesImpl(ctx context.Context, project *stor
 				continue
 			}
 			if err := func() error {
-				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+				driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 				if err != nil {
 					return err
 				}
@@ -592,7 +593,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 			if err != nil {
 				return err
 			}
@@ -753,7 +754,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	// Test connection.
 	if request.ValidateOnly {
 		err := func() error {
-			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */)
+			driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, &dataSource, "", false /* datashare */, dataSource.Type == api.RO, false /* schemaTenantMode */, db.ConnectionContext{})
 			if err != nil {
 				return err
 			}

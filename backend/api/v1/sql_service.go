@@ -141,7 +141,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 
 		// We only need to get the driver and connection once.
 		if driver == nil {
-			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+			driver, err = s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 			}
@@ -1653,7 +1653,7 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 		}
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to get database driver: %v", err)
 	}
