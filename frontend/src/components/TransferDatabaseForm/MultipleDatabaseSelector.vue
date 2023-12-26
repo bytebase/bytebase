@@ -14,19 +14,13 @@
         :name="environment.uid"
       >
         <template #header>
-          <label class="flex items-center gap-x-2" @click.stop="">
+          <label class="flex items-center gap-x-2" @click.stop.prevent>
             <NCheckbox
-              :checked="
+              v-bind="
                 getAllSelectionStateForEnvironment(
                   environment,
                   databaseListInEnvironment
-                ).checked
-              "
-              :indeterminate="
-                getAllSelectionStateForEnvironment(
-                  environment,
-                  databaseListInEnvironment
-                ).indeterminate
+                )
               "
               @update:checked="
                 toggleAllDatabasesSelectionForEnvironment(
@@ -65,22 +59,23 @@
         >
           <template #item="{ item: database }: { item: ComposedDatabase }">
             <div class="bb-grid-cell gap-x-2 !pl-[23px]">
-              <NCheckbox
-                :checked="
-                  isDatabaseSelectedForEnvironment(
-                    database.uid,
-                    environment.uid
-                  )
-                "
-                @update:checked="
-                  (checked) =>
+              <div @click.stop.prevent>
+                <NCheckbox
+                  :checked="
+                    isDatabaseSelectedForEnvironment(
+                      database.uid,
+                      environment.uid
+                    )
+                  "
+                  @update:checked="
                     toggleDatabaseIdForEnvironment(
                       database.uid,
                       environment.uid,
-                      checked
+                      $event
                     )
-                "
-              />
+                  "
+                />
+              </div>
               <span
                 class="font-medium text-main"
                 :class="database.syncState !== State.ACTIVE && 'opacity-40'"

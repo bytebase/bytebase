@@ -27,19 +27,13 @@
       :name="environment.uid"
     >
       <template #header>
-        <label class="flex items-center gap-x-2" @click.stop="">
+        <label class="flex items-center gap-x-2" @click.stop.prevent>
           <NCheckbox
-            :checked="
+            v-bind="
               getAllSelectionStateForEnvironment(
                 environment,
                 databaseListInEnvironment
-              ).checked
-            "
-            :indeterminate="
-              getAllSelectionStateForEnvironment(
-                environment,
-                databaseListInEnvironment
-              ).indeterminate
+              )
             "
             @update:checked="
               toggleAllDatabasesSelectionForEnvironment(
