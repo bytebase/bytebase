@@ -15,21 +15,24 @@
       >
         <template #header>
           <label class="flex items-center gap-x-2" @click.stop="">
-            <input
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
-              v-bind="
+            <NCheckbox
+              :checked="
                 getAllSelectionStateForEnvironment(
                   environment,
                   databaseListInEnvironment
-                )
+                ).checked
               "
-              @click.stop=""
-              @input="
+              :indeterminate="
+                getAllSelectionStateForEnvironment(
+                  environment,
+                  databaseListInEnvironment
+                ).indeterminate
+              "
+              @update:checked="
                 toggleAllDatabasesSelectionForEnvironment(
                   environment,
                   databaseListInEnvironment,
-                  ($event.target as HTMLInputElement).checked
+                  $event
                 )
               "
             />
@@ -62,17 +65,21 @@
         >
           <template #item="{ item: database }: { item: ComposedDatabase }">
             <div class="bb-grid-cell gap-x-2 !pl-[23px]">
-              <input
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
+              <NCheckbox
                 :checked="
                   isDatabaseSelectedForEnvironment(
                     database.uid,
                     environment.uid
                   )
                 "
-                @input="(e: any) => toggleDatabaseIdForEnvironment(database.uid, environment.uid, e.target.checked)"
-                @click.stop=""
+                @update:checked="
+                  (checked) =>
+                    toggleDatabaseIdForEnvironment(
+                      database.uid,
+                      environment.uid,
+                      checked
+                    )
+                "
               />
               <span
                 class="font-medium text-main"
@@ -101,7 +108,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NCollapse, NCollapseItem } from "naive-ui";
+import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import { useEnvironmentV1List } from "@/store";
