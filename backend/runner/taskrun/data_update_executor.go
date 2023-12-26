@@ -114,7 +114,7 @@ func (exec *DataUpdateExecutor) backupData(
 		return err
 	}
 
-	suffix := fmt.Sprintf("%d", taskRunUID)
+	suffix := time.Now().Format("20060102150405")
 	selectIntoStatement := updateToSelect(statement, backupDatabaseName, suffix)
 	if _, err := driver.Execute(driverCtx, selectIntoStatement, false /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return err
@@ -137,6 +137,6 @@ func updateToSelect(statement, databaseName, suffix string) string {
 	updateIndex := strings.Index(lowerStatement, "update")
 	setIndex := strings.Index(lowerStatement, "set")
 	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
-	targetTableName := fmt.Sprintf("%s.%s%s", databaseName, tableName, suffix)
+	targetTableName := fmt.Sprintf("`%s`.`%s-%s`", databaseName, tableName, suffix)
 	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition)
 }
