@@ -68,7 +68,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	if err != nil {
 		return true, nil, err
 	}
-	if err := exec.backupData(ctx, driverCtx, statement, payload, task, taskRunUID); err != nil {
+	if err := exec.backupData(ctx, driverCtx, statement, payload, task); err != nil {
 		return true, nil, err
 	}
 	version := model.Version{Version: payload.SchemaVersion}
@@ -81,7 +81,6 @@ func (exec *DataUpdateExecutor) backupData(
 	statement string,
 	payload *api.TaskDatabaseDataUpdatePayload,
 	task *store.TaskMessage,
-	taskRunUID int,
 ) error {
 	if payload.PreUpdateBackupDetail.Database == "" {
 		return nil
@@ -109,12 +108,12 @@ func (exec *DataUpdateExecutor) backupData(
 		return err
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
 
-	suffix := fmt.Sprintf("%d", taskRunUID)
+	suffix := time.Now().Format("20060102150405")
 	selectIntoStatement := updateToSelect(statement, backupDatabaseName, suffix)
 	if _, err := driver.Execute(driverCtx, selectIntoStatement, false /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return err
@@ -137,6 +136,7 @@ func updateToSelect(statement, databaseName, suffix string) string {
 	updateIndex := strings.Index(lowerStatement, "update")
 	setIndex := strings.Index(lowerStatement, "set")
 	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
-	targetTableName := fmt.Sprintf("%s.%s%s", databaseName, tableName, suffix)
+	tableName = strings.Trim(tableName, "`")
+	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
 	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition)
 }

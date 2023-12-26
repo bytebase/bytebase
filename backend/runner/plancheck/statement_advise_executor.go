@@ -11,6 +11,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -150,7 +151,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 	if err != nil {
 		return nil, err
 	}
@@ -277,28 +278,28 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	}
 
 	var results []*storepb.PlanCheckRunResult_Result
-	for _, db := range matchedDatabases {
-		if db.DatabaseName != config.DatabaseName {
+	for _, database := range matchedDatabases {
+		if database.DatabaseName != config.DatabaseName {
 			continue
 		}
 
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &db.InstanceID})
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", db.InstanceID)
+			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
 		}
 		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", db.InstanceID)
+			return nil, errors.Errorf("instance %q not found", database.InstanceID)
 		}
 		if instance.UID != int(config.InstanceUid) {
 			continue
 		}
 
-		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &db.EffectiveEnvironmentID})
+		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 		if err != nil {
 			return nil, err
 		}
 		if environment == nil {
-			return nil, errors.Errorf("environment %q not found", db.EffectiveEnvironmentID)
+			return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
 		}
 
 		if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
@@ -320,9 +321,9 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			}, nil
 		}
 
-		dbSchema, err := e.store.GetDBSchema(ctx, db.UID)
+		dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get db schema %q", db.UID)
+			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
 		}
 
 		schemaGroupsMatchedTables := map[string][]string{}
@@ -356,20 +357,20 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				}
 			}
 
-			catalog, err := e.store.NewCatalog(ctx, db.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), getSyntaxMode(changeType))
+			catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), getSyntaxMode(changeType))
 			if err != nil {
 				return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 			}
 
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, db)
+				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
 				if err != nil {
 					return nil, err
 				}
 				defer driver.Close(ctx)
 				connection := driver.GetDB()
 
-				materials := utils.GetSecretMapFromDatabaseMessage(db)
+				materials := utils.GetSecretMapFromDatabaseMessage(database)
 				// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 				renderedStatement := utils.RenderStatement(statement, materials)
 				adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{

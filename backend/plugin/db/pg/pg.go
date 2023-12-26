@@ -63,7 +63,7 @@ func newDriver(config db.DriverConfig) db.Driver {
 }
 
 // Open opens a Postgres driver.
-func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig, connectionCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -139,7 +139,16 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, err
 	}
 	driver.db = db
-	driver.connectionCtx = connectionCtx
+	if config.ConnectionContext.UseDatabaseOwner {
+		owner, err := driver.GetCurrentDatabaseOwner()
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database owner")
+		}
+		if _, err := db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
+			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
+	}
+	driver.connectionCtx = config.ConnectionContext
 	return driver, nil
 }
 

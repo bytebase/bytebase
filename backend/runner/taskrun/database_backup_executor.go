@@ -178,7 +178,7 @@ func dumpBackupFile(ctx context.Context, driver db.Driver, backupFilePath string
 
 // backupDatabase will take a backup of a database.
 func (*DatabaseBackupExecutor) backupDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, database *store.DatabaseMessage, backup *store.BackupMessage) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return "", err
 	}

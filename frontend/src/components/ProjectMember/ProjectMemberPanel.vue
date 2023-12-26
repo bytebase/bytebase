@@ -48,8 +48,7 @@
           <template #selection-all="{ memberList }">
             <NCheckbox
               v-if="renderedComposedMemberList.length > 0"
-              :checked="getAllSelectionState(memberList).checked"
-              :indeterminate="getAllSelectionState(memberList).indeterminate"
+              v-bind="getAllSelectionState(memberList)"
               @update:checked="toggleAllMembersSelection(memberList, $event)"
             />
           </template>

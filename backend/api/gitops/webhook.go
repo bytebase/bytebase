@@ -1019,7 +1019,7 @@ func (s *Service) sqlAdviceForFile(
 			return nil, errors.Errorf("Failed to get catalog for database %v with error: %v", database.UID, err)
 		}
 
-		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, err
 		}

@@ -49,7 +49,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Oracle driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, connectionCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("invalid port %q", config.Port)
@@ -72,7 +72,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
 	driver.schemaTenantMode = config.SchemaTenantMode
-	driver.connectionCtx = connectionCtx
+	driver.connectionCtx = config.ConnectionContext
 	return driver, nil
 }
 

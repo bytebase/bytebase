@@ -35,7 +35,7 @@ func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory 
 
 // GetAdminDatabaseDriver gets the admin database driver using the instance's admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (db.Driver, error) {
+func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
 	if dataSource == nil {
 		return nil, common.Errorf(common.Internal, "admin data source not found for instance %q", instance.Title)
@@ -62,7 +62,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if instance.Options != nil && instance.Options.SchemaTenantMode {
 		schemaTenantMode = true
 	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, schemaTenantMode)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, schemaTenantMode, connectionContext)
 }
 
 // GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
@@ -111,11 +111,11 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 	if database != nil {
 		dataShare = database.DataShare
 	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode)
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode, db.ConnectionContext{})
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
-func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, schemaTenantMode bool) (db.Driver, error) {
+func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.InstanceMessage, dataSource *store.DataSourceMessage, databaseName string, datashare, readOnly bool, schemaTenantMode bool, connectionContext db.ConnectionContext) (db.Driver, error) {
 	dbBinDir := ""
 	switch instance.Engine {
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -170,6 +170,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 		Password:   sshPassword,
 		PrivateKey: sshPrivateKey,
 	}
+	connectionContext.InstanceID = instance.ResourceID
+	connectionContext.EngineVersion = instance.EngineVersion
 	driver, err := db.Open(
 		ctx,
 		instance.Engine,
@@ -196,10 +198,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			SSHConfig:              sshConfig,
 			ReadOnly:               readOnly,
 			SchemaTenantMode:       schemaTenantMode,
-		},
-		db.ConnectionContext{
-			InstanceID:    instance.ResourceID,
-			EngineVersion: instance.EngineVersion,
+			ConnectionContext:      connectionContext,
 		},
 	)
 	if err != nil {
