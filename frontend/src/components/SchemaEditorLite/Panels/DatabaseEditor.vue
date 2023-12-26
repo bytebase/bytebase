@@ -373,6 +373,8 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
     metadata: metadataForTable(),
   });
 
-  events.emit("rebuild-tree");
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
+  });
 };
 </script>

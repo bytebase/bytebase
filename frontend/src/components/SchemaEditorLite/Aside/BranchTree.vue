@@ -284,7 +284,7 @@ const expandNodeRecursively = (node: TreeNode) => {
     upsertExpandedKeys(key);
   }
 };
-const buildBranchTreeData = () => {
+const buildBranchTreeData = (openFirstChild = false) => {
   treeNodeMap.clear();
   const db = database.value;
   const treeNodeList = schemaList.value.map((schema) => {
@@ -357,29 +357,25 @@ const buildBranchTreeData = () => {
     return schemaTreeNode;
   });
   treeDataRef.value = treeNodeList;
-  const firstSchemaNode = head(treeDataRef.value);
-  if (firstSchemaNode) {
-    nextTick(() => {
-      // Auto expand the first tree node.
-      openTabForTreeNode(firstSchemaNode);
-    });
+  if (openFirstChild) {
+    const firstSchemaNode = head(treeDataRef.value);
+    if (firstSchemaNode) {
+      nextTick(() => {
+        // Auto expand the first tree node.
+        openTabForTreeNode(firstSchemaNode);
+      });
+    }
   }
 };
 
 onMounted(() => {
-  buildBranchTreeData();
+  buildBranchTreeData(/* openFirstChild */ true);
 });
 
 const debouncedBuildBranchTreeData = debounce(buildBranchTreeData, 100);
-useEmitteryEventListener(events, "rebuild-tree", debouncedBuildBranchTreeData);
-
-// watch(
-//   [() => schemaList.value.length, () => flattenTableList.value.length],
-//   buildBranchTreeData,
-//   {
-//     deep: false,
-//   }
-// );
+useEmitteryEventListener(events, "rebuild-tree", (params) => {
+  debouncedBuildBranchTreeData(params.openFirstChild);
+});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
@@ -390,42 +386,44 @@ const tabWatchKey = computed(() => {
   return keyForResource(tab.database, tab.metadata);
 });
 watch(tabWatchKey, () => {
-  const tab = currentTab.value;
-  if (!tab) {
-    selectedKeysRef.value = [];
-    return;
-  }
+  requestAnimationFrame(() => {
+    const tab = currentTab.value;
+    if (!tab) {
+      selectedKeysRef.value = [];
+      return;
+    }
 
-  if (tab.type === "database") {
-    const { database, selectedSchema: schema } = tab;
-    if (schema) {
-      const key = keyForResourceName(database.name, schema);
-      const node = treeNodeMap.get(key);
+    if (tab.type === "database") {
+      const { database, selectedSchema: schema } = tab;
+      if (schema) {
+        const key = keyForResourceName(database.name, schema);
+        const node = treeNodeMap.get(key);
+        if (node) {
+          expandNodeRecursively(node);
+        }
+        selectedKeysRef.value = [key];
+      }
+    } else if (tab.type === "table") {
+      const {
+        database,
+        metadata: { schema, table },
+      } = tab;
+      const tableKey = keyForResource(database, { schema, table });
+      const node = treeNodeMap.get(tableKey);
       if (node) {
         expandNodeRecursively(node);
       }
-      selectedKeysRef.value = [key];
+      selectedKeysRef.value = [tableKey];
     }
-  } else if (tab.type === "table") {
-    const {
-      database,
-      metadata: { schema, table },
-    } = tab;
-    const tableKey = keyForResource(database, { schema, table });
-    const node = treeNodeMap.get(tableKey);
-    if (node) {
-      expandNodeRecursively(node);
-    }
-    selectedKeysRef.value = [tableKey];
-  }
 
-  if (state.shouldRelocateTreeNode) {
-    nextTick(() => {
-      treeRef.value?.scrollTo({
-        key: selectedKeysRef.value[0],
+    if (state.shouldRelocateTreeNode) {
+      nextTick(() => {
+        treeRef.value?.scrollTo({
+          key: selectedKeysRef.value[0],
+        });
       });
-    });
-  }
+    }
+  });
 });
 
 // Render prefix icons before label text.
@@ -554,7 +552,9 @@ const handleDuplicateTable = (schema: SchemaMetadata, table: TableMetadata) => {
       table: newTable,
     },
   });
-  events.emit("rebuild-tree");
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
+  });
 };
 
 // Render a 'menu' icon in the right of the node

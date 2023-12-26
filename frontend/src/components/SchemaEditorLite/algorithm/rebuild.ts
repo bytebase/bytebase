@@ -24,7 +24,9 @@ export const useRebuildMetadataEdit = (context: SchemaEditorContext) => {
         events.emit("clear-tabs");
       }
       if (resets.includes("tree")) {
-        events.emit("rebuild-tree");
+        events.emit("rebuild-tree", {
+          openFirstChild: resets.includes("tabs"),
+        });
       }
     });
   };

@@ -13,7 +13,9 @@ export const KEY = Symbol("bb.schema-editor");
 
 export type SchemaEditorEvents = Emittery<{
   ["update:selected-rollout-objects"]: RolloutObject[];
-  ["rebuild-tree"]: undefined;
+  ["rebuild-tree"]: {
+    openFirstChild: boolean;
+  };
   ["rebuild-edit-status"]: { resets: RebuildMetadataEditReset[] };
   ["clear-tabs"]: undefined;
 }>;

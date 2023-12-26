@@ -148,7 +148,9 @@ const handleConfirmButtonClick = async () => {
         table,
       },
     });
-    events.emit("rebuild-tree");
+    events.emit("rebuild-tree", {
+      openFirstChild: false,
+    });
   } else {
     const { table } = props;
     table.name = state.tableName;

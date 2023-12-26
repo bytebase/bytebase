@@ -90,7 +90,9 @@ const handleConfirmButtonClick = async () => {
       },
       selectedSchema: schema.name,
     });
-    events.emit("rebuild-tree");
+    events.emit("rebuild-tree", {
+      openFirstChild: false,
+    });
   });
 
   dismissModal();

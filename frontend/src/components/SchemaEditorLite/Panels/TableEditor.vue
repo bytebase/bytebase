@@ -266,6 +266,10 @@ const handleAddColumn = () => {
       column,
     },
   });
+
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
+  });
 };
 
 const handleApplyColumnTemplate = (
@@ -300,7 +304,9 @@ const handleApplyColumnTemplate = (
       column,
     },
   });
-  events.emit("rebuild-tree");
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
+  });
 };
 
 const gotoForeignKeyReferencedTable = (
