@@ -142,7 +142,6 @@ roles:
       - bb.databases.sync
       - bb.databases.update
       - bb.databases.updateBackupSetting
-      - bb.databases.updateMetadata
       - bb.issueComments.create
       - bb.issueComments.update
       - bb.issues.create
