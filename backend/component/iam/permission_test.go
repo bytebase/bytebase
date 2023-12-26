@@ -40,6 +40,8 @@ func permissionExist(p Permission) bool {
 		PermissionDatabasesGetSchema,
 		PermissionDatabasesGetBackupSetting,
 		PermissionDatabasesUpdateBackupSetting,
+		PermissionDatabasesQuery,
+		PermissionDatabasesExport,
 		PermissionBackupsList,
 		PermissionBackupsCreate,
 		PermissionChangeHistoriesList,
