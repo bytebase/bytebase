@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -128,108 +126,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name: "",
 	}
 
-	// Query MySQL version
-	version, rest, err := driver.getVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	semVersion, err := semver.Make(version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
-	}
-	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
-
-	// Query index info.
-	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
-	indexQuery := `
-		SELECT
-			TABLE_NAME,
-			INDEX_NAME,
-			COLUMN_NAME,
-			'',
-			SEQ_IN_INDEX,
-			INDEX_TYPE,
-			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-			1,
-			INDEX_COMMENT
-		FROM information_schema.STATISTICS
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
-	// MySQL 8.0.13 introduced the EXPRESSION column in the INFORMATION_SCHEMA.STATISTICS table.
-	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
-	// MariaDB doesn't have the EXPRESSION column.
-	// https://mariadb.com/docs/server/ref/mdb/information-schema/STATISTICS
-	if atLeast8_0_13 && !strings.Contains(rest, "MariaDB") {
-		indexQuery = `
-			SELECT
-				TABLE_NAME,
-				INDEX_NAME,
-				COLUMN_NAME,
-				EXPRESSION,
-				SEQ_IN_INDEX,
-				INDEX_TYPE,
-				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
-				INDEX_COMMENT
-			FROM information_schema.STATISTICS
-			WHERE TABLE_SCHEMA = ?
-			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
-	}
-	indexRows, err := driver.db.QueryContext(ctx, indexQuery, driver.databaseName)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexQuery)
-	}
-	defer indexRows.Close()
-	for indexRows.Next() {
-		var tableName, indexName, indexType, comment, expression string
-		var columnName sql.NullString
-		var expressionName sql.NullString
-		var position int
-		var unique, visible bool
-		if err := indexRows.Scan(
-			&tableName,
-			&indexName,
-			&columnName,
-			&expressionName,
-			&position,
-			&indexType,
-			&unique,
-			&visible,
-			&comment,
-		); err != nil {
-			return nil, err
-		}
-		if columnName.Valid {
-			expression = columnName.String
-		} else if expressionName.Valid {
-			// It's a bit late or not necessary to differentiate the column name or expression.
-			// We add parentheses around expression.
-			expression = fmt.Sprintf("(%s)", expressionName.String)
-		}
-
-		key := db.TableKey{Schema: "", Table: tableName}
-		if _, ok := indexMap[key]; !ok {
-			indexMap[key] = make(map[string]*storepb.IndexMetadata)
-		}
-		if _, ok := indexMap[key][indexName]; !ok {
-			indexMap[key][indexName] = &storepb.IndexMetadata{
-				Name:    indexName,
-				Type:    indexType,
-				Unique:  unique,
-				Primary: indexName == "PRIMARY",
-				Visible: visible,
-				Comment: comment,
-			}
-		}
-		indexMap[key][indexName].Expressions = append(indexMap[key][indexName].Expressions, expression)
-	}
-	if err := indexRows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, indexQuery)
-	}
-
+	// There is not yet a way to list indexes from information_schema.
 	// Query column info.
 	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
-	columnQuery := `
+	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
 			IFNULL(COLUMN_NAME, ''),
@@ -241,10 +141,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(COLLATION_NAME, ''),
 			COLUMN_COMMENT,
 			EXTRA
-		FROM information_schema.COLUMNS
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`
-	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
+		FROM information_schema.columns
+		WHERE TABLE_SCHEMA = '%s'
+		ORDER BY TABLE_NAME, ORDINAL_POSITION`, driver.databaseName)
+	columnRows, err := driver.db.QueryContext(ctx, columnQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
@@ -295,13 +195,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 
 	// Query view info.
 	viewMap := make(map[db.TableKey]*storepb.ViewMetadata)
-	viewQuery := `
+	viewQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
 			VIEW_DEFINITION
 		FROM information_schema.VIEWS
-		WHERE TABLE_SCHEMA = ?`
-	viewRows, err := driver.db.QueryContext(ctx, viewQuery, driver.databaseName)
+		WHERE TABLE_SCHEMA = '%s'`, driver.databaseName)
+	viewRows, err := driver.db.QueryContext(ctx, viewQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, viewQuery)
 	}
@@ -322,7 +222,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	// Query table info.
-	tableQuery := `
+	tableQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
 			TABLE_TYPE,
@@ -335,9 +235,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(CREATE_OPTIONS, ''),
 			IFNULL(TABLE_COMMENT, '')
 		FROM information_schema.TABLES
-		WHERE TABLE_SCHEMA = ?
-		ORDER BY TABLE_NAME`
-	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
+		WHERE TABLE_SCHEMA = '%s'
+		ORDER BY TABLE_NAME`, driver.databaseName)
+	tableRows, err := driver.db.QueryContext(ctx, tableQuery)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
@@ -380,17 +280,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
 			}
-			var indexNames []string
-			if indexes, ok := indexMap[key]; ok {
-				for indexName := range indexes {
-					indexNames = append(indexNames, indexName)
-				}
-				sort.Strings(indexNames)
-				for _, indexName := range indexNames {
-					tableMetadata.Indexes = append(tableMetadata.Indexes, indexes[indexName])
-				}
-			}
-
+			// TODO(d): add index information whenever it is available.
 			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		case viewTableType:
 			if view, ok := viewMap[key]; ok {
@@ -408,13 +298,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
-	databaseQuery := `
+	databaseQuery := fmt.Sprintf(`
 		SELECT
 			DEFAULT_CHARACTER_SET_NAME,
 			DEFAULT_COLLATION_NAME
 		FROM information_schema.SCHEMATA
-		WHERE SCHEMA_NAME = ?`
-	if err := driver.db.QueryRowContext(ctx, databaseQuery, driver.databaseName).Scan(
+		WHERE SCHEMA_NAME = '%s'`, driver.databaseName)
+	if err := driver.db.QueryRowContext(ctx, databaseQuery).Scan(
 		&databaseMetadata.CharacterSet,
 		&databaseMetadata.Collation,
 	); err != nil {

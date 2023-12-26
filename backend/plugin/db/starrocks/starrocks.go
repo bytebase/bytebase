@@ -358,6 +358,9 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
+	// Starrocks doesn't support READ ONLY transactions.
+	// Error: Error 1064 (HY000): You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'READ' at line 1
+	queryContext.ReadOnly = false
 	result, err := util.Query(ctx, driver.dbType, conn, stmt, queryContext)
 	if err != nil {
 		return nil, err
