@@ -6,7 +6,7 @@
       </div>
       <div class="flex flex-row justify-end items-center">
         <NCheckbox v-if="!formatted.error" v-model:checked="format">
-          Format
+          {{ $t("sql-editor.format") }}
         </NCheckbox>
       </div>
     </div>

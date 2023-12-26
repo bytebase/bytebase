@@ -41,7 +41,7 @@
               {{ $t("schema-editor.actions.add-from-template") }}
             </NButton>
             <div
-              v-if="selectedRolloutObjects"
+              v-if="selectionEnabled"
               class="text-sm flex flex-row items-center gap-x-2"
             >
               <span class="text-main">
@@ -201,7 +201,8 @@ interface LocalState {
 const context = useSchemaEditorContext();
 const {
   readonly,
-  selectedRolloutObjects,
+  selectionEnabled,
+  events,
   addTab,
   getSchemaStatus,
   markEditStatus,
@@ -370,6 +371,10 @@ const handleApplyTemplate = (template: SchemaTemplateSetting_TableTemplate) => {
   queuePendingScrollToTable({
     db,
     metadata: metadataForTable(),
+  });
+
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
   });
 };
 </script>

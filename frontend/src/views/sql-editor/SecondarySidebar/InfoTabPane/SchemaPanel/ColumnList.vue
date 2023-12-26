@@ -8,20 +8,22 @@
     >
       <template #default="{ item: column }: VirtualListItem">
         <div
-          class="bb-column-list--column-item flex items-start mx-3 px-1 cursor-pointer hover:bg-control-bg-hover/50"
+          class="bb-column-list--column-item flex items-start mx-3 px-1 gap-2 cursor-pointer hover:bg-control-bg-hover/50"
           @mouseenter="handleMouseEnter($event, column)"
           @mouseleave="handleMouseLeave($event, column)"
         >
-          <!-- eslint-disable vue/no-v-html -->
-          <div
-            class="text-sm leading-6 text-gray-600whitespace-pre-wrap break-words flex-2 min-w-[4rem]"
-            v-html="renderColumnName(column)"
-          />
-          <div
-            class="shrink-0 text-right text-sm leading-6 text-gray-400 overflow-x-hidden whitespace-nowrap flex-1 min-w-[4rem]"
+          <NEllipsis class="max-w-2/3">
+            <!-- eslint-disable vue/no-v-html -->
+            <span
+              class="text-sm leading-6 text-gray-600whitespace-pre-wrap break-words flex-2 min-w-[4rem]"
+              v-html="renderColumnName(column)"
+            />
+          </NEllipsis>
+          <NEllipsis
+            class="shrink-0 max-w-1/2 text-right text-sm leading-6 text-gray-400 flex-1 min-w-[4rem]"
           >
             {{ column.type }}
-          </div>
+          </NEllipsis>
         </div>
       </template>
     </VirtualList>
@@ -30,6 +32,7 @@
 
 <script setup lang="ts">
 import { escape } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
 import { ComposedDatabase } from "@/types";

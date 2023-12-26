@@ -278,7 +278,8 @@
     "show-all": "Mostrar todo",
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
-    "nothing-changed": "nada ha cambiado"
+    "nothing-changed": "nada ha cambiado",
+    "untitled": "Intitulado"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
