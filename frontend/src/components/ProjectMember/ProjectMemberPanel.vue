@@ -46,25 +46,19 @@
           :show-selection-column="allowAdmin"
         >
           <template #selection-all="{ memberList }">
-            <input
+            <NCheckbox
               v-if="renderedComposedMemberList.length > 0"
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-              v-bind="getAllSelectionState(memberList)"
-              @input="
-                toggleAllMembersSelection(
-                  memberList,
-                  ($event.target as HTMLInputElement).checked
-                )
-              "
+              :checked="getAllSelectionState(memberList).checked"
+              :indeterminate="getAllSelectionState(memberList).indeterminate"
+              @update:checked="toggleAllMembersSelection(memberList, $event)"
             />
           </template>
           <template #selection="{ member }">
-            <input
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            <NCheckbox
               :checked="isMemeberSelected(member)"
-              @input="(e: any) => toggleMemberSelection(member, e.target.checked)"
+              @update:checked="
+                (checked) => toggleMemberSelection(member, checked)
+              "
             />
           </template>
         </ProjectMemberTable>

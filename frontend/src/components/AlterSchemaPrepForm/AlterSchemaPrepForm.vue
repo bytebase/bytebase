@@ -167,28 +167,26 @@
                   <template
                     #selection-all="{ databaseList: selectedDatabaseList }"
                   >
-                    <input
+                    <NCheckbox
                       v-if="selectedDatabaseList.length > 0"
-                      type="checkbox"
                       class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
-                      @input="
+                      :checked="getAllSelectionState(selectedDatabaseList as ComposedDatabase[]).checked"
+                      :indeterminate="getAllSelectionState(selectedDatabaseList as ComposedDatabase[]).indeterminate"
+                      @update:checked="
                         toggleDatabasesSelection(
                           selectedDatabaseList as ComposedDatabase[],
-                          ($event.target as HTMLInputElement).checked
+                          $event
                         )
                       "
                     />
                   </template>
                   <template #selection="{ database }">
-                    <input
-                      type="checkbox"
-                      class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                    <NCheckbox
                       :checked="isDatabaseSelected(database as ComposedDatabase)"
-                      @click.stop="
+                      @update:checked="
                         toggleDatabasesSelection(
                           [database as ComposedDatabase],
-                          ($event.target as HTMLInputElement).checked
+                          $event
                         )
                       "
                     />
@@ -309,6 +307,7 @@ import {
   NRadio,
   NInputGroup,
   NInputGroupLabel,
+  NCheckbox,
 } from "naive-ui";
 import { computed, reactive, PropType, ref, watch } from "vue";
 import { watchEffect } from "vue";

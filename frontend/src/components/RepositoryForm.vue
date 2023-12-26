@@ -19,12 +19,11 @@
         </label>
         <VCSIcon :type="vcsType" />
       </div>
-      <input
+      <BBTextField
         id="gitprovider"
         name="gitprovider"
-        type="text"
-        class="textfield mt-1 w-full"
-        disabled="true"
+        class="mt-2 w-full"
+        :disabled="true"
         :value="vcsName"
       />
     </div>
@@ -41,12 +40,11 @@
           {{ $t("common.change") }}
         </div>
       </div>
-      <input
+      <BBTextField
         id="repository"
         name="repository"
-        type="text"
-        class="textfield mt-1 w-full"
-        disabled="true"
+        class="mt-2 w-full"
+        :disabled="true"
         :value="repositoryInfo.fullPath"
       />
     </div>
@@ -57,12 +55,11 @@
       <div class="mt-1 textinfolabel">
         {{ $t("repository.branch-observe-file-change") }}
       </div>
-      <input
+      <BBTextField
         id="branch"
-        v-model="repositoryConfig.branchFilter"
+        v-model:value="repositoryConfig.branchFilter"
         name="branch"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         placeholder="e.g. main"
         :disabled="!allowEdit"
       />
@@ -72,12 +69,11 @@
       <div class="mt-1 textinfolabel">
         {{ $t("repository.base-directory-description") }}
       </div>
-      <input
+      <BBTextField
         id="basedirectory"
-        v-model="repositoryConfig.baseDirectory"
+        v-model:value="repositoryConfig.baseDirectory"
         name="basedirectory"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         :disabled="!allowEdit"
       />
     </div>
@@ -111,12 +107,11 @@
           class="ml-1"
         />
       </div>
-      <input
+      <BBTextField
         id="filepathtemplate"
-        v-model="repositoryConfig.filePathTemplate"
+        v-model:value="repositoryConfig.filePathTemplate"
         name="filepathtemplate"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         :disabled="!allowEdit"
       />
       <div class="mt-2 textinfolabel capitalize">
@@ -200,28 +195,25 @@
         :action-text="$t('subscription.instance-assignment.assign-license')"
         @click="state.showInstanceAssignmentDrawer = true"
       />
-      <input
+      <BBTextField
         v-if="hasFeature('bb.feature.vcs-schema-write-back')"
         id="schemapathtemplate"
-        v-model="repositoryConfig.schemaPathTemplate"
+        v-model:value="repositoryConfig.schemaPathTemplate"
         name="schemapathtemplate"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <input
+      <BBTextField
         v-else-if="isProjectSchemaChangeTypeSDL"
         id="schemapathtemplate"
-        v-model="repositoryConfig.schemaPathTemplate"
+        v-model:value="repositoryConfig.schemaPathTemplate"
         name="schemapathtemplate"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         :disabled="!allowEdit"
       />
-      <input
+      <BBTextField
         v-else-if="isProjectSchemaChangeTypeDDL"
-        type="text"
-        class="textfield mt-2 w-full"
+        class="mt-2 w-full"
         :value="
           subscriptionStore.getRquiredPlanString(
             'bb.feature.vcs-schema-write-back'
@@ -313,7 +305,7 @@
 <script lang="ts" setup>
 import { NCheckbox, NSelect, SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { reactive, PropType, computed, h } from "vue";
+import { reactive, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBetaBadge } from "@/bbkit";
 import {
@@ -348,40 +340,22 @@ defineEmits<{
   (event: "change-schema-change-type", changeType: SchemaChange): void;
 }>();
 
-const props = defineProps({
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-  create: {
-    type: Boolean,
-    default: false,
-  },
-  vcsType: {
-    required: true,
-    type: Object as PropType<ExternalVersionControl_Type>,
-  },
-  vcsName: {
-    required: true,
-    type: String,
-  },
-  repositoryInfo: {
-    required: true,
-    type: Object as PropType<ExternalRepositoryInfo>,
-  },
-  repositoryConfig: {
-    required: true,
-    type: Object as PropType<RepositoryConfig>,
-  },
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  schemaChangeType: {
-    required: true,
-    type: Object as PropType<SchemaChange>,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    allowEdit?: boolean;
+    create?: boolean;
+    vcsType: ExternalVersionControl_Type;
+    vcsName: string;
+    repositoryInfo: ExternalRepositoryInfo;
+    repositoryConfig: RepositoryConfig;
+    project: Project;
+    schemaChangeType: SchemaChange;
+  }>(),
+  {
+    allowEdit: true,
+    create: false,
+  }
+);
 
 const { t } = useI18n();
 
