@@ -305,7 +305,7 @@
 <script lang="ts" setup>
 import { NCheckbox, NSelect, SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { reactive, PropType, computed, h } from "vue";
+import { reactive, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBetaBadge } from "@/bbkit";
 import {
