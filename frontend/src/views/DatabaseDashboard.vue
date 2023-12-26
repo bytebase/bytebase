@@ -32,8 +32,7 @@
         <template #selection-all="{ databaseList }">
           <NCheckbox
             v-if="databaseList.length > 0"
-            :checked="getAllSelectionState(databaseList).checked"
-            :indeterminate="getAllSelectionState(databaseList).indeterminate"
+            v-bind="getAllSelectionState(databaseList)"
             @update:checked="toggleDatabasesSelection(databaseList, $event)"
           />
         </template>

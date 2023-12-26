@@ -33,8 +33,7 @@
         <template #selection-all="{ databaseList: selectedDatabaseList }">
           <NCheckbox
             v-if="selectedDatabaseList.length > 0"
-            :checked="getAllSelectionState(selectedDatabaseList as ComposedDatabase[]).checked"
-            :indeterminate="getAllSelectionState(selectedDatabaseList as ComposedDatabase[]).indeterminate"
+            v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
             @update:checked="
               toggleDatabasesSelection(
                 selectedDatabaseList as ComposedDatabase[],
