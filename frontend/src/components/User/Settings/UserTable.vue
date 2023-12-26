@@ -51,7 +51,7 @@
           <template v-else>
             <UserAvatar :user="user" />
 
-            <div class="flex flex-row">
+            <div class="flex flex-row items-center">
               <div class="flex flex-col">
                 <div class="flex flex-row items-center space-x-2">
                   <router-link :to="`/users/${user.email}`" class="normal-link">
@@ -83,26 +83,33 @@
                   {{ user.email }}
                 </span>
               </div>
-              <template
+              <div
                 v-if="user.userType === UserType.SERVICE_ACCOUNT && allowEdit"
+                class="ml-3 text-xs"
               >
-                <button
+                <NButton
                   v-if="user.serviceKey"
-                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  tertiary
+                  size="small"
                   @click.prevent="() => copyServiceKey(user.serviceKey)"
                 >
-                  <heroicons-outline:clipboard class="w-4 h-4" />
+                  <template #icon>
+                    <heroicons-outline:clipboard class="w-4 h-4" />
+                  </template>
                   {{ $t("settings.members.copy-service-key") }}
-                </button>
-                <button
+                </NButton>
+                <NButton
                   v-else
-                  class="inline-flex gap-x-1 text-xs ml-3 my-1 px-2 rounded bg-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-200 items-center"
+                  tertiary
+                  size="small"
                   @click.prevent="() => tryResetServiceKey(user)"
                 >
-                  <heroicons-outline:reply class="w-4 h-4" />
+                  <template #icon>
+                    <heroicons-outline:reply class="w-4 h-4" />
+                  </template>
                   {{ $t("settings.members.reset-service-key") }}
-                </button>
-              </template>
+                </NButton>
+              </div>
             </div>
           </template>
         </div>

@@ -57,11 +57,70 @@ export interface DeleteRoleRequest {
   name: string;
 }
 
+export interface ListPermissionsRequest {
+}
+
+export interface ListPermissionsResponse {
+  permissions: Permission[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface Role {
   /** Format: roles/{role} */
   name: string;
   title: string;
   description: string;
+  /** Permissions that are granted to this role. */
+  permissions: string[];
+}
+
+export interface Permission {
+  name: string;
+  /** The resource under which this permission applies. */
+  resource: Permission_Resource;
+}
+
+export enum Permission_Resource {
+  RESOURCE_UNSPECIFIED = 0,
+  WORKSPACE = 1,
+  PROJECT = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function permission_ResourceFromJSON(object: any): Permission_Resource {
+  switch (object) {
+    case 0:
+    case "RESOURCE_UNSPECIFIED":
+      return Permission_Resource.RESOURCE_UNSPECIFIED;
+    case 1:
+    case "WORKSPACE":
+      return Permission_Resource.WORKSPACE;
+    case 2:
+    case "PROJECT":
+      return Permission_Resource.PROJECT;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Permission_Resource.UNRECOGNIZED;
+  }
+}
+
+export function permission_ResourceToJSON(object: Permission_Resource): string {
+  switch (object) {
+    case Permission_Resource.RESOURCE_UNSPECIFIED:
+      return "RESOURCE_UNSPECIFIED";
+    case Permission_Resource.WORKSPACE:
+      return "WORKSPACE";
+    case Permission_Resource.PROJECT:
+      return "PROJECT";
+    case Permission_Resource.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 function createBaseListRolesRequest(): ListRolesRequest {
@@ -417,8 +476,127 @@ export const DeleteRoleRequest = {
   },
 };
 
+function createBaseListPermissionsRequest(): ListPermissionsRequest {
+  return {};
+}
+
+export const ListPermissionsRequest = {
+  encode(_: ListPermissionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListPermissionsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListPermissionsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ListPermissionsRequest {
+    return {};
+  },
+
+  toJSON(_: ListPermissionsRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListPermissionsRequest>): ListPermissionsRequest {
+    return ListPermissionsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<ListPermissionsRequest>): ListPermissionsRequest {
+    const message = createBaseListPermissionsRequest();
+    return message;
+  },
+};
+
+function createBaseListPermissionsResponse(): ListPermissionsResponse {
+  return { permissions: [], nextPageToken: "" };
+}
+
+export const ListPermissionsResponse = {
+  encode(message: ListPermissionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.permissions) {
+      Permission.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListPermissionsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListPermissionsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.permissions.push(Permission.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListPermissionsResponse {
+    return {
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => Permission.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListPermissionsResponse): unknown {
+    const obj: any = {};
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions.map((e) => Permission.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListPermissionsResponse>): ListPermissionsResponse {
+    return ListPermissionsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListPermissionsResponse>): ListPermissionsResponse {
+    const message = createBaseListPermissionsResponse();
+    message.permissions = object.permissions?.map((e) => Permission.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
 function createBaseRole(): Role {
-  return { name: "", title: "", description: "" };
+  return { name: "", title: "", description: "", permissions: [] };
 }
 
 export const Role = {
@@ -431,6 +609,9 @@ export const Role = {
     }
     if (message.description !== "") {
       writer.uint32(26).string(message.description);
+    }
+    for (const v of message.permissions) {
+      writer.uint32(34).string(v!);
     }
     return writer;
   },
@@ -463,6 +644,13 @@ export const Role = {
 
           message.description = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.permissions.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -477,6 +665,9 @@ export const Role = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -491,6 +682,9 @@ export const Role = {
     if (message.description !== "") {
       obj.description = message.description;
     }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions;
+    }
     return obj;
   },
 
@@ -502,6 +696,81 @@ export const Role = {
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
+    message.permissions = object.permissions?.map((e) => e) || [];
+    return message;
+  },
+};
+
+function createBasePermission(): Permission {
+  return { name: "", resource: 0 };
+}
+
+export const Permission = {
+  encode(message: Permission, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.resource !== 0) {
+      writer.uint32(16).int32(message.resource);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Permission {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePermission();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.resource = reader.int32() as any;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Permission {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      resource: isSet(object.resource) ? permission_ResourceFromJSON(object.resource) : 0,
+    };
+  },
+
+  toJSON(message: Permission): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.resource !== 0) {
+      obj.resource = permission_ResourceToJSON(message.resource);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Permission>): Permission {
+    return Permission.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Permission>): Permission {
+    const message = createBasePermission();
+    message.name = object.name ?? "";
+    message.resource = object.resource ?? 0;
     return message;
   },
 };
@@ -614,6 +883,20 @@ export const RoleServiceDefinition = {
               42,
               125,
             ]),
+          ],
+        },
+      },
+    },
+    listPermissions: {
+      name: "ListPermissions",
+      requestType: ListPermissionsRequest,
+      requestStream: false,
+      responseType: ListPermissionsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([17, 18, 15, 47, 118, 49, 47, 112, 101, 114, 109, 105, 115, 115, 105, 111, 110, 115]),
           ],
         },
       },

@@ -30,13 +30,9 @@
           {{ projectWebhook.title }}
         </h3>
       </div>
-      <button
-        type="button"
-        class="btn-normal py-2 px-4"
-        @click.prevent="viewProjectWebhook"
-      >
+      <NButton @click.prevent="viewProjectWebhook">
         {{ $t("common.view") }}
-      </button>
+      </NButton>
     </div>
     <div class="border-t border-block-border">
       <dl class="divide-y divide-block-border">

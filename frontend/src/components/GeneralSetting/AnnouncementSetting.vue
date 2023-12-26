@@ -16,10 +16,7 @@
     </div>
     <div class="flex-1 lg:px-5">
       <div class="mb-7 mt-5 lg:mt-0">
-        <label
-          class="flex items-center gap-x-2"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
+        <label class="flex items-center gap-x-2">
           <span class="font-medium">{{
             $t(
               "settings.general.workspace.announcement-alert-level.description"
@@ -44,10 +41,7 @@
           </span>
         </NTooltip>
 
-        <label
-          class="flex items-center mt-2 gap-x-2"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
+        <label class="flex items-center mt-2 gap-x-2">
           <span class="font-medium"
             >{{ $t("settings.general.workspace.announcement-text.self") }}
           </span>
@@ -75,10 +69,7 @@
           </span>
         </NTooltip>
 
-        <label
-          class="flex items-center py-2 gap-x-2"
-          :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-        >
+        <label class="flex items-center py-2 gap-x-2">
           <span class="font-medium">{{
             $t("settings.general.workspace.extra-link.self")
           }}</span>

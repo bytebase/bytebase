@@ -57,6 +57,16 @@ export const useEditStatus = () => {
     keys.forEach((key) => dirtyPaths.value.delete(key));
   };
 
+  const removeEditStatusByKey = (key: string, recursive: boolean) => {
+    const keys = recursive
+      ? dirtyPathsArray.value.filter(
+          (path) => path === key || path.startsWith(`${key}/`)
+        )
+      : [key];
+
+    keys.forEach((key) => dirtyPaths.value.delete(key));
+  };
+
   const getSchemaStatus = (
     database: ComposedDatabase,
     metadata: {
@@ -121,6 +131,7 @@ export const useEditStatus = () => {
     markEditStatusByKey,
     getEditStatusByKey,
     removeEditStatus,
+    removeEditStatusByKey,
     clearEditStatus,
     getSchemaStatus,
     getTableStatus,

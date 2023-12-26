@@ -63,6 +63,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { pick } from "lodash-es";
 import {
   DataTableColumn,
   DataTableInst,
@@ -97,6 +98,7 @@ import {
   ForeignKeyCell,
   OperationCell,
   ReorderCell,
+  SelectionCell,
   SemanticTypeCell,
 } from "./components";
 import DefaultValueCell from "./components/DefaultValueCell.vue";
@@ -177,6 +179,9 @@ const {
   getColumnConfig,
   upsertColumnConfig,
   useConsumePendingScrollToColumn,
+  selectionEnabled,
+  getAllColumnsSelectionState,
+  updateAllColumnsSelection,
 } = useSchemaEditorContext();
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
@@ -214,7 +219,21 @@ const metadataForColumn = (column: ColumnMetadata) => {
 const statusForColumn = (column: ColumnMetadata) => {
   return getColumnStatus(props.db, metadataForColumn(column));
 };
-const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
+const markColumnStatus = (
+  column: ColumnMetadata,
+  status: EditStatus,
+  oldStatus: EditStatus | undefined = undefined
+) => {
+  if (!oldStatus) {
+    oldStatus = statusForColumn(column);
+  }
+  if (
+    (oldStatus === "created" || oldStatus === "dropped") &&
+    status === "updated"
+  ) {
+    markEditStatus(props.db, metadataForColumn(column), oldStatus);
+    return;
+  }
   markEditStatus(props.db, metadataForColumn(column), status);
 };
 const configForColumn = (column: ColumnMetadata) => {
@@ -254,6 +273,39 @@ const showSemanticTypeColumn = computed(() => {
 const columns = computed(() => {
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {
+      key: "__selected__",
+      width: 32,
+      hide: !selectionEnabled.value,
+      title: () => {
+        const state = getAllColumnsSelectionState(
+          props.db,
+          pick(props, "database", "schema", "table"),
+          shownColumnList.value
+        );
+        return h(NCheckbox, {
+          checked: state.checked,
+          indeterminate: state.indeterminate,
+          onUpdateChecked: (on: boolean) => {
+            updateAllColumnsSelection(
+              props.db,
+              pick(props, "database", "schema", "table"),
+              shownColumnList.value,
+              on
+            );
+          },
+        });
+      },
+      render: (column) => {
+        return h(SelectionCell, {
+          db: props.db,
+          metadata: {
+            ...pick(props, "database", "schema", "table"),
+            column,
+          },
+        });
+      },
+    },
+    {
       key: "reorder",
       title: "",
       resizable: false,
@@ -287,8 +339,9 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value) => {
+            const oldStatus = statusForColumn(column);
             column.name = value;
-            markColumnStatus(column, "updated");
+            markColumnStatus(column, "updated", oldStatus);
           },
         });
       },

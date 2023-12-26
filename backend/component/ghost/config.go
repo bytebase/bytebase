@@ -274,6 +274,7 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
 	migrationContext.ServeSocketFile = getSocketFilename(taskID, database.UID, database.DatabaseName, tableName)
+	migrationContext.DropServeSocket = true
 	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName)
 	migrationContext.TimestampAllTable = defaultConfig.timestampAllTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)

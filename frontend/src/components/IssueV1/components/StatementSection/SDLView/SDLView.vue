@@ -2,13 +2,9 @@
   <div class="flex flex-col gap-y-2">
     <div v-if="!hasFeature('bb.feature.sql-review')">
       <div class="flex space-x-4 flex-1">
-        <button
-          type="button"
-          class="btn-small py-0.5 inline-flex items-center text-accent"
-          @click.prevent="state.showFeatureModal = true"
-        >
+        <NButton size="small" @click.prevent="state.showFeatureModal = true">
           🎈{{ $t("sql-review.unlock-full-feature") }}
-        </button>
+        </NButton>
       </div>
     </div>
 

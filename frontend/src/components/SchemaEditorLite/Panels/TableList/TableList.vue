@@ -19,9 +19,7 @@
       :striped="true"
       :bordered="true"
       :bottom-bordered="true"
-      :checked-row-keys="checkedRowKeys"
       class="schema-editor-table-list"
-      @update:checked-row-keys="handleUpdateCheckedRowKeys"
     />
   </div>
 
@@ -57,8 +55,13 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
-import { DataTableColumn, DataTableInst, NDataTable } from "naive-ui";
+import { cloneDeep, pick } from "lodash-es";
+import {
+  DataTableColumn,
+  DataTableInst,
+  NCheckbox,
+  NDataTable,
+} from "naive-ui";
 import { computed, h, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
@@ -77,10 +80,9 @@ import {
 } from "@/types/proto/v1/setting_service";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
 import { useSchemaEditorContext } from "../../context";
-import { RolloutObject } from "../../types";
 import ClassificationCell from "../TableColumnEditor/components/ClassificationCell.vue";
 import { markUUID } from "../common";
-import { NameCell, OperationCell } from "./components";
+import { SelectionCell, NameCell, OperationCell } from "./components";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -99,10 +101,9 @@ interface LocalState {
 
 const { t } = useI18n();
 const {
-  events,
   project,
   readonly,
-  selectedRolloutObjects,
+  selectionEnabled,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -110,6 +111,8 @@ const {
   getTableStatus,
   upsertTableConfig,
   useConsumePendingScrollToTable,
+  getAllTablesSelectionState,
+  updateAllTablesSelection,
 } = useSchemaEditorContext();
 const dataTableRef = ref<DataTableInst>();
 const containerElRef = ref<HTMLElement>();
@@ -140,10 +143,6 @@ const filteredTables = computed(() => {
 
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
-});
-
-const shouldShowSelectionColumn = computed(() => {
-  return !!selectedRolloutObjects.value;
 });
 
 const classificationConfig = computed(() => {
@@ -195,9 +194,37 @@ const isDroppedSchema = computed(() => {
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
-      type: "selection",
+      key: "__selected__",
       width: 32,
-      hide: !shouldShowSelectionColumn.value,
+      hide: !selectionEnabled.value,
+      title: () => {
+        const state = getAllTablesSelectionState(
+          props.db,
+          pick(props, "database", "schema"),
+          filteredTables.value
+        );
+        return h(NCheckbox, {
+          checked: state.checked,
+          indeterminate: state.indeterminate,
+          onUpdateChecked: (on: boolean) => {
+            updateAllTablesSelection(
+              props.db,
+              pick(props, "database", "schema"),
+              filteredTables.value,
+              on
+            );
+          },
+        });
+      },
+      render: (table) => {
+        return h(SelectionCell, {
+          db: props.db,
+          metadata: {
+            ...pick(props, "database", "schema"),
+            table,
+          },
+        });
+      },
     },
     {
       key: "name",
@@ -353,39 +380,6 @@ const isDroppedTable = (table: TableMetadata) => {
 
 const getTableKey = (table: TableMetadata) => {
   return markUUID(table);
-};
-
-const checkedRowKeys = computed(() => {
-  return selectedRolloutObjects.value
-    ?.filter((ro) => {
-      return (
-        ro.db.name === props.db.name &&
-        ro.metadata.schema.name === props.schema.name
-      );
-    })
-    .map((ro) => {
-      return getTableKey(ro.metadata.table);
-    });
-});
-const handleUpdateCheckedRowKeys = (keys: string[], rows: TableMetadata[]) => {
-  const selected = selectedRolloutObjects.value;
-  if (!selected) {
-    return;
-  }
-
-  const objectsInCurrentSchema = rows.map<RolloutObject>((table) => ({
-    db: props.db,
-    metadata: metadataForTable(table),
-  }));
-  const objectsOutCurrentSchema = selected.filter((ro) => {
-    return (
-      ro.db.name !== props.db.name ||
-      ro.metadata.schema.name !== props.schema.name
-    );
-  });
-  const mergedObjects = [...objectsOutCurrentSchema, ...objectsInCurrentSchema];
-
-  events.emit("update:selected-rollout-objects", mergedObjects);
 };
 
 const vlRef = computed(() => {

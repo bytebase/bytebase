@@ -26,7 +26,7 @@
         <div v-for="(toolbar, i) in toolbarItems" :key="i">
           <NTooltip :show-arrow="true">
             <template #trigger>
-              <button class="hover:bg-gray-100 p-2" @click="toolbar.action">
+              <NButton quaternary size="small" @click="toolbar.action">
                 <template v-if="toolbar.text">
                   <span class="font-bold">{{ toolbar.text }}</span>
                 </template>
@@ -44,7 +44,7 @@
                     class="w-4 h-4"
                   />
                 </template>
-              </button>
+              </NButton>
             </template>
             <span class="w-56 text-sm">
               {{ toolbar.tooltip }}

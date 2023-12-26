@@ -8,14 +8,10 @@
         >{{ $t("gitops.setting.description-highlight") }}</a
       >
     </div>
-    <div v-if="vcsList.length > 0" class="flex items-center justify-end">
-      <button
-        type="button"
-        class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
-        @click.prevent="addVCSProvider"
-      >
+    <div v-if="vcsList.length > 0" class="flex justify-end">
+      <NButton type="primary" @click.prevent="addVCSProvider">
         {{ $t("gitops.setting.add-git-provider.self") }}
-      </button>
+      </NButton>
     </div>
 
     <div v-if="vcsList.length > 0" class="space-y-6">
@@ -29,48 +25,29 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive, computed, watchEffect, defineComponent } from "vue";
+<script lang="ts" setup>
+import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "@/components/VCS/VCSCard.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
 import { useVCSV1Store } from "@/store";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
+const vcsV1Store = useVCSV1Store();
+const router = useRouter();
 
-export default defineComponent({
-  name: "SettingWorkspaceVCS",
-  components: {
-    VCSCard,
-    VCSSetupWizard,
-  },
-  setup() {
-    const vcsV1Store = useVCSV1Store();
-    const router = useRouter();
-    const state = reactive<LocalState>({});
+const prepareVCSList = () => {
+  vcsV1Store.fetchVCSList();
+};
 
-    const prepareVCSList = () => {
-      vcsV1Store.fetchVCSList();
-    };
+watchEffect(prepareVCSList);
 
-    watchEffect(prepareVCSList);
-
-    const vcsList = computed(() => {
-      return vcsV1Store.getVCSList();
-    });
-
-    const addVCSProvider = () => {
-      router.push({
-        name: "setting.workspace.gitops.create",
-      });
-    };
-
-    return {
-      state,
-      vcsList,
-      addVCSProvider,
-    };
-  },
+const vcsList = computed(() => {
+  return vcsV1Store.getVCSList();
 });
+
+const addVCSProvider = () => {
+  router.push({
+    name: "setting.workspace.gitops.create",
+  });
+};
 </script>

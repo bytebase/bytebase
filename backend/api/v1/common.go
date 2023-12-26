@@ -337,10 +337,12 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_OCEANBASE
 	case storepb.Engine_OCEANBASE_ORACLE:
 		return v1pb.Engine_OCEANBASE_ORACLE
-	case storepb.Engine_RISINGWAVE:
-		return v1pb.Engine_RISINGWAVE
 	case storepb.Engine_DM:
 		return v1pb.Engine_DM
+	case storepb.Engine_RISINGWAVE:
+		return v1pb.Engine_RISINGWAVE
+	case storepb.Engine_STARROCKS:
+		return v1pb.Engine_STARROCKS
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -381,6 +383,8 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_DM
 	case v1pb.Engine_RISINGWAVE:
 		return storepb.Engine_RISINGWAVE
+	case v1pb.Engine_STARROCKS:
+		return storepb.Engine_STARROCKS
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }

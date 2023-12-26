@@ -29,16 +29,12 @@
       </div>
     </div>
     <div class="mt-7 flex justify-end space-x-2">
-      <button type="button" class="btn-normal" @click.prevent="$emit('close')">
+      <NButton @click.prevent="$emit('close')">
         {{ $t("schema-template.column-type-restriction.back-to-edit") }}
-      </button>
-      <button
-        type="button"
-        class="btn-primary"
-        @click="$emit('save-all', props.fieldTemplates)"
-      >
+      </NButton>
+      <NButton type="primary" @click="$emit('save-all', props.fieldTemplates)">
         {{ $t("schema-template.column-type-restriction.add-and-save") }}
-      </button>
+      </NButton>
     </div>
   </BBModal>
 </template>

@@ -70,13 +70,12 @@
             />
           </div>
           <div class="bb-grid-cell justify-center">
-            <button
-              class="btn-normal !px-3 !py-1"
+            <NButton
               :disabled="!isRuleAvailable(rule)"
               @click="setActiveRule(rule)"
             >
               {{ editable ? $t("common.edit") : $t("common.view") }}
-            </button>
+            </NButton>
           </div>
           <div
             v-if="rule.comment || getRuleLocalization(rule.type).description"

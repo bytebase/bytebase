@@ -2,17 +2,12 @@
   <div class="p-4">
     <div v-if="state.hasError" class="mt-2">
       <div>{{ state.message }}</div>
-      <button
-        v-if="state.oAuthState?.popup"
-        type="button"
-        class="btn-normal"
-        @click="window.close()"
-      >
+      <NButton v-if="state.oAuthState?.popup" @click="window.close()">
         Close
-      </button>
-      <router-link v-else to="/auth" class="btn-normal"
-        >Back to Sign in</router-link
-      >
+      </NButton>
+      <router-link v-else to="/auth" class="btn-normal">
+        Back to Sign in
+      </router-link>
     </div>
   </div>
 </template>

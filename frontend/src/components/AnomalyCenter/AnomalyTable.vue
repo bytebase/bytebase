@@ -67,9 +67,9 @@
         :readonly="true"
       />
       <div class="flex justify-end">
-        <button type="button" class="btn-primary" @click.prevent="dismissModal">
+        <NButton type="primary" @click.prevent="dismissModal">
           {{ $t("common.close") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </BBModal>

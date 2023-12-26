@@ -18,12 +18,13 @@
               class="mr-2 flex items-center space-x-2"
             >
               <!-- Edit Comment Button-->
-              <button
-                class="btn-icon"
+              <NButton
+                quaternary
+                size="tiny"
                 @click.prevent="onUpdateComment(item.activity)"
               >
                 <heroicons-outline:pencil class="w-4 h-4" />
-              </button>
+              </NButton>
             </div>
           </div>
         </template>
@@ -50,21 +51,15 @@
             "
             class="flex space-x-2 mt-4 items-center justify-end"
           >
-            <button
-              type="button"
-              class="btn-normal border-none"
-              @click.prevent="cancelEditComment"
-            >
+            <NButton quaternary @click.prevent="cancelEditComment">
               {{ $t("common.cancel") }}
-            </button>
-            <button
-              type="button"
-              class="btn-normal"
+            </NButton>
+            <NButton
               :disabled="!allowUpdateComment"
               @click.prevent="doUpdateComment"
             >
               {{ $t("common.save") }}
-            </button>
+            </NButton>
           </div>
         </template>
       </ActivityItem>
@@ -95,17 +90,13 @@
             @change="(val: string) => state.newComment = val"
             @submit="doCreateComment(state.newComment)"
           />
-          <div class="mt-4 flex items-center justify-between space-x-4">
-            <div>
-              <button
-                type="button"
-                class="btn-normal"
-                :disabled="state.newComment.length == 0"
-                @click.prevent="doCreateComment(state.newComment)"
-              >
-                {{ $t("common.comment") }}
-              </button>
-            </div>
+          <div class="my-4 flex items-center justify-between">
+            <NButton
+              :disabled="state.newComment.length == 0"
+              @click.prevent="doCreateComment(state.newComment)"
+            >
+              {{ $t("common.comment") }}
+            </NButton>
           </div>
         </div>
       </div>

@@ -5,12 +5,10 @@
         {{ $t("common.environment") }}
       </p>
       <EnvironmentSelect
-        id="environment"
         class="mt-1 max-w-md"
-        name="environment"
+        :environment="environment?.uid"
         :disabled="!allowEdit"
-        :selected-id="environment?.uid"
-        :default-environment="database.instanceEntity.environment"
+        :default-environment-name="database.instanceEntity.environment"
         @select-environment-id="handleSelectEnvironmentUID"
       />
     </div>
@@ -22,6 +20,7 @@
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
+import { EnvironmentSelect } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import Labels from "./components/Labels.vue";

@@ -31,6 +31,9 @@ service RoleService {
     option (google.api.http) = {delete: "/v1/{name=roles/*}"};
     option (google.api.method_signature) = "name";
   }
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse) {
+    option (google.api.http) = {get: "/v1/permissions"};
+  }
 }
 
 message ListRolesRequest {
@@ -77,9 +80,34 @@ message DeleteRoleRequest {
   string name = 1;
 }
 
+message ListPermissionsRequest {}
+
+message ListPermissionsResponse {
+  repeated Permission permissions = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
 message Role {
   // Format: roles/{role}
   string name = 1;
   string title = 2;
   string description = 3;
+  // Permissions that are granted to this role.
+  repeated string permissions = 4;
+}
+
+message Permission {
+  string name = 1;
+
+  // The resource under which this permission applies.
+  Resource resource = 2;
+
+  enum Resource {
+    RESOURCE_UNSPECIFIED = 0;
+    WORKSPACE = 1;
+    PROJECT = 2;
+  }
 }

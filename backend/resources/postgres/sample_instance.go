@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -43,12 +44,28 @@ var dbsPerEnv = map[string][]string{
 
 // StartAllSampleInstances starts all postgres sample instances.
 func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port int, includeBatch bool) []func() {
-	stoppers := []func(){}
+	// Load sample data
+	sampleData, err := loadSampleData()
+	if err != nil {
+		slog.Error("failed to load sample data", log.BBError(err))
+		return nil
+	}
+
 	slog.Info("-----Sample Postgres Instance BEGIN-----")
 	i := 0
 	for k, v := range dbsPerEnv {
+		slog.Info(fmt.Sprintf("Setup sample instance %v", k))
+		if err := setupOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch, sampleData); err != nil {
+			slog.Error("failed to init sample instance", log.BBError(err))
+			continue
+		}
+	}
+
+	i = 0
+	stoppers := []func(){}
+	for k := range dbsPerEnv {
 		slog.Info(fmt.Sprintf("Start sample instance %v at port %d", k, port+i))
-		stopper, err := startOneSampleInstance(ctx, pgBinDir, path.Join(dataDir, "pgdata-sample", k), v, port+i, includeBatch)
+		stopper, err := startOneSampleInstance(pgBinDir, path.Join(dataDir, "pgdata-sample", k), port+i)
 		i++
 		if err != nil {
 			slog.Error("failed to init sample instance", log.BBError(err))
@@ -60,37 +77,58 @@ func StartAllSampleInstances(ctx context.Context, pgBinDir, dataDir string, port
 	return stoppers
 }
 
-// startOneSampleInstance starts a single postgres sample instance.
-func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool) (func(), error) {
+func loadSampleData() (string, error) {
+	// Load sample data
+	names, err := fs.Glob(sampleFS, "sample/*.sql")
+	if err != nil {
+		return "", err
+	}
+	sort.Strings(names)
+
+	var builder strings.Builder
+	for _, name := range names {
+		buf, err := fs.ReadFile(sampleFS, name)
+		if err != nil {
+			return "", errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
+		}
+		if _, err := builder.Write(buf); err != nil {
+			return "", err
+		}
+	}
+	return builder.String(), nil
+}
+
+// setupOneSampleInstance starts a single postgres sample instance.
+func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs []string, port int, includeBatch bool, sampleData string) error {
 	v, err := getVersion(pgDataDir)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if v != "" && v != currentVersion {
 		slog.Warn("delete sample postgres with different version", slog.String("old", v), slog.String("new", currentVersion))
 		err := os.RemoveAll(pgDataDir)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 	if err := initDB(pgBinDir, pgDataDir, SampleUser); err != nil {
-		return nil, errors.Wrapf(err, "failed to init sample instance")
+		return errors.Wrapf(err, "failed to init sample instance")
 	}
 
 	if err := turnOnPGStateStatements(pgDataDir); err != nil {
-		slog.Warn("Failed to turn on pg_stat_statements", log.BBError(err))
+		return errors.Wrapf(err, "failed to turn on pg_stat_statements")
 	}
 
 	// TODO(tianzhou): Remove this after debugging completes.
 	// turn on serverlog to debug sample instance startup in SaaS.
 	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
-		return nil, errors.Wrapf(err, "failed to start sample instance")
+		return errors.Wrapf(err, "failed to start sample instance")
 	}
 
 	host := common.GetPostgresSocketDir()
 	for _, v := range dbs {
-		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v); err != nil {
-			return nil, errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
+		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v, sampleData); err != nil {
+			return errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
 		}
 		if !includeBatch {
 			break
@@ -102,6 +140,14 @@ func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 		slog.Warn("Failed to drop default postgres database", log.BBError(err))
 	}
 
+	return stop(pgBinDir, pgDataDir)
+}
+
+// startOneSampleInstance starts a single postgres sample instance.
+func startOneSampleInstance(pgBinDir, pgDataDir string, port int) (func(), error) {
+	if err := start(port, pgBinDir, pgDataDir, true /* serverLog */); err != nil {
+		return nil, errors.Wrapf(err, "failed to start sample instance")
+	}
 	return func() {
 		if err := stop(pgBinDir, pgDataDir); err != nil {
 			panic(err)
@@ -112,7 +158,7 @@ func startOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 // Verify by pinging the sample database. As long as we encounter error, we will regard it as need
 // to create sample database. This might not be 100% accurate since it could be connection issue.
 // But if it's the connection issue, the following code will catch that anyway.
-func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string) bool {
+func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string) (bool, error) {
 	driver, err := db.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
@@ -127,19 +173,30 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 		db.ConnectionContext{},
 	)
 	if err != nil {
-		return true
+		return false, err
 	}
 	defer driver.Close(ctx)
 
 	if err := driver.Ping(ctx); err != nil {
-		return true
+		slog.Debug("sample database ping error", slog.String("database", database))
+		// nolint
+		return true, nil
 	}
-	return false
+	row := driver.GetDB().QueryRowContext(ctx, "select count(1) from pg_tables where schemaname='public';")
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return false, err
+	}
+	return count == 0, nil
 }
 
 // prepareSampleDatabaseIfNeeded creates sample database if needed.
-func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database string) error {
-	if !needSetupSampleDatabase(ctx, pgUser, port, database) {
+func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, database, sampleData string) error {
+	needSetup, err := needSetupSampleDatabase(ctx, pgUser, port, database)
+	if err != nil {
+		return err
+	}
+	if !needSetup {
 		slog.Info(fmt.Sprintf("Sample database %v already exists, skip setup", database))
 		return nil
 	}
@@ -172,22 +229,9 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 	}
 	defer driver.Close(ctx)
 
-	// Load sample data
-	names, err := fs.Glob(sampleFS, "sample/*.sql")
-	if err != nil {
-		return err
+	if _, err := driver.GetDB().ExecContext(ctx, sampleData); err != nil {
+		return errors.Wrapf(err, "failed to load sample database data")
 	}
-
-	sort.Strings(names)
-
-	for _, name := range names {
-		if buf, err := fs.ReadFile(sampleFS, name); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
-		} else if _, err := driver.Execute(ctx, string(buf), false, db.ExecuteOptions{}); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to load sample database data: %s", name))
-		}
-	}
-
 	return nil
 }
 

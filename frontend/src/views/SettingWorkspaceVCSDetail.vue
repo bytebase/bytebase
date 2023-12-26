@@ -13,12 +13,11 @@
       <label for="instanceurl" class="textlabel">
         {{ $t("common.instance") }} URL
       </label>
-      <input
+      <BBTextField
         id="instanceurl"
         name="instanceurl"
-        type="text"
-        class="textfield mt-1 w-full"
-        disabled="true"
+        class="mt-1 w-full"
+        :disabled="true"
         :value="vcs?.url"
       />
     </div>
@@ -32,12 +31,11 @@
           $t("gitops.setting.add-git-provider.basic-info.display-name-label")
         }}
       </p>
-      <input
+      <BBTextField
         id="name"
-        v-model="state.title"
+        v-model:value="state.title"
         name="name"
-        type="text"
-        class="textfield mt-1 w-full"
+        class="mt-1 w-full"
       />
     </div>
 
@@ -74,12 +72,11 @@
           }}</a>
         </template>
       </p>
-      <input
+      <BBTextField
         id="applicationid"
-        v-model="state.applicationId"
+        v-model:value="state.applicationId"
         name="applicationid"
-        type="text"
-        class="textfield mt-1 w-full"
+        class="mt-1 w-full"
       />
     </div>
 
@@ -99,12 +96,11 @@
           {{ $t("gitops.setting.git-provider.azure-secret-label") }}
         </template>
       </p>
-      <input
+      <BBTextField
         id="secret"
-        v-model="state.secret"
+        v-model:value="state.secret"
         name="secret"
-        type="text"
-        class="textfield mt-1 w-full"
+        class="mt-1 w-full"
         :placeholder="$t('common.sensitive-placeholder')"
       />
     </div>
@@ -129,22 +125,17 @@
           {{ $t("gitops.setting.git-provider.delete-forbidden") }}
         </div>
       </template>
-      <div>
-        <button
-          type="button"
-          class="btn-normal py-2 px-4"
-          @click.prevent="cancel"
-        >
+      <div class="space-x-3">
+        <NButton @click.prevent="cancel">
           {{ $t("common.cancel") }}
-        </button>
-        <button
-          type="button"
-          class="btn-primary ml-3 inline-flex justify-center py-2 px-4"
+        </NButton>
+        <NButton
+          type="primary"
           :disabled="!allowUpdate"
           @click.prevent="doUpdate"
         >
           {{ $t("common.update") }}
-        </button>
+        </NButton>
       </div>
     </div>
   </div>

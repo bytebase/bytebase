@@ -1,12 +1,7 @@
-import { uniqueId } from "lodash-es";
+import { cloneDeep, uniqueId } from "lodash-es";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { useDBSchemaV1Store } from "@/store";
-import {
-  ComposedDatabase,
-  ComposedProject,
-  MaybeRef,
-  unknownDatabase,
-} from "@/types";
+import { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import {
   DatabaseMetadata,
@@ -56,13 +51,19 @@ export const useVirtualBranch = (
   });
 
   const virtualBranch = computed(() => {
-    const db = unref(database) ?? unknownDatabase();
+    const db = unref(database);
+    if (!db) {
+      return undefined;
+    }
+    if (state.isLoadingDatabaseMetadata) {
+      return undefined;
+    }
     return Branch.fromPartial({
       name: `${unref(project).name}/branches/-${uniqueId()}`,
       engine: db.instanceEntity.engine,
       baselineDatabase: db.name,
-      schemaMetadata: unref(branch).schemaMetadata,
-      baselineSchemaMetadata: databaseHeadMetadata.value,
+      schemaMetadata: cloneDeep(unref(branch).schemaMetadata),
+      baselineSchemaMetadata: cloneDeep(databaseHeadMetadata.value),
     });
   });
 

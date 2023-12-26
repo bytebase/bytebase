@@ -15,6 +15,7 @@
 <script lang="ts" setup>
 import { NSelect, SelectOption } from "naive-ui";
 import { computed, h, watchEffect } from "vue";
+import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
@@ -28,12 +29,14 @@ interface EnvironmentSelectOption extends SelectOption {
 const props = withDefaults(
   defineProps<{
     environment?: string | undefined;
+    defaultEnvironmentName?: string | undefined;
     includeArchived?: boolean;
     showProductionIcon?: boolean;
     filter?: (environment: Environment, index: number) => boolean;
   }>(),
   {
     environment: undefined,
+    defaultEnvironmentName: undefined,
     includeArchived: false,
     showProductionIcon: true,
     filter: () => true,
@@ -44,6 +47,7 @@ defineEmits<{
   (event: "update:environment", id: string | undefined): void;
 }>();
 
+const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 
@@ -90,6 +94,10 @@ const renderLabel = (option: SelectOption) => {
     environment,
     showIcon: props.showProductionIcon,
     link: false,
+    suffix:
+      props.defaultEnvironmentName === environment.name
+        ? `(${t("common.default")})`
+        : "",
   });
 };
 

@@ -33,16 +33,15 @@
             </div>
           </div>
 
-          <div>
-            <span class="block w-full rounded-md shadow-sm">
-              <button
-                type="submit"
-                :disabled="!allowReset"
-                class="btn-primary w-full flex justify-center py-2 px-4"
-              >
-                {{ $t("auth.password-reset.send-reset-link") }}
-              </button>
-            </span>
+          <div class="w-full">
+            <NButton
+              attr-type="submit"
+              type="primary"
+              :disabled="!allowReset"
+              style="width: 100%"
+            >
+              {{ $t("auth.password-reset.send-reset-link") }}
+            </NButton>
           </div>
         </form>
       </div>
