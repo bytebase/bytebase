@@ -20,11 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	RoleService_ListRoles_FullMethodName       = "/bytebase.v1.RoleService/ListRoles"
-	RoleService_CreateRole_FullMethodName      = "/bytebase.v1.RoleService/CreateRole"
-	RoleService_UpdateRole_FullMethodName      = "/bytebase.v1.RoleService/UpdateRole"
-	RoleService_DeleteRole_FullMethodName      = "/bytebase.v1.RoleService/DeleteRole"
-	RoleService_ListPermissions_FullMethodName = "/bytebase.v1.RoleService/ListPermissions"
+	RoleService_ListRoles_FullMethodName  = "/bytebase.v1.RoleService/ListRoles"
+	RoleService_CreateRole_FullMethodName = "/bytebase.v1.RoleService/CreateRole"
+	RoleService_UpdateRole_FullMethodName = "/bytebase.v1.RoleService/UpdateRole"
+	RoleService_DeleteRole_FullMethodName = "/bytebase.v1.RoleService/DeleteRole"
 )
 
 // RoleServiceClient is the client API for RoleService service.
@@ -35,7 +34,6 @@ type RoleServiceClient interface {
 	CreateRole(ctx context.Context, in *CreateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	UpdateRole(ctx context.Context, in *UpdateRoleRequest, opts ...grpc.CallOption) (*Role, error)
 	DeleteRole(ctx context.Context, in *DeleteRoleRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error)
 }
 
 type roleServiceClient struct {
@@ -82,15 +80,6 @@ func (c *roleServiceClient) DeleteRole(ctx context.Context, in *DeleteRoleReques
 	return out, nil
 }
 
-func (c *roleServiceClient) ListPermissions(ctx context.Context, in *ListPermissionsRequest, opts ...grpc.CallOption) (*ListPermissionsResponse, error) {
-	out := new(ListPermissionsResponse)
-	err := c.cc.Invoke(ctx, RoleService_ListPermissions_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // RoleServiceServer is the server API for RoleService service.
 // All implementations must embed UnimplementedRoleServiceServer
 // for forward compatibility
@@ -99,7 +88,6 @@ type RoleServiceServer interface {
 	CreateRole(context.Context, *CreateRoleRequest) (*Role, error)
 	UpdateRole(context.Context, *UpdateRoleRequest) (*Role, error)
 	DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error)
-	ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error)
 	mustEmbedUnimplementedRoleServiceServer()
 }
 
@@ -118,9 +106,6 @@ func (UnimplementedRoleServiceServer) UpdateRole(context.Context, *UpdateRoleReq
 }
 func (UnimplementedRoleServiceServer) DeleteRole(context.Context, *DeleteRoleRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRole not implemented")
-}
-func (UnimplementedRoleServiceServer) ListPermissions(context.Context, *ListPermissionsRequest) (*ListPermissionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListPermissions not implemented")
 }
 func (UnimplementedRoleServiceServer) mustEmbedUnimplementedRoleServiceServer() {}
 
@@ -207,24 +192,6 @@ func _RoleService_DeleteRole_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RoleService_ListPermissions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPermissionsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoleServiceServer).ListPermissions(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RoleService_ListPermissions_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoleServiceServer).ListPermissions(ctx, req.(*ListPermissionsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // RoleService_ServiceDesc is the grpc.ServiceDesc for RoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -247,10 +214,6 @@ var RoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteRole",
 			Handler:    _RoleService_DeleteRole_Handler,
-		},
-		{
-			MethodName: "ListPermissions",
-			Handler:    _RoleService_ListPermissions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
