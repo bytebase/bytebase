@@ -103,7 +103,11 @@ message Permission {
   string name = 1;
 
   // The resource under which this permission applies.
-  // Format: workspaces
-  // Format: projects
-  string resource = 2;
+  Resource resource = 2;
+
+  enum Resource {
+    RESOURCE_UNSPECIFIED = 0;
+    WORKSPACE = 1;
+    PROJECT = 2;
+  }
 }
