@@ -1,5 +1,8 @@
 <template>
   <div class="flex-1 flex flex-col gap-y-1 text-sm">
+    <div>
+      {{ $t("branch.merge-rebase.preview-merge-result") }}
+    </div>
     <NTabs v-model:value="tab">
       <NTab name="schema-editor">
         {{ $t("schema-editor.self") }}
