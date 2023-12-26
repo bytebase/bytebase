@@ -359,6 +359,7 @@
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
     "task-checks": "任务检查项",
+    "prior-backup": "数据预前备份",
     "rollback": {
       "sql-rollback": "SQL 回滚",
       "failed": "失败",
