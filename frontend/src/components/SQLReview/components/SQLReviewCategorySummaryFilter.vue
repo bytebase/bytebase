@@ -8,13 +8,12 @@
         :key="stats.engine"
         class="flex items-center gap-x-1 text-sm text-gray-600"
       >
-        <input
+        <NCheckbox
           :id="engineToJSON(stats.engine)"
-          type="checkbox"
-          :value="stats.engine"
           :checked="isCheckedEngine(stats.engine)"
-          class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-          @input="e => emit('toggle-checked-engine', stats.engine, (e.target as HTMLInputElement).checked)"
+          @update:checked="
+            (checked) => emit('toggle-checked-engine', stats.engine, checked)
+          "
         />
         <EngineIcon
           :engine="engineFromJSON(stats.engine)"
@@ -34,13 +33,12 @@
         :key="stats.level"
         class="flex items-center gap-x-2 text-sm text-gray-600"
       >
-        <input
+        <NCheckbox
           :id="sQLReviewRuleLevelToJSON(stats.level)"
-          type="checkbox"
-          :value="stats.level"
           :checked="isCheckedLevel(stats.level)"
-          class="h-4 w-4 border-gray-300 rounded text-indigo-600 focus:ring-indigo-500"
-          @input="e =>$emit('toggle-checked-level', stats.level, (e.target as HTMLInputElement).checked)"
+          @update:checked="
+            (checked) => $emit('toggle-checked-level', stats.level, checked)
+          "
         />
         <SQLRuleLevelBadge :level="stats.level" :suffix="`(${stats.count})`" />
       </label>
@@ -49,6 +47,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { LEVEL_LIST, RuleTemplate } from "@/types";
 import { engineFromJSON, Engine, engineToJSON } from "@/types/proto/v1/common";

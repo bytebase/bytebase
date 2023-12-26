@@ -35,21 +35,24 @@
         >
           <template #header>
             <label class="flex items-center gap-x-2" @click.stop="">
-              <input
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-0.5"
-                v-bind="
+              <NCheckbox
+                :checked="
                   getAllSelectionStateForEnvironment(
                     environment,
                     databaseListInEnvironment
-                  )
+                  ).checked
                 "
-                @click.stop=""
-                @input="
+                :indeterminate="
+                  getAllSelectionStateForEnvironment(
+                    environment,
+                    databaseListInEnvironment
+                  ).indeterminate
+                "
+                @update:checked="
                   toggleAllDatabasesSelectionForEnvironment(
                     environment,
                     databaseListInEnvironment,
-                    ($event.target as HTMLInputElement).checked
+                    $event
                   )
                 "
               />
@@ -85,11 +88,11 @@
                 "
               >
                 <div class="radio text-sm flex justify-start md:flex-1">
-                  <input
-                    type="checkbox"
-                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+                  <NCheckbox
                     :checked="isDatabaseSelected(database.uid)"
-                    @input="(e: any) => toggleDatabaseSelected(database.uid, e.target.checked)"
+                    @update:checked="
+                      (checked) => toggleDatabaseSelected(database.uid, checked)
+                    "
                   />
                   <span
                     class="font-medium ml-2 text-main"
@@ -129,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { NCollapse, NCollapseItem, NButton } from "naive-ui";
+import { NCollapse, NCollapseItem, NButton, NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import {
   Drawer,

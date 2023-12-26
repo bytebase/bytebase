@@ -10,6 +10,13 @@
       :source-filterable="true"
       :source-filter-placeholder="$t('common.filter-by-name')"
     />
+    <div
+      v-else
+      style="height: 512px"
+      class="border flex items-center justify-center"
+    >
+      <BBSpin size="large" />
+    </div>
   </div>
 </template>
 
