@@ -5,7 +5,9 @@
   >
     <NTooltip>
       <template #trigger>
-        <div class="textlabel flex items-center">Prior Backup</div>
+        <div class="textlabel flex items-center">
+          {{ $t("task.prior-backup") }}
+        </div>
       </template>
     </NTooltip>
     <div class="w-[12rem] flex items-center gap-x-2">
