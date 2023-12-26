@@ -219,7 +219,21 @@ const metadataForColumn = (column: ColumnMetadata) => {
 const statusForColumn = (column: ColumnMetadata) => {
   return getColumnStatus(props.db, metadataForColumn(column));
 };
-const markColumnStatus = (column: ColumnMetadata, status: EditStatus) => {
+const markColumnStatus = (
+  column: ColumnMetadata,
+  status: EditStatus,
+  oldStatus: EditStatus | undefined = undefined
+) => {
+  if (!oldStatus) {
+    oldStatus = statusForColumn(column);
+  }
+  if (
+    (oldStatus === "created" || oldStatus === "dropped") &&
+    status === "updated"
+  ) {
+    markEditStatus(props.db, metadataForColumn(column), oldStatus);
+    return;
+  }
   markEditStatus(props.db, metadataForColumn(column), status);
 };
 const configForColumn = (column: ColumnMetadata) => {
@@ -325,8 +339,9 @@ const columns = computed(() => {
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
           "onUpdate:value": (value) => {
+            const oldStatus = statusForColumn(column);
             column.name = value;
-            markColumnStatus(column, "updated");
+            markColumnStatus(column, "updated", oldStatus);
           },
         });
       },
