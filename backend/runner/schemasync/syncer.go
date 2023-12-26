@@ -22,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -252,7 +253,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		return nil
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
 		return err
@@ -356,7 +357,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	if instance == nil {
 		return errors.Errorf("instance %q not found", database.InstanceID)
 	}
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		s.upsertDatabaseConnectionAnomaly(ctx, instance, database, err)
 		return err

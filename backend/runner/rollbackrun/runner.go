@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -176,7 +177,7 @@ func (r *Runner) generateOracleRollbackSQLImpl(ctx context.Context, payload *api
 	if payload.TransactionID == "" {
 		return nil, errors.New("missing transaction ID, may be there is no data change in the transaction")
 	}
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get admin database driver")
 	}
@@ -283,7 +284,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 	}
 	binlogFileNameList := mysql.GenBinlogFileNames(basename, seqStart, seqEnd)
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to get admin database driver")
 	}

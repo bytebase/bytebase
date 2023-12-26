@@ -154,7 +154,7 @@ func cutover(ctx context.Context, stores *store.Store, dbFactory *dbfactory.DBFa
 		}
 		return nil
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return true, nil, err
 	}
