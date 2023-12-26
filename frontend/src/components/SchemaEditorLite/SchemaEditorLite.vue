@@ -102,7 +102,10 @@ const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
   useAlgorithm(context);
 
 useEmitteryEventListener(context.events, "rebuild-edit-status", (params) => {
-  if (ready.value && props.diffWhenReady) {
+  if (
+    ready.value &&
+    (props.diffWhenReady || props.resourceType === "database")
+  ) {
     targets.value.forEach((target) => {
       rebuildMetadataEdit(
         target.database,

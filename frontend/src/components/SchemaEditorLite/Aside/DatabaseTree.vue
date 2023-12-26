@@ -211,15 +211,6 @@ const expandedKeysRef = ref<string[]>([]);
 const selectedKeysRef = ref<string[]>([]);
 const treeDataRef = ref<TreeNode[]>([]);
 const treeNodeMap = new Map<string, TreeNode>();
-const databaseList = computed(() => {
-  return targets.value.map((target) => target.database);
-});
-const flattenSchemaList = computed(() => {
-  return targets.value.flatMap((target) => target.metadata.schemas);
-});
-const flattenTableList = computed(() => {
-  return flattenSchemaList.value.flatMap((schema) => schema.tables);
-});
 
 const contextMenuOptions = computed(() => {
   const treeNode = contextMenu.treeNode;
@@ -312,7 +303,7 @@ const expandNodeRecursively = (node: TreeNode) => {
     upsertExpandedKeys(key);
   }
 };
-const buildDatabaseTreeData = () => {
+const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const groupedByInstance = groupBy(
     targets.value,
     (target) => target.database.instance
@@ -390,35 +381,24 @@ const buildDatabaseTreeData = () => {
 
   treeDataRef.value = treeNodeList;
 
-  const firstInstanceNode = head(treeNodeList) as
-    | TreeNodeForInstance
-    | undefined;
-  const firstDatabaseNode = head(firstInstanceNode?.children);
-  const firstSchemaNode = head(firstDatabaseNode?.children);
-  if (firstSchemaNode) {
-    nextTick(() => {
-      // Auto expand the first tree node.
-      openTabForTreeNode(firstSchemaNode);
-    });
+  if (openFirstChild) {
+    const firstInstanceNode = head(treeNodeList) as
+      | TreeNodeForInstance
+      | undefined;
+    const firstDatabaseNode = head(firstInstanceNode?.children);
+    const firstSchemaNode = head(firstDatabaseNode?.children);
+    if (firstSchemaNode) {
+      nextTick(() => {
+        // Auto expand the first tree node.
+        openTabForTreeNode(firstSchemaNode);
+      });
+    }
   }
 };
 const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
-useEmitteryEventListener(
-  events,
-  "rebuild-tree",
-  debouncedBuildDatabaseTreeData
-);
-watch(
-  [
-    () => databaseList.value.length,
-    () => flattenSchemaList.value.length,
-    () => flattenTableList.value.length,
-  ],
-  debouncedBuildDatabaseTreeData,
-  {
-    deep: false,
-  }
-);
+useEmitteryEventListener(events, "rebuild-tree", (params) => {
+  debouncedBuildDatabaseTreeData(params.openFirstChild);
+});
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;
@@ -430,43 +410,45 @@ const tabWatchKey = computed(() => {
 });
 // Sync tree expandedKeys and selectedKeys with tabs
 watch(tabWatchKey, () => {
-  const tab = currentTab.value;
-  if (!tab) {
-    selectedKeysRef.value = [];
-    return;
-  }
+  requestAnimationFrame(() => {
+    const tab = currentTab.value;
+    if (!tab) {
+      selectedKeysRef.value = [];
+      return;
+    }
 
-  if (tab.type === "database") {
-    const { database, selectedSchema: schema } = tab;
-    if (schema) {
-      const key = keyForResourceName(database.name, schema);
-      const node = treeNodeMap.get(key);
-      if (node) {
-        expandNodeRecursively(node);
+    if (tab.type === "database") {
+      const { database, selectedSchema: schema } = tab;
+      if (schema) {
+        const key = keyForResourceName(database.name, schema);
+        const node = treeNodeMap.get(key);
+        if (node) {
+          expandNodeRecursively(node);
+        }
+        selectedKeysRef.value = [key];
       }
-      selectedKeysRef.value = [key];
+    } else if (tab.type === "table") {
+      const {
+        database,
+        metadata: { schema, table },
+      } = tab;
+      const schemaKey = keyForResource(database, { schema });
+      const schemaNode = treeNodeMap.get(schemaKey);
+      if (schemaNode) {
+        expandNodeRecursively(schemaNode);
+      }
+      const tableKey = keyForResource(database, { schema, table });
+      selectedKeysRef.value = [tableKey];
     }
-  } else if (tab.type === "table") {
-    const {
-      database,
-      metadata: { schema, table },
-    } = tab;
-    const schemaKey = keyForResource(database, { schema });
-    const schemaNode = treeNodeMap.get(schemaKey);
-    if (schemaNode) {
-      expandNodeRecursively(schemaNode);
-    }
-    const tableKey = keyForResource(database, { schema, table });
-    selectedKeysRef.value = [tableKey];
-  }
 
-  if (state.shouldRelocateTreeNode) {
-    nextTick(() => {
-      treeRef.value?.scrollTo({
-        key: selectedKeysRef.value[0],
+    if (state.shouldRelocateTreeNode) {
+      nextTick(() => {
+        treeRef.value?.scrollTo({
+          key: selectedKeysRef.value[0],
+        });
       });
-    });
-  }
+    }
+  });
 });
 
 const openTabForTreeNode = (node: TreeNode) => {
@@ -497,7 +479,7 @@ const openTabForTreeNode = (node: TreeNode) => {
 };
 
 onMounted(() => {
-  buildDatabaseTreeData();
+  buildDatabaseTreeData(/* openFirstChild */ true);
 });
 
 // Render prefix icons before label text.
