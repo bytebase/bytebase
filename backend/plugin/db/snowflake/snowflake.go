@@ -46,7 +46,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a Snowflake driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	dsn, loggedDSN, err := buildSnowflakeDSN(config)
 	if err != nil {
 		return nil, err
@@ -54,8 +54,8 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 
 	slog.Debug("Opening Snowflake driver",
 		slog.String("dsn", loggedDSN),
-		slog.String("environment", connCtx.EnvironmentID),
-		slog.String("database", connCtx.InstanceID),
+		slog.String("environment", config.ConnectionContext.EnvironmentID),
+		slog.String("database", config.ConnectionContext.InstanceID),
 	)
 	db, err := sql.Open("snowflake", dsn)
 	if err != nil {
@@ -63,7 +63,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	}
 	driver.dbType = dbType
 	driver.db = db
-	driver.connectionCtx = connCtx
+	driver.connectionCtx = config.ConnectionContext
 	driver.databaseName = config.Database
 
 	return driver, nil

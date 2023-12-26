@@ -216,7 +216,7 @@ type MockDriver struct {
 }
 
 // Open implements the Driver interface.
-func (d *MockDriver) Open(_ context.Context, _ storepb.Engine, _ database.ConnectionConfig, _ database.ConnectionContext) (database.Driver, error) {
+func (d *MockDriver) Open(_ context.Context, _ storepb.Engine, _ database.ConnectionConfig) (database.Driver, error) {
 	return d, nil
 }
 

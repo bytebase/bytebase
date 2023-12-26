@@ -56,12 +56,12 @@ func newDriver(_ db.DriverConfig) db.Driver {
 
 // Open opens a Spanner driver. It must connect to a specific database.
 // If database isn't provided, part of the driver cannot function.
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.New("host cannot be empty")
 	}
 	d.config = config
-	d.connCtx = connCtx
+	d.connCtx = config.ConnectionContext
 	if config.Database != "" {
 		d.databaseName = d.config.Database
 		dsn := getDSN(d.config.Host, d.config.Database)
