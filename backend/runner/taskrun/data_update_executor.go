@@ -137,6 +137,6 @@ func updateToSelect(statement, databaseName, suffix string) string {
 	setIndex := strings.Index(lowerStatement, "set")
 	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
 	tableName = strings.Trim(tableName, "`")
-	targetTableName := fmt.Sprintf("`%s`.`%s-%s`", databaseName, tableName, suffix)
+	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
 	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition)
 }
