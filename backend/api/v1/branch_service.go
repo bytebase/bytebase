@@ -509,27 +509,40 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	}
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-		ProjectID:  baseProject.ResourceID,
-		ResourceID: baseBranchID,
-		UpdaterID:  principalID,
-		Base: &storepb.BranchSnapshot{
+	if request.ValidateOnly {
+		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       newBaseMetadata,
 			DatabaseConfig: newBaseConfig,
-		},
-		BaseSchema: &newBaseSchemaBytes,
-		Head: &storepb.BranchSnapshot{
-			Metadata: newHeadMetadata,
-			// TODO(d): handle config.
+		}
+		baseBranch.BaseSchema = newBaseSchemaBytes
+		baseBranch.Head = &storepb.BranchSnapshot{
+			Metadata:       newHeadMetadata,
 			DatabaseConfig: newHeadConfig,
-		},
-		HeadSchema: &newHeadSchemaBytes,
-	}); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
-	}
-	baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
-	if err != nil {
-		return nil, err
+		}
+		baseBranch.HeadSchema = newHeadSchemaBytes
+	} else {
+		if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
+			ProjectID:  baseProject.ResourceID,
+			ResourceID: baseBranchID,
+			UpdaterID:  principalID,
+			Base: &storepb.BranchSnapshot{
+				Metadata:       newBaseMetadata,
+				DatabaseConfig: newBaseConfig,
+			},
+			BaseSchema: &newBaseSchemaBytes,
+			Head: &storepb.BranchSnapshot{
+				Metadata: newHeadMetadata,
+				// TODO(d): handle config.
+				DatabaseConfig: newHeadConfig,
+			},
+			HeadSchema: &newHeadSchemaBytes,
+		}); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
+		}
+		baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
+		if err != nil {
+			return nil, err
+		}
 	}
 	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
