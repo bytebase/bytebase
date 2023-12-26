@@ -230,6 +230,7 @@ const handleChangeTab = async (tab: TabType) => {
 const fetchRawSQLPreview = async () => {
   const cleanup = (errors: string[], fatal: boolean) => {
     if (errors.length > 0) {
+      rawSQLPreviewState.value = "";
       pushNotification({
         module: "bytebase",
         style: fatal ? "CRITICAL" : "WARN",
