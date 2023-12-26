@@ -454,15 +454,10 @@
 - [v1/role_service.proto](#v1_role_service-proto)
     - [CreateRoleRequest](#bytebase-v1-CreateRoleRequest)
     - [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest)
-    - [ListPermissionsRequest](#bytebase-v1-ListPermissionsRequest)
-    - [ListPermissionsResponse](#bytebase-v1-ListPermissionsResponse)
     - [ListRolesRequest](#bytebase-v1-ListRolesRequest)
     - [ListRolesResponse](#bytebase-v1-ListRolesResponse)
-    - [Permission](#bytebase-v1-Permission)
     - [Role](#bytebase-v1-Role)
     - [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest)
-  
-    - [Permission.Resource](#bytebase-v1-Permission-Resource)
   
     - [RoleService](#bytebase-v1-RoleService)
   
@@ -7385,32 +7380,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][A-Z][0-9]/
 
 
 
-<a name="bytebase-v1-ListPermissionsRequest"></a>
-
-### ListPermissionsRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-ListPermissionsResponse"></a>
-
-### ListPermissionsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| permissions | [Permission](#bytebase-v1-Permission) | repeated |  |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-ListRolesRequest"></a>
 
 ### ListRolesRequest
@@ -7445,22 +7414,6 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
-<a name="bytebase-v1-Permission"></a>
-
-### Permission
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| resource | [Permission.Resource](#bytebase-v1-Permission-Resource) |  | The resource under which this permission applies. |
-
-
-
-
-
-
 <a name="bytebase-v1-Role"></a>
 
 ### Role
@@ -7472,7 +7425,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | name | [string](#string) |  | Format: roles/{role} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
-| permissions | [string](#string) | repeated | Permissions that are granted to this role. |
+| permissions | [string](#string) | repeated |  |
 
 
 
@@ -7496,19 +7449,6 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
  
 
-
-<a name="bytebase-v1-Permission-Resource"></a>
-
-### Permission.Resource
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| RESOURCE_UNSPECIFIED | 0 |  |
-| WORKSPACE | 1 |  |
-| PROJECT | 2 |  |
-
-
  
 
  
@@ -7525,7 +7465,6 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | CreateRole | [CreateRoleRequest](#bytebase-v1-CreateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | UpdateRole | [UpdateRoleRequest](#bytebase-v1-UpdateRoleRequest) | [Role](#bytebase-v1-Role) |  |
 | DeleteRole | [DeleteRoleRequest](#bytebase-v1-DeleteRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| ListPermissions | [ListPermissionsRequest](#bytebase-v1-ListPermissionsRequest) | [ListPermissionsResponse](#bytebase-v1-ListPermissionsResponse) |  |
 
  
 
