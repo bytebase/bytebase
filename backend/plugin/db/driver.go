@@ -353,6 +353,8 @@ type ConnectionContext struct {
 	EnvironmentID string
 	InstanceID    string
 	EngineVersion string
+	// UseDatabaseOwner is used by Postgres for using role of database owner.
+	UseDatabaseOwner bool
 }
 
 // QueryContext is the context to query.

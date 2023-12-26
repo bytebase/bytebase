@@ -9,6 +9,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
 	"github.com/bytebase/bytebase/backend/store"
@@ -19,7 +20,7 @@ import (
 // and the given schema. It returns an empty string if there is no applicable
 // diff.
 func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, dbFactory *dbfactory.DBFactory, newSchema string) (string, error) {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return "", errors.Wrap(err, "get admin driver")
 	}

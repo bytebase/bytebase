@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -157,7 +158,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 			continue
 		}
 		if err := func() error {
-			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+			driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 			if err != nil {
 				return err
 			}
@@ -179,7 +180,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 		return errors.Errorf("no database is available for slow query sync in instance %s", instance.ResourceID)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabases[0])
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, enabledDatabases[0], db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
@@ -305,7 +306,7 @@ func (s *Syncer) syncMySQLSlowQuery(ctx context.Context, instance *store.Instanc
 		latestSlowLogDate = &earliestDate
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}

@@ -138,12 +138,12 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 		// For MongoDB, it allows us to connect to the non-existing database. So we pass the database name to driver to let us connect to the specific database.
 		// And run the create collection statement later.
 		// NOTE: we have to hack the database message.
-		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return true, nil, err
 		}
 	default:
-		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+		defaultDBDriver, err = exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 		if err != nil {
 			return true, nil, err
 		}
@@ -258,7 +258,7 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		return model.Version{}, "", nil
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return model.Version{}, "", err
 	}
@@ -386,7 +386,7 @@ func (*DatabaseCreateExecutor) getSchemaFromPeerTenantDatabase(ctx context.Conte
 		return model.Version{}, "", err
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, similarDBInstance, similarDB, db.ConnectionContext{})
 	if err != nil {
 		return model.Version{}, "", err
 	}
