@@ -276,7 +276,8 @@
     "show-all": "显示全部",
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
-    "nothing-changed": "没有改变"
+    "nothing-changed": "没有改变",
+    "untitled": "未命名"
   },
   "error-page": {
     "go-back-home": "回到主页"

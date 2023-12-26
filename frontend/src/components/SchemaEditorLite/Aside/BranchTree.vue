@@ -472,8 +472,16 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
     const status = getTableStatus(treeNode.db, treeNode.metadata);
     additionalClassList.push(status);
   } else if (treeNode.type === "column") {
-    const status = getColumnStatus(treeNode.db, treeNode.metadata);
+    const { db, metadata } = treeNode;
+    const status = getColumnStatus(db, metadata);
     additionalClassList.push(status);
+    const { name } = metadata.column;
+    if (name) {
+      label = name;
+    } else {
+      label = `<${t("common.untitled")}>`;
+      additionalClassList.push("text-control-placeholder");
+    }
   }
 
   return h(
