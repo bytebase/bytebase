@@ -10,6 +10,13 @@
       :source-filterable="true"
       :source-filter-placeholder="$t('common.filter-by-name')"
     />
+    <div
+      v-else
+      style="height: 512px"
+      class="border flex items-center justify-center"
+    >
+      <BBSpin size="large" />
+    </div>
   </div>
 </template>
 
@@ -21,7 +28,7 @@ import {
   NTree,
   TreeOption,
 } from "naive-ui";
-import { computed, h, onMounted, ref, watch } from "vue";
+import { computed, h, ref, watch } from "vue";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
@@ -62,43 +69,49 @@ const selectedValueList = ref<string[]>(
     .filter((item) => item !== "")
 );
 const databaseResourceMap = ref<Map<string, DatabaseResource>>(new Map());
-const loading = ref(false);
+const loading = ref(true);
 
-onMounted(async () => {
-  const project = await useProjectV1Store().getOrFetchProjectByUID(
-    props.projectId
-  );
-  const databaseList = await databaseStore.fetchDatabaseList({
-    parent: "instances/-",
-    filter: `project == "${project.name}"`,
-  });
+watch(
+  () => props.projectId,
+  async (projectId) => {
+    loading.value = true;
 
-  for (const database of databaseList) {
-    const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
-      database: database.name,
+    const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
+    const databaseList = await databaseStore.fetchDatabaseList({
+      parent: "instances/-",
+      filter: `project == "${project.name}"`,
     });
-    databaseResourceMap.value.set(`d-${database.uid}`, {
-      databaseName: database.name,
-    });
-    for (const schema of databaseMetadata.schemas) {
-      databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
-        databaseName: database.name,
-        schema: schema.name,
+
+    for (const database of databaseList) {
+      const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
+        database: database.name,
       });
-      for (const table of schema.tables) {
-        databaseResourceMap.value.set(
-          `t-${database.uid}-${schema.name}-${table.name}`,
-          {
-            databaseName: database.name,
-            schema: schema.name,
-            table: table.name,
-          }
-        );
+      databaseResourceMap.value.set(`d-${database.uid}`, {
+        databaseName: database.name,
+      });
+      for (const schema of databaseMetadata.schemas) {
+        databaseResourceMap.value.set(`s-${database.uid}-${schema.name}`, {
+          databaseName: database.name,
+          schema: schema.name,
+        });
+        for (const table of schema.tables) {
+          databaseResourceMap.value.set(
+            `t-${database.uid}-${schema.name}-${table.name}`,
+            {
+              databaseName: database.name,
+              schema: schema.name,
+              table: table.name,
+            }
+          );
+        }
       }
     }
+    loading.value = false;
+  },
+  {
+    immediate: true,
   }
-  loading.value = false;
-});
+);
 
 const databaseList = computed(() => {
   const project = useProjectV1Store().getProjectByUID(props.projectId);
