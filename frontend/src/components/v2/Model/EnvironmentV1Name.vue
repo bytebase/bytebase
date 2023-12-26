@@ -6,6 +6,7 @@
     :class="[link && !plain && 'normal-link', link && 'hover:underline']"
   >
     <span class="line-clamp-1" :class="textClass">
+      {{ prefix }}
       {{ environmentV1Name(environment) }}
       {{ suffix }}
     </span>
@@ -33,6 +34,7 @@ const props = withDefaults(
     iconClass?: VueClass;
     tooltip?: boolean;
     suffix?: string;
+    prefix?: string;
     showIcon?: boolean;
     textClass?: string;
   }>(),
@@ -43,6 +45,7 @@ const props = withDefaults(
     iconClass: undefined,
     tooltip: false,
     suffix: "",
+    prefix: "",
     showIcon: true,
     textClass: "",
   }

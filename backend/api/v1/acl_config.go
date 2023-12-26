@@ -61,8 +61,8 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_SyncDatabase_FullMethodName:           iam.PermissionDatabasesSync,
-	v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName:    iam.PermissionDatabasesGetMetadata,
-	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdateMetadata,
+	v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName:    iam.PermissionDatabasesGetSchema,
+	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:      iam.PermissionDatabasesGetSchema,
 	v1pb.DatabaseService_DiffSchema_FullMethodName:             "", // handled in the method.
 	v1pb.DatabaseService_GetBackupSetting_FullMethodName:       iam.PermissionDatabasesGetBackupSetting,
