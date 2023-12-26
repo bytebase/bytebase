@@ -66,14 +66,6 @@ const (
 		"DELIMITER ;;\n" +
 		"%s ;;\n" +
 		"DELIMITER ;\n"
-	triggerStmtFmt = "" +
-		"--\n" +
-		"-- Trigger structure for `%s`\n" +
-		"--\n" +
-		settingsStmt +
-		"DELIMITER ;;\n" +
-		"%s ;;\n" +
-		"DELIMITER ;\n"
 
 	disableUniqueAndForeignKeyCheckStmt = "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\nSET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n"
 	restoreUniqueAndForeignKeyCheckStmt = "SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\nSET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n"
@@ -90,7 +82,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 	}
 	defer conn.Close()
 
-	options := sql.TxOptions{ReadOnly: true}
+	options := sql.TxOptions{}
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
@@ -202,17 +194,6 @@ func dumpTxn(txn *sql.Tx, database string, out io.Writer, schemaOnly bool) error
 		}
 	}
 
-	// Trigger statements.
-	triggers, err := getTriggers(txn, database)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get triggers of database %q", database)
-	}
-	for _, tr := range triggers {
-		if _, err := io.WriteString(out, fmt.Sprintf("%s\n", tr.statement)); err != nil {
-			return err
-		}
-	}
-
 	// Restore foreign key check.
 	if _, err := io.WriteString(out, restoreUniqueAndForeignKeyCheckStmt); err != nil {
 		return err
@@ -249,12 +230,6 @@ type routineSchema struct {
 
 // eventSchema describes the schema of an event.
 type eventSchema struct {
-	name      string
-	statement string
-}
-
-// triggerSchema describes the schema of a trigger.
-type triggerSchema struct {
 	name      string
 	statement string
 }
@@ -546,88 +521,6 @@ func getEventStmt(txn *sql.Tx, dbName, eventName string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf(eventStmtFmt, eventName, charset, charset, collation, sqlmode, timezone, stmt), nil
-}
-
-// getTriggers gets all triggers of a database.
-func getTriggers(txn *sql.Tx, dbName string) ([]*triggerSchema, error) {
-	var triggers []*triggerSchema
-	query := fmt.Sprintf("SHOW TRIGGERS FROM `%s`;", dbName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	cols, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-	var values []any
-	for i := 0; i < len(cols); i++ {
-		values = append(values, new(any))
-	}
-	for rows.Next() {
-		var tr triggerSchema
-		if err := rows.Scan(values...); err != nil {
-			return nil, err
-		}
-		tr.name = fmt.Sprintf("%s", *values[0].(*any))
-		triggers = append(triggers, &tr)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	for _, tr := range triggers {
-		stmt, err := getTriggerStmt(txn, dbName, tr.name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to call getTriggerStmt(%q, %q)", dbName, tr.name)
-		}
-		tr.statement = stmt
-	}
-	return triggers, nil
-}
-
-// getTriggerStmt gets the create statement of a trigger.
-func getTriggerStmt(txn *sql.Tx, dbName, triggerName string) (string, error) {
-	query := fmt.Sprintf("SHOW CREATE TRIGGER `%s`.`%s`;", dbName, triggerName)
-	rows, err := txn.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	columns, err := rows.Columns()
-	if err != nil {
-		return "", err
-	}
-
-	var sqlmode, stmt, charset, collation string
-	var unused any
-	for rows.Next() {
-		cols := make([]any, len(columns))
-		// The query SHOW CREATE TRIGGER returns uncertain number of columns.
-		for i := 0; i < len(columns); i++ {
-			switch columns[i] {
-			case "sql_mode":
-				cols[i] = &sqlmode
-			case "SQL Original Statement":
-				cols[i] = &stmt
-			case "character_set_client":
-				cols[i] = &charset
-			case "collation_connection":
-				cols[i] = &collation
-			default:
-				cols[i] = &unused
-			}
-		}
-		if err := rows.Scan(cols...); err != nil {
-			return "", errors.Wrapf(err, "cannot scan row from %q query", query)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return "", util.FormatErrorWithQuery(err, query)
-	}
-	return fmt.Sprintf(triggerStmtFmt, triggerName, charset, charset, collation, sqlmode, stmt), nil
 }
 
 // Restore restores a database.
