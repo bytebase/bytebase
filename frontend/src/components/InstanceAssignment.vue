@@ -42,8 +42,7 @@
                 <template v-if="index === 0 && canManageSubscription">
                   <NCheckbox
                     v-if="instanceList.length > 0"
-                    :checked="allSelectionState.checked"
-                    :indeterminate="allSelectionState.indeterminate"
+                    v-bind="allSelectionState"
                     :disabled="
                       !allSelectionState.checked &&
                       instanceList.length > instanceLicenseCount
@@ -56,7 +55,11 @@
             </div>
           </template>
           <template #item="{ item: instance }: { item: ComposedInstance }">
-            <div v-if="canManageSubscription" class="bb-grid-cell">
+            <div
+              v-if="canManageSubscription"
+              class="bb-grid-cell"
+              @click.stop.prevent
+            >
               <NCheckbox
                 :checked="isInstanceSelected(instance)"
                 :disabled="

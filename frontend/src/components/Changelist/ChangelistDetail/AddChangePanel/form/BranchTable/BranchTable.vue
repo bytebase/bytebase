@@ -19,8 +19,7 @@
         >
           <template v-if="index === 0">
             <NCheckbox
-              :checked="allSelectionState.checked"
-              :indeterminate="allSelectionState.indeterminate"
+              v-bind="allSelectionState"
               @update:checked="toggleSelectAll"
             />
           </template>
@@ -29,11 +28,10 @@
       </div>
     </template>
     <template #item="{ item: branch }: BBGridRow<Branch>">
-      <div class="bb-grid-cell">
+      <div class="bb-grid-cell" @click.stop.prevent>
         <NCheckbox
           :checked="isSelected(branch)"
           @update:checked="toggleSelect(branch, $event)"
-          @click.stop
         />
       </div>
 
