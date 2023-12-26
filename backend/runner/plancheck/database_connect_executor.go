@@ -8,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -52,7 +53,7 @@ func (e *DatabaseConnectExecutor) Run(ctx context.Context, config *storepb.PlanC
 
 func (e *DatabaseConnectExecutor) checkDatabaseConnection(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) *storepb.PlanCheckRunResult_Result {
 	err := func() error {
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return err
 		}

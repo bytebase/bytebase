@@ -108,7 +108,7 @@ func (exec *DataUpdateExecutor) backupData(
 		return err
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
