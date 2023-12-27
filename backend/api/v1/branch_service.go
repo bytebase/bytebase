@@ -455,7 +455,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
 	} else {
-		mergedTarget, err := tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, newBaseMetadata)
+		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, newBaseMetadata)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
 			conflictSchema, err := diff3.Merge(
@@ -476,7 +476,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
 		}
-		if mergedTarget == nil {
+		if newHeadMetadata == nil {
 			// TODO(zp): bug, this should not be no change.
 			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
 		}
@@ -484,13 +484,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 
-		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.HeadSchema), mergedTarget)
+		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.HeadSchema), newHeadMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
-		}
-		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert merged schema to metadata, %v", err)
 		}
 	}
 
