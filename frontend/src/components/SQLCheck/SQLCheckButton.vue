@@ -91,7 +91,6 @@ const { t } = useI18n();
 const SKIP_CHECK_THRESHOLD = 512 * 1024;
 const isRunning = ref(false);
 const advices = ref<Advice[]>();
-const checkRunCounter = ref(0);
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
 
@@ -128,7 +127,6 @@ const runCheckInternal = async (statement: string) => {
     statement,
     database: database.name,
   });
-  checkRunCounter.value++;
   return result;
 };
 
@@ -179,9 +177,7 @@ onMounted(() => {
       return true;
     }
 
-    if (checkRunCounter.value === 0) {
-      await runChecks();
-    }
+    await runChecks();
 
     const hasError = advices.value?.some(
       (advice) =>

@@ -5,5 +5,6 @@ export * from "./useSelectedContent";
 export * from "./useFormatContent";
 export * from "./useSuggestOptionByLanguage";
 export * from "./useAdvices";
+export * from "./useLineHighlights";
 export * from "./useAutoHeight";
 export * from "./useAutoComplete";

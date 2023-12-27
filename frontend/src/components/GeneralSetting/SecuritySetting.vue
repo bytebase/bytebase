@@ -22,11 +22,9 @@
               <NCheckbox
                 :disabled="!allowEdit"
                 :checked="watermarkEnabled"
+                :label="$t('settings.general.workspace.watermark.enable')"
                 @update:checked="handleWatermarkToggle"
               />
-              <span class="font-medium">{{
-                $t("settings.general.workspace.watermark.enable")
-              }}</span>
             </label>
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -47,11 +45,9 @@
               <NCheckbox
                 :disabled="!allowEdit"
                 :checked="disallowSignupEnabled"
+                :label="$t('settings.general.workspace.disallow-signup.enable')"
                 @update:checked="handleDisallowSignupToggle"
               />
-              <span class="font-medium">{{
-                $t("settings.general.workspace.disallow-signup.enable")
-              }}</span>
             </label>
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -72,11 +68,9 @@
               <NCheckbox
                 :disabled="!allowEdit"
                 :checked="require2FAEnabled"
+                :label="$t('settings.general.workspace.require-2fa.enable')"
                 @update:checked="handleRequire2FAToggle"
               />
-              <span class="font-medium">{{
-                $t("settings.general.workspace.require-2fa.enable")
-              }}</span>
             </label>
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">
@@ -97,13 +91,13 @@
               <NCheckbox
                 :disabled="!allowEdit"
                 :checked="restrictIssueCreationForSQLReview"
+                :label="
+                  $t(
+                    'settings.general.workspace.restrict-issue-creation-for-sql-review.title'
+                  )
+                "
                 @update:checked="handleRestrictIssueCreationForSQLReviewToggle"
               />
-              <span class="font-medium">{{
-                $t(
-                  "settings.general.workspace.restrict-issue-creation-for-sql-review.title"
-                )
-              }}</span>
             </label>
           </template>
           <span class="text-sm text-gray-400 -translate-y-2">

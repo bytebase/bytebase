@@ -14,22 +14,19 @@
         :name="environment.uid"
       >
         <template #header>
-          <label class="flex items-center gap-x-2" @click.stop="">
-            <input
-              type="checkbox"
-              class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent ml-0.5"
+          <label class="flex items-center gap-x-2" @click.stop.prevent>
+            <NCheckbox
               v-bind="
                 getAllSelectionStateForEnvironment(
                   environment,
                   databaseListInEnvironment
                 )
               "
-              @click.stop=""
-              @input="
+              @update:checked="
                 toggleAllDatabasesSelectionForEnvironment(
                   environment,
                   databaseListInEnvironment,
-                  ($event.target as HTMLInputElement).checked
+                  $event
                 )
               "
             />
@@ -62,18 +59,23 @@
         >
           <template #item="{ item: database }: { item: ComposedDatabase }">
             <div class="bb-grid-cell gap-x-2 !pl-[23px]">
-              <input
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed focus:ring-accent"
-                :checked="
-                  isDatabaseSelectedForEnvironment(
-                    database.uid,
-                    environment.uid
-                  )
-                "
-                @input="(e: any) => toggleDatabaseIdForEnvironment(database.uid, environment.uid, e.target.checked)"
-                @click.stop=""
-              />
+              <div @click.stop.prevent>
+                <NCheckbox
+                  :checked="
+                    isDatabaseSelectedForEnvironment(
+                      database.uid,
+                      environment.uid
+                    )
+                  "
+                  @update:checked="
+                    toggleDatabaseIdForEnvironment(
+                      database.uid,
+                      environment.uid,
+                      $event
+                    )
+                  "
+                />
+              </div>
               <span
                 class="font-medium text-main"
                 :class="database.syncState !== State.ACTIVE && 'opacity-40'"
@@ -101,7 +103,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NCollapse, NCollapseItem } from "naive-ui";
+import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { type BBGridColumn, BBGrid } from "@/bbkit";
 import { useEnvironmentV1List } from "@/store";

@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/store"
@@ -285,7 +286,7 @@ func (r *Runner) downloadBinlogFilesForInstance(ctx context.Context, instance *s
 		r.downloadBinlogMu.Unlock()
 		r.downloadBinlogWg.Done()
 	}()
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		if common.ErrorCode(err) == common.DbConnectionFailure {
 			slog.Debug("Cannot connect to instance", slog.String("instance", instance.ResourceID), log.BBError(err))
@@ -419,7 +420,7 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 		return nil, errors.Errorf("environment %q not found", instance.EnvironmentID)
 	}
 
-	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := r.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get admin database driver")
 	}

@@ -19,8 +19,7 @@
           <template v-if="index === 0 && rowSelectable">
             <NCheckbox
               v-if="columnList.length > 0"
-              :checked="allSelectionState.checked"
-              :indeterminate="allSelectionState.indeterminate"
+              v-bind="allSelectionState"
               @update:checked="toggleSelectAll"
             />
           </template>

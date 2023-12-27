@@ -3,19 +3,7 @@
     v-if="treeStore.state === 'READY'"
     class="sql-editor-tree p-0.5 gap-y-1 h-full flex flex-col"
   >
-    <div class="sql-editor-tree--input pt-1 px-2">
-      <NInput
-        size="small"
-        :value="searchPattern"
-        :placeholder="$t('sql-editor.search-databases')"
-        :clearable="true"
-        @update:value="$emit('update:search-pattern', $event)"
-      >
-        <template #prefix>
-          <heroicons-outline:search class="h-5 w-5 text-gray-300" />
-        </template>
-      </NInput>
-    </div>
+    <SearchBox v-model:searchPattern="searchPattern" />
     <div
       ref="treeContainerElRef"
       class="sql-editor-tree--tree flex-1 pb-1 text-sm overflow-hidden select-none"
@@ -28,7 +16,7 @@
         :data="treeStore.tree"
         :show-irrelevant-nodes="false"
         :selected-keys="selectedKeys"
-        :pattern="mounted ? throttledSearchPattern : ''"
+        :pattern="mounted ? searchPattern : ''"
         :expand-on-click="true"
         :node-props="nodeProps"
         :virtual-scroll="true"
@@ -65,9 +53,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted, useThrottleFn } from "@vueuse/core";
+import { useElementSize, useMounted } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NTree, NInput, NDropdown, DropdownOption, TreeOption } from "naive-ui";
+import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -110,11 +98,13 @@ import {
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   isDescendantOf,
-  isSimilarTab,
+  tryConnectToCoreTab,
   wrapSQLIdentifier,
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
+import SearchBox from "./SearchBox/index.vue";
+import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
 import { fetchDatabaseSubTree } from "./common";
 import { provideHoverStateContext } from "./hover-state";
@@ -128,14 +118,6 @@ type DropdownOptionWithTreeNode = DropdownOption & {
   node: SQLEditorTreeNode;
 };
 
-const props = defineProps<{
-  searchPattern?: string;
-}>();
-
-defineEmits<{
-  (event: "update:search-pattern", keyword: string): void;
-}>();
-
 const { t } = useI18n();
 const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
@@ -148,6 +130,7 @@ const me = useCurrentUserV1();
 const { executeReadonly } = useExecuteSQL();
 const { selectedDatabaseSchemaByDatabaseName, events: editorEvents } =
   useSQLEditorContext();
+const searchHistory = useSearchHistory();
 const { node: hoverNode, update: updateHoverNode } = provideHoverStateContext();
 const hoverPanelPosition = ref<Position>({
   x: 0,
@@ -164,7 +147,7 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const treeRef = ref<InstanceType<typeof NTree>>();
-const throttledSearchPattern = ref(props.searchPattern);
+const searchPattern = ref("");
 const showDropdown = ref(false);
 const dropdownPosition = ref<Position>({
   x: 0,
@@ -272,26 +255,6 @@ const allowAdmin = computed(() =>
   )
 );
 
-const connect = (target: CoreTabInfo) => {
-  if (isSimilarTab(target, tabStore.currentTab)) {
-    // Don't go further if the connection doesn't change.
-    return;
-  }
-  if (tabStore.currentTab.isFreshNew) {
-    // If the current tab is "fresh new", update its connection directly.
-    tabStore.updateCurrentTab(target);
-  } else {
-    // Otherwise select or add a new tab and set its connection
-    const name = getSuggestedTabNameFromConnection(target.connection);
-    tabStore.selectOrAddSimilarTab(
-      target,
-      /* beside */ false,
-      /* defaultTabName */ name
-    );
-    tabStore.updateCurrentTab(target);
-  }
-};
-
 const setConnection = (
   node: SQLEditorTreeNode,
   extra: { sheetName?: string; mode: TabMode } = {
@@ -310,11 +273,11 @@ const setConnection = (
         return;
       }
     }
-    const target: CoreTabInfo = {
+    const coreTab: CoreTabInfo = {
       connection: emptyConnection(),
       ...extra,
     };
-    const conn = target.connection;
+    const conn = coreTab.connection;
     // If selected item is instance node
     if (type === "instance") {
       const instance = node.meta.target as ComposedInstance;
@@ -326,7 +289,7 @@ const setConnection = (
       conn.instanceId = database.instanceEntity.uid;
       conn.databaseId = database.uid;
     }
-    connect(target);
+    tryConnectToCoreTab(coreTab);
   }
 };
 
@@ -336,7 +299,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
   return h(Label, {
     node,
     factors: treeStore.filteredFactorList,
-    keyword: props.searchPattern ?? "",
+    keyword: searchPattern.value ?? "",
   });
 };
 
@@ -368,16 +331,16 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
   const target = node.meta.target as SQLEditorTreeNodeTarget<"table">;
   const { database, schema, table } = target;
   if (database.uid !== tabStore.currentTab.connection.databaseId) {
-    const target: CoreTabInfo = {
+    const coreTab: CoreTabInfo = {
       connection: {
         instanceId: database.instanceEntity.uid,
         databaseId: database.uid,
       },
       mode: TabMode.ReadOnly,
     };
-    target.connection.instanceId = database.instanceEntity.uid;
-    target.connection.databaseId = database.uid;
-    connect(target);
+    coreTab.connection.instanceId = database.instanceEntity.uid;
+    coreTab.connection.databaseId = database.uid;
+    tryConnectToCoreTab(coreTab);
     await nextTick();
   }
 
@@ -400,16 +363,16 @@ const maybeSelectExternalTable = async (node: SQLEditorTreeNode) => {
   const target = node.meta.target as SQLEditorTreeNodeTarget<"external-table">;
   const { database, schema, externalTable } = target;
   if (database.uid !== tabStore.currentTab.connection.databaseId) {
-    const target: CoreTabInfo = {
+    const coreTab: CoreTabInfo = {
       connection: {
         instanceId: database.instanceEntity.uid,
         databaseId: database.uid,
       },
       mode: TabMode.ReadOnly,
     };
-    target.connection.instanceId = database.instanceEntity.uid;
-    target.connection.databaseId = database.uid;
-    connect(target);
+    coreTab.connection.instanceId = database.instanceEntity.uid;
+    coreTab.connection.databaseId = database.uid;
+    tryConnectToCoreTab(coreTab);
     await nextTick();
   }
 
@@ -510,6 +473,15 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         if (type === "external-table") {
           maybeSelectExternalTable(node);
         }
+
+        // If the search pattern is not empty, append the selected database name to
+        // the search history.
+        if (searchPattern.value) {
+          if (type === "database") {
+            const database = node.meta.target as ComposedDatabase;
+            searchHistory.appendSearchResult(database.name);
+          }
+        }
       }
     },
     onContextmenu(e: MouseEvent) {
@@ -605,21 +577,6 @@ watch(
     }
   },
   { immediate: true }
-);
-
-watch(
-  () => props.searchPattern,
-  useThrottleFn(
-    (searchPattern: string | undefined) => {
-      throttledSearchPattern.value = searchPattern;
-    },
-    100,
-    true /* trailing */,
-    true /* leading */
-  ),
-  {
-    immediate: true,
-  }
 );
 
 watch(

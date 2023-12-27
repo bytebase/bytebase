@@ -136,6 +136,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 			if constraint.Tp == ast.ConstraintIndex {
 				var columnList []string
 				for _, key := range constraint.Keys {
+					if key.Column == nil {
+						continue
+					}
 					columnList = append(columnList, key.Column.Name.String())
 				}
 				metaData := map[string]string{
@@ -179,6 +182,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 				if spec.Constraint.Tp == ast.ConstraintIndex {
 					var columnList []string
 					for _, key := range spec.Constraint.Keys {
+						if key.Column == nil {
+							continue
+						}
 						columnList = append(columnList, key.Column.Name.String())
 					}
 
@@ -199,6 +205,9 @@ func (checker *namingIndexConventionChecker) getMetaDataList(in ast.Node) []*ind
 		if node.KeyType != ast.IndexKeyTypeUnique {
 			var columnList []string
 			for _, spec := range node.IndexPartSpecifications {
+				if spec.Column == nil {
+					continue
+				}
 				columnList = append(columnList, spec.Column.Name.String())
 			}
 			metaData := map[string]string{

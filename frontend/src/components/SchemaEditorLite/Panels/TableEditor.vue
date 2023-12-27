@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
     <div
-      v-if="!readonly || selectedRolloutObjects"
+      v-if="!readonly || selectionEnabled"
       class="w-full flex flex-row justify-between items-center"
     >
       <div
         v-if="!readonly"
-        class="w-full flex justify-between items-center space-x-2"
+        class="w-full flex justify-start items-center space-x-2"
       >
         <NButton
           size="small"
@@ -27,7 +27,7 @@
         </NButton>
       </div>
       <div
-        v-if="selectedRolloutObjects"
+        v-if="selectionEnabled"
         class="text-sm flex flex-row items-center gap-x-2 h-[28px] whitespace-nowrap"
       >
         <span class="text-main">
@@ -152,6 +152,7 @@ const { t } = useI18n();
 const {
   project,
   readonly,
+  events,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -160,7 +161,7 @@ const {
   getColumnStatus,
   upsertColumnConfig,
   queuePendingScrollToColumn,
-  selectedRolloutObjects,
+  selectionEnabled,
 } = useSchemaEditorContext();
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
@@ -265,6 +266,10 @@ const handleAddColumn = () => {
       column,
     },
   });
+
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
+  });
 };
 
 const handleApplyColumnTemplate = (
@@ -298,6 +303,9 @@ const handleApplyColumnTemplate = (
       table: props.table,
       column,
     },
+  });
+  events.emit("rebuild-tree", {
+    openFirstChild: false,
   });
 };
 

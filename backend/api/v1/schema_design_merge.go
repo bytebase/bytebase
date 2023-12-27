@@ -177,7 +177,6 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 			}
 		}
 	case diffActionUpdate:
-
 		for idx, schema := range target.Schemas {
 			if schema.Name == n.name {
 				newSchema := &storepb.SchemaMetadata{
@@ -257,7 +256,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if other.base.Engine != other.head.Engine {
 			if n.base.Engine != n.head.Engine {
 				if n.head.Engine != other.head.Engine {
-					return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.base.Engine, other.base.Engine)
+					return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.head.Engine, other.head.Engine)
 				}
 			} else {
 				n.head.Engine = other.head.Engine
@@ -267,7 +266,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if other.base.Collation != other.head.Collation {
 			if n.base.Collation != n.head.Collation {
 				if n.head.Collation != other.head.Collation {
-					return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.base.Collation, other.base.Collation)
+					return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.head.Collation, other.head.Collation)
 				}
 			} else {
 				n.head.Collation = other.head.Collation
@@ -277,7 +276,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if other.base.Comment != other.head.Comment {
 			if n.base.Comment != n.head.Comment {
 				if n.head.Comment != other.head.Comment {
-					return true, fmt.Sprintf("conflict table comment, one is %s, the other is %s", n.base.Comment, other.base.Comment)
+					return true, fmt.Sprintf("conflict table comment, one is %s, the other is %s", n.head.Comment, other.head.Comment)
 				}
 			} else {
 				n.head.Comment = other.head.Comment
@@ -287,7 +286,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if other.base.UserComment != other.head.UserComment {
 			if n.base.UserComment != n.head.UserComment {
 				if n.head.UserComment != other.head.UserComment {
-					return true, fmt.Sprintf("conflict table user comment, one is %s, the other is %s", n.base.UserComment, other.base.UserComment)
+					return true, fmt.Sprintf("conflict table user comment, one is %s, the other is %s", n.head.UserComment, other.head.UserComment)
 				}
 			} else {
 				n.head.UserComment = other.head.UserComment
@@ -297,7 +296,7 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 		if other.base.Classification != other.head.Classification {
 			if n.base.Classification != n.head.Classification {
 				if n.head.Classification != other.head.Classification {
-					return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.base.Classification, other.base.Classification)
+					return true, fmt.Sprintf("conflict table classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
 				}
 			} else {
 				n.head.Classification = other.head.Classification
@@ -411,7 +410,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 		}
 		for _, indexName := range sortedIndexName {
 			index := n.indexes[indexName]
-			if err := index.applyDiffTo(n); err != nil {
+			if err := index.applyDiffTo(newTable); err != nil {
 				return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 			}
 		}
@@ -425,7 +424,8 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 		}
 	case diffActionUpdate:
 		for idx, table := range target.Tables {
-			// Update table currently is only contains diff of columns and foreign keys. So we do apply column and foreign key diff to target table.
+			// Update table currently is only contains diff of columns, foreign keys and indexes.
+			// So we do apply column and foreign key diff to target table.
 			if table.Name == n.name {
 				newTable := &storepb.TableMetadata{
 					Name:           n.name,
@@ -453,7 +453,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 				}
 				for _, indexName := range sortedIndexName {
 					index := n.indexes[indexName]
-					if err := index.applyDiffTo(n); err != nil {
+					if err := index.applyDiffTo(newTable); err != nil {
 						return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 					}
 				}
@@ -518,7 +518,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if other.base.Type != other.head.Type {
 			if n.base.Type != n.head.Type {
 				if n.head.Type != other.head.Type {
-					return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.base.Type, other.base.Type)
+					return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
 				}
 			} else {
 				n.head.Type = other.head.Type
@@ -528,7 +528,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if otherDiff := cmp.Diff(other.base.DefaultValue, other.head.DefaultValue, protocmp.Transform()); otherDiff != "" {
 			if nDiff := cmp.Diff(n.base.DefaultValue, n.head.DefaultValue, protocmp.Transform()); nDiff != "" {
 				if d := cmp.Diff(n.head.DefaultValue, other.head.DefaultValue, protocmp.Transform()); d != "" {
-					return true, fmt.Sprintf("conflict column default value, one is %v, the other is %v", n.base.DefaultValue, other.base.DefaultValue)
+					return true, fmt.Sprintf("conflict column default value, one is %v, the other is %v", n.head.DefaultValue, other.head.DefaultValue)
 				}
 			} else {
 				n.head.DefaultValue = other.head.DefaultValue
@@ -538,7 +538,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if other.base.Nullable != other.head.Nullable {
 			if n.base.Nullable != n.head.Nullable {
 				if n.head.Nullable != other.head.Nullable {
-					return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.base.Nullable, other.base.Nullable)
+					return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.head.Nullable, other.head.Nullable)
 				}
 			} else {
 				n.head.Nullable = other.head.Nullable
@@ -548,7 +548,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if other.base.Comment != other.head.Comment {
 			if n.base.Comment != n.head.Comment {
 				if n.head.Comment != other.head.Comment {
-					return true, fmt.Sprintf("conflict column comment, one is %s, the other is %s", n.base.Comment, other.base.Comment)
+					return true, fmt.Sprintf("conflict column comment, one is %s, the other is %s", n.head.Comment, other.head.Comment)
 				}
 			} else {
 				n.head.Comment = other.head.Comment
@@ -558,7 +558,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if other.base.UserComment != other.head.UserComment {
 			if n.base.UserComment != n.head.UserComment {
 				if n.head.UserComment != other.head.UserComment {
-					return true, fmt.Sprintf("conflict column user comment, one is %s, the other is %s", n.base.UserComment, other.base.UserComment)
+					return true, fmt.Sprintf("conflict column user comment, one is %s, the other is %s", n.head.UserComment, other.head.UserComment)
 				}
 			} else {
 				n.head.UserComment = other.head.UserComment
@@ -568,7 +568,7 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if other.base.Classification != other.head.Classification {
 			if n.base.Classification != n.head.Classification {
 				if n.head.Classification != other.head.Classification {
-					return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.base.Classification, other.base.Classification)
+					return true, fmt.Sprintf("conflict column classification, one is %s, the other is %s", n.head.Classification, other.head.Classification)
 				}
 			} else {
 				n.head.Classification = other.head.Classification
@@ -626,7 +626,7 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if slices.Equal(n.head.Expressions, other.head.Expressions) {
+		if !slices.Equal(n.head.Expressions, other.head.Expressions) {
 			return true, fmt.Sprintf("conflict index expressions, one is %v, the other is %v", n.head.Expressions, other.head.Expressions)
 		}
 		if n.head.Type != other.head.Type {
@@ -644,7 +644,7 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 		if !slices.Equal(other.base.Expressions, other.head.Expressions) {
 			if !slices.Equal(n.base.Expressions, n.head.Expressions) {
 				if !slices.Equal(n.head.Expressions, other.head.Expressions) {
-					return true, fmt.Sprintf("conflict index expressions, one is %v, the other is %v", n.base.Expressions, other.base.Expressions)
+					return true, fmt.Sprintf("conflict index expressions, one is %v, the other is %v", n.head.Expressions, other.head.Expressions)
 				}
 			} else {
 				n.head.Expressions = other.head.Expressions
@@ -654,7 +654,7 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 		if other.base.Type != other.head.Type {
 			if n.base.Type != n.head.Type {
 				if n.head.Type != other.head.Type {
-					return true, fmt.Sprintf("conflict index type, one is %s, the other is %s", n.base.Type, other.base.Type)
+					return true, fmt.Sprintf("conflict index type, one is %s, the other is %s", n.head.Type, other.head.Type)
 				}
 			} else {
 				n.head.Type = other.head.Type
@@ -664,7 +664,7 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 		if other.base.Unique != other.head.Unique {
 			if n.base.Unique != n.head.Unique {
 				if n.head.Unique != other.head.Unique {
-					return true, fmt.Sprintf("conflict index unique, one is %t, the other is %t", n.base.Unique, other.base.Unique)
+					return true, fmt.Sprintf("conflict index unique, one is %t, the other is %t", n.head.Unique, other.head.Unique)
 				}
 			} else {
 				n.head.Unique = other.head.Unique
@@ -674,7 +674,7 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 		if other.base.Primary != other.head.Primary {
 			if n.base.Primary != n.head.Primary {
 				if n.head.Primary != other.head.Primary {
-					return true, fmt.Sprintf("conflict index primary, one is %t, the other is %t", n.base.Primary, other.base.Primary)
+					return true, fmt.Sprintf("conflict index primary, one is %t, the other is %t", n.head.Primary, other.head.Primary)
 				}
 			} else {
 				n.head.Primary = other.head.Primary
@@ -685,21 +685,21 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 	return false, ""
 }
 
-func (n *metadataDiffIndexNode) applyDiffTo(target *metadataDiffTableNode) error {
+func (n *metadataDiffIndexNode) applyDiffTo(target *storepb.TableMetadata) error {
 	switch n.action {
 	case diffActionCreate:
-		target.head.Indexes = append(target.head.Indexes, n.head)
+		target.Indexes = append(target.Indexes, n.head)
 	case diffActionDrop:
-		for i, index := range target.head.Indexes {
+		for i, index := range target.Indexes {
 			if index.Name == n.name {
-				target.head.Indexes = append(target.head.Indexes[:i], target.head.Indexes[i+1:]...)
+				target.Indexes = append(target.Indexes[:i], target.Indexes[i+1:]...)
 				break
 			}
 		}
 	case diffActionUpdate:
-		for i, index := range target.head.Indexes {
+		for i, index := range target.Indexes {
 			if index.Name == n.name {
-				target.head.Indexes[i] = n.head
+				target.Indexes[i] = n.head
 				break
 			}
 		}
@@ -754,7 +754,7 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 		if other.base.ReferencedSchema != other.head.ReferencedSchema {
 			if n.base.ReferencedSchema != n.head.ReferencedSchema {
 				if n.head.ReferencedSchema != other.head.ReferencedSchema {
-					return true, fmt.Sprintf("conflict foreign key referenced schema, one is %s, the other is %s", n.base.ReferencedSchema, other.base.ReferencedSchema)
+					return true, fmt.Sprintf("conflict foreign key referenced schema, one is %s, the other is %s", n.head.ReferencedSchema, other.head.ReferencedSchema)
 				}
 			} else {
 				n.head.ReferencedSchema = other.head.ReferencedSchema
@@ -764,7 +764,7 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 		if other.base.ReferencedTable != other.head.ReferencedTable {
 			if n.base.ReferencedTable != n.head.ReferencedTable {
 				if n.head.ReferencedTable != other.head.ReferencedTable {
-					return true, fmt.Sprintf("conflict foreign key referenced table, one is %s, the other is %s", n.base.ReferencedTable, other.base.ReferencedTable)
+					return true, fmt.Sprintf("conflict foreign key referenced table, one is %s, the other is %s", n.head.ReferencedTable, other.head.ReferencedTable)
 				}
 			} else {
 				n.head.ReferencedTable = other.head.ReferencedTable
@@ -774,7 +774,7 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 		if other.base.OnDelete != other.head.OnDelete {
 			if n.base.OnDelete != n.head.OnDelete {
 				if n.head.OnDelete != other.head.OnDelete {
-					return true, fmt.Sprintf("conflict foreign key on delete, one is %s, the other is %s", n.base.OnDelete, other.base.OnDelete)
+					return true, fmt.Sprintf("conflict foreign key on delete, one is %s, the other is %s", n.head.OnDelete, other.head.OnDelete)
 				}
 			} else {
 				n.head.OnDelete = other.head.OnDelete
@@ -784,7 +784,7 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 		if other.base.OnUpdate != other.head.OnUpdate {
 			if n.base.OnUpdate != n.head.OnUpdate {
 				if n.head.OnUpdate != other.head.OnUpdate {
-					return true, fmt.Sprintf("conflict foreign key on update, one is %s, the other is %s", n.base.OnUpdate, other.base.OnUpdate)
+					return true, fmt.Sprintf("conflict foreign key on update, one is %s, the other is %s", n.head.OnUpdate, other.head.OnUpdate)
 				}
 			} else {
 				n.head.OnUpdate = other.head.OnUpdate
@@ -794,7 +794,7 @@ func (n *metadataDiffForeignKeyNode) tryMerge(other *metadataDiffForeignKeyNode)
 		if !reflect.DeepEqual(other.base.Columns, other.head.Columns) {
 			if !reflect.DeepEqual(n.base.Columns, n.head.Columns) {
 				if !reflect.DeepEqual(n.head.Columns, other.head.Columns) {
-					return true, fmt.Sprintf("conflict foreign key columns, one is %v, the other is %v", n.base.Columns, other.base.Columns)
+					return true, fmt.Sprintf("conflict foreign key columns, one is %v, the other is %v", n.head.Columns, other.head.Columns)
 				}
 			} else {
 				n.head.Columns = other.head.Columns
@@ -1038,8 +1038,37 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		}
 	}
 
+	indexNamesMap := make(map[string]bool)
+
+	baseIndexKeyMap := make(map[string]*storepb.IndexMetadata)
+	if base != nil {
+		for _, index := range base.Indexes {
+			baseIndexKeyMap[index.Name] = index
+			indexNamesMap[index.Name] = true
+		}
+	}
+
+	headIndexKeyMap := make(map[string]*storepb.IndexMetadata)
+	if head != nil {
+		for _, index := range head.Indexes {
+			headIndexKeyMap[index.Name] = index
+			indexNamesMap[index.Name] = true
+		}
+	}
+
+	for indexName := range indexNamesMap {
+		baseIndex, headIndex := baseIndexKeyMap[indexName], headIndexKeyMap[indexName]
+		diffNode, err := diffIndexMetadata(baseIndex, headIndex)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to diff index %q", indexName)
+		}
+		if diffNode != nil {
+			tableNode.indexes[indexName] = diffNode
+		}
+	}
+
 	if action == diffActionUpdate {
-		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 {
+		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 {
 			return nil, nil
 		}
 	}
@@ -1074,7 +1103,7 @@ func diffColumnMetadata(base, head *storepb.ColumnMetadata) (*metadataDiffColumn
 	}
 
 	if action == diffActionUpdate {
-		if !reflect.DeepEqual(base, head) {
+		if !proto.Equal(base, head) {
 			return columnNode, nil
 		}
 		return nil, nil
@@ -1109,10 +1138,45 @@ func diffForeignKeyMetadata(base, head *storepb.ForeignKeyMetadata) (*metadataDi
 	}
 
 	if action == diffActionUpdate {
-		if !reflect.DeepEqual(base, head) {
+		if !proto.Equal(base, head) {
 			return fkNode, nil
 		}
 		return nil, nil
 	}
 	return fkNode, nil
+}
+
+func diffIndexMetadata(base, head *storepb.IndexMetadata) (*metadataDiffIndexNode, error) {
+	if base == nil && head == nil {
+		return nil, errors.New("base and head index metadata cannot be nil both")
+	}
+
+	var name string
+	action := diffActionUpdate
+	if base == nil {
+		action = diffActionCreate
+		name = head.Name
+	} else if head == nil {
+		action = diffActionDrop
+		name = base.Name
+	} else {
+		name = base.Name
+	}
+
+	indexNode := &metadataDiffIndexNode{
+		metadataDiffBaseNode: metadataDiffBaseNode{
+			action: action,
+		},
+		name: name,
+		base: base,
+		head: head,
+	}
+
+	if action == diffActionUpdate {
+		if !proto.Equal(base, head) {
+			return indexNode, nil
+		}
+		return nil, nil
+	}
+	return indexNode, nil
 }

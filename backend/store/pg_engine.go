@@ -57,7 +57,6 @@ func (db *DB) Open(ctx context.Context, createDB bool) error {
 			storepb.Engine_POSTGRES,
 			dbdriver.DriverConfig{DbBinDir: db.binDir},
 			createCfg,
-			dbdriver.ConnectionContext{},
 		)
 		if err != nil {
 			return err
@@ -74,7 +73,6 @@ func (db *DB) Open(ctx context.Context, createDB bool) error {
 		storepb.Engine_POSTGRES,
 		dbdriver.DriverConfig{DbBinDir: db.binDir},
 		db.ConnCfg,
-		dbdriver.ConnectionContext{},
 	)
 	if err != nil {
 		return err

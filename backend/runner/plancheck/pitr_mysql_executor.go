@@ -7,6 +7,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -42,7 +43,7 @@ func (e *PITRMySQLExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	}
 	databaseName := config.DatabaseName
 
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return nil, err
 	}

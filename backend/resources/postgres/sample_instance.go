@@ -170,7 +170,6 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 			Port:     port,
 			Database: database,
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return false, err
@@ -222,7 +221,6 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 			Port:     port,
 			Database: database,
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect sample database")
@@ -248,7 +246,6 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 			Port:     port,
 			Database: "postgres",
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect sample instance")
@@ -276,7 +273,6 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 			Port:     port,
 			Database: database,
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect sample database")
@@ -302,7 +298,6 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 			Port:     port,
 			Database: connectingDb,
 		},
-		db.ConnectionContext{},
 	)
 	if err != nil {
 		return errors.Wrapf(err, "failed to connect sample instance")

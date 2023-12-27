@@ -49,7 +49,7 @@ func newDriver(dc db.DriverConfig) db.Driver {
 }
 
 // Open opens a MongoDB driver.
-func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
 	connectionURI := getMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
 	client, err := mongo.Connect(ctx, opts)
@@ -57,7 +57,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
 	}
 	driver.client = client
-	driver.connectionCtx = connCtx
+	driver.connectionCtx = connCfg.ConnectionContext
 	driver.connCfg = connCfg
 	driver.databaseName = connCfg.Database
 	return driver, nil

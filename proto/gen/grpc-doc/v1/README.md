@@ -811,6 +811,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | DM | 15 |  |
 | RISINGWAVE | 16 |  |
 | OCEANBASE_ORACLE | 17 |  |
+| STARROCKS | 18 |  |
 
 
 
@@ -1799,13 +1800,14 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | user_type | [UserType](#bytebase-v1-UserType) |  |  |
-| user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. |
+| user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. TODO(p0ny): deprecate in favor of `roles`. |
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | mfa_secret | [string](#string) |  | The mfa_secret is the temporary secret using in two phase verification. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
+| roles | [string](#string) | repeated | The roles of the user. This filed is to supersede the `user_role` field. |
 
 
 
@@ -7424,6 +7426,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | name | [string](#string) |  | Format: roles/{role} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
+| permissions | [string](#string) | repeated |  |
 
 
 

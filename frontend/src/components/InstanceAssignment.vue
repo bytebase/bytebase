@@ -40,21 +40,14 @@
                 :class="[column.class]"
               >
                 <template v-if="index === 0 && canManageSubscription">
-                  <input
+                  <NCheckbox
                     v-if="instanceList.length > 0"
-                    type="checkbox"
-                    class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                    :checked="allSelectionState.checked"
-                    :indeterminate="allSelectionState.indeterminate"
+                    v-bind="allSelectionState"
                     :disabled="
                       !allSelectionState.checked &&
                       instanceList.length > instanceLicenseCount
                     "
-                    @input="
-                      selectAllInstances(
-                        ($event.target as HTMLInputElement).checked
-                      )
-                    "
+                    @update:checked="selectAllInstances($event)"
                   />
                 </template>
                 <template v-else>{{ column.title }}</template>
@@ -62,18 +55,18 @@
             </div>
           </template>
           <template #item="{ item: instance }: { item: ComposedInstance }">
-            <div v-if="canManageSubscription" class="bb-grid-cell">
-              <input
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+            <div
+              v-if="canManageSubscription"
+              class="bb-grid-cell"
+              @click.stop.prevent
+            >
+              <NCheckbox
                 :checked="isInstanceSelected(instance)"
                 :disabled="
                   !isInstanceSelected(instance) &&
                   state.selectedInstance.size == instanceLicenseCount
                 "
-                @click.stop="
-                  toggleSelectInstance(instance, !isInstanceSelected(instance))
-                "
+                @update:checked="toggleSelectInstance(instance, $event)"
               />
             </div>
             <div class="bb-grid-cell">
@@ -130,6 +123,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";

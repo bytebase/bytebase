@@ -31,29 +31,22 @@
         :database-list="filteredDatabaseList"
       >
         <template #selection-all="{ databaseList: selectedDatabaseList }">
-          <input
+          <NCheckbox
             v-if="selectedDatabaseList.length > 0"
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
             v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
-            @input="
+            @update:checked="
               toggleDatabasesSelection(
                 selectedDatabaseList as ComposedDatabase[],
-                ($event.target as HTMLInputElement).checked
+                $event
               )
             "
           />
         </template>
         <template #selection="{ database }">
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+          <NCheckbox
             :checked="isDatabaseSelected(database as ComposedDatabase)"
-            @click.stop="
-              toggleDatabasesSelection(
-                [database as ComposedDatabase],
-                ($event.target as HTMLInputElement).checked
-              )
+            @update:checked="
+              toggleDatabasesSelection([database as ComposedDatabase], $event)
             "
           />
         </template>
@@ -84,6 +77,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox } from "naive-ui";
 import { reactive, computed, ref, watchEffect } from "vue";
 import { usePageMode, usePolicyV1Store } from "@/store";
 import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";

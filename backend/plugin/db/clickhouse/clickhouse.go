@@ -57,7 +57,7 @@ func newDriver(db.DriverConfig) db.Driver {
 }
 
 // Open opens a ClickHouse driver.
-func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig, connCtx db.ConnectionContext) (db.Driver, error) {
+func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addr := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	// Set SSL configuration.
 	tlsConfig, err := config.TLSConfig.GetSslConfig()
@@ -83,14 +83,14 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 
 	slog.Debug("Opening ClickHouse driver",
 		slog.String("addr", addr),
-		slog.String("environment", connCtx.EnvironmentID),
-		slog.String("database", connCtx.InstanceID),
+		slog.String("environment", config.ConnectionContext.EnvironmentID),
+		slog.String("database", config.ConnectionContext.InstanceID),
 	)
 
 	driver.dbType = dbType
 	driver.db = conn
 	driver.databaseName = config.Database
-	driver.connectionCtx = connCtx
+	driver.connectionCtx = config.ConnectionContext
 
 	return driver, nil
 }

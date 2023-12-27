@@ -334,6 +334,8 @@ type ConnectionConfig struct {
 	// SchemaTenantMode is the Oracle specific mode.
 	// If true, bytebase will treat the schema as a database.
 	SchemaTenantMode bool
+
+	ConnectionContext ConnectionContext
 }
 
 // SSHConfig is the configuration for connection over SSH.
@@ -351,6 +353,8 @@ type ConnectionContext struct {
 	EnvironmentID string
 	InstanceID    string
 	EngineVersion string
+	// UseDatabaseOwner is used by Postgres for using role of database owner.
+	UseDatabaseOwner bool
 }
 
 // QueryContext is the context to query.
@@ -399,7 +403,7 @@ type Driver interface {
 	// General execution
 	// A driver might support multiple engines (e.g. MySQL driver can support both MySQL and TiDB),
 	// So we pass the dbType to tell the exact engine.
-	Open(ctx context.Context, dbType storepb.Engine, config ConnectionConfig, connCtx ConnectionContext) (Driver, error)
+	Open(ctx context.Context, dbType storepb.Engine, config ConnectionConfig) (Driver, error)
 	// Remember to call Close to avoid connection leak
 	Close(ctx context.Context) error
 	Ping(ctx context.Context) error
@@ -462,7 +466,7 @@ func Register(dbType storepb.Engine, f driverFunc) {
 }
 
 // Open opens a database specified by its database driver type and connection config without verifying the connection.
-func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig, connectionConfig ConnectionConfig, connCtx ConnectionContext) (Driver, error) {
+func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig, connectionConfig ConnectionConfig) (Driver, error) {
 	driversMu.RLock()
 	f, ok := drivers[dbType]
 	driversMu.RUnlock()
@@ -470,7 +474,7 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 		return nil, errors.Errorf("db: unknown driver %v", dbType)
 	}
 
-	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig, connCtx)
+	driver, err := f(driverConfig).Open(ctx, dbType, connectionConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -206,7 +206,7 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 		return nil, err
 	}
 
-	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	sourceDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +218,7 @@ func (exec *PITRRestoreExecutor) doPITRRestore(ctx context.Context, dbFactory *d
 		if err != nil {
 			return nil, err
 		}
-		if targetDriver, err = dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, nil /* database */); err != nil {
+		if targetDriver, err = dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, nil /* database */, db.ConnectionContext{}); err != nil {
 			return nil, err
 		}
 	}
@@ -388,7 +388,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 	if err != nil {
 		return nil, err
 	}
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return nil, err
 	}
@@ -404,23 +404,23 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		return nil, errors.Wrapf(err, "failed to get the OWNER of database %q", database.DatabaseName)
 	}
 
-	defaultDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	defaultDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return nil, err
 	}
 	defer defaultDBDriver.Close(ctx)
-	db := defaultDBDriver.GetDB()
+	dbConn := defaultDBDriver.GetDB()
 	pitrDatabaseName := util.GetPITRDatabaseName(database.DatabaseName, issue.CreatedTime.Unix())
 	// If there's already a PITR database, it means there's a failed trial before this task execution.
 	// We need to clean up the dirty state and start clean for idempotent task execution.
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
+	if _, err := dbConn.ExecContext(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s;", pitrDatabaseName)); err != nil {
 		return nil, errors.Wrapf(err, "failed to drop the dirty PITR database %q left from a former task execution", pitrDatabaseName)
 	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s WITH OWNER %s;", pitrDatabaseName, originalOwner)); err != nil {
+	if _, err := dbConn.ExecContext(ctx, fmt.Sprintf("CREATE DATABASE %s WITH OWNER %s;", pitrDatabaseName, originalOwner)); err != nil {
 		return nil, errors.Wrapf(err, "failed to create the PITR database %q", pitrDatabaseName)
 	}
 
-	pitrDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	pitrDBDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +479,7 @@ func (exec *PITRRestoreExecutor) updateProgress(ctx context.Context, driver *mys
 
 // restoreDatabase will restore the database to the instance from the backup.
 func (*PITRRestoreExecutor) restoreDatabase(ctx context.Context, dbFactory *dbfactory.DBFactory, s3Client *bbs3.Client, profile config.Profile, instance *store.InstanceMessage, database *store.DatabaseMessage, backup *store.BackupMessage) error {
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
@@ -564,7 +564,7 @@ func createBranchMigrationHistory(ctx context.Context, stores *store.Store, dbFa
 		Creator:        creator.Name,
 		CreatorID:      creator.ID,
 	}
-	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase)
+	targetDriver, err := dbFactory.GetAdminDatabaseDriver(ctx, targetInstance, targetDatabase, db.ConnectionContext{})
 	if err != nil {
 		return "", model.Version{}, err
 	}

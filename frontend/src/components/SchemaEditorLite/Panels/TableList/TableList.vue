@@ -103,7 +103,7 @@ const { t } = useI18n();
 const {
   project,
   readonly,
-  selectedRolloutObjects,
+  selectionEnabled,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -143,10 +143,6 @@ const filteredTables = computed(() => {
 
 const engine = computed(() => {
   return props.db.instanceEntity.engine;
-});
-
-const shouldShowSelectionColumn = computed(() => {
-  return !!selectedRolloutObjects.value;
 });
 
 const classificationConfig = computed(() => {
@@ -200,7 +196,7 @@ const columns = computed(() => {
     {
       key: "__selected__",
       width: 32,
-      hide: !shouldShowSelectionColumn.value,
+      hide: !selectionEnabled.value,
       title: () => {
         const state = getAllTablesSelectionState(
           props.db,

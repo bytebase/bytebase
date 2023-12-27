@@ -3,17 +3,17 @@
     :recovery-codes="props.recoveryCodes"
     @download="state.recoveryCodesDownloaded = true"
   />
-  <div class="w-112 mx-auto flex flex-row justify-between items-center mb-8">
-    <button class="btn-cancel" @click="emit('close')">
+  <div class="flex flex-row justify-between items-center mb-8">
+    <NButton @click="emit('close')">
       {{ $t("common.cancel") }}
-    </button>
-    <button
-      class="btn-primary"
+    </NButton>
+    <NButton
+      type="primary"
       :disabled="!state.recoveryCodesDownloaded"
       @click="regenerateRecoveryCodes"
     >
       {{ $t("two-factor.setup-steps.recovery-codes-saved") }}
-    </button>
+    </NButton>
   </div>
 </template>
 

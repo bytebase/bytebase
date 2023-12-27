@@ -27,22 +27,19 @@
       :name="environment.uid"
     >
       <template #header>
-        <label class="flex items-center gap-x-2" @click.stop="">
-          <input
-            type="checkbox"
-            class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent ml-0.5"
+        <label class="flex items-center gap-x-2" @click.stop.prevent>
+          <NCheckbox
             v-bind="
               getAllSelectionStateForEnvironment(
                 environment,
                 databaseListInEnvironment
               )
             "
-            @click.stop=""
-            @input="
+            @update:checked="
               toggleAllDatabasesSelectionForEnvironment(
                 environment,
                 databaseListInEnvironment,
-                ($event.target as HTMLInputElement).checked
+                $event
               )
             "
           />
@@ -78,16 +75,21 @@
             "
           >
             <div class="radio text-sm flex justify-start md:flex-1">
-              <input
-                type="checkbox"
-                class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
+              <NCheckbox
                 :checked="
                   isDatabaseSelectedForEnvironment(
                     database.uid,
                     environment.uid
                   )
                 "
-                @input="(e: any) => toggleDatabaseUidForEnvironment(database.uid, environment.uid, e.target.checked)"
+                @update:checked="
+                  (checked) =>
+                    toggleDatabaseUidForEnvironment(
+                      database.uid,
+                      environment.uid,
+                      checked
+                    )
+                "
               />
               <span
                 class="font-medium ml-2 text-main"
@@ -112,7 +114,7 @@
 
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
-import { NCollapse, NCollapseItem } from "naive-ui";
+import { NCollapse, NCollapseItem, NCheckbox } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { ComposedDatabase } from "@/types";

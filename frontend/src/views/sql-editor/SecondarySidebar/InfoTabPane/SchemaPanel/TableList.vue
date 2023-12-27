@@ -8,7 +8,7 @@
     >
       <template #default="{ item, index }: VirtualListItem">
         <div
-          class="text-sm leading-6 px-1"
+          class="w-full text-sm leading-6 px-1"
           :class="`bb-table-list--item`"
           :data-key="item.key"
           :data-index="index"
@@ -16,7 +16,7 @@
           @mouseleave="handleMouseLeave($event, item)"
         >
           <div
-            class="flex items-center text-gray-600 whitespace-pre-wrap break-words rounded-sm px-1"
+            class="w-full flex items-center text-gray-600 rounded-sm px-1"
             :class="
               rowClickable && ['hover:bg-control-bg-hover/50', 'cursor-pointer']
             "
@@ -27,8 +27,10 @@
               class="w-4 h-4 mr-1 shrink-0"
             />
             <ViewIcon v-if="item.view" class="w-4 h-4 mr-1 shrink-0" />
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-html="renderItem(item)" />
+            <NEllipsis class="grow">
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <span v-html="renderItem(item)" />
+            </NEllipsis>
           </div>
         </div>
       </template>
@@ -38,6 +40,7 @@
 
 <script setup lang="ts">
 import { escape } from "lodash-es";
+import { NEllipsis } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
 import { TableIcon, ViewIcon } from "@/components/Icon";

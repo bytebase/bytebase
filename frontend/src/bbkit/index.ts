@@ -3,13 +3,10 @@ import BBAttention from "./BBAttention.vue";
 import BBAvatar from "./BBAvatar.vue";
 import BBBetaBadge from "./BBBetaBadge.vue";
 import BBButtonConfirm from "./BBButtonConfirm.vue";
-import BBContextMenu from "./BBContextMenu.vue";
 import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
-import BBSelect from "./BBSelect.vue";
 import BBSpin from "./BBSpin.vue";
-import BBTab from "./BBTab.vue";
 import {
   BBTable,
   BBTableCell,
@@ -25,12 +22,9 @@ export {
   BBAttention,
   BBAvatar,
   BBButtonConfirm,
-  BBContextMenu,
   BBModal,
   BBDialog,
-  BBSelect,
   BBSpin,
-  BBTab,
   BBTable,
   BBTableCell,
   BBTableHeaderCell,

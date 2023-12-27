@@ -14,8 +14,7 @@
         <BBTableHeaderCell class="w-12" :left-padding="4" @click.stop="">
           <NCheckbox
             v-if="historySectionList.length > 0"
-            :checked="allSelectionState.checked"
-            :indeterminate="allSelectionState.indeterminate"
+            v-bind="allSelectionState"
             @update:checked="toggleAllChangeHistorySelection"
           />
         </BBTableHeaderCell>
