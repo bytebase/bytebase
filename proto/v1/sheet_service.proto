@@ -223,9 +223,12 @@ message Sheet {
   // starred indicates whether the sheet is starred by the current authenticated user.
   bool starred = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  SheetPayload payload = 13;
+  // pinned indicates whether the sheet is pinned by the current authenticated user.
+  bool pinned = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  PushEvent push_event = 14;
+  SheetPayload payload = 14;
+
+  PushEvent push_event = 15;
 }
 
 message SheetPayload {

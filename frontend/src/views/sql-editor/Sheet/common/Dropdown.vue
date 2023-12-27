@@ -108,10 +108,13 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    await sheetV1Store.upsertSheetOrganizer({
-      sheet: sheet.name,
-      starred: key === "star",
-    });
+    await sheetV1Store.upsertSheetOrganizer(
+      {
+        sheet: sheet.name,
+        starred: key === "star",
+      },
+      ["starred"]
+    );
     events.emit("refresh", { views: ["starred"] });
   } else if (key === "duplicate") {
     const dialogInstance = dialog.create({

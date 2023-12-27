@@ -47,12 +47,13 @@ export interface TabInfo {
   selectedStatement: string;
   mode: TabMode;
   editMode: EditMode;
+  isExecutingSQL: boolean;
+  pinned?: boolean;
   executeParams?: {
     query: string;
     config: ExecuteConfig;
     option?: Partial<ExecuteOption>;
   };
-  isExecutingSQL: boolean;
   sheetName?: string;
   isFreshNew?: boolean;
   // batchQueryContext saves the context of batch query, including the selected labels.
