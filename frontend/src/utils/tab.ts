@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import { useDatabaseV1Store, useInstanceV1Store, useTabStore } from "@/store";
 import type {
   ComposedDatabase,
   ComposedInstance,
@@ -118,4 +118,25 @@ export const isDisconnectedTab = (tab: TabInfo) => {
     return false;
   }
   return databaseId === String(UNKNOWN_ID);
+};
+
+export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
+  const tabStore = useTabStore();
+  if (isSimilarTab(tab, tabStore.currentTab)) {
+    // Don't go further if the connection doesn't change.
+    return;
+  }
+  if (tabStore.currentTab.isFreshNew) {
+    // If the current tab is "fresh new", update its connection directly.
+    tabStore.updateCurrentTab(tab);
+  } else {
+    // Otherwise select or add a new tab and set its connection
+    const name = getSuggestedTabNameFromConnection(tab.connection);
+    tabStore.selectOrAddSimilarTab(
+      tab,
+      false /* beside */,
+      name /* defaultTabName */
+    );
+    tabStore.updateCurrentTab(tab);
+  }
 };
