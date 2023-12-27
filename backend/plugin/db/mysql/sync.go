@@ -277,18 +277,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			} else {
 				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
+		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+			// TODO(zp): refactor column default value.
+			// Use the upper case to consistent with MySQL Dump.
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
 		} else if isNullBool {
 			// This is NULL if the column has an explicit default of NULL,
 			// or if the column definition includes no DEFAULT clause.
 			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
 				DefaultNull: true,
-			}
-		} else {
-			// TODO(zp): refactor column default value.
-			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
-				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
 			}
 		}
 
