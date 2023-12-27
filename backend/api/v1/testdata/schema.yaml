@@ -1,4 +1,61 @@
 - engine: 2
+  schema: |-
+    create table t
+      (
+        `a` int NOT NULL COMMENT 'this is comment',
+        KEY `idx` (((`a` + 20))),
+        UNIQUE KEY `idx2` (`a`),
+        PRIMARY KEY (`a`)
+      ) COMMENT 'this is comment with '' escaped';
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type":  "int",
+                  "comment":  "this is comment",
+                  "userComment":  "this is comment"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "idx",
+                  "expressions":  [
+                    "((`a` + 20))"
+                  ],
+                  "visible":  true
+                },
+                {
+                  "name":  "idx2",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "visible":  true
+                },
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "comment":  "this is comment with ' escaped",
+              "userComment":  "this is comment with ' escaped"
+            }
+          ]
+        }
+      ]
+    }
+- engine: 2
   schema: |
     create table t
       (
@@ -11,78 +68,78 @@
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata: |-
     {
-      "schemas": [
+      "schemas":  [
         {
-          "tables": [
+          "tables":  [
             {
-              "name": "t",
-              "columns": [
+              "name":  "t",
+              "columns":  [
                 {
-                  "name": "c",
-                  "defaultExpression": "AUTO_INCREMENT",
-                  "nullable": true,
-                  "type": "int"
+                  "name":  "c",
+                  "defaultExpression":  "AUTO_INCREMENT",
+                  "nullable":  true,
+                  "type":  "int"
                 },
                 {
-                  "name": "a",
-                  "defaultExpression": "1",
-                  "nullable": true,
-                  "type": "int",
-                  "comment": "abcdefg",
-                  "userComment": "abcdefg"
+                  "name":  "a",
+                  "defaultExpression":  "1",
+                  "nullable":  true,
+                  "type":  "int",
+                  "comment":  "abcdefg",
+                  "userComment":  "abcdefg"
                 },
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "nullable": true,
-                  "type": "varchar(20)"
+                  "name":  "b",
+                  "defaultNull":  true,
+                  "nullable":  true,
+                  "type":  "varchar(20)"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "a",
                     "b"
                   ],
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 }
               ],
-              "comment": "this is comment with ' escaped",
-              "userComment": "this is comment with ' escaped",
-              "foreignKeys": [
+              "comment":  "this is comment with ' escaped",
+              "userComment":  "this is comment with ' escaped",
+              "foreignKeys":  [
                 {
-                  "name": "fk1",
-                  "columns": [
+                  "name":  "fk1",
+                  "columns":  [
                     "a"
                   ],
-                  "referencedTable": "t2",
-                  "referencedColumns": [
+                  "referencedTable":  "t2",
+                  "referencedColumns":  [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name": "t2",
-              "columns": [
+              "name":  "t2",
+              "columns":  [
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "type": "int"
+                  "name":  "b",
+                  "defaultNull":  true,
+                  "type":  "int"
                 }
               ],
-              "indexes": [
+              "indexes":  [
                 {
-                  "name": "PRIMARY",
-                  "expressions": [
+                  "name":  "PRIMARY",
+                  "expressions":  [
                     "b"
                   ],
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
                 }
               ]
             }
