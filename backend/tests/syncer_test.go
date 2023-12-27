@@ -289,19 +289,25 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "name":"a",
 							  "position":1,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   },
 						   {
 							  "name":"b",
 							  "position":2,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   },
 						   {
 							  "name":"c",
 							  "position":3,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   }
 						],
 						"indexes":[
@@ -360,19 +366,25 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "name":"a",
 							  "position":1,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   },
 						   {
 							  "name":"b",
 							  "position":2,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   },
 						   {
 							  "name":"c",
 							  "position":3,
 							  "nullable":true,
-							  "type":"int"
+							  "type":"int",
+							  "defaultNull":true,
+							  "hasDefault":true
 						   }
 						],
 						"indexes":[
