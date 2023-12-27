@@ -2657,7 +2657,8 @@
     },
     "sheets": "Hojas",
     "search-sheets": "Hojas de búsqueda",
-    "sheet": "Hoja"
+    "sheet": "Hoja",
+    "unconnected": "Desconectado"
   },
   "engine": {
     "mysql": "MySQL",
