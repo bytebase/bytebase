@@ -1,50 +1,59 @@
 <template>
-  <div>
-    <div class="issue-debug">phase: {{ phase }}</div>
+  <div class="h-full flex flex-col">
+    <NLayoutHeader class="border-b">
+      <div class="issue-debug">phase: {{ phase }}</div>
+      <BannerSection v-if="!isCreating" />
 
-    <BannerSection v-if="!isCreating" />
+      <HeaderSection />
+    </NLayoutHeader>
+    <NLayout :has-sider="true" sider-placement="right" class="flex-1">
+      <NLayoutContent content-class="hide-scrollbar">
+        <StageSection />
 
-    <HeaderSection class="!border-t-0" />
+        <TaskListSection />
 
-    <div class="w-full border-t mt-4" />
+        <TaskRunSection v-if="!isCreating" />
 
-    <StageSection />
+        <div class="w-full border-t my-2" />
 
-    <div class="w-full mt-4" />
+        <SQLCheckSection v-if="isCreating" />
+        <PlanCheckSection v-if="!isCreating" />
 
-    <TaskListSection />
+        <StatementSection />
 
-    <TaskRunSection v-if="!isCreating" />
+        <div class="w-full border-t my-2" />
 
-    <div class="w-full border-t my-4" />
+        <DescriptionSection />
 
-    <SQLCheckSection v-if="isCreating" />
-    <PlanCheckSection v-if="!isCreating" />
+        <div class="w-full border-t my-2" />
 
-    <StatementSection />
+        <ActivitySection v-if="!isCreating" />
+      </NLayoutContent>
 
-    <div class="w-full border-t my-4" />
-
-    <DescriptionSection />
-
-    <div class="w-full border-t my-4" />
-
-    <ActivitySection v-if="!isCreating" />
-
-    <IssueReviewActionPanel
-      :action="ongoingIssueReviewAction?.action"
-      @close="ongoingIssueReviewAction = undefined"
-    />
-    <IssueStatusActionPanel
-      :action="ongoingIssueStatusAction?.action"
-      @close="ongoingIssueStatusAction = undefined"
-    />
-    <TaskRolloutActionPanel
-      :action="ongoingTaskRolloutAction?.action"
-      :task-list="ongoingTaskRolloutAction?.taskList ?? []"
-      @close="ongoingTaskRolloutAction = undefined"
-    />
+      <NLayoutSider
+        :width="240"
+        :show-trigger="false"
+        content-class="hide-scrollbar"
+        class="border-l"
+      >
+        <Sidebar />
+      </NLayoutSider>
+    </NLayout>
   </div>
+
+  <IssueReviewActionPanel
+    :action="ongoingIssueReviewAction?.action"
+    @close="ongoingIssueReviewAction = undefined"
+  />
+  <IssueStatusActionPanel
+    :action="ongoingIssueStatusAction?.action"
+    @close="ongoingIssueStatusAction = undefined"
+  />
+  <TaskRolloutActionPanel
+    :action="ongoingTaskRolloutAction?.action"
+    :task-list="ongoingTaskRolloutAction?.taskList ?? []"
+    @close="ongoingTaskRolloutAction = undefined"
+  />
 
   <div class="issue-debug">
     <pre class="text-xs">{{ JSON.stringify(issue, null, "  ") }}</pre>
@@ -52,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { NLayout, NLayoutContent, NLayoutHeader, NLayoutSider } from "naive-ui";
 import { ref } from "vue";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -65,6 +75,7 @@ import {
   StatementSection,
   DescriptionSection,
   ActivitySection,
+  Sidebar,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
   TaskRolloutActionPanel,

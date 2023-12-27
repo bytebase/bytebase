@@ -132,4 +132,10 @@ const rollbackIssueLink = computed(() => {
     rollbackFromTask.value
   );
 });
+
+defineExpose({
+  shown: computed(() => {
+    return shouldShowTips.value;
+  }),
+});
 </script>
