@@ -179,9 +179,7 @@ onMounted(() => {
       return true;
     }
 
-    if (checkRunCounter.value === 0) {
-      await runChecks();
-    }
+    await runChecks();
 
     const hasError = advices.value?.some(
       (advice) =>
