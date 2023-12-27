@@ -17,6 +17,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	autoRandSymbol = "AUTO_RANDOM"
+)
+
 func checkTiDBColumnType(tp string) bool {
 	_, err := tidbparser.ParseTiDB(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp), "", "")
 	return err == nil
@@ -119,6 +123,18 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					columnState.comment = comment
 				case tidbast.ColumnOptionAutoIncrement:
 					defaultValue := autoIncrementSymbol
+					columnState.hasDefault = true
+					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
+				case tidbast.ColumnOptionAutoRandom:
+					defaultValue := autoRandSymbol
+					unspecifiedLength := -1
+					if option.AutoRandOpt.ShardBits != unspecifiedLength {
+						if option.AutoRandOpt.RangeBits != unspecifiedLength {
+							defaultValue += fmt.Sprintf("(%d, %d)", option.AutoRandOpt.ShardBits, option.AutoRandOpt.RangeBits)
+						} else {
+							defaultValue += fmt.Sprintf("(%d)", option.AutoRandOpt.ShardBits)
+						}
+					}
 					columnState.hasDefault = true
 					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 				}
@@ -479,13 +495,17 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			// Column attributes.
 			// todo(zp): refactor column auto_increment.
 			skipSchemaAutoIncrement := false
+			skipAutoRand := false
+			// Default value, auto increment and auto random are mutually exclusive.
 			for _, option := range column.Options {
-				if option.Tp == tidbast.ColumnOptionDefaultValue || option.Tp == tidbast.ColumnOptionAutoIncrement {
-					// if schema string has default value or auto_increment.
-					// and metdata has default value.
-					// we skip the schema auto_increment and only compare default value.
+				switch option.Tp {
+				case tidbast.ColumnOptionDefaultValue:
+					skipAutoRand = stateColumn.hasDefault
 					skipSchemaAutoIncrement = stateColumn.hasDefault
-					break
+				case tidbast.ColumnOptionAutoIncrement:
+					skipSchemaAutoIncrement = stateColumn.hasDefault
+				case tidbast.ColumnOptionAutoRandom:
+					skipAutoRand = stateColumn.hasDefault
 				}
 			}
 			newAttr := tidbExtractNewAttrs(stateColumn, column.Options)
@@ -546,9 +566,13 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 							}
 						}
 					} else if stateColumn.hasDefault {
-						if strings.EqualFold(stateColumn.defaultValue.toString(), "AUTO_INCREMENT") {
-							skipSchemaAutoIncrement = true
+						if strings.EqualFold(stateColumn.defaultValue.toString(), autoIncrementSymbol) {
 							if _, err := g.columnDefine.WriteString(" " + stateColumn.defaultValue.toString()); err != nil {
+								g.err = err
+								return in, true
+							}
+						} else if strings.Contains(strings.ToUpper(stateColumn.defaultValue.toString()), autoRandSymbol) {
+							if _, err := g.columnDefine.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */" + stateColumn.defaultValue.toString())); err != nil {
 								g.err = err
 								return in, true
 							}
@@ -588,6 +612,9 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					}
 				default:
 					if skipSchemaAutoIncrement && option.Tp == tidbast.ColumnOptionAutoIncrement {
+						continue
+					}
+					if skipAutoRand && option.Tp == tidbast.ColumnOptionAutoRandom {
 						continue
 					}
 					if optionStr, err := tidbRestoreNodeDefault(option); err == nil {
@@ -897,9 +924,14 @@ func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) [
 	}
 	if !defaultExists && column.hasDefault {
 		// todo(zp): refactor column attribute.
-		if strings.EqualFold(column.defaultValue.toString(), "AUTO_INCREMENT") {
+		if strings.EqualFold(column.defaultValue.toString(), autoIncrementSymbol) {
 			result = append(result, columnAttr{
 				text:  column.defaultValue.toString(),
+				order: columnAttrOrder["DEFAULT"],
+			})
+		} else if strings.Contains(strings.ToUpper(column.defaultValue.toString()), autoRandSymbol) {
+			result = append(result, columnAttr{
+				text:  fmt.Sprintf("/*T![auto_rand] %s */", column.defaultValue.toString()),
 				order: columnAttrOrder["DEFAULT"],
 			})
 		} else {
@@ -930,6 +962,8 @@ func tidbGetAttrOrder(option *tidbast.ColumnOption) int {
 		return columnAttrOrder["COLUMN_FORMAT"]
 	case tidbast.ColumnOptionAutoIncrement:
 		return columnAttrOrder["AUTO_INCREMENT"]
+	case tidbast.ColumnOptionAutoRandom:
+		return columnAttrOrder["AUTO_RANDOM"]
 	case tidbast.ColumnOptionComment:
 		return columnAttrOrder["COMMENT"]
 	case tidbast.ColumnOptionCollate:
