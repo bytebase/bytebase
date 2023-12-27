@@ -17,6 +17,9 @@
         constraint fk1 foreign key (a) references t2 (b)
       );
     create table t2(b int NOT NULL default NULL, primary key (b));
+    create table t3(a bigint NOT NULL AUTO_RANDOM, primary key (a));
+    create table t4(a bigint NOT NULL AUTO_RANDOM(6), primary key (a));
+    create table t5(a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */, primary key (a));
   metadata: |-
     {
       "schemas":  [
@@ -124,6 +127,69 @@
                   "name":  "PRIMARY",
                   "expressions":  [
                     "b"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ]
+            },
+            {
+              "name":  "t3",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "defaultExpression":  "AUTO_RANDOM",
+                  "type":  "bigint"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ]
+            },
+            {
+              "name":  "t4",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "defaultExpression":  "AUTO_RANDOM(6)",
+                  "type":  "bigint"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ]
+            },
+            {
+              "name":  "t5",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "defaultExpression":  "AUTO_RANDOM(6, 54)",
+                  "type":  "bigint"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
                   ],
                   "unique":  true,
                   "primary":  true,

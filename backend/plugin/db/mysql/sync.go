@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -48,6 +49,9 @@ var (
 		"ORAAUDITOR": true,
 		"__public":   true,
 	}
+
+	pkAutoRandomBitsRegex = regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
+	RangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
 )
 
 // SyncInstance syncs the instance.
@@ -341,10 +345,30 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
 			IFNULL(TABLE_COMMENT, ''),
+			''
+		FROM information_schema.TABLES
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME`
+
+	if driver.dbType == storepb.Engine_TIDB {
+		tableQuery = `
+		SELECT
+			TABLE_NAME,
+			TABLE_TYPE,
+			IFNULL(ENGINE, ''),
+			IFNULL(TABLE_COLLATION, ''),
+			IFNULL(TABLE_ROWS, 0),
+			IFNULL(DATA_LENGTH, 0),
+			IFNULL(INDEX_LENGTH, 0),
+			IFNULL(DATA_FREE, 0),
+			IFNULL(CREATE_OPTIONS, ''),
+			IFNULL(TABLE_COMMENT, ''),
 			IFNULL(TIDB_ROW_ID_SHARDING_INFO, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
+	}
+
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
@@ -376,7 +400,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		case baseTableType:
 			columns := columnMap[key]
 			// Set auto random default value for TiDB.
-			if strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
+			if driver.dbType == storepb.Engine_TIDB && strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
+				autoRandText := autoRandSymbol
+				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
+					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
+						autoRandText += fmt.Sprintf("(%s,%s)", randomBitsMatch[1], rangeBitsMatch[1])
+					} else {
+						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
+					}
+				}
 				if indexes, ok := indexMap[key]; ok {
 					for _, index := range indexes {
 						if index.Primary {
@@ -385,7 +417,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 								for i, column := range columns {
 									if column.Name == columnName {
 										newColumn := columns[i]
-										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandSymbol}
+										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandText}
 										break
 									}
 								}
