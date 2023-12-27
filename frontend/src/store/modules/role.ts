@@ -15,6 +15,10 @@ export const useRoleStore = defineStore("role", () => {
     return roleList.value;
   };
 
+  const getRoleByName = (name: string) => {
+    return roleList.value.find((r) => r.name === name);
+  };
+
   const upsertRole = async (role: Role) => {
     const existedRole = roleList.value.find((r) => r.name === role.name);
     if (existedRole) {
@@ -50,6 +54,7 @@ export const useRoleStore = defineStore("role", () => {
   return {
     roleList,
     fetchRoleList,
+    getRoleByName,
     upsertRole,
     deleteRole,
   };
