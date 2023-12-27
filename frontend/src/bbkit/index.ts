@@ -7,12 +7,7 @@ import BBDialog from "./BBDialog.vue";
 import { BBGrid } from "./BBGrid";
 import BBModal from "./BBModal.vue";
 import BBSpin from "./BBSpin.vue";
-import {
-  BBTable,
-  BBTableCell,
-  BBTableHeaderCell,
-  BBTableSearch,
-} from "./BBTable";
+import { BBTable, BBTableCell, BBTableHeaderCell } from "./BBTable";
 import BBTextField from "./BBTextField.vue";
 
 export * from "./types";
@@ -28,7 +23,6 @@ export {
   BBTable,
   BBTableCell,
   BBTableHeaderCell,
-  BBTableSearch,
   BBGrid,
   BBTextField,
   BBBetaBadge,

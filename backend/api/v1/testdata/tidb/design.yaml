@@ -27,6 +27,7 @@
       `binlog_format` enum('ROW','MIXED','STATEMENT',''),
       `c1` int default 1
     );
+    create table t5(a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */, primary key (a));
   target: |-
     {
       "schemas":  [
@@ -166,6 +167,50 @@
               ]
             },
             {
+              "name": "t5",
+              "columns": [
+                {
+                  "name": "a",
+                  "defaultExpression": "AUTO_RANDOM(6, 54)",
+                  "nullable": false,
+                  "type": "bigint"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "t6",
+              "columns": [
+                {
+                  "name": "a",
+                  "defaultExpression": "AUTO_RANDOM(6)",
+                  "nullable": false,
+                  "type": "bigint"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "a"
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ]
+            },
+            {
               "name":  "t2",
               "columns":  [
                 {
@@ -233,7 +278,15 @@
       `c1` int AUTO_INCREMENT,
       `x1` blob NULL
     ) COMMENT 'hello';
+    CREATE TABLE `t5` (
+      `a` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */,
+      PRIMARY KEY (`a`)
+    );
 
+    CREATE TABLE `t6` (
+      `a` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6) */,
+      PRIMARY KEY (`a`)
+    );
     CREATE TABLE `t2` (
       `b` int NULL,
       `a` int NULL,

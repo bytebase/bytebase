@@ -45,7 +45,7 @@
     },
     "table-drop-naming-convention": {
       "title": "Restrict the naming format of tables to be deleted",
-      "description": "For example, by requring the \"_del\" suffix, it can effectively prevent accidental deletions. Suggestion error level: Error",
+      "description": "For example, by requiring the \"_del\" suffix, it can effectively prevent accidental deletions. Suggestion error level: Error",
       "component": {
         "format": {
           "title": "Table name format (regex)"
