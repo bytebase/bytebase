@@ -266,11 +266,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
-		isNullBool, err := util.ConvertYesNo(nullable)
+		nullableBool, err := util.ConvertYesNo(nullable)
 		if err != nil {
 			return nil, err
 		}
-		column.Nullable = isNullBool
+		column.Nullable = nullableBool
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
 				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
@@ -281,7 +281,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			// TODO(zp): refactor column default value.
 			// Use the upper case to consistent with MySQL Dump.
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
-		} else if isNullBool {
+		} else if nullableBool {
 			// This is NULL if the column has an explicit default of NULL,
 			// or if the column definition includes no DEFAULT clause.
 			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
