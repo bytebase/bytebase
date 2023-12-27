@@ -250,18 +250,6 @@ func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchShe
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
 			}
-		case "pinned":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for pinned", spec.operator))
-			}
-			switch spec.value {
-			case "true":
-				sheetFind.OrganizerPrincipalIDPinned = &principalID
-			case "false":
-				sheetFind.OrganizerPrincipalIDNotPinned = &principalID
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for pinned", spec.value))
-			}
 		case "source":
 			switch spec.operator {
 			case comparatorTypeEqual:
@@ -676,7 +664,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		Source:      source,
 		Type:        tp,
 		Starred:     sheet.Starred,
-		Pinned:      sheet.Pinned,
 		PushEvent:   v1PushEvent,
 		Payload:     v1SheetPayload,
 	}, nil
