@@ -54,15 +54,15 @@
           {{ $t("common.description") }}
         </h3>
         <div class="flex flex-col gap-x-2">
-          <AutoHeightTextarea
+          <BBTextField
             v-model:value="state.comment"
             :disabled="disabled"
             :placeholder="
               getRuleLocalization(rule.type).description ||
               $t('common.description')
             "
-            rows="1"
-            :max-height="120"
+            type="textarea"
+            :autosize="{ minRows: 1, maxRows: 4 }"
           />
         </div>
       </div>
@@ -160,7 +160,6 @@
 import { NSwitch } from "naive-ui";
 import { computed, nextTick, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import AutoHeightTextarea from "@/components/misc/AutoHeightTextarea.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import {

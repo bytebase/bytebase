@@ -1,20 +1,14 @@
 <template>
-  <input
+  <NInputNumber
     :value="value"
-    type="number"
     :disabled="disabled"
-    :class="[
-      'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
-      disabled && 'cursor-not-allowed',
-    ]"
     :placeholder="`${config.payload.default}`"
-    @change="
-      $emit('update:value', ($event.target as HTMLInputElement).valueAsNumber)
-    "
+    @update:value="$emit('update:value', $event as number)"
   />
 </template>
 
 <script lang="ts" setup>
+import { NInputNumber } from "naive-ui";
 import { RuleConfigComponent } from "@/types";
 
 defineProps<{

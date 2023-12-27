@@ -12,10 +12,9 @@
       class="w-[30rem] max-w-[100vw] relative"
     >
       <div class="flex items-center justify-end mx-2 mb-2">
-        <BBTableSearch
-          class="m-px"
+        <SearchBox
+          v-model:value="state.searchText"
           :placeholder="$t('database.filter-database')"
-          @change-text="(text: string) => (state.searchText = text)"
         />
       </div>
       <NCollapse
