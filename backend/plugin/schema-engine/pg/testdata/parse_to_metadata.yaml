@@ -51,7 +51,11 @@
                 },
                 {
                   "name":  "idx_t_c",
-                  "visible":  true
+                  "expressions":  [
+                    "c"
+                  ],
+                  "visible":  true,
+                  "definition":  "CREATE INDEX idx_t_c ON public.t USING btree (c);"
                 }
               ],
               "foreignKeys":  [

@@ -109,6 +109,7 @@ func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 						referencedTable:   constraint.Foreign.Table.Name,
 						referencedColumns: constraint.Foreign.ColumnList,
 					}
+				case ast.ConstraintTypeUnique:
 				}
 			}
 
@@ -183,10 +184,12 @@ func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
 				continue
 			}
 			table.indexes[stmt.Index.Name] = &indexState{
-				id:      len(table.indexes),
-				name:    stmt.Index.Name,
-				primary: false,
-				unique:  stmt.Index.Unique,
+				id:         len(table.indexes),
+				name:       stmt.Index.Name,
+				primary:    false,
+				unique:     stmt.Index.Unique,
+				keys:       stmt.Index.GetKeyNameList(),
+				definition: stmt.Text(),
 			}
 		case *ast.CommentStmt:
 			switch stmt.Type {
