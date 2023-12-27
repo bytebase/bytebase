@@ -10,7 +10,6 @@ export * from "./database";
 export * from "./dataSource";
 export * from "./environment";
 export * from "./error";
-export * from "./errorList";
 export * from "./help";
 export * from "./id";
 export * from "./instance";
