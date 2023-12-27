@@ -95,6 +95,8 @@ func (extractor *fieldExtractor) extractNode(in tidbast.Node) ([]base.FieldInfo,
 		return extractor.extractTableName(node)
 	case *tidbast.SetOprStmt:
 		return extractor.extractSetOpr(node)
+	case *tidbast.SetOprSelectList:
+		return extractor.extractSetOprSelectList(node)
 	case *tidbast.CreateViewStmt:
 		list, err := extractor.extractNode(node.Select)
 		if err != nil {
@@ -120,6 +122,42 @@ func (extractor *fieldExtractor) extractNode(in tidbast.Node) ([]base.FieldInfo,
 		return result, nil
 	}
 	return nil, nil
+}
+
+func (extractor *fieldExtractor) extractSetOprSelectList(node *tidbast.SetOprSelectList) ([]base.FieldInfo, error) {
+	if node.With != nil {
+		cteOuterLength := len(extractor.cteOuterSchemaInfo)
+		defer func() {
+			extractor.cteOuterSchemaInfo = extractor.cteOuterSchemaInfo[:cteOuterLength]
+		}()
+		for _, cte := range node.With.CTEs {
+			cteTable, err := extractor.extractCTE(cte)
+			if err != nil {
+				return nil, err
+			}
+			extractor.cteOuterSchemaInfo = append(extractor.cteOuterSchemaInfo, cteTable)
+		}
+	}
+
+	result := []base.FieldInfo{}
+	for i, selectStmt := range node.Selects {
+		fieldList, err := extractor.extractNode(selectStmt)
+		if err != nil {
+			return nil, err
+		}
+		if i == 0 {
+			result = fieldList
+		} else {
+			if len(result) != len(fieldList) {
+				// The error content comes from MySQL.
+				return nil, errors.Errorf("The used SELECT statements have a different number of columns")
+			}
+			for i := 0; i < len(result); i++ {
+				result[i].MaskingAttributes.TransmittedBy(fieldList[i].MaskingAttributes)
+			}
+		}
+	}
+	return result, nil
 }
 
 func (extractor *fieldExtractor) extractSetOpr(node *tidbast.SetOprStmt) ([]base.FieldInfo, error) {
