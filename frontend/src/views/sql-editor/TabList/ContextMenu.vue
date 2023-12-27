@@ -34,12 +34,12 @@ const options = computed((): DropdownOption[] => {
   const options: (DropdownOption & { hide?: boolean })[] = [
     {
       key: "PIN",
-      label: "Pin",
+      label: t("common.pin"),
       hide: tab.pinned,
     },
     {
       key: "UNPIN",
-      label: "Unpin",
+      label: t("common.unpin"),
       hide: !tab.pinned,
     },
     {
