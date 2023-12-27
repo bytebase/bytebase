@@ -762,7 +762,10 @@ func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []str
 	var result []string
 	for _, key := range ctx.AllKeyPartOrExpression() {
 		if key.KeyPart() != nil {
-			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.KeyPart())
+			keyText := mysqlparser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			if key.KeyPart().FieldLength() != nil || key.KeyPart().Direction() != nil {
+				keyText = key.GetParser().GetTokenStream().GetTextFromRuleContext(key.KeyPart())
+			}
 			result = append(result, keyText)
 		} else if key.ExprWithParentheses() != nil {
 			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
