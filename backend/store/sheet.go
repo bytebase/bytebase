@@ -105,10 +105,9 @@ type FindSheetMessage struct {
 	Type         *SheetType
 	PayloadType  *string
 	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
 	OrganizerPrincipalIDNotStarred *int
-	OrganizerPrincipalIDPinned     *int
-	OrganizerPrincipalIDNotPinned  *int
 	// Used to find a sheet list from projects containing PrincipalID as an active member.
 	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
 	PrincipalID *int
@@ -212,12 +211,6 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 	}
 	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
-	}
-	if v := find.OrganizerPrincipalIDPinned; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND pinned = true)", len(args)+1)), append(args, *v)
-	}
-	if v := find.OrganizerPrincipalIDNotPinned; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND pinned = false)", len(args)+1)), append(args, *v)
 	}
 
 	if v := find.Source; v != nil {
