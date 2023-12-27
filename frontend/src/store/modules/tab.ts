@@ -11,6 +11,7 @@ import {
   WebStorageHelper,
   isDisconnectedTab,
 } from "@/utils";
+import { createTabFromSheet } from "@/views/sql-editor/Sheet";
 import { useWebTerminalV1Store } from "./v1";
 import { useSheetV1Store } from "./v1/sheet";
 
@@ -33,6 +34,7 @@ const PERSISTENT_TAB_FIELDS = [
   "sheetName",
   "mode",
   "batchQueryContext",
+  "pinned",
 ] as const;
 type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
@@ -139,6 +141,12 @@ export const useTabStore = defineStore("tab", () => {
       addTab(newTab);
     }
   };
+  const reorderTabs = () => {
+    const sortedTabs = Array.from(tabs.value.values()).sort((a, b) => {
+      return a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1;
+    });
+    tabIdList.value = sortedTabs.map((tab) => tab.id);
+  };
   const _cleanup = (tabIdList: string[]) => {
     const prefix = `${LOCAL_STORAGE_KEY_PREFIX}.tab.`;
     const keys = storage.keys().filter((key) => key.startsWith(prefix));
@@ -175,13 +183,30 @@ export const useTabStore = defineStore("tab", () => {
 
   // Load session from local storage.
   // Reset if failed.
-  const init = () => {
+  const init = async () => {
+    const sheetV1Store = useSheetV1Store();
     // Load tabIdList and currentTabId
     tabIdList.value = storage.load(KEYS.tabIdList, []);
     currentTabId.value = storage.load(KEYS.currentTabId, INITIAL_TAB.id);
+
     if (tabIdList.value.length === 0) {
-      // tabIdList is empty accidentally
-      tabIdList.value = [INITIAL_TAB.id];
+      const pinnedSheets = await sheetV1Store.fetchPinnedSheetList(
+        true /* silent */
+      );
+      if (pinnedSheets.length > 0) {
+        for (const sheet of pinnedSheets) {
+          const newTab = await createTabFromSheet(sheet);
+          if (!newTab) {
+            continue;
+          }
+          tabs.value.set(newTab.id, newTab);
+          watchTab(newTab, true);
+        }
+        tabIdList.value = Array.from(tabs.value.keys());
+      } else {
+        // tabIdList is empty accidentally.
+        tabIdList.value = [INITIAL_TAB.id];
+      }
     }
     if (tabIdList.value.indexOf(currentTabId.value) < 0) {
       // currentTabId is not in tabIdList accidentally
@@ -211,7 +236,6 @@ export const useTabStore = defineStore("tab", () => {
     });
 
     // Fetch opening sheets if needed
-    const sheetV1Store = useSheetV1Store();
     tabList.value.forEach((tab) => {
       if (tab.sheetName) {
         sheetV1Store.getOrFetchSheetByName(tab.sheetName);
@@ -258,6 +282,7 @@ export const useTabStore = defineStore("tab", () => {
     setCurrentTabId,
     selectOrAddTempTab,
     selectOrAddSimilarTab,
+    reorderTabs,
     reset,
   };
 });
@@ -285,8 +310,12 @@ const maybeMigrateLegacyTab = (
 };
 
 export const isTabClosable = (tab: TabInfo) => {
-  const { tabList } = useTabStore();
+  // Pinned tabs are not closable by default. User needs to unpin it first.
+  if (tab.pinned) {
+    return false;
+  }
 
+  const { tabList } = useTabStore();
   if (tabList.length > 1) {
     // Not the only one tab
     return true;
