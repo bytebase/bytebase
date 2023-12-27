@@ -159,12 +159,11 @@ CREATE TABLE member (
     created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
-    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DBA', 'DEVELOPER')),
+    role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
 
-CREATE UNIQUE INDEX idx_member_unique_principal_id ON member(principal_id);
+CREATE INDEX idx_member_principal_id ON member (principal_id);
 
 ALTER SEQUENCE member_id_seq RESTART WITH 101;
 
