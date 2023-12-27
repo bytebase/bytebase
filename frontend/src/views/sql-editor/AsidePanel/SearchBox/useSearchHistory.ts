@@ -2,7 +2,7 @@ import { useLocalStorage } from "@vueuse/core";
 import { uniq } from "lodash-es";
 
 const useSearchHistory = () => {
-  const searchHistoryRef = useLocalStorage<string[]>(
+  const searchHistory = useLocalStorage<string[]>(
     "sql-editor-search-result-history",
     []
   );
@@ -11,11 +11,11 @@ const useSearchHistory = () => {
     if (!databaseName) {
       return;
     }
-    searchHistoryRef.value = uniq([databaseName, ...searchHistoryRef.value]);
+    searchHistory.value = uniq([databaseName, ...searchHistory.value]);
   };
 
   return {
-    searchResults: searchHistoryRef.value,
+    searchHistory,
     appendSearchResult,
   };
 };

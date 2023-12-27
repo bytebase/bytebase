@@ -41,17 +41,17 @@ defineEmits<{
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const searchHistory = useSearchHistory();
+const { searchHistory } = useSearchHistory();
 
 const getOptionShow = () => {
-  if (autoCompleteOptions.value.length === 0) {
+  if (autoCompleteOptions.value[0].children.length === 0) {
     return false;
   }
   return true;
 };
 
 const autoCompleteOptions = computed(() => {
-  const databaseNames = searchHistory.searchResults;
+  const databaseNames = searchHistory.value;
   return [
     {
       type: "group",
@@ -118,7 +118,7 @@ const handleDatabaseSelect = (databaseName: string) => {
 };
 
 watchEffect(async () => {
-  for (const databaseName of searchHistory.searchResults) {
+  for (const databaseName of searchHistory.value) {
     const database = await databaseStore.getOrFetchDatabaseByName(
       databaseName,
       true /* silent */
