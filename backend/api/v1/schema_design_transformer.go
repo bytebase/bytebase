@@ -668,7 +668,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 	}
 
 	if ctx.GetType_() != nil {
-		switch strings.ToUpper(ctx.GetType_().GetText()) {
+		symbol := strings.ToUpper(ctx.GetType_().GetText())
+		switch symbol {
 		case "PRIMARY":
 			list := extractKeyListVariants(ctx.KeyListVariants())
 			table := t.state.schemas[""].tables[t.currentTable]
@@ -701,6 +702,27 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				referencedColumns: referencedColumns,
 			}
 			table.foreignKeys[name] = fk
+		case "KEY", "INDEX", "UNIQUE":
+			var name string
+			if v := ctx.IndexNameAndType(); v != nil {
+				name = mysqlparser.NormalizeMySQLIdentifier(v.IndexName().Identifier())
+			} else {
+				t.err = errors.New("index name not found")
+			}
+			list := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    list,
+				primary: false,
+				unique:  symbol == "UNIQUE",
+			}
+			table.indexes[name] = idx
 		}
 	}
 }
