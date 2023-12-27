@@ -55,6 +55,29 @@ func TestTiDBExtractSensitiveField(t *testing.T) {
 		schemaInfo *base.SensitiveSchemaInfo
 		fieldList  []base.SensitiveField
 	}{
+		// Test for SetOprSelectList as SelectList in SetOprStmt.
+		{
+			statement:  `SELECT * FROM (SELECT * FROM t) AS sub1 UNION (SELECT * FROM t)`,
+			schemaInfo: defaultDatabaseSchema,
+			fieldList: []base.SensitiveField{
+				{
+					Name:              "a",
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultFullMasker()),
+				},
+				{
+					Name:              "b",
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
+				},
+				{
+					Name:              "c",
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewNoneMasker()),
+				},
+				{
+					Name:              "d",
+					MaskingAttributes: base.NewMaskingAttributes(masker.NewDefaultRangeMasker()),
+				},
+			},
+		},
 		{
 			// Test for case-insensitive column names.
 			statement:  `SELECT * FROM (select * from (select a from t) t1 join t as t2 using(A)) result LIMIT 10000;`,
