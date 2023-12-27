@@ -47,6 +47,7 @@ permissions:
     - bb.rollouts.get
     - bb.rollouts.preview
     - bb.slowQueries.list
+    - bb.taskRuns.cancel
     - bb.taskRuns.list
     - bb.tasks.run
     - bb.tasks.skip
