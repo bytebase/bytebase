@@ -266,6 +266,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		isNullBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
+		}
+		column.Nullable = isNullBool
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
 				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
@@ -273,17 +278,20 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
 		} else {
-			// TODO(zp): refactor column default value.
-			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
-				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+			// This is NULL if the column has an explicit default of NULL,
+			// or if the column definition includes no DEFAULT clause.
+			if isNullBool {
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+					DefaultNull: true,
+				}
+			} else {
+				// TODO(zp): refactor column default value.
+				if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+					// Use the upper case to consistent with MySQL Dump.
+					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+				}
 			}
 		}
-		isNullBool, err := util.ConvertYesNo(nullable)
-		if err != nil {
-			return nil, err
-		}
-		column.Nullable = isNullBool
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
