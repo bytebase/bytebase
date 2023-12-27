@@ -12,6 +12,8 @@
 
         <TaskListSection />
 
+        <div class="w-full border-t my-2" />
+
         <TaskRunSection v-if="!isCreating" />
 
         <div class="w-full border-t my-2" />

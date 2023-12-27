@@ -1,10 +1,10 @@
 <template>
   <div class="!no-underline">
-    <span class="!no-underline">(</span>
-    <span class="!no-underline">{{ summary.done + summary.canceled }}</span>
-    <span class="!no-underline">/</span>
-    <span class="!no-underline">{{ summary.total }}</span>
-    <span class="!no-underline">)</span>
+    <span>(</span>
+    <span>{{ summary.done + summary.canceled }}</span>
+    <span>/</span>
+    <span>{{ summary.total }}</span>
+    <span>)</span>
   </div>
 </template>
 

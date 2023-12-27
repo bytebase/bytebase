@@ -27,18 +27,15 @@
 
     <div class="w-full border-t mb-2" />
 
-    <div class="lg:flex items-start justify-between px-4">
-      <StageInfo />
+    <StageInfo class="px-4" />
 
-      <Actions v-if="false" />
-    </div>
+    <div class="w-full border-t my-2" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import Actions from "./Actions";
 import StageCard from "./StageCard.vue";
 import StageInfo from "./StageInfo";
 
