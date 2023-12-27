@@ -7,11 +7,10 @@ import {
   useSheetV1Store,
   useTabStore,
 } from "@/store";
-import { TabInfo } from "@/types";
+import { AnyTabInfo, UNKNOWN_ID } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   emptyConnection,
-  getDefaultTab,
   getSheetStatement,
   getSuggestedTabNameFromConnection,
   isSheetReadableV1,
@@ -109,7 +108,12 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const createTabFromSheet = async (sheet: Sheet) => {
+export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
+  const tabStore = useTabStore();
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheetName == sheet.name
+  );
+
   if (!isSheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
@@ -118,50 +122,50 @@ export const createTabFromSheet = async (sheet: Sheet) => {
     });
     return false;
   }
-
-  const newTab: TabInfo = {
-    ...getDefaultTab(),
+  const statement = getSheetStatement(sheet);
+  const newTab: AnyTabInfo = {
     sheetName: sheet.name,
     name: sheet.title,
-    statement: getSheetStatement(sheet),
-    pinned: sheet.pinned,
+    statement,
   };
+  if (openingSheetTab) {
+    // Switch to a sheet tab if it's open already.
+    tabStore.setCurrentTabId(openingSheetTab.id);
+    return true;
+  } else if (forceNewTab) {
+    tabStore.addTab(newTab, true /* beside */);
+  } else {
+    // Open the sheet in a "temp" tab otherwise.
+    tabStore.addTab(newTab);
+  }
+
+  let insId = String(UNKNOWN_ID);
+  let dbId = String(UNKNOWN_ID);
   if (sheet.database) {
     try {
       const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
         sheet.database,
         true /* silent */
       );
-      newTab.connection = {
-        ...emptyConnection(),
-        instanceId: database.instanceEntity.uid,
-        databaseId: database.uid,
-      };
+      insId = database.instanceEntity.uid;
+      dbId = database.uid;
     } catch {
       // Skip.
     }
   }
 
-  return newTab;
-};
-
-export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
-  const tabStore = useTabStore();
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetName == sheet.name
-  );
-
-  if (openingSheetTab) {
-    // Switch to a sheet tab if it's open already.
-    tabStore.setCurrentTabId(openingSheetTab.id);
-    return true;
-  } else {
-    const newTab = await createTabFromSheet(sheet);
-    if (!newTab) {
-      return false;
-    }
-    tabStore.addTab(newTab, forceNewTab);
-  }
+  tabStore.updateCurrentTab({
+    sheetName: sheet.name,
+    name: sheet.title,
+    statement,
+    isSaved: true,
+    connection: {
+      ...emptyConnection(),
+      // TODO: legacy instance id.
+      instanceId: insId,
+      databaseId: dbId,
+    },
+  });
 
   return true;
 };

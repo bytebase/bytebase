@@ -279,9 +279,7 @@
     "view-details": "View details",
     "force-verb": "Force {verb}",
     "nothing-changed": "Nothing changed",
-    "untitled": "Untitled",
-    "pin": "Pin",
-    "unpin": "Unpin"
+    "untitled": "Untitled"
   },
   "error-page": {
     "go-back-home": "Go back home"

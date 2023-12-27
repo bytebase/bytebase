@@ -28,9 +28,8 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { computed, PropType, reactive, watch } from "vue";
-import { useSheetV1Store, useTabStore } from "@/store";
-import { getProjectAndSheetId } from "@/store/modules/v1/common";
+import { computed, PropType, reactive } from "vue";
+import { useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { isDisconnectedTab, sheetTypeForTab } from "@/utils";
@@ -64,32 +63,9 @@ const state = reactive<LocalState>({
 });
 
 const tabStore = useTabStore();
-const sheetStore = useSheetV1Store();
 const { currentTabId } = storeToRefs(tabStore);
 
 const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
-
-watch(
-  () => props.tab.pinned,
-  async (pinned) => {
-    if (!props.tab.sheetName) {
-      return;
-    }
-
-    // Update sheet pinned state after tab pinned state is changed.
-    const [_, sheetId] = getProjectAndSheetId(props.tab.sheetName);
-    if (!sheetId) {
-      return;
-    }
-    await sheetStore.upsertSheetOrganizer(
-      {
-        sheet: props.tab.sheetName,
-        pinned,
-      },
-      ["pinned"]
-    );
-  }
-);
 </script>
 
 <style scoped lang="postcss">

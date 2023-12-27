@@ -17,12 +17,10 @@
 import { NDropdown, DropdownOption } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { useTabStore } from "@/store";
 import { TabInfo, TabMode } from "@/types";
 import { CloseTabAction, useTabListContext } from "./context";
 
 const { t } = useI18n();
-const tabStore = useTabStore();
 const { contextMenu: state, events } = useTabListContext();
 
 const options = computed((): DropdownOption[] => {
@@ -30,53 +28,50 @@ const options = computed((): DropdownOption[] => {
     return [];
   }
 
-  const { tab } = state.value;
-  const options: (DropdownOption & { hide?: boolean })[] = [
-    {
-      key: "PIN",
-      label: t("common.pin"),
-      hide: tab.pinned,
-    },
-    {
-      key: "UNPIN",
-      label: t("common.unpin"),
-      hide: !tab.pinned,
-    },
-    {
-      key: "CLOSE",
-      label: t("sql-editor.tab.context-menu.actions.close"),
-      hide: tab.pinned,
-    },
-    {
-      key: "CLOSE_OTHERS",
-      label: t("sql-editor.tab.context-menu.actions.close-others"),
-    },
-    {
-      key: "CLOSE_TO_THE_RIGHT",
-      label: t("sql-editor.tab.context-menu.actions.close-to-the-right"),
-    },
-    {
-      key: "CLOSE_SAVED",
-      label: t("sql-editor.tab.context-menu.actions.close-saved"),
-    },
-    {
-      key: "CLOSE_ALL",
-      label: t("sql-editor.tab.context-menu.actions.close-all"),
-      hide: tab.pinned,
-    },
-    {
-      type: "divider",
-      key: "DIVIDER",
-      hide: tab.mode !== TabMode.ReadOnly,
-    },
-    {
-      key: "RENAME",
-      label: t("sql-editor.tab.context-menu.actions.rename"),
-      hide: tab.mode !== TabMode.ReadOnly,
-    },
+  const CLOSE: DropdownOption = {
+    key: "CLOSE",
+    label: t("sql-editor.tab.context-menu.actions.close"),
+  };
+  const CLOSE_OTHERS: DropdownOption = {
+    key: "CLOSE_OTHERS",
+    label: t("sql-editor.tab.context-menu.actions.close-others"),
+  };
+  const CLOSE_TO_THE_RIGHT: DropdownOption = {
+    key: "CLOSE_TO_THE_RIGHT",
+    label: t("sql-editor.tab.context-menu.actions.close-to-the-right"),
+  };
+  const CLOSE_SAVED: DropdownOption = {
+    key: "CLOSE_SAVED",
+    label: t("sql-editor.tab.context-menu.actions.close-saved"),
+  };
+  const CLOSE_ALL: DropdownOption = {
+    key: "CLOSE_ALL",
+    label: t("sql-editor.tab.context-menu.actions.close-all"),
+  };
+
+  const options = [
+    CLOSE,
+    CLOSE_OTHERS,
+    CLOSE_TO_THE_RIGHT,
+    CLOSE_SAVED,
+    CLOSE_ALL,
   ];
 
-  return options.filter((option) => !option.hide);
+  const { tab } = state.value;
+  if (tab.mode === TabMode.ReadOnly) {
+    const DIVIDER: DropdownOption = {
+      type: "divider",
+      key: "DIVIDER",
+    };
+    const RENAME: DropdownOption = {
+      key: "RENAME",
+      label: t("sql-editor.tab.context-menu.actions.rename"),
+    };
+
+    options.push(DIVIDER, RENAME);
+  }
+
+  return options;
 });
 
 const show = (tab: TabInfo, index: number, e: MouseEvent) => {
@@ -104,17 +99,13 @@ const handleUpdateShow = (show: boolean) => {
   }
 };
 
-const handleSelect = (action: CloseTabAction | "RENAME" | "PIN" | "UNPIN") => {
+const handleSelect = (action: CloseTabAction | "RENAME") => {
   if (!state.value) return;
   const { tab, index } = state.value;
   if (action === "RENAME") {
     events.emit("rename-tab", { tab, index });
-  } else if (action.startsWith("CLOSE")) {
-    action = action as CloseTabAction;
+  } else {
     events.emit("close-tab", { tab, index, action });
-  } else if (action === "PIN" || action === "UNPIN") {
-    tabStore.updateTab(tab.id, { pinned: action === "PIN" });
-    tabStore.reorderTabs();
   }
 };
 
