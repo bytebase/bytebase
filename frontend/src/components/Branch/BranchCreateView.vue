@@ -6,9 +6,9 @@
       <span class="flex w-40 items-center text-sm">
         {{ $t("database.branch-name") }}
       </span>
-      <NInput
+      <BBTextField
         v-model:value="branchId"
-        type="text"
+        required
         class="!w-60 text-sm"
         :placeholder="'feature/add-billing'"
       />
@@ -85,7 +85,7 @@
 <script lang="ts" setup>
 import { useDebounce } from "@vueuse/core";
 import { cloneDeep, uniqueId } from "lodash-es";
-import { NButton, NDivider, NInput } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
