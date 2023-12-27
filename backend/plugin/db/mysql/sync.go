@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,7 +29,9 @@ import (
 )
 
 const (
-	autoIncrementSymbol = "AUTO_INCREMENT"
+	autoIncrementSymbol    = "AUTO_INCREMENT"
+	autoRandSymbol         = "AUTO_RANDOM"
+	pkAutoRandomBitsSymbol = "PK_AUTO_RANDOM_BITS"
 )
 
 var (
@@ -46,6 +49,9 @@ var (
 		"ORAAUDITOR": true,
 		"__public":   true,
 	}
+
+	pkAutoRandomBitsRegex = regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
+	RangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
 )
 
 // SyncInstance syncs the instance.
@@ -266,24 +272,29 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
+		nullableBool, err := util.ConvertYesNo(nullable)
+		if err != nil {
+			return nil, err
+		}
+		column.Nullable = nullableBool
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
 				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
 			} else {
 				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
-		} else {
+		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 			// TODO(zp): refactor column default value.
-			if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
-				// Use the upper case to consistent with MySQL Dump.
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+			// Use the upper case to consistent with MySQL Dump.
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+		} else if nullableBool {
+			// This is NULL if the column has an explicit default of NULL,
+			// or if the column definition includes no DEFAULT clause.
+			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+				DefaultNull: true,
 			}
 		}
-		isNullBool, err := util.ConvertYesNo(nullable)
-		if err != nil {
-			return nil, err
-		}
-		column.Nullable = isNullBool
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
@@ -338,17 +349,38 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(INDEX_LENGTH, 0),
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
-			IFNULL(TABLE_COMMENT, '')
+			IFNULL(TABLE_COMMENT, ''),
+			''
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
+
+	if driver.dbType == storepb.Engine_TIDB {
+		tableQuery = `
+		SELECT
+			TABLE_NAME,
+			TABLE_TYPE,
+			IFNULL(ENGINE, ''),
+			IFNULL(TABLE_COLLATION, ''),
+			IFNULL(TABLE_ROWS, 0),
+			IFNULL(DATA_LENGTH, 0),
+			IFNULL(INDEX_LENGTH, 0),
+			IFNULL(DATA_FREE, 0),
+			IFNULL(CREATE_OPTIONS, ''),
+			IFNULL(TABLE_COMMENT, ''),
+			IFNULL(TIDB_ROW_ID_SHARDING_INFO, '')
+		FROM information_schema.TABLES
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME`
+	}
+
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 	defer tableRows.Close()
 	for tableRows.Next() {
-		var tableName, tableType, engine, collation, createOptions, comment string
+		var tableName, tableType, engine, collation, createOptions, comment, shardingInfo string
 		var rowCount, dataSize, indexSize, dataFree int64
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
 		var tableCollation sql.NullString
@@ -363,6 +395,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&dataFree,
 			&createOptions,
 			&comment,
+			&shardingInfo,
 		); err != nil {
 			return nil, err
 		}
@@ -370,9 +403,38 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		key := db.TableKey{Schema: "", Table: tableName}
 		switch tableType {
 		case baseTableType:
+			columns := columnMap[key]
+			// Set auto random default value for TiDB.
+			if driver.dbType == storepb.Engine_TIDB && strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
+				autoRandText := autoRandSymbol
+				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
+					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
+						autoRandText += fmt.Sprintf("(%s,%s)", randomBitsMatch[1], rangeBitsMatch[1])
+					} else {
+						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
+					}
+				}
+				if indexes, ok := indexMap[key]; ok {
+					for _, index := range indexes {
+						if index.Primary {
+							if len(index.Expressions) > 0 {
+								columnName := index.Expressions[0]
+								for i, column := range columns {
+									if column.Name == columnName {
+										newColumn := columns[i]
+										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandText}
+										break
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			tableMetadata := &storepb.TableMetadata{
 				Name:          tableName,
-				Columns:       columnMap[key],
+				Columns:       columns,
 				ForeignKeys:   foreignKeysMap[key],
 				Engine:        engine,
 				Collation:     collation,

@@ -1,8 +1,10 @@
-import IAM_ACL_DATA from "./acl.yaml";
+import { ProjectPermission, WorkspacePermission } from "./permission";
+import PERMISSION_DATA from "./permission.yaml";
 
-interface Role {
-  name: string;
-  permissions: string[];
-}
+export const WORKSPACE_PERMISSIONS: WorkspacePermission[] =
+  PERMISSION_DATA.permissions.workspacePermissions;
 
-export const SYSTEM_ROLES: Role[] = IAM_ACL_DATA.roles;
+export const PROJECT_PERMISSIONS: ProjectPermission[] =
+  PERMISSION_DATA.permissions.projectPermissions;
+
+export * from "./permission";

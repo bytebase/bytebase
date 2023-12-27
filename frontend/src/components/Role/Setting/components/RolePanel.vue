@@ -136,7 +136,7 @@ const handleSave = async () => {
 
   state.loading = true;
   try {
-    await store.upsertRole(state.role);
+    state.role = await store.upsertRole(state.role);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
