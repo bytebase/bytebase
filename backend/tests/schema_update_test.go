@@ -1819,16 +1819,24 @@ func TestGetLatestSchema(t *testing.T) {
 								DataSize:  16384,
 								Columns: []*v1pb.ColumnMetadata{
 									{
-										Name:     "id",
-										Position: 1,
-										Nullable: true,
-										Type:     "int",
+										Name:       "id",
+										Position:   1,
+										Nullable:   true,
+										HasDefault: true,
+										Default: &v1pb.ColumnMetadata_DefaultNull{
+											DefaultNull: true,
+										},
+										Type: "int",
 									},
 									{
-										Name:         "name",
-										Position:     2,
-										Nullable:     true,
-										Type:         "text",
+										Name:       "name",
+										Position:   2,
+										Nullable:   true,
+										Type:       "text",
+										HasDefault: true,
+										Default: &v1pb.ColumnMetadata_DefaultNull{
+											DefaultNull: true,
+										},
 										CharacterSet: "utf8mb4",
 										Collation:    "utf8mb4_general_ci",
 									},
