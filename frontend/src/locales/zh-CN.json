@@ -277,7 +277,9 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "nothing-changed": "没有改变",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "pin": "置顶",
+    "unpin": "取消置顶"
   },
   "error-page": {
     "go-back-home": "回到主页"
