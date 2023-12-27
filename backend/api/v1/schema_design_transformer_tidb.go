@@ -149,7 +149,8 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 
 		// primary and foreign key definition
 		for _, constraint := range node.Constraints {
-			switch constraint.Tp {
+			constraintType := constraint.Tp
+			switch constraintType {
 			case tidbast.ConstraintPrimaryKey:
 				var pkList []string
 				for _, constraint := range node.Constraints {
@@ -198,6 +199,46 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					referencedColumns: referencedColumnList,
 				}
 				table.foreignKeys[fkName] = fk
+			case tidbast.ConstraintIndex, tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex, tidbast.ConstraintKey:
+				var referencingColumnList []string
+				for _, spec := range constraint.Keys {
+					var specString string
+					var err error
+					if spec.Column != nil {
+						specString = spec.Column.Name.String()
+						if spec.Length > 0 {
+							specString = fmt.Sprintf("`%s`(%d)", specString, spec.Length)
+						}
+					} else {
+						specString, err = tidbRestoreNode(spec, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
+						if err != nil {
+							t.err = err
+							return in, true
+						}
+					}
+					referencingColumnList = append(referencingColumnList, specString)
+				}
+
+				var indexName string
+				if constraint.Name != "" {
+					indexName = constraint.Name
+				} else {
+					t.err = errors.New("empty index name")
+					return in, true
+				}
+
+				if table.indexes[indexName] != nil {
+					t.err = errors.New("multiple foreign keys found: " + indexName)
+					return in, true
+				}
+
+				table.indexes[indexName] = &indexState{
+					id:      len(table.indexes),
+					name:    indexName,
+					keys:    referencingColumnList,
+					primary: false,
+					unique:  constraintType == tidbast.ConstraintUniq || constraintType == tidbast.ConstraintUniqKey || constraintType == tidbast.ConstraintUniqIndex,
+				}
 			}
 		}
 	}
