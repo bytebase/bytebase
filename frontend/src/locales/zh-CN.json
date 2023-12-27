@@ -277,7 +277,9 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "nothing-changed": "没有改变",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "pin": "置顶",
+    "unpin": "取消置顶"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2657,7 +2659,8 @@
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
     "sheets": "工作表",
     "search-sheets": "搜索工作表",
-    "sheet": "工作表"
+    "sheet": "工作表",
+    "unconnected": "未连接"
   },
   "engine": {
     "mysql": "MySQL",

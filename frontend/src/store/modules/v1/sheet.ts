@@ -190,6 +190,20 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     setSheetList(sheets);
     return sheets;
   };
+  const fetchPinnedSheetList = async (silent = false) => {
+    const me = useCurrentUserV1();
+    const { sheets } = await sheetServiceClient.searchSheets(
+      {
+        parent: "projects/-",
+        filter: `creator = users/${me.value.email} && pinned = true && source != BYTEBASE_ARTIFACT`,
+      },
+      {
+        silent,
+      }
+    );
+    setSheetList(sheets);
+    return sheets;
+  };
   const fetchStarredSheetList = async () => {
     const { sheets } = await sheetServiceClient.searchSheets({
       parent: "projects/-",
@@ -226,19 +240,20 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   };
 
   const upsertSheetOrganizer = async (
-    organizer: Pick<SheetOrganizer, "sheet" | "starred">
+    organizer: Partial<SheetOrganizer>,
+    updateMask: string[]
   ) => {
+    if (!organizer.sheet) {
+      return;
+    }
+
     await sheetServiceClient.updateSheetOrganizer({
       organizer,
-      // for now we only support change the `starred` field.
-      updateMask: ["starred"],
+      updateMask,
     });
 
-    // Update local sheet values
-    const sheet = getSheetByName(organizer.sheet);
-    if (sheet) {
-      sheet.starred = organizer.starred;
-    }
+    // Fetch the latest sheet by name.
+    await fetchSheetByName(organizer.sheet);
   };
 
   return {
@@ -255,6 +270,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     fetchMySheetList,
     fetchSharedSheetList,
     fetchStarredSheetList,
+    fetchPinnedSheetList,
     patchSheet,
     deleteSheetByName,
     upsertSheetOrganizer,
