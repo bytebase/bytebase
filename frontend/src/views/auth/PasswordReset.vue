@@ -22,13 +22,10 @@
               {{ $t("auth.password-reset.content") }}
             </label>
             <div class="mt-4 rounded-md shadow-sm">
-              <input
-                id="email"
-                v-model="state.email"
-                type="email"
+              <BBTextField
+                v-model:value="state.email"
                 required
                 placeholder="jim@example.com"
-                class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
               />
             </div>
           </div>

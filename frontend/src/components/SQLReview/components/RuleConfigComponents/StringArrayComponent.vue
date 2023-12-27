@@ -9,15 +9,11 @@
         @remove="remove(val)"
       />
     </div>
-    <input
+    <BBTextField
       v-if="editable"
-      type="text"
+      v-model:value="inputValue"
       pattern="[a-z]+"
       :disabled="disabled"
-      :class="[
-        'shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full border-gray-300 rounded-md',
-        disabled && 'cursor-not-allowed',
-      ]"
       :placeholder="$t('sql-review.input-then-press-enter')"
       @keyup.enter="push($event)"
     />
@@ -25,6 +21,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ref } from "vue";
 import type { RuleConfigComponent } from "@/types";
 
 const props = defineProps<{
@@ -38,14 +35,15 @@ const emit = defineEmits<{
   (event: "update:value", value: string[]): void;
 }>();
 
-const push = (e: Event) => {
+const inputValue = ref("");
+
+const push = (_: Event) => {
   const array = [...props.value];
-  const input = e.target as HTMLInputElement;
-  const val = input.value.trim();
+  const val = inputValue.value.trim();
   if (val) {
     if (!array.includes(val)) {
       array.push(val);
-      input.value = "";
+      inputValue.value = "";
       emit("update:value", array);
     }
   }

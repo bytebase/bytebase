@@ -1,16 +1,20 @@
 <template>
   <NInput
     ref="inputField"
+    v-bind="$attrs"
     v-model:value="state.text"
+    :type="type"
     class="!border-none"
     :disabled="disabled"
     :clearable="clearable"
     :placeholder="placeholder"
     :autofocus="focusOnMount"
+    :autosize="autosize"
     :status="state.hasError ? 'error' : undefined"
     @blur="onBlur"
-    @input="onInput($event)"
+    @update:value="onInput($event)"
     @keypress.enter="onPressEnter"
+    @input="$emit('input', $event)"
   />
 </template>
 
@@ -26,6 +30,8 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
+    autosize?: boolean | { minRows?: number; maxRows?: number };
+    type?: "text" | "password" | "textarea";
     required?: boolean;
     value?: string;
     placeholder?: string;
@@ -35,6 +41,8 @@ const props = withDefaults(
     clearable?: boolean;
   }>(),
   {
+    autosize: false,
+    type: "text",
     required: false,
     value: "",
     placeholder: "",
@@ -48,7 +56,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "end-editing", value: string): void;
   (event: "update:value", value: string): void;
-  (event: "input", e: Event): void;
+  (event: "input", value: string): void;
 }>();
 
 const inputField = ref();

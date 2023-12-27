@@ -26,13 +26,11 @@
                   <span class="text-red-600">*</span>
                 </label>
                 <div class="mt-1 rounded-md shadow-sm">
-                  <input
+                  <BBTextField
                     id="email"
-                    v-model="state.email"
-                    type="email"
+                    v-model:value="state.email"
                     required
                     placeholder="jim@example.com"
-                    class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                   />
                 </div>
               </div>
@@ -62,13 +60,12 @@
                 <div
                   class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
                 >
-                  <input
+                  <BBTextField
                     id="password"
-                    v-model="state.password"
+                    v-model:value="state.password"
                     :type="state.showPassword ? 'text' : 'password'"
                     autocomplete="on"
                     required
-                    class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                   />
                   <div
                     class="hover:cursor-pointer absolute right-3"
@@ -148,13 +145,11 @@
                     <span class="text-red-600">*</span>
                   </label>
                   <div class="mt-1 rounded-md shadow-sm">
-                    <input
+                    <BBTextField
                       id="username"
-                      v-model="state.email"
-                      type="text"
+                      v-model:value="state.email"
                       required
                       placeholder="jim"
-                      class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                     />
                   </div>
                 </div>
@@ -172,13 +167,12 @@
                   <div
                     class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
                   >
-                    <input
+                    <BBTextField
                       id="password"
-                      v-model="state.password"
+                      v-model:value="state.password"
                       :type="state.showPassword ? 'text' : 'password'"
                       autocomplete="on"
                       required
-                      class="appearance-none block w-full px-3 py-2 border border-control-border rounded-md placeholder-control-placeholder focus:outline-none focus:shadow-outline-blue focus:border-control-border sm:text-sm sm:leading-5"
                     />
                     <div
                       class="hover:cursor-pointer absolute right-3"
