@@ -12,8 +12,7 @@
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
-    <PinIcon v-if="icon === 'pinned'" class="w-4 h-auto" />
-    <carbon:dot-mark v-else-if="icon === 'unsaved'" class="icon unsaved" />
+    <carbon:dot-mark v-if="icon === 'unsaved'" class="icon unsaved" />
     <heroicons-solid:x
       v-else-if="icon === 'close'"
       class="icon close"
@@ -24,7 +23,6 @@
 </template>
 
 <script lang="ts" setup>
-import { PinIcon } from "lucide-vue-next";
 import { computed, PropType, reactive } from "vue";
 import { isTabClosable } from "@/store";
 import type { TabInfo } from "@/types";
@@ -35,7 +33,7 @@ type LocalState = {
   hovering: boolean;
 };
 
-type IconType = "pinned" | "unsaved" | "close";
+type IconType = "unsaved" | "close";
 
 const props = defineProps({
   tab: {
@@ -61,9 +59,6 @@ const closable = computed(() => {
 });
 
 const icon = computed((): IconType | undefined => {
-  if (props.tab.pinned) {
-    return "pinned";
-  }
   if (state.hovering && closable.value) {
     return "close";
   }

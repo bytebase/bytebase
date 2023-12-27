@@ -16,7 +16,7 @@
         }"
         ghost-class="ghost"
         @start="state.dragging = true"
-        @end="handleTagDragEnd"
+        @end="state.dragging = false"
         @scroll="recalculateScrollState"
       >
         <template
@@ -60,7 +60,7 @@ import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useTabStore, useActuatorV1Store, isTabClosable } from "@/store";
+import { useTabStore, useActuatorV1Store } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import {
@@ -214,20 +214,6 @@ const recalculateScrollState = () => {
   }
 };
 
-const handleTagDragEnd = (event: any) => {
-  const draggingTab = tabStore.getTabById(event.clone.dataset.tabId);
-  if (draggingTab) {
-    // If the tab is pinned, unpin it after drop.
-    if (draggingTab.pinned) {
-      tabStore.updateTab(draggingTab.id, {
-        pinned: false,
-      });
-    }
-  }
-
-  state.dragging = false;
-};
-
 watch(
   () => tabStore.currentTabId,
   (id) => {
@@ -256,10 +242,6 @@ useEmitteryEventListener(
     const tabList = tabStore.tabList;
 
     const remove = async (tab: TabInfo, index: number) => {
-      if (!isTabClosable(tab)) {
-        return;
-      }
-
       await handleRemoveTab(tab, index, true);
       await new Promise((r) => requestAnimationFrame(r));
     };
