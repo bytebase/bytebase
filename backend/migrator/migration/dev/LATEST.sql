@@ -164,7 +164,7 @@ CREATE TABLE member (
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
 
-CREATE UNIQUE INDEX idx_member_unique_principal_id ON member(principal_id);
+CREATE INDEX idx_member_principal_id ON member (principal_id);
 
 ALTER SEQUENCE member_id_seq RESTART WITH 101;
 
