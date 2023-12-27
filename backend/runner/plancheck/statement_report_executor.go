@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -117,7 +118,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, err
 		}
@@ -126,7 +127,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 
 		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, err
 		}
@@ -274,7 +275,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 			stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
 				switch instance.Engine {
 				case storepb.Engine_POSTGRES:
-					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 					if err != nil {
 						return nil, err
 					}
@@ -283,7 +284,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 
 					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
 				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 					if err != nil {
 						return nil, err
 					}

@@ -16,6 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/ghost"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -190,7 +191,7 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			// For MySQL, we need to use different case of DatabaseName depends on the variable `lower_case_table_names`.
 			// https://dev.mysql.com/doc/refman/8.0/en/identifier-case-sensitivity.html
 			// And also, meet an error in here is not a big deal, we will just use the original DatabaseName.
-			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+			driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 			if err != nil {
 				slog.Warn("failed to get admin database driver for instance %q, please check the connection for admin data source", log.BBError(err), slog.String("instance", instance.Title))
 				break

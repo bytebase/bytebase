@@ -160,7 +160,7 @@ func (exec *PITRCutoverExecutor) pitrCutover(ctx context.Context, dbFactory *dbf
 		CreatorID:      creator.ID,
 	}
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database)
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return true, nil, err
 	}
@@ -226,7 +226,7 @@ func (exec *PITRCutoverExecutor) doCutover(ctx context.Context, instance *store.
 }
 
 func (exec *PITRCutoverExecutor) pitrCutoverMySQL(ctx context.Context, instance *store.InstanceMessage, issue *store.IssueMessage, databaseName string) error {
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}
@@ -251,7 +251,7 @@ func (exec *PITRCutoverExecutor) pitrCutoverPostgres(ctx context.Context, instan
 	pitrDatabaseName := util.GetPITRDatabaseName(databaseName, issue.CreatedTime.Unix())
 	pitrOldDatabaseName := util.GetPITROldDatabaseName(databaseName, issue.CreatedTime.Unix())
 
-	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */)
+	defaultDBDriver, err := exec.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		return err
 	}

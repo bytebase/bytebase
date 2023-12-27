@@ -177,7 +177,6 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 			}
 		}
 	case diffActionUpdate:
-
 		for idx, schema := range target.Schemas {
 			if schema.Name == n.name {
 				newSchema := &storepb.SchemaMetadata{
@@ -411,7 +410,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 		}
 		for _, indexName := range sortedIndexName {
 			index := n.indexes[indexName]
-			if err := index.applyDiffTo(n); err != nil {
+			if err := index.applyDiffTo(newTable); err != nil {
 				return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 			}
 		}
@@ -425,7 +424,8 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 		}
 	case diffActionUpdate:
 		for idx, table := range target.Tables {
-			// Update table currently is only contains diff of columns and foreign keys. So we do apply column and foreign key diff to target table.
+			// Update table currently is only contains diff of columns, foreign keys and indexes.
+			// So we do apply column and foreign key diff to target table.
 			if table.Name == n.name {
 				newTable := &storepb.TableMetadata{
 					Name:           n.name,
@@ -453,7 +453,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 				}
 				for _, indexName := range sortedIndexName {
 					index := n.indexes[indexName]
-					if err := index.applyDiffTo(n); err != nil {
+					if err := index.applyDiffTo(newTable); err != nil {
 						return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 					}
 				}
@@ -685,21 +685,21 @@ func (n *metadataDiffIndexNode) tryMerge(other *metadataDiffIndexNode) (bool, st
 	return false, ""
 }
 
-func (n *metadataDiffIndexNode) applyDiffTo(target *metadataDiffTableNode) error {
+func (n *metadataDiffIndexNode) applyDiffTo(target *storepb.TableMetadata) error {
 	switch n.action {
 	case diffActionCreate:
-		target.head.Indexes = append(target.head.Indexes, n.head)
+		target.Indexes = append(target.Indexes, n.head)
 	case diffActionDrop:
-		for i, index := range target.head.Indexes {
+		for i, index := range target.Indexes {
 			if index.Name == n.name {
-				target.head.Indexes = append(target.head.Indexes[:i], target.head.Indexes[i+1:]...)
+				target.Indexes = append(target.Indexes[:i], target.Indexes[i+1:]...)
 				break
 			}
 		}
 	case diffActionUpdate:
-		for i, index := range target.head.Indexes {
+		for i, index := range target.Indexes {
 			if index.Name == n.name {
-				target.head.Indexes[i] = n.head
+				target.Indexes[i] = n.head
 				break
 			}
 		}
@@ -1068,7 +1068,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	if action == diffActionUpdate {
-		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 {
+		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 {
 			return nil, nil
 		}
 	}
