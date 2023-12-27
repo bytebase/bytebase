@@ -16,7 +16,7 @@ export const useRoleStore = defineStore("role", () => {
   };
 
   const getRoleByName = (name: string) => {
-    return roleList.value.find((r) => r.name === name) || Role.fromPartial({});
+    return roleList.value.find((r) => r.name === name);
   };
 
   const upsertRole = async (role: Role) => {

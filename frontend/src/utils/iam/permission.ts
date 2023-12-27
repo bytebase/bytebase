@@ -9,6 +9,6 @@ export function hasWorkspacePermissionV2(
   const roleStore = useRoleStore();
   const permissions = user.roles
     .map((role) => roleStore.getRoleByName(role))
-    .flatMap((role) => role.permissions);
+    .flatMap((role) => (role ? role.permissions : []));
   return permissions.includes(permission);
 }
