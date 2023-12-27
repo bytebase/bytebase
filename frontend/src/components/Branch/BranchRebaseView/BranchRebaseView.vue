@@ -281,12 +281,14 @@ watch(
           head.baselineDatabase
         );
         state.sourceDatabaseUID = db.uid;
+        state.sourceType = "DATABASE";
       }
 
       // Automatically select the branch's parent as rebase source branch
       // if rebase source is empty
       if (head.parentBranch && !state.sourceBranchName) {
         state.sourceBranchName = head.parentBranch;
+        state.sourceType = "BRANCH";
       }
     }
   },
