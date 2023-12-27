@@ -160,7 +160,7 @@ CREATE TABLE member (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     status TEXT NOT NULL CHECK (status IN ('INVITED', 'ACTIVE')),
-    role TEXT NOT NULL CHECK (role IN ('OWNER', 'DBA', 'DEVELOPER')),
+    role TEXT NOT NULL,
     principal_id INTEGER NOT NULL REFERENCES principal (id)
 );
 

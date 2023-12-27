@@ -1,0 +1,1 @@
+ALTER TABLE member DROP CONSTRAINT member_role_check;
