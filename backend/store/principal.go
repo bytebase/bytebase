@@ -284,15 +284,13 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 			INSERT INTO member (
 				creator_id,
 				updater_id,
-				status,
 				role,
 				principal_id
 			)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES ($1, $2, $3, $4)
 		`,
 		creatorID,
 		creatorID,
-		api.Active,
 		role,
 		userID,
 	); err != nil {
