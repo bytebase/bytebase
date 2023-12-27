@@ -2657,7 +2657,8 @@
     "content-oversize-warning": "SQL 过大所以无法直接编辑。",
     "sheets": "工作表",
     "search-sheets": "搜索工作表",
-    "sheet": "工作表"
+    "sheet": "工作表",
+    "unconnected": "未连接"
   },
   "engine": {
     "mysql": "MySQL",

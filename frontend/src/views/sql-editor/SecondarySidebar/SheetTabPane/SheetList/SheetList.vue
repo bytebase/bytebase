@@ -70,6 +70,7 @@ import { NButton, NInput, NTree, NEllipsis, TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, onMounted, ref, watch, h } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   InstanceV1EngineIcon,
   ProjectV1Name,
@@ -123,6 +124,7 @@ const props = defineProps<{
   view: SheetViewMode;
 }>();
 
+const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const tabStore = useTabStore();
@@ -237,7 +239,7 @@ const renderPrefix = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   if (treeNode.project) {
     if (treeNode.project.uid === `${DEFAULT_PROJECT_ID}`) {
-      return h("div", {}, "Unconnected");
+      return h("div", {}, t("sheet.unconnected"));
     }
     return h(ProjectV1Name, {
       project: treeNode.project,
