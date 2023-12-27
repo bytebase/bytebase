@@ -7,27 +7,19 @@
       <HeaderSection />
     </NLayoutHeader>
     <NLayout :has-sider="true" sider-placement="right" class="flex-1">
-      <NLayoutContent content-class="hide-scrollbar">
+      <NLayoutContent content-class="hide-scrollbar divide-y">
         <StageSection />
 
         <TaskListSection />
 
-        <div class="w-full border-t my-2" />
-
         <TaskRunSection v-if="!isCreating" />
-
-        <div class="w-full border-t my-2" />
 
         <SQLCheckSection v-if="isCreating" />
         <PlanCheckSection v-if="!isCreating" />
 
         <StatementSection />
 
-        <div class="w-full border-t my-2" />
-
         <DescriptionSection />
-
-        <div class="w-full border-t my-2" />
 
         <ActivitySection v-if="!isCreating" />
       </NLayoutContent>
