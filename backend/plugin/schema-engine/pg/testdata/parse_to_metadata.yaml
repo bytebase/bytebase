@@ -9,6 +9,7 @@
       );
     create table public.t2(b int NOT NULL default NULL, constraint t2_pk primary key (b));
     comment on column public.t.a is 'this is a comment';
+    CREATE INDEX idx_t_c ON public.t USING btree (c);
   metadata: |-
     {
       "schemas":  [
@@ -46,6 +47,10 @@
                   ],
                   "unique":  true,
                   "primary":  true,
+                  "visible":  true
+                },
+                {
+                  "name":  "idx_t_c",
                   "visible":  true
                 }
               ],
