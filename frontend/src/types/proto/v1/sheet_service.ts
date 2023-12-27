@@ -176,6 +176,8 @@ export interface Sheet {
   type: Sheet_Type;
   /** starred indicates whether the sheet is starred by the current authenticated user. */
   starred: boolean;
+  /** pinned indicates whether the sheet is pinned by the current authenticated user. */
+  pinned: boolean;
   payload: SheetPayload | undefined;
   pushEvent: PushEvent | undefined;
 }
@@ -982,6 +984,7 @@ function createBaseSheet(): Sheet {
     source: 0,
     type: 0,
     starred: false,
+    pinned: false,
     payload: undefined,
     pushEvent: undefined,
   };
@@ -1025,11 +1028,14 @@ export const Sheet = {
     if (message.starred === true) {
       writer.uint32(96).bool(message.starred);
     }
+    if (message.pinned === true) {
+      writer.uint32(104).bool(message.pinned);
+    }
     if (message.payload !== undefined) {
-      SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
+      SheetPayload.encode(message.payload, writer.uint32(114).fork()).ldelim();
     }
     if (message.pushEvent !== undefined) {
-      PushEvent.encode(message.pushEvent, writer.uint32(114).fork()).ldelim();
+      PushEvent.encode(message.pushEvent, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1126,14 +1132,21 @@ export const Sheet = {
           message.starred = reader.bool();
           continue;
         case 13:
-          if (tag !== 106) {
+          if (tag !== 104) {
+            break;
+          }
+
+          message.pinned = reader.bool();
+          continue;
+        case 14:
+          if (tag !== 114) {
             break;
           }
 
           message.payload = SheetPayload.decode(reader, reader.uint32());
           continue;
-        case 14:
-          if (tag !== 114) {
+        case 15:
+          if (tag !== 122) {
             break;
           }
 
@@ -1162,6 +1175,7 @@ export const Sheet = {
       source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
       type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
       starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
+      pinned: isSet(object.pinned) ? globalThis.Boolean(object.pinned) : false,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
@@ -1205,6 +1219,9 @@ export const Sheet = {
     if (message.starred === true) {
       obj.starred = message.starred;
     }
+    if (message.pinned === true) {
+      obj.pinned = message.pinned;
+    }
     if (message.payload !== undefined) {
       obj.payload = SheetPayload.toJSON(message.payload);
     }
@@ -1233,6 +1250,7 @@ export const Sheet = {
     message.source = object.source ?? 0;
     message.type = object.type ?? 0;
     message.starred = object.starred ?? false;
+    message.pinned = object.pinned ?? false;
     message.payload = (object.payload !== undefined && object.payload !== null)
       ? SheetPayload.fromPartial(object.payload)
       : undefined;

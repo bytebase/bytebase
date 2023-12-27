@@ -9501,6 +9501,7 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | source | [Sheet.Source](#bytebase-v1-Sheet-Source) |  | The source of the sheet. |
 | type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
 | starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
+| pinned | [bool](#bool) |  | pinned indicates whether the sheet is pinned by the current authenticated user. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
