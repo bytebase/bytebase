@@ -543,8 +543,12 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	}
 	if c.hasDefault {
 		// todo(zp): refactor column attribute.
-		if strings.EqualFold(c.defaultValue.toString(), "AUTO_INCREMENT") {
+		if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
 			if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+				return err
+			}
+		} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
+			if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
 				return err
 			}
 		} else {
@@ -1192,6 +1196,7 @@ var columnAttrOrder = map[string]int{
 	"DEFAULT":        2,
 	"VISIBLE":        3,
 	"AUTO_INCREMENT": 4,
+	"AUTO_RAND":      4,
 	"UNIQUE":         5,
 	"KEY":            6,
 	"COMMENT":        7,
