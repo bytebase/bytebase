@@ -1,1 +1,1 @@
-ALTER TABLE member DROP CONSTRAINT member_role_check;
+ALTER TABLE member DROP CONSTRAINT IF EXISTS member_role_check;
