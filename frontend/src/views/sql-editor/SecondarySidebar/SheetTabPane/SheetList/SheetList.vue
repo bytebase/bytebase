@@ -236,6 +236,9 @@ const getTreeNodeList = (treeNodeMap: TreeNodeMap): TreeNode[] => {
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   if (treeNode.project) {
+    if (treeNode.project.uid === `${DEFAULT_PROJECT_ID}`) {
+      return h("div", {}, "Unconnected");
+    }
     return h(ProjectV1Name, {
       project: treeNode.project,
       link: false,
