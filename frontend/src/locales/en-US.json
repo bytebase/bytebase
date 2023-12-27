@@ -2661,7 +2661,8 @@
     "content-oversize-warning": "SQL is oversized and inline-editing is disallowed. ",
     "sheets": "Sheets",
     "search-sheets": "Search Sheets",
-    "sheet": "Sheet"
+    "sheet": "Sheet",
+    "unconnected": "Unconnected"
   },
   "engine": {
     "mysql": "MySQL",
