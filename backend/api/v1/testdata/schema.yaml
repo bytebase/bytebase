@@ -3,8 +3,10 @@
     create table t
       (
         `a` int NOT NULL COMMENT 'this is comment',
+        `b` VARCHAR(20) NOT NULL,
         KEY `idx` (((`a` + 20))),
         UNIQUE KEY `idx2` (`a`),
+        KEY `idx_length` (`b`(10) DESC),
         PRIMARY KEY (`a`)
       ) COMMENT 'this is comment with '' escaped';
   metadata: |-
@@ -20,6 +22,10 @@
                   "type":  "int",
                   "comment":  "this is comment",
                   "userComment":  "this is comment"
+                },
+                {
+                  "name":  "b",
+                  "type":  "VARCHAR(20)"
                 }
               ],
               "indexes":  [
@@ -33,15 +39,22 @@
                 {
                   "name":  "idx2",
                   "expressions":  [
-                    "a"
+                    "`a`"
                   ],
                   "unique":  true,
                   "visible":  true
                 },
                 {
+                  "name":  "idx_length",
+                  "expressions":  [
+                    "`b`(10) DESC"
+                  ],
+                  "visible":  true
+                },
+                {
                   "name":  "PRIMARY",
                   "expressions":  [
-                    "a"
+                    "`a`"
                   ],
                   "unique":  true,
                   "primary":  true,
