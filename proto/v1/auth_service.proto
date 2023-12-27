@@ -196,6 +196,7 @@ message User {
   UserType user_type = 5;
 
   // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
+  // TODO(p0ny): deprecate in favor of `roles`.
   UserRole user_role = 6;
 
   string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
@@ -214,6 +215,10 @@ message User {
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
   string phone = 12;
+
+  // The roles of the user.
+  // This filed is to supersede the `user_role` field.
+  repeated string roles = 13;
 }
 
 enum UserType {
