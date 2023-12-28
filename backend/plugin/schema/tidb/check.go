@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	schema.RegisterCheckColumnType(storepb.Engine_POSTGRES, checkColumnType)
+	schema.RegisterCheckColumnType(storepb.Engine_TIDB, checkColumnType)
 }
 
 func checkColumnType(tp string) bool {
