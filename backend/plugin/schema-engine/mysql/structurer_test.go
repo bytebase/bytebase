@@ -24,7 +24,7 @@ func TestParseToMetadata(t *testing.T) {
 		record = false
 	)
 	var (
-		filepath = "testdata/schema.yaml"
+		filepath = "testdata/parse_to_metadata.yaml"
 	)
 
 	a := require.New(t)
@@ -70,7 +70,7 @@ func TestGetDesignSchema(t *testing.T) {
 		record = false
 	)
 	var (
-		filepath = "testdata/design.yaml"
+		filepath = "testdata/get_design_schema.yaml"
 	)
 
 	a := require.New(t)

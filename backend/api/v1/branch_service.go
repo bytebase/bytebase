@@ -638,11 +638,11 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
-	sourceSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSourceMetadata)
+	sourceSchema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeTargetMetadata)
+	targetSchema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}

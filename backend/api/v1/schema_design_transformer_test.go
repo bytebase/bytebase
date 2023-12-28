@@ -12,19 +12,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type transformTest struct {
-	Engine   storepb.Engine
-	Schema   string
-	Metadata string
-}
-
-type designTest struct {
-	Engine   storepb.Engine
-	Baseline string
-	Target   string
-	Result   string
-}
-
 type checkTest struct {
 	Engine   storepb.Engine
 	Metadata string
