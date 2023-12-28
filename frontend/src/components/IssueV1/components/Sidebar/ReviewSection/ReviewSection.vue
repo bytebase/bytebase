@@ -41,6 +41,7 @@
       <Timeline
         v-else-if="wrappedSteps && wrappedSteps.length > 0"
         :steps="wrappedSteps"
+        class="mt-2"
       />
       <div
         v-else
