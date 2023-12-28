@@ -27,6 +27,7 @@ func init() {
 	base.RegisterCompleteFunc(store.Engine_TIDB, Completion)
 	base.RegisterCompleteFunc(store.Engine_OCEANBASE, Completion)
 	base.RegisterCompleteFunc(store.Engine_CLICKHOUSE, Completion)
+	base.RegisterCompleteFunc(store.Engine_STARROCKS, Completion)
 }
 
 // Completion is the entry point of MySQL code completion.
