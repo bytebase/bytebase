@@ -48,7 +48,7 @@ const watchNotification = () => {
     title: () =>
       h(
         "div",
-        { class: "text-sm font-medium text-gray-900 whitespace-pre-wrap" },
+        { class: "text-sm font-medium text-gray-900 whitespace-pre-wrap mt-1" },
         item.title
       ),
     content: () =>
