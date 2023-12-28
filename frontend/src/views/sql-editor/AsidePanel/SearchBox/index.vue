@@ -98,7 +98,13 @@ const renderLabel = (option: SelectOption) => {
         link: false,
         class: "text-control-light",
       }),
-      h("span", {}, database.databaseName),
+      h(
+        "span",
+        {
+          class: "truncate",
+        },
+        database.databaseName
+      ),
     ]
   );
 };
