@@ -3,93 +3,24 @@ package mysql
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
-
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
 
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, limit int) string {
-	switch driver.dbType {
-	case storepb.Engine_TIDB:
-		stmt, err := getStatementWithResultLimitForTiDB(stmt, limit)
-		if err != nil {
-			slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
-			stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-		}
-		return stmt
-	default:
-		stmt, err := getStatementWithResultLimitForMySQL(stmt, limit)
-		if err != nil {
-			slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
-			// MySQL 5.7 doesn't support WITH clause.
-			stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-		}
-		return stmt
-	}
-}
-
-func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) (string, error) {
-	stmtList, err := tidbparser.ParseTiDB(singleStatement, "", "")
+func getStatementWithResultLimit(stmt string, limit int) string {
+	stmt, err := getStatementWithResultLimitForMySQL(stmt, limit)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", singleStatement)
+		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
+		// MySQL 5.7 doesn't support WITH clause.
+		stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
 	}
-	for _, stmt := range stmtList {
-		switch stmt := stmt.(type) {
-		case *tidbast.SelectStmt:
-			limit := &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limitCount), "", ""),
-			}
-			if stmt.Limit != nil {
-				limit = stmt.Limit
-				if stmt.Limit.Count != nil {
-					// If the statement already has limit clause, we will return the original statement.
-					return singleStatement, nil
-				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(limitCount), "", "")
-			}
-			stmt.Limit = limit
-			var buffer strings.Builder
-			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
-			if err := stmt.Restore(ctx); err != nil {
-				return "", err
-			}
-			return buffer.String(), nil
-		case *tidbast.SetOprStmt:
-			limit := &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limitCount), "", ""),
-			}
-			if stmt.Limit != nil {
-				limit = stmt.Limit
-				if stmt.Limit.Count != nil {
-					// If the statement already has limit clause, we will return the original statement.
-					return singleStatement, nil
-				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(limitCount), "", "")
-			}
-			stmt.Limit = limit
-			var buffer strings.Builder
-			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
-			if err := stmt.Restore(ctx); err != nil {
-				return "", err
-			}
-			return buffer.String(), nil
-
-		default:
-			continue
-		}
-	}
-	return "", nil
+	return stmt
 }
 
 // singleStatement must be a selectStatement for mysql.
