@@ -11,11 +11,11 @@
   <slot
     v-if="!state.loading"
     name="more"
-    :has-more="state.hasMore"
+    :has-more="!!state.paginationToken"
     :fetch-next-page="fetchNextPage"
   >
     <div
-      v-if="!hideLoadMore && pageSize > 0 && state.hasMore"
+      v-if="!hideLoadMore && pageSize > 0 && state.paginationToken"
       class="flex items-center justify-center py-2 text-gray-400 text-sm hover:bg-gray-200 cursor-pointer"
       @click="fetchNextPage"
     >
@@ -36,7 +36,6 @@ type LocalState = {
   loading: boolean;
   auditLogList: LogEntity[];
   paginationToken: string;
-  hasMore: boolean;
 };
 
 /**
@@ -86,7 +85,6 @@ const state = reactive<LocalState>({
   loading: false,
   auditLogList: [],
   paginationToken: "",
-  hasMore: true,
 });
 
 const sessionState = useSessionStorage<SessionState>(props.sessionKey, {
@@ -142,9 +140,6 @@ const fetchData = async (refresh = false) => {
 
     sessionState.value.updatedTs = Date.now();
     state.paginationToken = nextPageToken;
-    if (!nextPageToken) {
-      state.hasMore = false;
-    }
   } catch (e) {
     console.error(e);
   } finally {
@@ -161,7 +156,6 @@ const resetSession = () => {
 
 const refresh = () => {
   state.paginationToken = "";
-  state.hasMore = true;
   resetSession();
   fetchData(true);
 };
