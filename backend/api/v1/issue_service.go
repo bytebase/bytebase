@@ -293,16 +293,6 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		}
 	}
 
-	if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueAdvancedSearch); err != nil {
-		limitedSearchTs := time.Now().AddDate(0, 0, -30).Unix()
-		if v := issueFind.CreatedTsBefore; v != nil {
-			if limitedSearchTs >= *v {
-				return nil, status.Errorf(codes.PermissionDenied, err.Error())
-			}
-		}
-		issueFind.CreatedTsAfter = &limitedSearchTs
-	}
-
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
