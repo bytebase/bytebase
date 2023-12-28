@@ -14,10 +14,12 @@ var (
 	mux              sync.Mutex
 	getDesignSchemas = make(map[storepb.Engine]getDesignSchema)
 	parseToMetadatas = make(map[storepb.Engine]parseToMetadata)
+	checkColumnTypes = make(map[storepb.Engine]checkColumnType)
 )
 
 type getDesignSchema func(string, *storepb.DatabaseSchemaMetadata) (string, error)
 type parseToMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
+type checkColumnType func(string) bool
 
 func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
 	mux.Lock()
@@ -64,4 +66,20 @@ func ParseToMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSch
 		}
 	}
 	return metadata, nil
+}
+func RegisterCheckColumnType(engine storepb.Engine, f checkColumnType) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := checkColumnTypes[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	checkColumnTypes[engine] = f
+}
+
+func CheckColumnType(engine storepb.Engine, tp string) bool {
+	f, ok := checkColumnTypes[engine]
+	if !ok {
+		return false
+	}
+	return f(tp)
 }

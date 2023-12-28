@@ -1,13 +1,9 @@
 package v1
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -76,42 +72,14 @@ func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSche
 }
 
 func checkDatabaseMetadataColumnType(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
-	for _, schema := range metadata.GetSchemas() {
-		for _, table := range schema.GetTables() {
+	for _, sc := range metadata.GetSchemas() {
+		for _, table := range sc.GetTables() {
 			for _, column := range table.GetColumns() {
-				if !checkColumnType(engine, column.Type) {
+				if !schema.CheckColumnType(engine, column.Type) {
 					return errors.Errorf("column %s type %s is invalid in table %s", column.Name, column.Type, table.Name)
 				}
 			}
 		}
 	}
 	return nil
-}
-
-func checkColumnType(engine storepb.Engine, tp string) bool {
-	switch engine {
-	case storepb.Engine_MYSQL:
-		return checkMySQLColumnType(tp)
-	case storepb.Engine_TIDB:
-		return checkTiDBColumnType(tp)
-	case storepb.Engine_POSTGRES:
-		return checkPostgreSQLColumnType(tp)
-	default:
-		return false
-	}
-}
-
-func checkTiDBColumnType(tp string) bool {
-	_, err := tidbparser.ParseTiDB(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp), "", "")
-	return err == nil
-}
-
-func checkMySQLColumnType(tp string) bool {
-	_, err := mysqlparser.ParseMySQL(fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
-	return err == nil
-}
-
-func checkPostgreSQLColumnType(tp string) bool {
-	_, err := pgrawparser.Parse(pgrawparser.ParseContext{}, fmt.Sprintf("CREATE TABLE t (a %s NOT NULL)", tp))
-	return err == nil
 }
