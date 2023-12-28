@@ -150,6 +150,22 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		if err := convertV1PbToStorePb(request.Setting.Value.GetWorkspaceProfileSettingValue(), payload); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
+		oldSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", apiSettingName, err)
+		}
+		if s.profile.SaaS {
+			if oldSetting.ExternalUrl != payload.ExternalUrl {
+				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+			}
+			if oldSetting.DisallowSignup != payload.DisallowSignup {
+				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+			}
+			if strings.Join(oldSetting.OutboundIpList, ",") != strings.Join(payload.OutboundIpList, ",") {
+				return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
+			}
+		}
+
 		if payload.ExternalUrl != "" {
 			externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
 			if err != nil {

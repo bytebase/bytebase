@@ -80,7 +80,8 @@ func (prof *Profile) UseEmbedDB() bool {
 }
 
 var saasFeatureControlMap = map[string]bool{
-	string(api.SettingWorkspaceProfile): true,
+	string(api.SettingPluginAgent): true,
+	string(api.SettingWorkspaceID): true,
 }
 
 // IsFeatureUnavailable returns if the feature is unavailable in SaaS mode.
