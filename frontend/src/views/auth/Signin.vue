@@ -30,6 +30,7 @@
                     id="email"
                     v-model:value="state.email"
                     required
+                    :input-props="{ autocomplete: 'on', type: 'email' }"
                     placeholder="jim@example.com"
                   />
                 </div>
@@ -64,7 +65,7 @@
                     id="password"
                     v-model:value="state.password"
                     :type="state.showPassword ? 'text' : 'password'"
-                    autocomplete="on"
+                    :input-props="{ autocomplete: 'on' }"
                     required
                   />
                   <div
@@ -150,6 +151,7 @@
                       v-model:value="state.email"
                       required
                       placeholder="jim"
+                      :input-props="{ autocomplete: 'on' }"
                     />
                   </div>
                 </div>
@@ -171,7 +173,7 @@
                       id="password"
                       v-model:value="state.password"
                       :type="state.showPassword ? 'text' : 'password'"
-                      autocomplete="on"
+                      :input-props="{ autocomplete: 'on' }"
                       required
                     />
                     <div
