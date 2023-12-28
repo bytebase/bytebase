@@ -36,10 +36,12 @@
         </div>
 
         <div class="order-2 flex-shrink-0 sm:order-3 sm:ml-3 -mr-1">
-          <NButton quaternary @click.prevent="show = false">
+          <NButton quaternary size="small" @click.prevent="show = false">
             <span class="sr-only">{{ $t("common.dismiss") }}</span>
-            <!-- Heroicon name: outline/x -->
-            <heroicons-outline:x class="h-6 w-6 text-white" />
+            <template #icon>
+              <!-- Heroicon name: outline/x -->
+              <heroicons-outline:x class="h-6 w-6 text-white" />
+            </template>
           </NButton>
         </div>
       </div>

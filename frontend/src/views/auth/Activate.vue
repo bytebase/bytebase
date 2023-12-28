@@ -42,10 +42,9 @@
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <BBTextField
-                id="password"
                 v-model:value="state.password"
                 type="password"
-                autocomplete="on"
+                :input-props="{ id: 'password', autocomplete: 'on' }"
                 required
               />
             </div>
