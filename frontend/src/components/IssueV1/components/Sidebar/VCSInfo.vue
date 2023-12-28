@@ -1,20 +1,25 @@
 <template>
-  <p
+  <div
     v-if="pushEvent"
-    class="mt-1 text-sm text-control-light flex flex-row items-center space-x-1"
+    class="text-sm text-control-light flex flex-col items-start gap-y-1"
   >
-    <template v-if="pushEvent.vcsType === VcsType.GITLAB">
-      <img class="h-4 w-auto" src="@/assets/gitlab-logo.svg" />
-    </template>
-    <template v-else-if="pushEvent.vcsType === VcsType.GITHUB">
-      <img class="h-4 w-auto" src="@/assets/github-logo.svg" />
-    </template>
-    <template v-else-if="pushEvent.vcsType === VcsType.BITBUCKET">
-      <img class="h-4 w-auto" src="@/assets/bitbucket-logo.svg" />
-    </template>
-    <a :href="vcsBranchUrl" target="_blank" class="normal-link">{{
-      `${vcsBranch}@${pushEvent.repositoryFullPath}`
-    }}</a>
+    <div class="space-x-1">
+      <template v-if="pushEvent.vcsType === VcsType.GITLAB">
+        <img class="h-4 w-auto inline-block" src="@/assets/gitlab-logo.svg" />
+      </template>
+      <template v-else-if="pushEvent.vcsType === VcsType.GITHUB">
+        <img class="h-4 w-auto inline-block" src="@/assets/github-logo.svg" />
+      </template>
+      <template v-else-if="pushEvent.vcsType === VcsType.BITBUCKET">
+        <img
+          class="h-4 w-auto inline-block"
+          src="@/assets/bitbucket-logo.svg"
+        />
+      </template>
+      <a :href="vcsBranchUrl" target="_blank" class="normal-link">{{
+        `${vcsBranch}@${pushEvent.repositoryFullPath}`
+      }}</a>
+    </div>
 
     <i18n-t
       v-if="commit && commit.id && commit.url"
@@ -34,7 +39,7 @@
         <HumanizeDate :date="commit.createdTime" />
       </template>
     </i18n-t>
-  </p>
+  </div>
 </template>
 
 <script setup lang="ts">
