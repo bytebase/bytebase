@@ -42,7 +42,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NProgress } from "naive-ui";
 import { computed, ref } from "vue";
 
 type Tick = (p: number) => void;
