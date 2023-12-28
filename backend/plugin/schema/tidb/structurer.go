@@ -15,8 +15,14 @@ import (
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	schema.RegisterGetDesignSchema(storepb.Engine_TIDB, GetDesignSchema)
+	schema.RegisterParseToMetadatas(storepb.Engine_TIDB, ParseToMetadata)
+}
 
 const (
 	autoIncrementSymbol = "AUTO_INCREMENT"

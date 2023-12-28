@@ -22,6 +22,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -287,7 +288,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
 		sanitizeCommentForSchemaMetadata(metadata)
 
-		schema, err := getDesignSchema(branch.Engine, string(branch.BaseSchema), metadata)
+		schema, err := schema.GetDesignSchema(branch.Engine, string(branch.BaseSchema), metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -369,7 +370,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		// TODO(zp): bug, this should not be no change.
 		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
 	}
-	mergedSchema, err := getDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
+	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
@@ -449,7 +450,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	var newHeadConfig *storepb.DatabaseConfig
 	if request.MergedSchema != "" {
 		newHeadSchema = request.MergedSchema
-		newHeadMetadata, err = TransformSchemaStringToDatabaseMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
+		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
@@ -484,7 +485,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 
-		newHeadSchema, err = getDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.HeadSchema), newHeadMetadata)
+		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.HeadSchema), newHeadMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
@@ -638,11 +639,11 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
-	sourceSchema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeSourceMetadata)
+	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeTargetMetadata)
+	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -826,17 +827,6 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) 
 			table.Comment = common.GetCommentFromClassificationAndUserComment(table.Classification, table.UserComment)
 			for _, col := range table.Columns {
 				col.Comment = common.GetCommentFromClassificationAndUserComment(col.Classification, col.UserComment)
-			}
-		}
-	}
-}
-
-func setClassificationAndUserCommentFromComment(dbSchema *storepb.DatabaseSchemaMetadata) {
-	for _, schema := range dbSchema.Schemas {
-		for _, table := range schema.Tables {
-			table.Classification, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
-			for _, col := range table.Columns {
-				col.Classification, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
 			}
 		}
 	}
