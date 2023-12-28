@@ -1,4 +1,4 @@
-package v1
+package tidb
 
 import (
 	"io"
@@ -14,12 +14,17 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+type transformTest struct {
+	Schema   string
+	Metadata string
+}
+
 func TestTiDBTransformSchemaString(t *testing.T) {
 	const (
 		record = false
 	)
 	var (
-		filepath = "testdata/tidb/schema.yaml"
+		filepath = "testdata/parse_to_metadata.yaml"
 	)
 
 	a := require.New(t)
@@ -33,7 +38,7 @@ func TestTiDBTransformSchemaString(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := TransformSchemaStringToDatabaseMetadata(t.Engine, t.Schema)
+		result, err := ParseToMetadata(t.Schema)
 		a.NoError(err)
 		if record {
 			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
@@ -54,12 +59,18 @@ func TestTiDBTransformSchemaString(t *testing.T) {
 	}
 }
 
-func TestTiDBGetDesignSchema(t *testing.T) {
+type designTest struct {
+	Baseline string
+	Target   string
+	Result   string
+}
+
+func TestGetDesignSchema(t *testing.T) {
 	const (
 		record = false
 	)
 	var (
-		filepath = "testdata/tidb/design.yaml"
+		filepath = "testdata/get_design_schema.yaml"
 	)
 
 	a := require.New(t)
@@ -75,58 +86,12 @@ func TestTiDBGetDesignSchema(t *testing.T) {
 	for i, t := range tests {
 		targetMeta := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
-		result, err := getDesignSchema(t.Engine, t.Baseline, targetMeta)
+		result, err := GetDesignSchema(t.Baseline, targetMeta)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result
 		} else {
 			a.Equal(t.Result, result)
-		}
-	}
-
-	if record {
-		byteValue, err := yaml.Marshal(tests)
-		a.NoError(err)
-		err = os.WriteFile(filepath, byteValue, 0644)
-		a.NoError(err)
-	}
-}
-
-func TestTiDBCheckDatabaseMetadata(t *testing.T) {
-	const (
-		record = false
-	)
-	var (
-		filepath = "testdata/tidb/check.yaml"
-	)
-
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-
-	tests := []checkTest{}
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(yamlFile.Close())
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
-
-	for i, t := range tests {
-		meta := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(protojson.Unmarshal([]byte(t.Metadata), meta))
-		err := checkDatabaseMetadata(t.Engine, meta)
-		if record {
-			if err != nil {
-				tests[i].Err = err.Error()
-			} else {
-				tests[i].Err = ""
-			}
-		} else {
-			if t.Err == "" {
-				a.NoError(err)
-			} else {
-				a.NotNil(err, t.Err)
-				a.Equal(t.Err, err.Error())
-			}
 		}
 	}
 
