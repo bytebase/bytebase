@@ -22,6 +22,7 @@
     COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
     ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY (a, c, d);
     ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY (a) REFERENCES public.t2 (b);
+    CREATE INDEX idx_t4_d ON public.t4 USING btree (d);
   target: |-
     {
       "schemas":  [
@@ -173,6 +174,7 @@
     COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
     ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY ("a", "b", "c");
     ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");
+    CREATE INDEX idx_t4_d ON public.t4 USING btree (d);
     CREATE SCHEMA "s1";
 
     CREATE TABLE "s1"."t" (
