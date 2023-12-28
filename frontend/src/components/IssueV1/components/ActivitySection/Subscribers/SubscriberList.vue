@@ -53,6 +53,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
 import { User, UserType } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
 import { extractUserResourceName } from "@/utils";
 import SubscriberListItem from "./SubscriberListItem.vue";
 
@@ -76,7 +77,9 @@ const subscriberList = computed(() => {
 const options = computed(() => {
   const subscribers = new Set(issue.value.subscribers);
   const options = userStore.userList
-    .filter((user) => user.userType === UserType.USER)
+    .filter(
+      (user) => user.userType === UserType.USER && user.state === State.ACTIVE
+    )
     .map<UserSelectOption>((user) => ({
       user,
       value: `users/${user.email}`,
