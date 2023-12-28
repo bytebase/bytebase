@@ -4,6 +4,7 @@
       <template #trigger>
         <div class="textlabel flex items-center gap-x-1">
           {{ $t("issue.approval-flow.self") }}
+          <FeatureBadge feature="bb.feature.custom-approval" />
         </div>
       </template>
       <template #default>
@@ -56,11 +57,21 @@
       </div>
     </div>
   </div>
+  <div v-if="isCreating" class="flex flex-col gap-y-1">
+    <div class="textlabel flex items-center gap-x-1">
+      {{ $t("issue.approval-flow.self") }}
+      <FeatureBadge feature="bb.feature.custom-approval" />
+    </div>
+    <div class="text-control-placeholder text-xs">
+      {{ $t("issue.approval-flow.pre-issue-created-tips") }}
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import {
   databaseForTask,
   useIssueContext,
@@ -100,7 +111,7 @@ const showApprovalTooltip = computed(() => {
 
 defineExpose({
   shown: computed(() => {
-    return !isCreating.value;
+    return true; // Always shown
   }),
 });
 </script>
