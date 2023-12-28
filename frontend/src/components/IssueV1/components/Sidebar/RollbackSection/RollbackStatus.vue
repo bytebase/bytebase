@@ -78,7 +78,7 @@ import {
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { Task_DatabaseDataUpdate_RollbackSqlStatus as RollbackSqlStatus } from "@/types/proto/v1/rollout_service";
 import { extractSheetUID } from "@/utils";
-import IssueStatusIcon from "../../../IssueStatusIcon.vue";
+import IssueStatusIcon from "../../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
 import { useRollbackContext } from "./common";

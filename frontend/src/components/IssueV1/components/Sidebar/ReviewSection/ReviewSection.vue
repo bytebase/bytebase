@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-x-3 min-h-[34px]">
+  <div v-if="!isCreating" class="flex flex-col gap-y-1">
     <NTooltip :disabled="!showApprovalTooltip">
       <template #trigger>
         <div class="textlabel flex items-center gap-x-1">
@@ -41,6 +41,7 @@
       <Timeline
         v-else-if="wrappedSteps && wrappedSteps.length > 0"
         :steps="wrappedSteps"
+        class="mt-1"
       />
       <div
         v-else
@@ -69,7 +70,8 @@ import { useIssueV1Store } from "@/store";
 import { isGrantRequestIssue } from "@/utils";
 import Timeline from "./Timeline.vue";
 
-const { issue, events, reviewContext, selectedTask } = useIssueContext();
+const { issue, events, isCreating, reviewContext, selectedTask } =
+  useIssueContext();
 const { ready, error } = reviewContext;
 const selectedDatabase = computed(() =>
   databaseForTask(issue.value, selectedTask.value)
@@ -94,5 +96,11 @@ const showApprovalTooltip = computed(() => {
     return false;
   }
   return true;
+});
+
+defineExpose({
+  shown: computed(() => {
+    return !isCreating.value;
+  }),
 });
 </script>

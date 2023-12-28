@@ -1,6 +1,6 @@
 <template>
-  <div v-if="shouldShowEarliestAllowedTime" class="flex items-center gap-x-3">
-    <h2 class="flex flex-col items-end">
+  <div v-if="shouldShowEarliestAllowedTime" class="flex flex-col">
+    <h2 class="flex flex-row items-center gap-x-1">
       <div class="flex gap-x-1 items-center textlabel">
         <NTooltip>
           <template #trigger>
@@ -20,7 +20,7 @@
         {{ "UTC" + dayjs().format("ZZ") }}
       </div>
     </h2>
-    <div class="w-[12rem]">
+    <div>
       <NTooltip :disabled="disallowEditReasons.length === 0">
         <template #trigger>
           <NDatePicker
@@ -66,6 +66,7 @@ import {
   specForTask,
   useIssueContext,
 } from "@/components/IssueV1";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
@@ -76,7 +77,6 @@ import {
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
-import { ErrorList } from "../../common";
 
 dayjs.extend(isSameOrAfter);
 

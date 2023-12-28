@@ -1,7 +1,6 @@
 <template>
   <NButton
     tag="div"
-    quaternary
     size="small"
     style="--n-padding: 0 5px"
     @click="showFlagsPanel = true"

@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="rollbackUIType !== 'NONE'"
-    class="flex items-center gap-x-3 min-h-[34px]"
+    class="flex items-center justify-between gap-x-2 min-h-[34px] whitespace-nowrap"
   >
     <NTooltip>
       <template #trigger>
@@ -24,7 +24,7 @@
         </i18n-t>
       </template>
     </NTooltip>
-    <div class="w-[12rem]">
+    <div class="">
       <RollbackSwitch v-if="rollbackUIType === 'SWITCH'" />
       <RollbackStatus v-if="rollbackUIType === 'FULL'" />
     </div>

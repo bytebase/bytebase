@@ -1,42 +1,41 @@
 <template>
-  <div
-    v-if="shouldShowGhostSection"
-    class="flex items-center gap-x-3 min-h-[34px]"
-  >
-    <div class="textlabel flex items-center gap-x-1">
-      <NTooltip>
-        <template #trigger>
-          {{ $t("task.online-migration.self") }}
-        </template>
-        <template #default>
-          <i18n-t
-            tag="p"
-            keypath="issue.migration-mode.online.description"
-            class="whitespace-pre-line max-w-[20rem]"
-          >
-            <template #link>
-              <LearnMoreLink
-                url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
-                color="light"
-              />
-            </template>
-          </i18n-t>
-        </template>
-      </NTooltip>
-      <FeatureBadge feature="bb.feature.online-migration" />
-      <FeatureBadgeForInstanceLicense
-        feature="bb.feature.online-migration"
-        :show="hasOnlineMigrationFeature && showMissingInstanceLicense"
-        :instance="instance"
-      >
-        <LockIcon class="w-4 h-4 text-accent" />
-      </FeatureBadgeForInstanceLicense>
+  <div v-if="shouldShowGhostSection" class="flex flex-col items-start gap-1">
+    <div
+      class="w-full flex flex-row items-center justify-between whitespace-nowrap"
+    >
+      <div class="textlabel flex items-center gap-x-1 whitespace-nowrap">
+        <NTooltip>
+          <template #trigger>
+            {{ $t("task.online-migration.self") }}
+          </template>
+          <template #default>
+            <i18n-t
+              tag="p"
+              keypath="issue.migration-mode.online.description"
+              class="whitespace-pre-line max-w-[20rem]"
+            >
+              <template #link>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
+                  color="light"
+                />
+              </template>
+            </i18n-t>
+          </template>
+        </NTooltip>
+        <FeatureBadge feature="bb.feature.online-migration" />
+        <FeatureBadgeForInstanceLicense
+          feature="bb.feature.online-migration"
+          :show="hasOnlineMigrationFeature && showMissingInstanceLicense"
+          :instance="instance"
+        >
+          <LockIcon class="w-4 h-4 text-accent" />
+        </FeatureBadgeForInstanceLicense>
+      </div>
+      <GhostSwitch v-if="isCreating" />
     </div>
 
-    <div class="w-[12rem] flex items-center gap-x-2">
-      <GhostSwitch v-if="isCreating" />
-      <GhostConfigButton v-if="viewType === 'ON'" />
-    </div>
+    <GhostConfigButton v-if="viewType === 'ON'" />
 
     <GhostFlagsPanel />
 
