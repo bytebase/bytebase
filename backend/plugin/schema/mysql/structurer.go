@@ -11,8 +11,14 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	schema.RegisterGetDesignSchema(storepb.Engine_MYSQL, GetDesignSchema)
+	schema.RegisterParseToMetadatas(storepb.Engine_MYSQL, ParseToMetadata)
+}
 
 const (
 	autoIncrementSymbol = "AUTO_INCREMENT"

@@ -10,6 +10,9 @@ import (
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 
+	// Schema designer.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/pg"
+
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/pg"
 
