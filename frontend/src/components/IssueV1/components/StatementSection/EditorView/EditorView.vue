@@ -138,14 +138,7 @@
         }"
         @update:content="handleStatementChange"
       />
-      <div
-        class="absolute bottom-[3px] right-[18px] transition-opacity"
-        :class="
-          editorContainerHeight >= 240
-            ? 'opacity-100'
-            : 'opacity-0 pointer-events-none'
-        "
-      >
+      <div class="absolute bottom-[3px] right-[18px]">
         <NButton
           size="small"
           :quaternary="true"
