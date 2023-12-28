@@ -301,7 +301,7 @@ onMounted(async () => {
   const params = new URLSearchParams(url.search);
   state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
   state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
-  state.showPassword = isDemo.value != null;
+  state.showPassword = !!isDemo.value;
 
   await identityProviderStore.fetchIdentityProviderList();
   if (
