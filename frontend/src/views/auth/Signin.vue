@@ -27,10 +27,13 @@
                 </label>
                 <div class="mt-1 rounded-md shadow-sm">
                   <BBTextField
-                    id="email"
                     v-model:value="state.email"
                     required
-                    :input-props="{ autocomplete: 'on', type: 'email' }"
+                    :input-props="{
+                      id: 'email',
+                      autocomplete: 'on',
+                      type: 'email',
+                    }"
                     placeholder="jim@example.com"
                   />
                 </div>
@@ -62,10 +65,9 @@
                   class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
                 >
                   <BBTextField
-                    id="password"
                     v-model:value="state.password"
                     :type="state.showPassword ? 'text' : 'password'"
-                    :input-props="{ autocomplete: 'on' }"
+                    :input-props="{ id: 'password', autocomplete: 'on' }"
                     required
                   />
                   <div
@@ -147,11 +149,10 @@
                   </label>
                   <div class="mt-1 rounded-md shadow-sm">
                     <BBTextField
-                      id="username"
                       v-model:value="state.email"
                       required
                       placeholder="jim"
-                      :input-props="{ autocomplete: 'on' }"
+                      :input-props="{ id: 'username', autocomplete: 'on' }"
                     />
                   </div>
                 </div>
@@ -170,10 +171,9 @@
                     class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
                   >
                     <BBTextField
-                      id="password"
                       v-model:value="state.password"
                       :type="state.showPassword ? 'text' : 'password'"
-                      :input-props="{ autocomplete: 'on' }"
+                      :input-props="{ id: 'password', autocomplete: 'on' }"
                       required
                     />
                     <div
