@@ -4,6 +4,7 @@ import DescriptionSection from "./DescriptionSection";
 import HeaderSection from "./HeaderSection";
 import IssueSearch from "./IssueSearch";
 import PlanCheckSection from "./PlanCheckSection";
+import Sidebar from "./Sidebar";
 import StageSection from "./StageSection";
 import StatementSection from "./StatementSection";
 import TaskListSection from "./TaskListSection";
@@ -22,4 +23,5 @@ export {
   DescriptionSection,
   ActivitySection,
   IssueSearch,
+  Sidebar,
 };

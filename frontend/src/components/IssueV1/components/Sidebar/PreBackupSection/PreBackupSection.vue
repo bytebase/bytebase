@@ -1,16 +1,12 @@
 <template>
   <div
     v-if="showPreBackupSection"
-    class="flex items-center gap-x-3 min-h-[34px]"
+    class="flex items-center justify-between gap-x-2 min-h-[34px] whitespace-nowrap"
   >
-    <NTooltip>
-      <template #trigger>
-        <div class="textlabel flex items-center">
-          {{ $t("task.prior-backup") }}
-        </div>
-      </template>
-    </NTooltip>
-    <div class="w-[12rem] flex items-center gap-x-2">
+    <div class="textlabel flex items-center">
+      {{ $t("task.prior-backup") }}
+    </div>
+    <div class="flex items-center gap-x-2">
       <PreBackupSwitch />
     </div>
   </div>

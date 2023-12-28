@@ -83,4 +83,10 @@ const vcsBranchUrl = computed((): string => {
   }
   return "";
 });
+
+defineExpose({
+  shown: computed(() => {
+    return !!pushEvent.value;
+  }),
+});
 </script>

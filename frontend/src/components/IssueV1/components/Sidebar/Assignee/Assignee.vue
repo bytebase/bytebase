@@ -1,6 +1,6 @@
 <template>
-  <div v-if="!isCreating" class="flex items-center justify-end gap-3">
-    <div class="flex items-center justify-end gap-1">
+  <div v-if="shouldShowAssignee" class="flex flex-col">
+    <div class="flex items-center gap-1">
       <NTooltip>
         <template #trigger>
           <div class="flex items-center gap-x-1 textlabel">
@@ -13,9 +13,6 @@
           </div>
         </template>
       </NTooltip>
-
-      <!-- AssigneeAttentionButton will be now shown until the feature is re-defined -->
-      <AssigneeAttentionButton v-if="false" />
     </div>
 
     <NTooltip :disabled="errors.length === 0">
@@ -31,7 +28,7 @@
           :fallback-option="fallbackUser"
           :clearable="true"
           :auto-reset="false"
-          style="width: 14rem"
+          style="width: 100%"
           @update:user="changeAssigneeUID"
         />
       </template>
@@ -56,7 +53,12 @@ import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { UserSelect } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { pushNotification, useCurrentUserV1, useUserStore } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  usePageMode,
+  useUserStore,
+} from "@/store";
 import {
   SYSTEM_BOT_EMAIL,
   SYSTEM_BOT_ID,
@@ -70,17 +72,26 @@ import {
   extractUserResourceName,
   extractUserUID,
   hasWorkspacePermissionV1,
+  isDatabaseRelatedIssue,
   isMemberOfProjectV1,
   isOwnerOfProjectV1,
 } from "@/utils";
-import AssigneeAttentionButton from "./AssigneeAttentionButton.vue";
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const pageMode = usePageMode();
 const { isCreating, issue, reviewContext, releaserCandidates } =
   useIssueContext();
 const currentUser = useCurrentUserV1();
 const isUpdating = ref(false);
+
+const shouldShowAssignee = computed(() => {
+  return (
+    !isCreating.value &&
+    pageMode.value === "BUNDLED" &&
+    isDatabaseRelatedIssue(issue.value)
+  );
+});
 
 const assigneeEmail = computed(() => {
   const assignee = issue.value.assignee;
@@ -279,4 +290,10 @@ const fallbackUser = (uid: string) => {
     value: uid,
   };
 };
+
+defineExpose({
+  shown: computed(() => {
+    return shouldShowAssignee.value;
+  }),
+});
 </script>

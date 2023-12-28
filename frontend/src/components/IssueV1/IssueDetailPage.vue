@@ -1,50 +1,72 @@
 <template>
-  <div>
-    <div class="issue-debug">phase: {{ phase }}</div>
+  <div ref="containerRef" class="h-full flex flex-col">
+    <div class="border-b">
+      <div class="issue-debug">phase: {{ phase }}</div>
+      <BannerSection v-if="!isCreating" />
 
-    <BannerSection v-if="!isCreating" />
+      <HeaderSection />
+    </div>
+    <div class="flex-1 flex flex-row">
+      <div
+        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
+      >
+        <StageSection />
 
-    <HeaderSection class="!border-t-0" />
+        <TaskListSection />
 
-    <div class="w-full border-t mt-4" />
+        <TaskRunSection v-if="!isCreating" />
 
-    <StageSection />
+        <SQLCheckSection v-if="isCreating" />
+        <PlanCheckSection v-if="!isCreating" />
 
-    <div class="w-full mt-4" />
+        <StatementSection />
 
-    <TaskListSection />
+        <DescriptionSection />
 
-    <TaskRunSection v-if="!isCreating" />
+        <ActivitySection v-if="!isCreating" />
+      </div>
 
-    <div class="w-full border-t my-4" />
-
-    <SQLCheckSection v-if="isCreating" />
-    <PlanCheckSection v-if="!isCreating" />
-
-    <StatementSection />
-
-    <div class="w-full border-t my-4" />
-
-    <DescriptionSection />
-
-    <div class="w-full border-t my-4" />
-
-    <ActivitySection v-if="!isCreating" />
-
-    <IssueReviewActionPanel
-      :action="ongoingIssueReviewAction?.action"
-      @close="ongoingIssueReviewAction = undefined"
-    />
-    <IssueStatusActionPanel
-      :action="ongoingIssueStatusAction?.action"
-      @close="ongoingIssueStatusAction = undefined"
-    />
-    <TaskRolloutActionPanel
-      :action="ongoingTaskRolloutAction?.action"
-      :task-list="ongoingTaskRolloutAction?.taskList ?? []"
-      @close="ongoingTaskRolloutAction = undefined"
-    />
+      <div
+        v-if="sidebarMode == 'DESKTOP'"
+        class="hide-scrollbar border-l"
+        :style="{
+          width: `${desktopSidebarWidth}px`,
+        }"
+      >
+        <Sidebar />
+      </div>
+    </div>
   </div>
+
+  <template v-if="sidebarMode === 'MOBILE'">
+    <!-- mobile sidebar -->
+    <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+      <div
+        style="
+          min-width: 240px;
+          width: 80vw;
+          max-width: 320px;
+          padding: 0.5rem 0;
+        "
+      >
+        <Sidebar v-if="sidebarMode === 'MOBILE'" />
+      </div>
+    </Drawer>
+  </template>
+
+  <IssueReviewActionPanel
+    :action="ongoingIssueReviewAction?.action"
+    @close="ongoingIssueReviewAction = undefined"
+  />
+  <IssueStatusActionPanel
+    :action="ongoingIssueStatusAction?.action"
+    @close="ongoingIssueStatusAction = undefined"
+  />
+  <TaskRolloutActionPanel
+    :action="ongoingTaskRolloutAction?.action"
+    :task-list="ongoingTaskRolloutAction?.taskList ?? []"
+    @close="ongoingTaskRolloutAction = undefined"
+  />
 
   <div class="issue-debug">
     <pre class="text-xs">{{ JSON.stringify(issue, null, "  ") }}</pre>
@@ -55,6 +77,7 @@
 import { ref } from "vue";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { provideSQLCheckContext } from "../SQLCheck";
+import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
@@ -65,6 +88,7 @@ import {
   StatementSection,
   DescriptionSection,
   ActivitySection,
+  Sidebar,
   IssueReviewActionPanel,
   IssueStatusActionPanel,
   TaskRolloutActionPanel,
@@ -73,10 +97,12 @@ import {
   IssueReviewAction,
   IssueStatusAction,
   TaskRolloutAction,
+  provideIssueSidebarContext,
   useIssueContext,
   usePollIssue,
 } from "./logic";
 
+const containerRef = ref<HTMLElement>();
 const { isCreating, phase, issue, events } = useIssueContext();
 
 const ongoingIssueReviewAction = ref<{
@@ -112,4 +138,10 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
 });
 
 provideSQLCheckContext();
+
+const {
+  mode: sidebarMode,
+  desktopSidebarWidth,
+  mobileSidebarOpen,
+} = provideIssueSidebarContext(containerRef);
 </script>
