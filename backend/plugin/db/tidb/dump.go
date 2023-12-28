@@ -86,7 +86,8 @@ const (
 )
 
 var (
-	excludeAutoIncrement = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoIncrement  = regexp.MustCompile(` AUTO_INCREMENT=\d+`)
+	excludeAutoRandomBase = regexp.MustCompile(` AUTO_RANDOM_BASE=\d+`)
 )
 
 // Dump dumps the database.
@@ -126,8 +127,11 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		}
 	}
 
-	options := sql.TxOptions{ReadOnly: true}
-
+	options := sql.TxOptions{}
+	// TiDB does not support readonly, so we only set for MySQL and OceanBase.
+	if driver.dbType == storepb.Engine_MYSQL || driver.dbType == storepb.Engine_MARIADB || driver.dbType == storepb.Engine_OCEANBASE {
+		options.ReadOnly = true
+	}
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
 	// Beginning a transaction in the same session will implicitly release existing table locks.
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
@@ -312,7 +316,10 @@ func getTemporaryView(name string, columns []string) string {
 // excludeSchemaAutoValues excludes
 // 1) the starting value of AUTO_INCREMENT if it's a schema only dump.
 // https://github.com/bytebase/bytebase/issues/123
+// 2) The auto random base in TiDB.
+// /*T![auto_rand_base] AUTO_RANDOM_BASE=39456621 */.
 func excludeSchemaAutoValues(s string) string {
+	s = excludeAutoRandomBase.ReplaceAllString(s, ``)
 	return excludeAutoIncrement.ReplaceAllString(s, ``)
 }
 
@@ -408,16 +415,6 @@ type triggerSchema struct {
 	statement string
 }
 
-// getTables gets all tables of a database.
-func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
-	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer txn.Rollback()
-	return getTablesTx(txn, storepb.Engine_MYSQL, dbName)
-}
-
 // getTablesTx gets all tables of a database using the provided transaction.
 func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSchema, error) {
 	var tables []*TableSchema
@@ -492,6 +489,16 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 			return "", err
 		}
 		return fmt.Sprintf(viewStmtFmt, tblName, createStmt), nil
+	case sequenceTableType:
+		query := fmt.Sprintf("SHOW CREATE SEQUENCE `%s`.`%s`;", dbName, tblName)
+		var stmt, unused string
+		if err := txn.QueryRow(query).Scan(&unused, &stmt); err != nil {
+			if err == sql.ErrNoRows {
+				return "", common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return "", err
+		}
+		return fmt.Sprintf(sequenceStmtFmt, tblName, stmt), nil
 	default:
 		return "", errors.Errorf("unrecognized table type %q for database %q table %q", tblType, dbName, tblName)
 	}
@@ -834,10 +841,8 @@ func (driver *Driver) restoreImpl(ctx context.Context, backup io.Reader, databas
 	mysqlCmd := exec.CommandContext(ctx, mysqlutil.GetPath(mysqlutil.MySQL, driver.dbBinDir), mysqlArgs...)
 
 	var stderr bytes.Buffer
-	countingReader := common.NewCountingReader(backup)
-	mysqlCmd.Stdin = countingReader
+	mysqlCmd.Stdin = backup
 	mysqlCmd.Stderr = &stderr
-	driver.restoredBackupBytes = countingReader
 
 	if err := mysqlCmd.Run(); err != nil {
 		return errors.Wrapf(err, "mysql command fails: %s", stderr.String())

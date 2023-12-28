@@ -8,6 +8,7 @@ import (
 	// Drivers.
 	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/sqlite"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 
 	// Parsers.
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"

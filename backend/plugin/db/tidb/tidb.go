@@ -30,14 +30,14 @@ import (
 var (
 	baseTableType = "BASE TABLE"
 	viewTableType = "VIEW"
+	// Sequence is available to TiDB only.
+	sequenceTableType = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
 )
 
 func init() {
-	db.Register(storepb.Engine_MYSQL, newDriver)
-	db.Register(storepb.Engine_MARIADB, newDriver)
-	db.Register(storepb.Engine_OCEANBASE, newDriver)
+	db.Register(storepb.Engine_TIDB, newDriver)
 }
 
 // Driver is the MySQL driver.
@@ -50,9 +50,6 @@ type Driver struct {
 	db            *sql.DB
 	databaseName  string
 	sshClient     *ssh.Client
-
-	replayedBinlogBytes *common.CountingReader
-	restoredBackupBytes *common.CountingReader
 }
 
 func newDriver(dc db.DriverConfig) db.Driver {
@@ -175,112 +172,19 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opt
 	}
 	defer conn.Close()
 
-	connectionID, err := getConnectionID(ctx, conn)
-	if err != nil {
-		return 0, err
-	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
-
 	if opts.BeginFunc != nil {
 		if err := opts.BeginFunc(ctx, conn); err != nil {
 			return 0, err
 		}
 	}
-
-	var totalCommands int
-	var chunks [][]base.SingleSQL
-	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
-		list, err := mysqlparser.SplitSQL(statement)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to split sql")
-		}
-		list = base.FilterEmptySQL(list)
-		if len(list) == 0 {
-			return 0, nil
-		}
-		totalCommands = len(list)
-		ret, err := util.ChunkedSQLScript(list, common.MaxSheetCheckSize)
-		if err != nil {
-			return 0, errors.Wrapf(err, "failed to chunk sql")
-		}
-		chunks = ret
-	} else {
-		chunks = [][]base.SingleSQL{
-			{
-				base.SingleSQL{
-					Text: statement,
-				},
-			},
-		}
-	}
-
-	tx, err := conn.BeginTx(ctx, nil)
+	sqlResult, err := conn.ExecContext(ctx, statement)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to begin execute transaction")
+		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 	}
-	defer tx.Rollback()
-
-	currentIndex := 0
-	var totalRowsAffected int64
-	for _, chunk := range chunks {
-		if len(chunk) == 0 {
-			continue
-		}
-		// Start the current chunk.
-
-		// Set the progress information for the current chunk.
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(totalCommands),
-				CommandsCompleted: int32(currentIndex),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
-			})
-		}
-
-		chunkText, err := util.ConcatChunk(chunk)
-		if err != nil {
-			return 0, err
-		}
-
-		sqlResult, err := tx.ExecContext(ctx, chunkText)
-		if err != nil {
-			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-				slog.Info("cancel connection", slog.String("connectionID", connectionID))
-				if err := driver.StopConnectionByID(connectionID); err != nil {
-					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
-				}
-			}
-
-			return 0, &db.ErrorWithPosition{
-				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
-				Start: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[0].FirstStatementLine),
-					Column: int32(chunk[0].FirstStatementColumn),
-				},
-				End: &storepb.TaskRunResult_Position{
-					Line:   int32(chunk[len(chunk)-1].LastLine),
-					Column: int32(chunk[len(chunk)-1].LastColumn),
-				},
-			}
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		}
-		totalRowsAffected += rowsAffected
-		currentIndex += len(chunk)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, errors.Wrapf(err, "failed to commit execute transaction")
+	totalRowsAffected, err := sqlResult.RowsAffected()
+	if err != nil {
+		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+		slog.Debug("rowsAffected returns error", log.BBError(err))
 	}
 
 	return totalRowsAffected, nil
@@ -348,6 +252,12 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	stmt := statement
 	if !isExplain && queryContext.Limit > 0 {
 		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
+	}
+
+	if queryContext.ReadOnly {
+		// TiDB doesn't support READ ONLY transactions. We have to skip the flag for it.
+		// https://github.com/pingcap/tidb/issues/34626
+		queryContext.ReadOnly = false
 	}
 
 	if queryContext.SensitiveSchemaInfo != nil {

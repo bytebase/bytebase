@@ -40,15 +40,12 @@ var (
 		"mysql":              true,
 		"performance_schema": true,
 		"sys":                true,
-		// OceanBase only
-		"oceanbase":  true,
-		"SYS":        true,
-		"LBACSYS":    true,
-		"ORAAUDITOR": true,
-		"__public":   true,
+		// TiDB only
+		"metrics_schema": true,
 	}
 
-	RangeBitsRegex = regexp.MustCompile(`RANGE BITS=(\d+)`)
+	pkAutoRandomBitsRegex = regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
+	RangeBitsRegex        = regexp.MustCompile(`RANGE BITS=(\d+)`)
 )
 
 // SyncInstance syncs the instance.
@@ -122,6 +119,22 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
 		},
 	}, nil
+}
+
+func (driver *Driver) getServerVariable(ctx context.Context, varName string) (string, error) {
+	db := driver.GetDB()
+	query := fmt.Sprintf("SHOW VARIABLES LIKE '%s'", varName)
+	var varNameFound, value string
+	if err := db.QueryRowContext(ctx, query).Scan(&varNameFound, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return "", common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return "", util.FormatErrorWithQuery(err, query)
+	}
+	if varName != varNameFound {
+		return "", errors.Errorf("expecting variable %s, but got %s", varName, varNameFound)
+	}
+	return value, nil
 }
 
 // SyncDBSchema syncs a single database schema.
@@ -347,10 +360,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
 			IFNULL(TABLE_COMMENT, ''),
-			''
+			IFNULL(TIDB_ROW_ID_SHARDING_INFO, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
+
 	tableRows, err := driver.db.QueryContext(ctx, tableQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
@@ -381,6 +395,34 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		switch tableType {
 		case baseTableType:
 			columns := columnMap[key]
+			// Set auto random default value for TiDB.
+			if strings.Contains(shardingInfo, pkAutoRandomBitsSymbol) {
+				autoRandText := autoRandSymbol
+				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
+					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
+						autoRandText += fmt.Sprintf("(%s,%s)", randomBitsMatch[1], rangeBitsMatch[1])
+					} else {
+						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
+					}
+				}
+				if indexes, ok := indexMap[key]; ok {
+					for _, index := range indexes {
+						if index.Primary {
+							if len(index.Expressions) > 0 {
+								columnName := index.Expressions[0]
+								for i, column := range columns {
+									if column.Name == columnName {
+										newColumn := columns[i]
+										newColumn.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoRandText}
+										break
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
 			tableMetadata := &storepb.TableMetadata{
 				Name:          tableName,
 				Columns:       columns,
