@@ -4,61 +4,12 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
-	mysqlse "github.com/bytebase/bytebase/backend/plugin/schema-engine/mysql"
-	pgse "github.com/bytebase/bytebase/backend/plugin/schema-engine/pg"
-	tidbse "github.com/bytebase/bytebase/backend/plugin/schema-engine/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
-
-func getDesignSchema(engine storepb.Engine, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
-	switch engine {
-	case storepb.Engine_MYSQL:
-		result, err := mysqlse.GetDesignSchema(baselineSchema, to)
-		if err != nil {
-			return "", status.Errorf(codes.Internal, "failed to generate mysql design schema: %v", err)
-		}
-		return result, nil
-	case storepb.Engine_TIDB:
-		result, err := tidbse.GetDesignSchema(baselineSchema, to)
-		if err != nil {
-			return "", status.Errorf(codes.Internal, "failed to generate tidb design schema: %v", err)
-		}
-		return result, nil
-	case storepb.Engine_POSTGRES:
-		result, err := pgse.GetDesignSchema(baselineSchema, to)
-		if err != nil {
-			return "", status.Errorf(codes.Internal, "failed to generate postgres design schema: %v", err)
-		}
-		return result, nil
-	default:
-		return "", status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
-	}
-}
-func TransformSchemaStringToDatabaseMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSchemaMetadata, error) {
-	dbSchema, err := func() (*storepb.DatabaseSchemaMetadata, error) {
-		switch engine {
-		case storepb.Engine_MYSQL:
-			return mysqlse.ParseToMetadata(schema)
-		case storepb.Engine_POSTGRES:
-			return pgse.ParseToMetadata(schema)
-		case storepb.Engine_TIDB:
-			return tidbse.ParseToMetadata(schema)
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("unsupported engine: %v", engine))
-		}
-	}()
-	if err != nil {
-		return nil, err
-	}
-	setClassificationAndUserCommentFromComment(dbSchema)
-	return dbSchema, nil
-}
 
 func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
 	switch engine {
