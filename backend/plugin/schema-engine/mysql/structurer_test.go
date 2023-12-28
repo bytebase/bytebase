@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
