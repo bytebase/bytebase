@@ -7,10 +7,10 @@
     class="border"
   >
     <template #item="{ item: taskRun }: TaskRunGridRow">
-      <div class="bb-grid-cell">
+      <div class="bb-grid-cell block">
         <TaskRunStatusIcon :status="taskRun.status" />
       </div>
-      <div class="bb-grid-cell whitespace-pre-wrap break-words">
+      <div class="bb-grid-cell whitespace-pre-wrap break-words !block">
         <TaskRunComment :task-run="taskRun" />
       </div>
       <div class="bb-grid-cell">

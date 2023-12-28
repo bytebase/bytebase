@@ -1,11 +1,11 @@
 <template>
-  <div class="w-full flex flex-col">
+  <div class="w-full flex flex-col divide-y">
     <div class="flex flex-col lg:flex-row justify-between px-4">
       <template v-for="(stage, index) in stageList" :key="stage.uid">
-        <StageCard :stage="stage" :index="index" class="h-[68px]" />
+        <StageCard :stage="stage" :index="index" class="h-[54px]" />
         <div
           v-if="index < stageList.length - 1"
-          class="hidden lg:block w-5 h-[68px] mr-2 pointer-events-none shrink-0"
+          class="hidden lg:block w-3.5 h-[54px] mr-2 pointer-events-none shrink-0"
           aria-hidden="true"
         >
           <svg
@@ -25,20 +25,13 @@
       </template>
     </div>
 
-    <div class="w-full border-t mb-4" />
-
-    <div class="lg:flex items-start justify-between px-4">
-      <StageInfo />
-
-      <Actions />
-    </div>
+    <StageInfo class="px-4 py-2" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useIssueContext } from "@/components/IssueV1/logic";
-import Actions from "./Actions";
 import StageCard from "./StageCard.vue";
 import StageInfo from "./StageInfo";
 
