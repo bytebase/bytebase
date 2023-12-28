@@ -24,6 +24,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/mail"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -777,7 +778,7 @@ func validateTableMetadata(engine v1pb.Engine, tableMetadata *v1pb.TableMetadata
 	if err := checkDatabaseMetadata(storepb.Engine(engine), tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to check database metadata")
 	}
-	if _, err := getDesignSchema(storepb.Engine(engine), "" /* baseline */, tempStoreSchemaMetadata); err != nil {
+	if _, err := schema.GetDesignSchema(storepb.Engine(engine), "" /* baseline */, tempStoreSchemaMetadata); err != nil {
 		return errors.Wrap(err, "failed to transform database metadata to schema string")
 	}
 	return nil

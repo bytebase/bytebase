@@ -12,11 +12,17 @@ import (
 	postgres "github.com/bytebase/postgresql-parser"
 
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
+
+func init() {
+	schema.RegisterGetDesignSchema(storepb.Engine_POSTGRES, GetDesignSchema)
+	schema.RegisterParseToMetadatas(storepb.Engine_POSTGRES, ParseToMetadata)
+}
 
 // ParseToMetadata converts a schema string to database metadata.
 func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {

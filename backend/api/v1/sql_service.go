@@ -38,6 +38,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -436,7 +437,7 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
 	sanitizeCommentForSchemaMetadata(storeSchemaMetadata)
 
-	schema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline */, storeSchemaMetadata)
+	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline */, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -2554,7 +2555,7 @@ func encodeToBase64String(statement string) string {
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
 func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.NewMetadata)
-	schema, err := getDesignSchema(storepb.Engine(request.Engine), request.OldSchema, storeSchemaMetadata)
+	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), request.OldSchema, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}

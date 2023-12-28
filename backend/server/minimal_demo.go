@@ -15,6 +15,10 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
+	// Schema designer.
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/schema/tidb"
+
 	// Advisors.
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/advisor/tidb"
