@@ -436,7 +436,7 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
 	sanitizeCommentForSchemaMetadata(storeSchemaMetadata)
 
-	schema, err := transformDatabaseMetadataToSchemaString(storepb.Engine(request.Engine), storeSchemaMetadata)
+	schema, err := getDesignSchema(storepb.Engine(request.Engine), "" /* baseline */, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
