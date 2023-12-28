@@ -1,13 +1,15 @@
 <template>
-  <div class="h-full flex flex-col">
-    <NLayoutHeader class="border-b">
+  <div ref="containerRef" class="h-full flex flex-col">
+    <div class="border-b">
       <div class="issue-debug">phase: {{ phase }}</div>
       <BannerSection v-if="!isCreating" />
 
       <HeaderSection />
-    </NLayoutHeader>
-    <NLayout :has-sider="true" sider-placement="right" class="flex-1">
-      <NLayoutContent content-class="hide-scrollbar divide-y">
+    </div>
+    <div class="flex-1 flex flex-row">
+      <div
+        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden"
+      >
         <StageSection />
 
         <TaskListSection />
@@ -22,18 +24,35 @@
         <DescriptionSection />
 
         <ActivitySection v-if="!isCreating" />
-      </NLayoutContent>
+      </div>
 
-      <NLayoutSider
-        :width="240"
-        :show-trigger="false"
-        content-class="hide-scrollbar"
-        class="border-l"
+      <div
+        v-if="sidebarMode == 'DESKTOP'"
+        class="hide-scrollbar border-l"
+        :style="{
+          width: `${desktopSidebarWidth}px`,
+        }"
       >
         <Sidebar />
-      </NLayoutSider>
-    </NLayout>
+      </div>
+    </div>
   </div>
+
+  <template v-if="sidebarMode === 'MOBILE'">
+    <!-- mobile sidebar -->
+    <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+      <div
+        style="
+          min-width: 240px;
+          width: 80vw;
+          max-width: 320px;
+          padding: 0.5rem 0;
+        "
+      >
+        <Sidebar v-if="sidebarMode === 'MOBILE'" />
+      </div>
+    </Drawer>
+  </template>
 
   <IssueReviewActionPanel
     :action="ongoingIssueReviewAction?.action"
@@ -55,10 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import { NLayout, NLayoutContent, NLayoutHeader, NLayoutSider } from "naive-ui";
 import { ref } from "vue";
 import { Task } from "@/types/proto/v1/rollout_service";
 import { provideSQLCheckContext } from "../SQLCheck";
+import { Drawer } from "../v2";
 import {
   BannerSection,
   HeaderSection,
@@ -78,10 +97,12 @@ import {
   IssueReviewAction,
   IssueStatusAction,
   TaskRolloutAction,
+  provideIssueSidebarContext,
   useIssueContext,
   usePollIssue,
 } from "./logic";
 
+const containerRef = ref<HTMLElement>();
 const { isCreating, phase, issue, events } = useIssueContext();
 
 const ongoingIssueReviewAction = ref<{
@@ -117,4 +138,10 @@ events.on("perform-task-rollout-action", async ({ action, tasks }) => {
 });
 
 provideSQLCheckContext();
+
+const {
+  mode: sidebarMode,
+  desktopSidebarWidth,
+  mobileSidebarOpen,
+} = provideIssueSidebarContext(containerRef);
 </script>
