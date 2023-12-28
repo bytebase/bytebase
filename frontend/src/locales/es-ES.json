@@ -1104,7 +1104,8 @@
     "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
-      "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo."
+      "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo.",
+      "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con el flujo de aprobación personalizado correspondiente según el tipo y el nivel de riesgo del problema."
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",

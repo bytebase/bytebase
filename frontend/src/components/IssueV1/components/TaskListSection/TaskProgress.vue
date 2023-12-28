@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import { NProgress } from "naive-ui";
 import { computed } from "vue";
 import { Task, Task_Status } from "@/types/proto/v1/rollout_service";
 
