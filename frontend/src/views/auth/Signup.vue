@@ -36,10 +36,10 @@
             </label>
             <div class="mt-1 rounded-md shadow-sm">
               <BBTextField
-                id="email"
                 v-model:value="state.email"
                 required
                 placeholder="jim@example.com"
+                :input-props="{ id: 'email' }"
                 @input="onTextEmail"
               />
             </div>
@@ -57,10 +57,9 @@
               class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
             >
               <BBTextField
-                id="password"
                 v-model:value="state.password"
                 :type="state.showPassword ? 'text' : 'password'"
-                autocomplete="off"
+                :input-props="{ id: 'password', autocomplete: 'off' }"
                 required
                 @input="refreshPasswordValidation"
               />
@@ -100,10 +99,9 @@
               class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
             >
               <BBTextField
-                id="password-confirm"
                 v-model:value="state.passwordConfirm"
                 :type="state.showPassword ? 'text' : 'password'"
-                autocomplete="off"
+                :input-props="{ id: 'password-confirm', autocomplete: 'off' }"
                 :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
                 required
                 @input="refreshPasswordValidation"
