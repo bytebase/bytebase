@@ -15,11 +15,11 @@
   <slot
     v-if="!state.loadingMore"
     name="more"
-    :has-more="state.hasMore"
+    :has-more="!!state.paginationToken"
     :fetch-next-page="fetchNextPage"
   >
     <div
-      v-if="!hideLoadMore && pageSize > 0 && state.hasMore"
+      v-if="!hideLoadMore && pageSize > 0 && state.paginationToken"
       class="flex items-center justify-center py-2 text-gray-400 text-sm hover:bg-gray-200 cursor-pointer"
       @click="fetchNextPage"
     >
@@ -46,7 +46,6 @@ type LocalState = {
   issueList: ComposedIssue[];
   paginationToken: string;
   loadingMore: boolean;
-  hasMore: boolean;
 };
 
 /**
@@ -107,7 +106,6 @@ const state = reactive<LocalState>({
   issueList: [],
   paginationToken: "",
   loadingMore: false,
-  hasMore: true,
 });
 
 const sessionState = useSessionStorage<SessionState>(
@@ -176,18 +174,13 @@ const fetchData = (refresh = false) => {
         state.issueList.push(...issues);
       }
 
-      if (issues.length < expectedRowCount) {
-        state.hasMore = false;
-      } else if (!isFirstFetch) {
+      if (issues.length >= expectedRowCount && !isFirstFetch) {
         // If we didn't reach the end, memorize we've clicked the "load more" button.
         sessionState.value.page++;
       }
 
       sessionState.value.updatedTs = Date.now();
       state.paginationToken = nextPageToken;
-      if (!nextPageToken) {
-        state.hasMore = false;
-      }
     })
     .finally(() => {
       state.loading = false;
@@ -204,7 +197,6 @@ const resetSession = () => {
 
 const refresh = () => {
   state.paginationToken = "";
-  state.hasMore = true;
   resetSession();
   fetchData(true);
 };
