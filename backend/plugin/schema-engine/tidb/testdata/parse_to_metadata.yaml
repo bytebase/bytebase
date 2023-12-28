@@ -1,5 +1,4 @@
-- engine: 6
-  schema: |-
+- schema: |-
     create table t
       (
         `a` int NOT NULL COMMENT 'this is comment',
@@ -20,8 +19,7 @@
                 {
                   "name": "a",
                   "type": "int",
-                  "comment": "this is comment",
-                  "userComment": "this is comment"
+                  "comment": "this is comment"
                 },
                 {
                   "name": "b",
@@ -61,15 +59,13 @@
                   "visible": true
                 }
               ],
-              "comment": "this is comment with ' escaped",
-              "userComment": "this is comment with ' escaped"
+              "comment": "this is comment with ' escaped"
             }
           ]
         }
       ]
     }
-- engine: 6
-  schema: |
+- schema: |
     create table t
       (
         c int,
@@ -108,8 +104,7 @@
                   "defaultExpression": "1",
                   "nullable": true,
                   "type": "int",
-                  "comment": "abcdefg",
-                  "userComment": "abcdefg"
+                  "comment": "abcdefg"
                 },
                 {
                   "name": "b",

@@ -1,4 +1,13 @@
-- engine: 6
+- schema: |-
+    create table t
+      (
+        `a` int NOT NULL COMMENT 'this is comment',
+        `b` VARCHAR(20) NOT NULL,
+        KEY `idx` (((`a` + 20))),
+        UNIQUE KEY `idx2` (`a`),
+        KEY `idx_length` (`b`(10) DESC),
+        PRIMARY KEY (`a`)
+      ) COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
       "schemas":  [
@@ -9,12 +18,87 @@
               "columns":  [
                 {
                   "name":  "a",
+                  "type":  "int",
+                  "comment":  "this is comment"
+                },
+                {
+                  "name":  "b",
+                  "type":  "VARCHAR(20)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "idx",
+                  "expressions":  [
+                    "((`a` + 20))"
+                  ],
+                  "visible":  true
+                },
+                {
+                  "name":  "idx2",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "visible":  true
+                },
+                {
+                  "name":  "idx_length",
+                  "expressions":  [
+                    "`b`(10) DESC"
+                  ],
+                  "visible":  true
+                },
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "a"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "comment":  "this is comment with ' escaped"
+            }
+          ]
+        }
+      ]
+    }
+- schema: |
+    create table t
+      (
+        c int auto_increment,
+        a int default 1 comment 'abcdefg',
+        b varchar(20) default NULL comment '',
+        primary key (a, b),
+        constraint fk1 foreign key (a) references t2 (b)
+      ) COMMENT 'this is comment with '' escaped';
+    create table t2(b int NOT NULL default NULL, primary key (b));
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "c",
+                  "defaultExpression":  "AUTO_INCREMENT",
+                  "nullable":  true,
+                  "type":  "int"
+                },
+                {
+                  "name":  "a",
+                  "defaultExpression":  "1",
                   "nullable":  true,
                   "type":  "int",
                   "comment":  "abcdefg"
                 },
                 {
                   "name":  "b",
+                  "defaultNull":  true,
                   "nullable":  true,
                   "type":  "varchar(20)"
                 }
@@ -31,6 +115,7 @@
                   "visible":  true
                 }
               ],
+              "comment":  "this is comment with ' escaped",
               "foreignKeys":  [
                 {
                   "name":  "fk1",
@@ -49,6 +134,7 @@
               "columns":  [
                 {
                   "name":  "b",
+                  "defaultNull":  true,
                   "type":  "int"
                 }
               ],
@@ -68,146 +154,3 @@
         }
       ]
     }
-  err: ""
-- engine: 6
-  metadata: |-
-    {
-      "schemas":  [
-        {
-          "tables":  [
-            {
-              "name":  "t",
-              "columns":  [
-                {
-                  "name":  "a",
-                  "nullable":  true,
-                  "type":  "abcd",
-                  "comment":  "abcdefg"
-                },
-                {
-                  "name":  "b",
-                  "nullable":  true,
-                  "type":  "varchar(20)"
-                }
-              ],
-              "indexes":  [
-                {
-                  "name":  "PRIMARY",
-                  "expressions":  [
-                    "a",
-                    "b"
-                  ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
-                }
-              ],
-              "foreignKeys":  [
-                {
-                  "name":  "fk1",
-                  "columns":  [
-                    "a"
-                  ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
-                    "b"
-                  ]
-                }
-              ]
-            },
-            {
-              "name":  "t2",
-              "columns":  [
-                {
-                  "name":  "b",
-                  "type":  "int"
-                }
-              ],
-              "indexes":  [
-                {
-                  "name":  "PRIMARY",
-                  "expressions":  [
-                    "b"
-                  ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  err: ""
-- engine: 6
-  metadata: |-
-    {
-      "schemas":  [
-        {
-          "tables":  [
-            {
-              "name":  "t",
-              "columns":  [
-                {
-                  "name":  "a",
-                  "nullable":  true,
-                  "type":  "int",
-                  "comment":  "abcdefg"
-                },
-                {
-                  "name":  "b",
-                  "nullable":  true,
-                  "type":  "varchar(20)"
-                }
-              ],
-              "indexes":  [
-                {
-                  "name":  "PRIMARY",
-                  "expressions":  [
-                    "a",
-                    "c"
-                  ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
-                }
-              ],
-              "foreignKeys":  [
-                {
-                  "name":  "fk1",
-                  "columns":  [
-                    "a"
-                  ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
-                    "b"
-                  ]
-                }
-              ]
-            },
-            {
-              "name":  "t2",
-              "columns":  [
-                {
-                  "name":  "b",
-                  "type":  "int"
-                }
-              ],
-              "indexes":  [
-                {
-                  "name":  "PRIMARY",
-                  "expressions":  [
-                    "b"
-                  ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  err: primary key column c not found in table t
