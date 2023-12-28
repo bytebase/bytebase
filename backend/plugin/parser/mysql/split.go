@@ -1,7 +1,11 @@
 package mysql
 
 import (
+	"context"
 	"io"
+	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
@@ -28,7 +32,12 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	return splitMySQLStatement(stream)
+	list, err := splitMySQLStatement(stream)
+	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
+	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
+		slog.Info("split SQL statement timed out", "statement", statement)
+	}
+	return list, err
 }
 
 // SplitMultiSQLStream splits MySQL multiSQL to stream.
@@ -62,6 +71,10 @@ func SplitMySQLStream(src io.Reader) ([]base.SingleSQL, error) {
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+	// HACK(p0ny): this function might end up in an infinite loop. Before we figure out how to fix it, we set a deadline to avoid it and log to help debug.
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Minute))
+	defer cancel()
+
 	var result []base.SingleSQL
 	stream.Fill()
 	tokens := stream.GetAllTokens()
@@ -77,6 +90,10 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 	}
 	var stack []openParenthesis
 	for i := 0; i < len(tokens); i++ {
+		if ctx.Err() != nil {
+			return nil, errors.New("split SQL statement timed out")
+		}
+
 		switch tokens[i].GetTokenType() {
 		case parser.MySQLParserBEGIN_SYMBOL:
 			isBeginWork := base.GetDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserWORK_SYMBOL
