@@ -108,17 +108,22 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 		}
 		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
-	database, err := s.store.GetDatabaseV2(ctx, find)
+	databaseMessage, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if database == nil {
+	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
+	if err := s.checkDatabasePermission(ctx, databaseMessage.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
 		return nil, err
 	}
-	return convertToDatabase(database), nil
+
+	database, err := s.convertToDatabase(ctx, databaseMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+	}
+	return database, nil
 }
 
 // ListDatabases lists all databases.
@@ -142,17 +147,21 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		}
 		find.ProjectID = &projectID
 	}
-	databases, err := s.store.ListDatabases(ctx, find)
+	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	databases, err = s.filterDatabases(ctx, databases)
+	databaseMessages, err = s.filterDatabases(ctx, databaseMessages)
 	if err != nil {
 		return nil, err
 	}
 	response := &v1pb.ListDatabasesResponse{}
-	for _, database := range databases {
-		response.Databases = append(response.Databases, convertToDatabase(database))
+	for _, databaseMessage := range databaseMessages {
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		response.Databases = append(response.Databases, database)
 	}
 	return response, nil
 }
@@ -258,7 +267,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
-	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:          &instanceID,
 		DatabaseName:        &databaseName,
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
@@ -266,10 +275,10 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if database == nil {
+	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
+	if err := s.checkDatabasePermission(ctx, databaseMessage.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
 		return nil, err
 	}
 
@@ -343,12 +352,16 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if project != nil {
-		if err := s.createTransferProjectActivity(ctx, project, principalID, database); err != nil {
+		if err := s.createTransferProjectActivity(ctx, project, principalID, databaseMessage); err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	}
 
-	return convertToDatabase(updatedDatabase), nil
+	database, err := s.convertToDatabase(ctx, updatedDatabase)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+	}
+	return database, nil
 }
 
 // SyncDatabase syncs the schema of a database.
@@ -466,8 +479,12 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		if err := s.createTransferProjectActivity(ctx, project, principalID, databases...); err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		for _, database := range updatedDatabases {
-			response.Databases = append(response.Databases, convertToDatabase(database))
+		for _, databaseMessage := range updatedDatabases {
+			database, err := s.convertToDatabase(ctx, databaseMessage)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+			}
+			response.Databases = append(response.Databases, database)
 		}
 	}
 	return response, nil
@@ -1997,7 +2014,14 @@ func convertToBackup(backup *store.BackupMessage, instanceID string, databaseNam
 	}
 }
 
-func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
+func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &database.InstanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find instance")
+	}
+
 	syncState := v1pb.State_STATE_UNSPECIFIED
 	switch database.SyncState {
 	case api.OK:
@@ -2022,7 +2046,8 @@ func convertToDatabase(database *store.DatabaseMessage) *v1pb.Database {
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
-	}
+		Instance:             convertToInstance(instance),
+	}, nil
 }
 
 type metadataFilter struct {

@@ -6,6 +6,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, State, stateFromJSON, stateToJSON } from "./common";
+import { Instance } from "./instance_service";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
@@ -388,6 +389,8 @@ export interface Database {
   effectiveEnvironment: string;
   /** Labels will be used for deployment and policy control. */
   labels: { [key: string]: string };
+  /** The instance resource. */
+  instance: Instance | undefined;
 }
 
 export interface Database_LabelsEntry {
@@ -3000,6 +3003,7 @@ function createBaseDatabase(): Database {
     environment: "",
     effectiveEnvironment: "",
     labels: {},
+    instance: undefined,
   };
 }
 
@@ -3032,6 +3036,9 @@ export const Database = {
     Object.entries(message.labels).forEach(([key, value]) => {
       Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
+    if (message.instance !== undefined) {
+      Instance.encode(message.instance, writer.uint32(82).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -3108,6 +3115,13 @@ export const Database = {
             message.labels[entry9.key] = entry9.value;
           }
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.instance = Instance.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3133,6 +3147,7 @@ export const Database = {
           return acc;
         }, {})
         : {},
+      instance: isSet(object.instance) ? Instance.fromJSON(object.instance) : undefined,
     };
   },
 
@@ -3171,6 +3186,9 @@ export const Database = {
         });
       }
     }
+    if (message.instance !== undefined) {
+      obj.instance = Instance.toJSON(message.instance);
+    }
     return obj;
   },
 
@@ -3193,6 +3211,9 @@ export const Database = {
       }
       return acc;
     }, {});
+    message.instance = (object.instance !== undefined && object.instance !== null)
+      ? Instance.fromPartial(object.instance)
+      : undefined;
     return message;
   },
 };
