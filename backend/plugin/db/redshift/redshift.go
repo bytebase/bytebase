@@ -162,11 +162,11 @@ func (driver *Driver) GetDB() *sql.DB {
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	if driver.datashare {
 		return 0, errors.Errorf("datashare database cannot be updated")
 	}
-	if createDatabase {
+	if opts.CreateDatabase {
 		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}

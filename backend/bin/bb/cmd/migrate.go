@@ -72,7 +72,7 @@ func migrateDatabase(ctx context.Context, u *dburl.URL, sqlReader io.Reader) err
 	if _, err := io.Copy(&buf, sqlReader); err != nil {
 		return errors.Wrap(err, "failed to read sql file")
 	}
-	if _, err := driver.Execute(ctx, buf.String(), false /* createDatabase */, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(ctx, buf.String(), db.ExecuteOptions{}); err != nil {
 		return errors.Wrap(err, "failed to migrate database")
 	}
 	return nil

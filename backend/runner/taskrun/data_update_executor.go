@@ -119,7 +119,7 @@ func (exec *DataUpdateExecutor) backupData(
 
 	suffix := time.Now().Format("20060102150405")
 	selectIntoStatement, targetTableName := updateToSelect(statement, backupDatabaseName, suffix, issue.UID)
-	if _, err := driver.Execute(driverCtx, selectIntoStatement, false /* createDatabase */, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(driverCtx, selectIntoStatement, db.ExecuteOptions{}); err != nil {
 		return err
 	}
 	createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{

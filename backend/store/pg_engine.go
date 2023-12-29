@@ -63,7 +63,7 @@ func (db *DB) Open(ctx context.Context, createDB bool) error {
 		}
 		defer defaultDriver.Close(ctx)
 		// Underlying driver handles the case where database already exists.
-		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.Database), true, dbdriver.ExecuteOptions{}); err != nil {
+		if _, err := defaultDriver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", db.ConnCfg.Database), dbdriver.ExecuteOptions{CreateDatabase: true}); err != nil {
 			return err
 		}
 	}

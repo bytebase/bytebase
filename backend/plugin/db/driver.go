@@ -410,7 +410,7 @@ type Driver interface {
 	GetType() storepb.Engine
 	GetDB() *sql.DB
 	// Execute will execute the statement.
-	Execute(ctx context.Context, statement string, createDatabase bool, opts ExecuteOptions) (int64, error)
+	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
 	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
 	// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
@@ -484,6 +484,7 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 
 // ExecuteOptions is the options for execute.
 type ExecuteOptions struct {
+	CreateDatabase     bool
 	BeginFunc          func(ctx context.Context, conn *sql.Conn) error
 	EndTransactionFunc func(tx *sql.Tx) error
 	// ChunkedSubmission is the flag to indicate if we should use chunked submission for the statement.

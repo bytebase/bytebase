@@ -241,7 +241,7 @@ func (*MockDriver) GetDB() *sql.DB {
 }
 
 // Execute implements the Driver interface.
-func (*MockDriver) Execute(_ context.Context, _ string, _ bool, _ database.ExecuteOptions) (int64, error) {
+func (*MockDriver) Execute(_ context.Context, _ string, _ database.ExecuteOptions) (int64, error) {
 	return 0, nil
 }
 

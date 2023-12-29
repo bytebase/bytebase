@@ -156,7 +156,7 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 			UpdateTime:      time.Now(),
 		})
 
-	if _, err := defaultDBDriver.Execute(driverCtx, statement, true /* createDatabase */, db.ExecuteOptions{}); err != nil {
+	if _, err := defaultDBDriver.Execute(driverCtx, statement, db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return true, nil, err
 	}
 

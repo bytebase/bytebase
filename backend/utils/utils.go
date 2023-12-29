@@ -221,7 +221,7 @@ func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLi
 // ExecuteMigrationDefault executes migration.
 func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
-		if _, err := driver.Execute(ctx, execStatement, false /* createDatabase */, opts); err != nil {
+		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil

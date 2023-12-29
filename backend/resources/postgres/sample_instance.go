@@ -253,7 +253,7 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 	defer driver.Close(ctx)
 
 	// Create the sample database.
-	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", database), true, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE %s", database), db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return errors.Wrapf(err, "failed to create sample database")
 	}
 	slog.Info(fmt.Sprintf("Successfully created database %s", database))
@@ -279,7 +279,7 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 	}
 	defer driver.Close(ctx)
 
-	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", false, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(ctx, "CREATE EXTENSION IF NOT EXISTS pg_stat_statements;", db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to create pg_stat_statements extension")
 	}
 	slog.Info("Successfully created pg_stat_statements extension")
@@ -305,7 +305,7 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 	defer driver.Close(ctx)
 
 	// Drop the default postgres database.
-	if _, err := driver.Execute(ctx, "DROP DATABASE IF EXISTS postgres", true, db.ExecuteOptions{}); err != nil {
+	if _, err := driver.Execute(ctx, "DROP DATABASE IF EXISTS postgres", db.ExecuteOptions{}); err != nil {
 		return errors.Wrapf(err, "failed to drop default postgres database")
 	}
 
