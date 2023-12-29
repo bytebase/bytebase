@@ -1,3 +1,9 @@
+ALTER TABLE member DISABLE TRIGGER update_member_updated_ts;
+ALTER TABLE project_member DISABLE TRIGGER update_project_member_updated_ts;
+ALTER TABLE policy DISABLE TRIGGER update_policy_updated_ts;
+ALTER TABLE issue DISABLE TRIGGER update_issue_updated_ts;
+ALTER TABLE project DISABLE TRIGGER update_project_updated_ts;
+
 UPDATE member
 SET role = CASE role
     WHEN 'OWNER' THEN 'workspaceAdmin'
@@ -97,3 +103,9 @@ replace(
     'roles/QUERIER',
     'roles/projectQuerier'
 )::jsonb;
+
+ALTER TABLE member ENABLE TRIGGER update_member_updated_ts;
+ALTER TABLE project_member ENABLE TRIGGER update_project_member_updated_ts;
+ALTER TABLE policy ENABLE TRIGGER update_policy_updated_ts;
+ALTER TABLE issue ENABLE TRIGGER update_issue_updated_ts;
+ALTER TABLE project ENABLE TRIGGER update_project_updated_ts;
