@@ -172,7 +172,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.mfa_config,
 		principal.phone,
 		member.role,
-		member.row_status AS row_status
+		principal.row_status AS row_status
 	FROM principal
 	LEFT JOIN member ON principal.id = member.principal_id
 	WHERE ` + strings.Join(where, " AND ")
