@@ -24,8 +24,8 @@
         <template v-if="!isLoading">
           <div
             v-if="
-              binding.role === 'roles/QUERIER' ||
-              binding.role === 'roles/EXPORTER'
+              binding.role === PresetRoleType.PROJECT_QUERIER ||
+              binding.role === PresetRoleType.PROJECT_EXPORTER
             "
             class="w-full"
           >
@@ -39,7 +39,7 @@
           </div>
 
           <!-- Exporter blocks -->
-          <template v-if="binding.role === 'roles/EXPORTER'">
+          <template v-if="binding.role === PresetRoleType.PROJECT_EXPORTER">
             <div class="w-full flex flex-col justify-start items-start">
               <p class="mb-2">
                 {{ $t("issue.grant-request.export-rows") }}
@@ -133,6 +133,7 @@ import {
 import {
   ComposedProject,
   DatabaseResource,
+  PresetRoleType,
   getUserEmailInBinding,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -245,7 +246,7 @@ onMounted(() => {
     }
     if (conditionExpr.databaseResources) {
       state.databaseResources = conditionExpr.databaseResources;
-      if (binding.role === "roles/EXPORTER") {
+      if (binding.role === "PresetRoleType.PROJECT_EXPORTER") {
         if (conditionExpr.databaseResources.length > 0) {
           const selectedDatabaseResource = conditionExpr.databaseResources[0];
           const database = databaseStore.getDatabaseByName(
@@ -323,12 +324,12 @@ const handleUpdateRole = async () => {
       ).toISOString()}")`
     );
   }
-  if (props.binding.role === "roles/QUERIER") {
+  if (props.binding.role === "PresetRoleType.PROJECT_QUERIER") {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
     }
   }
-  if (props.binding.role === "roles/EXPORTER") {
+  if (props.binding.role === "PresetRoleType.PROJECT_EXPORTER") {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
 

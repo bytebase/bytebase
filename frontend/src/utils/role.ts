@@ -196,12 +196,14 @@ export const extractRoleResourceName = (resourceId: string): string => {
 
 export const displayRoleTitle = (role: string): string => {
   // Use i18n-defined readable titles for system roles
-  if (role === PresetRoleType.OWNER) return t("common.role.owner");
-  if (role === PresetRoleType.DEVELOPER) return t("common.role.developer");
-  if (role === PresetRoleType.RELEASER) return t("common.role.releaser");
-  if (role === PresetRoleType.QUERIER) return t("common.role.querier");
-  if (role === PresetRoleType.EXPORTER) return t("common.role.exporter");
-  if (role === PresetRoleType.VIEWER) return t("common.role.viewer");
+  if (role === PresetRoleType.PROJECT_OWNER) return t("common.role.owner");
+  if (role === PresetRoleType.PROJECT_DEVELOPER)
+    return t("common.role.developer");
+  if (role === PresetRoleType.PROJECT_RELEASER) return t("common.role.releaser");
+  if (role === PresetRoleType.PROJECT_QUERIER) return t("common.role.querier");
+  if (role === PresetRoleType.PROJECT_EXPORTER)
+    return t("common.role.exporter");
+  if (role === PresetRoleType.PROJECT_VIEWER) return t("common.role.viewer");
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise
@@ -210,12 +212,15 @@ export const displayRoleTitle = (role: string): string => {
 
 export const displayRoleDescription = (role: string): string => {
   // Use i18n-defined readable titles for system roles
-  if (role === PresetRoleType.OWNER) return t("role.owner.description");
-  if (role === PresetRoleType.DEVELOPER) return t("role.developer.description");
-  if (role === PresetRoleType.RELEASER) return t("role.releaser.description");
-  if (role === PresetRoleType.QUERIER) return t("role.querier.description");
-  if (role === PresetRoleType.EXPORTER) return t("role.exporter.description");
-  if (role === PresetRoleType.VIEWER) return t("role.viewer.description");
+  if (role === PresetRoleType.PROJECT_OWNER) return t("role.owner.description");
+  if (role === PresetRoleType.PROJECT_DEVELOPER)
+    return t("role.developer.description");
+  if (role === PresetRoleType.PROJECT_RELEASER) return t("role.releaser.description");
+  if (role === PresetRoleType.PROJECT_QUERIER)
+    return t("role.querier.description");
+  if (role === PresetRoleType.PROJECT_EXPORTER)
+    return t("role.exporter.description");
+  if (role === PresetRoleType.PROJECT_VIEWER) return t("role.viewer.description");
   // Use role.description if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

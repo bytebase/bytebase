@@ -29,7 +29,7 @@
           </span>
           <ProjectSelect
             v-model:project="targetProjectId"
-            :allowed-project-role-list="[PresetRoleType.OWNER]"
+            :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
             :include-default-project="true"
           />
         </div>

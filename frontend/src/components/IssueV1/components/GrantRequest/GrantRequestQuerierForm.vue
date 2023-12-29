@@ -60,7 +60,7 @@ const state = reactive<LocalState>({
 
 onMounted(async () => {
   const grantRequest = issue.value.grantRequest!;
-  if (grantRequest.role !== PresetRoleType.QUERIER) {
+  if (grantRequest.role !== PresetRoleType.PROJECT_QUERIER) {
     throw "Only support QUERIER role";
   }
 

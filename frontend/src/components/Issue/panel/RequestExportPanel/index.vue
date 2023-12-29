@@ -20,9 +20,9 @@
             :project="state.projectId"
             :filter-by-current-user="true"
             :allowed-project-role-list="[
-              PresetRoleType.OWNER,
-              PresetRoleType.DEVELOPER,
-              PresetRoleType.VIEWER,
+              PresetRoleType.PROJECT_OWNER,
+              PresetRoleType.PROJECT_DEVELOPER,
+              PresetRoleType.PROJECT_VIEWER,
             ]"
             @update:project="handleProjectSelect"
           />
@@ -315,7 +315,7 @@ const doCreateIssue = async () => {
   const project = await projectStore.getOrFetchProjectByUID(state.projectId!);
   const memberList = memberListInProjectV1(project, project.iamPolicy);
   const ownerList = memberList.filter((member) =>
-    member.roleList.includes(PresetRoleType.OWNER)
+    member.roleList.includes(PresetRoleType.PROJECT_OWNER)
   );
   const projectOwner = head(ownerList);
   if (projectOwner) {
@@ -353,7 +353,7 @@ const doCreateIssue = async () => {
 
   const celExpressionString = expression.join(" && ");
   newIssue.grantRequest = {
-    role: "roles/EXPORTER",
+    role: PresetRoleType.PROJECT_EXPORTER,
     user: `users/${currentUser.value.email}`,
     condition: Expr.fromPartial({
       expression: celExpressionString,

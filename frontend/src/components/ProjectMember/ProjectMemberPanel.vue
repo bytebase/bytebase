@@ -209,7 +209,7 @@ const allowRemoveExpiredRoles = computed(() => {
     if (parsedExpr?.expr) {
       const expression = convertFromExpr(parsedExpr.expr);
       // Skip EXPORTER role if it has a non-empty statement condition.
-      if (binding.role === "roles/EXPORTER") {
+      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
         if (expression.statement && expression.statement !== "") {
           continue;
         }
@@ -246,7 +246,7 @@ const composedMemberList = computed(() => {
   const usersByRole = iamPolicy.value.bindings
     .filter((binding) => {
       // Don't show EXPORTER role if it has a non-empty statement condition.
-      if (binding.role === "roles/EXPORTER") {
+      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
         const parsedExpr = binding.parsedExpr;
         if (parsedExpr?.expr) {
           const expression = convertFromExpr(parsedExpr.expr);
@@ -282,7 +282,7 @@ const composedMemberList = computed(() => {
     [
       (item) =>
         item.bindingList.find(
-          (binding) => binding.role === PresetRoleType.OWNER
+          (binding) => binding.role === PresetRoleType.PROJECT_OWNER
         )
           ? 0
           : 1,

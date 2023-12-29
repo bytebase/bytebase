@@ -13,7 +13,7 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
 
   for (let i = 0; i < issue.releasers.length; i++) {
     const releaserRole = issue.releasers[i];
-    if (releaserRole === IssueReleaserRoleType.WORKSPACE_OWNER) {
+    if (releaserRole === IssueReleaserRoleType.WORKSPACE_ADMIN) {
       users.push(
         ...workspaceMembers.filter((user) => user.userRole === UserRole.OWNER)
       );
@@ -25,13 +25,17 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
     }
     if (releaserRole === IssueReleaserRoleType.PROJECT_OWNER) {
       const owners = projectMembers
-        .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
+        .filter((member) =>
+          member.roleList.includes(PresetRoleType.PROJECT_OWNER)
+        )
         .map((member) => member.user);
       users.push(...owners);
     }
     if (releaserRole === IssueReleaserRoleType.PROJECT_RELEASER) {
       const releasers = projectMembers
-        .filter((member) => member.roleList.includes(PresetRoleType.RELEASER))
+        .filter((member) =>
+          member.roleList.includes(PresetRoleType.PROJECT_RELEASER)
+        )
         .map((member) => member.user);
       users.push(...releasers);
     }
@@ -61,25 +65,25 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
   // }
 
   // const users: User[] = [];
-  // if (workspaceRoles.includes(VirtualRoleType.OWNER)) {
+  // if (workspaceRoles.includes(VirtualRoleType.WORKSPACE_ADMIN)) {
   //   users.push(
   //     ...workspaceMembers.filter((member) => member.userRole === UserRole.OWNER)
   //   );
   // }
-  // if (workspaceRoles.includes(VirtualRoleType.DBA)) {
+  // if (workspaceRoles.includes(VirtualRoleType.WORKSPACE_DBA)) {
   //   users.push(
   //     ...workspaceMembers.filter((member) => member.userRole === UserRole.DBA)
   //   );
   // }
-  // if (projectRoles.includes(PresetRoleType.OWNER)) {
+  // if (projectRoles.includes(PresetRoleType.PROJECT_OWNER)) {
   //   const owners = projectMembers
-  //     .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
+  //     .filter((member) => member.roleList.includes(PresetRoleType.PROJECT_OWNER))
   //     .map((member) => member.user);
   //   users.push(...owners);
   // }
-  // if (projectRoles.includes(PresetRoleType.RELEASER)) {
+  // if (projectRoles.includes(PresetRoleType.PROJECT_RELEASER)) {
   //   const releasers = projectMembers
-  //     .filter((member) => member.roleList.includes(PresetRoleType.RELEASER))
+  //     .filter((member) => member.roleList.includes(PresetRoleType.PROJECT_RELEASER))
   //     .map((member) => member.user);
   //   users.push(...releasers);
   // }

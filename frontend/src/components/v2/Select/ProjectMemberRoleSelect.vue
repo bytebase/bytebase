@@ -43,12 +43,12 @@ const emit = defineEmits<{
 }>();
 
 const FREE_ROLE_LIST = [
-  PresetRoleType.OWNER,
+  PresetRoleType.PROJECT_OWNER,
   PresetRoleType.DEVELOPER,
-  PresetRoleType.RELEASER,
-  PresetRoleType.QUERIER,
-  PresetRoleType.EXPORTER,
-  PresetRoleType.VIEWER,
+  PresetRoleType.PROJECT_RELEASER,
+  PresetRoleType.PROJECT_QUERIER,
+  PresetRoleType.PROJECT_EXPORTER,
+  PresetRoleType.PROJECT_VIEWER,
 ];
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
