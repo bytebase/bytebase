@@ -118,7 +118,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	suffix := time.Now().Format("20060102150405")
-	selectIntoStatement, targetTableName := updateToSelect(statement, backupDatabaseName, suffix)
+	selectIntoStatement, targetTableName := updateToSelect(statement, backupDatabaseName, suffix, issue.UID)
 	if _, err := driver.Execute(driverCtx, selectIntoStatement, false /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (exec *DataUpdateExecutor) backupData(
 	return nil
 }
 
-func updateToSelect(statement, databaseName, suffix string) (string, string) {
+func updateToSelect(statement, databaseName, suffix string, issueID int) (string, string) {
 	// TODO(rebelice): use parser.
 	lowerStatement := strings.ToLower(statement)
 	whereIndex := strings.LastIndex(lowerStatement, "where")
@@ -170,5 +170,9 @@ func updateToSelect(statement, databaseName, suffix string) (string, string) {
 	tableName = strings.Trim(tableName, "`")
 	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
 	activityTargetTableName := fmt.Sprintf("%s_%s", tableName, suffix)
-	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition), activityTargetTableName
+	query := fmt.Sprintf("CREATE TABLE %s LIKE %s;"+
+		"ALTER TABLE %s COMMENT = 'issue %d';"+
+		"INSERT INTO %s SELECT * FROM %s %s",
+		targetTableName, tableName, targetTableName, issueID, targetTableName, tableName, condition)
+	return query, activityTargetTableName
 }
