@@ -90,6 +90,31 @@
   
     - [AuthService](#bytebase-v1-AuthService)
   
+- [v1/instance_service.proto](#v1_instance_service-proto)
+    - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
+    - [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest)
+    - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
+    - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
+    - [DataSource](#bytebase-v1-DataSource)
+    - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
+    - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
+    - [Instance](#bytebase-v1-Instance)
+    - [InstanceOptions](#bytebase-v1-InstanceOptions)
+    - [InstanceResource](#bytebase-v1-InstanceResource)
+    - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
+    - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
+    - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
+    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
+    - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
+    - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
+    - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
+    - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
+  
+    - [DataSourceType](#bytebase-v1-DataSourceType)
+  
+    - [InstanceService](#bytebase-v1-InstanceService)
+  
 - [v1/vcs.proto](#v1_vcs-proto)
     - [Commit](#bytebase-v1-Commit)
     - [FileCommit](#bytebase-v1-FileCommit)
@@ -314,30 +339,6 @@
     - [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest)
   
     - [InstanceRoleService](#bytebase-v1-InstanceRoleService)
-  
-- [v1/instance_service.proto](#v1_instance_service-proto)
-    - [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest)
-    - [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest)
-    - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
-    - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
-    - [DataSource](#bytebase-v1-DataSource)
-    - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
-    - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
-    - [Instance](#bytebase-v1-Instance)
-    - [InstanceOptions](#bytebase-v1-InstanceOptions)
-    - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
-    - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
-    - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
-    - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
-    - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
-    - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
-    - [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest)
-    - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
-    - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
-  
-    - [DataSourceType](#bytebase-v1-DataSourceType)
-  
-    - [InstanceService](#bytebase-v1-InstanceService)
   
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
@@ -1871,6 +1872,384 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
 
+<a name="v1_instance_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/instance_service.proto
+
+
+
+<a name="bytebase-v1-AddDataSourceRequest"></a>
+
+### AddDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncInstanceRequest"></a>
+
+### BatchSyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchSyncInstanceResponse"></a>
+
+### BatchSyncInstanceResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-CreateInstanceRequest"></a>
+
+### CreateInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
+| instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSource"></a>
+
+### DataSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  |  |
+| type | [DataSourceType](#bytebase-v1-DataSourceType) |  |  |
+| username | [string](#string) |  |  |
+| password | [string](#string) |  |  |
+| ssl_ca | [string](#string) |  |  |
+| ssl_cert | [string](#string) |  |  |
+| ssl_key | [string](#string) |  |  |
+| host | [string](#string) |  |  |
+| port | [string](#string) |  |  |
+| database | [string](#string) |  |  |
+| srv | [bool](#bool) |  | srv and authentication_database are used for MongoDB. |
+| authentication_database | [string](#string) |  |  |
+| sid | [string](#string) |  | sid and service_name are used for Oracle. |
+| service_name | [string](#string) |  |  |
+| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
+| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
+| ssh_user | [string](#string) |  | The user to login the server. Required. |
+| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
+| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteInstanceRequest"></a>
+
+### DeleteInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
+| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
+
+
+
+
+
+
+<a name="bytebase-v1-GetInstanceRequest"></a>
+
+### GetInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-Instance"></a>
+
+### Instance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
+| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
+| state | [State](#bytebase-v1-State) |  |  |
+| title | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| engine_version | [string](#string) |  |  |
+| external_link | [string](#string) |  |  |
+| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
+| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
+| activation | [bool](#bool) |  |  |
+| options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceOptions"></a>
+
+### InstanceOptions
+InstanceOptions is the option for instances.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
+| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
+
+
+
+
+
+
+<a name="bytebase-v1-InstanceResource"></a>
+
+### InstanceResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| engine_version | [string](#string) |  |  |
+| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
+| activation | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstancesRequest"></a>
+
+### ListInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent parameter&#39;s value depends on the target resource for the request. - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to. - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. |
+| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListInstancesResponse"></a>
+
+### ListInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-RemoveDataSourceRequest"></a>
+
+### RemoveDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceRequest"></a>
+
+### SyncInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-SyncInstanceResponse"></a>
+
+### SyncInstanceResponse
+
+
+
+
+
+
+
+<a name="bytebase-v1-SyncSlowQueriesRequest"></a>
+
+### SyncSlowQueriesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} for one instance or projects/{project} for one project. |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteInstanceRequest"></a>
+
+### UndeleteInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateDataSourceRequest"></a>
+
+### UpdateDataSourceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
+| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateInstanceRequest"></a>
+
+### UpdateInstanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
+
+The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-DataSourceType"></a>
+
+### DataSourceType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DATA_SOURCE_UNSPECIFIED | 0 |  |
+| ADMIN | 1 |  |
+| READ_ONLY | 2 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-InstanceService"></a>
+
+### InstanceService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) |  |
+| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
+| BatchSyncInstance | [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest) | [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse) |  |
+| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
+| SyncSlowQueries | [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+
+ 
+
+
+
 <a name="v1_vcs-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2273,6 +2652,7 @@ CreateBackupRequest is the request message for CreateBackup.
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
+| instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 
 
 
@@ -5252,365 +5632,6 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | UpdateInstanceRole | [UpdateInstanceRoleRequest](#bytebase-v1-UpdateInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
 | DeleteInstanceRole | [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | UndeleteInstanceRole | [UndeleteInstanceRoleRequest](#bytebase-v1-UndeleteInstanceRoleRequest) | [InstanceRole](#bytebase-v1-InstanceRole) |  |
-
- 
-
-
-
-<a name="v1_instance_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/instance_service.proto
-
-
-
-<a name="bytebase-v1-AddDataSourceRequest"></a>
-
-### AddDataSourceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to add a data source to. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be added. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSyncInstanceRequest"></a>
-
-### BatchSyncInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| requests | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | repeated | The request message specifying the instances to sync. A maximum of 1000 instances can be synced in a batch. |
-
-
-
-
-
-
-<a name="bytebase-v1-BatchSyncInstanceResponse"></a>
-
-### BatchSyncInstanceResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-CreateInstanceRequest"></a>
-
-### CreateInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [Instance](#bytebase-v1-Instance) |  | The instance to create. |
-| instance_id | [string](#string) |  | The ID to use for the instance, which will become the final component of the instance&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-
-
-
-
-
-
-<a name="bytebase-v1-DataSource"></a>
-
-### DataSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| type | [DataSourceType](#bytebase-v1-DataSourceType) |  |  |
-| username | [string](#string) |  |  |
-| password | [string](#string) |  |  |
-| ssl_ca | [string](#string) |  |  |
-| ssl_cert | [string](#string) |  |  |
-| ssl_key | [string](#string) |  |  |
-| host | [string](#string) |  |  |
-| port | [string](#string) |  |  |
-| database | [string](#string) |  |  |
-| srv | [bool](#bool) |  | srv and authentication_database are used for MongoDB. |
-| authentication_database | [string](#string) |  |  |
-| sid | [string](#string) |  | sid and service_name are used for Oracle. |
-| service_name | [string](#string) |  |  |
-| ssh_host | [string](#string) |  | Connection over SSH. The hostname of the SSH server agent. Required. |
-| ssh_port | [string](#string) |  | The port of the SSH server agent. It&#39;s 22 typically. Required. |
-| ssh_user | [string](#string) |  | The user to login the server. Required. |
-| ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
-| ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteInstanceRequest"></a>
-
-### DeleteInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to delete. Format: instances/{instance} |
-| force | [bool](#bool) |  | If set to true, any databases and sheets from this project will also be moved to default project, and all open issues will be closed. |
-
-
-
-
-
-
-<a name="bytebase-v1-GetInstanceRequest"></a>
-
-### GetInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance to retrieve. Format: instances/{instance} |
-
-
-
-
-
-
-<a name="bytebase-v1-Instance"></a>
-
-### Instance
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
-| state | [State](#bytebase-v1-State) |  |  |
-| title | [string](#string) |  |  |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| engine_version | [string](#string) |  |  |
-| external_link | [string](#string) |  |  |
-| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
-| environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
-| activation | [bool](#bool) |  |  |
-| options | [InstanceOptions](#bytebase-v1-InstanceOptions) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-InstanceOptions"></a>
-
-### InstanceOptions
-InstanceOptions is the option for instances.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema_tenant_mode | [bool](#bool) |  | The schema tenant mode is used to determine whether the instance is in schema tenant mode. For Oracle schema tenant mode, the instance a Oracle database and the database is the Oracle schema. |
-| sync_interval | [google.protobuf.Duration](#google-protobuf-Duration) |  | How often the instance is synced. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstancesRequest"></a>
-
-### ListInstancesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent parameter&#39;s value depends on the target resource for the request. - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to. - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. |
-| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInstancesResponse"></a>
-
-### ListInstancesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-RemoveDataSourceRequest"></a>
-
-### RemoveDataSourceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to remove a data source from. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. Only READ_ONLY data source can be removed. |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncInstanceRequest"></a>
-
-### SyncInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of instance. Format: instances/{instance} |
-
-
-
-
-
-
-<a name="bytebase-v1-SyncInstanceResponse"></a>
-
-### SyncInstanceResponse
-
-
-
-
-
-
-
-<a name="bytebase-v1-SyncSlowQueriesRequest"></a>
-
-### SyncSlowQueriesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The name of the instance to sync slow queries. Format: instances/{instance} for one instance or projects/{project} for one project. |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteInstanceRequest"></a>
-
-### UndeleteInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted instance. Format: instances/{instance} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateDataSourceRequest"></a>
-
-### UpdateDataSourceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The name of the instance to update a data source. Format: instances/{instance} |
-| data_source | [DataSource](#bytebase-v1-DataSource) |  | Identified by data source ID. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| validate_only | [bool](#bool) |  | Validate only also tests the data source connection. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateInstanceRequest"></a>
-
-### UpdateInstanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instance | [Instance](#bytebase-v1-Instance) |  | The instance to update.
-
-The instance&#39;s `name` field is used to identify the instance to update. Format: instances/{instance} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-DataSourceType"></a>
-
-### DataSourceType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| DATA_SOURCE_UNSPECIFIED | 0 |  |
-| ADMIN | 1 |  |
-| READ_ONLY | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-InstanceService"></a>
-
-### InstanceService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) |  |
-| CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteInstance | [UndeleteInstanceRequest](#bytebase-v1-UndeleteInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| SyncInstance | [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest) | [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse) |  |
-| BatchSyncInstance | [BatchSyncInstanceRequest](#bytebase-v1-BatchSyncInstanceRequest) | [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse) |  |
-| AddDataSource | [AddDataSourceRequest](#bytebase-v1-AddDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
-| SyncSlowQueries | [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

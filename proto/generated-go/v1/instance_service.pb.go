@@ -1322,6 +1322,85 @@ func (x *DataSource) GetSshPrivateKey() string {
 	return ""
 }
 
+type InstanceResource struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Title         string        `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	Engine        Engine        `protobuf:"varint,2,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
+	EngineVersion string        `protobuf:"bytes,3,opt,name=engine_version,json=engineVersion,proto3" json:"engine_version,omitempty"`
+	DataSources   []*DataSource `protobuf:"bytes,4,rep,name=data_sources,json=dataSources,proto3" json:"data_sources,omitempty"`
+	Activation    bool          `protobuf:"varint,5,opt,name=activation,proto3" json:"activation,omitempty"`
+}
+
+func (x *InstanceResource) Reset() {
+	*x = InstanceResource{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_v1_instance_service_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *InstanceResource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InstanceResource) ProtoMessage() {}
+
+func (x *InstanceResource) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InstanceResource.ProtoReflect.Descriptor instead.
+func (*InstanceResource) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *InstanceResource) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *InstanceResource) GetEngine() Engine {
+	if x != nil {
+		return x.Engine
+	}
+	return Engine_ENGINE_UNSPECIFIED
+}
+
+func (x *InstanceResource) GetEngineVersion() string {
+	if x != nil {
+		return x.EngineVersion
+	}
+	return ""
+}
+
+func (x *InstanceResource) GetDataSources() []*DataSource {
+	if x != nil {
+		return x.DataSources
+	}
+	return nil
+}
+
+func (x *InstanceResource) GetActivation() bool {
+	if x != nil {
+		return x.Activation
+	}
+	return false
+}
+
 var File_v1_instance_service_proto protoreflect.FileDescriptor
 
 var file_v1_instance_service_proto_rawDesc = []byte{
@@ -1504,7 +1583,21 @@ var file_v1_instance_service_proto_rawDesc = []byte{
 	0xe0, 0x41, 0x04, 0x52, 0x0b, 0x73, 0x73, 0x68, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64,
 	0x12, 0x2b, 0x0a, 0x0f, 0x73, 0x73, 0x68, 0x5f, 0x70, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x5f,
 	0x6b, 0x65, 0x79, 0x18, 0x13, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0, 0x41, 0x04, 0x52, 0x0d,
-	0x73, 0x73, 0x68, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x4b, 0x65, 0x79, 0x2a, 0x47, 0x0a,
+	0x73, 0x73, 0x68, 0x50, 0x72, 0x69, 0x76, 0x61, 0x74, 0x65, 0x4b, 0x65, 0x79, 0x22, 0xdd, 0x01,
+	0x0a, 0x10, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72,
+	0x63, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x05, 0x74, 0x69, 0x74, 0x6c, 0x65, 0x12, 0x2b, 0x0a, 0x06, 0x65, 0x6e, 0x67, 0x69,
+	0x6e, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x13, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x52, 0x06, 0x65,
+	0x6e, 0x67, 0x69, 0x6e, 0x65, 0x12, 0x2a, 0x0a, 0x0e, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x5f,
+	0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x03, 0xe0,
+	0x41, 0x03, 0x52, 0x0d, 0x65, 0x6e, 0x67, 0x69, 0x6e, 0x65, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f,
+	0x6e, 0x12, 0x3a, 0x0a, 0x0c, 0x64, 0x61, 0x74, 0x61, 0x5f, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x62, 0x79, 0x74, 0x65, 0x62, 0x61,
+	0x73, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x52, 0x0b, 0x64, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x12, 0x1e, 0x0a,
+	0x0a, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x0a, 0x61, 0x63, 0x74, 0x69, 0x76, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2a, 0x47, 0x0a,
 	0x0e, 0x44, 0x61, 0x74, 0x61, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x54, 0x79, 0x70, 0x65, 0x12,
 	0x1b, 0x0a, 0x17, 0x44, 0x41, 0x54, 0x41, 0x5f, 0x53, 0x4f, 0x55, 0x52, 0x43, 0x45, 0x5f, 0x55,
 	0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05,
@@ -1629,7 +1722,7 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_v1_instance_service_proto_goTypes = []interface{}{
 	(DataSourceType)(0),               // 0: bytebase.v1.DataSourceType
 	(*GetInstanceRequest)(nil),        // 1: bytebase.v1.GetInstanceRequest
@@ -1650,57 +1743,60 @@ var file_v1_instance_service_proto_goTypes = []interface{}{
 	(*InstanceOptions)(nil),           // 16: bytebase.v1.InstanceOptions
 	(*Instance)(nil),                  // 17: bytebase.v1.Instance
 	(*DataSource)(nil),                // 18: bytebase.v1.DataSource
-	(*fieldmaskpb.FieldMask)(nil),     // 19: google.protobuf.FieldMask
-	(*durationpb.Duration)(nil),       // 20: google.protobuf.Duration
-	(State)(0),                        // 21: bytebase.v1.State
-	(Engine)(0),                       // 22: bytebase.v1.Engine
-	(*emptypb.Empty)(nil),             // 23: google.protobuf.Empty
+	(*InstanceResource)(nil),          // 19: bytebase.v1.InstanceResource
+	(*fieldmaskpb.FieldMask)(nil),     // 20: google.protobuf.FieldMask
+	(*durationpb.Duration)(nil),       // 21: google.protobuf.Duration
+	(State)(0),                        // 22: bytebase.v1.State
+	(Engine)(0),                       // 23: bytebase.v1.Engine
+	(*emptypb.Empty)(nil),             // 24: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
 	17, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
 	17, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
 	17, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	19, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	20, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
 	8,  // 4: bytebase.v1.BatchSyncInstanceRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
 	18, // 5: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	18, // 6: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
 	18, // 7: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	19, // 8: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	20, // 9: bytebase.v1.InstanceOptions.sync_interval:type_name -> google.protobuf.Duration
-	21, // 10: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	22, // 11: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	20, // 8: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	21, // 9: bytebase.v1.InstanceOptions.sync_interval:type_name -> google.protobuf.Duration
+	22, // 10: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	23, // 11: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
 	18, // 12: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
 	16, // 13: bytebase.v1.Instance.options:type_name -> bytebase.v1.InstanceOptions
 	0,  // 14: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	1,  // 15: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
-	2,  // 16: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
-	4,  // 17: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	5,  // 18: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	6,  // 19: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	7,  // 20: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	8,  // 21: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	10, // 22: bytebase.v1.InstanceService.BatchSyncInstance:input_type -> bytebase.v1.BatchSyncInstanceRequest
-	12, // 23: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	13, // 24: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	14, // 25: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	15, // 26: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
-	17, // 27: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	3,  // 28: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	17, // 29: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	17, // 30: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	23, // 31: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	17, // 32: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	9,  // 33: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	11, // 34: bytebase.v1.InstanceService.BatchSyncInstance:output_type -> bytebase.v1.BatchSyncInstanceResponse
-	17, // 35: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	17, // 36: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	17, // 37: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	23, // 38: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
-	27, // [27:39] is the sub-list for method output_type
-	15, // [15:27] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	23, // 15: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	18, // 16: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	1,  // 17: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
+	2,  // 18: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
+	4,  // 19: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
+	5,  // 20: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	6,  // 21: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	7,  // 22: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	8,  // 23: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	10, // 24: bytebase.v1.InstanceService.BatchSyncInstance:input_type -> bytebase.v1.BatchSyncInstanceRequest
+	12, // 25: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	13, // 26: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	14, // 27: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	15, // 28: bytebase.v1.InstanceService.SyncSlowQueries:input_type -> bytebase.v1.SyncSlowQueriesRequest
+	17, // 29: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	3,  // 30: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	17, // 31: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	17, // 32: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	24, // 33: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	17, // 34: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	9,  // 35: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	11, // 36: bytebase.v1.InstanceService.BatchSyncInstance:output_type -> bytebase.v1.BatchSyncInstanceResponse
+	17, // 37: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	17, // 38: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	17, // 39: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	24, // 40: bytebase.v1.InstanceService.SyncSlowQueries:output_type -> google.protobuf.Empty
+	29, // [29:41] is the sub-list for method output_type
+	17, // [17:29] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_v1_instance_service_proto_init() }
@@ -1926,6 +2022,18 @@ func file_v1_instance_service_proto_init() {
 				return nil
 			}
 		}
+		file_v1_instance_service_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*InstanceResource); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -1933,7 +2041,7 @@ func file_v1_instance_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_v1_instance_service_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   18,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
