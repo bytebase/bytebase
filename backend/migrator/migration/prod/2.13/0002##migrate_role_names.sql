@@ -27,7 +27,6 @@ END;
 
 UPDATE policy
 SET payload = replace(
-    (
     replace(
         payload::text,
         'roles/EXPORTER',
@@ -66,7 +65,7 @@ WHERE type = 'bb.policy.rollout';
 
 UPDATE issue
 SET payload = replace(
-    replace( 
+    replace(
         payload::text,
         'roles/EXPORTER',
         'roles/projectExporter'
