@@ -40,7 +40,9 @@
           :disabled="disabled"
           style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
-            toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.WORKSPACE_ADMIN])
+            toggleDedicatedRoles($event, 'workspace', [
+              VirtualRoleType.WORKSPACE_ADMIN,
+            ])
           "
         >
           <div class="textlabel">
@@ -52,7 +54,9 @@
           :disabled="disabled"
           style="--n-label-padding: 0 0 0 1rem"
           @update:checked="
-            toggleDedicatedRoles($event, 'workspace', [VirtualRoleType.WORKSPACE_DBA])
+            toggleDedicatedRoles($event, 'workspace', [
+              VirtualRoleType.WORKSPACE_DBA,
+            ])
           "
         >
           <div class="textlabel">
@@ -137,10 +141,14 @@ const emit = defineEmits<{
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
 
 const isDBAChecked = computed(() => {
-  return rolloutPolicy.value.workspaceRoles.includes(VirtualRoleType.WORKSPACE_DBA);
+  return rolloutPolicy.value.workspaceRoles.includes(
+    VirtualRoleType.WORKSPACE_DBA
+  );
 });
 const isWorkspaceOwnerChecked = computed(() => {
-  return rolloutPolicy.value.workspaceRoles.includes(VirtualRoleType.WORKSPACE_ADMIN);
+  return rolloutPolicy.value.workspaceRoles.includes(
+    VirtualRoleType.WORKSPACE_ADMIN
+  );
 });
 const isProjectOwnerChecked = computed(() => {
   return rolloutPolicy.value.projectRoles.includes(
@@ -204,7 +212,10 @@ const toggleAllDedicatedRoles = (checked: boolean) => {
   update(
     RolloutPolicy.fromPartial({
       automatic: false,
-      workspaceRoles: [VirtualRoleType.WORKSPACE_ADMIN, VirtualRoleType.WORKSPACE_DBA],
+      workspaceRoles: [
+        VirtualRoleType.WORKSPACE_ADMIN,
+        VirtualRoleType.WORKSPACE_DBA,
+      ],
       projectRoles: [
         PresetRoleType.PROJECT_OWNER,
         PresetRoleType.PROJECT_RELEASER,

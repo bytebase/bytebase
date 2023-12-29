@@ -71,7 +71,9 @@ export const isDeveloperOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 };
 
 export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.PROJECT_VIEWER);
+  return roleListInProjectV1(iamPolicy, user).includes(
+    PresetRoleType.PROJECT_VIEWER
+  );
 };
 
 export const memberListInProjectV1 = (
