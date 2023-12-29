@@ -19,8 +19,8 @@
         </div>
         <div class="mt-6">
           <NRadioGroup
-            :disabled="!allowEdit"
             v-model:value="state.workflowType"
+            :disabled="!allowEdit"
             class="flex flex-col space-y-4"
           >
             <NRadio

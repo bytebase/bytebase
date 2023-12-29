@@ -55,8 +55,8 @@
       </div>
       <div class="mt-2 textlabel">
         <ProjectModeRadioGroup
-          :disabled="!allowEdit"
           v-model:value="state.tenantMode"
+          :disabled="!allowEdit"
         />
       </div>
     </div>
@@ -77,7 +77,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
-import { NTooltip, NRadio, NRadioGroup } from "naive-ui";
+import { NTooltip } from "naive-ui";
 import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
