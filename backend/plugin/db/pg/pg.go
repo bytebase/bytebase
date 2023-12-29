@@ -288,9 +288,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// We don't use transaction for creating / altering databases in Postgres.
-		// We will execute the statement directly before "\\connect" statement.
-		// https://github.com/bytebase/bytebase/issues/202
 		if isSuperuserStatement(stmt) {
 			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
 			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.

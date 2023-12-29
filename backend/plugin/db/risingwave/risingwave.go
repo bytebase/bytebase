@@ -248,9 +248,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// We don't use transaction for creating / altering databases in Postgres.
-		// We will execute the statement directly before "\\connect" statement.
-		// https://github.com/bytebase/bytebase/issues/202
 		if isSuperuserStatement(stmt) {
 			remainingStmts = append(remainingStmts, stmt)
 		} else if isNonTransactionStatement(stmt) {
