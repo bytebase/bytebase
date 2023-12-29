@@ -43,6 +43,8 @@ const (
 	ActivityPipelineTaskStatementUpdate ActivityType = "bb.pipeline.task.statement.update"
 	// ActivityPipelineTaskEarliestAllowedTimeUpdate is the type for updating pipeline task the earliest allowed time.
 	ActivityPipelineTaskEarliestAllowedTimeUpdate ActivityType = "bb.pipeline.task.general.earliest-allowed-time.update"
+	// ActivityPipelineTaskStatementUpdate is the type for updating pipeline task SQL statement.
+	ActivityPipelineTaskPriorBackup ActivityType = "bb.pipeline.task.prior-backup"
 
 	// Member related.
 
@@ -211,6 +213,22 @@ type ActivityPipelineTaskEarliestAllowedTimeUpdatePayload struct {
 	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
+}
+
+// ActivityPipelineTaskPriorBackupPayload is the API message payloads for pipeline task prior backup.
+type ActivityPipelineTaskPriorBackupPayload struct {
+	TaskID               int              `json:"taskId"`
+	BackupSchemaMetadata []SchemaMetadata `json:"schemaMetadata"`
+
+	// Used by inbox to display info without paying the join cost
+	IssueName string `json:"issueName"`
+	TaskName  string `json:"taskName"`
+}
+
+// SchemaMetadata is the database schema metadata.
+type SchemaMetadata struct {
+	Schema string `json:"schema,omitempty"`
+	Table  string `json:"table"`
 }
 
 // ActivityMemberCreatePayload is the API message payloads for creating members.
