@@ -238,32 +238,7 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
 func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
 	if createDatabase {
-		databases, err := driver.getDatabases(ctx)
-		if err != nil {
-			return 0, err
-		}
-		databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
-		if err != nil {
-			return 0, err
-		}
-		exist := false
-		for _, database := range databases {
-			if database.Name == databaseName {
-				exist = true
-				break
-			}
-		}
-		if exist {
-			return 0, err
-		}
-
-		f := func(stmt string) error {
-			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-				return err
-			}
-			return nil
-		}
-		if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
+		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -320,6 +295,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 	}
 	return totalRowsAffected, nil
+}
+
+func (driver *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
+	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
+	if err != nil {
+		return err
+	}
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return err
+	}
+	for _, database := range databases {
+		if database.Name == databaseName {
+			// Database already exists.
+			return nil
+		}
+	}
+
+	if _, err := driver.db.ExecContext(ctx, statement); err != nil {
+		return err
+	}
+	return nil
 }
 
 func isSuperuserStatement(stmt string) bool {
