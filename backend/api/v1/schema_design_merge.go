@@ -21,8 +21,13 @@ const (
 	diffActionDrop   diffAction = "DROP"
 )
 
+// tryMerge merges other metadata to current metadata, always returns a non-nil metadata if no error occurs.
 func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, error) {
 	ancestor, head, base = proto.Clone(ancestor).(*storepb.DatabaseSchemaMetadata), proto.Clone(head).(*storepb.DatabaseSchemaMetadata), proto.Clone(base).(*storepb.DatabaseSchemaMetadata)
+
+	if ancestor == nil {
+		ancestor = &storepb.DatabaseSchemaMetadata{}
+	}
 
 	diffBetweenAncestorAndHead, err := diffMetadata(ancestor, head)
 	if err != nil {

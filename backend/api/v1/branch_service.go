@@ -367,8 +367,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
 	}
 	if mergedMetadata == nil {
-		// TODO(zp): bug, this should not be no change.
-		return nil, status.Errorf(codes.FailedPrecondition, "failed to merge branch: no change")
+		return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	}
 	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
 	if err != nil {
@@ -478,8 +477,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
 		}
 		if newHeadMetadata == nil {
-			// TODO(zp): bug, this should not be no change.
-			return nil, status.Errorf(codes.FailedPrecondition, "failed to rebase branch: no change")
+			return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", baseBranch.Base.Metadata, baseBranch.Head.Metadata, newBaseMetadata)
 		}
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
