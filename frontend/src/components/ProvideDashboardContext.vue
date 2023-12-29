@@ -15,7 +15,6 @@ import {
   useUserStore,
   useUIStateStore,
   useDatabaseV1Store,
-  useDBGroupStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
@@ -48,11 +47,7 @@ onMounted(async () => {
     usePolicyV1Store().getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
   ]);
 
-  await Promise.all([
-    prepareDatabases(),
-    useDBGroupStore().fetchAllDatabaseGroupList(),
-    useUIStateStore().restoreState(),
-  ]);
+  await Promise.all([prepareDatabases(), useUIStateStore().restoreState()]);
 
   isLoading.value = false;
 });
