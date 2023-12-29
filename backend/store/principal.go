@@ -165,14 +165,14 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	query := `
 	SELECT
 		principal.id AS user_id,
+		principal.row_status AS row_status,
 		principal.email,
 		principal.name,
 		principal.type,
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		member.role,
-		principal.row_status AS row_status
+		member.role
 	FROM principal
 	LEFT JOIN member ON principal.id = member.principal_id
 	WHERE ` + strings.Join(where, " AND ")
@@ -189,10 +189,12 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	defer rows.Close()
 	for rows.Next() {
 		var userMessage UserMessage
-		var role, rowStatus sql.NullString
+		var role sql.NullString
+		var rowStatus string
 		var mfaConfigBytes []byte
 		if err := rows.Scan(
 			&userMessage.ID,
+			&rowStatus,
 			&userMessage.Email,
 			&userMessage.Name,
 			&userMessage.Type,
@@ -200,7 +202,6 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&mfaConfigBytes,
 			&userMessage.Phone,
 			&role,
-			&rowStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -211,11 +212,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		} else {
 			userMessage.Role = api.Developer
 		}
-		if rowStatus.Valid {
-			userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus.String)
-		} else if userMessage.ID != api.SystemBotID {
-			userMessage.MemberDeleted = true
-		}
+		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
 		if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
