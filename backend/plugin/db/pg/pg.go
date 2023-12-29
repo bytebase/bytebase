@@ -367,8 +367,10 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 		}
 	}
 
-	if _, err := driver.db.ExecContext(ctx, statement); err != nil {
-		return err
+	for _, s := range strings.Split(statement, "\n") {
+		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+			return err
+		}
 	}
 	return nil
 }
