@@ -104,6 +104,8 @@
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
+    - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
+    - [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
     - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
@@ -2116,6 +2118,37 @@ When paginating, all other parameters provided to `ListInstances` must match the
 
 
 
+<a name="bytebase-v1-SearchInstancesRequest"></a>
+
+### SearchInstancesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent parameter&#39;s value depends on the target resource for the request. - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to. - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. |
+| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchInstancesResponse"></a>
+
+### SearchInstancesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
+
+
+
+
+
+
 <a name="bytebase-v1-SyncInstanceRequest"></a>
 
 ### SyncInstanceRequest
@@ -2235,6 +2268,7 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | ----------- | ------------ | ------------- | ------------|
 | GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) |  |
+| SearchInstances | [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest) | [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse) |  |
 | CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
