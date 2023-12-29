@@ -1,56 +1,61 @@
 <template>
   <div class="space-y-4">
     <div v-if="create">
-      <label class="textlabel">
-        {{ $t("project.webhook.destination") }}
-      </label>
-      <div class="mt-1 grid grid-cols-1 gap-4 sm:grid-cols-7">
-        <template
-          v-for="(item, index) in projectWebhookV1TypeItemList()"
-          :key="index"
-        >
-          <div
-            class="flex justify-center px-2 py-4 border border-control-border hover:bg-control-bg-hover cursor-pointer"
-            @click.capture="state.webhook.type = item.type"
+      <div>
+        <label for="name" class="textlabel">
+          {{ $t("project.webhook.destination") }}
+          <span class="text-red-600">*</span>
+        </label>
+      </div>
+      <NRadioGroup class="w-full mt-1" :value="state.webhook.type">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-7">
+          <template
+            v-for="(item, index) in projectWebhookV1TypeItemList()"
+            :key="index"
           >
-            <div class="flex flex-col items-center">
-              <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
+            <div
+              class="flex justify-center px-2 py-4 rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
+              @click.capture="state.webhook.type = item.type"
+            >
+              <div class="flex flex-col items-center">
+                <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
                    https://github.com/vitejs/vite/issues/1265 -->
-              <template v-if="item.type === Webhook_Type.TYPE_SLACK">
-                <img class="h-10 w-10" src="../assets/slack-logo.png" alt="" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_DISCORD">
-                <img class="h-10 w-10" src="../assets/discord-logo.svg" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_TEAMS">
-                <img class="h-10 w-10" src="../assets/teams-logo.svg" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_DINGTALK">
-                <img class="h-10 w-10" src="../assets/dingtalk-logo.png" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_FEISHU">
-                <img class="h-10 w-10" src="../assets/feishu-logo.webp" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_WECOM">
-                <img class="h-10 w-10" src="../assets/wecom-logo.png" />
-              </template>
-              <template v-else-if="item.type === Webhook_Type.TYPE_CUSTOM">
-                <heroicons-outline:puzzle class="w-10 h-10" />
-              </template>
-              <p class="mt-1 text-center textlabel">
-                {{ item.name }}
-              </p>
-              <div class="mt-3 radio text-sm">
-                <input
-                  type="radio"
-                  class="btn"
-                  :checked="state.webhook.type == item.type"
-                />
+                <template v-if="item.type === Webhook_Type.TYPE_SLACK">
+                  <img
+                    class="h-10 w-10"
+                    src="../assets/slack-logo.png"
+                    alt=""
+                  />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_DISCORD">
+                  <img class="h-10 w-10" src="../assets/discord-logo.svg" />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_TEAMS">
+                  <img class="h-10 w-10" src="../assets/teams-logo.svg" />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_DINGTALK">
+                  <img class="h-10 w-10" src="../assets/dingtalk-logo.png" />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_FEISHU">
+                  <img class="h-10 w-10" src="../assets/feishu-logo.webp" />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_WECOM">
+                  <img class="h-10 w-10" src="../assets/wecom-logo.png" />
+                </template>
+                <template v-else-if="item.type === Webhook_Type.TYPE_CUSTOM">
+                  <heroicons-outline:puzzle class="w-10 h-10" />
+                </template>
+                <p class="mt-1 text-center textlabel">
+                  {{ item.name }}
+                </p>
+                <div class="mt-3 radio text-sm">
+                  <NRadio :value="item.type" />
+                </div>
               </div>
             </div>
-          </div>
-        </template>
-      </div>
+          </template>
+        </div>
+      </NRadioGroup>
     </div>
     <div>
       <label for="name" class="textlabel">
@@ -279,7 +284,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
-import { NCheckbox } from "naive-ui";
+import { NCheckbox, NRadio, NRadioGroup } from "naive-ui";
 import { reactive, computed, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

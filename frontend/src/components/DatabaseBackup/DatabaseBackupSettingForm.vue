@@ -14,24 +14,16 @@
           >
             <template #trigger>
               <div class="flex items-center gap-x-2 text-sm">
-                <label
+                <NRadio
                   v-for="schedule in PLAN_SCHEDULES"
                   :key="schedule"
-                  class="flex items-center gap-x-2"
-                  :class="
-                    !isAllowedScheduleByPolicy(schedule) &&
-                    'opacity-50 cursor-not-allowed'
-                  "
-                  @click="setSchedule(schedule)"
+                  :value="schedule"
+                  :checked="schedule === checkedSchedule"
+                  :disabled="!isAllowedScheduleByPolicy(schedule)"
+                  @change="setSchedule(schedule)"
                 >
-                  <input
-                    type="radio"
-                    :value="schedule"
-                    :checked="schedule === checkedSchedule"
-                    :disabled="!isAllowedScheduleByPolicy(schedule)"
-                  />
-                  <span>{{ nameOfSchedule(schedule) }}</span>
-                </label>
+                  {{ nameOfSchedule(schedule) }}
+                </NRadio>
               </div>
             </template>
 
@@ -150,7 +142,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NPopover, NSelect, NInputNumber } from "naive-ui";
+import { NPopover, NSelect, NInputNumber, NRadio } from "naive-ui";
 import { computed, PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";

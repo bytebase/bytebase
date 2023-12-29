@@ -54,34 +54,10 @@
         <span class="text-red-600">*</span>
       </div>
       <div class="mt-2 textlabel">
-        <div class="radio-set-row">
-          <label class="radio">
-            <input
-              v-model="state.tenantMode"
-              :disabled="!allowEdit"
-              tabindex="-1"
-              type="radio"
-              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
-              :value="TenantMode.TENANT_MODE_DISABLED"
-            />
-            <span class="label">{{ $t("project.mode.standard") }}</span>
-          </label>
-          <label class="radio space-x-1">
-            <input
-              v-model="state.tenantMode"
-              :disabled="!allowEdit"
-              tabindex="-1"
-              type="radio"
-              class="btn disabled:opacity-50 disabled:cursor-not-allowed"
-              :value="TenantMode.TENANT_MODE_ENABLED"
-            />
-            <span class="label">{{ $t("project.mode.batch") }}</span>
-            <LearnMoreLink
-              url="https://www.bytebase.com/docs/change-database/batch-change/?source=console"
-            />
-            <FeatureBadge feature="bb.feature.multi-tenancy" />
-          </label>
-        </div>
+        <ProjectModeRadioGroup
+          v-model:value="state.tenantMode"
+          :disabled="!allowEdit"
+        />
       </div>
     </div>
 
