@@ -45,7 +45,7 @@
           padding: 0.5rem 0;
         "
       >
-        <Sidebar v-if="sidebarMode === 'MOBILE'" />
+        <Sidebar />
       </div>
     </Drawer>
   </template>
