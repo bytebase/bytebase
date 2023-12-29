@@ -99,6 +99,8 @@ export interface ActuatorInfo {
   lsp: boolean;
   /** lsp is the enablement of data backup prior to data update. */
   preUpdateBackup: boolean;
+  /** iam_guard is the enablement of IAM checks. */
+  iamGuard: boolean;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -549,6 +551,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     debug: false,
     lsp: false,
     preUpdateBackup: false,
+    iamGuard: false,
   };
 }
 
@@ -604,6 +607,9 @@ export const ActuatorInfo = {
     }
     if (message.preUpdateBackup === true) {
       writer.uint32(136).bool(message.preUpdateBackup);
+    }
+    if (message.iamGuard === true) {
+      writer.uint32(144).bool(message.iamGuard);
     }
     return writer;
   },
@@ -734,6 +740,13 @@ export const ActuatorInfo = {
 
           message.preUpdateBackup = reader.bool();
           continue;
+        case 18:
+          if (tag !== 144) {
+            break;
+          }
+
+          message.iamGuard = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -762,6 +775,7 @@ export const ActuatorInfo = {
       debug: isSet(object.debug) ? globalThis.Boolean(object.debug) : false,
       lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
       preUpdateBackup: isSet(object.preUpdateBackup) ? globalThis.Boolean(object.preUpdateBackup) : false,
+      iamGuard: isSet(object.iamGuard) ? globalThis.Boolean(object.iamGuard) : false,
     };
   },
 
@@ -818,6 +832,9 @@ export const ActuatorInfo = {
     if (message.preUpdateBackup === true) {
       obj.preUpdateBackup = message.preUpdateBackup;
     }
+    if (message.iamGuard === true) {
+      obj.iamGuard = message.iamGuard;
+    }
     return obj;
   },
 
@@ -843,6 +860,7 @@ export const ActuatorInfo = {
     message.debug = object.debug ?? false;
     message.lsp = object.lsp ?? false;
     message.preUpdateBackup = object.preUpdateBackup ?? false;
+    message.iamGuard = object.iamGuard ?? false;
     return message;
   },
 };
