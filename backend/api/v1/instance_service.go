@@ -954,6 +954,17 @@ func (s *InstanceService) convertToInstanceMessage(instanceID string, instance *
 	}, nil
 }
 
+func convertToInstanceResource(instanceMessage *store.InstanceMessage) *v1pb.InstanceResource {
+	instance := convertToInstance(instanceMessage)
+	return &v1pb.InstanceResource{
+		Title:         instance.Title,
+		Engine:        instance.Engine,
+		EngineVersion: instance.EngineVersion,
+		DataSources:   instance.DataSources,
+		Activation:    instance.Activation,
+	}
+}
+
 func (s *InstanceService) convertToDataSourceMessages(dataSources []*v1pb.DataSource) ([]*store.DataSourceMessage, error) {
 	var datasources []*store.DataSourceMessage
 	for _, ds := range dataSources {

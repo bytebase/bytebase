@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
+import "v1/instance_service.proto";
 import "v1/vcs.proto";
 
 option go_package = "generated-go/v1";
@@ -392,6 +393,9 @@ message Database {
 
   // Labels will be used for deployment and policy control.
   map<string, string> labels = 9;
+
+  // The instance resource.
+  InstanceResource instance_resource = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.

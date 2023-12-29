@@ -292,6 +292,14 @@ export interface DataSource {
   sshPrivateKey: string;
 }
 
+export interface InstanceResource {
+  title: string;
+  engine: Engine;
+  engineVersion: string;
+  dataSources: DataSource[];
+  activation: boolean;
+}
+
 function createBaseGetInstanceRequest(): GetInstanceRequest {
   return { name: "" };
 }
@@ -2009,6 +2017,127 @@ export const DataSource = {
     message.sshUser = object.sshUser ?? "";
     message.sshPassword = object.sshPassword ?? "";
     message.sshPrivateKey = object.sshPrivateKey ?? "";
+    return message;
+  },
+};
+
+function createBaseInstanceResource(): InstanceResource {
+  return { title: "", engine: 0, engineVersion: "", dataSources: [], activation: false };
+}
+
+export const InstanceResource = {
+  encode(message: InstanceResource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
+    }
+    if (message.engine !== 0) {
+      writer.uint32(16).int32(message.engine);
+    }
+    if (message.engineVersion !== "") {
+      writer.uint32(26).string(message.engineVersion);
+    }
+    for (const v of message.dataSources) {
+      DataSource.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.activation === true) {
+      writer.uint32(40).bool(message.activation);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): InstanceResource {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInstanceResource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.engine = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.engineVersion = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.dataSources.push(DataSource.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.activation = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InstanceResource {
+    return {
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      engine: isSet(object.engine) ? engineFromJSON(object.engine) : 0,
+      engineVersion: isSet(object.engineVersion) ? globalThis.String(object.engineVersion) : "",
+      dataSources: globalThis.Array.isArray(object?.dataSources)
+        ? object.dataSources.map((e: any) => DataSource.fromJSON(e))
+        : [],
+      activation: isSet(object.activation) ? globalThis.Boolean(object.activation) : false,
+    };
+  },
+
+  toJSON(message: InstanceResource): unknown {
+    const obj: any = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
+    if (message.engine !== 0) {
+      obj.engine = engineToJSON(message.engine);
+    }
+    if (message.engineVersion !== "") {
+      obj.engineVersion = message.engineVersion;
+    }
+    if (message.dataSources?.length) {
+      obj.dataSources = message.dataSources.map((e) => DataSource.toJSON(e));
+    }
+    if (message.activation === true) {
+      obj.activation = message.activation;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<InstanceResource>): InstanceResource {
+    return InstanceResource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<InstanceResource>): InstanceResource {
+    const message = createBaseInstanceResource();
+    message.title = object.title ?? "";
+    message.engine = object.engine ?? 0;
+    message.engineVersion = object.engineVersion ?? "";
+    message.dataSources = object.dataSources?.map((e) => DataSource.fromPartial(e)) || [];
+    message.activation = object.activation ?? false;
     return message;
   },
 };
