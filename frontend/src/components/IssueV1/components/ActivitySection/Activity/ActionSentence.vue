@@ -206,7 +206,6 @@ const renderActionSentence = () => {
     case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP: {
       const payload = JSON.parse(activity.payload) as ActivityTaskPriorBackup;
       const tables = payload.schemaMetadata.map((sc) => sc.table).join(", ");
-      console.log("Barny1: ", payload);
       const params: VerbTypeTarget = {
         activity,
         verb: t("activity.sentence.prior-back-table", {
