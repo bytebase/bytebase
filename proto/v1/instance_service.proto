@@ -316,3 +316,15 @@ enum DataSourceType {
   ADMIN = 1;
   READ_ONLY = 2;
 }
+
+message InstanceResource {
+  string title = 1;
+
+  Engine engine = 2;
+
+  string engine_version = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  repeated DataSource data_sources = 4;
+
+  bool activation = 5;
+}
