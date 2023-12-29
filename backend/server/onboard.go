@@ -329,8 +329,11 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 
 	ruleList := []*storepb.SQLReviewRule{}
 
-	// Add DropEmptyDatabase rule for MySQL, TiDB, MariaDB.
-	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB} {
+	// Add DropEmptyDatabase rule.
+	for _, e := range []storepb.Engine{
+		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE,
+		storepb.Engine_MARIADB,
+	} {
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleDropEmptyDatabase),
 			Level:   storepb.SQLReviewRuleLevel_ERROR,
@@ -339,8 +342,12 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 		})
 	}
 
-	// Add ColumnNotNull rule for MySQL, TiDB, MariaDB, Postgres.
-	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
+	// Add ColumnNotNull rule.
+	for _, e := range []storepb.Engine{
+		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES,
+		storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE, storepb.Engine_OCEANBASE,
+		storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL, storepb.Engine_MARIADB,
+	} {
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleColumnNotNull),
 			Level:   storepb.SQLReviewRuleLevel_WARNING,
@@ -349,8 +356,12 @@ func getSampleSQLReviewPolicy() *storepb.SQLReviewPolicy {
 		})
 	}
 
-	// Add TableDropNamingConvention rule for MySQL, TiDB, MariaDB Postgres.
-	for _, e := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_POSTGRES} {
+	// Add TableDropNamingConvention rule.
+	for _, e := range []storepb.Engine{
+		storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES,
+		storepb.Engine_OCEANBASE, storepb.Engine_SNOWFLAKE, storepb.Engine_MSSQL,
+		storepb.Engine_MARIADB,
+	} {
 		ruleList = append(ruleList, &storepb.SQLReviewRule{
 			Type:    string(advisor.SchemaRuleTableDropNamingConvention),
 			Level:   storepb.SQLReviewRuleLevel_ERROR,
