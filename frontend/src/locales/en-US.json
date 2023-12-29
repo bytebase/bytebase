@@ -867,6 +867,7 @@
       "pipeline-task-status-update": "Update issue task status",
       "pipeline-task-file-commit": "Commit file",
       "pipeline-task-statement-update": "SQL update",
+      "pipeline-task-prior-backup": "Data prior backup",
       "member-create": "Create member",
       "member-role-update": "Update role",
       "member-activate": "Activate member",
@@ -913,7 +914,8 @@
       "xxx-automatically": "{verb} automatically",
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "changed {name}. {link}"
+      "changed-x-link": "changed {name}. {link}",
+      "prior-back-table": "Data backup to database {database} and tables {tables}"
     },
     "subject-prefix": {
       "task": "Task",

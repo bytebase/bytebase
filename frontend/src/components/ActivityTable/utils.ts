@@ -41,6 +41,7 @@ export const getLinkFromActivity = (activity: LogEntity): Link | undefined => {
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATUS_UPDATE:
     case LogEntity_Action.ACTION_PIPELINE_STAGE_STATUS_UPDATE:
     case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
+    case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP:
     case LogEntity_Action.ACTION_ISSUE_STATUS_UPDATE:
     case LogEntity_Action.ACTION_ISSUE_CREATE: {
       const payload = JSON.parse(
