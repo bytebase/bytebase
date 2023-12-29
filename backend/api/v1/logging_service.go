@@ -57,6 +57,7 @@ var defaultResourceActionTypeMap = map[string][]api.ActivityType{
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
 		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+		api.ActivityPipelineTaskPriorBackup,
 	},
 	"issues": {
 		api.ActivityIssueCreate,
@@ -385,7 +386,8 @@ func convertToLogEntity(ctx context.Context, db *store.Store, activity *store.Ac
 		api.ActivityPipelineTaskRunStatusUpdate,
 		api.ActivityPipelineTaskFileCommit,
 		api.ActivityPipelineTaskStatementUpdate,
-		api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
+		api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
+		api.ActivityPipelineTaskPriorBackup:
 		resource = fmt.Sprintf("%s%d", common.PipelineNamePrefix, activity.ContainerUID)
 	case
 		api.ActivityProjectRepositoryPush,
@@ -473,6 +475,8 @@ func convertToActivityType(action v1pb.LogEntity_Action) (api.ActivityType, erro
 		return api.ActivityPipelineTaskStatementUpdate, nil
 	case v1pb.LogEntity_ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE:
 		return api.ActivityPipelineTaskEarliestAllowedTimeUpdate, nil
+	case v1pb.LogEntity_ACTION_PIPELINE_TASK_PRIOR_BACKUP:
+		return api.ActivityPipelineTaskPriorBackup, nil
 
 	case v1pb.LogEntity_ACTION_PROJECT_REPOSITORY_PUSH:
 		return api.ActivityProjectRepositoryPush, nil
@@ -528,6 +532,8 @@ func convertToActionType(activityType api.ActivityType) v1pb.LogEntity_Action {
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_STATEMENT_UPDATE
 	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
 		return v1pb.LogEntity_ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE
+	case api.ActivityPipelineTaskPriorBackup:
+		return v1pb.LogEntity_ACTION_PIPELINE_TASK_PRIOR_BACKUP
 
 	case api.ActivityProjectRepositoryPush:
 		return v1pb.LogEntity_ACTION_PROJECT_REPOSITORY_PUSH

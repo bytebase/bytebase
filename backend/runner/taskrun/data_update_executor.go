@@ -94,6 +94,10 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return err
 	}
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
+	}
 
 	backupInstanceID, backupDatabaseName, err := common.GetInstanceDatabaseID(payload.PreUpdateBackupDetail.Database)
 	if err != nil {
@@ -114,9 +118,36 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	suffix := time.Now().Format("20060102150405")
-	selectIntoStatement := updateToSelect(statement, backupDatabaseName, suffix)
+	selectIntoStatement, targetTableName := updateToSelect(statement, backupDatabaseName, suffix)
 	if _, err := driver.Execute(driverCtx, selectIntoStatement, false /* createDatabase */, db.ExecuteOptions{}); err != nil {
 		return err
+	}
+	createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{
+		TaskID: task.ID,
+		BackupSchemaMetadata: []api.SchemaMetadata{
+			{
+				Table: targetTableName,
+			},
+		},
+		IssueName: issue.Title,
+		TaskName:  task.Name,
+	}
+	bytes, err := json.Marshal(createActivityPayload)
+	if err != nil {
+		return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
+	}
+	activityCreate := &store.ActivityMessage{
+		CreatorUID:   api.SystemBotID,
+		ContainerUID: issue.UID,
+		Type:         api.ActivityPipelineTaskPriorBackup,
+		Level:        api.ActivityInfo,
+		Payload:      string(bytes),
+	}
+	if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
+		slog.Error("failed to create activity",
+			slog.Int("task", task.ID),
+			log.BBError(err),
+		)
 	}
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
 		slog.Error("failed to sync backup database schema",
@@ -128,7 +159,7 @@ func (exec *DataUpdateExecutor) backupData(
 	return nil
 }
 
-func updateToSelect(statement, databaseName, suffix string) string {
+func updateToSelect(statement, databaseName, suffix string) (string, string) {
 	// TODO(rebelice): use parser.
 	lowerStatement := strings.ToLower(statement)
 	whereIndex := strings.LastIndex(lowerStatement, "where")
@@ -138,5 +169,6 @@ func updateToSelect(statement, databaseName, suffix string) string {
 	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
 	tableName = strings.Trim(tableName, "`")
 	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
-	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition)
+	activityTargetTableName := fmt.Sprintf("%s_%s", tableName, suffix)
+	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition), activityTargetTableName
 }
