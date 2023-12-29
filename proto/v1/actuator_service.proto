@@ -136,4 +136,7 @@ message ActuatorInfo {
 
   // lsp is the enablement of data backup prior to data update.
   bool pre_update_backup = 17;
+
+  // iam_guard is the enablement of IAM checks.
+  bool iam_guard = 18;
 }
