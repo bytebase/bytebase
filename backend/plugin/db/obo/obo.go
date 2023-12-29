@@ -79,8 +79,8 @@ func (driver *Driver) GetDB() *sql.DB {
 	return driver.db
 }
 
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, opts db.ExecuteOptions) (int64, error) {
-	if createDatabase {
+func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	if opts.CreateDatabase {
 		return 0, errors.New("create database is not supported for OceanBase Oracle mode")
 	}
 

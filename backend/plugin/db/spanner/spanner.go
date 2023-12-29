@@ -115,8 +115,8 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
-	if createDatabase {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	if opts.CreateDatabase {
 		stmts, err := sanitizeSQL(statement)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to sanitize %v", statement)
