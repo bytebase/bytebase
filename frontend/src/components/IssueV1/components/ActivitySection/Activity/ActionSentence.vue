@@ -14,6 +14,7 @@ import {
   ActivityTaskFileCommitPayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
+  ActivityTaskPriorBackup,
   ComposedIssue,
   SYSTEM_BOT_EMAIL,
   UNKNOWN_ID,
@@ -194,6 +195,27 @@ const renderActionSentence = () => {
         default:
           params.verb = t("activity.sentence.changed");
       }
+      const task = findTaskByUID(issue.rolloutEntity, String(payload.taskId));
+      if (task) {
+        params.target = h(TaskName, { issue, task });
+      }
+      return renderVerbTypeTarget(params, {
+        tag: "span",
+      });
+    }
+    case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP: {
+      const payload = JSON.parse(activity.payload) as ActivityTaskPriorBackup;
+      const tables = payload.schemaMetadata.map((sc) => sc.table).join(", ");
+      console.log("Barny1: ", payload);
+      const params: VerbTypeTarget = {
+        activity,
+        verb: t("activity.sentence.prior-back-table", {
+          database: "bbdataarchive",
+          tables: tables,
+        }),
+        type: t("common.task"),
+        target: "",
+      };
       const task = findTaskByUID(issue.rolloutEntity, String(payload.taskId));
       if (task) {
         params.target = h(TaskName, { issue, task });
