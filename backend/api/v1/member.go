@@ -13,13 +13,13 @@ import (
 )
 
 func isOwnerOrDBA(role api.Role) bool {
-	return role == api.Owner || role == api.DBA
+	return role == api.WorkspaceAdmin || role == api.WorkspaceDBA
 }
 
 // isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
 func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
 	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Owner && binding.Role != api.Developer {
+		if binding.Role != api.ProjectOwner && binding.Role != api.ProjectDeveloper {
 			continue
 		}
 		for _, member := range binding.Members {
@@ -78,7 +78,7 @@ func isUserAtLeastProjectViewer(ctx context.Context, s *store.Store, requestProj
 // isProjectOwnerDeveloperOrViewer returns whether a principal is a project owner or developer in the project.
 func isProjectOwnerDeveloperOrViewer(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
 	for _, binding := range projectPolicy.Bindings {
-		if binding.Role != api.Owner && binding.Role != api.Developer && binding.Role != api.ProjectViewer {
+		if binding.Role != api.ProjectOwner && binding.Role != api.ProjectDeveloper && binding.Role != api.ProjectViewer {
 			continue
 		}
 		for _, member := range binding.Members {

@@ -27,7 +27,7 @@
           v-else-if="state.transferSource == 'OTHER'"
           :include-all="true"
           :project="projectFilter?.uid ?? String(UNKNOWN_ID)"
-          :allowed-project-role-list="[PresetRoleType.OWNER]"
+          :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
           :filter="filterSourceProject"
           @update:project="changeProjectFilter"
         />

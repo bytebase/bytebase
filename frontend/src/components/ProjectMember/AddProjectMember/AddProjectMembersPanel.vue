@@ -99,7 +99,7 @@ const allowConfirm = computed(() => {
     }
     // Filter uncompleted querier and exporter options.
     // TODO: use parsed expression to check if the expression is valid.
-    if (binding.role === PresetRoleType.EXPORTER) {
+    if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
       if (binding.condition?.expression === "") {
         return false;
       }

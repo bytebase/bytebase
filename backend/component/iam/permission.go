@@ -4,7 +4,6 @@ type Permission string
 
 const (
 	// Workspace-level permissions.
-
 	// Instance service.
 	PermissionInstancesList     Permission = "bb.instances.list"
 	PermissionInstancesGet      Permission = "bb.instances.get"
@@ -13,7 +12,6 @@ const (
 	PermissionInstancesDelete   Permission = "bb.instances.delete"
 	PermissionInstancesUndelete Permission = "bb.instances.undelete"
 	PermissionInstancesSync     Permission = "bb.instances.sync"
-
 	// Instance role service.
 	PermissionInstanceRolesList     Permission = "bb.instanceRoles.list"
 	PermissionInstanceRolesGet      Permission = "bb.instanceRoles.get"
@@ -21,7 +19,6 @@ const (
 	PermissionInstanceRolesUpdate   Permission = "bb.instanceRoles.update"
 	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
 	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
-
 	// Environment service.
 	PermissionEnvironmentsList     Permission = "bb.environments.list"
 	PermissionEnvironmentsGet      Permission = "bb.environments.get"
@@ -29,19 +26,16 @@ const (
 	PermissionEnvironmentsUpdate   Permission = "bb.environments.update"
 	PermissionEnvironmentsDelete   Permission = "bb.environments.delete"
 	PermissionEnvironmentsUndelete Permission = "bb.environments.undelete"
-
 	// Risk service.
 	PermissionRisksList   Permission = "bb.risks.list"
 	PermissionRisksCreate Permission = "bb.risks.create"
 	PermissionRisksUpdate Permission = "bb.risks.update"
 	PermissionRisksDelete Permission = "bb.risks.delete"
-
 	// Role service.
 	PermissionRolesList   Permission = "bb.roles.list"
 	PermissionRolesCreate Permission = "bb.roles.create"
 	PermissionRolesUpdate Permission = "bb.roles.update"
 	PermissionRolesDelete Permission = "bb.roles.delete"
-
 	// Database service.
 	PermissionDatabasesList                Permission = "bb.databases.list"
 	PermissionDatabasesGet                 Permission = "bb.databases.get"
@@ -61,7 +55,6 @@ const (
 	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
 	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
 	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
-
 	// External version control service.
 	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
 	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
@@ -70,28 +63,23 @@ const (
 	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
 	PermissionExternalVersionControlsSearchProjects Permission = "bb.externalVersionControls.searchProjects"
 	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
-
 	// Setting service.
 	PermissionSettingsList Permission = "bb.settings.list"
 	PermissionSettingsGet  Permission = "bb.settings.get"
 	PermissionSettingsSet  Permission = "bb.settings.set"
-
 	// Org policy service.
 	PermissionPoliciesList   Permission = "bb.policies.list"
 	PermissionPoliciesGet    Permission = "bb.policies.get"
 	PermissionPoliciesCreate Permission = "bb.policies.create"
 	PermissionPoliciesUpdate Permission = "bb.policies.update"
 	PermissionPoliciesDelete Permission = "bb.policies.delete"
-
 	// Identity provider service.
 	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
 	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
 	PermissionIdentityProvidersUpdate   Permission = "bb.identityProviders.update"
 	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
 	PermissionIdentityProvidersUndelete Permission = "bb.identityProviders.undelete"
-
 	// Project-level permissions.
-
 	// Project Service.
 	PermissionProjectsList         Permission = "bb.projects.list"
 	PermissionProjectsGet          Permission = "bb.projects.get"

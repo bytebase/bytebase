@@ -125,7 +125,7 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 			if err != nil {
 				return status.Errorf(codes.PermissionDenied, err.Error())
 			}
-			if !projectRoles[api.Owner] {
+			if !projectRoles[api.ProjectOwner] {
 				return status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, fullMethod)
 			}
 		}
@@ -141,7 +141,7 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 			if err != nil {
 				return status.Errorf(codes.PermissionDenied, err.Error())
 			}
-			if !projectRoles[api.Owner] {
+			if !projectRoles[api.ProjectOwner] {
 				return status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
 			}
 		}
@@ -176,7 +176,7 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
-		user.Role = api.Owner
+		user.Role = api.WorkspaceAdmin
 	}
 	return user, nil
 }

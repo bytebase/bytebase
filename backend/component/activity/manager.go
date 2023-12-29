@@ -698,13 +698,13 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 				return nil, errors.Errorf("invalid group value")
 			case storepb.ApprovalNode_WORKSPACE_OWNER:
-				usersGetter = getUsersFromWorkspaceRole(m.store, api.Owner)
+				usersGetter = getUsersFromWorkspaceRole(m.store, api.WorkspaceAdmin)
 			case storepb.ApprovalNode_WORKSPACE_DBA:
-				usersGetter = getUsersFromWorkspaceRole(m.store, api.DBA)
+				usersGetter = getUsersFromWorkspaceRole(m.store, api.WorkspaceDBA)
 			case storepb.ApprovalNode_PROJECT_OWNER:
-				usersGetter = getUsersFromProjectRole(m.store, api.Owner, meta.Issue.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectOwner, meta.Issue.Project.ResourceID)
 			case storepb.ApprovalNode_PROJECT_MEMBER:
-				usersGetter = getUsersFromProjectRole(m.store, api.Developer, meta.Issue.Project.ResourceID)
+				usersGetter = getUsersFromProjectRole(m.store, api.ProjectDeveloper, meta.Issue.Project.ResourceID)
 			default:
 				return nil, errors.Errorf("invalid group value")
 			}

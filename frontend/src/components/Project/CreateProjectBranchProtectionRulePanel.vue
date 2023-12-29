@@ -173,7 +173,7 @@ const roleList = computed(() => {
 const roleOptions = computed(() => {
   return roleList.value.map((role) => {
     // Only allow to select roles that are not OWNER.
-    const disabled = role.name === PresetRoleType.OWNER;
+    const disabled = role.name === PresetRoleType.PROJECT_OWNER;
     return {
       label: displayRoleTitle(role.name),
       value: role.name,
@@ -186,8 +186,8 @@ watch(
   () => [state.disallowAllRoles],
   () => {
     if (state.disallowAllRoles) {
-      if (!state.selectedRoles.includes(PresetRoleType.OWNER)) {
-        state.selectedRoles.unshift(PresetRoleType.OWNER);
+      if (!state.selectedRoles.includes(PresetRoleType.PROJECT_OWNER)) {
+        state.selectedRoles.unshift(PresetRoleType.PROJECT_OWNER);
       }
     }
   }

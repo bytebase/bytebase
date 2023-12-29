@@ -198,9 +198,9 @@ onMounted(async () => {
           if (
             environmentNameList.includes(environmentPolicy.environment.name)
           ) {
-            if (binding.role === "roles/QUERIER") {
+            if (binding.role === "PresetRoleType.PROJECT_QUERIER") {
               environmentPolicy.allowQueryData = true;
-            } else if (binding.role === "roles/EXPORTER") {
+            } else if (binding.role === "PresetRoleType.PROJECT_EXPORTER") {
               environmentPolicy.allowExportData = true;
             }
           }
@@ -248,7 +248,7 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   if (allowQueryEnvNameList.length > 0) {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
-        role: "roles/QUERIER",
+        role: "PresetRoleType.PROJECT_QUERIER",
         members: [ALL_USERS_USER_NAME],
         condition: {
           expression: `resource.environment_name in ["${allowQueryEnvNameList.join(
@@ -261,7 +261,7 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   if (allowExportEnvNameList.length > 0) {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
-        role: "roles/EXPORTER",
+        role: "PresetRoleType.PROJECT_EXPORTER",
         members: [ALL_USERS_USER_NAME],
         condition: {
           expression: `resource.environment_name in ["${allowExportEnvNameList.join(

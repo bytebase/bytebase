@@ -1598,13 +1598,13 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 			return false, errors.Errorf("invalid group value")
 		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return user.Role == api.Owner, nil
+			return user.Role == api.WorkspaceAdmin, nil
 		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return user.Role == api.DBA, nil
+			return user.Role == api.WorkspaceDBA, nil
 		case storepb.ApprovalNode_PROJECT_OWNER:
-			return userHasProjectRole[convertToRoleName(string(api.Owner))], nil
+			return userHasProjectRole[convertToRoleName(string(api.ProjectOwner))], nil
 		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return userHasProjectRole[convertToRoleName(string(api.Developer))], nil
+			return userHasProjectRole[convertToRoleName(string(api.ProjectDeveloper))], nil
 		default:
 			return false, errors.Errorf("invalid group value")
 		}
@@ -1733,26 +1733,13 @@ func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.I
 
 	var releasers []string
 	if policy.Automatic {
-		releasers = append(releasers, "roles/projectOwner", common.FormatUserEmail(issue.Creator.Email))
+		releasers = append(releasers, common.FormatRole(api.ProjectOwner.String()), common.FormatUserEmail(issue.Creator.Email))
 		return releasers, nil
 	}
 
-	for _, role := range policy.WorkspaceRoles {
-		switch role {
-		case "roles/OWNER":
-			releasers = append(releasers, "roles/workspaceOwner")
-		case "roles/DBA":
-			releasers = append(releasers, "roles/workspaceDBA")
-		}
-	}
-	for _, role := range policy.ProjectRoles {
-		switch role {
-		case "roles/OWNER":
-			releasers = append(releasers, "roles/projectOwner")
-		case "roles/RELEASER":
-			releasers = append(releasers, "roles/projectReleaser")
-		}
-	}
+	releasers = append(releasers, policy.WorkspaceRoles...)
+	releasers = append(releasers, policy.ProjectRoles...)
+
 	for _, role := range policy.IssueRoles {
 		switch role {
 		case "roles/CREATOR":

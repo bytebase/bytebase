@@ -24,7 +24,10 @@
     </div>
 
     <div
-      v-if="state.role === 'roles/QUERIER' || state.role === 'roles/EXPORTER'"
+      v-if="
+        state.role === PresetRoleType.PROJECT_QUERIER ||
+        state.role === PresetRoleType.PROJECT_EXPORTER
+      "
       class="w-full"
     >
       <span class="block mb-2">{{ $t("common.databases") }}</span>
@@ -35,7 +38,7 @@
         @update:database-resources="state.databaseResources = $event"
       />
     </div>
-    <template v-if="state.role === 'roles/EXPORTER'">
+    <template v-if="state.role === PresetRoleType.PROJECT_EXPORTER">
       <div class="w-full flex flex-col justify-start items-start">
         <span class="mb-2">
           {{ $t("issue.grant-request.export-rows") }}
@@ -130,7 +133,7 @@ onMounted(() => {
 });
 
 const expireDaysOptions = computed(() => {
-  if (state.role === "roles/EXPORTER") {
+  if (state.role === PresetRoleType.PROJECT_EXPORTER) {
     return [
       {
         value: 1,
@@ -224,12 +227,12 @@ watch(
       const expiresAt = now.add(state.expireDays, "days");
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
     }
-    if (state.role === PresetRoleType.QUERIER) {
+    if (state.role === PresetRoleType.PROJECT_QUERIER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
     }
-    if (state.role === PresetRoleType.EXPORTER) {
+    if (state.role === PresetRoleType.PROJECT_EXPORTER) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
@@ -260,7 +263,10 @@ const generateConditionTitle = () => {
   }
 
   let conditionSuffix = "";
-  if (state.role === "roles/QUERIER" || state.role === "roles/EXPORTER") {
+  if (
+    state.role === PresetRoleType.PROJECT_QUERIER ||
+    state.role === PresetRoleType.PROJECT_QUERIER
+  ) {
     if (!state.databaseResources || state.databaseResources.length === 0) {
       conditionSuffix = `${conditionSuffix} All`;
     } else if (state.databaseResources.length <= 3) {

@@ -23,7 +23,8 @@
             <NTooltip
               v-if="allowAdmin"
               :disabled="
-                allowRemoveRole(role.role) || role.role !== 'roles/OWNER'
+                allowRemoveRole(role.role) ||
+                role.role !== PresetRoleType.PROJECT_OWNER
               "
             >
               <template #trigger>
@@ -237,7 +238,10 @@ const panelTitle = computed(() => {
 });
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
-  return role === PresetRoleType.QUERIER || role === PresetRoleType.EXPORTER;
+  return (
+    role === PresetRoleType.PROJECT_QUERIER ||
+    role === PresetRoleType.PROJECT_EXPORTER
+  );
 };
 
 const getGridColumns = (role: string) => {
@@ -315,9 +319,9 @@ const allowRemoveRole = (role: string) => {
     return false;
   }
 
-  if (role === PresetRoleType.OWNER) {
+  if (role === PresetRoleType.PROJECT_OWNER) {
     const ownerBindings = iamPolicy.value.bindings.filter(
-      (binding) => binding.role === PresetRoleType.OWNER
+      (binding) => binding.role === PresetRoleType.PROJECT_OWNER
     );
     const members: User[] = [];
     // Find those never expires owner members.
@@ -379,8 +383,8 @@ const handleDeleteRole = (role: string) => {
 };
 
 const allowDeleteCondition = (singleBinding: SingleBinding) => {
-  if (singleBinding.rawBinding.role === PresetRoleType.OWNER) {
-    return allowRemoveRole(PresetRoleType.OWNER);
+  if (singleBinding.rawBinding.role === PresetRoleType.PROJECT_OWNER) {
+    return allowRemoveRole(PresetRoleType.PROJECT_OWNER);
   }
   return true;
 };
