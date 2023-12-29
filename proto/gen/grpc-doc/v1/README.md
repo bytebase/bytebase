@@ -660,6 +660,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
 | lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
 | pre_update_backup | [bool](#bool) |  | lsp is the enablement of data backup prior to data update. |
+| iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 
 
 
