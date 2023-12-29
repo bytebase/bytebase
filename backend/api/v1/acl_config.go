@@ -94,6 +94,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IssueService_RequestIssue_FullMethodName:              "",
 
 	v1pb.ProjectService_ListProjects_FullMethodName:                 iam.PermissionProjectsList,
+	v1pb.ProjectService_SearchProjects_FullMethodName:               "", // TODO(p0ny): implement me.
 	v1pb.ProjectService_GetProject_FullMethodName:                   iam.PermissionProjectsGet,
 	v1pb.ProjectService_CreateProject_FullMethodName:                iam.PermissionProjectsCreate,
 	v1pb.ProjectService_UpdateProject_FullMethodName:                iam.PermissionProjectsUpdate,
