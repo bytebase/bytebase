@@ -141,7 +141,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if len(activePolicies) == 0 {
-		dbaRole := api.DBA
+		dbaRole := api.WorkspaceDBA
 		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
 		if err != nil {
 			slog.Error("Failed to list dba users", log.BBError(err))
@@ -154,7 +154,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			}
 		}
 
-		ownerRole := api.Owner
+		ownerRole := api.WorkspaceAdmin
 		users, err = s.store.ListUsers(ctx, &store.FindUserMessage{Role: &ownerRole})
 		if err != nil {
 			slog.Error("Failed to list owner users", log.BBError(err))
@@ -170,7 +170,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if body, err := s.generateWeeklyEmailForDBA(ctx, activePolicies, now, consoleRedirectURL); err == nil {
-		dbaRole := api.DBA
+		dbaRole := api.WorkspaceDBA
 		users, err := s.store.ListUsers(ctx, &store.FindUserMessage{Role: &dbaRole})
 		if err != nil {
 			slog.Error("Failed to list dba users", log.BBError(err))
@@ -209,7 +209,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		}
 
 		for _, binding := range projectPolicy.Bindings {
-			if binding.Role == api.Owner {
+			if binding.Role == api.ProjectOwner {
 				for _, member := range binding.Members {
 					apiValue.SMTPTo = member.Email
 					subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))

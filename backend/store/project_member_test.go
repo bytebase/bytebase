@@ -26,11 +26,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -38,7 +38,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 				},
@@ -46,7 +46,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			remove: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -57,11 +57,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -69,11 +69,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -81,7 +81,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			remove: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -92,7 +92,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 				},
@@ -100,11 +100,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -113,7 +113,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			add: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -123,11 +123,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -135,11 +135,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -148,7 +148,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			add: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -158,7 +158,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 				},
@@ -166,11 +166,11 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -178,7 +178,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			remove: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -186,7 +186,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			add: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -196,7 +196,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			oldPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 				},
@@ -204,15 +204,15 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			newPolicy: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 1}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 1}},
 					},
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -220,7 +220,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			remove: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Owner,
+						Role:    api.ProjectOwner,
 						Members: []*UserMessage{{ID: 2}},
 					},
 				},
@@ -228,7 +228,7 @@ func TestGetIAMPolicyDiff(t *testing.T) {
 			add: &IAMPolicyMessage{
 				Bindings: []*PolicyBinding{
 					{
-						Role:    api.Developer,
+						Role:    api.ProjectDeveloper,
 						Members: []*UserMessage{{ID: 1}, {ID: 2}},
 					},
 				},

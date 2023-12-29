@@ -175,7 +175,7 @@ watchEffect(async () => {
   for (const iamPolicy of iamPolicyList) {
     const bindings = iamPolicy.bindings.filter(
       (binding) =>
-        binding.role === "roles/EXPORTER" &&
+        binding.role === "PresetRoleType.PROJECT_EXPORTER" &&
         binding.members.includes(`user:${currentUser.value.email}`)
     );
     for (const binding of bindings) {

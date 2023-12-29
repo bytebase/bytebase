@@ -703,7 +703,7 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 		return status.Errorf(codes.Internal, err.Error())
 	}
 	for _, binding := range policy.Bindings {
-		if binding.Role == api.Developer || binding.Role == api.Owner {
+		if binding.Role == api.ProjectDeveloper || binding.Role == api.ProjectOwner {
 			for _, member := range binding.Members {
 				if member.ID == principalID || member.Email == api.AllUsers {
 					return nil

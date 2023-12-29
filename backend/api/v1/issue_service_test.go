@@ -60,16 +60,16 @@ func TestCanUserApproveStep(t *testing.T) {
 			},
 			user: &store.UserMessage{
 				ID:   1,
-				Role: api.Developer,
+				Role: api.WorkspaceMember,
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
 					{
-						Role: api.Developer,
+						Role: api.WorkspaceMember,
 						Members: []*store.UserMessage{
 							{
 								ID:   1,
-								Role: api.Developer,
+								Role: api.WorkspaceMember,
 							},
 						},
 					},
@@ -91,16 +91,16 @@ func TestCanUserApproveStep(t *testing.T) {
 			},
 			user: &store.UserMessage{
 				ID:   1,
-				Role: api.DBA,
+				Role: api.WorkspaceDBA,
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
 					{
-						Role: api.Developer,
+						Role: api.WorkspaceMember,
 						Members: []*store.UserMessage{
 							{
 								ID:   1,
-								Role: api.Developer,
+								Role: api.WorkspaceMember,
 							},
 						},
 					},
@@ -122,16 +122,16 @@ func TestCanUserApproveStep(t *testing.T) {
 			},
 			user: &store.UserMessage{
 				ID:   1,
-				Role: api.DBA,
+				Role: api.WorkspaceDBA,
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
 					{
-						Role: api.Developer,
+						Role: api.WorkspaceMember,
 						Members: []*store.UserMessage{
 							{
 								ID:   1,
-								Role: api.Developer,
+								Role: api.WorkspaceMember,
 							},
 						},
 					},
@@ -153,16 +153,16 @@ func TestCanUserApproveStep(t *testing.T) {
 			},
 			user: &store.UserMessage{
 				ID:   1,
-				Role: api.DBA,
+				Role: api.WorkspaceDBA,
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
 					{
-						Role: api.Developer,
+						Role: api.WorkspaceMember,
 						Members: []*store.UserMessage{
 							{
 								ID:   1,
-								Role: api.Developer,
+								Role: api.WorkspaceMember,
 							},
 						},
 					},
@@ -171,7 +171,7 @@ func TestCanUserApproveStep(t *testing.T) {
 						Members: []*store.UserMessage{
 							{
 								ID:   1,
-								Role: api.Developer,
+								Role: api.WorkspaceMember,
 							},
 						},
 					},

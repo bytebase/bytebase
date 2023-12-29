@@ -84,8 +84,8 @@ const props = withDefaults(
       UserRole.DEVELOPER,
     ],
     allowedProjectMemberRoleList: () => [
-      PresetRoleType.OWNER,
-      PresetRoleType.DEVELOPER,
+      PresetRoleType.PROJECT_OWNER,
+      PresetRoleType.PROJECT_DEVELOPER,
     ],
     autoReset: true,
     filter: undefined,

@@ -277,7 +277,7 @@ export const getDefaultRolloutPolicyPayload = () => {
     automatic: false,
     issueRoles: [],
     projectRoles: [],
-    workspaceRoles: [VirtualRoleType.OWNER],
+    workspaceRoles: [VirtualRoleType.WORKSPACE_ADMIN],
   });
 };
 

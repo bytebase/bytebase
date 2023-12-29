@@ -59,17 +59,21 @@ export const isMemberOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
 };
 
 export const isOwnerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.OWNER);
+  return roleListInProjectV1(iamPolicy, user).includes(
+    PresetRoleType.PROJECT_OWNER
+  );
 };
 
 export const isDeveloperOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
   return roleListInProjectV1(iamPolicy, user).includes(
-    PresetRoleType.DEVELOPER
+    PresetRoleType.PROJECT_DEVELOPER
   );
 };
 
 export const isViewerOfProjectV1 = (iamPolicy: IamPolicy, user: User) => {
-  return roleListInProjectV1(iamPolicy, user).includes(PresetRoleType.VIEWER);
+  return roleListInProjectV1(iamPolicy, user).includes(
+    PresetRoleType.PROJECT_VIEWER
+  );
 };
 
 export const memberListInProjectV1 = (
@@ -109,7 +113,7 @@ export const memberListInProjectV1 = (
   return orderBy(
     composedUserList,
     [
-      (item) => (item.roleList.includes(PresetRoleType.OWNER) ? 0 : 1),
+      (item) => (item.roleList.includes(PresetRoleType.PROJECT_OWNER) ? 0 : 1),
       (item) => item.user.email,
     ],
     ["asc", "asc"]

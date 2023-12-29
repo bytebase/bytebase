@@ -11,10 +11,10 @@
         class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden px-4 py-2"
       >
         <GrantRequestExporterForm
-          v-if="requestRole === PresetRoleType.EXPORTER"
+          v-if="requestRole === PresetRoleType.PROJECT_EXPORTER"
         />
         <GrantRequestQuerierForm
-          v-if="requestRole === PresetRoleType.QUERIER"
+          v-if="requestRole === PresetRoleType.PROJECT_QUERIER"
         />
 
         <DescriptionSection />

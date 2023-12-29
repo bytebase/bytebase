@@ -174,13 +174,15 @@ export const candidatesOfApprovalStepV1 = (
       if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
         return projectMemberList
           .filter((member) =>
-            member.roleList.includes(PresetRoleType.DEVELOPER)
+            member.roleList.includes(PresetRoleType.PROJECT_DEVELOPER)
           )
           .map((member) => member.user);
       }
       if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
         return projectMemberList
-          .filter((member) => member.roleList.includes(PresetRoleType.OWNER))
+          .filter((member) =>
+            member.roleList.includes(PresetRoleType.PROJECT_OWNER)
+          )
           .map((member) => member.user);
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {

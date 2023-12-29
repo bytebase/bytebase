@@ -1,9 +1,5 @@
 package api
 
-import (
-	"github.com/bytebase/bytebase/backend/common"
-)
-
 // ProjectPermissionType is the type of a project permission.
 type ProjectPermissionType string
 
@@ -33,7 +29,7 @@ const (
 )
 
 // ProjectPermission returns whether a particular permission is granted to a particular project role in a particular plan.
-func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles map[common.ProjectRole]bool) bool {
+func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles map[Role]bool) bool {
 	// a map from the a particular feature to the respective enablement of a project developer and owner.
 	projectPermissionMatrix := map[ProjectPermissionType][3]bool{
 		ProjectPermissionManageGeneral:  {false, true, true},
@@ -52,15 +48,15 @@ func ProjectPermission(permission ProjectPermissionType, plan PlanType, roles ma
 
 	for role := range roles {
 		switch role {
-		case common.ProjectDeveloper:
+		case ProjectDeveloper:
 			if projectPermissionMatrix[permission][0] {
 				return true
 			}
-		case common.ProjectOwner:
+		case ProjectOwner:
 			if projectPermissionMatrix[permission][1] {
 				return true
 			}
-		case common.ProjectViewer:
+		case ProjectViewer:
 			if projectPermissionMatrix[permission][2] {
 				return true
 			}

@@ -111,7 +111,7 @@ export type IssueCreateContext =
   | EmptyContext;
 
 export interface GrantRequestPayload {
-  // The requested role, e.g. roles/EXPORTER
+  // The requested role, e.g. PresetRoleType.PROJECT_EXPORTER
   role: string;
   // The requested user, e.g. users/hello@bytebase.com
   user: string;
