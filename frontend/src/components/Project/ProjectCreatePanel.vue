@@ -53,32 +53,7 @@
             <span class="text-red-600">*</span>
           </div>
           <div class="mt-2 textlabel">
-            <div class="radio-set-row">
-              <div class="radio">
-                <input
-                  v-model="state.project.tenantMode"
-                  tabindex="-1"
-                  type="radio"
-                  class="btn"
-                  :value="TenantMode.TENANT_MODE_DISABLED"
-                />
-                <label class="label">{{ $t("project.mode.standard") }}</label>
-              </div>
-              <div class="radio space-x-1">
-                <input
-                  v-model="state.project.tenantMode"
-                  tabindex="-1"
-                  type="radio"
-                  class="btn"
-                  :value="TenantMode.TENANT_MODE_ENABLED"
-                />
-                <label class="label">{{ $t("project.mode.batch") }}</label>
-                <LearnMoreLink
-                  url="https://www.bytebase.com/docs/change-database/batch-change/?source=console"
-                />
-                <FeatureBadge feature="bb.feature.multi-tenancy" />
-              </div>
-            </div>
+            <ProjectModeRadioGroup v-model:value="state.project.tenantMode" />
           </div>
         </div>
       </div>
@@ -116,7 +91,7 @@
 
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, NRadio, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";

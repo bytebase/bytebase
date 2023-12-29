@@ -19,22 +19,15 @@
         </a>
       </div>
       <div class="w-full flex flex-row justify-start items-start space-x-2">
-        <label
+        <NRadioGroup
           v-for="item in identityProviderTypeList"
           :key="item"
-          class="flex flex-row justify-center items-center cursor-pointer mr-2"
-          :for="`radio-${item}`"
+          v-model:value="state.type"
         >
-          <input
-            :id="`radio-${item}`"
-            v-model="state.type"
-            type="radio"
-            class="btn mr-2"
-            :value="item"
-            :checked="state.type === item"
-          />
-          <span>{{ identityProviderTypeToString(item) }}</span>
-        </label>
+          <NRadio :value="item">
+            {{ identityProviderTypeToString(item) }}
+          </NRadio>
+        </NRadioGroup>
       </div>
     </div>
 
@@ -47,21 +40,22 @@
         {{ $t("settings.sso.form.use-template") }}
       </p>
       <div class="w-full flex flex-row justify-start items-start space-x-2">
-        <label
+        <NRadioGroup
           v-for="template in templateList"
           :key="template.title"
-          class="w-24 h-24 border rounded-md flex flex-col justify-center items-center cursor-pointer hover:bg-gray-100"
-          :for="`radio-${template.title}`"
-          @click="handleTemplateSelect(template)"
+          :value="selectedTemplate?.title"
         >
-          <span>{{ template.title }}</span>
-          <input
-            :id="`radio-${template.title}`"
-            type="radio"
-            class="btn mt-4"
-            :checked="selectedTemplate?.title === template.title"
-          />
-        </label>
+          <div
+            class="w-24 h-12 border rounded-md flex items-center justify-center"
+          >
+            <NRadio
+              :value="template.title"
+              @change="handleTemplateSelect(template)"
+            >
+              {{ template.title }}
+            </NRadio>
+          </div>
+        </NRadioGroup>
       </div>
     </div>
 
