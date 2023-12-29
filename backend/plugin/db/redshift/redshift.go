@@ -167,32 +167,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		return 0, errors.Errorf("datashare database cannot be updated")
 	}
 	if createDatabase {
-		databases, err := driver.getDatabases(ctx)
-		if err != nil {
-			return 0, err
-		}
-		databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
-		if err != nil {
-			return 0, err
-		}
-		exist := false
-		for _, database := range databases {
-			if database.Name == databaseName {
-				exist = true
-				break
-			}
-		}
-		if exist {
-			return 0, err
-		}
-
-		f := func(stmt string) error {
-			if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
-				return err
-			}
-			return nil
-		}
-		if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
+		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}
 		return 0, nil
@@ -207,9 +182,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	f := func(stmt string) error {
-		// We don't use transaction for creating / altering databases in Postgres.
-		// We will execute the statement directly before "\\connect" statement.
-		// https://github.com/bytebase/bytebase/issues/202
 		if isSuperuserStatement(stmt) {
 			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
 			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
@@ -273,6 +245,30 @@ func (driver *Driver) Execute(ctx context.Context, statement string, createDatab
 		}
 	}
 	return totalRowsAffected, nil
+}
+
+func (driver *Driver) createDatabaseExecute(ctx context.Context, statement string) error {
+	databaseName, err := getDatabaseInCreateDatabaseStatement(statement)
+	if err != nil {
+		return err
+	}
+	databases, err := driver.getDatabases(ctx)
+	if err != nil {
+		return err
+	}
+	for _, database := range databases {
+		if database.Name == databaseName {
+			// Database already exists.
+			return nil
+		}
+	}
+
+	for _, s := range strings.Split(statement, "\n") {
+		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func isSuperuserStatement(stmt string) bool {
