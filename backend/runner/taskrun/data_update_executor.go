@@ -169,5 +169,6 @@ func updateToSelect(statement, databaseName, suffix string) (string, string) {
 	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
 	tableName = strings.Trim(tableName, "`")
 	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
-	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition), targetTableName
+	activityTargetTableName := fmt.Sprintf("%s_%s", tableName, suffix)
+	return fmt.Sprintf("CREATE TABLE %s LIKE %s; INSERT INTO %s SELECT * FROM %s %s", targetTableName, tableName, targetTableName, tableName, condition), activityTargetTableName
 }
