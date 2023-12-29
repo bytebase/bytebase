@@ -1,37 +1,63 @@
 <template>
-  <div>
-    <div class="issue-debug">phase: {{ phase }}</div>
-
-    <BannerSection v-if="!isCreating" />
-
-    <HeaderSection class="!border-t-0" />
-
-    <div class="w-full border-t mt-2" />
-
-    <div class="px-4 mt-2">
-      <GrantRequestExporterForm
-        v-if="requestRole === PresetRoleType.EXPORTER"
-      />
-      <GrantRequestQuerierForm v-if="requestRole === PresetRoleType.QUERIER" />
+  <div ref="containerRef" class="h-full flex flex-col">
+    <div class="border-b">
+      <div class="issue-debug">phase: {{ phase }}</div>
+      <BannerSection v-if="!isCreating" />
+      <HeaderSection />
     </div>
 
-    <div class="w-full border-t mt-4" />
+    <div class="flex-1 flex flex-row">
+      <div
+        class="flex-1 flex flex-col hide-scrollbar divide-y overflow-x-hidden px-4 py-2"
+      >
+        <GrantRequestExporterForm
+          v-if="requestRole === PresetRoleType.EXPORTER"
+        />
+        <GrantRequestQuerierForm
+          v-if="requestRole === PresetRoleType.QUERIER"
+        />
 
-    <DescriptionSection />
+        <DescriptionSection />
 
-    <div class="w-full border-t mt-4" />
+        <ActivitySection v-if="!isCreating" />
+      </div>
 
-    <ActivitySection v-if="!isCreating" />
-
-    <IssueReviewActionPanel
-      :action="ongoingIssueReviewAction?.action"
-      @close="ongoingIssueReviewAction = undefined"
-    />
-    <IssueStatusActionPanel
-      :action="ongoingIssueStatusAction?.action"
-      @close="ongoingIssueStatusAction = undefined"
-    />
+      <div
+        v-if="sidebarMode == 'DESKTOP'"
+        class="hide-scrollbar border-l"
+        :style="{
+          width: `${desktopSidebarWidth}px`,
+        }"
+      >
+        <Sidebar />
+      </div>
+    </div>
   </div>
+
+  <template v-if="sidebarMode === 'MOBILE'">
+    <!-- mobile sidebar -->
+    <Drawer :show="mobileSidebarOpen" @close="mobileSidebarOpen = false">
+      <div
+        style="
+          min-width: 240px;
+          width: 80vw;
+          max-width: 320px;
+          padding: 0.5rem 0;
+        "
+      >
+        <Sidebar />
+      </div>
+    </Drawer>
+  </template>
+
+  <IssueReviewActionPanel
+    :action="ongoingIssueReviewAction?.action"
+    @close="ongoingIssueReviewAction = undefined"
+  />
+  <IssueStatusActionPanel
+    :action="ongoingIssueStatusAction?.action"
+    @close="ongoingIssueStatusAction = undefined"
+  />
 
   <div class="issue-debug">
     <pre class="text-xs">{{ JSON.stringify(issue, null, "  ") }}</pre>
@@ -55,10 +81,12 @@ import {
 import {
   IssueReviewAction,
   IssueStatusAction,
+  provideIssueSidebarContext,
   useIssueContext,
   usePollIssue,
 } from "./logic";
 
+const containerRef = ref<HTMLElement>();
 const { isCreating, phase, issue, events } = useIssueContext();
 
 const ongoingIssueReviewAction = ref<{
@@ -93,4 +121,10 @@ useEmitteryEventListener(
     };
   }
 );
+
+const {
+  mode: sidebarMode,
+  desktopSidebarWidth,
+  mobileSidebarOpen,
+} = provideIssueSidebarContext(containerRef);
 </script>
