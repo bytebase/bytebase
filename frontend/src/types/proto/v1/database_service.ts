@@ -6,7 +6,7 @@ import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { MaskingLevel, maskingLevelFromJSON, maskingLevelToJSON, State, stateFromJSON, stateToJSON } from "./common";
-import { Instance } from "./instance_service";
+import { InstanceResource } from "./instance_service";
 import { PushEvent } from "./vcs";
 
 export const protobufPackage = "bytebase.v1";
@@ -390,7 +390,7 @@ export interface Database {
   /** Labels will be used for deployment and policy control. */
   labels: { [key: string]: string };
   /** The instance resource. */
-  instance: Instance | undefined;
+  instanceResource: InstanceResource | undefined;
 }
 
 export interface Database_LabelsEntry {
@@ -3003,7 +3003,7 @@ function createBaseDatabase(): Database {
     environment: "",
     effectiveEnvironment: "",
     labels: {},
-    instance: undefined,
+    instanceResource: undefined,
   };
 }
 
@@ -3036,8 +3036,8 @@ export const Database = {
     Object.entries(message.labels).forEach(([key, value]) => {
       Database_LabelsEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
-    if (message.instance !== undefined) {
-      Instance.encode(message.instance, writer.uint32(82).fork()).ldelim();
+    if (message.instanceResource !== undefined) {
+      InstanceResource.encode(message.instanceResource, writer.uint32(82).fork()).ldelim();
     }
     return writer;
   },
@@ -3120,7 +3120,7 @@ export const Database = {
             break;
           }
 
-          message.instance = Instance.decode(reader, reader.uint32());
+          message.instanceResource = InstanceResource.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3147,7 +3147,7 @@ export const Database = {
           return acc;
         }, {})
         : {},
-      instance: isSet(object.instance) ? Instance.fromJSON(object.instance) : undefined,
+      instanceResource: isSet(object.instanceResource) ? InstanceResource.fromJSON(object.instanceResource) : undefined,
     };
   },
 
@@ -3186,8 +3186,8 @@ export const Database = {
         });
       }
     }
-    if (message.instance !== undefined) {
-      obj.instance = Instance.toJSON(message.instance);
+    if (message.instanceResource !== undefined) {
+      obj.instanceResource = InstanceResource.toJSON(message.instanceResource);
     }
     return obj;
   },
@@ -3211,8 +3211,8 @@ export const Database = {
       }
       return acc;
     }, {});
-    message.instance = (object.instance !== undefined && object.instance !== null)
-      ? Instance.fromPartial(object.instance)
+    message.instanceResource = (object.instanceResource !== undefined && object.instanceResource !== null)
+      ? InstanceResource.fromPartial(object.instanceResource)
       : undefined;
     return message;
   },

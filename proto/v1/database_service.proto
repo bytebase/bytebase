@@ -395,7 +395,7 @@ message Database {
   map<string, string> labels = 9;
 
   // The instance resource.
-  Instance instance = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+  InstanceResource instance_resource = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // DatabaseMetadata is the metadata for databases.

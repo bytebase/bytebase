@@ -2046,7 +2046,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
-		Instance:             convertToInstance(instance),
+		InstanceResource:     convertToInstanceResource(instance),
 	}, nil
 }
 

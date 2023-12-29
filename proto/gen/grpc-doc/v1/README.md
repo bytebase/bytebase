@@ -100,6 +100,7 @@
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
     - [Instance](#bytebase-v1-Instance)
     - [InstanceOptions](#bytebase-v1-InstanceOptions)
+    - [InstanceResource](#bytebase-v1-InstanceResource)
     - [ListInstancesRequest](#bytebase-v1-ListInstancesRequest)
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
@@ -2044,6 +2045,25 @@ InstanceOptions is the option for instances.
 
 
 
+<a name="bytebase-v1-InstanceResource"></a>
+
+### InstanceResource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| engine | [Engine](#bytebase-v1-Engine) |  |  |
+| engine_version | [string](#string) |  |  |
+| data_sources | [DataSource](#bytebase-v1-DataSource) | repeated |  |
+| activation | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-ListInstancesRequest"></a>
 
 ### ListInstancesRequest
@@ -2632,7 +2652,7 @@ CreateBackupRequest is the request message for CreateBackup.
 | environment | [string](#string) |  | The environment resource. Format: environments/prod where prod is the environment resource ID. |
 | effective_environment | [string](#string) |  | The effective environment based on environment tag above and environment tag on the instance. Inheritance follows https://cloud.google.com/resource-manager/docs/tags/tags-overview. |
 | labels | [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry) | repeated | Labels will be used for deployment and policy control. |
-| instance | [Instance](#bytebase-v1-Instance) |  | The instance resource. |
+| instance_resource | [InstanceResource](#bytebase-v1-InstanceResource) |  | The instance resource. |
 
 
 
