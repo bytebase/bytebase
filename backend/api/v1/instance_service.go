@@ -94,6 +94,37 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	return response, nil
 }
 
+// SearchInstance searches for instances.
+// TODO(p0ny): filter the instances by the user's permission.
+func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.SearchInstancesRequest) (*v1pb.SearchInstancesResponse, error) {
+	var project *store.ProjectMessage
+	if request.Parent != "" {
+		p, err := s.getProjectMessage(ctx, request.Parent)
+		if err != nil {
+			return nil, err
+		}
+		if p.Deleted {
+			return nil, status.Errorf(codes.NotFound, "project %q has been deleted", request.Parent)
+		}
+		project = p
+	}
+	find := &store.FindInstanceMessage{
+		ShowDeleted: request.ShowDeleted,
+	}
+	if project != nil {
+		find.ProjectUID = &project.UID
+	}
+	instances, err := s.store.ListInstancesV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.SearchInstancesResponse{}
+	for _, instance := range instances {
+		response.Instances = append(response.Instances, convertToInstance(instance))
+	}
+	return response, nil
+}
+
 // CreateInstance creates an instance.
 func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.CreateInstanceRequest) (*v1pb.Instance, error) {
 	if request.Instance == nil {
