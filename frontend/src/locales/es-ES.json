@@ -866,6 +866,7 @@
       "pipeline-task-status-update": "actualizar estado de la tarea de la incidencia",
       "pipeline-task-file-commit": "commit al archivo",
       "pipeline-task-statement-update": "actualización SQL",
+      "pipeline-task-prior-backup": "Respaldo Previo",
       "member-create": "crear miembro",
       "member-role-update": "actualizar rol",
       "member-activate": "activar miembro",
@@ -912,7 +913,8 @@
       "xxx-automatically": "{verb} automáticamente",
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "cambiado {name}. \n{link}"
+      "changed-x-link": "cambiado {name}. \n{link}",
+      "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}"
     },
     "subject-prefix": {
       "task": "Tarea",

@@ -864,6 +864,7 @@
       "pipeline-task-status-update": "更新工单任务状态",
       "pipeline-task-file-commit": "提交文件",
       "pipeline-task-statement-update": "更新 SQL",
+      "pipeline-task-prior-backup": "数据预前备份",
       "member-create": "创建成员",
       "member-role-update": "更新角色",
       "member-activate": "激活成员",
@@ -910,7 +911,8 @@
       "xxx-automatically": "自动{verb}",
       "verb-type-target-by-people": "{verb}{type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
-      "changed-x-link": "修改了 {name}。{link}"
+      "changed-x-link": "修改了 {name}。{link}",
+      "prior-back-table": "已备份到数据库 {database} 中表 {tables}"
     },
     "subject-prefix": {
       "task": "任务",

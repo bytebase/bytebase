@@ -37,6 +37,8 @@ export function activityName(action: LogEntity_Action): string {
       return t("activity.type.pipeline-task-status-update");
     case LogEntity_Action.ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE:
       return t("activity.type.pipeline-task-status-update");
+    case LogEntity_Action.ACTION_PIPELINE_TASK_PRIOR_BACKUP:
+      return t("activity.type.pipeline-task-prior-backup");
     case LogEntity_Action.ACTION_PIPELINE_TASK_FILE_COMMIT:
       return t("activity.type.pipeline-task-file-commit");
     case LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE:
@@ -140,6 +142,18 @@ export type ActivityTaskStatementUpdatePayload = {
   newSheetId: SheetId;
   issueName: string;
   taskName: string;
+};
+
+export type ActivityTaskPriorBackup = {
+  taskId: TaskId;
+  schemaMetadata: DatabaseSchemaMetadata[];
+  issueName: string;
+  taskName: string;
+};
+
+export type DatabaseSchemaMetadata = {
+  schema: string;
+  table: string;
 };
 
 export type ActivityTaskEarliestAllowedTimeUpdatePayload = {
