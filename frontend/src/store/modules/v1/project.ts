@@ -40,7 +40,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     });
   };
   const fetchProjectList = async (showDeleted = false) => {
-    const { projects } = await projectServiceClient.listProjects({
+    const { projects } = await projectServiceClient.searchProjects({
       showDeleted,
     });
     await upsertProjectMap(projects);
