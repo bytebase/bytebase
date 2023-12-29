@@ -218,7 +218,7 @@ func filterPolicyDatabases(userID int, policy *store.IAMPolicyMessage, databases
 			if member.ID != userID && member.Email != api.AllUsers {
 				continue
 			}
-			if binding.Role != api.Querier && binding.Role != api.Exporter {
+			if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
 				return databases
 			}
 			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
@@ -1644,11 +1644,11 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 		return nil
 	}
 
-	projectRoles := make(map[common.ProjectRole]bool)
+	projectRoles := make(map[api.Role]bool)
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == principalID || member.Email == api.AllUsers {
-				projectRoles[common.ProjectRole(binding.Role)] = true
+				projectRoles[api.Role(binding.Role)] = true
 				break
 			}
 		}
@@ -1781,9 +1781,9 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 	}
 
 	switch user.Role {
-	case api.Owner, api.DBA:
+	case api.WorkspaceAdmin, api.WorkspaceDBA:
 		canAccessDBs = databases
-	case api.Developer:
+	case api.WorkspaceMember:
 		for _, database := range databases {
 			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
 			if err != nil {

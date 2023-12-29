@@ -60,7 +60,7 @@ func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessag
 			ID:    api.SystemBotID,
 			Email: api.SystemBotEmail,
 			Type:  api.SystemBot,
-			Role:  api.Owner,
+			Role:  api.WorkspaceAdmin,
 		}, nil
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -208,9 +208,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		if role.Valid {
 			userMessage.Role = api.Role(role.String)
 		} else if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.Owner
+			userMessage.Role = api.WorkspaceAdmin
 		} else {
-			userMessage.Role = api.Developer
+			userMessage.Role = api.WorkspaceMember
 		}
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
@@ -268,11 +268,11 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	).Scan(&count); err != nil {
 		return nil, err
 	}
-	role := api.Developer
+	role := api.WorkspaceMember
 	firstMember := count == 0
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
-		role = api.Owner
+		role = api.WorkspaceAdmin
 	} else if create.Role != "" {
 		role = create.Role
 	}

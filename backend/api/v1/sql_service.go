@@ -1107,7 +1107,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the caller is admin for exporting with admin mode.
-		if isAdmin && (user.Role != api.Owner && user.Role != api.DBA) {
+		if isAdmin && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
 			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 		}
 
@@ -2184,9 +2184,9 @@ func (s *SQLService) checkWorkspaceIAMPolicy(
 	environment *store.EnvironmentMessage,
 	isExport bool,
 ) (bool, error) {
-	role := common.ProjectQuerier
+	role := api.ProjectQuerier
 	if isExport {
-		role = common.ProjectExporter
+		role = api.ProjectExporter
 	}
 
 	workspacePolicyResourceType := api.PolicyResourceTypeWorkspace
@@ -2240,7 +2240,7 @@ func (s *SQLService) checkQueryRights(
 	isExport bool,
 ) error {
 	// Owner and DBA have all rights.
-	if user.Role == api.Owner || user.Role == api.DBA {
+	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
 		return nil
 	}
 
@@ -2339,7 +2339,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 	pass := false
 	for _, binding := range projectPolicy.Bindings {
 		// Project owner has all permissions.
-		if binding.Role == api.Role(common.ProjectOwner) {
+		if binding.Role == api.ProjectOwner {
 			for _, member := range binding.Members {
 				if member.ID == principalID || member.Email == api.AllUsers {
 					pass = true
@@ -2347,7 +2347,7 @@ func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMess
 				}
 			}
 		}
-		if !((isExport && binding.Role == api.Role(common.ProjectExporter)) || (!isExport && binding.Role == api.Role(common.ProjectQuerier))) {
+		if !((isExport && binding.Role == api.ProjectExporter) || (!isExport && binding.Role == api.ProjectQuerier)) {
 			continue
 		}
 		for _, member := range binding.Members {

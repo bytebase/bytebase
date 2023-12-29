@@ -526,7 +526,7 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 		if len(projectRoles) == 0 {
 			return false, nil
 		}
-		return projectRoles[common.ProjectOwner], nil
+		return projectRoles[api.ProjectOwner], nil
 	}
 
 	return false, nil
@@ -553,7 +553,7 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 	case store.PublicSheet:
 		return true, nil
 	case store.ProjectSheet:
-		if role == api.Owner || role == api.DBA {
+		if role == api.WorkspaceAdmin || role == api.WorkspaceDBA {
 			return true, nil
 		}
 		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, principalID)
@@ -565,16 +565,16 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 	return false, nil
 }
 
-func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, principalUID int) (map[common.ProjectRole]bool, error) {
+func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, principalUID int) (map[api.Role]bool, error) {
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
 		return nil, err
 	}
-	projectRoles := make(map[common.ProjectRole]bool)
+	projectRoles := make(map[api.Role]bool)
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {
 			if member.ID == principalUID {
-				projectRoles[common.ProjectRole(binding.Role)] = true
+				projectRoles[api.Role(binding.Role)] = true
 				break
 			}
 		}

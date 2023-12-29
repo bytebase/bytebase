@@ -16,22 +16,16 @@ const (
 type Role string
 
 const (
-	// Owner is the OWNER role.
-	Owner Role = "OWNER"
-	// DBA is the DBA role.
-	DBA Role = "DBA"
-	// Developer is the DEVELOPER role.
-	Developer Role = "DEVELOPER"
-	// Exporter is the EXPORTER role.
-	Exporter Role = "EXPORTER"
-	// Querier is the QUERIER role.
-	Querier Role = "QUERIER"
-	// Releaser is the RELEASER role.
-	Releaser Role = "RELEASER"
-	// ProjectViewer is the database viewer role.
-	ProjectViewer Role = "VIEWER"
-	// UnknownRole is the unknown role.
-	UnknownRole Role = "UNKNOWN"
+	WorkspaceAdmin   Role = "workspaceAdmin"
+	WorkspaceDBA     Role = "workspaceDBA"
+	WorkspaceMember  Role = "workspaceMember"
+	ProjectOwner     Role = "projectOwner"
+	ProjectDeveloper Role = "projectDeveloper"
+	ProjectQuerier   Role = "projectQuerier"
+	ProjectExporter  Role = "projectExporter"
+	ProjectReleaser  Role = "projectReleaser"
+	ProjectViewer    Role = "projectViewer"
+	UnknownRole      Role = "UNKNOWN"
 )
 
 func (r Role) String() string {

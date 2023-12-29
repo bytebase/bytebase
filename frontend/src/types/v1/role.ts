@@ -1,30 +1,30 @@
 export const PresetRoleType = {
-  OWNER: "roles/OWNER",
-  DEVELOPER: "roles/DEVELOPER",
-  QUERIER: "roles/QUERIER",
-  EXPORTER: "roles/EXPORTER",
-  RELEASER: "roles/RELEASER",
-  VIEWER: "roles/VIEWER",
+  PROJECT_OWNER: "roles/projectOwner",
+  PROJECT_DEVELOPER: "roles/projectDeveloper",
+  PROJECT_QUERIER: "roles/projectQuerier",
+  PROJECT_EXPORTER: "roles/projectExporter",
+  PROJECT_RELEASER: "roles/projectReleaser",
+  PROJECT_VIEWER: "roles/projectViewer",
 };
 
 export const PresetRoleTypeList = [
-  PresetRoleType.OWNER,
-  PresetRoleType.DEVELOPER,
-  PresetRoleType.QUERIER,
-  PresetRoleType.EXPORTER,
-  PresetRoleType.RELEASER,
-  PresetRoleType.VIEWER,
+  PresetRoleType.PROJECT_OWNER,
+  PresetRoleType.PROJECT_DEVELOPER,
+  PresetRoleType.PROJECT_QUERIER,
+  PresetRoleType.PROJECT_EXPORTER,
+  PresetRoleType.PROJECT_RELEASER,
+  PresetRoleType.PROJECT_VIEWER,
 ];
 
 export const VirtualRoleType = {
-  OWNER: "roles/OWNER",
-  DBA: "roles/DBA",
+  WORKSPACE_ADMIN: "roles/workspaceAdmin",
+  WORKSPACE_DBA: "roles/workspaceDBA",
   LAST_APPROVER: "roles/LAST_APPROVER",
   CREATOR: "roles/CREATOR",
 };
 
 export const IssueReleaserRoleType = {
-  WORKSPACE_OWNER: "roles/workspaceOwner",
+  WORKSPACE_ADMIN: "roles/workspaceAdmin",
   WORKSPACE_DBA: "roles/workspaceDBA",
   PROJECT_OWNER: "roles/projectOwner",
   PROJECT_RELEASER: "roles/projectReleaser",

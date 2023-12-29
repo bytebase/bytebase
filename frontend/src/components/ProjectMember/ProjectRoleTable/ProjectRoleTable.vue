@@ -138,7 +138,7 @@ const roleGroup = computed(() => {
   let roleMap = new Map<string, Binding[]>();
   for (const binding of iamPolicy.value.bindings) {
     // Don't show EXPORTER role if it has a non-empty statement condition.
-    if (binding.role === "roles/EXPORTER") {
+    if (binding.role === "PresetRoleType.PROJECT_EXPORTER") {
       const parsedExpr = binding.parsedExpr;
       if (parsedExpr?.expr) {
         const expression = convertFromExpr(parsedExpr.expr);

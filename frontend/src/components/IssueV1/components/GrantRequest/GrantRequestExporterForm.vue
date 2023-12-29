@@ -85,7 +85,7 @@ const exportMethod = computed(() => {
 
 onMounted(async () => {
   const grantRequest = issue.value.grantRequest!;
-  if (grantRequest.role !== PresetRoleType.EXPORTER) {
+  if (grantRequest.role !== PresetRoleType.PROJECT_EXPORTER) {
     throw "Only support EXPORTER role";
   }
 

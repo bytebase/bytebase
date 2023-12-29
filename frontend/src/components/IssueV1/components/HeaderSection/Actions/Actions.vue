@@ -52,7 +52,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
   if (isGrantRequestIssue(issue.value)) {
     if (isFinishedGrantRequestIssueByCurrentUser.value) {
       const role = issue.value.grantRequest?.role;
-      if (role === PresetRoleType.EXPORTER) {
+      if (role === PresetRoleType.PROJECT_EXPORTER) {
         // Show the export button only when the grant request condition is based on the statement.
         const expr = await convertFromCELString(
           issue.value.grantRequest?.condition?.expression ?? ""
@@ -61,7 +61,7 @@ const actionType = asyncComputed(async (): Promise<ActionType | undefined> => {
           return "EXPORT-CENTER";
         }
       }
-      if (role === PresetRoleType.QUERIER) {
+      if (role === PresetRoleType.PROJECT_QUERIER) {
         return "SQL-EDITOR";
       }
     }
