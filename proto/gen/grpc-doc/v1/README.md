@@ -409,6 +409,8 @@
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
     - [SchemaGroup](#bytebase-v1-SchemaGroup)
     - [SchemaGroup.Table](#bytebase-v1-SchemaGroup-Table)
+    - [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest)
+    - [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse)
     - [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest)
     - [SetupSQLReviewCIRequest](#bytebase-v1-SetupSQLReviewCIRequest)
     - [SetupSQLReviewCIResponse](#bytebase-v1-SetupSQLReviewCIResponse)
@@ -660,6 +662,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | debug | [bool](#bool) |  | debug flag means if the debug mode is enabled. |
 | lsp | [bool](#bool) |  | lsp is the enablement of lsp in SQL Editor. |
 | pre_update_backup | [bool](#bool) |  | lsp is the enablement of data backup prior to data update. |
+| iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 
 
 
@@ -4906,6 +4909,7 @@ ACTION_ISSUE_CREATE is the type for creating a new issue. |
 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE | 36 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| ACTION_PIPELINE_TASK_PRIOR_BACKUP | 37 | ACTION_PIPELINE_TASK_PRIOR_BACKUP represents the pipeline task prior backup activity. |
 | ACTION_PROJECT_REPOSITORY_PUSH | 41 | Project related activity types. Enum value 41 - 60
 
 ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
@@ -6724,6 +6728,36 @@ All the expressions will be used to filter the schema objects in DatabaseSchema.
 
 
 
+<a name="bytebase-v1-SearchProjectsRequest"></a>
+
+### SearchProjectsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchProjectsResponse"></a>
+
+### SearchProjectsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+
+
+
+
+
+
 <a name="bytebase-v1-SetIamPolicyRequest"></a>
 
 ### SetIamPolicyRequest
@@ -7159,6 +7193,7 @@ The type of target.
 | ----------- | ------------ | ------------- | ------------|
 | GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) |  |
+| SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) |  |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | UpdateProject | [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest) | [Project](#bytebase-v1-Project) |  |
 | DeleteProject | [DeleteProjectRequest](#bytebase-v1-DeleteProjectRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
