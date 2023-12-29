@@ -63,7 +63,7 @@ func TestValidateBindings(t *testing.T) {
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 			},
 			wantErr: true,
@@ -72,20 +72,20 @@ func TestValidateBindings(t *testing.T) {
 		{
 			bindings: []*v1pb.Binding{
 				{
-					Role:    "roles/OWNER",
+					Role:    "roles/projectOwner",
 					Members: []string{"user:bytebase"},
 				},
 				{
-					Role:    "roles/DEVELOPER",
+					Role:    "role/projectDeveloper",
 					Members: []string{},
 				},
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 				{
-					Name: "roles/DEVELOPER",
+					Name: "role/projectDeveloper",
 				},
 			},
 			wantErr: true,
@@ -94,16 +94,16 @@ func TestValidateBindings(t *testing.T) {
 		{
 			bindings: []*v1pb.Binding{
 				{
-					Role:    "roles/DEVELOPER",
+					Role:    "role/projectDeveloper",
 					Members: []string{"user:bytebase"},
 				},
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 				{
-					Name: "roles/DEVELOPER",
+					Name: "role/projectDeveloper",
 				},
 			},
 			wantErr: true,
@@ -112,20 +112,20 @@ func TestValidateBindings(t *testing.T) {
 			bindings: []*v1pb.Binding{
 				{
 
-					Role:    "roles/OWNER",
+					Role:    "roles/projectOwner",
 					Members: []string{"user:bytebase"},
 				},
 				{
-					Role:    "roles/OWNER",
+					Role:    "roles/projectOwner",
 					Members: []string{"user:foo"},
 				},
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 				{
-					Name: "roles/DEVELOPER",
+					Name: "role/projectDeveloper",
 				},
 			},
 			wantErr: false,
@@ -134,16 +134,16 @@ func TestValidateBindings(t *testing.T) {
 		{
 			bindings: []*v1pb.Binding{
 				{
-					Role:    "roles/OWNER",
+					Role:    "roles/projectOwner",
 					Members: []string{"user:bytebase"},
 				},
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 				{
-					Name: "roles/DEVELOPER",
+					Name: "role/projectDeveloper",
 				},
 			},
 			wantErr: false,
@@ -151,20 +151,20 @@ func TestValidateBindings(t *testing.T) {
 		{
 			bindings: []*v1pb.Binding{
 				{
-					Role:    "roles/OWNER",
+					Role:    "roles/projectOwner",
 					Members: []string{"user:bytebase"},
 				},
 				{
-					Role:    "roles/DEVELOPER",
+					Role:    "role/projectDeveloper",
 					Members: []string{"user:foo"},
 				},
 			},
 			roles: []*v1pb.Role{
 				{
-					Name: "roles/OWNER",
+					Name: "roles/projectOwner",
 				},
 				{
-					Name: "roles/DEVELOPER",
+					Name: "role/projectDeveloper",
 				},
 			},
 			wantErr: false,

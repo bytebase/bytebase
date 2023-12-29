@@ -540,3 +540,7 @@ func FormatUserUID(uid int) string {
 func FormatDatabase(instance string, database string) string {
 	return fmt.Sprintf("%s%s/%s%s", InstanceNamePrefix, instance, DatabaseIDPrefix, database)
 }
+
+func FormatRole(role string) string {
+	return fmt.Sprintf("%s%s", RolePrefix, role)
+}

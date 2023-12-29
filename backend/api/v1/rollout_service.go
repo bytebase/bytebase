@@ -532,7 +532,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
 	}
-	if !approved && !(user.Role == api.Owner || user.Role == api.DBA) {
+	if !approved && !(user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA) {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
 	}
 
@@ -1335,7 +1335,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// the workspace owner and DBA roles can always run tasks.
-	if user.Role == api.Owner || user.Role == api.DBA {
+	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
 		return true, nil
 	}
 

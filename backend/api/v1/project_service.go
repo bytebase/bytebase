@@ -3037,8 +3037,8 @@ func validateBindings(bindings []*v1pb.Binding, roles []*v1pb.Role) error {
 		}
 	}
 	// Must contain one owner binding.
-	if _, ok := projectRoleMap["roles/OWNER"]; !ok {
-		return errors.Errorf("IAM Policy must have at least one binding with role PROJECT_OWNER")
+	if _, ok := projectRoleMap[common.FormatRole(api.ProjectOwner.String())]; !ok {
+		return errors.Errorf("IAM Policy must have at least one binding with %s", api.ProjectOwner.String())
 	}
 	return nil
 }

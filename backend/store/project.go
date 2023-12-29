@@ -201,7 +201,7 @@ func (s *Store) CreateProjectV2(ctx context.Context, create *ProjectMessage, cre
 	policy := &IAMPolicyMessage{
 		Bindings: []*PolicyBinding{
 			{
-				Role: api.Owner,
+				Role: api.ProjectOwner,
 				Members: []*UserMessage{
 					user,
 				},
