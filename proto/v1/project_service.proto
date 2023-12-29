@@ -25,6 +25,11 @@ service ProjectService {
     option (google.api.method_signature) = "";
   }
 
+  rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
+    option (google.api.http) = {get: "/v1/projects:search"};
+    option (google.api.method_signature) = "";
+  }
+
   rpc CreateProject(CreateProjectRequest) returns (Project) {
     option (google.api.http) = {
       post: "/v1/projects"
@@ -236,6 +241,16 @@ message ListProjectsResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message SearchProjectsRequest {
+  // Show deleted projects if specified.
+  bool show_deleted = 1;
+}
+
+message SearchProjectsResponse {
+  // The projects from the specified request.
+  repeated Project projects = 1;
 }
 
 message CreateProjectRequest {

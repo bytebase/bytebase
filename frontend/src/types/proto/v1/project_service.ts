@@ -375,6 +375,16 @@ export interface ListProjectsResponse {
   nextPageToken: string;
 }
 
+export interface SearchProjectsRequest {
+  /** Show deleted projects if specified. */
+  showDeleted: boolean;
+}
+
+export interface SearchProjectsResponse {
+  /** The projects from the specified request. */
+  projects: Project[];
+}
+
 export interface CreateProjectRequest {
   /** The project to create. */
   project:
@@ -1445,6 +1455,122 @@ export const ListProjectsResponse = {
     const message = createBaseListProjectsResponse();
     message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseSearchProjectsRequest(): SearchProjectsRequest {
+  return { showDeleted: false };
+}
+
+export const SearchProjectsRequest = {
+  encode(message: SearchProjectsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.showDeleted === true) {
+      writer.uint32(8).bool(message.showDeleted);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchProjectsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchProjectsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchProjectsRequest {
+    return { showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false };
+  },
+
+  toJSON(message: SearchProjectsRequest): unknown {
+    const obj: any = {};
+    if (message.showDeleted === true) {
+      obj.showDeleted = message.showDeleted;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
+    return SearchProjectsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchProjectsRequest>): SearchProjectsRequest {
+    const message = createBaseSearchProjectsRequest();
+    message.showDeleted = object.showDeleted ?? false;
+    return message;
+  },
+};
+
+function createBaseSearchProjectsResponse(): SearchProjectsResponse {
+  return { projects: [] };
+}
+
+export const SearchProjectsResponse = {
+  encode(message: SearchProjectsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.projects) {
+      Project.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SearchProjectsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchProjectsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.projects.push(Project.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SearchProjectsResponse {
+    return {
+      projects: globalThis.Array.isArray(object?.projects) ? object.projects.map((e: any) => Project.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: SearchProjectsResponse): unknown {
+    const obj: any = {};
+    if (message.projects?.length) {
+      obj.projects = message.projects.map((e) => Project.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SearchProjectsResponse>): SearchProjectsResponse {
+    return SearchProjectsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SearchProjectsResponse>): SearchProjectsResponse {
+    const message = createBaseSearchProjectsResponse();
+    message.projects = object.projects?.map((e) => Project.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5399,6 +5525,44 @@ export const ProjectServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([0])],
           578365826: [new Uint8Array([14, 18, 12, 47, 118, 49, 47, 112, 114, 111, 106, 101, 99, 116, 115])],
+        },
+      },
+    },
+    searchProjects: {
+      name: "SearchProjects",
+      requestType: SearchProjectsRequest,
+      requestStream: false,
+      responseType: SearchProjectsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              21,
+              18,
+              19,
+              47,
+              118,
+              49,
+              47,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+            ]),
+          ],
         },
       },
     },
