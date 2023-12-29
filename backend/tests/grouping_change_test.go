@@ -412,11 +412,11 @@ func TestCreateTableGroup(t *testing.T) {
 					a.NoError(err)
 
 					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].matched {
-						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), false, db.ExecuteOptions{})
+						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), db.ExecuteOptions{})
 						a.NoError(err)
 					}
 					for _, preCreateTable := range prepareInstance.matchDatabasesNameTableName[preCreateDatabase].unmatched {
-						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), false, db.ExecuteOptions{})
+						_, err = dbDriver.Execute(ctx, fmt.Sprintf(`CREATE TABLE %s (id INT);`, preCreateTable), db.ExecuteOptions{})
 						a.NoError(err)
 					}
 					err = dbDriver.Close(ctx)

@@ -271,8 +271,8 @@ func (driver *Driver) getPGStatStatementsVersion(ctx context.Context) (string, e
 
 // Execute will execute the statement. For CREATE DATABASE statement, some types of databases such as Postgres
 // will not use transactions to execute the statement but will still use transactions to execute the rest of statements.
-func (driver *Driver) Execute(ctx context.Context, statement string, createDatabase bool, _ db.ExecuteOptions) (int64, error) {
-	if createDatabase {
+func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	if opts.CreateDatabase {
 		if err := driver.createDatabaseExecute(ctx, statement); err != nil {
 			return 0, err
 		}

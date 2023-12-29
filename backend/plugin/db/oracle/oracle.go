@@ -100,7 +100,11 @@ func (driver *Driver) GetDB() *sql.DB {
 //
 // Callers can use `beforeCommitTx` to do some extra work before transaction commit, like get the transaction id.
 // Any error returned by `beforeCommitTx` will rollback the transaction, so it is the callers' responsibility to return nil if the error occurs in `beforeCommitTx` is not fatal.
-func (driver *Driver) Execute(ctx context.Context, statement string, _ bool, opts db.ExecuteOptions) (int64, error) {
+func (driver *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
+	if opts.CreateDatabase {
+		return 0, errors.New("create database is not supported for Oracle")
+	}
+
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
