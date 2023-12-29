@@ -5,25 +5,21 @@
     <span class="text-red-600">*</span>
   </div>
   <div class="flex flex-wrap pt-4 radio-set-row gap-4">
-    <label
-      v-for="vcsWithUIType in vcsListByUIType"
-      :key="vcsWithUIType.uiType"
-      class="radio space-x-2"
-    >
-      <input
-        v-model="config.uiType"
-        :name="vcsWithUIType.title"
-        tabindex="-1"
-        type="radio"
-        class="btn"
+    <NRadioGroup v-model:value="config.uiType">
+      <NRadio
+        v-for="vcsWithUIType in vcsListByUIType"
+        :key="vcsWithUIType.uiType"
         :value="vcsWithUIType.uiType"
         @change="changeUIType()"
-      />
-      <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
-      <span class="whitespace-nowrap">
-        {{ vcsWithUIType.title }}
-      </span>
-    </label>
+      >
+        <div class="flex space-x-1">
+          <VCSIcon custom-class="h-6" :type="vcsWithUIType.type" />
+          <span class="whitespace-nowrap">
+            {{ vcsWithUIType.title }}
+          </span>
+        </div>
+      </NRadio>
+    </NRadioGroup>
   </div>
   <div class="mt-6 pt-6 border-t border-block-border textlabel">
     {{ instanceUrlLabel }} <span class="text-red-600">*</span>
@@ -58,6 +54,7 @@
 
 <script lang="ts" setup>
 import isEmpty from "lodash-es/isEmpty";
+import { NRadio, NRadioGroup } from "naive-ui";
 import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { TEXT_VALIDATION_DELAY, VCSConfig } from "@/types";

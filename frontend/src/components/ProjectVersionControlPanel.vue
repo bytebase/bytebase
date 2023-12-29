@@ -17,47 +17,27 @@
         <div class="text-lg leading-6 font-medium text-main">
           {{ $t("workflow.current-workflow") }}
         </div>
-        <div class="mt-6 flex flex-col space-y-4">
-          <div class="flex space-x-4">
-            <input
-              id="workflow-ui"
-              v-model="state.workflowType"
-              name="UI workflow"
-              tabindex="-1"
-              type="radio"
-              class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              :value="Workflow.UI"
-              :disabled="!allowEdit"
-            />
-            <div class="-mt-1">
-              <label for="workflow-ui" class="textlabel">{{
-                $t("workflow.ui-workflow")
-              }}</label>
-              <div class="mt-1 textinfolabel">
-                {{ $t("workflow.ui-workflow-description") }}
+        <div class="mt-6">
+          <NRadioGroup
+            v-model:value="state.workflowType"
+            :disabled="!allowEdit"
+            class="flex flex-col space-y-4"
+          >
+            <NRadio
+              v-for="workflow in workflowList"
+              :key="workflow.value"
+              :value="workflow.value"
+            >
+              <div>
+                <span class="textlabel">
+                  {{ workflow.title }}
+                </span>
+                <div class="mt-1 textinfolabel">
+                  {{ workflow.description }}
+                </div>
               </div>
-            </div>
-          </div>
-          <div class="flex space-x-4">
-            <input
-              id="workflow-gitops"
-              v-model="state.workflowType"
-              name="GitOps workflow"
-              tabindex="-1"
-              type="radio"
-              class="text-accent disabled:text-accent-disabled focus:ring-accent"
-              :value="Workflow.VCS"
-              :disabled="!allowEdit"
-            />
-            <div class="-mt-1">
-              <label for="workflow-gitops" class="textlabel">{{
-                $t("workflow.gitops-workflow")
-              }}</label>
-              <div class="mt-1 textinfolabel">
-                {{ $t("workflow.gitops-workflow-description") }}
-              </div>
-            </div>
-          </div>
+            </NRadio>
+          </NRadioGroup>
         </div>
         <template v-if="allowEdit && state.workflowType == Workflow.VCS">
           <div class="mt-4 flex items-center justify-end">
@@ -85,6 +65,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NRadio, NRadioGroup } from "naive-ui";
 import { reactive, watch } from "vue";
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
@@ -119,6 +100,19 @@ const state = reactive<LocalState>({
   showWizardForCreate: false,
   showWizardForChange: false,
 });
+
+const workflowList = computed(() => [
+  {
+    value: Workflow.UI,
+    title: t("workflow.ui-workflow"),
+    description: t("workflow.ui-workflow-description"),
+  },
+  {
+    value: Workflow.VCS,
+    title: t("workflow.gitops-workflow"),
+    description: t("workflow.gitops-workflow-description"),
+  },
+]);
 
 watch(
   () => [props.project.name],

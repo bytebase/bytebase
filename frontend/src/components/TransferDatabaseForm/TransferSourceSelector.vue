@@ -1,35 +1,20 @@
 <template>
   <div class="textlabel">
     <div class="flex items-center justify-between">
-      <div class="radio-set-row">
-        <template v-if="project.name !== DEFAULT_PROJECT_V1_NAME">
-          <label class="radio">
-            <input
-              v-model="state.transferSource"
-              tabindex="-1"
-              type="radio"
-              class="btn"
-              value="DEFAULT"
-            />
-            <span class="label">
-              {{ $t("quick-action.from-unassigned-databases") }}
-            </span>
-          </label>
-          <label class="radio">
-            <input
-              v-model="state.transferSource"
-              tabindex="-1"
-              type="radio"
-              class="btn"
-              value="OTHER"
-            />
-            <span class="label">
-              {{ $t("quick-action.from-projects") }}
-            </span>
-          </label>
-        </template>
+      <div
+        v-if="project.name !== DEFAULT_PROJECT_V1_NAME"
+        class="radio-set-row"
+      >
+        <NRadioGroup v-model:value="state.transferSource">
+          <NRadio :value="'DEFAULT'">
+            {{ $t("quick-action.from-unassigned-databases") }}
+          </NRadio>
+          <NRadio :value="'OTHER'">
+            {{ $t("quick-action.from-projects") }}
+          </NRadio>
+        </NRadioGroup>
       </div>
-      <NInputGroup style="width: auto">
+      <NInputGroup style="width: auto; margin-left: auto">
         <InstanceSelect
           v-if="state.transferSource == 'DEFAULT'"
           class="!w-48"
@@ -60,7 +45,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NInputGroup } from "naive-ui";
+import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
 import { type PropType, computed, reactive, watch } from "vue";
 import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
