@@ -103,6 +103,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 }
 
 // SearchProjects searches all projects.
+// TODO(p0ny): filter the projects by the user's permission.
 func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {

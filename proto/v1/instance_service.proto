@@ -26,6 +26,14 @@ service InstanceService {
     option (google.api.method_signature) = "";
   }
 
+  rpc SearchInstances(SearchInstancesRequest) returns (SearchInstancesResponse) {
+    option (google.api.http) = {
+      get: "/v1/instances:search"
+      additional_bindings {get: "/v1/{parent=projects/*}/instances:search"}
+    };
+    option (google.api.method_signature) = "";
+  }
+
   rpc CreateInstance(CreateInstanceRequest) returns (Instance) {
     option (google.api.http) = {
       post: "/v1/instances"
@@ -135,6 +143,21 @@ message ListInstancesResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message SearchInstancesRequest {
+  // The parent parameter's value depends on the target resource for the request.
+  // - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
+  // - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
+  string parent = 1;
+
+  // Show deleted instances if specified.
+  bool show_deleted = 2;
+}
+
+message SearchInstancesResponse {
+  // The instances from the specified request.
+  repeated Instance instances = 1;
 }
 
 message CreateInstanceRequest {

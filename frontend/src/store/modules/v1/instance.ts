@@ -59,14 +59,14 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composedInstances;
   };
   const fetchInstanceList = async (showDeleted = false) => {
-    const { instances } = await instanceServiceClient.listInstances({
+    const { instances } = await instanceServiceClient.searchInstances({
       showDeleted,
     });
     const composed = await upsertInstances(instances);
     return composed;
   };
   const fetchProjectInstanceList = async (project: string) => {
-    const { instances } = await instanceServiceClient.listInstances({
+    const { instances } = await instanceServiceClient.searchInstances({
       parent: `${projectNamePrefix}${project}`,
     });
     const composed = await upsertInstances(instances);
