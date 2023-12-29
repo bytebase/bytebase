@@ -49,18 +49,21 @@ func TestTryMerge(t *testing.T) {
 		baseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 		err := protojson.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
-		expectedSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
-		err = protojson.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
-		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+		a.NotNil(mergedSchemaMetadata, "test case %d: %s, mergedSchemaMetadata should not be nil if there is no error", idx, tc.Description)
 
 		s := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(mergedSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		if record {
 			testCases[idx].Expected = strings.TrimSpace(s)
-		} else if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
-			a.Failf("Failed", "mismatch (-want +got):\n%s", diff)
+		} else {
+			expectedSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
+			err = protojson.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
+			a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
+			if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
+				a.Failf("Failed", "mismatch (-want +got):\n%s", diff)
+			}
 		}
 	}
 
