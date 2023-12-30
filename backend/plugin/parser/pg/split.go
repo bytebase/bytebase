@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"io"
-
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -16,25 +14,6 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_POSTGRES, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_REDSHIFT, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_RISINGWAVE, SplitSQL)
-}
-
-// SplitMultiSQLStream splits multiSQL to stream.
-func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	text := antlr.NewIoStream(src).String()
-	list, err := SplitSQL(text)
-	if err != nil {
-		return nil, err
-	}
-	var results []base.SingleSQL
-	for _, sql := range list {
-		if f != nil && !sql.Empty {
-			if err := f(sql.Text); err != nil {
-				return nil, err
-			}
-		}
-		results = append(results, sql)
-	}
-	return results, nil
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.

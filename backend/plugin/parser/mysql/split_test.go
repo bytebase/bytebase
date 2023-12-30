@@ -3,7 +3,6 @@ package mysql
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 	"testing"
 	"time"
 
@@ -367,13 +366,6 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	for _, test := range tests {
 		res, err := SplitSQL(test.statement)
 		errStr := ""
-		if err != nil {
-			errStr = err.Error()
-		}
-		require.Equal(t, test.want, resData{res, errStr}, test.statement)
-
-		res, err = SplitMultiSQLStream(strings.NewReader(test.statement), nil)
-		errStr = ""
 		if err != nil {
 			errStr = err.Error()
 		}

@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"io"
 	"log/slog"
 	"strings"
 	"time"
@@ -38,36 +37,6 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		slog.Info("split SQL statement timed out", "statement", statement)
 	}
 	return list, err
-}
-
-// SplitMultiSQLStream splits MySQL multiSQL to stream.
-// Note that the reader is read completely into memory and so it must actually
-// have a stopping point - you cannot pass in a reader on an open-ended source such
-// as a socket for instance.
-func SplitMultiSQLStream(src io.Reader, f func(string) error) ([]base.SingleSQL, error) {
-	result, err := SplitMySQLStream(src)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, sql := range result {
-		if f != nil {
-			if err := f(sql.Text); err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return result, nil
-}
-
-// SplitMySQLStream splits the given SQL stream into multiple SQL statements.
-// Note that the reader is read completely into memory and so it must actually
-// have a stopping point - you cannot pass in a reader on an open-ended source such
-// as a socket for instance.
-func SplitMySQLStream(src io.Reader) ([]base.SingleSQL, error) {
-	text := antlr.NewIoStream(src).String()
-	return SplitSQL(text)
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
