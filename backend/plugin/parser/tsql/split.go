@@ -17,12 +17,5 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	if err != nil {
 		return nil, err
 	}
-	var results []base.SingleSQL
-	for _, sql := range list {
-		if sql.Empty {
-			continue
-		}
-		results = append(results, sql)
-	}
-	return results, nil
+	return list, nil
 }

@@ -220,11 +220,16 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	sqls, err := standard.SplitSQL(statement)
+	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return 0, err
 	}
-	count := len(sqls)
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return 0, nil
+	}
+
+	count := len(singleSQLs)
 	if count <= 0 {
 		return 0, nil
 	}
