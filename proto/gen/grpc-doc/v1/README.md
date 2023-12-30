@@ -818,6 +818,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | RISINGWAVE | 16 |  |
 | OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
+| DORIS | 19 |  |
 
 
 
