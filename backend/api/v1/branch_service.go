@@ -7,9 +7,9 @@ import (
 	"io"
 	"log/slog"
 	"path"
+	"slices"
 	"strings"
 
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -928,6 +928,33 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 			return false
 		}
 		if sc.GetDefaultNull() != tc.GetDefaultNull() {
+			return false
+		}
+	}
+	for i := 0; i < len(s.GetIndexes()); i++ {
+		si, ti := s.GetIndexes()[i], t.GetIndexes()[i]
+		if si.GetName() != ti.GetName() {
+			return false
+		}
+		if si.GetDefinition() != ti.GetDefinition() {
+			return false
+		}
+		if si.GetPrimary() != ti.GetPrimary() {
+			return false
+		}
+		if si.GetUnique() != ti.GetUnique() {
+			return false
+		}
+		if si.GetType() != ti.GetType() {
+			return false
+		}
+		if si.GetVisible() != ti.GetVisible() {
+			return false
+		}
+		if si.GetComment() != ti.GetComment() {
+			return false
+		}
+		if !slices.Equal(si.GetExpressions(), ti.GetExpressions()) {
 			return false
 		}
 	}
