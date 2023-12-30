@@ -111,8 +111,26 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	defer tx.Rollback()
 
+	totalCommands := len(singleSQLs)
 	totalRowsAffected := int64(0)
-	for _, singleSQL := range singleSQLs {
+	for i, singleSQL := range singleSQLs {
+		// Start the current chunk.
+		// Set the progress information for the current chunk.
+		if opts.UpdateExecutionStatus != nil {
+			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+				CommandsTotal:     int32(totalCommands),
+				CommandsCompleted: int32(i),
+				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(singleSQL.FirstStatementLine),
+					Column: int32(singleSQL.FirstStatementColumn),
+				},
+				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(singleSQL.LastLine),
+					Column: int32(singleSQL.LastColumn),
+				},
+			})
+		}
+
 		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			return 0, err
@@ -121,9 +139,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if err != nil {
 			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 			slog.Debug("rowsAffected returns error", log.BBError(err))
-		} else {
-			totalRowsAffected += rowsAffected
 		}
+		totalRowsAffected += rowsAffected
 	}
 
 	if opts.EndTransactionFunc != nil {
