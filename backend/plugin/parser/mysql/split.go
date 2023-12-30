@@ -18,6 +18,7 @@ func init() {
 	base.RegisterSplitterFunc(storepb.Engine_MYSQL, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_MARIADB, SplitSQL)
 	base.RegisterSplitterFunc(storepb.Engine_OCEANBASE, SplitSQL)
+	base.RegisterSplitterFunc(storepb.Engine_STARROCKS, SplitSQL)
 }
 
 // SplitSQL splits the given SQL statement into multiple SQL statements.
