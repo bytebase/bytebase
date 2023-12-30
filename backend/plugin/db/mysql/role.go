@@ -344,19 +344,19 @@ func convertToUserContent(upsert *db.DatabaseRoleUpsertMessage) (string, error) 
 }
 
 func splitGrantStatement(stmts string) ([]base.SingleSQL, error) {
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, stmts)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, stmts)
 	if err != nil {
 		return nil, common.Wrapf(err, common.Invalid, "failed to split grant statement")
 	}
 
 	grantReg := regexp.MustCompile("(?i)^GRANT ")
-	for _, sql := range list {
-		if len(grantReg.FindString(sql.Text)) == 0 {
-			return nil, common.Wrapf(err, common.Invalid, "\"%s\" is not the GRANT statement", sql.Text)
+	for _, singleSQL := range singleSQLs {
+		if len(grantReg.FindString(singleSQL.Text)) == 0 {
+			return nil, common.Wrapf(err, common.Invalid, "\"%s\" is not the GRANT statement", singleSQL.Text)
 		}
 	}
 
-	return list, nil
+	return singleSQLs, nil
 }
 
 func (driver *Driver) findRoleGrant(ctx context.Context, name string) (string, error) {

@@ -161,6 +161,7 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
@@ -168,9 +169,6 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		startTime := time.Now()
-		if singleSQL.Empty {
-			continue
-		}
 		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
 			sqlResult, err := conn.ExecContext(ctx, singleSQL.Text)
 			if err != nil {
