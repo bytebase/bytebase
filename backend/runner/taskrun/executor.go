@@ -228,7 +228,7 @@ func executeMigration(
 		opts.EndTransactionFunc = getSetOracleTransactionIDFunc(ctx, task, stores)
 	}
 
-	if (profile.Mode == common.ReleaseModeDev || license.GetEffectivePlan() == api.FREE) && stateCfg != nil {
+	if (profile.Mode == common.ReleaseModeDev || license.GetEffectivePlan() == api.FREE || profile.ExecuteDetail) && stateCfg != nil {
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
