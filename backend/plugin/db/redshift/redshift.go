@@ -177,11 +177,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		return 0, err
 	}
-
+	stmts, err := pgparser.SplitSQL(statement)
+	if err != nil {
+		return 0, err
+	}
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
-	f := func(stmt string) error {
+	for _, sql := range stmts {
+		if sql.Empty {
+			continue
+		}
+		stmt := sql.Text
 		if isSuperuserStatement(stmt) {
 			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
 			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
@@ -198,11 +205,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		} else if !isIgnoredStatement(stmt) {
 			remainingStmts = append(remainingStmts, stmt)
 		}
-		return nil
-	}
-
-	if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
-		return 0, err
 	}
 
 	if len(remainingStmts) != 0 {

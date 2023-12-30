@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
@@ -230,50 +231,14 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
+	buf := new(strings.Builder)
+	if _, err := io.Copy(buf, sc); err != nil {
 		return err
 	}
-	defer txn.Rollback()
-
-	owner, err := driver.GetCurrentDatabaseOwner()
-	if err != nil {
-		return errors.Wrapf(err, "failed to get the OWNER of the current database")
-	}
-
-	if _, err := txn.ExecContext(ctx, fmt.Sprintf("SET LOCAL ROLE \"%s\";", owner)); err != nil {
-		return errors.Wrapf(err, "failed to set role to %q", owner)
-	}
-
-	f := func(stmt string) error {
-		// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
-		// Since we use pg_dump version 14, the dump uses new style even for old version of PostgreSQL.
-		// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restore to work on old versions.
-		// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-		if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-			stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
-		}
-		if isSuperuserStatement(stmt) {
-			stmt = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE \"%s\";", stmt, owner)
-		}
-		if isIgnoredStatement(stmt) {
-			return nil
-		}
-		if _, err := txn.Exec(stmt); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if _, err := pgparser.SplitMultiSQLStream(sc, f); err != nil {
+	if _, err := driver.Execute(ctx, buf.String(), db.ExecuteOptions{}); err != nil {
 		return err
 	}
-
-	if _, err := txn.ExecContext(ctx, "SET LOCAL ROLE NONE;"); err != nil {
-		return errors.Wrap(err, "failed to reset role")
-	}
-
-	return txn.Commit()
+	return nil
 }
 
 // split large sslCA to multiple smaller sslCAs.
