@@ -84,6 +84,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, errors.New("create database is not supported for OceanBase Oracle mode")
 	}
 
+	// Use Oracle sql parser.
+	stmts, err := plsqlparser.SplitSQL(statement)
+	if err != nil {
+		return 0, err
+	}
+
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to get connection")
@@ -96,10 +102,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer tx.Rollback()
 
 	totalRowsAffected := int64(0)
-	f := func(stmt string) error {
-		sqlResult, err := tx.ExecContext(ctx, stmt)
+	for _, stmt := range stmts {
+		sqlResult, err := tx.ExecContext(ctx, stmt.Text)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		rowsAffected, err := sqlResult.RowsAffected()
 		if err != nil {
@@ -108,11 +114,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		} else {
 			totalRowsAffected += rowsAffected
 		}
-		return nil
-	}
-
-	if _, err := plsqlparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
-		return 0, err
 	}
 
 	if opts.EndTransactionFunc != nil {
