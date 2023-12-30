@@ -253,38 +253,91 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	var remainingStmts []string
+	var remainingSQLs []base.SingleSQL
 	var nonTransactionStmts []string
-	totalRowsAffected := int64(0)
 	for _, singleSQL := range singleSQLs {
 		if isNonTransactionStatement(singleSQL.Text) {
 			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
 			continue
 		}
-
-		remainingStmts = append(remainingStmts, singleSQL.Text)
+		remainingSQLs = append(remainingSQLs, singleSQL)
 	}
 
-	if len(remainingStmts) != 0 {
+	totalRowsAffected := int64(0)
+	if len(remainingSQLs) != 0 {
+		var totalCommands int
+		var chunks [][]base.SingleSQL
+		if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+			totalCommands = len(remainingSQLs)
+			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to chunk sql")
+			}
+			chunks = ret
+		} else {
+			chunks = [][]base.SingleSQL{
+				remainingSQLs,
+			}
+		}
+		currentIndex := 0
+
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
 
-		sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
-		if err != nil {
-			return 0, err
+		for _, chunk := range chunks {
+			if len(chunk) == 0 {
+				continue
+			}
+			// Start the current chunk.
+			// Set the progress information for the current chunk.
+			if opts.UpdateExecutionStatus != nil {
+				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+					CommandsTotal:     int32(totalCommands),
+					CommandsCompleted: int32(currentIndex),
+					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
+				})
+			}
+
+			chunkText, err := util.ConcatChunk(chunk)
+			if err != nil {
+				return 0, err
+			}
+
+			sqlResult, err := tx.ExecContext(ctx, chunkText)
+			if err != nil {
+				return 0, &db.ErrorWithPosition{
+					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+					Start: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					End: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
+				}
+			}
+			rowsAffected, err := sqlResult.RowsAffected()
+			if err != nil {
+				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+				slog.Debug("rowsAffected returns error", log.BBError(err))
+			}
+			totalRowsAffected += rowsAffected
+			currentIndex += len(chunk)
 		}
+
 		if err := tx.Commit(); err != nil {
 			return 0, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		} else {
-			totalRowsAffected += rowsAffected
 		}
 	}
 
@@ -345,39 +398,6 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 	databaseName := strings.TrimLeft(tokens[0], `"`)
 	databaseName = strings.TrimRight(databaseName, `"`)
 	return databaseName, nil
-}
-
-// GetCurrentDatabaseOwner gets the role of the current database.
-func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
-	const query = `
-		SELECT
-			u.rolname
-		FROM
-			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
-		WHERE
-			d.datname = current_database();
-		`
-	rows, err := driver.db.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
-	var owner string
-	for rows.Next() {
-		var o string
-		if err := rows.Scan(&o); err != nil {
-			return "", err
-		}
-		owner = o
-	}
-	if err := rows.Err(); err != nil {
-		return "", err
-	}
-	if owner == "" {
-		return "", errors.Errorf("owner not found for the current database")
-	}
-	return owner, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.

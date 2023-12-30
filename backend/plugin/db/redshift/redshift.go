@@ -18,6 +18,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -186,9 +187,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	var remainingStmts []string
+	var remainingSQLs []base.SingleSQL
 	var nonTransactionStmts []string
-	totalRowsAffected := int64(0)
 	for _, singleSQL := range singleSQLs {
 		if isNonTransactionStatement(singleSQL.Text) {
 			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
@@ -206,25 +206,86 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			// Use superuser privilege to run privileged statements.
 			singleSQL.Text = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", singleSQL.Text, owner)
 		}
-		remainingStmts = append(remainingStmts, singleSQL.Text)
+		remainingSQLs = append(remainingSQLs, singleSQL)
 	}
 
-	if len(remainingStmts) != 0 {
+	totalRowsAffected := int64(0)
+	if len(remainingSQLs) != 0 {
+		var totalCommands int
+		var chunks [][]base.SingleSQL
+		if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+			totalCommands = len(remainingSQLs)
+			ret, err := util.ChunkedSQLScript(remainingSQLs, common.MaxSheetChunksCount)
+			if err != nil {
+				return 0, errors.Wrapf(err, "failed to chunk sql")
+			}
+			chunks = ret
+		} else {
+			chunks = [][]base.SingleSQL{
+				remainingSQLs,
+			}
+		}
+		currentIndex := 0
+
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
-
 		// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
 		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET SESSION AUTHORIZATION '%s'", owner)); err != nil {
 			return 0, err
 		}
 
-		sqlResult, err := tx.ExecContext(ctx, strings.Join(remainingStmts, "\n"))
-		if err != nil {
-			return 0, err
+		for _, chunk := range chunks {
+			if len(chunk) == 0 {
+				continue
+			}
+			// Start the current chunk.
+			// Set the progress information for the current chunk.
+			if opts.UpdateExecutionStatus != nil {
+				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+					CommandsTotal:     int32(totalCommands),
+					CommandsCompleted: int32(currentIndex),
+					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
+				})
+			}
+
+			chunkText, err := util.ConcatChunk(chunk)
+			if err != nil {
+				return 0, err
+			}
+
+			sqlResult, err := tx.ExecContext(ctx, chunkText)
+			if err != nil {
+				return 0, &db.ErrorWithPosition{
+					Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+					Start: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[0].FirstStatementLine),
+						Column: int32(chunk[0].FirstStatementColumn),
+					},
+					End: &storepb.TaskRunResult_Position{
+						Line:   int32(chunk[len(chunk)-1].LastLine),
+						Column: int32(chunk[len(chunk)-1].LastColumn),
+					},
+				}
+			}
+			rowsAffected, err := sqlResult.RowsAffected()
+			if err != nil {
+				// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+				slog.Debug("rowsAffected returns error", log.BBError(err))
+			}
+			totalRowsAffected += rowsAffected
+			currentIndex += len(chunk)
 		}
+
 		// Restore the current transaction role to the current user.
 		if _, err := tx.ExecContext(ctx, "SET SESSION AUTHORIZATION DEFAULT"); err != nil {
 			slog.Warn("Failed to restore the current transaction role to the current user", log.BBError(err))
@@ -232,13 +293,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 		if err := tx.Commit(); err != nil {
 			return 0, err
-		}
-		rowsAffected, err := sqlResult.RowsAffected()
-		if err != nil {
-			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-			slog.Debug("rowsAffected returns error", log.BBError(err))
-		} else {
-			totalRowsAffected += rowsAffected
 		}
 	}
 
