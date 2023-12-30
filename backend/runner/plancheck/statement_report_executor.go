@@ -352,11 +352,12 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 			},
 		}, nil
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 
 	var changedResources []base.SchemaResource
 
 	for _, stmt := range singleSQLs {
-		if stmt.Empty || stmt.Text == "" {
+		if stmt.Text == "" {
 			continue
 		}
 		resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, stmt.Text)
@@ -401,13 +402,14 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 			},
 		}, nil
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
 	var changedResources []base.SchemaResource
 
 	for _, stmt := range singleSQLs {
-		if stmt.Empty || stmt.Text == "" {
+		if stmt.Text == "" {
 			continue
 		}
 

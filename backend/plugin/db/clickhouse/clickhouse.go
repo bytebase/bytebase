@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -131,9 +132,13 @@ func (driver *Driver) getVersion(ctx context.Context) (string, error) {
 
 // Execute executes a SQL statement.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	sqls, err := standard.SplitSQL(statement)
+	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return 0, err
+	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return 0, nil
 	}
 
 	tx, err := driver.db.BeginTx(ctx, nil)
@@ -143,11 +148,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	defer tx.Rollback()
 
 	totalRowsAffected := int64(0)
-	for _, sql := range sqls {
-		if sql.Empty {
-			continue
-		}
-		sqlResult, err := tx.ExecContext(ctx, sql.Text)
+	for _, singleSQL := range singleSQLs {
+		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			return 0, err
 		}
@@ -169,17 +171,20 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 // RunStatement runs a SQL statement.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	sqls, err := standard.SplitSQL(statement)
+	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return nil, nil
+	}
 
 	var results []*v1pb.QueryResult
-	for _, sql := range sqls {
+	for _, singleSQL := range singleSQLs {
 		startTime := time.Now()
-		stmt := sql.Text
 		result, err := func() (*v1pb.QueryResult, error) {
-			rows, err := conn.QueryContext(ctx, stmt)
+			rows, err := conn.QueryContext(ctx, singleSQL.Text)
 			if err != nil {
 				// ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
 				// nolint
@@ -194,7 +199,7 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 				}
 			}
 			result.Latency = durationpb.New(time.Since(startTime))
-			result.Statement = strings.TrimRight(stmt, " \n\t;")
+			result.Statement = singleSQL.Text
 			return result, nil
 		}()
 		if err != nil {

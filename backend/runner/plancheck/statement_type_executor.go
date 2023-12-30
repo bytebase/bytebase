@@ -369,19 +369,20 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 		return nil, err
 	}
 
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL")
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 
 	var results []*storepb.PlanCheckRunResult_Result
-	for _, stmt := range list {
-		if tidbparser.IsTiDBUnsupportDDLStmt(stmt.Text) {
+	for _, singleSQL := range singleSQLs {
+		if tidbparser.IsTiDBUnsupportDDLStmt(singleSQL.Text) {
 			continue
 		}
-		nodeList, _, err := tidbp.New().Parse(stmt.Text, "", "")
+		nodeList, _, err := tidbp.New().Parse(singleSQL.Text, "", "")
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt.Text)
+			return nil, errors.Wrapf(err, "failed to parse schema %q", singleSQL.Text)
 		}
 		if len(nodeList) != 1 {
 			return nil, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
@@ -397,7 +398,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 					Content: fmt.Sprintf("Plan to drop table `%s`", table.Name.O),
 					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   int32(stmt.LastLine),
+							Line:   int32(singleSQL.LastLine),
 							Detail: "",
 							Code:   0,
 						},
@@ -412,7 +413,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 				Content: fmt.Sprintf("Plan to drop index `%s` on table `%s`", node.IndexName, node.Table.Name.O),
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   int32(stmt.LastLine),
+						Line:   int32(singleSQL.LastLine),
 						Detail: "",
 						Code:   0,
 					},
@@ -429,7 +430,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 						Content: fmt.Sprintf("Plan to drop column `%s` on table `%s`", spec.OldColumnName.Name.O, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int32(stmt.LastLine),
+								Line:   int32(singleSQL.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -443,7 +444,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 						Content: fmt.Sprintf("Plan to drop primary key on table `%s`", node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int32(stmt.LastLine),
+								Line:   int32(singleSQL.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -457,7 +458,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 						Content: fmt.Sprintf("Plan to drop foreign key `%s` on table `%s`", spec.Name, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int32(stmt.LastLine),
+								Line:   int32(singleSQL.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -471,7 +472,7 @@ func (e *StatementTypeExecutor) tidbSDLTypeCheck(ctx context.Context, newSchema 
 						Content: fmt.Sprintf("Plan to drop check constraint `%s` on table `%s`", spec.Constraint.Name, node.Table.Name.O),
 						Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 							SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-								Line:   int32(stmt.LastLine),
+								Line:   int32(singleSQL.LastLine),
 								Detail: "",
 								Code:   0,
 							},
@@ -587,16 +588,17 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 		return nil, err
 	}
 
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, ddl)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split SQL")
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 
 	var results []*storepb.PlanCheckRunResult_Result
-	for _, stmt := range list {
-		nodeList, err := mysqlparser.ParseMySQL(stmt.Text)
+	for _, singleSQL := range singleSQLs {
+		nodeList, err := mysqlparser.ParseMySQL(singleSQL.Text)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse schema %q", stmt.Text)
+			return nil, errors.Wrapf(err, "failed to parse schema %q", singleSQL.Text)
 		}
 		if len(nodeList) != 1 {
 			return nil, errors.Errorf("Expect one statement after splitting but found %d", len(nodeList))
