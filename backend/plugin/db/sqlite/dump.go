@@ -168,7 +168,6 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
 		if _, err := txn.Exec(sql.Text); err != nil {
 			return err
 		}
-		return nil
 	}
 
 	return txn.Commit()
