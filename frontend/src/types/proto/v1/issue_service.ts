@@ -330,7 +330,7 @@ export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): stri
 export interface GrantRequest {
   /**
    * The requested role.
-   * Format: PresetRoleType.PROJECT_EXPORTER.
+   * Format: roles/EXPORTER.
    */
   role: string;
   /**
