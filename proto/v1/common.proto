@@ -30,6 +30,7 @@ enum Engine {
   RISINGWAVE = 16;
   OCEANBASE_ORACLE = 17;
   STARROCKS = 18;
+  DORIS = 19;
 }
 
 enum MaskingLevel {

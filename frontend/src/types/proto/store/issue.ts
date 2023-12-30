@@ -15,7 +15,7 @@ export interface IssuePayload {
 export interface GrantRequest {
   /**
    * The requested role.
-   * Format: PresetRoleType.PROJECT_EXPORTER.
+   * Format: roles/EXPORTER.
    */
   role: string;
   /**
