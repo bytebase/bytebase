@@ -931,5 +931,37 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 			return false
 		}
 	}
+	for i := 0; i < len(s.GetIndexes()); i++ {
+		si, ti := s.GetIndexes()[i], t.GetIndexes()[i]
+		if si.GetName() != ti.GetName() {
+			return false
+		}
+		if si.GetDefinition() != ti.GetDefinition() {
+			return false
+		}
+		if si.GetPrimary() != ti.GetPrimary() {
+			return false
+		}
+		if si.GetUnique() != ti.GetUnique() {
+			return false
+		}
+		if si.GetType() != ti.GetType() {
+			return false
+		}
+		if si.GetVisible() != ti.GetVisible() {
+			return false
+		}
+		if si.GetComment() != ti.GetComment() {
+			return false
+		}
+		if len(si.GetExpressions()) != len(ti.GetExpressions()) {
+			return false
+		}
+		for j := 0; j < len(si.GetExpressions()); j++ {
+			if si.GetExpressions()[j] != ti.GetExpressions()[j] {
+				return false
+			}
+		}
+	}
 	return true
 }
