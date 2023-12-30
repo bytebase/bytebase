@@ -30,7 +30,7 @@ func FormatErrorWithQuery(err error, query string) error {
 
 // ApplyMultiStatements will apply the split statements from scanner.
 // This function only used for SQLite, snowflake and clickhouse.
-// For MySQL and PostgreSQL, use parser.SplitSQL instead.
+// For MySQL and PostgreSQL, use parser.SplitSQL.
 func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
 	// TODO(rebelice): use parser/tokenizer to split SQL statements.
 	reader := bufio.NewReader(sc)
