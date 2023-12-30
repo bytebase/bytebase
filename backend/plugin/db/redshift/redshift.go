@@ -190,23 +190,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	for _, singleSQL := range singleSQLs {
-		stmt := singleSQL.Text
-		if isSuperuserStatement(stmt) {
+		if isNonTransactionStatement(singleSQL.Text) {
+			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
+			continue
+		}
+
+		if isSuperuserStatement(singleSQL.Text) {
 			// CREATE EVENT TRIGGER statement only supports EXECUTE PROCEDURE in version 10 and before, while newer version supports both EXECUTE { FUNCTION | PROCEDURE }.
 			// Since we use pg_dump version 14, the dump uses a new style even for an old version of PostgreSQL.
 			// We should convert EXECUTE FUNCTION to EXECUTE PROCEDURE to make the restoration work on old versions.
 			// https://www.postgresql.org/docs/14/sql-createeventtrigger.html
-			if strings.Contains(strings.ToUpper(stmt), "CREATE EVENT TRIGGER") {
-				stmt = strings.ReplaceAll(stmt, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
+			if strings.Contains(strings.ToUpper(singleSQL.Text), "CREATE EVENT TRIGGER") {
+				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
 			// Use superuser privilege to run privileged statements.
-			stmt = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", stmt, owner)
-			remainingStmts = append(remainingStmts, stmt)
-		} else if isNonTransactionStatement(stmt) {
-			nonTransactionStmts = append(nonTransactionStmts, stmt)
-		} else if !isIgnoredStatement(stmt) {
-			remainingStmts = append(remainingStmts, stmt)
+			singleSQL.Text = fmt.Sprintf("SET SESSION AUTHORIZATION NONE;%sSET SESSION AUTHORIZATION '%s';", singleSQL.Text, owner)
 		}
+		remainingStmts = append(remainingStmts, singleSQL.Text)
 	}
 
 	if len(remainingStmts) != 0 {
@@ -281,13 +281,6 @@ func isSuperuserStatement(stmt string) bool {
 		return true
 	}
 	return false
-}
-
-func isIgnoredStatement(stmt string) bool {
-	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
-	// We don't have privileges to comment on the extension and have to ignore it.
-	upperCaseStmt := strings.ToUpper(stmt)
-	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
 func isNonTransactionStatement(stmt string) bool {
