@@ -2,11 +2,9 @@
 package util
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"log/slog"
 	"strings"
 	"time"
@@ -26,91 +24,6 @@ import (
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
-}
-
-// ApplyMultiStatements will apply the split statements from scanner.
-// This function only used for SQLite, snowflake and clickhouse.
-// For MySQL and PostgreSQL, use parser.SplitSQL.
-func ApplyMultiStatements(sc io.Reader, f func(string) error) error {
-	// TODO(rebelice): use parser/tokenizer to split SQL statements.
-	reader := bufio.NewReader(sc)
-	var sb strings.Builder
-	delimiter := false
-	comment := false
-	done := false
-	for !done {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				done = true
-			} else {
-				return err
-			}
-		}
-		line = strings.TrimRight(line, "\r\n")
-
-		execute := false
-		switch {
-		case strings.HasPrefix(line, "/*"):
-			if strings.Contains(line, "*/") {
-				if !strings.HasSuffix(line, "*/") {
-					return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
-				}
-			} else {
-				comment = true
-			}
-			continue
-		case comment && !strings.Contains(line, "*/"):
-			// Skip the line when in comment mode.
-			continue
-		case comment && strings.Contains(line, "*/"):
-			if !strings.HasSuffix(line, "*/") {
-				return errors.Errorf("`*/` must be the end of the line; new statement should start as a new line")
-			}
-			comment = false
-			continue
-		case sb.Len() == 0 && line == "":
-			continue
-		case strings.HasPrefix(line, "--"):
-			continue
-		case line == "DELIMITER ;;":
-			delimiter = true
-			continue
-		case line == "DELIMITER ;" && delimiter:
-			delimiter = false
-			execute = true
-		case strings.HasSuffix(line, ";"):
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
-			if !delimiter {
-				execute = true
-			}
-		default:
-			_, _ = sb.WriteString(line)
-			_, _ = sb.WriteString("\n")
-			continue
-		}
-		if execute {
-			s := sb.String()
-			s = strings.Trim(s, "\n\t ")
-			if s != "" {
-				if err := f(s); err != nil {
-					return errors.Wrapf(err, "execute query %q failed", s)
-				}
-			}
-			sb.Reset()
-		}
-	}
-	// Apply the remaining content.
-	s := sb.String()
-	s = strings.Trim(s, "\n\t ")
-	if s != "" {
-		if err := f(s); err != nil {
-			return errors.Wrapf(err, "execute query %q failed", s)
-		}
-	}
-
-	return nil
 }
 
 // QueryV2 is a copy of Query, but do not mask the data(use none masker).
