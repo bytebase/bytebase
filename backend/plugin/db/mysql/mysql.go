@@ -199,7 +199,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, nil
 		}
 		totalCommands = len(list)
-		ret, err := util.ChunkedSQLScript(list, common.MaxSheetCheckSize)
+		ret, err := util.ChunkedSQLScript(list, common.MaxSheetChunksCount)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to chunk sql")
 		}
