@@ -257,14 +257,12 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
 	for _, singleSQL := range singleSQLs {
-		stmt := singleSQL.Text
-		if isSuperuserStatement(stmt) {
-			remainingStmts = append(remainingStmts, stmt)
-		} else if isNonTransactionStatement(stmt) {
-			nonTransactionStmts = append(nonTransactionStmts, stmt)
-		} else if !isIgnoredStatement(stmt) {
-			remainingStmts = append(remainingStmts, stmt)
+		if isNonTransactionStatement(singleSQL.Text) {
+			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
+			continue
 		}
+
+		remainingStmts = append(remainingStmts, singleSQL.Text)
 	}
 
 	if len(remainingStmts) != 0 {
@@ -321,21 +319,6 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 		}
 	}
 	return nil
-}
-
-func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(stmt)
-	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
-		return true
-	}
-	return false
-}
-
-func isIgnoredStatement(stmt string) bool {
-	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
-	// We don't have privileges to comment on the extension and have to ignore it.
-	upperCaseStmt := strings.ToUpper(stmt)
-	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
 func isNonTransactionStatement(stmt string) bool {
