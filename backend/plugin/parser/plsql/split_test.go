@@ -1,7 +1,6 @@
 package plsql
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -47,13 +46,6 @@ func TestOracleSplitMultiSQL(t *testing.T) {
 	for _, test := range tests {
 		res, err := SplitSQL(test.statement)
 		errStr := ""
-		if err != nil {
-			errStr = err.Error()
-		}
-		require.Equal(t, test.want, resData{res, errStr}, test.statement)
-
-		res, err = SplitMultiSQLStream(strings.NewReader(test.statement), nil)
-		errStr = ""
 		if err != nil {
 			errStr = err.Error()
 		}

@@ -33,7 +33,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 
 // applyMultiStatements will apply the split statements from scanner.
 // This function only used for SQLite, snowflake.
-// For MySQL and PostgreSQL, use parser.SplitMultiSQLStream instead.
+// For MySQL and PostgreSQL, use parser.SplitSQL.
 // Copy from plugin/db/util/driverutil.go.
 func applyMultiStatements(sc io.Reader, f func(string) error) error {
 	// TODO(rebelice): use parser/tokenizer to split SQL statements.
