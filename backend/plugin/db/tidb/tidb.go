@@ -243,9 +243,6 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	if singleSQL.Empty {
-		return nil, nil
-	}
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
 	isExplain := strings.HasPrefix(statement, "EXPLAIN")
 
