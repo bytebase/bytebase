@@ -232,7 +232,7 @@ func executeMigration(
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {
-			case storepb.Engine_MYSQL:
+			case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE, storepb.Engine_MARIADB, storepb.Engine_STARROCKS, storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 				opts.ChunkedSubmission = true
 				opts.UpdateExecutionStatus = func(detail *v1pb.TaskRun_ExecutionDetail) {
 					stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
