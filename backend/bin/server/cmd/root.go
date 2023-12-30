@@ -143,7 +143,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 
 	rootCmd.PersistentFlags().BoolVar(&flags.developmentIAM, "development-iam", false, "(development only) whether to use the IAM manager")
-	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", false, "expose execute details")
+	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
