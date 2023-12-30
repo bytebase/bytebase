@@ -185,8 +185,7 @@ func executeMigration(
 	taskRunUID int,
 	statement string,
 	sheetID *int,
-	mi *db.MigrationInfo,
-	license enterprise.LicenseService) (string, string, error) {
+	mi *db.MigrationInfo) (string, string, error) {
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
 		return "", "", err
@@ -666,7 +665,7 @@ func runMigration(ctx context.Context, driverCtx context.Context, store *store.S
 		return true, nil, err
 	}
 
-	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, stateCfg, profile, task, taskRunUID, statement, sheetID, mi, license)
+	migrationID, schema, err := executeMigration(ctx, driverCtx, store, dbFactory, stateCfg, profile, task, taskRunUID, statement, sheetID, mi)
 	if err != nil {
 		return true, nil, err
 	}
