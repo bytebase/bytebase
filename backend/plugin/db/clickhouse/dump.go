@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // Dump and restore.
@@ -194,23 +193,6 @@ func getTables(ctx context.Context, txn *sql.Tx, dbName string) ([]*tableSchema,
 }
 
 // Restore restores a database.
-func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
-	txn, err := driver.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer txn.Rollback()
-
-	f := func(stmt string) error {
-		if _, err := txn.Exec(stmt); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
-		return err
-	}
-
-	return txn.Commit()
+func (*Driver) Restore(_ context.Context, _ io.Reader) (err error) {
+	return errors.Errorf("ClickHouse restore is unsupported")
 }

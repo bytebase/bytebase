@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 // Dump dumps the database.
@@ -148,21 +149,25 @@ func exportTableData(txn *sql.Tx, tblName string, out io.Writer) error {
 
 // Restore restores a database.
 func (driver *Driver) Restore(ctx context.Context, sc io.Reader) (err error) {
+	buf := new(strings.Builder)
+	if _, err := io.Copy(buf, sc); err != nil {
+		return err
+	}
+	sqls, err := standard.SplitSQL(buf.String())
+	if err != nil {
+		return err
+	}
+
 	txn, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer txn.Rollback()
 
-	f := func(stmt string) error {
-		if _, err := txn.Exec(stmt); err != nil {
+	for _, sql := range sqls {
+		if _, err := txn.Exec(sql.Text); err != nil {
 			return err
 		}
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(sc, f); err != nil {
-		return err
 	}
 
 	return txn.Commit()

@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -219,16 +220,11 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	count := 0
-	f := func(stmt string) error {
-		count++
-		return nil
-	}
-
-	if err := util.ApplyMultiStatements(strings.NewReader(statement), f); err != nil {
+	sqls, err := standard.SplitSQL(statement)
+	if err != nil {
 		return 0, err
 	}
-
+	count := len(sqls)
 	if count <= 0 {
 		return 0, nil
 	}
