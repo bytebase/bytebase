@@ -60,11 +60,11 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 		return resultStatements, schemaGroupNames
 	}
 
-	singleStatements, err := base.SplitMultiSQL(engine, statement)
+	singleSQLs, err := base.SplitMultiSQL(engine, statement)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to split sql")
 	}
-	if len(singleStatements) == 0 {
+	if len(singleSQLs) == 0 {
 		return nil, nil, errors.Errorf("no sql statement found")
 	}
 
@@ -72,9 +72,9 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 	var emptyStatementBuilder, statementBuilder strings.Builder
 
 	var preMatch, curMatch *store.SchemaGroupMessage
-	for _, singleStatement := range singleStatements {
-		if singleStatement.Empty {
-			_, _ = emptyStatementBuilder.WriteString(singleStatement.Text)
+	for _, singleSQL := range singleSQLs {
+		if singleSQL.Empty {
+			_, _ = emptyStatementBuilder.WriteString(singleSQL.Text)
 			continue
 		}
 		for _, schemaGroup := range schemaGroups {
@@ -82,7 +82,7 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to compile regexp")
 			}
-			if re.MatchString(singleStatement.Text) {
+			if re.MatchString(singleSQL.Text) {
 				curMatch = schemaGroup
 				break
 			}
@@ -110,7 +110,7 @@ func GetStatementsAndSchemaGroupsFromSchemaGroups(statement string, engine store
 			resultSchemaGroupNames = append(resultSchemaGroupNames, schemaGroupNames...)
 		}
 
-		_, _ = statementBuilder.WriteString(singleStatement.Text)
+		_, _ = statementBuilder.WriteString(singleSQL.Text)
 		_, _ = statementBuilder.WriteString("\n")
 
 		preMatch = curMatch

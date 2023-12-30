@@ -244,19 +244,21 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	stmts, err := pgparser.SplitSQL(statement)
+	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return 0, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return 0, nil
+	}
+
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
-	for _, sql := range stmts {
-		if sql.Empty {
-			continue
-		}
-		stmt := sql.Text
-		if isSuperuserStatement(sql.Text) {
+	for _, singleSQL := range singleSQLs {
+		stmt := singleSQL.Text
+		if isSuperuserStatement(stmt) {
 			remainingStmts = append(remainingStmts, stmt)
 		} else if isNonTransactionStatement(stmt) {
 			nonTransactionStmts = append(nonTransactionStmts, stmt)

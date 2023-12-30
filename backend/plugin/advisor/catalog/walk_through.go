@@ -1362,14 +1362,14 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, NewSetLineError(err.Error())
 	}
 
 	var returnNodes []tidbast.StmtNode
-	for _, item := range list {
-		nodes, _, err := p.Parse(item.Text, "", "")
+	for _, singleSQL := range singleSQLs {
+		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
 			return nil, NewSetLineError(err.Error())
 		}
@@ -1379,8 +1379,8 @@ func (*DatabaseState) parse(statement string) ([]tidbast.StmtNode, *WalkThroughE
 		}
 
 		node := nodes[0]
-		node.SetText(nil, item.Text)
-		node.SetOriginTextPosition(item.LastLine)
+		node.SetText(nil, singleSQL.Text)
+		node.SetOriginTextPosition(singleSQL.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, NewSetLineError(err.Error())

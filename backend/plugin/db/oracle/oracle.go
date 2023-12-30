@@ -106,9 +106,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	// Use Oracle sql parser.
-	sqls, err := plsqlparser.SplitSQL(statement)
+	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return 0, err
+	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
+	if len(singleSQLs) == 0 {
+		return 0, nil
 	}
 
 	conn, err := driver.db.Conn(ctx)
@@ -123,11 +127,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer tx.Rollback()
 
 	totalRowsAffected := int64(0)
-	for _, sql := range sqls {
-		if sql.Empty {
-			continue
-		}
-		sqlResult, err := tx.ExecContext(ctx, sql.Text)
+	for _, singleSQL := range singleSQLs {
+		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
 		if err != nil {
 			return 0, err
 		}
@@ -158,6 +159,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	if err != nil {
 		return nil, err
 	}
+	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}

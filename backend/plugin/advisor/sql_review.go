@@ -555,15 +555,15 @@ func postgresSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func calculatePostgresErrorLine(statement string) int {
-	statementList, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
 	if err != nil {
 		// nolint:nilerr
 		return 1
 	}
 
-	for _, stmt := range statementList {
-		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, stmt.Text); err != nil {
-			return stmt.LastLine
+	for _, singleSQL := range singleSQLs {
+		if _, err := pgrawparser.Parse(pgrawparser.ParseContext{}, singleSQL.Text); err != nil {
+			return singleSQL.LastLine
 		}
 	}
 
@@ -610,7 +610,7 @@ func mysqlSyntaxCheck(statement string) (any, []Advice) {
 }
 
 func tidbSyntaxCheck(statement string) (any, []Advice) {
-	list, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_TIDB, statement)
 	if err != nil {
 		return nil, []Advice{
 			{
@@ -626,8 +626,8 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 	p := newTiDBParser()
 	var returnNodes []tidbast.StmtNode
 	var adviceList []Advice
-	for _, item := range list {
-		nodes, _, err := p.Parse(item.Text, "", "")
+	for _, singleSQL := range singleSQLs {
+		nodes, _, err := p.Parse(singleSQL.Text, "", "")
 		if err != nil {
 			return nil, []Advice{
 				{
@@ -645,8 +645,8 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 		}
 
 		node := nodes[0]
-		node.SetText(nil, item.Text)
-		node.SetOriginTextPosition(item.LastLine)
+		node.SetText(nil, singleSQL.Text)
+		node.SetOriginTextPosition(singleSQL.LastLine)
 		if n, ok := node.(*tidbast.CreateTableStmt); ok {
 			if err := tidbbbparser.SetLineForMySQLCreateTableStmt(n); err != nil {
 				return nil, append(adviceList, Advice{
@@ -654,7 +654,7 @@ func tidbSyntaxCheck(statement string) (any, []Advice) {
 					Code:    Internal,
 					Title:   "Set line error",
 					Content: err.Error(),
-					Line:    item.LastLine,
+					Line:    singleSQL.LastLine,
 				})
 			}
 		}
