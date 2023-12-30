@@ -42,5 +42,6 @@ func getBaseProfile(dataDir string) config.Profile {
 		Lsp:                  flags.lsp,
 		PreUpdateBackup:      flags.preUpdateBackup,
 		DevelopmentIAM:       flags.developmentIAM,
+		ExecuteDetail:        flags.executeDetail,
 	}
 }
