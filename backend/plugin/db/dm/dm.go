@@ -91,7 +91,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	// Use Oracle sql parser.
-	stmts, err := plsqlparser.SplitSQL(statement)
+	sqls, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return 0, err
 	}
@@ -108,8 +108,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	defer tx.Rollback()
 
 	totalRowsAffected := int64(0)
-	for _, stmt := range stmts {
-		sqlResult, err := tx.ExecContext(ctx, stmt.Text)
+	for _, sql := range sqls {
+		if sql.Empty {
+			continue
+		}
+		sqlResult, err := tx.ExecContext(ctx, sql.Text)
 		if err != nil {
 			return 0, err
 		}

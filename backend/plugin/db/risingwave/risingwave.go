@@ -244,22 +244,25 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
+	stmts, err := pgparser.SplitSQL(statement)
+	if err != nil {
+		return 0, err
+	}
 	var remainingStmts []string
 	var nonTransactionStmts []string
 	totalRowsAffected := int64(0)
-	f := func(stmt string) error {
-		if isSuperuserStatement(stmt) {
+	for _, sql := range stmts {
+		if sql.Empty {
+			continue
+		}
+		stmt := sql.Text
+		if isSuperuserStatement(sql.Text) {
 			remainingStmts = append(remainingStmts, stmt)
 		} else if isNonTransactionStatement(stmt) {
 			nonTransactionStmts = append(nonTransactionStmts, stmt)
 		} else if !isIgnoredStatement(stmt) {
 			remainingStmts = append(remainingStmts, stmt)
 		}
-		return nil
-	}
-
-	if _, err := pgparser.SplitMultiSQLStream(strings.NewReader(statement), f); err != nil {
-		return 0, err
 	}
 
 	if len(remainingStmts) != 0 {
