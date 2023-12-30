@@ -14,6 +14,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MYSQL, extractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_MARIADB, extractChangedResources)
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE, extractChangedResources)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_STARROCKS, extractChangedResources)
 }
 
 func extractChangedResources(currentDatabase string, _, statement string) ([]base.SchemaResource, error) {
