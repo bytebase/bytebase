@@ -36,6 +36,7 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_STARROCKS, newDriver)
+	db.Register(storepb.Engine_DORIS, newDriver)
 }
 
 // Driver is the MySQL driver.

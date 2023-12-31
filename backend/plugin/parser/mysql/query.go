@@ -15,10 +15,12 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_MARIADB, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_OCEANBASE, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_STARROCKS, validateQuery)
+	base.RegisterQueryValidator(storepb.Engine_DORIS, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_MYSQL, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_MARIADB, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_OCEANBASE, ExtractResourceList)
 	base.RegisterExtractResourceListFunc(storepb.Engine_STARROCKS, ExtractResourceList)
+	base.RegisterExtractResourceListFunc(storepb.Engine_DORIS, ExtractResourceList)
 }
 
 // validateQuery validates the SQL statement for SQL editor.

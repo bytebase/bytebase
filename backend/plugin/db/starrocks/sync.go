@@ -88,6 +88,10 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		); err != nil {
 			return nil, err
 		}
+		if driver.dbType == storepb.Engine_DORIS {
+			database.CharacterSet = ""
+			database.Collation = ""
+		}
 		databases = append(databases, database)
 	}
 	if err := rows.Err(); err != nil {
@@ -312,6 +316,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, common.Errorf(common.NotFound, "database %q not found", driver.databaseName)
 		}
 		return nil, err
+	}
+	// "characterSet":"utf8\u0000", "collation":"utf8_general_ci\u0000".
+	// ERROR: unsupported Unicode escape sequence (SQLSTATE 22P05).
+	if driver.dbType == storepb.Engine_DORIS {
+		databaseMetadata.CharacterSet = ""
+		databaseMetadata.Collation = ""
 	}
 
 	return databaseMetadata, err
