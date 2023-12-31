@@ -244,10 +244,23 @@ func getTablesTx(txn *sql.Tx, dbName string) ([]*TableSchema, error) {
 	}
 	defer rows.Close()
 
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
 	for rows.Next() {
 		var tbl TableSchema
-		if err := rows.Scan(&tbl.Name, &tbl.TableType); err != nil {
-			return nil, err
+		// StorageFormat is the third but unused column for Doris.
+		var unusedStorageFormat string
+		if len(columns) == 3 {
+			// Doris.
+			if err := rows.Scan(&tbl.Name, &tbl.TableType, &unusedStorageFormat); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := rows.Scan(&tbl.Name, &tbl.TableType); err != nil {
+				return nil, err
+			}
 		}
 		tables = append(tables, &tbl)
 	}

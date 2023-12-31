@@ -16,6 +16,7 @@ func init() {
 	base.RegisterGetAffectedRows(storepb.Engine_MARIADB, GetAffectedRows)
 	base.RegisterGetAffectedRows(storepb.Engine_OCEANBASE, GetAffectedRows)
 	base.RegisterGetAffectedRows(storepb.Engine_STARROCKS, GetAffectedRows)
+	base.RegisterGetAffectedRows(storepb.Engine_DORIS, GetAffectedRows)
 }
 
 type AffectedRowsListener struct {
