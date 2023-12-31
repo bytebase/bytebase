@@ -343,6 +343,8 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_RISINGWAVE
 	case storepb.Engine_STARROCKS:
 		return v1pb.Engine_STARROCKS
+	case storepb.Engine_DORIS:
+		return v1pb.Engine_DORIS
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -385,6 +387,8 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_RISINGWAVE
 	case v1pb.Engine_STARROCKS:
 		return storepb.Engine_STARROCKS
+	case v1pb.Engine_DORIS:
+		return storepb.Engine_DORIS
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }

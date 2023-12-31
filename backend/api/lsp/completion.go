@@ -41,7 +41,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 	defaultDatabase := h.getDefaultDatabase()
 	engine := h.getEngineType(ctx)
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_CLICKHOUSE, storepb.Engine_STARROCKS:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE, storepb.Engine_CLICKHOUSE, storepb.Engine_STARROCKS, storepb.Engine_DORIS:
 		// Nothing.
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:
 		// Nothing.
