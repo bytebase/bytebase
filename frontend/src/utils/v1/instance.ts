@@ -98,6 +98,7 @@ export const supportedEngineV1List = () => {
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
     engines.push(Engine.STARROCKS);
+    engines.push(Engine.DORIS);
   }
   return engines;
 };
@@ -175,6 +176,7 @@ export const instanceV1HasSSL = (
     Engine.OCEANBASE,
     Engine.DM,
     Engine.STARROCKS,
+    Engine.DORIS,
   ].includes(engine);
 };
 
@@ -204,6 +206,7 @@ export const instanceV1HasCollationAndCharacterSet = (
     Engine.REDSHIFT,
     Engine.RISINGWAVE,
     Engine.STARROCKS,
+    Engine.DORIS,
   ];
   return !excludedList.includes(engine);
 };
@@ -219,6 +222,7 @@ export const instanceV1AllowsCrossDatabaseQuery = (
     Engine.MARIADB,
     Engine.OCEANBASE,
     Engine.STARROCKS,
+    Engine.DORIS,
   ].includes(engine);
 };
 
@@ -272,6 +276,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "RisingWave";
     case Engine.STARROCKS:
       return "StarRocks";
+    case Engine.DORIS:
+      return "Doris";
   }
   return "";
 };
