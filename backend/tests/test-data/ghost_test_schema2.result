@@ -1,21 +1,21 @@
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
 --
+-- Table structure for `xxx`
+--
+CREATE TABLE `xxx` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` text COLLATE utf8mb4_general_ci,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Table structure for `book`
 --
 CREATE TABLE `book` (
   `id` int NOT NULL AUTO_INCREMENT,
   `name` text COLLATE utf8mb4_general_ci,
   `author` varchar(54) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Table structure for `xxx`
---
-CREATE TABLE `xxx` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `name` text COLLATE utf8mb4_general_ci,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
