@@ -66,6 +66,13 @@
           >
           <div class="textinfolabel">
             {{ $t("policy.rollout.info") }}
+            <a
+              class="inline-flex items-center text-blue-600 ml-1 hover:underline"
+              href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
+              target="_blank"
+              >{{ $t("common.learn-more")
+              }}<heroicons-outline:external-link class="w-4 h-4"
+            /></a>
           </div>
           <RolloutPolicyConfig
             v-model:policy="state.rolloutPolicy"
