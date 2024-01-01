@@ -8,8 +8,6 @@ import (
 var (
 	// systemDatabases is the list of system or internal databases.
 	systemDatabases = map[string]bool{
-		// Skip our internal "bytebase" database
-		"bytebase": true,
 		// Skip internal databases from cloud service providers
 		// see https://github.com/bytebase/bytebase/issues/30
 		// aws

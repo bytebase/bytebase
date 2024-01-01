@@ -15,13 +15,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var (
-	excludedDatabaseList = map[string]bool{
-		// Skip our internal "bytebase" database
-		bytebaseDatabase: true,
-	}
-)
-
 // SyncInstance syncs the instance.
 func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	version, err := driver.getVersion(ctx)
@@ -36,9 +29,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	for _, databaseName := range databaseNames {
-		if _, ok := excludedDatabaseList[databaseName]; ok {
-			continue
-		}
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{Name: databaseName})
 	}
 

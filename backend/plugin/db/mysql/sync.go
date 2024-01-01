@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,8 +46,13 @@ var (
 		"ORAAUDITOR": true,
 		"__public":   true,
 	}
-
-	RangeBitsRegex = regexp.MustCompile(`RANGE BITS=(\d+)`)
+	systemDatabaseClause = func() string {
+		var l []string
+		for k := range systemDatabases {
+			l = append(l, fmt.Sprintf("'%s'", k))
+		}
+		return strings.Join(l, ", ")
+	}()
 )
 
 // SyncInstance syncs the instance.
@@ -74,17 +78,8 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	excludedDatabases := []string{
-		// Skip our internal "bytebase" database
-		"'bytebase'",
-	}
-	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabases = append(excludedDatabases, fmt.Sprintf("'%s'", k))
-	}
-
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabases, ", "))
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
 	query := `
 		SELECT
 			SCHEMA_NAME,
