@@ -247,7 +247,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/montanaflynn/stats v0.7.0 // indirect
-	github.com/openark/golib v0.0.0-20210531070646-355f37940af8 // indirect
+	github.com/openark/golib v0.0.0-20210531070646-355f37940af8
 	github.com/opentracing/basictracer-go v1.1.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
@@ -266,7 +266,6 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/cors v1.7.0 // indirect
-	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/backo-go v1.0.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.10 // indirect
@@ -303,7 +302,7 @@ require (
 // fix potential security issue(CVE-2020-26160) introduced by indirect dependency.
 replace github.com/dgrijalva/jwt-go => github.com/form3tech-oss/jwt-go v3.2.6-0.20210809144907-32ab6a8243d7+incompatible
 
-replace github.com/github/gh-ost => github.com/bytebase/gh-ost v1.1.3-0.20230915044519-b37a6525f8f9
+replace github.com/github/gh-ost => github.com/bytebase/gh-ost2 v0.0.0-20231212013517-59fd18dc9096
 
 replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940
 
