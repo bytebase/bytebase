@@ -42,18 +42,15 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	var filteredDatabases []*storepb.DatabaseSchemaMetadata
+	var databaseMetadataSlice []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
-		if database == bytebaseDatabase {
-			continue
-		}
-		filteredDatabases = append(filteredDatabases, &storepb.DatabaseSchemaMetadata{Name: database})
+		databaseMetadataSlice = append(databaseMetadataSlice, &storepb.DatabaseSchemaMetadata{Name: database})
 	}
 
 	return &db.InstanceMetadata{
 		Version:       version,
 		InstanceRoles: instanceRoles,
-		Databases:     filteredDatabases,
+		Databases:     databaseMetadataSlice,
 	}, nil
 }
 

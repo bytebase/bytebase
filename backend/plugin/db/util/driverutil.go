@@ -335,10 +335,11 @@ func IsAffectedRowsStatement(stmt string) bool {
 
 // ConvertYesNo converts YES/NO to bool.
 func ConvertYesNo(s string) (bool, error) {
+	// ClickHouse uses 0 and 1.
 	switch s {
-	case "YES", "Y":
+	case "YES", "Y", "1":
 		return true, nil
-	case "NO", "N":
+	case "NO", "N", "0":
 		return false, nil
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)

@@ -25,8 +25,6 @@ import (
 )
 
 var (
-	bytebaseDatabase = "BYTEBASE"
-
 	_ db.Driver = (*Driver)(nil)
 )
 
