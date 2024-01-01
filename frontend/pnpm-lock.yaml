@@ -272,8 +272,8 @@ devDependencies:
     specifier: ^1.5.5
     version: 1.5.5
   '@types/qs':
-    specifier: 6.9.10
-    version: 6.9.10
+    specifier: 6.9.11
+    version: 6.9.11
   '@types/scrollparent':
     specifier: ^2.0.3
     version: 2.0.3
@@ -1337,8 +1337,8 @@ packages:
       '@types/markdown-it': 12.2.3
     dev: false
 
-  /@mazui/cli@3.29.10(typescript@5.3.3):
-    resolution: {integrity: sha512-qOibwQaqaM8j+Be+qwvkC7mKOZj7O6Miz7MDk7Scpnhwc1H9ObWWGeAkvw1a9SBayibFKhEfh6tXrMJz8o9A3g==}
+  /@mazui/cli@3.31.1(typescript@5.3.3):
+    resolution: {integrity: sha512-BsbUUF/4B5wNyzGpdtaToMGZAY0pd6pKIxrMMV1sNkeebY0wSbfq79gBog3WvtnV55F24Gi6/tl0TtJUUn9aEw==}
     hasBin: true
     dependencies:
       '@clack/prompts': 0.7.0
@@ -2002,8 +2002,8 @@ packages:
       '@types/node': 20.10.4
     dev: true
 
-  /@types/qs@6.9.10:
-    resolution: {integrity: sha512-3Gnx08Ns1sEoCrWssEgTSJs/rsT2vhGP+Ja9cnnk9k4ALxinORlQneLXFeFKOTJMOeZUFD1s7w+w2AphTpvzZw==}
+  /@types/qs@6.9.11:
+    resolution: {integrity: sha512-oGk0gmhnEJK4Yyk+oI7EfXsLayXatCWPHary1MtcmbAifkobT9cM9yutG/hZKIseOU0MqbIwQ/u2nn/Gb+ltuQ==}
     dev: true
 
   /@types/scrollparent@2.0.3:
@@ -4506,7 +4506,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      '@mazui/cli': 3.29.10(typescript@5.3.3)
+      '@mazui/cli': 3.31.1(typescript@5.3.3)
       dayjs: 1.11.10
       libphonenumber-js: 1.10.52
       unplugin-vue-components: 0.25.2(rollup@4.9.1)(vue@3.3.12)
