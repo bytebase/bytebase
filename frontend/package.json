@@ -131,7 +131,7 @@
     "events": "^3.3.0",
     "jquery": "3.7.1",
     "long": "^5.2.3",
-    "postcss": "8.4.31",
+    "postcss": "8.4.32",
     "prettier": "2.7.1",
     "protobufjs": "^7.2.5",
     "rollup": "4.9.2",
