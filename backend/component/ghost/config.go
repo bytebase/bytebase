@@ -18,7 +18,7 @@ import (
 var defaultConfig = struct {
 	allowedRunningOnMaster              bool
 	concurrentCountTableRows            bool
-	timestampAllTable                   bool
+	timestampOldTable                   bool
 	hooksStatusIntervalSec              int64
 	heartbeatIntervalMilliseconds       int64
 	niceRatio                           float64
@@ -33,7 +33,7 @@ var defaultConfig = struct {
 }{
 	allowedRunningOnMaster:              true, // allow-on-master
 	concurrentCountTableRows:            true, // concurrent-rowcount
-	timestampAllTable:                   true, // doesn't have a gh-ost cli flag counterpart
+	timestampOldTable:                   true, // doesn't have a gh-ost cli flag counterpart
 	hooksStatusIntervalSec:              60,   // hooks-status-interval
 	heartbeatIntervalMilliseconds:       100,  // heartbeat-interval-millis
 	niceRatio:                           0,    // nice-ratio
@@ -224,6 +224,7 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	password = updatedPassword
 
 	migrationContext := base.NewMigrationContext()
+	migrationContext.Log = newGhostLogger()
 	migrationContext.InspectorConnectionConfig.Key.Hostname = dataSource.Host
 	port := 3306
 	if dataSource.Port != "" {
@@ -276,7 +277,8 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 	migrationContext.ServeSocketFile = getSocketFilename(taskID, database.UID, database.DatabaseName, tableName)
 	migrationContext.DropServeSocket = true
 	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName)
-	migrationContext.TimestampAllTable = defaultConfig.timestampAllTable
+	migrationContext.InitiallyDropGhostTable = true
+	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
 	migrationContext.SetNiceRatio(defaultConfig.niceRatio)
 	migrationContext.SetChunkSize(defaultConfig.chunkSize)
