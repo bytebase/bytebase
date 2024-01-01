@@ -37,6 +37,13 @@ var (
 		"information_schema": true,
 		"INFORMATION_SCHEMA": true,
 	}
+	systemDatabaseClause = func() string {
+		var l []string
+		for k := range systemDatabases {
+			l = append(l, fmt.Sprintf("'%s'", k))
+		}
+		return strings.Join(l, ", ")
+	}()
 
 	_ db.Driver = (*Driver)(nil)
 )

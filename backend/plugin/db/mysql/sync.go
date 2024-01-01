@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -47,8 +46,13 @@ var (
 		"ORAAUDITOR": true,
 		"__public":   true,
 	}
-
-	RangeBitsRegex = regexp.MustCompile(`RANGE BITS=(\d+)`)
+	systemDatabaseClause = func() string {
+		var l []string
+		for k := range systemDatabases {
+			l = append(l, fmt.Sprintf("'%s'", k))
+		}
+		return strings.Join(l, ", ")
+	}()
 )
 
 // SyncInstance syncs the instance.
@@ -74,17 +78,8 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		return nil, err
 	}
 
-	excludedDatabases := []string{
-		// Skip our internal "bytebase" database
-		"'bytebase'",
-	}
-	// Skip all system databases
-	for k := range systemDatabases {
-		excludedDatabases = append(excludedDatabases, fmt.Sprintf("'%s'", k))
-	}
-
 	// Query db info
-	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", strings.Join(excludedDatabases, ", "))
+	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
 	query := `
 		SELECT
 			SCHEMA_NAME,
@@ -346,8 +341,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(INDEX_LENGTH, 0),
 			IFNULL(DATA_FREE, 0),
 			IFNULL(CREATE_OPTIONS, ''),
-			IFNULL(TABLE_COMMENT, ''),
-			''
+			IFNULL(TABLE_COMMENT, '')
 		FROM information_schema.TABLES
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME`
@@ -357,7 +351,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer tableRows.Close()
 	for tableRows.Next() {
-		var tableName, tableType, engine, collation, createOptions, comment, shardingInfo string
+		var tableName, tableType, engine, collation, createOptions, comment string
 		var rowCount, dataSize, indexSize, dataFree int64
 		// Workaround TiDB bug https://github.com/pingcap/tidb/issues/27970
 		var tableCollation sql.NullString
@@ -372,7 +366,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&dataFree,
 			&createOptions,
 			&comment,
-			&shardingInfo,
 		); err != nil {
 			return nil, err
 		}
