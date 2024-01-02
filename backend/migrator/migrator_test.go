@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
@@ -184,7 +185,7 @@ func TestMigrationCompatibility(t *testing.T) {
 	db := store.NewDB(metadataConnConfig, pgBinDir, false, common.ReleaseModeDev)
 	err = db.Open(ctx, true /* createDB */)
 	require.NoError(t, err)
-	storeInstance, err := store.New(db)
+	storeInstance, err := store.New(db, &config.Profile{})
 	require.NoError(t, err)
 
 	releaseVersion, err := getProdCutoffVersion()
