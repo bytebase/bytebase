@@ -131,6 +131,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
 const connection = computed(() => useTabStore().currentTab.connection);
 const keyword = ref("");
 const detail: SQLResultViewContext["detail"] = ref({
@@ -190,7 +191,7 @@ const disallowCopyingData = computed(() => {
     connection.value.instanceId
   );
   const environment = instance.environment;
-  const policy = usePolicyV1Store().getPolicyByParentAndType({
+  const policy = policyStore.getPolicyByParentAndType({
     parentPath: environment,
     policyType: PolicyType.DISABLE_COPY_DATA,
   });

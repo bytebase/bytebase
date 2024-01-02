@@ -110,7 +110,6 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
-      - bb.instances.get
       - bb.policies.list
       - bb.risks.list
       - bb.roles.list
@@ -199,12 +198,16 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.projects.get
+      - bb.projects.getIamPolicy
   - name: roles/projectExporter
     permissions:
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
+      - bb.projects.get
+      - bb.projects.getIamPolicy
   - name: roles/projectReleaser
     permissions:
       - bb.branches.get
