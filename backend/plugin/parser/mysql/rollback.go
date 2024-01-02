@@ -26,6 +26,60 @@ func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabas
 	return generateSQL(tableStatementMap, targetDatabase, tableSuffix)
 }
 
+func prepareTransformation(databaseName, statement string) (map[string][]*tableStatement, error) {
+	list, err := SplitSQL(statement)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to split sql")
+	}
+
+	result := make(map[string][]*tableStatement)
+
+	for _, sql := range list {
+		if len(sql.Text) == 0 || sql.Empty {
+			continue
+		}
+		parseResult, isDML, isDDL, err := getSQLType(sql.Text)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get sql type")
+		}
+		if isDDL {
+			return nil, errors.New("cannot transform mixed DDL and DML statements")
+		}
+		if !isDML {
+			continue
+		}
+
+		tables, err := extractTables(databaseName, parseResult)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to extract tables")
+		}
+		for _, table := range tables {
+			result[table.Table] = append(result[table.Table], &tableStatement{
+				tree:  parseResult,
+				table: &TableReference{Table: table.Table, Alias: table.Alias},
+			})
+		}
+	}
+
+	return result, nil
+}
+
+func getSQLType(statement string) (*ParseResult, bool, bool, error) {
+	listener := &StatementTypeChecker{}
+
+	stmts, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, false, false, errors.Wrap(err, "failed to parse sql")
+	}
+
+	if len(stmts) != 1 {
+		return nil, false, false, errors.New("statement is not single sql")
+	}
+
+	antlr.ParseTreeWalkerDefault.Walk(listener, stmts[0].Tree)
+	return stmts[0], listener.IsDML, listener.IsDDL, nil
+}
+
 func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]string, error) {
 	var result []string
 	for tableName, tableStatements := range tableStatementMap {
@@ -118,44 +172,6 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 type tableStatement struct {
 	tree  *ParseResult
 	table *TableReference
-}
-
-func prepareTransformation(databaseName, statement string) (map[string][]*tableStatement, error) {
-	list, err := SplitSQL(statement)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to split sql")
-	}
-
-	result := make(map[string][]*tableStatement)
-
-	for _, sql := range list {
-		if len(sql.Text) == 0 || sql.Empty {
-			continue
-		}
-		parseResult, isDML, isDDL, err := getSQLType(sql.Text)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get sql type")
-		}
-		if isDDL {
-			return nil, errors.New("cannot transform mixed DDL and DML statements")
-		}
-		if !isDML {
-			continue
-		}
-
-		tables, err := extractTables(databaseName, parseResult)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to extract tables")
-		}
-		for _, table := range tables {
-			result[table.Table] = append(result[table.Table], &tableStatement{
-				tree:  parseResult,
-				table: &TableReference{Table: table.Table, Alias: table.Alias},
-			})
-		}
-	}
-
-	return result, nil
 }
 
 type TableReference struct {
@@ -258,20 +274,4 @@ type updateTableListener struct {
 func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
 	_, table, _ := normalizeMySQLColumnRef(ctx.ColumnRef())
 	l.tables[table] = true
-}
-
-func getSQLType(statement string) (*ParseResult, bool, bool, error) {
-	listener := &StatementTypeChecker{}
-
-	stmts, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, false, false, errors.Wrap(err, "failed to parse sql")
-	}
-
-	if len(stmts) != 1 {
-		return nil, false, false, errors.New("statement is not single sql")
-	}
-
-	antlr.ParseTreeWalkerDefault.Walk(listener, stmts[0].Tree)
-	return stmts[0], listener.IsDML, listener.IsDDL, nil
 }
