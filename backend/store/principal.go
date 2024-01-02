@@ -34,6 +34,7 @@ type UpdateUserMessage struct {
 	Name         *string
 	PasswordHash *string
 	Role         *api.Role
+	Roles        *[]api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
 	Phone        *string
@@ -218,24 +219,11 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		for _, r := range rolesString {
 			userMessage.Roles = append(userMessage.Roles, api.Role(r))
 		}
-
-		userMessage.Role = api.WorkspaceMember
 		if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.WorkspaceAdmin
 			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
 		}
-		for _, r := range userMessage.Roles {
-			if r == api.WorkspaceDBA {
-				userMessage.Role = api.WorkspaceDBA
-				break
-			}
-		}
-		for _, r := range userMessage.Roles {
-			if r == api.WorkspaceAdmin {
-				userMessage.Role = api.WorkspaceAdmin
-				break
-			}
-		}
+
+		userMessage.Role = backfillRoleFromRoles(userMessage.Roles)
 
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
@@ -366,12 +354,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	principalArgs = append(principalArgs, userID)
 
-	memberSet, memberArgs := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
-	if v := patch.Role; v != nil {
-		memberSet, memberArgs = append(memberSet, fmt.Sprintf("role = $%d", len(memberArgs)+1)), append(memberArgs, *v)
-	}
-	memberArgs = append(memberArgs, userID)
-
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -413,21 +395,24 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	user.MFAConfig = &mfaConfig
 
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE member
-			SET `+strings.Join(memberSet, ", ")+`
-			WHERE principal_id = $%d
-			RETURNING role
-		`, len(memberArgs)),
-		memberArgs...,
-	).Scan(
-		&user.Role,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
+	var patchRoles []api.Role
+	doPatchRoles := false
+	if v := patch.Role; v != nil {
+		doPatchRoles = true
+		patchRoles = []api.Role{*v}
 	}
+	// patch.Roles overrides patch.Role
+	if v := patch.Roles; v != nil {
+		doPatchRoles = true
+		patchRoles = *v
+	}
+	if doPatchRoles {
+		if err := s.updateUserRoles(ctx, tx, user.ID, patchRoles, updaterID); err != nil {
+			return nil, errors.Wrapf(err, "failed to update user roles")
+		}
+	}
+	user.Roles = patchRoles
+	user.Role = backfillRoleFromRoles(user.Roles)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -438,6 +423,72 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		s.projectPolicyCache.Purge()
 	}
 	return user, nil
+}
+
+func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles []api.Role, updaterUID int) error {
+	oldUser, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &userUID})
+	if err != nil {
+		return err
+	}
+	if len(oldUser) != 1 {
+		return errors.Errorf("expect to get one user with uid %d, got %d", userUID, len(oldUser))
+	}
+	oldMap, newMap := make(map[api.Role]struct{}), make(map[api.Role]struct{})
+	for _, r := range oldUser[0].Roles {
+		oldMap[r] = struct{}{}
+	}
+	for _, r := range roles {
+		newMap[r] = struct{}{}
+	}
+	var remove, add []string
+	for r := range oldMap {
+		if _, ok := newMap[r]; !ok {
+			remove = append(remove, r.String())
+		}
+	}
+	for r := range newMap {
+		if _, ok := oldMap[r]; !ok {
+			add = append(add, r.String())
+		}
+	}
+
+	if len(remove) > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM member
+			WHERE principal_id = $1 AND role = ANY($2)
+		`, userUID, remove); err != nil {
+			return err
+		}
+	}
+	if len(add) > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO member (principal_id, role, creator_id, updater_id)
+			SELECT $1, unnest($2), $3, $3
+		`, userUID, add, updaterUID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func backfillRoleFromRoles(roles []api.Role) api.Role {
+	admin, dba := false, false
+	for _, r := range roles {
+		if r == api.WorkspaceAdmin {
+			admin = true
+		}
+		if r == api.WorkspaceDBA {
+			dba = true
+		}
+	}
+	if admin {
+		return api.WorkspaceAdmin
+	}
+	if dba {
+		return api.WorkspaceDBA
+	}
+	return api.WorkspaceMember
 }
 
 func uniq[T comparable](array []T) []T {
