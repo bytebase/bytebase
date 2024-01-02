@@ -10,6 +10,7 @@ import { useCurrentUserV1 } from "./auth";
 import { usePolicyV1Store } from "./v1/policy";
 
 export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
+  const policyStore = usePolicyV1Store();
   const policyMapByName = ref(new Map<string, Policy>());
 
   const getPolicyList = () => {
@@ -23,7 +24,6 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
   };
 
   const fetchPolicyList = async () => {
-    const policyStore = usePolicyV1Store();
     const policyList = await policyStore.fetchPolicies({
       resourceType: PolicyResourceType.INSTANCE,
       policyType: PolicyType.SLOW_QUERY,
@@ -41,7 +41,7 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
     parentPath: string;
     active: boolean;
   }) => {
-    const policy = await usePolicyV1Store().upsertPolicy({
+    const policy = await policyStore.upsertPolicy({
       parentPath,
       policy: {
         type: PolicyType.SLOW_QUERY,

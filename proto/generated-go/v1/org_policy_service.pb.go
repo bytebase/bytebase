@@ -560,7 +560,7 @@ type ListPoliciesRequest struct {
 	unknownFields protoimpl.UnknownFields
 
 	// The parent, which owns this collection of policies.
-	// Format: {resource type}/{resource id}/policies/{policy type}
+	// Format: {resource type}/{resource id}
 	Parent     string      `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	PolicyType *PolicyType `protobuf:"varint,2,opt,name=policy_type,json=policyType,proto3,enum=bytebase.v1.PolicyType,oneof" json:"policy_type,omitempty"`
 	// The maximum number of policies to return. The service may return fewer than
