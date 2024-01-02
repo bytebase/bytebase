@@ -62,7 +62,7 @@ import {
   useProjectV1ListByCurrentUser,
   useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { SearchParams, SearchScopeId } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import ExportRecordTable from "./ExportRecordTable.vue";
@@ -175,7 +175,7 @@ watchEffect(async () => {
   for (const iamPolicy of iamPolicyList) {
     const bindings = iamPolicy.bindings.filter(
       (binding) =>
-        binding.role === "PresetRoleType.PROJECT_EXPORTER" &&
+        binding.role === PresetRoleType.PROJECT_EXPORTER &&
         binding.members.includes(`user:${currentUser.value.email}`)
     );
     for (const binding of bindings) {

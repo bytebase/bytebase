@@ -4,8 +4,8 @@ import { extractUserEmail, useUserStore } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
   DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
   UNKNOWN_ID,
+  PresetRoleType,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";

@@ -29,8 +29,8 @@ import { NButton } from "naive-ui";
 import SystemLabel from "@/components/SystemLabel.vue";
 import { SpinnerButton } from "@/components/v2";
 import { useRoleStore } from "@/store";
-import { isCustomRole } from "@/types";
 import type { Role } from "@/types/proto/v1/role_service";
+import { isCustomRole } from "@/utils";
 import {
   displayRoleDescription,
   displayRoleTitle,
