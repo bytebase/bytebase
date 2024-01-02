@@ -9,6 +9,7 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -21,7 +22,8 @@ var (
 
 // Store provides database access to all raw objects.
 type Store struct {
-	db *DB
+	db      *DB
+	profile *config.Profile
 
 	userIDCache            *lru.Cache[int, *UserMessage]
 	environmentCache       *lru.Cache[string, *EnvironmentMessage]
@@ -53,7 +55,7 @@ type Store struct {
 }
 
 // New creates a new instance of Store.
-func New(db *DB) (*Store, error) {
+func New(db *DB, profile *config.Profile) (*Store, error) {
 	userIDCache, err := lru.New[int, *UserMessage](2048)
 	if err != nil {
 		return nil, err
@@ -156,7 +158,8 @@ func New(db *DB) (*Store, error) {
 	}
 
 	return &Store{
-		db: db,
+		db:      db,
+		profile: profile,
 
 		// Cache.
 		userIDCache:            userIDCache,
