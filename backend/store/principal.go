@@ -222,6 +222,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		userMessage.Role = api.WorkspaceMember
 		if userMessage.ID == api.SystemBotID {
 			userMessage.Role = api.WorkspaceAdmin
+			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
 		}
 		for _, r := range userMessage.Roles {
 			if r == api.WorkspaceDBA {
