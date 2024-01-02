@@ -62,6 +62,11 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.hasPermission(p, workspaceRoles, projectRoles), nil
 }
 
+// GetPermissions returns all permissions for the given role.
+func (m *Manager) GetPermissions(role string) []Permission {
+	return m.roles[role]
+}
+
 func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) bool {
 	return m.hasPermissionOnWorkspace(p, workspaceRoles) ||
 		m.hasPermissionOnEveryProject(p, projectRoles)
