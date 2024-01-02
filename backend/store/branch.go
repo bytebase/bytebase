@@ -17,6 +17,7 @@ import (
 type BranchMessage struct {
 	ProjectID  string
 	ResourceID string
+	CreatorID  int
 
 	Engine     storepb.Engine
 	Config     *storepb.BranchConfig
@@ -27,7 +28,6 @@ type BranchMessage struct {
 
 	// Output only fields
 	UID         int
-	CreatorID   int
 	UpdaterID   int
 	CreatedTime time.Time
 	UpdatedTime time.Time
