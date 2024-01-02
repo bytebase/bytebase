@@ -200,7 +200,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		// return s so that caller can call s.Close() to shut down the postgres server if embedded.
 		return nil, errors.Wrap(err, "cannot open metadb")
 	}
-	storeInstance, err := store.New(storeDB)
+	storeInstance, err := store.New(storeDB, &profile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to new store")
 	}
@@ -210,7 +210,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		if err := demo.LoadDemoDataIfNeeded(ctx, storeDB, s.pgBinDir, profile.DemoName, profile.Mode); err != nil {
 			return nil, errors.Wrapf(err, "failed to load demo data")
 		}
-		if _, err := migrator.MigrateSchema(ctx, storeDB, s.pgBinDir, profile.Version, profile.Mode); err != nil {
+		if _, err := migrator.MigrateSchema(ctx, storeDB, storeInstance, s.pgBinDir, profile.Version, profile.Mode); err != nil {
 			return nil, err
 		}
 	}
