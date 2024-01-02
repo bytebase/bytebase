@@ -5,7 +5,7 @@ import { projectServiceClient } from "@/grpcweb";
 import { resolveCELExpr } from "@/plugins/cel";
 import { hasFeature, usePolicyV1Store } from "@/store";
 import {
-  ALL_USERS_USER_NAME,
+  ALL_USERS_USER_EMAIL,
   ComposedDatabase,
   MaybeRef,
   PresetRoleType,
@@ -252,7 +252,7 @@ export const useCurrentUserIamPolicy = () => {
         binding.role === PresetRoleType.PROJECT_OWNER &&
         binding.members.find(
           (member) =>
-            member === ALL_USERS_USER_NAME ||
+            member === ALL_USERS_USER_EMAIL ||
             member === `user:${currentUser.value.email}`
         )
       ) {
@@ -262,7 +262,7 @@ export const useCurrentUserIamPolicy = () => {
         binding.role === PresetRoleType.PROJECT_QUERIER &&
         binding.members.find(
           (member) =>
-            member === ALL_USERS_USER_NAME ||
+            member === ALL_USERS_USER_EMAIL ||
             member === `user:${currentUser.value.email}`
         )
       ) {
@@ -316,7 +316,7 @@ export const useCurrentUserIamPolicy = () => {
         binding.role === PresetRoleType.PROJECT_OWNER &&
         binding.members.find(
           (member) =>
-            member === ALL_USERS_USER_NAME ||
+            member === ALL_USERS_USER_EMAIL ||
             member === `user:${currentUser.value.email}`
         )
       ) {
@@ -326,7 +326,7 @@ export const useCurrentUserIamPolicy = () => {
         binding.role === PresetRoleType.PROJECT_EXPORTER &&
         binding.members.find(
           (member) =>
-            member === ALL_USERS_USER_NAME ||
+            member === ALL_USERS_USER_EMAIL ||
             member === `user:${currentUser.value.email}`
         )
       ) {
