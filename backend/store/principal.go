@@ -293,30 +293,33 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 	roles = uniq(roles)
 
-	stmt, err := tx.PrepareContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO member (
 			creator_id,
 			updater_id,
 			role,
 			principal_id
-		)
-		VALUES ($1, $2, $3, $4)`)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare statement")
-	}
-	defer stmt.Close()
-
-	for _, role := range roles {
-		if _, err := stmt.ExecContext(ctx, creatorID, creatorID, role, userID); err != nil {
-			return nil, errors.Wrapf(err, "failed to insert member")
-		}
+		) SELECT $1, $2, unnest($3), $4`,
+		creatorID, creatorID, roles, userID); err != nil {
+		return nil, errors.Wrapf(err, "failed to insert members")
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	return s.GetUserByID(ctx, userID)
+	user := &UserMessage{
+		ID:           userID,
+		Email:        create.Email,
+		Name:         create.Name,
+		Type:         create.Type,
+		PasswordHash: create.PasswordHash,
+		Phone:        create.Phone,
+		Roles:        roles,
+		Role:         backfillRoleFromRoles(roles),
+	}
+	s.userIDCache.Add(user.ID, user)
+	return user, nil
 }
 
 // UpdateUser updates a user.
