@@ -299,7 +299,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 			updater_id,
 			role,
 			principal_id
-		) SELECT $1, $2, unnest($3), $4`,
+		) SELECT $1, $2, unnest($3::text[]), $4`,
 		creatorID, creatorID, roles, userID); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert members")
 	}
@@ -466,7 +466,7 @@ func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles 
 	if len(add) > 0 {
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO member (principal_id, role, creator_id, updater_id)
-			SELECT $1, unnest($2), $3, $3
+			SELECT $1, unnest($2::text[]), $3, $3
 		`, userUID, add, updaterUID); err != nil {
 			return err
 		}
