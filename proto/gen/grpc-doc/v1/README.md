@@ -1013,7 +1013,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id}/policies/{policy type} |
+| parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id} |
 | policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
 | page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.

@@ -119,12 +119,13 @@ const state = reactive<LocalState>({
 });
 
 const currentUserV1 = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const policyList = ref<Policy[]>([]);
 
 const preparePolicyList = () => {
-  usePolicyV1Store()
+  policyStore
     .fetchPolicies({
       policyType: PolicyType.WORKSPACE_IAM,
       resourceType: PolicyResourceType.WORKSPACE,
