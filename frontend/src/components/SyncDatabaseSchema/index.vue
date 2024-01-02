@@ -77,6 +77,10 @@ import {
   SourceSchemaType,
 } from "./types";
 
+defineOptions({
+  name: "SyncDatabaseSchema",
+});
+
 const SELECT_SOURCE_SCHEMA = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
 
