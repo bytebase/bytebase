@@ -198,6 +198,13 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			userMessage.Role = userRole
+			for _, r := range request.User.GetRoles() {
+				role, err := common.GetRoleID(r)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid role %s", r)
+				}
+				userMessage.Roles = append(userMessage.Roles, api.Role(role))
+			}
 		} else {
 			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with role")
 		}
