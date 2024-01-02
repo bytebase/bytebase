@@ -78,14 +78,9 @@
 
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
-import { reactive, computed, ref, watchEffect } from "vue";
-import { usePageMode, usePolicyV1Store } from "@/store";
+import { reactive, computed } from "vue";
+import { usePageMode } from "@/store";
 import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
-import {
-  Policy,
-  PolicyResourceType,
-  PolicyType,
-} from "@/types/proto/v1/org_policy_service";
 import {
   filterDatabaseV1ByKeyword,
   SearchParams,
@@ -116,18 +111,6 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
-const policyList = ref<Policy[]>([]);
-
-const preparePolicyList = () => {
-  usePolicyV1Store()
-    .fetchPolicies({
-      policyType: PolicyType.WORKSPACE_IAM,
-      resourceType: PolicyResourceType.WORKSPACE,
-    })
-    .then((list) => (policyList.value = list));
-};
-
-watchEffect(preparePolicyList);
 
 const selectedInstance = computed(() => {
   return (

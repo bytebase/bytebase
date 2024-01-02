@@ -153,7 +153,7 @@ message GetPolicyRequest {
 
 message ListPoliciesRequest {
   // The parent, which owns this collection of policies.
-  // Format: {resource type}/{resource id}/policies/{policy type}
+  // Format: {resource type}/{resource id}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
   optional PolicyType policy_type = 2;
