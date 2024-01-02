@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { authServiceClient } from "@/grpcweb";
 import {
   ALL_USERS_USER_ID,
-  ALL_USERS_USER_NAME,
+  ALL_USERS_USER_EMAIL,
   Principal,
   PrincipalType,
   RoleType,
@@ -115,7 +115,7 @@ export const useUserStore = defineStore("user", {
       return this.getUserByEmail(getUserEmailFromIdentifier(identifier));
     },
     getUserByEmail(email: string) {
-      if (email === ALL_USERS_USER_NAME) {
+      if (email === ALL_USERS_USER_EMAIL) {
         return allUsersUser();
       }
       return [...this.userMapByName.values()].find(

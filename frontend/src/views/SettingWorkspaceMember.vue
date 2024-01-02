@@ -86,7 +86,11 @@ import {
 } from "@/store";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
+import {
+  ALL_USERS_USER_EMAIL,
+  SYSTEM_BOT_USER_NAME,
+  filterUserListByKeyword,
+} from "../types";
 import { hasWorkspacePermissionV1 } from "../utils";
 
 type LocalState = {
@@ -119,8 +123,14 @@ onMounted(() => {
   }
 });
 
+const userList = computed(() => {
+  return userStore.userList.filter(
+    (user) => user.email !== ALL_USERS_USER_EMAIL
+  );
+});
+
 const activeUserList = computed(() => {
-  const list = userStore.userList.filter((user) => user.state === State.ACTIVE);
+  const list = userList.value.filter((user) => user.state === State.ACTIVE);
 
   // Try to shift SYSTEM_BOT to the top of the list.
   const systemBotUserIndex = list.findIndex(
@@ -136,7 +146,7 @@ const activeUserList = computed(() => {
 });
 
 const inactiveUserList = computed(() => {
-  const list = userStore.userList.filter(
+  const list = userList.value.filter(
     (user) =>
       user.state === State.DELETED && user.userType !== UserType.SYSTEM_BOT
   );

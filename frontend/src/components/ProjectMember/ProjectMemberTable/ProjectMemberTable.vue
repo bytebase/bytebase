@@ -34,7 +34,7 @@
         <UserAvatar class="mt-1" :user="projectMember.user" />
         <div class="flex flex-col">
           <div class="flex flex-row items-center space-x-2">
-            <template v-if="projectMember.user.email !== ALL_USERS_USER_NAME">
+            <template v-if="projectMember.user.email !== ALL_USERS_USER_EMAIL">
               <router-link
                 :to="`/users/${projectMember.user.email}`"
                 class="normal-link"
@@ -49,7 +49,7 @@
             </template>
           </div>
           <span
-            v-if="projectMember.user.email !== ALL_USERS_USER_NAME"
+            v-if="projectMember.user.email !== ALL_USERS_USER_EMAIL"
             class="textinfolabel"
             >{{ projectMember.user.email }}</span
           >
@@ -147,7 +147,7 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import {
-  ALL_USERS_USER_NAME,
+  ALL_USERS_USER_EMAIL,
   ComposedProject,
   PresetRoleTypeList,
 } from "@/types";
