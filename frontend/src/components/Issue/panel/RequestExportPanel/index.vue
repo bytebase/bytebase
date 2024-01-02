@@ -158,11 +158,11 @@ import {
 } from "@/store";
 import {
   DatabaseResource,
-  PresetRoleType,
   SQLDialect,
   SYSTEM_BOT_EMAIL,
   UNKNOWN_ID,
   dialectOfEngineV1,
+  PresetRoleType,
 } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";

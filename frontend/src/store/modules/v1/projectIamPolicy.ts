@@ -230,7 +230,7 @@ export const useCurrentUserIamPolicy = () => {
         const bindings = policy.workspaceIamPolicy?.bindings;
         if (bindings) {
           const querierBinding = bindings.find(
-            (binding) => binding.role === "PresetRoleType.PROJECT_QUERIER"
+            (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
           );
           if (querierBinding) {
             const simpleExpr = resolveCELExpr(

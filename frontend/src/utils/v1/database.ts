@@ -8,7 +8,7 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { policyNamePrefix } from "@/store/modules/v1/common";
-import { ComposedDatabase, UNKNOWN_ID } from "@/types";
+import { ComposedDatabase, UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
@@ -147,7 +147,7 @@ export const isDatabaseV1Queryable = (
     const bindings = policy.workspaceIamPolicy?.bindings;
     if (bindings) {
       const querierBinding = bindings.find(
-        (binding) => binding.role === "PresetRoleType.PROJECT_QUERIER"
+        (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
       );
       if (querierBinding) {
         const simpleExpr = resolveCELExpr(
@@ -185,7 +185,7 @@ export const isTableQueryable = (
       const bindings = policy.workspaceIamPolicy?.bindings;
       if (bindings) {
         const querierBinding = bindings.find(
-          (binding) => binding.role === "PresetRoleType.PROJECT_QUERIER"
+          (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
         );
         if (querierBinding) {
           const simpleExpr = resolveCELExpr(

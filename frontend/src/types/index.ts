@@ -43,5 +43,6 @@ export * from "./quickAction";
 export * from "./setting";
 export * from "./changeHistory";
 export * from "./semanticTypes";
+export * from "./iam";
 
 export * from "./v1";

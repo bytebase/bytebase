@@ -5,9 +5,9 @@ import { ref, watch, WatchCallback } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import {
   ActivityIssueCommentCreatePayload,
-  PresetRoleType,
   ComposedIssue,
   IssueFilter,
+  PresetRoleType,
 } from "@/types";
 import { UserRole, UserType } from "@/types/proto/v1/auth_service";
 import {
