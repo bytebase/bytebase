@@ -8,7 +8,7 @@ UPDATE member
 SET role = CASE role
     WHEN 'OWNER' THEN 'workspaceAdmin'
     WHEN 'DBA' THEN 'workspaceDBA'
-    WHEN 'DEVELOPER' THEN 'workspaceDeveloper'
+    WHEN 'DEVELOPER' THEN 'workspaceMember'
     ELSE role
 END;
 
