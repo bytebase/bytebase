@@ -293,47 +293,42 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	).Scan(&count); err != nil {
 		return nil, err
 	}
-	role := api.WorkspaceMember
+
+	roles := create.Roles
+	if len(roles) == 0 {
+		roles = []api.Role{create.Role}
+	}
 	firstMember := count == 0
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
-		role = api.WorkspaceAdmin
-	} else if create.Role != "" {
-		role = create.Role
+		roles = append(roles, api.WorkspaceAdmin)
 	}
+	roles = uniq(roles)
 
-	if _, err := tx.ExecContext(ctx, `
-			INSERT INTO member (
-				creator_id,
-				updater_id,
-				role,
-				principal_id
-			)
-			VALUES ($1, $2, $3, $4)
-		`,
-		creatorID,
-		creatorID,
-		role,
-		userID,
-	); err != nil {
-		return nil, err
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT INTO member (
+			creator_id,
+			updater_id,
+			role,
+			principal_id
+		)
+		VALUES ($1, $2, $3, $4)`)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare statement")
+	}
+	defer stmt.Close()
+
+	for _, role := range roles {
+		if _, err := stmt.ExecContext(ctx, creatorID, creatorID, role, userID); err != nil {
+			return nil, errors.Wrapf(err, "failed to insert member")
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	user := &UserMessage{
-		ID:           userID,
-		Email:        create.Email,
-		Name:         create.Name,
-		Type:         create.Type,
-		PasswordHash: create.PasswordHash,
-		Phone:        create.Phone,
-		Role:         role,
-	}
-	s.userIDCache.Add(user.ID, user)
-	return user, nil
+	return s.GetUserByID(ctx, userID)
 }
 
 // UpdateUser updates a user.
@@ -443,4 +438,19 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		s.projectPolicyCache.Purge()
 	}
 	return user, nil
+}
+
+func uniq[T comparable](array []T) []T {
+	res := make([]T, 0, len(array))
+	seen := make(map[T]struct{}, len(array))
+
+	for _, e := range array {
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		res = append(res, e)
+	}
+
+	return res
 }
