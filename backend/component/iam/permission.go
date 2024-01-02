@@ -127,3 +127,7 @@ const (
 	PermissionBranchesUpdate Permission = "bb.branches.update"
 	PermissionBranchesDelete Permission = "bb.branches.delete"
 )
+
+func (p Permission) String() string {
+	return string(p)
+}
