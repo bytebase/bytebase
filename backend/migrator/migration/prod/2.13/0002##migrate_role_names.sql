@@ -48,8 +48,12 @@ SET payload = payload || jsonb_build_object(
         ),
         'roles/OWNER',
         'roles/projectOwner'
-    )
-) || jsonb_build_object(
+    )::jsonb
+)
+WHERE type = 'bb.policy.rollout' AND payload ? 'projectRoles';
+
+UPDATE policy
+SET payload = payload || jsonb_build_object(
     'workspaceRoles',
     replace(
         replace(
@@ -59,9 +63,9 @@ SET payload = payload || jsonb_build_object(
         ),
         'roles/DBA',
         'roles/workspaceDBA'
-    )
+    )::jsonb
 )
-WHERE type = 'bb.policy.rollout';
+WHERE type = 'bb.policy.rollout' AND payload ? 'workspaceRoles';
 
 UPDATE issue
 SET payload = replace(
