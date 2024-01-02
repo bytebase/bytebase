@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgtype"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
@@ -42,11 +43,13 @@ type UpdateUserMessage struct {
 type UserMessage struct {
 	ID int
 	// Email must be lower case.
-	Email         string
-	Name          string
-	Type          api.PrincipalType
-	PasswordHash  string
+	Email        string
+	Name         string
+	Type         api.PrincipalType
+	PasswordHash string
+	// TODO(p0ny): deprecate Role in favor of Roles.
 	Role          api.Role
+	Roles         []api.Role
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
 	// Phone conforms E.164 format.
@@ -61,6 +64,7 @@ func (s *Store) GetUser(ctx context.Context, find *FindUserMessage) (*UserMessag
 			Email: api.SystemBotEmail,
 			Type:  api.SystemBot,
 			Role:  api.WorkspaceAdmin,
+			Roles: []api.Role{api.WorkspaceAdmin},
 		}, nil
 	}
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -172,7 +176,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		member.role
+		(SELECT ARRAY_AGG (member.role) FROM member WHERE member.principal_id = principal.id)
 	FROM principal
 	LEFT JOIN member ON principal.id = member.principal_id
 	WHERE ` + strings.Join(where, " AND ")
@@ -189,7 +193,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 	defer rows.Close()
 	for rows.Next() {
 		var userMessage UserMessage
-		var role sql.NullString
+		var roles pgtype.TextArray
 		var rowStatus string
 		var mfaConfigBytes []byte
 		if err := rows.Scan(
@@ -201,17 +205,38 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			&userMessage.PasswordHash,
 			&mfaConfigBytes,
 			&userMessage.Phone,
-			&role,
+			&roles,
 		); err != nil {
 			return nil, err
 		}
-		if role.Valid {
-			userMessage.Role = api.Role(role.String)
-		} else if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.WorkspaceAdmin
-		} else {
-			userMessage.Role = api.WorkspaceMember
+
+		// pgtype cannot assign []string to []api.Role
+		var rolesString []string
+		if err := roles.AssignTo(&rolesString); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan roles")
 		}
+		for _, r := range rolesString {
+			userMessage.Roles = append(userMessage.Roles, api.Role(r))
+		}
+
+		userMessage.Role = api.WorkspaceMember
+		if userMessage.ID == api.SystemBotID {
+			userMessage.Role = api.WorkspaceAdmin
+			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
+		}
+		for _, r := range userMessage.Roles {
+			if r == api.WorkspaceDBA {
+				userMessage.Role = api.WorkspaceDBA
+				break
+			}
+		}
+		for _, r := range userMessage.Roles {
+			if r == api.WorkspaceAdmin {
+				userMessage.Role = api.WorkspaceAdmin
+				break
+			}
+		}
+
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
 		decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
