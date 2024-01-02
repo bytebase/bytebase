@@ -174,6 +174,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     virtualScroll: true,
     data: sourceTreeOptions.value,
     blockLine: true,
+    style: "height: 428px", // since <NTransfer> height is 512
     renderLabel: ({ option }: { option: TreeOption }) => {
       return h(Label, {
         option: option as DatabaseTreeOption,
@@ -204,6 +205,7 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     defaultExpandAll: true,
     data: targetTreeOptions.value,
     blockLine: true,
+    style: "height: 468px", // since <NTransfer> height is 512
     renderLabel: ({ option }: { option: TreeOption }) => {
       return h(Label, {
         option: option as DatabaseTreeOption,
