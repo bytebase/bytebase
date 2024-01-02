@@ -795,7 +795,7 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 		}
 	}
 
-	schemaDesign := &v1pb.Branch{
+	v1Branch := &v1pb.Branch{
 		Name:             fmt.Sprintf("%s%s/%s%v", common.ProjectNamePrefix, project.ResourceID, common.BranchPrefix, branch.ResourceID),
 		BranchId:         branch.ResourceID,
 		Etag:             fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()),
@@ -809,14 +809,14 @@ func (s *BranchService) convertBranchToBranch(ctx context.Context, project *stor
 	}
 
 	if view != v1pb.BranchView_BRANCH_VIEW_FULL {
-		return schemaDesign, nil
+		return v1Branch, nil
 	}
 
-	schemaDesign.Schema = string(branch.HeadSchema)
-	schemaDesign.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
-	schemaDesign.BaselineSchema = string(branch.BaseSchema)
-	schemaDesign.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
-	return schemaDesign, nil
+	v1Branch.Schema = string(branch.HeadSchema)
+	v1Branch.SchemaMetadata = convertStoreDatabaseMetadata(branch.Head.Metadata, branch.Head.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	v1Branch.BaselineSchema = string(branch.BaseSchema)
+	v1Branch.BaselineSchemaMetadata = convertStoreDatabaseMetadata(branch.Base.Metadata, branch.Base.DatabaseConfig, v1pb.DatabaseMetadataView_DATABASE_METADATA_VIEW_FULL, nil /* filter */)
+	return v1Branch, nil
 }
 
 func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) {
