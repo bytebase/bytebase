@@ -16,13 +16,13 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore, useSettingV1Store } from "@/store";
-import { isCustomRole } from "@/types";
 import {
   ApprovalNode,
   ApprovalNode_GroupValue,
   ApprovalNode_Type,
 } from "@/types/proto/v1/issue_service";
 import { ExternalApprovalSetting } from "@/types/proto/v1/setting_service";
+import { isCustomRole } from "@/utils";
 import { approvalNodeGroupValueText, approvalNodeRoleText } from "@/utils";
 import { useCustomApprovalContext } from "../context";
 

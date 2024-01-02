@@ -149,7 +149,7 @@ import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
   ComposedProject,
-  PresetRoleTypeList,
+  ProjectLevelRoles,
 } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import {
@@ -258,11 +258,9 @@ const getSortedBindingList = (bindingList: Binding[]) => {
   // Sort by role type.
   roleMap = new Map(
     [...roleMap].sort((a, b) => {
-      if (!PresetRoleTypeList.includes(a[0])) return -1;
-      if (!PresetRoleTypeList.includes(b[0])) return 1;
-      return (
-        PresetRoleTypeList.indexOf(a[0]) - PresetRoleTypeList.indexOf(b[0])
-      );
+      if (!ProjectLevelRoles.includes(a[0])) return -1;
+      if (!ProjectLevelRoles.includes(b[0])) return 1;
+      return ProjectLevelRoles.indexOf(a[0]) - ProjectLevelRoles.indexOf(b[0]);
     })
   );
   // Sort by expiration time.

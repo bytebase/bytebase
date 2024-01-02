@@ -25,7 +25,7 @@ import { computed, h, ref, VNode } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
-import { PresetRoleType, ProjectRoleType } from "@/types";
+import { ProjectRoleType, PresetRoleType, WorkspaceLevelRoles } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
@@ -44,12 +44,13 @@ const emit = defineEmits<{
 
 const FREE_ROLE_LIST = [
   PresetRoleType.PROJECT_OWNER,
-  PresetRoleType.DEVELOPER,
+  PresetRoleType.PROJECT_DEVELOPER,
   PresetRoleType.PROJECT_RELEASER,
   PresetRoleType.PROJECT_QUERIER,
   PresetRoleType.PROJECT_EXPORTER,
   PresetRoleType.PROJECT_VIEWER,
 ];
+
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 const roleList = computed(() => {
@@ -58,13 +59,18 @@ const roleList = computed(() => {
 });
 
 const roleOptions = computed(() => {
-  return roleList.value.map<ProjectRoleSelectOption>((role) => {
-    return {
-      label: displayRoleTitle(role.name),
-      value: role.name,
-      role,
-    };
-  });
+  return (
+    roleList.value
+      // Exclude workspace level roles.
+      .filter((role) => !WorkspaceLevelRoles.includes(role.name))
+      .map<ProjectRoleSelectOption>((role) => {
+        return {
+          label: displayRoleTitle(role.name),
+          value: role.name,
+          role,
+        };
+      })
+  );
 });
 
 const renderLabel = (option: SelectOption) => {

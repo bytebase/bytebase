@@ -34,3 +34,4 @@ export * from "./quickAction";
 export * from "./TinyTimer";
 
 export * from "./v1";
+export * from "./iam";

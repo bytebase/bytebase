@@ -8,3 +8,5 @@ export const PROJECT_PERMISSIONS: ProjectPermission[] =
   PERMISSION_DATA.permissions.projectPermissions;
 
 export * from "./permission";
+
+export * from "./role";

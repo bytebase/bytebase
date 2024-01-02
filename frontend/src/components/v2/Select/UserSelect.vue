@@ -33,12 +33,12 @@ import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import {
-  PresetRoleType,
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_ID,
   UNKNOWN_USER_NAME,
   allUsersUser,
   unknownUser,
+  PresetRoleType,
 } from "@/types";
 import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
