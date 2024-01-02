@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { roleServiceClient } from "@/grpcweb";
-import { ComposedRole } from "@/types/iam/role";
+import { ComposedRole } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { useGracefulRequest } from "./utils";

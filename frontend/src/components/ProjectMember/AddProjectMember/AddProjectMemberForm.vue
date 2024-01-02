@@ -78,8 +78,8 @@ import { getUserId } from "@/store/modules/v1/common";
 import {
   ComposedProject,
   DatabaseResource,
-  PresetRoleType,
   getUserEmailInBinding,
+  PresetRoleType,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Binding } from "@/types/proto/v1/iam_policy";
