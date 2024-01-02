@@ -245,6 +245,7 @@ const props = defineProps({
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
+const policyStore = usePolicyV1Store();
 const currentUserV1 = useCurrentUserV1();
 const { t } = useI18n();
 const state = reactive<LocalState>({
@@ -287,7 +288,7 @@ const policyList = ref<Policy[]>([]);
 
 const preparePolicyList = () => {
   if (showSQLEditorLink.value) {
-    usePolicyV1Store()
+    policyStore
       .fetchPolicies({
         policyType: PolicyType.WORKSPACE_IAM,
         resourceType: PolicyResourceType.WORKSPACE,

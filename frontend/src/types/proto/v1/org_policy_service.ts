@@ -306,7 +306,7 @@ export interface GetPolicyRequest {
 export interface ListPoliciesRequest {
   /**
    * The parent, which owns this collection of policies.
-   * Format: {resource type}/{resource id}/policies/{policy type}
+   * Format: {resource type}/{resource id}
    */
   parent: string;
   policyType?:

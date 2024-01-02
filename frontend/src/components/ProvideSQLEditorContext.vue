@@ -336,10 +336,12 @@ onMounted(async () => {
       prepareInstances(),
       prepareProjects(),
       policyV1Store.fetchPolicies({
+        resourceType: PolicyResourceType.WORKSPACE,
+      }),
+      policyV1Store.fetchPolicies({
         resourceType: PolicyResourceType.ENVIRONMENT,
         policyType: PolicyType.DISABLE_COPY_DATA,
       }),
-      policyV1Store.getOrFetchPolicyByName("policies/WORKSPACE_IAM"),
     ]);
 
     await prepareDatabases();
