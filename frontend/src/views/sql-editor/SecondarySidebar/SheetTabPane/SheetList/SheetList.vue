@@ -325,7 +325,9 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 };
 
 const selectedKeys = computed(() => {
-  return [currentSheet.value?.name, tabStore.currentTab.id];
+  return [currentSheet.value?.name, tabStore.currentTab.id].filter(
+    (item) => !!item
+  ) as string[];
 });
 
 const nodeProps = ({ option }: { option: TreeOption }) => {

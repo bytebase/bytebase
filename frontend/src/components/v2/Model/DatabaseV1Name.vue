@@ -1,6 +1,6 @@
 <template>
   <component
-    :is="link ? 'router-link' : tag"
+    :is="link ? 'router-link' : NEllipsis"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
     :class="[link && !plain && 'normal-link', link && 'hover:underline']"
@@ -11,6 +11,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -19,12 +20,10 @@ import { databaseV1Slug } from "@/utils";
 const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
-    tag?: string;
     link?: boolean;
     plain?: boolean;
   }>(),
   {
-    tag: "span",
     link: true,
     plain: false,
   }
