@@ -29,7 +29,7 @@ import (
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
+func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.Store, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
@@ -41,10 +41,6 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 	}
 	defer metadataDriver.Close(ctx)
 
-	storeInstance, err := store.New(storeDB)
-	if err != nil {
-		return nil, err
-	}
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
 	if err != nil {
