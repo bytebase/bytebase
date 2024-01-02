@@ -24,7 +24,7 @@
     <ChangelistDashboard :project="project" />
   </template>
   <template v-if="hash === 'sync-schema'">
-    <SyncDatabaseSchema :project="project" />
+    <SyncDatabaseSchema :key="project.name" :project="project" />
   </template>
   <template v-if="hash === 'slow-query'">
     <ProjectSlowQueryPanel :project="project" />
