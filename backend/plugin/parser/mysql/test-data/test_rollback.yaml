@@ -1,0 +1,18 @@
+- input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
+  result:
+    - CREATE TABLE "backupDB"."test_rollback" AS SELECT "x".* FROM test x WHERE x.c1 = 1;
+- input: UPDATE test SET c1 = 1 WHERE c1=2;
+  result:
+    - CREATE TABLE "backupDB"."test_rollback" AS SELECT "test".* FROM test WHERE c1=2;
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
+  result:
+    - CREATE TABLE "backupDB"."test_rollback" AS SELECT "t1".* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
+  result:
+    - CREATE TABLE "backupDB"."test_rollback" AS SELECT "t1".* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+    - CREATE TABLE "backupDB"."test2_rollback" AS SELECT "t2".* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+- input: |-
+    UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
+    UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
+  result:
+    - CREATE TABLE "backupDB"."test_rollback" AS SELECT "t1".* FROM test t1 WHERE t1.c1 = 1 UNION SELECT "t2".* FROM test t2 WHERE t2.c1 = 5;
