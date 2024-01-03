@@ -177,7 +177,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, err
 		}
 	}
-	sqlResult, err := conn.ExecContext(ctx, statement)
+	tx, err := conn.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to begin execute transaction")
+	}
+	defer tx.Rollback()
+
+	sqlResult, err := tx.ExecContext(ctx, statement)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
 	}
@@ -185,6 +191,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	if err != nil {
 		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
 		slog.Debug("rowsAffected returns error", log.BBError(err))
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, errors.Wrapf(err, "failed to commit execute transaction")
 	}
 
 	return totalRowsAffected, nil
