@@ -75,16 +75,7 @@
     "updated": "Updated",
     "visit": "Visit",
     "role": {
-      "self": "Role",
-      "admin": "Admin",
-      "dba": "DBA",
-      "member": "Member",
-      "owner": "Owner",
-      "developer": "Developer",
-      "exporter": "Exporter",
-      "querier": "Querier",
-      "releaser": "Releaser",
-      "viewer": "Viewer"
+      "self": "Role"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -527,8 +518,8 @@
       "create-as-service-account": "Create as service account",
       "show-inactive": "Show inactive members",
       "remove-self-admin": {
-        "title": "Are you sure to revoke @.lower:common.role.admin from yourself?",
-        "description": "Please make sure the remaining @.lower:common.role.admin(s) can sign in, otherwise, no one can manage users."
+        "title": "Are you sure to revoke @.lower:role.workspace-admin.self from yourself?",
+        "description": "Please make sure the remaining @.lower:role.workspace-admin.self can sign in, otherwise, no one can manage users."
       }
     },
     "im-integration": {
@@ -1927,8 +1918,8 @@
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archive project",
         "description": "Archived projects will not be displayed.",
@@ -3204,22 +3195,40 @@
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
-    "owner": {
+    "workspace-admin": {
+      "self": "Workspace Admin",
+      "description": "Workspace Admin has all permissions within the workspace."
+    },
+    "workspace-dba": {
+      "self": "Workspace DBA",
+      "description": "Workspace DBA has all permissions within the workspace except for managing workspace members."
+    },
+    "workspace-member": {
+      "self": "Workspace Member",
+      "description": "Workspace Member has all permissions within the workspace except for managing workspace members."
+    },
+    "project-owner": {
+      "self": "Project Owner",
       "description": "All permissions within the project"
     },
-    "developer": {
+    "project-developer": {
+      "self": "Project Developer",
       "description": "All viewer permissions, plus permissions for requesting database changes."
     },
-    "releaser": {
+    "project-releaser": {
+      "self": "Project Releaser",
       "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
     },
-    "querier": {
+    "project-querier": {
+      "self": "Project Querier",
       "description": "Permissions for querying database data."
     },
-    "exporter": {
+    "project-exporter": {
+      "self": "Project Exporter",
       "description": "Permissions for exporting database data."
     },
-    "viewer": {
+    "project-viewer": {
+      "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
     }
   },
