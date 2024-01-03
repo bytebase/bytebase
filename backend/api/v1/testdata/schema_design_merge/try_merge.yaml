@@ -5,6 +5,7 @@
         - DROP COLUMN `name`.
         - ADD COLUMN `gender char(1)`.
         - ADD COLUMN `credit_card_number VARCHAR(255)`.
+        - DROP INDEX `t_c_uniq_idx`.
       - Table `salary`:
         - DROP TABLE `salary`.
       - Table `address`:
@@ -14,6 +15,7 @@
       - Table `employee`:
         - ADD COLUMN `gender char(1)`.
         - ADD COLUMN `debit_card_number VARCHAR(255)`.
+        - DROP INDEX `t_c_plus_5_uniq_idx` and CREATE INDEX `t_c_plus_5_uniq_idx` to make it UNIQUE.
       - Table `salary`:
         - NO CHANGE.
       - Table `hiring_date`:
@@ -27,6 +29,8 @@
         - ADD COLUMN `gender char(1)`.
         - ADD COLUMN `debit_card_number VARCHAR(255)`.
         - ADD COLUMN `credit_card_number VARCHAR(255)`.
+        - DROP INDEX `t_c_uniq_idx`.
+        - DROP INDEX `t_c_plus_5_uniq_idx` and CREATE INDEX `t_c_plus_5_uniq_idx` to make it UNIQUE.
       - Table `salary`:
         - DROP TABLE `salary`.
       - Table `hiring_date`:
@@ -51,6 +55,11 @@
                   "name":  "name",
                   "position":  2,
                   "type":  "varchar(255)"
+                },
+                {
+                  "name": "c",
+                  "position": 2,
+                  "type": "int"
                 }
               ],
               "indexes":  [
@@ -62,6 +71,21 @@
                   "type":  "btree",
                   "unique":  true,
                   "primary":  true
+                },
+                {
+                  "name": "t_c_uniq_idx",
+                  "expressions": [
+                    "c"
+                  ],
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
+                    "((`c` + 5))"
+                  ],
+                  "visible": true
                 }
               ],
               "indexSize":  "8192"
@@ -97,13 +121,18 @@
                   "type":  "integer"
                 },
                 {
-                  "name": "gender",
+                  "name": "c",
                   "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "gender",
+                  "position": 3,
                   "type": "char(1)"
                 },
                 {
                   "name": "credit_card_number",
-                  "position": 3,
+                  "position": 4,
                   "type": "varchar(255)"
                 }
               ],
@@ -116,6 +145,13 @@
                   "type":  "btree",
                   "unique":  true,
                   "primary":  true
+                },
+                {
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
+                    "((`c` + 5))"
+                  ],
+                  "visible": true
                 }
               ],
               "indexSize":  "8192"
@@ -183,13 +219,18 @@
                   "type":  "varchar(255)"
                 },
                 {
-                  "name": "gender",
+                  "name": "c",
                   "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "gender",
+                  "position": 4,
                   "type": "char(1)"
                 },
                 {
                   "name": "debit_card_number",
-                  "position": 4,
+                  "position": 5,
                   "type": "varchar(255)"
                 }
               ],
@@ -202,6 +243,14 @@
                   "type":  "btree",
                   "unique":  true,
                   "primary":  true
+                },
+                {
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
+                    "((`c` + 5))"
+                  ],
+                  "unique": true,
+                  "visible": true
                 }
               ],
               "indexSize":  "8192"
@@ -294,18 +343,23 @@
                   "type":  "integer"
                 },
                 {
-                  "name":  "gender",
+                  "name":  "c",
                   "position":  2,
+                  "type":  "int"
+                },
+                {
+                  "name":  "gender",
+                  "position":  3,
                   "type":  "char(1)"
                 },
                 {
                   "name":  "debit_card_number",
-                  "position":  3,
+                  "position":  4,
                   "type":  "varchar(255)"
                 },
                 {
                   "name":  "credit_card_number",
-                  "position":  4,
+                  "position":  5,
                   "type":  "varchar(255)"
                 }
               ],
@@ -318,6 +372,14 @@
                   "type":  "btree",
                   "unique":  true,
                   "primary":  true
+                },
+                {
+                  "name":  "t_c_plus_5_uniq_idx",
+                  "expressions":  [
+                    "((`c` + 5))"
+                  ],
+                  "unique":  true,
+                  "visible":  true
                 }
               ]
             },
