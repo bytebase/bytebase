@@ -1,12 +1,15 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/alexmullins/zip"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -165,14 +168,15 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
+			request := &v1pb.ExportRequest{
 				Admin:              true,
 				ConnectionDatabase: databaseNameQuery,
 				Format:             v1pb.ExportFormat_SQL,
 				Limit:              1,
 				Name:               instance.Name,
 				Statement:          tt.export,
-			})
+			}
+			export, err := ctl.sqlServiceClient.Export(ctx, request)
 			a.NoError(err)
 
 			statement = tt.reset
@@ -180,7 +184,18 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-			statement = string(export.Content)
+			reader := bytes.NewReader(export.Content)
+			zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
+			a.NoError(err)
+			a.Equal(1, len(zipReader.File))
+
+			a.Equal(fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())), zipReader.File[0].Name)
+			file, err := zipReader.File[0].Open()
+			a.NoError(err)
+			content, err := io.ReadAll(file)
+			a.NoError(err)
+
+			statement = string(content)
 			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)

@@ -65,6 +65,7 @@
           <DataExportButton
             v-if="allowToExportData"
             size="small"
+            :file-type="'zip'"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
               ExportFormat.CSV,
@@ -339,9 +340,12 @@ const pageSize = computed(() => {
 });
 
 const handleExportBtnClick = async (
-  format: ExportFormat,
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void,
-  userSpecifiedLimit: number | undefined
+  {
+    format,
+    password,
+    limit: userSpecifiedLimit,
+  }: { format: ExportFormat; limit: number | undefined; password: string },
+  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
 ) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
@@ -360,6 +364,7 @@ const handleExportBtnClick = async (
     statement,
     limit,
     admin,
+    password,
   });
 
   callback(content, format);
