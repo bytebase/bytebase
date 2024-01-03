@@ -7,7 +7,6 @@ import { UserRole } from "@/types/proto/v1/auth_service";
 
 export type WorkspacePermissionType =
   | "bb.permission.workspace.debug"
-  | "bb.permission.workspace.manage-environment"
   | "bb.permission.workspace.manage-instance"
   // Visible to and manage databases even if not in the project the database
   // belongs to, and unassigned databases
@@ -43,7 +42,6 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   boolean[]
 > = new Map([
   ["bb.permission.workspace.debug", [false, true, true]],
-  ["bb.permission.workspace.manage-environment", [false, true, true]],
   ["bb.permission.workspace.manage-instance", [false, true, true]],
   ["bb.permission.workspace.manage-database", [false, true, true]],
   ["bb.permission.workspace.manage-issue", [false, true, true]],
