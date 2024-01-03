@@ -27,6 +27,10 @@ export const useRoleStore = defineStore("role", () => {
         role,
         updateMask: ["title", "description"],
       })) as ComposedRole;
+      const index = roleList.value.findIndex((r) => r.name === role.name);
+      if (index >= 0) {
+        roleList.value.splice(index, 1, updated);
+      }
       return updated;
     } else {
       // create

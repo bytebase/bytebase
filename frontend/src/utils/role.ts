@@ -1,3 +1,4 @@
+import { kebabCase } from "lodash-es";
 import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
 import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
@@ -195,16 +196,9 @@ export const extractRoleResourceName = (resourceId: string): string => {
 };
 
 export const displayRoleTitle = (role: string): string => {
-  // Use i18n-defined readable titles for system roles
-  if (role === PresetRoleType.PROJECT_OWNER) return t("common.role.owner");
-  if (role === PresetRoleType.PROJECT_DEVELOPER)
-    return t("common.role.developer");
-  if (role === PresetRoleType.PROJECT_RELEASER)
-    return t("common.role.releaser");
-  if (role === PresetRoleType.PROJECT_QUERIER) return t("common.role.querier");
-  if (role === PresetRoleType.PROJECT_EXPORTER)
-    return t("common.role.exporter");
-  if (role === PresetRoleType.PROJECT_VIEWER) return t("common.role.viewer");
+  if (Object.values(PresetRoleType).includes(role)) {
+    return t(`role.${kebabCase(extractRoleResourceName(role))}.self`);
+  }
   // Use role.title if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise
@@ -212,18 +206,9 @@ export const displayRoleTitle = (role: string): string => {
 };
 
 export const displayRoleDescription = (role: string): string => {
-  // Use i18n-defined readable titles for system roles
-  if (role === PresetRoleType.PROJECT_OWNER) return t("role.owner.description");
-  if (role === PresetRoleType.PROJECT_DEVELOPER)
-    return t("role.developer.description");
-  if (role === PresetRoleType.PROJECT_RELEASER)
-    return t("role.releaser.description");
-  if (role === PresetRoleType.PROJECT_QUERIER)
-    return t("role.querier.description");
-  if (role === PresetRoleType.PROJECT_EXPORTER)
-    return t("role.exporter.description");
-  if (role === PresetRoleType.PROJECT_VIEWER)
-    return t("role.viewer.description");
+  if (Object.values(PresetRoleType).includes(role)) {
+    return t(`role.${kebabCase(extractRoleResourceName(role))}.description`);
+  }
   // Use role.description if possible
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise

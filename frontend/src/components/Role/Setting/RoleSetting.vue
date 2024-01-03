@@ -1,22 +1,22 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-end">
+    <div class="w-full flex flex-row justify-between items-center">
+      <div class="textinfolabel">
+        {{ $t("role.setting.description") }}
+        <a
+          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+          class="normal-link text-sm inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
+      </div>
       <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
         {{ $t("role.setting.add") }}
       </NButton>
     </div>
-    <div class="textinfolabel">
-      {{ $t("role.setting.description") }}
-      <a
-        href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
-        class="normal-link text-sm inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
-    </div>
-    <RoleTable
+    <RoleDataTable
       :role-list="filteredRoleList"
       :show-placeholder="state.ready"
       @select-role="selectRole($event, 'EDIT')"
@@ -49,7 +49,7 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { featureToRef, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
 import { useWorkspacePermissionV1 } from "@/utils";
-import { RoleTable, RolePanel } from "./components";
+import { RoleDataTable, RolePanel } from "./components";
 import { provideCustomRoleSettingContext } from "./context";
 
 type LocalState = {
@@ -63,7 +63,7 @@ type LocalState = {
   };
 };
 
-const store = useRoleStore();
+const roleStore = useRoleStore();
 const state = reactive<LocalState>({
   ready: false,
   detail: {
@@ -84,8 +84,8 @@ const allowAdmin = useWorkspacePermissionV1(
 
 const filteredRoleList = computed(() => {
   const keyword = state.filter.keyword.trim().toLowerCase();
-  if (!keyword) return store.roleList;
-  return store.roleList.filter((role) => {
+  if (!keyword) return roleStore.roleList;
+  return roleStore.roleList.filter((role) => {
     return (
       role.name.toLowerCase().includes(keyword) ||
       role.description.toLowerCase().includes(keyword)
@@ -106,7 +106,7 @@ const selectRole = (role: Role | undefined, mode?: "ADD" | "EDIT") => {
 
 const prepare = async () => {
   try {
-    await store.fetchRoleList();
+    await roleStore.fetchRoleList();
   } finally {
     state.ready = true;
   }

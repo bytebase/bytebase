@@ -96,7 +96,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
-const store = useRoleStore();
+const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
@@ -136,7 +136,7 @@ const handleSave = async () => {
 
   state.loading = true;
   try {
-    state.role = await store.upsertRole(state.role);
+    state.role = await roleStore.upsertRole(state.role);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -151,7 +151,7 @@ const handleSave = async () => {
 const validateResourceId = async (
   name: string
 ): Promise<ValidatedMessage[]> => {
-  if (store.roleList.find((r) => r.name === `roles/${name}`)) {
+  if (roleStore.roleList.find((r) => r.name === `roles/${name}`)) {
     return [
       {
         type: "error",
