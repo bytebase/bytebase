@@ -116,6 +116,81 @@
                   ]
                 }
               ]
+            },
+            {
+              "name": "t5",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "position": 1
+                },
+                {
+                  "name": "a",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 2,
+                  "defaultNull": true
+                },
+                {
+                  "name": "title",
+                  "type": "text",
+                  "nullable": true,
+                  "position": 3,
+                  "collation": "utf8mb4_general_ci",
+                  "defaultNull": true,
+                  "characterSet": "utf8mb4"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "expressions": [
+                    "id"
+                  ]
+                },
+                {
+                  "name": "t5_a_plus_5_t_a_plus_3_uniq_idx",
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true,
+                  "expressions": [
+                    "((`a` + 5))",
+                    "((`a` + 3))"
+                  ]
+                },
+                {
+                  "name": "t5_a_plus_5_uniq_idx",
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true,
+                  "expressions": [
+                    "((`a` + 5))"
+                  ]
+                },
+                {
+                  "name": "t5_a_uniq_idx",
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true,
+                  "expressions": [
+                    "a"
+                  ]
+                },
+                {
+                  "name": "t5_title_fulltext_idx",
+                  "type": "FULLTEXT",
+                  "visible": true,
+                  "expressions": [
+                    "title"
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -139,6 +214,16 @@
       `a` int NULL,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
+    );
+    CREATE TABLE `t5` (
+      `id` int NOT NULL,
+      `a` int NULL DEFAULT NULL,
+      `title` text NULL DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `t5_a_plus_5_t_a_plus_3_uniq_idx` (((`a` + 5)),((`a` + 3))) USING BTREE,
+      UNIQUE KEY `t5_a_plus_5_uniq_idx` (((`a` + 5))) USING BTREE,
+      UNIQUE KEY `t5_a_uniq_idx` (`a`) USING BTREE,
+      FULLTEXT KEY `t5_title_fulltext_idx` (`title`)
     );
 
 - baseline: |-
