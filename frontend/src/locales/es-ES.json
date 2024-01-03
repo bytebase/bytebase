@@ -3364,7 +3364,8 @@
       "export-rows-required": "Se requieren filas de exportación",
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
-    "export-format": "Formato de exportación"
+    "export-format": "Formato de exportación",
+    "password-info": "Proporcione una contraseña para cifrar el archivo de exportación."
   },
   "branch": {
     "rollout": {
