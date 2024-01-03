@@ -114,6 +114,9 @@ message ExportRequest {
   // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
   // The exported data is not masked.
   bool admin = 6;
+
+  // The zip password provide by users.
+  string password = 7;
 }
 
 message ExportResponse {

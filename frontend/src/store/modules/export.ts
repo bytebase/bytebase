@@ -9,6 +9,7 @@ export type ExportDataParams = {
   database: string; // instances/{instance}/databases/{database}
   instance: string; // instances/{instance}
   admin?: boolean;
+  password?: string;
 };
 
 export const useExportData = () => {
@@ -26,6 +27,7 @@ export const useExportData = () => {
       limit: params.limit,
       format: params.format,
       admin: params.admin ?? false,
+      password: params.password ?? "",
     });
 
     return content;
