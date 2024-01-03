@@ -1,20 +1,20 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-end">
+    <div class="w-full flex flex-row justify-between items-center">
+      <div class="textinfolabel">
+        {{ $t("role.setting.description") }}
+        <a
+          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+          class="normal-link text-sm inline-flex flex-row items-center"
+          target="_blank"
+        >
+          {{ $t("common.learn-more") }}
+          <heroicons-outline:external-link class="w-4 h-4" />
+        </a>
+      </div>
       <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
         {{ $t("role.setting.add") }}
       </NButton>
-    </div>
-    <div class="textinfolabel">
-      {{ $t("role.setting.description") }}
-      <a
-        href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
-        class="normal-link text-sm inline-flex flex-row items-center"
-        target="_blank"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
     </div>
     <RoleDataTable
       :role-list="filteredRoleList"
