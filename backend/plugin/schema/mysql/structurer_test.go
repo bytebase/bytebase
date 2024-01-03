@@ -67,7 +67,7 @@ type designTest struct {
 
 func TestGetDesignSchema(t *testing.T) {
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepath = "testdata/get_design_schema.yaml"
