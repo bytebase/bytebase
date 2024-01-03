@@ -1,4 +1,4 @@
+import RoleDataTable from "./RoleDataTable/index.vue";
 import RolePanel from "./RolePanel.vue";
-import RoleTable from "./RoleTable.vue";
 
-export { RoleTable, RolePanel };
+export { RoleDataTable, RolePanel };
