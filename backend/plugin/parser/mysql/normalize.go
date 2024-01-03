@@ -28,6 +28,15 @@ func NormalizeMySQLTableRef(ctx parser.ITableRefContext) (string, string) {
 	return "", ""
 }
 
+func normalizeMySQLTableRefWithWildcard(ctx parser.ITableRefWithWildcardContext) (string, string) {
+	identifier := NormalizeMySQLIdentifier(ctx.Identifier())
+	if ctx.DotIdentifier() == nil {
+		return "", identifier
+	}
+
+	return NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier()), identifier
+}
+
 // NormalizeMySQLColumnName normalizes the given column name.
 func NormalizeMySQLColumnName(ctx parser.IColumnNameContext) (string, string, string) {
 	if ctx.Identifier() != nil {

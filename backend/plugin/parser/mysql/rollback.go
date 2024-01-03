@@ -33,6 +33,7 @@ func prepareTransformation(databaseName, statement string) (map[string][]*tableS
 	}
 
 	result := make(map[string][]*tableStatement)
+	tableStatementTypeMap := make(map[string]StatementType)
 
 	for _, sql := range list {
 		if len(sql.Text) == 0 || sql.Empty {
@@ -54,6 +55,19 @@ func prepareTransformation(databaseName, statement string) (map[string][]*tableS
 			return nil, errors.Wrap(err, "failed to extract tables")
 		}
 		for _, table := range tables {
+			if table.StatementType == StatementTypeUnknown {
+				return nil, errors.Errorf("unknown statement type for table %q", table.Table)
+			}
+
+			tp, exists := tableStatementTypeMap[table.Table]
+			if exists && tp != table.StatementType {
+				return nil, errors.Errorf("cannot transform mixed DML statements for table %q", table.Table)
+			}
+
+			if !exists {
+				tableStatementTypeMap[table.Table] = table.StatementType
+			}
+
 			result[table.Table] = append(result[table.Table], &tableStatement{
 				tree:  parseResult,
 				table: &TableReference{Table: table.Table, Alias: table.Alias},
@@ -129,6 +143,30 @@ type suffixSelectStatementListener struct {
 	err error
 }
 
+func (l *suffixSelectStatementListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
+	if ctx.TableRef() != nil {
+		// Single table delete statement.
+		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
+			ctx.TableRef().GetStart(),
+			ctx.GetStop(),
+		)); err != nil {
+			l.err = errors.Wrap(err, "failed to write suffix select statement")
+			return
+		}
+	}
+
+	if ctx.TableAliasRefList() != nil {
+		// Multi table delete statement.
+		if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromTokens(
+			ctx.TableReferenceList().GetStart(),
+			ctx.GetStop(),
+		)); err != nil {
+			l.err = errors.Wrap(err, "failed to write suffix select statement")
+			return
+		}
+	}
+}
+
 func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 	if _, err := l.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.TableReferenceList())); err != nil {
 		l.err = errors.Wrap(err, "failed to write suffix select statement")
@@ -174,9 +212,19 @@ type tableStatement struct {
 	table *TableReference
 }
 
+type StatementType int
+
+const (
+	StatementTypeUnknown StatementType = iota
+	StatementTypeUpdate
+	StatementTypeInsert
+	StatementTypeDelete
+)
+
 type TableReference struct {
-	Table string
-	Alias string
+	Table         string
+	Alias         string
+	StatementType StatementType
 }
 
 func extractTables(databaseName string, parseResult *ParseResult) ([]*TableReference, error) {
@@ -195,6 +243,61 @@ type tableReferenceListener struct {
 	databaseName string
 	tables       []*TableReference
 	err          error
+}
+
+func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
+	if _, ok := ctx.GetParent().(*parser.SimpleStatementContext); !ok {
+		return
+	}
+
+	if ctx.TableRef() != nil {
+		// Single table delete statement.
+		database, table := NormalizeMySQLTableRef(ctx.TableRef())
+		if len(database) > 0 && database != l.databaseName {
+			l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
+			return
+		}
+
+		alias := ""
+
+		if ctx.TableAlias() != nil {
+			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		}
+
+		l.tables = append(l.tables, &TableReference{
+			Table:         table,
+			Alias:         alias,
+			StatementType: StatementTypeDelete,
+		})
+		return
+	}
+
+	if ctx.TableAliasRefList() != nil {
+		// Multi table delete statement.
+		singleTables := &singleTableListener{
+			databaseName: l.databaseName,
+			singleTables: make(map[string]*TableReference),
+		}
+
+		antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
+
+		for _, tableRef := range ctx.TableAliasRefList().AllTableRefWithWildcard() {
+			database, table := normalizeMySQLTableRefWithWildcard(tableRef)
+			if len(database) > 0 && database != l.databaseName {
+				l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
+				return
+			}
+
+			singleTable, ok := singleTables.singleTables[table]
+			if !ok {
+				l.err = errors.Errorf("cannot extract reference table: no matched table %q in referenced table list", table)
+				return
+			}
+
+			singleTable.StatementType = StatementTypeDelete
+			l.tables = append(l.tables, singleTable)
+		}
+	}
 }
 
 func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
@@ -233,6 +336,7 @@ func (l *tableReferenceListener) EnterUpdateStatement(ctx *parser.UpdateStatemen
 			return
 		}
 
+		singleTable.StatementType = StatementTypeUpdate
 		l.tables = append(l.tables, singleTable)
 	}
 }
