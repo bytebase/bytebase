@@ -366,6 +366,7 @@ func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	fzip := io.Writer(&b)
 
 	zipw := zip.NewWriter(fzip)
+	defer zipw.Close()
 
 	filename := fmt.Sprintf("export.%s", strings.ToLower(request.Format.String()))
 	var w io.Writer
@@ -388,7 +389,9 @@ func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to write export file")
 	}
-	zipw.Close()
+	if err := zipw.Close(); err != nil {
+		return nil, errors.Wrap(err, "failed to close zip writer")
+	}
 
 	return b.Bytes(), nil
 }
