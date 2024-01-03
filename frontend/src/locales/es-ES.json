@@ -75,16 +75,7 @@
     "updated": "Actualizado",
     "visit": "Visitar",
     "role": {
-      "self": "Rol",
-      "admin": "Administrador",
-      "dba": "DBA",
-      "member": "Miembro",
-      "owner": "Propietario",
-      "developer": "Desarrollador",
-      "exporter": "Exportador",
-      "querier": "Querier",
-      "releaser": "Liberador",
-      "viewer": "Espectador"
+      "self": "Rol"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -527,8 +518,8 @@
       "create-as-service-account": "Crear como cuenta de servicio",
       "show-inactive": "Mostrar miembros inactivos",
       "remove-self-admin": {
-        "title": "¿Estás seguro de revocarte @.lower:common.role.admin?",
-        "description": "Asegúrese de que los @.lower:common.role.admin restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
+        "title": "¿Estás seguro de revocarte @.lower:role.workspace-admin.self?",
+        "description": "Asegúrese de que los @.lower:role.workspace-admin.self restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
       }
     },
     "im-integration": {
@@ -1926,8 +1917,8 @@
       "success-member-deleted-prompt": "Se revocó el acceso de {name} al proyecto correctamente.",
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
@@ -3201,23 +3192,41 @@
     "title": "Título",
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
-    "owner": {
-      "description": "Todas las permisos dentro del proyecto."
+    "workspace-admin": {
+      "self": "Administrador del espacio de trabajo",
+      "description": "El administrador del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo."
     },
-    "developer": {
-      "description": "Todas las permisos de visualización, más permisos para solicitar cambios en la base de datos."
+    "workspace-dba": {
+      "self": "DBA del espacio de trabajo",
+      "description": "El DBA del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
     },
-    "releaser": {
-      "description": "Todas las permisos de visualización, más permisos para revisar solicitudes de cambios en la base de datos con fines de lanzamiento."
+    "workspace-member": {
+      "self": "Miembro del espacio de trabajo",
+      "description": "El miembro del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
     },
-    "querier": {
-      "description": "Permisos para realizar consultas a datos de la base de datos"
+    "project-owner": {
+      "self": "Propietario del proyecto",
+      "description": "El propietario del proyecto tiene todos los permisos dentro del proyecto."
     },
-    "exporter": {
-      "description": "Permisos para exportar datos de la base de datos."
+    "project-developer": {
+      "self": "Desarrollador del proyecto",
+      "description": "El desarrollador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
-    "viewer": {
-      "description": "Permisos de solo lectura para ver información básica del proyecto, acceder a las bases de datos e iniciar solicitudes de privilegios."
+    "project-releaser": {
+      "self": "Liberador del proyecto",
+      "description": "El liberador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-querier": {
+      "self": "Consultor del proyecto",
+      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-exporter": {
+      "self": "Exportador del proyecto",
+      "description": "El exportador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-viewer": {
+      "self": "Espectador del proyecto",
+      "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     }
   },
   "database-group": {
