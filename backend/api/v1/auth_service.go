@@ -529,7 +529,7 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		UserRole: role,
 	}
 	for _, r := range user.Roles {
-		convertedUser.Roles = append(convertedUser.Roles, r.String())
+		convertedUser.Roles = append(convertedUser.Roles, common.FormatRole(r.String()))
 	}
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
