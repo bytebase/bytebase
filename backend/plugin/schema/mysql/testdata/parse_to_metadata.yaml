@@ -3,63 +3,101 @@
       (
         `a` int NOT NULL COMMENT 'this is comment',
         `b` VARCHAR(20) NOT NULL,
-        KEY `idx` (((`a` + 20))),
-        UNIQUE KEY `idx2` (`a`),
-        KEY `idx_length` (`b`(10) DESC),
-        PRIMARY KEY (`a`)
+        `c` int NOT NULL,
+        `d` text NULL,
+        PRIMARY KEY (`a`),
+        UNIQUE KEY `t_c_uniq_idx` (`c` DESC),
+        UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5)) DESC),
+        UNIQUE KEY `t_c_plus_5_t_c_plus_3_uniq_idx` (((`c` + 5)) DESC,((`c` + 3))),
+        KEY `idx_c` (`c`),
+        KEY `idx_d` (`d`(10)),
+        FULLTEXT KEY `t_d_fulltext_idx` (`d`)
       ) COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "a",
-                  "type":  "int",
-                  "comment":  "this is comment"
+                  "name": "a",
+                  "type": "int",
+                  "comment": "this is comment"
                 },
                 {
-                  "name":  "b",
-                  "type":  "VARCHAR(20)"
+                  "name": "b",
+                  "type": "VARCHAR(20)"
+                },
+                {
+                  "name": "c",
+                  "type": "int"
+                },
+                {
+                  "name": "d",
+                  "nullable": true,
+                  "type": "text"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "idx",
-                  "expressions":  [
-                    "((`a` + 20))"
-                  ],
-                  "visible":  true
-                },
-                {
-                  "name":  "idx2",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 },
                 {
-                  "name":  "idx_length",
-                  "expressions":  [
-                    "`b`(10) DESC"
+                  "name": "t_c_uniq_idx",
+                  "expressions": [
+                    "c"
                   ],
-                  "visible":  true
+                  "unique": true,
+                  "visible": true
                 },
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
-                    "a"
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
+                    "((`c` + 5))"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "t_c_plus_5_t_c_plus_3_uniq_idx",
+                  "expressions": [
+                    "((`c` + 5))",
+                    "((`c` + 3))"
+                  ],
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_c",
+                  "expressions": [
+                    "c"
+                  ],
+                  "visible": true
+                },
+                {
+                  "name": "idx_d",
+                  "expressions": [
+                    "d"
+                  ],
+                  "visible": true
+                },
+                {
+                  "name": "t_d_fulltext_idx",
+                  "expressions": [
+                    "d"
+                  ],
+                  "visible": true
                 }
               ],
-              "comment":  "this is comment with ' escaped"
+              "comment": "this is comment with ' escaped"
             }
           ]
         }
@@ -77,76 +115,76 @@
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "c",
-                  "defaultExpression":  "AUTO_INCREMENT",
-                  "nullable":  true,
-                  "type":  "int"
+                  "name": "c",
+                  "defaultExpression": "AUTO_INCREMENT",
+                  "nullable": true,
+                  "type": "int"
                 },
                 {
-                  "name":  "a",
-                  "defaultExpression":  "1",
-                  "nullable":  true,
-                  "type":  "int",
-                  "comment":  "abcdefg"
+                  "name": "a",
+                  "defaultExpression": "1",
+                  "nullable": true,
+                  "type": "int",
+                  "comment": "abcdefg"
                 },
                 {
-                  "name":  "b",
-                  "defaultNull":  true,
-                  "nullable":  true,
-                  "type":  "varchar(20)"
+                  "name": "b",
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "varchar(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a",
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ],
-              "comment":  "this is comment with ' escaped",
-              "foreignKeys":  [
+              "comment": "this is comment with ' escaped",
+              "foreignKeys": [
                 {
-                  "name":  "fk1",
-                  "columns":  [
+                  "name": "fk1",
+                  "columns": [
                     "a"
                   ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
+                  "referencedTable": "t2",
+                  "referencedColumns": [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name":  "t2",
-              "columns":  [
+              "name": "t2",
+              "columns": [
                 {
-                  "name":  "b",
-                  "defaultNull":  true,
-                  "type":  "int"
+                  "name": "b",
+                  "defaultNull": true,
+                  "type": "int"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             }
