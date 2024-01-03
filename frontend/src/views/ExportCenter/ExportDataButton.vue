@@ -1,6 +1,7 @@
 <template>
   <DataExportButton
     size="tiny"
+    :file-type="'zip'"
     :support-formats="[
       ExportFormat.CSV,
       ExportFormat.JSON,
@@ -26,7 +27,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const { exportData } = useExportData();
 
 const handleExportData = async (
-  format: ExportFormat,
+  { format, password }: { format: ExportFormat; password: string },
   callback: (content: BinaryLike | Blob, format: ExportFormat) => void
 ) => {
   const exportRecord = props.exportRecord;
@@ -39,6 +40,7 @@ const handleExportData = async (
     statement: exportRecord.statement,
     limit: exportRecord.maxRowCount,
     admin: false,
+    password,
   });
 
   callback(content, format);

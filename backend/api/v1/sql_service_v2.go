@@ -86,8 +86,13 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		return nil, exportErr
 	}
 
+	content, err := doEncrypt(bytes, request)
+	if err != nil {
+		return nil, err
+	}
+
 	return &v1pb.ExportResponse{
-		Content: bytes,
+		Content: content,
 	}, nil
 }
 

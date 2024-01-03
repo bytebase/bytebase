@@ -3357,7 +3357,8 @@
       "export-rows-required": "Export rows required",
       "export-rows-must-gt-zero": "Export rows must greater than 0"
     },
-    "export-format": "Export format"
+    "export-format": "Export format",
+    "password-info": "Provide a password to encrypt the export file."
   },
   "branch": {
     "rollout": {
