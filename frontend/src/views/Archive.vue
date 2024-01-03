@@ -53,6 +53,7 @@ import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   filterProjectV1ListByKeyword,
   hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 interface LocalState {
@@ -116,10 +117,7 @@ const tabItemList = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-environment",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.environments.undelete")
   ) {
     list.push({ value: "ENVIRONMENT", label: t("common.environment") });
   }

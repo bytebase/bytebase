@@ -274,6 +274,7 @@ import {
 import {
   extractEnvironmentResourceName,
   hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
   sqlReviewPolicySlug,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -325,16 +326,17 @@ const emit = defineEmits([
 ]);
 
 const { t } = useI18n();
+const router = useRouter();
+const currentUserV1 = useCurrentUserV1();
+const environmentV1Store = useEnvironmentV1Store();
+const environmentList = useEnvironmentV1List();
+const sqlReviewStore = useSQLReviewStore();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   rolloutPolicy: cloneDeep(props.rolloutPolicy),
   backupPolicy: cloneDeep(props.backupPolicy),
   environmentTier: props.environmentTier,
 });
-
-const router = useRouter();
-const environmentV1Store = useEnvironmentV1Store();
-const sqlReviewStore = useSQLReviewStore();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const bindings = computed(() => {
@@ -416,14 +418,10 @@ watch(
   }
 );
 
-const currentUserV1 = useCurrentUserV1();
-
-const environmentList = useEnvironmentV1List();
-
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-environment",
-    currentUserV1.value.userRole
+  return hasWorkspacePermissionV2(
+    currentUserV1.value,
+    "bb.environments.update"
   );
 });
 
