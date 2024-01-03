@@ -75,16 +75,7 @@
     "updated": "已更新",
     "visit": "访问",
     "role": {
-      "self": "角色",
-      "admin": "管理员",
-      "dba": "DBA",
-      "member": "成员",
-      "owner": "所有者",
-      "developer": "开发者",
-      "exporter": "数据导出者",
-      "querier": "数据查询者",
-      "releaser": "发布者",
-      "viewer": "查看者"
+      "self": "角色"
     },
     "assignee": "指派人",
     "revert": "恢复",
@@ -525,8 +516,8 @@
       "create-as-service-account": "创建为服务账号",
       "show-inactive": "查看未激活的成员",
       "remove-self-admin": {
-        "title": "请确认您要移除您的@.lower:common.role.admin角色。",
-        "description": "请确保剩下的@.lower:common.role.admin成员可以登录，否则就无人可以管理用户了。"
+        "title": "请确认您要移除您的@.lower:role.workspace-admin.self角色。",
+        "description": "请确保剩下的@.lower:role.workspace-admin.self员可以登录，否则就无人可以管理用户了。"
       }
     },
     "im-integration": {
@@ -1922,8 +1913,8 @@
       "success-member-deleted-prompt": "成功将 {name} 从当前项目移除.",
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
@@ -3197,22 +3188,40 @@
     "title": "称谓",
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
-    "owner": {
+    "workspace-admin": {
+      "self": "工作空间管理员",
+      "description": "工作空间内的所有权限。"
+    },
+    "workspace-dba": {
+      "self": "工作空间 DBA",
+      "description": "可以管理工作空间的所有数据库和实例"
+    },
+    "workspace-member": {
+      "self": "工作空间成员",
+      "description": ""
+    },
+    "project-owner": {
+      "self": "项目所有者",
       "description": "项目内的所有权限。"
     },
-    "developer": {
+    "project-developer": {
+      "self": "项目开发者",
       "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
     },
-    "releaser": {
+    "project-releaser": {
+      "self": "项目发布者",
       "description": "可查看项目基本信息，并可在指定流程中发布变更。"
     },
-    "querier": {
+    "project-querier": {
+      "self": "项目查询者",
       "description": "可查询指定范围的数据。"
     },
-    "exporter": {
+    "project-exporter": {
+      "self": "项目导出者",
       "description": "可导出指定范围的数据。"
     },
-    "viewer": {
+    "project-viewer": {
+      "self": "项目查看者",
       "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
     }
   },
