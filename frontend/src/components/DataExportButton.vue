@@ -210,9 +210,13 @@ const exportDropdownOptions = computed(() => {
   }));
 });
 
-const tryExportViaDropdown = (format: ExportFormat) => {
+const tryExportViaDropdown = async (format: ExportFormat) => {
   formData.value.format = format;
-  state.showModal = true;
+  if (props.fileType === "zip") {
+    state.showModal = true;
+  } else {
+    await doExport();
+  }
 };
 
 const exportViaDropdown = async () => {
