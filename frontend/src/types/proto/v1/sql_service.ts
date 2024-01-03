@@ -66,6 +66,8 @@ export interface ExportRequest {
    * The exported data is not masked.
    */
   admin: boolean;
+  /** The zip password provide by users. */
+  password: string;
 }
 
 export interface ExportResponse {
@@ -588,7 +590,7 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0, admin: false };
+  return { name: "", connectionDatabase: "", statement: "", limit: 0, format: 0, admin: false, password: "" };
 }
 
 export const ExportRequest = {
@@ -610,6 +612,9 @@ export const ExportRequest = {
     }
     if (message.admin === true) {
       writer.uint32(48).bool(message.admin);
+    }
+    if (message.password !== "") {
+      writer.uint32(58).string(message.password);
     }
     return writer;
   },
@@ -663,6 +668,13 @@ export const ExportRequest = {
 
           message.admin = reader.bool();
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.password = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -680,6 +692,7 @@ export const ExportRequest = {
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : 0,
       admin: isSet(object.admin) ? globalThis.Boolean(object.admin) : false,
+      password: isSet(object.password) ? globalThis.String(object.password) : "",
     };
   },
 
@@ -703,6 +716,9 @@ export const ExportRequest = {
     if (message.admin === true) {
       obj.admin = message.admin;
     }
+    if (message.password !== "") {
+      obj.password = message.password;
+    }
     return obj;
   },
 
@@ -717,6 +733,7 @@ export const ExportRequest = {
     message.limit = object.limit ?? 0;
     message.format = object.format ?? 0;
     message.admin = object.admin ?? false;
+    message.password = object.password ?? "";
     return message;
   },
 };

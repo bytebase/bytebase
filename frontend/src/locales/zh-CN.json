@@ -3359,7 +3359,8 @@
       "export-rows-required": "需要指定导出行数",
       "export-rows-must-gt-zero": "导出行数必须大于 0"
     },
-    "export-format": "导出格式"
+    "export-format": "导出格式",
+    "password-info": "提供密码来对导出的文件进行加密"
   },
   "branch": {
     "rollout": {

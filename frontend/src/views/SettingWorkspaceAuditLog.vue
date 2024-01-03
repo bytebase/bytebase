@@ -25,6 +25,7 @@
       </div>
       <DataExportButton
         size="medium"
+        :file-type="'raw'"
         :support-formats="[
           ExportFormat.CSV,
           ExportFormat.JSON,
@@ -248,7 +249,7 @@ const activityFind = computed((): FindActivityMessage => {
 });
 
 const handleExport = async (
-  format: ExportFormat,
+  { format }: { format: ExportFormat },
   callback: (content: BinaryLike | Blob, format: ExportFormat) => void
 ) => {
   const content = await activityV1Store.exportData({
