@@ -113,7 +113,7 @@ import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
 import { computed, unref, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useCurrentUserV1, useUIStateStore } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV1, hasWorkspacePermissionV2 } from "@/utils";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -163,12 +163,7 @@ const introList = computed(() => {
     },
   ];
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-environment",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.environments.create")) {
     introList.push({
       name: computed(() => t("quick-start.visit-environment")),
       link: "/environment",
