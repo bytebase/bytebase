@@ -382,6 +382,7 @@ type indexState struct {
 	keys    []string
 	primary bool
 	unique  bool
+	tp      string
 }
 
 func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
@@ -402,6 +403,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		keys:    index.Expressions,
 		primary: index.Primary,
 		unique:  index.Unique,
+		tp:      index.Type,
 	}
 }
 
@@ -424,7 +426,15 @@ func (i *indexState) toString(buf *strings.Builder) error {
 			return err
 		}
 	} else {
-		if i.unique {
+		if strings.ToUpper(i.tp) == "FULLTEXT" {
+			if _, err := buf.WriteString("FULLTEXT KEY "); err != nil {
+				return err
+			}
+		} else if strings.ToUpper(i.tp) == "SPATIAL" {
+			if _, err := buf.WriteString("SPATIAL KEY "); err != nil {
+				return err
+			}
+		} else if i.unique {
 			if _, err := buf.WriteString("UNIQUE KEY "); err != nil {
 				return err
 			}
@@ -456,6 +466,16 @@ func (i *indexState) toString(buf *strings.Builder) error {
 		}
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
+		}
+
+		if strings.ToUpper(i.tp) == "BTREE" {
+			if _, err := buf.WriteString(" USING BTREE"); err != nil {
+				return err
+			}
+		} else if strings.ToUpper(i.tp) == "HASH" {
+			if _, err := buf.WriteString(" USING HASH"); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -676,6 +696,46 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				referencedColumns: referencedColumns,
 			}
 			table.foreignKeys[name] = fk
+		case "FULLTEXT":
+			var name string
+			if ctx.IndexName() != nil {
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+			}
+			list := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    list,
+				primary: false,
+				unique:  false,
+				tp:      symbol,
+			}
+			table.indexes[name] = idx
+		case "SPATIAL":
+			var name string
+			if ctx.IndexName() != nil {
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+			}
+			list := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    list,
+				primary: false,
+				unique:  false,
+				tp:      symbol,
+			}
+			table.indexes[name] = idx
 		case "KEY", "INDEX", "UNIQUE":
 			var name string
 			if v := ctx.IndexNameAndType(); v != nil {
@@ -689,12 +749,17 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 				t.err = errors.New("multiple indexes found: " + name)
 				return
 			}
+			tp := "BTREE"
+			if v := ctx.IndexNameAndType(); v != nil && v.IndexType() != nil {
+				tp = strings.ToUpper(v.IndexType().GetText())
+			}
 			idx := &indexState{
 				id:      len(table.indexes),
 				name:    name,
 				keys:    list,
 				primary: false,
 				unique:  symbol == "UNIQUE",
+				tp:      tp,
 			}
 			table.indexes[name] = idx
 		}
