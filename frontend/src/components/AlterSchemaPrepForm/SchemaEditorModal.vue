@@ -28,6 +28,7 @@
             name="schema-editor"
             :tab="$t('schema-editor.self')"
             style="height: 100%"
+            display-directive="show:lazy"
           >
             <SchemaEditorLite
               ref="schemaEditorRef"
@@ -42,6 +43,7 @@
             name="raw-sql"
             :tab="$t('schema-editor.raw-sql')"
             style="height: 100%"
+            display-directive="show:lazy"
           >
             <div
               class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
