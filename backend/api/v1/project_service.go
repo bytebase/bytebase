@@ -102,7 +102,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 	return response, nil
 }
 
-// SearchProjects searches all projects.
+// SearchProjects searches all projects on which the user has bb.projects.get permission.
 func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
