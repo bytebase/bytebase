@@ -240,7 +240,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
 		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
-		v1pb.ProjectService_SearchProjects_FullMethodName,   // TODO(p0ny): implement me please.
 		v1pb.InstanceService_SearchInstances_FullMethodName: // TODO(p0ny): implement me please.
 		return true
 	// skip checking for sheet service because we want to
@@ -266,6 +265,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+		v1pb.ProjectService_SearchProjects_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.RolloutService_ListPlans_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
