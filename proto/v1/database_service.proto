@@ -29,6 +29,12 @@ service DatabaseService {
     option (google.api.method_signature) = "";
   }
 
+  // Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
+  rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*}/databases:search"};
+    option (google.api.method_signature) = "";
+  }
+
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
       patch: "/v1/{database.name=instances/*/databases/*}"
