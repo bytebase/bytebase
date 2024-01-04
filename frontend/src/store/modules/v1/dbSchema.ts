@@ -11,7 +11,6 @@ import {
   ViewMetadata,
   FunctionMetadata,
   DatabaseMetadataView,
-  databaseMetadataViewToJSON,
 } from "@/types/proto/v1/database_service";
 import { getInstanceAndDatabaseId } from "./common";
 
