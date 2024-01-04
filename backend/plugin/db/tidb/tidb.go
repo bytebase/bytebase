@@ -185,6 +185,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 	}
 
+	var nonTransactionStmts []string
 	var totalCommands int
 	var chunks [][]base.SingleSQL
 	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
@@ -197,6 +198,19 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, nil
 		}
 		totalCommands = len(singleSQLs)
+
+		// Find non-transactional statements.
+		// TiDB cannot run create table and create index in a single transaction.
+		var remainingSQLs []base.SingleSQL
+		for _, singleSQL := range singleSQLs {
+			if isNonTransactionStatement(singleSQL.Text) {
+				nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
+				continue
+			}
+			remainingSQLs = append(remainingSQLs, singleSQL)
+		}
+		singleSQLs = remainingSQLs
+
 		ret, err := util.ChunkedSQLScript(singleSQLs, common.MaxSheetChunksCount)
 		if err != nil {
 			return 0, errors.Wrapf(err, "failed to chunk sql")
@@ -281,7 +295,23 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
 	}
 
+	// Run non-transaction statements at the end.
+	for _, stmt := range nonTransactionStmts {
+		if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+			return 0, err
+		}
+	}
 	return totalRowsAffected, nil
+}
+
+var (
+	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
+	// CREATE [ UNIQUE ] [ SPATIAL ] [ FULLTEXT ] INDEX ... ON table_name ...
+	createIndexReg = regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?(SPATIAL\s+)?(FULLTEXT\s+)?)INDEX(\s+)`)
+)
+
+func isNonTransactionStatement(stmt string) bool {
+	return len(createIndexReg.FindString(stmt)) > 0
 }
 
 // QueryConn queries a SQL statement in a given connection.
