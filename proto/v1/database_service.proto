@@ -29,6 +29,12 @@ service DatabaseService {
     option (google.api.method_signature) = "";
   }
 
+  // Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
+  rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
+    option (google.api.http) = {get: "/v1/databases:search"};
+    option (google.api.method_signature) = "";
+  }
+
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
       patch: "/v1/{database.name=instances/*/databases/*}"
@@ -174,27 +180,22 @@ message ListDatabasesResponse {
 }
 
 message SearchDatabasesRequest {
-  // The parent, which owns this collection of databases.
-  // Format: instances/{instance}
-  // Use "instances/-" to list all databases.
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
   // The maximum number of databases to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 databases will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 2;
+  int32 page_size = 1;
 
   // A page token, received from a previous `ListDatabases` call.
   // Provide this to retrieve the subsequent page.
   //
   // When paginating, all other parameters provided to `ListDatabases` must match
   // the call that provided the page token.
-  string page_token = 3;
+  string page_token = 2;
 
   // Filter is used to filter databases returned in the list.
   // For example, "project = projects/{project}" can be used to list databases in a project.
-  string filter = 4;
+  string filter = 3;
 }
 
 message SearchDatabasesResponse {
