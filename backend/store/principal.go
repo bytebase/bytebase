@@ -34,6 +34,7 @@ type UpdateUserMessage struct {
 	Name         *string
 	PasswordHash *string
 	Role         *api.Role
+	Roles        *[]api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
 	Phone        *string
@@ -160,10 +161,10 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Role; v != nil {
-		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("$%d = ANY(member_roles.roles)", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("principal.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	query := `
@@ -176,9 +177,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		(SELECT ARRAY_AGG (member.role) FROM member WHERE member.principal_id = principal.id)
+		member_roles.roles
 	FROM principal
-	LEFT JOIN member ON principal.id = member.principal_id
+	LEFT JOIN LATERAL (SELECT ARRAY(SELECT member.role FROM member WHERE member.principal_id = principal.id ORDER BY member.role)) AS member_roles(roles) ON TRUE
 	WHERE ` + strings.Join(where, " AND ")
 
 	if v := find.Limit; v != nil {
@@ -218,24 +219,11 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		for _, r := range rolesString {
 			userMessage.Roles = append(userMessage.Roles, api.Role(r))
 		}
-
-		userMessage.Role = api.WorkspaceMember
 		if userMessage.ID == api.SystemBotID {
-			userMessage.Role = api.WorkspaceAdmin
 			userMessage.Roles = append(userMessage.Roles, api.WorkspaceAdmin)
 		}
-		for _, r := range userMessage.Roles {
-			if r == api.WorkspaceDBA {
-				userMessage.Role = api.WorkspaceDBA
-				break
-			}
-		}
-		for _, r := range userMessage.Roles {
-			if r == api.WorkspaceAdmin {
-				userMessage.Role = api.WorkspaceAdmin
-				break
-			}
-		}
+
+		userMessage.Role = backfillRoleFromRoles(userMessage.Roles)
 
 		userMessage.MemberDeleted = convertRowStatusToDeleted(rowStatus)
 		mfaConfig := storepb.MFAConfig{}
@@ -293,30 +281,27 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	).Scan(&count); err != nil {
 		return nil, err
 	}
-	role := api.WorkspaceMember
+
+	roles := create.Roles
+	if len(roles) == 0 {
+		roles = []api.Role{create.Role}
+	}
 	firstMember := count == 0
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
-		role = api.WorkspaceAdmin
-	} else if create.Role != "" {
-		role = create.Role
+		roles = append(roles, api.WorkspaceAdmin)
 	}
+	roles = uniq(roles)
 
 	if _, err := tx.ExecContext(ctx, `
-			INSERT INTO member (
-				creator_id,
-				updater_id,
-				role,
-				principal_id
-			)
-			VALUES ($1, $2, $3, $4)
-		`,
-		creatorID,
-		creatorID,
-		role,
-		userID,
-	); err != nil {
-		return nil, err
+		INSERT INTO member (
+			creator_id,
+			updater_id,
+			role,
+			principal_id
+		) SELECT $1, $2, unnest($3::text[]), $4`,
+		creatorID, creatorID, roles, userID); err != nil {
+		return nil, errors.Wrapf(err, "failed to insert members")
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -330,7 +315,8 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
-		Role:         role,
+		Roles:        roles,
+		Role:         backfillRoleFromRoles(roles),
 	}
 	s.userIDCache.Add(user.ID, user)
 	return user, nil
@@ -370,12 +356,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("mfa_config = $%d", len(principalArgs)+1)), append(principalArgs, mfaConfigBytes)
 	}
 	principalArgs = append(principalArgs, userID)
-
-	memberSet, memberArgs := []string{"updater_id = $1"}, []any{fmt.Sprintf("%d", updaterID)}
-	if v := patch.Role; v != nil {
-		memberSet, memberArgs = append(memberSet, fmt.Sprintf("role = $%d", len(memberArgs)+1)), append(memberArgs, *v)
-	}
-	memberArgs = append(memberArgs, userID)
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -418,21 +398,24 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	user.MFAConfig = &mfaConfig
 
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-			UPDATE member
-			SET `+strings.Join(memberSet, ", ")+`
-			WHERE principal_id = $%d
-			RETURNING role
-		`, len(memberArgs)),
-		memberArgs...,
-	).Scan(
-		&user.Role,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
+	var patchRoles []api.Role
+	doPatchRoles := false
+	if v := patch.Role; v != nil {
+		doPatchRoles = true
+		patchRoles = []api.Role{*v}
 	}
+	// patch.Roles overrides patch.Role
+	if v := patch.Roles; v != nil {
+		doPatchRoles = true
+		patchRoles = *v
+	}
+	if doPatchRoles {
+		if err := s.updateUserRoles(ctx, tx, user.ID, patchRoles, updaterID); err != nil {
+			return nil, errors.Wrapf(err, "failed to update user roles")
+		}
+	}
+	user.Roles = patchRoles
+	user.Role = backfillRoleFromRoles(user.Roles)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
@@ -443,4 +426,85 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		s.projectPolicyCache.Purge()
 	}
 	return user, nil
+}
+
+func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles []api.Role, updaterUID int) error {
+	oldUser, err := s.listUserImpl(ctx, tx, &FindUserMessage{ID: &userUID})
+	if err != nil {
+		return err
+	}
+	if len(oldUser) != 1 {
+		return errors.Errorf("expect to get one user with uid %d, got %d", userUID, len(oldUser))
+	}
+	oldMap, newMap := make(map[api.Role]struct{}), make(map[api.Role]struct{})
+	for _, r := range oldUser[0].Roles {
+		oldMap[r] = struct{}{}
+	}
+	for _, r := range roles {
+		newMap[r] = struct{}{}
+	}
+	var remove, add []string
+	for r := range oldMap {
+		if _, ok := newMap[r]; !ok {
+			remove = append(remove, r.String())
+		}
+	}
+	for r := range newMap {
+		if _, ok := oldMap[r]; !ok {
+			add = append(add, r.String())
+		}
+	}
+
+	if len(remove) > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			DELETE FROM member
+			WHERE principal_id = $1 AND role = ANY($2)
+		`, userUID, remove); err != nil {
+			return err
+		}
+	}
+	if len(add) > 0 {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO member (principal_id, role, creator_id, updater_id)
+			SELECT $1, unnest($2::text[]), $3, $3
+		`, userUID, add, updaterUID); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func backfillRoleFromRoles(roles []api.Role) api.Role {
+	admin, dba := false, false
+	for _, r := range roles {
+		if r == api.WorkspaceAdmin {
+			admin = true
+		}
+		if r == api.WorkspaceDBA {
+			dba = true
+		}
+	}
+	if admin {
+		return api.WorkspaceAdmin
+	}
+	if dba {
+		return api.WorkspaceDBA
+	}
+	return api.WorkspaceMember
+}
+
+func uniq[T comparable](array []T) []T {
+	res := make([]T, 0, len(array))
+	seen := make(map[T]struct{}, len(array))
+
+	for _, e := range array {
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		res = append(res, e)
+	}
+
+	return res
 }
