@@ -14,12 +14,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type transformTest struct {
-	Schema   string
-	Metadata string
-}
-
 func TestParseToMetadata(t *testing.T) {
+	type transformTest struct {
+		Schema   string
+		Metadata string
+	}
 	const (
 		record = false
 	)
@@ -59,13 +58,13 @@ func TestParseToMetadata(t *testing.T) {
 	}
 }
 
-type designTest struct {
-	Baseline string
-	Target   string
-	Result   string
-}
-
 func TestGetDesignSchema(t *testing.T) {
+	type designTest struct {
+		Baseline string
+		Target   string
+		Result   string
+	}
+
 	const (
 		record = false
 	)
