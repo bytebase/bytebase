@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowAssignee" class="flex flex-col">
+  <div v-if="shouldShowAssignee" class="flex flex-col gap-y-1">
     <div class="flex items-center gap-1">
       <NTooltip>
         <template #trigger>
