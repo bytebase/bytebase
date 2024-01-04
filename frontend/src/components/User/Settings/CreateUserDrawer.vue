@@ -85,33 +85,35 @@
       </template>
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <NPopconfirm
-            v-if="!isCreating"
-            :disabled="!allowDeactivate"
-            @positive-click="handleArchiveUser"
-          >
-            <template #trigger>
-              <NButton
-                quaternary
-                size="small"
-                :disabled="!allowDeactivate"
-                @click.stop
-              >
-                <template #icon>
-                  <ArchiveIcon class="w-4 h-auto" />
-                </template>
-                <template #default>
-                  {{ $t("settings.members.action.deactivate") }}
-                </template>
-              </NButton>
-            </template>
+          <div>
+            <NPopconfirm
+              v-if="!isCreating"
+              :disabled="!allowDeactivate"
+              @positive-click="handleArchiveUser"
+            >
+              <template #trigger>
+                <NButton
+                  quaternary
+                  size="small"
+                  :disabled="!allowDeactivate"
+                  @click.stop
+                >
+                  <template #icon>
+                    <ArchiveIcon class="w-4 h-auto" />
+                  </template>
+                  <template #default>
+                    {{ $t("settings.members.action.deactivate") }}
+                  </template>
+                </NButton>
+              </template>
 
-            <template #default>
-              <div>
-                {{ $t("settings.members.action.deactivate-confirm-title") }}
-              </div>
-            </template>
-          </NPopconfirm>
+              <template #default>
+                <div>
+                  {{ $t("settings.members.action.deactivate-confirm-title") }}
+                </div>
+              </template>
+            </NPopconfirm>
+          </div>
 
           <div class="flex flex-row items-center justify-end gap-x-3">
             <NButton @click="$emit('close')">
@@ -119,6 +121,7 @@
             </NButton>
             <NButton
               type="primary"
+              :disabled="!allowConfirm"
               :loading="state.isRequesting"
               @click="tryCreateOrUpdateUser"
             >
@@ -191,6 +194,14 @@ const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 
 const isCreating = computed(() => !props.user);
 
+const allowConfirm = computed(() => {
+  if (isCreating.value) {
+    return state.user.email;
+  } else {
+    return getUpdateMaskFromUsers(props.user!, state.user).length > 0;
+  }
+});
+
 const allowDeactivate = computed(() => {
   if (state.user.userType === UserType.SERVICE_ACCOUNT) {
     return true;
@@ -230,11 +241,10 @@ const tryCreateOrUpdateUser = async () => {
       title: state.user.title || state.user.email,
     });
   } else {
-    const oldUser = props.user!;
     await userStore.updateUser(
       UpdateUserRequest.fromPartial({
         user: state.user,
-        updateMask: getUpdateMaskFromUsers(oldUser, state.user),
+        updateMask: getUpdateMaskFromUsers(props.user!, state.user),
       })
     );
   }
