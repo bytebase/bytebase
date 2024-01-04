@@ -2363,7 +2363,12 @@
     "edit-foreign-key": "Edit foreign key",
     "select-reference-schema": "Select a schema to reference to",
     "select-reference-table": "Select a table to reference to",
-    "select-reference-column": "Select a column to reference to"
+    "select-reference-column": "Select a column to reference to",
+    "index": {
+      "indexes": "Indexes",
+      "edit-indexes": "Edit indexes",
+      "unique": "Unique"
+    }
   },
   "label": {
     "empty-label-value": "Empty",
