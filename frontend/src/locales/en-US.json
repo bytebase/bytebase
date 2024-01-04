@@ -127,7 +127,7 @@
     "gitops": "GitOps",
     "restore": "Restore",
     "detailed-guide": "detailed guide",
-    "workspace": "workspace",
+    "workspace": "Workspace",
     "application": "Application",
     "confirm": "Confirm",
     "coming-later": "Coming later",
@@ -270,7 +270,8 @@
     "view-details": "View details",
     "force-verb": "Force {verb}",
     "nothing-changed": "Nothing changed",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "nickname": "Nickname"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -520,7 +521,11 @@
       "remove-self-admin": {
         "title": "Are you sure to revoke @.lower:role.workspace-admin.self from yourself?",
         "description": "Please make sure the remaining @.lower:role.workspace-admin.self can sign in, otherwise, no one can manage users."
-      }
+      },
+      "view-by-principals": "View by principals",
+      "view-by-roles": "View by roles",
+      "add-member": "Add member",
+      "update-member": "Update member"
     },
     "im-integration": {
       "enable": "Enable",

@@ -56,6 +56,7 @@ export const useUserStore = defineStore("user", {
       for (const user of users) {
         this.userMapByName.set(user.name, user);
       }
+      console.log("users", users);
       return users;
     },
     async fetchUser(name: string, silent = false) {
@@ -159,7 +160,7 @@ export const getUpdateMaskFromUsers = (
   if (!isUndefined(update.email) && !isEqual(origin.email, update.email)) {
     updateMask.push("email");
   }
-  if (!isUndefined(update.password)) {
+  if (!isUndefined(update.password) && update.password !== "") {
     updateMask.push("password");
   }
   if (
@@ -167,6 +168,9 @@ export const getUpdateMaskFromUsers = (
     !isEqual(origin.userRole, update.userRole)
   ) {
     updateMask.push("role");
+  }
+  if (!isUndefined(update.roles) && !isEqual(origin.roles, update.roles)) {
+    updateMask.push("roles");
   }
   return updateMask;
 };

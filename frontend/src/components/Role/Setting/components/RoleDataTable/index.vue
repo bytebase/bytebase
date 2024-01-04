@@ -13,7 +13,7 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription } from "@/utils";
-import RoleOperationCell from "./cells/RoleOperationCell.vue";
+import RoleOperationsCell from "./cells/RoleOperationsCell.vue";
 import RoleTitleCell from "./cells/RoleTitleCell.vue";
 import RoleTypeCell from "./cells/RoleTypeCell.vue";
 
@@ -60,11 +60,11 @@ const columns = computed(() => {
       },
     },
     {
-      key: "operation",
-      title: t("common.operation"),
+      key: "operations",
+      title: "",
       width: "10rem",
       render: (role: Role) => {
-        return h(RoleOperationCell, {
+        return h(RoleOperationsCell, {
           role,
           onEdit: () => {
             emit("select-role", role);

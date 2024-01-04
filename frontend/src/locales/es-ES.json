@@ -270,7 +270,8 @@
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
     "nothing-changed": "nada ha cambiado",
-    "untitled": "Intitulado"
+    "untitled": "Intitulado",
+    "nickname": "Apodo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -520,7 +521,11 @@
       "remove-self-admin": {
         "title": "¿Estás seguro de revocarte @.lower:role.workspace-admin.self?",
         "description": "Asegúrese de que los @.lower:role.workspace-admin.self restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
-      }
+      },
+      "view-by-principals": "Ver por responsables",
+      "view-by-roles": "Ver por roles",
+      "add-member": "Agregar miembro",
+      "update-member": "Actualizar miembro"
     },
     "im-integration": {
       "enable": "Habilitar",
