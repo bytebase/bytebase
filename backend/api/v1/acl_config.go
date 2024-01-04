@@ -90,12 +90,12 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:   iam.PermissionIssuesUpdate,
 	v1pb.IssueService_CreateIssueComment_FullMethodName:        iam.PermissionIssueCommentsCreate,
 	v1pb.IssueService_UpdateIssueComment_FullMethodName:        iam.PermissionIssueCommentsUpdate,
-	v1pb.IssueService_ApproveIssue_FullMethodName:              "",
-	v1pb.IssueService_RejectIssue_FullMethodName:               "",
-	v1pb.IssueService_RequestIssue_FullMethodName:              "",
+	v1pb.IssueService_ApproveIssue_FullMethodName:              "", // controlled by org policy.
+	v1pb.IssueService_RejectIssue_FullMethodName:               "", // controlled by org policy.
+	v1pb.IssueService_RequestIssue_FullMethodName:              "", // controlled by org policy.
 
 	v1pb.ProjectService_ListProjects_FullMethodName:                 iam.PermissionProjectsList,
-	v1pb.ProjectService_SearchProjects_FullMethodName:               "", // TODO(p0ny): implement me.
+	v1pb.ProjectService_SearchProjects_FullMethodName:               "", // handled in the method.
 	v1pb.ProjectService_GetProject_FullMethodName:                   iam.PermissionProjectsGet,
 	v1pb.ProjectService_CreateProject_FullMethodName:                iam.PermissionProjectsCreate,
 	v1pb.ProjectService_UpdateProject_FullMethodName:                iam.PermissionProjectsUpdate,
