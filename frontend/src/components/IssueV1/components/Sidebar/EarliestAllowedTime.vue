@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shouldShowEarliestAllowedTime" class="flex flex-col">
+  <div v-if="shouldShowEarliestAllowedTime" class="flex flex-col gap-y-1">
     <h2 class="flex flex-row items-center gap-x-1">
       <div class="flex gap-x-1 items-center textlabel">
         <NTooltip>
