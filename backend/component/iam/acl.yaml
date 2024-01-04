@@ -105,7 +105,6 @@ roles:
       - bb.settings.get
       - bb.settings.list
       - bb.settings.set
-      - bb.slowQueries.list
   - name: roles/workspaceMember
     permissions:
       - bb.environments.get
@@ -160,7 +159,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.preview
-      - bb.slowQueries.list
       - bb.taskRuns.list
   - name: roles/projectDeveloper
     permissions:
@@ -190,7 +188,6 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.preview
-      - bb.slowQueries.list
       - bb.taskRuns.list
   - name: roles/projectQuerier
     permissions:
