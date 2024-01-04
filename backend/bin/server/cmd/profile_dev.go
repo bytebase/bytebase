@@ -16,6 +16,7 @@ func activeProfile(dataDir string) config.Profile {
 	p.BackupRunnerInterval = 10 * time.Second
 	p.AppRunnerInterval = 30 * time.Second
 	p.EnableMetric = false
+	p.DevelopmentIAM = true
 	// Metric collection is disabled in dev mode.
 	// p.MetricConnectionKey = "3zcZLeX3ahvlueEJqNyJysGfVAErsjjT"
 	return p

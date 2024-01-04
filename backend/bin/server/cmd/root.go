@@ -142,7 +142,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.backupRegion, "backup-region", "", "region of the backup bucket, e.g., us-west-2 for AWS S3.")
 	rootCmd.PersistentFlags().StringVar(&flags.backupCredential, "backup-credential", "", "credentials file to use for the backup bucket. It should be the same format as the AWS/GCP credential files.")
 
-	rootCmd.PersistentFlags().BoolVar(&flags.developmentIAM, "development-iam", true, "(development only) whether to use the IAM manager")
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentIAM, "development-iam", false, "(development only) whether to use the IAM manager")
 	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
 }
 
