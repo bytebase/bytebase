@@ -159,7 +159,7 @@ export const getUpdateMaskFromUsers = (
   if (!isUndefined(update.email) && !isEqual(origin.email, update.email)) {
     updateMask.push("email");
   }
-  if (!isUndefined(update.password)) {
+  if (!isUndefined(update.password) && update.password !== "") {
     updateMask.push("password");
   }
   if (
@@ -167,6 +167,9 @@ export const getUpdateMaskFromUsers = (
     !isEqual(origin.userRole, update.userRole)
   ) {
     updateMask.push("role");
+  }
+  if (!isUndefined(update.roles) && !isEqual(origin.roles, update.roles)) {
+    updateMask.push("roles");
   }
   return updateMask;
 };
