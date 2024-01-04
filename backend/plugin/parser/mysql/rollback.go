@@ -17,7 +17,7 @@ func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
 }
 
-func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]string, error) {
+func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.RollbackStatement, error) {
 	tableStatementMap, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
@@ -94,11 +94,12 @@ func getSQLType(statement string) (*ParseResult, bool, bool, error) {
 	return stmts[0], listener.IsDML, listener.IsDDL, nil
 }
 
-func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]string, error) {
-	var result []string
+func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName string, tableSuffix string) ([]base.RollbackStatement, error) {
+	var result []base.RollbackStatement
 	for tableName, tableStatements := range tableStatementMap {
+		targetTable := fmt.Sprintf("%s%s", tableName, tableSuffix)
 		var buf strings.Builder
-		if _, err := buf.WriteString(fmt.Sprintf(`CREATE TABLE "%s"."%s%s" AS `, databaseName, tableName, tableSuffix)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` AS ", databaseName, targetTable)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
 		for i, tableStatement := range tableStatements {
@@ -111,7 +112,7 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 			if len(tableStatement.table.Alias) > 0 {
 				tableName = tableStatement.table.Alias
 			}
-			if _, err := buf.WriteString(fmt.Sprintf(`SELECT "%s".* FROM `, tableName)); err != nil {
+			if _, err := buf.WriteString(fmt.Sprintf("SELECT `%s`.* FROM ", tableName)); err != nil {
 				return nil, errors.Wrap(err, "failed to write select statement")
 			}
 
@@ -122,7 +123,10 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 		if err := buf.WriteByte(';'); err != nil {
 			return nil, errors.Wrap(err, "failed to write semicolon")
 		}
-		result = append(result, buf.String())
+		result = append(result, base.RollbackStatement{
+			Statement: buf.String(),
+			TableName: targetTable,
+		})
 	}
 	return result, nil
 }
