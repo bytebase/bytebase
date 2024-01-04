@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
@@ -363,40 +362,15 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 	}
 	defer tx.Rollback()
 
-	user := &UserMessage{}
-	var mfaConfigBytes []byte
-	var rowStatus string
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`
 		UPDATE principal
 		SET `+strings.Join(principalSet, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, email, name, type, password_hash, mfa_config, phone
 	`, len(principalArgs)),
 		principalArgs...,
-	).Scan(
-		&user.ID,
-		&rowStatus,
-		&user.Email,
-		&user.Name,
-		&user.Type,
-		&user.PasswordHash,
-		&mfaConfigBytes,
-		&user.Phone,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
 	}
-
-	user.MemberDeleted = convertRowStatusToDeleted(rowStatus)
-
-	mfaConfig := storepb.MFAConfig{}
-	decoder := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := decoder.Unmarshal(mfaConfigBytes, &mfaConfig); err != nil {
-		return nil, err
-	}
-	user.MFAConfig = &mfaConfig
 
 	var patchRoles []api.Role
 	doPatchRoles := false
@@ -410,22 +384,20 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		patchRoles = *v
 	}
 	if doPatchRoles {
-		if err := s.updateUserRoles(ctx, tx, user.ID, patchRoles, updaterID); err != nil {
+		if err := s.updateUserRoles(ctx, tx, userID, patchRoles, updaterID); err != nil {
 			return nil, errors.Wrapf(err, "failed to update user roles")
 		}
 	}
-	user.Roles = patchRoles
-	user.Role = backfillRoleFromRoles(user.Roles)
 
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
-	s.userIDCache.Add(user.ID, user)
+
 	if patch.Email != nil && patch.Phone != nil {
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
 	}
-	return user, nil
+	return s.GetUserByID(ctx, userID)
 }
 
 func (s *Store) updateUserRoles(ctx context.Context, tx *Tx, userUID int, roles []api.Role, updaterUID int) error {
