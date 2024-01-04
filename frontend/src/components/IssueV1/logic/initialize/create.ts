@@ -282,7 +282,12 @@ export const buildStepsViaChangelist = async (
         const sheetName = `${params.project.name}/sheets/${sheetUID}`;
         const sheet = getLocalSheetByName(sheetName);
         setSheetStatement(sheet, statement);
-        const spec = await buildSpecForTarget(db.name, params, sheetUID);
+        const spec = await buildSpecForTarget(
+          db.name,
+          params,
+          sheetUID,
+          change.version
+        );
         step.specs.push(spec);
       }
     }
@@ -295,7 +300,8 @@ export const buildStepsViaChangelist = async (
 export const buildSpecForTarget = async (
   target: string,
   { project, query }: CreateIssueParams,
-  sheetUID?: string
+  sheetUID?: string,
+  version?: string
 ) => {
   const sheet = `${project.name}/sheets/${sheetUID ?? nextUID()}`;
   const template = query.template as TemplateType | undefined;
@@ -315,6 +321,9 @@ export const buildSpecForTarget = async (
     }
     if (!spec.changeDatabaseConfig.sheet) {
       spec.changeDatabaseConfig.sheet = sheet;
+    }
+    if (version) {
+      spec.changeDatabaseConfig.schemaVersion = version;
     }
   }
   if (template === "bb.issue.database.schema.update") {
@@ -343,6 +352,10 @@ export const buildSpecForTarget = async (
         const statement = getSheetStatement(remoteSheet);
         setSheetStatement(localSheet, statement);
       }
+    }
+
+    if (version) {
+      spec.changeDatabaseConfig.schemaVersion = version;
     }
   }
   if (template === "bb.issue.database.schema.baseline") {
