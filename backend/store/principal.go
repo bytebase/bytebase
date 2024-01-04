@@ -397,6 +397,7 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 		s.projectIDPolicyCache.Purge()
 		s.projectPolicyCache.Purge()
 	}
+	s.userIDCache.Remove(userID)
 	return s.GetUserByID(ctx, userID)
 }
 
