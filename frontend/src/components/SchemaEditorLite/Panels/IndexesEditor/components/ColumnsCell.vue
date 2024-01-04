@@ -8,6 +8,7 @@
     :multiple="true"
     :max-tag-count="'responsive'"
     :placeholder="$t('schema-editor.columns')"
+    :filterable="true"
     suffix-style="right: 3px"
     class="bb-schema-editor--index-columns-select"
     @focus="focused = true"
