@@ -1,17 +1,16 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { roleServiceClient } from "@/grpcweb";
-import { ComposedRole } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {
-  const roleList = ref<ComposedRole[]>([]);
+  const roleList = ref<Role[]>([]);
 
   const fetchRoleList = async () => {
     const { roles } = await roleServiceClient.listRoles({});
-    roleList.value = roles as ComposedRole[];
+    roleList.value = roles as Role[];
     return roleList.value;
   };
 
@@ -23,10 +22,10 @@ export const useRoleStore = defineStore("role", () => {
     const existedRole = roleList.value.find((r) => r.name === role.name);
     if (existedRole) {
       // update
-      const updated = (await roleServiceClient.updateRole({
+      const updated = await roleServiceClient.updateRole({
         role,
         updateMask: ["title", "description"],
-      })) as ComposedRole;
+      });
       const index = roleList.value.findIndex((r) => r.name === role.name);
       if (index >= 0) {
         roleList.value.splice(index, 1, updated);
@@ -34,10 +33,10 @@ export const useRoleStore = defineStore("role", () => {
       return updated;
     } else {
       // create
-      const created = (await roleServiceClient.createRole({
+      const created = await roleServiceClient.createRole({
         role,
         roleId: extractRoleResourceName(role.name),
-      })) as ComposedRole;
+      });
       roleList.value.push(created);
       return created;
     }
