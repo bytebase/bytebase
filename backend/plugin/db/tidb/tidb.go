@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -172,26 +173,110 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	defer conn.Close()
 
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return 0, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
+
 	if opts.BeginFunc != nil {
 		if err := opts.BeginFunc(ctx, conn); err != nil {
 			return 0, err
 		}
 	}
+
+	var totalCommands int
+	var chunks [][]base.SingleSQL
+	if opts.ChunkedSubmission && len(statement) <= common.MaxSheetCheckSize {
+		singleSQLs, err := tidbparser.SplitSQL(statement)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to split sql")
+		}
+		singleSQLs = base.FilterEmptySQL(singleSQLs)
+		if len(singleSQLs) == 0 {
+			return 0, nil
+		}
+		totalCommands = len(singleSQLs)
+		ret, err := util.ChunkedSQLScript(singleSQLs, common.MaxSheetChunksCount)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to chunk sql")
+		}
+		chunks = ret
+	} else {
+		chunks = [][]base.SingleSQL{
+			{
+				base.SingleSQL{
+					Text: statement,
+				},
+			},
+		}
+	}
+
 	tx, err := conn.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to begin execute transaction")
 	}
 	defer tx.Rollback()
 
-	sqlResult, err := tx.ExecContext(ctx, statement)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to execute context in a transaction")
+	currentIndex := 0
+	var totalRowsAffected int64
+	for _, chunk := range chunks {
+		if len(chunk) == 0 {
+			continue
+		}
+		// Start the current chunk.
+
+		// Set the progress information for the current chunk.
+		if opts.UpdateExecutionStatus != nil {
+			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
+				CommandsTotal:     int32(totalCommands),
+				CommandsCompleted: int32(currentIndex),
+				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
+				},
+				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
+				},
+			})
+		}
+
+		chunkText, err := util.ConcatChunk(chunk)
+		if err != nil {
+			return 0, err
+		}
+
+		sqlResult, err := tx.ExecContext(ctx, chunkText)
+		if err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				slog.Info("cancel connection", slog.String("connectionID", connectionID))
+				if err := driver.StopConnectionByID(connectionID); err != nil {
+					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
+				}
+			}
+
+			return 0, &db.ErrorWithPosition{
+				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
+				Start: &storepb.TaskRunResult_Position{
+					Line:   int32(chunk[0].FirstStatementLine),
+					Column: int32(chunk[0].FirstStatementColumn),
+				},
+				End: &storepb.TaskRunResult_Position{
+					Line:   int32(chunk[len(chunk)-1].LastLine),
+					Column: int32(chunk[len(chunk)-1].LastColumn),
+				},
+			}
+		}
+		rowsAffected, err := sqlResult.RowsAffected()
+		if err != nil {
+			// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
+			slog.Debug("rowsAffected returns error", log.BBError(err))
+		}
+		totalRowsAffected += rowsAffected
+		currentIndex += len(chunk)
 	}
-	totalRowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		// Since we cannot differentiate DDL and DML yet, we have to ignore the error.
-		slog.Debug("rowsAffected returns error", log.BBError(err))
-	}
+
 	if err := tx.Commit(); err != nil {
 		return 0, errors.Wrapf(err, "failed to commit execute transaction")
 	}
