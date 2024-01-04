@@ -360,7 +360,7 @@ const handleAddIndex = () => {
   // eslint-disable-next-line vue/no-mutating-props
   props.table.indexes.push(
     IndexMetadata.fromPartial({
-      name: `${props.table.name}-index-${randomString(8).toLowerCase()}`,
+      name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
     })
   );
   markTableStatus("updated");
