@@ -2359,7 +2359,12 @@
     "edit-foreign-key": "Editar clave externa",
     "select-reference-schema": "Seleccionar un esquema de referencia",
     "select-reference-table": "Seleccionar una tabla de referencia",
-    "select-reference-column": "Seleccionar una columna de referencia"
+    "select-reference-column": "Seleccionar una columna de referencia",
+    "index": {
+      "indexes": "Índices",
+      "edit-indexes": "Editar índices",
+      "unique": "Único"
+    }
   },
   "label": {
     "empty-label-value": "Valor",

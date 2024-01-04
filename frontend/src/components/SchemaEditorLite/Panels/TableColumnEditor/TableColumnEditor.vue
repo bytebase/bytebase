@@ -1,5 +1,6 @@
 <template>
   <div
+    v-show="show"
     ref="containerElRef"
     class="w-full h-full overflow-x-auto"
     :data-height="containerHeight"
@@ -113,6 +114,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
+    show?: boolean;
     readonly: boolean;
     showForeignKey?: boolean;
     db: ComposedDatabase;
@@ -129,6 +131,7 @@ const props = withDefaults(
     getColumnItemComputedClassList?: (column: ColumnMetadata) => string;
   }>(),
   {
+    show: true,
     showForeignKey: true,
     disableChangeTable: false,
     allowReorderColumns: false,
