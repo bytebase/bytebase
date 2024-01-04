@@ -50,10 +50,7 @@ func NewManager(store *store.Store) (*Manager, error) {
 // Check if the user has the permission p
 // or has the permission p in every project.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
-	workspaceRoles, err := m.getWorkspaceRoles(user)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get workspace roles")
-	}
+	workspaceRoles := m.getWorkspaceRoles(user)
 	projectRoles, err := m.getProjectRoles(ctx, user, projectIDs)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project roles")
@@ -111,9 +108,13 @@ func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]str
 	}
 	return true
 }
-func (*Manager) getWorkspaceRoles(user *store.UserMessage) ([]string, error) {
-	role := common.FormatRole(user.Role.String())
-	return []string{role}, nil
+
+func (*Manager) getWorkspaceRoles(user *store.UserMessage) []string {
+	var roles []string
+	for _, r := range user.Roles {
+		roles = append(roles, common.FormatRole(r.String()))
+	}
+	return roles
 }
 
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
