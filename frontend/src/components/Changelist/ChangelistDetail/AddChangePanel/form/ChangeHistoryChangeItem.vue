@@ -19,6 +19,18 @@
         />
         <span>@</span>
         <span class="text-sm">{{ changeHistory.version }}</span>
+        <router-link
+          :to="{
+            name: 'workspace.issue.detail',
+            params: {
+              issueSlug: extractIssueUID(changeHistory.issue),
+            },
+          }"
+          class="normal-link text-sm hover:!no-underline"
+          target="_blank"
+        >
+          #{{ extractIssueUID(changeHistory.issue) }}
+        </router-link>
       </div>
     </div>
     <div
@@ -45,7 +57,7 @@ import { RichDatabaseName } from "@/components/v2";
 import { useChangeHistoryStore, useDatabaseV1Store } from "@/store";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, extractIssueUID } from "@/utils";
 import { displaySemanticType } from "./utils";
 
 const props = defineProps<{
