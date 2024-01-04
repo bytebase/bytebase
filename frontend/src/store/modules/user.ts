@@ -56,7 +56,6 @@ export const useUserStore = defineStore("user", {
       for (const user of users) {
         this.userMapByName.set(user.name, user);
       }
-      console.log("users", users);
       return users;
     },
     async fetchUser(name: string, silent = false) {
