@@ -179,7 +179,6 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.phone,
 		(SELECT ARRAY_AGG (member.role) FROM member WHERE member.principal_id = principal.id)
 	FROM principal
-	LEFT JOIN member ON principal.id = member.principal_id
 	WHERE ` + strings.Join(where, " AND ")
 
 	if v := find.Limit; v != nil {
