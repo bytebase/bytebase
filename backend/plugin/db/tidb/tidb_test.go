@@ -42,3 +42,36 @@ func TestParseVersion(t *testing.T) {
 		a.Equal(tc.wantRest, rest)
 	}
 }
+
+func TestIsNonTransactionStatement(t *testing.T) {
+	tests := []struct {
+		stmt string
+		want bool
+	}{
+		{
+			`CREATE DATABASE "hello" ENCODING "UTF8";`,
+			false,
+		},
+		{
+			`CREATE table hello(id integer);`,
+			false,
+		},
+		{
+			`CREATE INDEX c1 ON t1 (c1);`,
+			true,
+		},
+		{
+			`CREATE UNIQUE INDEX c1 ON t1 (c1);`,
+			true,
+		},
+		{
+			`CREATE UNIQUE INDEX c1 ON t1 (c1) INVISIBLE;`,
+			true,
+		},
+	}
+
+	for _, test := range tests {
+		got := isNonTransactionStatement(test.stmt)
+		require.Equal(t, test.want, got)
+	}
+}
