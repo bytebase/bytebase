@@ -28,6 +28,7 @@
           }"
           class="normal-link text-sm hover:!no-underline"
           target="_blank"
+          @click.stop
         >
           #{{ extractIssueUID(changeHistory.issue) }}
         </router-link>
