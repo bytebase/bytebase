@@ -1149,6 +1149,7 @@ ViewMetadata is the metadata for views.
 | ----- | ---- | ----- | ----------- |
 | sheet | [string](#string) |  | The name of a sheet. |
 | source | [string](#string) |  | The source of origin. 1) change history: instances/{instance}/databases/{database}/changeHistories/{changeHistory}. 2) branch: projects/{project}/branches/{branch}. 3) raw SQL if empty. |
+| version | [string](#string) |  | The migration version for a change. |
 
 
 
