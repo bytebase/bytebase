@@ -161,10 +161,10 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		where, args = append(where, fmt.Sprintf("principal.type = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.Role; v != nil {
-		where, args = append(where, fmt.Sprintf("member.role = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("$%d = ANY(member_roles.roles)", len(args)+1)), append(args, *v)
 	}
 	if !find.ShowDeleted {
-		where, args = append(where, fmt.Sprintf("member.row_status = $%d", len(args)+1)), append(args, api.Normal)
+		where, args = append(where, fmt.Sprintf("principal.row_status = $%d", len(args)+1)), append(args, api.Normal)
 	}
 
 	query := `
@@ -177,8 +177,9 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		ARRAY (SELECT member.role FROM member WHERE member.principal_id = principal.id ORDER BY member.role)
+		member_roles.roles
 	FROM principal
+	LEFT JOIN LATERAL (SELECT ARRAY(SELECT member.role FROM member WHERE member.principal_id = principal.id ORDER BY member.role)) AS member_roles(roles) ON TRUE
 	WHERE ` + strings.Join(where, " AND ")
 
 	if v := find.Limit; v != nil {
