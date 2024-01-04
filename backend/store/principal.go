@@ -177,7 +177,7 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		(SELECT ARRAY_AGG (member.role) FROM member WHERE member.principal_id = principal.id ORDER BY member.role)
+		ARRAY (SELECT member.role FROM member WHERE member.principal_id = principal.id ORDER BY member.role)
 	FROM principal
 	WHERE ` + strings.Join(where, " AND ")
 
