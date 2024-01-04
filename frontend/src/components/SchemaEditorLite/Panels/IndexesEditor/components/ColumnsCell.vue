@@ -8,7 +8,6 @@
     :multiple="true"
     :max-tag-count="'responsive'"
     :placeholder="$t('schema-editor.columns')"
-    :render-tag="renderTag"
     suffix-style="right: 3px"
     class="bb-schema-editor--index-columns-select"
     @focus="focused = true"
@@ -18,9 +17,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NSelect, NTag, SelectOption } from "naive-ui";
-import { SelectBaseOption } from "naive-ui/es/select/src/interface";
-import { CSSProperties, computed, h, ref } from "vue";
+import { NSelect, SelectOption } from "naive-ui";
+import { CSSProperties, computed, ref } from "vue";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnMetadata,
@@ -73,28 +71,11 @@ const style = computed(() => {
 
   return style;
 });
-
-const renderTag = (props: {
-  option: SelectBaseOption;
-  handleClose: () => void;
-}) => {
-  return h(
-    NTag,
-    {
-      size: "small",
-      closable: true,
-      onClose: props.handleClose,
-    },
-    {
-      default: () => props.option.label,
-    }
-  );
-};
 </script>
 
 <style lang="postcss" scoped>
 .bb-schema-editor--index-columns-select :deep(.n-base-selection) {
-  --n-padding-multiple: 4px 16px 2px 4px !important;
+  --n-padding-multiple: 2px 16px 0px 2px !important;
   --n-color: transparent !important;
   --n-color-disabled: transparent !important;
   --n-border: none !important;
