@@ -149,12 +149,6 @@ export interface ListDatabasesResponse {
 
 export interface SearchDatabasesRequest {
   /**
-   * The parent, which owns this collection of databases.
-   * Format: instances/{instance}
-   * Use "instances/-" to list all databases.
-   */
-  parent: string;
-  /**
    * The maximum number of databases to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 databases will be returned.
@@ -1745,22 +1739,19 @@ export const ListDatabasesResponse = {
 };
 
 function createBaseSearchDatabasesRequest(): SearchDatabasesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+  return { pageSize: 0, pageToken: "", filter: "" };
 }
 
 export const SearchDatabasesRequest = {
   encode(message: SearchDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(8).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(18).string(message.pageToken);
     }
     if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
+      writer.uint32(26).string(message.filter);
     }
     return writer;
   },
@@ -1773,28 +1764,21 @@ export const SearchDatabasesRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.pageToken = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -1811,7 +1795,6 @@ export const SearchDatabasesRequest = {
 
   fromJSON(object: any): SearchDatabasesRequest {
     return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
@@ -1820,9 +1803,6 @@ export const SearchDatabasesRequest = {
 
   toJSON(message: SearchDatabasesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
@@ -1840,7 +1820,6 @@ export const SearchDatabasesRequest = {
   },
   fromPartial(object: DeepPartial<SearchDatabasesRequest>): SearchDatabasesRequest {
     const message = createBaseSearchDatabasesRequest();
-    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
@@ -8472,6 +8451,46 @@ export const DatabaseServiceDefinition = {
               115,
               101,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query. */
+    searchDatabases: {
+      name: "SearchDatabases",
+      requestType: SearchDatabasesRequest,
+      requestStream: false,
+      responseType: SearchDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              22,
+              18,
+              20,
+              47,
+              118,
+              49,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
             ]),
           ],
         },
