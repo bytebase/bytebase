@@ -11,6 +11,7 @@ import {
   ViewMetadata,
   FunctionMetadata,
   DatabaseMetadataView,
+  databaseMetadataViewToJSON,
 } from "@/types/proto/v1/database_service";
 import { getInstanceAndDatabaseId } from "./common";
 
@@ -32,9 +33,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
       this._databaseMetadataByName.set(metadata.name, metadata);
       return metadata;
     },
-    mergeToCache(metadata: DatabaseMetadata) {
+    mergeToCache(metadata: DatabaseMetadata, override: boolean) {
       const existed = this._databaseMetadataByName.get(metadata.name);
-      if (!existed) {
+      if (!existed || override) {
         return this.setCache(metadata);
       }
 
@@ -91,8 +92,11 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
         databaseMetadata: metadata,
         updateMask: ["schema_configs"],
       });
-      this.mergeToCache(metadata);
-      return metadata;
+      const existed = this._databaseMetadataByName.get(metadata.name);
+      if (existed) {
+        existed.schemaConfigs = metadata.schemaConfigs;
+        this.setCache(metadata);
+      }
     },
     async getOrFetchDatabaseMetadata({
       database,
@@ -147,7 +151,10 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
           }
         )
         .then((res) => {
-          this.mergeToCache(res);
+          this.mergeToCache(
+            res,
+            view === DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
+          );
           return res;
         });
       this.requestCache.set(metadataName, promise);
@@ -241,7 +248,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", {
               }
             }
           }
-          this.mergeToCache(res);
+          this.mergeToCache(res, false);
           return tableMetadata;
         });
     },

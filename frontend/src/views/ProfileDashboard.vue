@@ -12,7 +12,7 @@
           <div
             class="mt-6 sm:flex-1 sm:min-w-0 sm:flex sm:items-center sm:justify-end sm:space-x-6 sm:pb-1"
           >
-            <div class="mt-6 flex flex-row justify-stretch space-x-4">
+            <div class="mt-6 flex flex-row justify-stretch space-x-2">
               <template v-if="allowEdit">
                 <template v-if="state.editing">
                   <NButton @click.prevent="cancelEdit">
