@@ -28,14 +28,14 @@
       </div>
     </template>
     <template #item="{ item: changeHistory }: BBGridRow<ChangeHistory>">
-      <div class="bb-grid-cell" @click.stop.prevent>
+      <div class="bb-grid-cell !pr-4" @click.stop.prevent="tryClickCheckbox">
         <NCheckbox
           :checked="isSelected(changeHistory)"
           @update:checked="toggleSelect(changeHistory, $event)"
         />
       </div>
 
-      <div class="bb-grid-cell">
+      <div class="bb-grid-cell !pl-0">
         {{ displaySemanticType(changeHistory.type) }}
       </div>
       <div class="bb-grid-cell">
@@ -84,8 +84,8 @@ const { t } = useI18n();
 
 const columns = computed((): BBGridColumn[] => {
   return [
-    { title: "", width: "auto" },
-    { title: t("common.type"), width: "auto" },
+    { title: "", width: "auto", class: "!pr-4" },
+    { title: t("common.type"), width: "auto", class: "!pl-0" },
     { title: t("common.version"), width: "1fr" },
     { title: t("common.issue"), width: "auto" },
     {
@@ -163,5 +163,14 @@ const renderVersion = (item: ChangeHistory) => {
 
 const handleClickRow = (item: ChangeHistory) => {
   emit("click-item", item);
+};
+
+const tryClickCheckbox = (e: MouseEvent) => {
+  console.log(e);
+  const div = e.target as HTMLElement;
+  const checkbox = div.querySelector(".n-checkbox");
+  if (!checkbox) return;
+  const e2 = new MouseEvent("click");
+  checkbox.dispatchEvent(e2);
 };
 </script>
