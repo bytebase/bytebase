@@ -84,7 +84,7 @@ func local_request_BranchService_GetBranch_0(ctx context.Context, marshaler runt
 }
 
 var (
-	filter_BranchService_ListBranches_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_BranchService_ListBranches_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_BranchService_ListBranches_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -154,18 +154,14 @@ func local_request_BranchService_ListBranches_0(ctx context.Context, marshaler r
 }
 
 var (
-	filter_BranchService_CreateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "parent": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
+	filter_BranchService_CreateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_BranchService_CreateBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateBranchRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -202,11 +198,7 @@ func local_request_BranchService_CreateBranch_0(ctx context.Context, marshaler r
 	var protoReq CreateBranchRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Branch); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Branch); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -240,7 +232,7 @@ func local_request_BranchService_CreateBranch_0(ctx context.Context, marshaler r
 }
 
 var (
-	filter_BranchService_UpdateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_BranchService_UpdateBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"branch": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_BranchService_UpdateBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -340,7 +332,7 @@ func local_request_BranchService_UpdateBranch_0(ctx context.Context, marshaler r
 }
 
 var (
-	filter_BranchService_MergeBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_BranchService_MergeBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_BranchService_MergeBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -410,7 +402,7 @@ func local_request_BranchService_MergeBranch_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_BranchService_RebaseBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_BranchService_RebaseBranch_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_BranchService_RebaseBranch_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -532,7 +524,7 @@ func local_request_BranchService_DeleteBranch_0(ctx context.Context, marshaler r
 }
 
 var (
-	filter_BranchService_DiffDatabase_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_BranchService_DiffDatabase_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_BranchService_DiffDatabase_0(ctx context.Context, marshaler runtime.Marshaler, client BranchServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -605,11 +597,7 @@ func request_BranchService_DiffMetadata_0(ctx context.Context, marshaler runtime
 	var protoReq DiffMetadataRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -622,11 +610,7 @@ func local_request_BranchService_DiffMetadata_0(ctx context.Context, marshaler r
 	var protoReq DiffMetadataRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
