@@ -1364,6 +1364,12 @@
       "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
       "min-value": "最小值 {value} 分钟"
+    },
+    "maximum-connections": {
+      "self": "最大连接数",
+      "default-value": "默认 (10 个连接)",
+      "description": "通过设置实例的最大连接数来限制连接和资源的使用。",
+      "max-value": "最大连接数 {value} 个"
     }
   },
   "environment": {
