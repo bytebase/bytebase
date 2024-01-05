@@ -79,6 +79,7 @@
 
 <script setup lang="ts">
 import { asyncComputed } from "@vueuse/core";
+import dayjs from "dayjs";
 import { File, GitBranch, History } from "lucide-vue-next";
 import { NRadio, NRadioGroup } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
@@ -161,11 +162,12 @@ const doAddChange = async () => {
       const sheet = localSheetStore.getOrCreateSheetByName(change.sheet);
       const sourceType = getChangelistChangeSourceType(change);
       if (sourceType === "CHANGE_HISTORY") {
-        const { statement } =
+        const { changeHistory, statement } =
           await useChangeHistoryStore().exportChangeHistoryFullStatementByName(
             change.source
           );
         setSheetStatement(sheet, statement);
+        change.version = changeHistory?.version || "";
       }
       if (sourceType === "BRANCH") {
         // For branch changes, use its diff DDL
@@ -183,6 +185,19 @@ const doAddChange = async () => {
       }
       const created = await localSheetStore.saveLocalSheetToRemote(sheet);
       change.sheet = created.name;
+    }
+
+    const sourceType = getChangelistChangeSourceType(change);
+    if (sourceType === "CHANGE_HISTORY") {
+      const { changeHistory } =
+        await useChangeHistoryStore().exportChangeHistoryFullStatementByName(
+          change.source
+        );
+      change.version = changeHistory?.version || "";
+    }
+    if (change.version === "") {
+      // Example: 20240101061834.
+      change.version = dayjs().utc().format("YYYYMMDDHHmmss");
     }
 
     return change;
