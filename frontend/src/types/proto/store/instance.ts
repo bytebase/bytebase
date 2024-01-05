@@ -14,7 +14,14 @@ export interface InstanceOptions {
    */
   schemaTenantMode: boolean;
   /** How often the instance is synced. */
-  syncInterval: Duration | undefined;
+  syncInterval:
+    | Duration
+    | undefined;
+  /**
+   * The maximum number of connections.
+   * The default is 10 if the value is unset or zero.
+   */
+  maximumConnections: number;
 }
 
 /** InstanceMetadata is the metadata for instances. */
@@ -28,7 +35,7 @@ export interface InstanceMetadata {
 }
 
 function createBaseInstanceOptions(): InstanceOptions {
-  return { schemaTenantMode: false, syncInterval: undefined };
+  return { schemaTenantMode: false, syncInterval: undefined, maximumConnections: 0 };
 }
 
 export const InstanceOptions = {
@@ -38,6 +45,9 @@ export const InstanceOptions = {
     }
     if (message.syncInterval !== undefined) {
       Duration.encode(message.syncInterval, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.maximumConnections !== 0) {
+      writer.uint32(24).int32(message.maximumConnections);
     }
     return writer;
   },
@@ -63,6 +73,13 @@ export const InstanceOptions = {
 
           message.syncInterval = Duration.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.maximumConnections = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -76,6 +93,7 @@ export const InstanceOptions = {
     return {
       schemaTenantMode: isSet(object.schemaTenantMode) ? globalThis.Boolean(object.schemaTenantMode) : false,
       syncInterval: isSet(object.syncInterval) ? Duration.fromJSON(object.syncInterval) : undefined,
+      maximumConnections: isSet(object.maximumConnections) ? globalThis.Number(object.maximumConnections) : 0,
     };
   },
 
@@ -86,6 +104,9 @@ export const InstanceOptions = {
     }
     if (message.syncInterval !== undefined) {
       obj.syncInterval = Duration.toJSON(message.syncInterval);
+    }
+    if (message.maximumConnections !== 0) {
+      obj.maximumConnections = Math.round(message.maximumConnections);
     }
     return obj;
   },
@@ -99,6 +120,7 @@ export const InstanceOptions = {
     message.syncInterval = (object.syncInterval !== undefined && object.syncInterval !== null)
       ? Duration.fromPartial(object.syncInterval)
       : undefined;
+    message.maximumConnections = object.maximumConnections ?? 0;
     return message;
   },
 };

@@ -1367,6 +1367,12 @@
       "default-never": "Default (never)",
       "description": "Bytebase periodically syncs instance schema and detects anomalies.",
       "min-value": "Min value {value} minutes"
+    },
+    "maximum-connections": {
+      "self": "Maximum Connections",
+      "default-value": "Default (10)",
+      "description": "Limiting connection and resource usage is achieved by setting the maximum number of connections to the instance.",
+      "max-value": "Maximum {value} connections"
     }
   },
   "environment": {

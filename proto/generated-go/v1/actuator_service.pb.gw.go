@@ -50,7 +50,7 @@ func local_request_ActuatorService_GetActuatorInfo_0(ctx context.Context, marsha
 }
 
 var (
-	filter_ActuatorService_UpdateActuatorInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{"actuator": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_ActuatorService_UpdateActuatorInfo_0 = &utilities.DoubleArray{Encoding: map[string]int{"actuator": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_ActuatorService_UpdateActuatorInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ActuatorServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
