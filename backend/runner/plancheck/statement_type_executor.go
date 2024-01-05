@@ -612,37 +612,12 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 }
 
 func tidbStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
-	// Due to the limitation of TiDB parser, we should split the multi-statement into single statements, and extract
-	// the TiDB unsupported statements, otherwise, the parser will panic or return the error.
-	unsupportStmt, supportStmt, err := tidbparser.ExtractTiDBUnsupportedStmts(statement)
-	if err != nil {
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: err.Error(),
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:   0,
-						Detail: "",
-						Code:   advisor.StatementSyntaxError.Int32(),
-					},
-				},
-			},
-		}, nil
-	}
-	// TODO(zp): We regard the DELIMITER statement as a DDL statement here.
-	// But we should ban the DELIMITER statement because go-sql-driver doesn't support it.
-	hasUnsupportDDL := len(unsupportStmt) > 0
-
 	p := tidbp.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
 	p.EnableWindowFunc(true)
 
-	stmts, _, err := p.Parse(supportStmt, charset, collation)
+	stmts, _, err := p.Parse(statement, charset, collation)
 	if err != nil {
 		// nolint: nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -673,7 +648,7 @@ func tidbStatementTypeCheck(statement string, charset string, collation string, 
 			_, isDDL := node.(tidbast.DDLNode)
 			// We only want to disallow DDL statements in CHANGE DATA.
 			// We need to run some common statements, e.g. COMMIT.
-			if isDDL || hasUnsupportDDL {
+			if isDDL {
 				results = append(results, &storepb.PlanCheckRunResult_Result{
 					Status:  storepb.PlanCheckRunResult_Result_WARNING,
 					Title:   "Data change can only run DML",
