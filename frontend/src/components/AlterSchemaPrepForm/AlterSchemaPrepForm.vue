@@ -125,6 +125,7 @@
                   "
                   v-model:selected="state.selectedLabels"
                   :database-list="rawDatabaseList"
+                  :placement="'left-start'"
                 />
                 <SearchBox
                   v-if="state.alterType === 'MULTI_DB'"
@@ -149,6 +150,7 @@
                   <DatabaseLabelFilter
                     v-model:selected="state.selectedLabels"
                     :database-list="rawDatabaseList"
+                    :placement="'left-start'"
                   />
                 </div>
                 <DatabaseV1Table

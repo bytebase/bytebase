@@ -102,16 +102,11 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 	return response, nil
 }
 
-// SearchProjects searches all projects.
-// TODO(p0ny): filter the projects by the user's permission.
+// SearchProjects searches all projects on which the user has bb.projects.get permission.
 func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.SearchProjectsRequest) (*v1pb.SearchProjectsResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
@@ -120,11 +115,11 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	}
 	response := &v1pb.SearchProjectsResponse{}
 	for _, project := range projects {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
 		}
-		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
+		if !ok {
 			continue
 		}
 		response.Projects = append(response.Projects, convertToProject(project))

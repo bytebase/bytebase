@@ -40,7 +40,7 @@ type GetQuerySpanFunc func(ctx context.Context, statement, database string, meta
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
-type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]string, error)
+type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]RollbackStatement, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -239,7 +239,7 @@ func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectF
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
-func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]string, error) {
+func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]RollbackStatement, error) {
 	f, ok := transformDMLToSelect[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)

@@ -7,6 +7,20 @@
         <span v-if="changeHistory" class="textinfolabel">
           {{ changeHistory.version }}
         </span>
+        <router-link
+          v-if="changeHistory"
+          :to="{
+            name: 'workspace.issue.detail',
+            params: {
+              issueSlug: extractIssueUID(changeHistory.issue),
+            },
+          }"
+          class="normal-link text-sm hover:!no-underline"
+          target="_blank"
+          @click.stop
+        >
+          #{{ extractIssueUID(changeHistory.issue) }}
+        </router-link>
       </div>
     </template>
     <template v-if="type === 'BRANCH'">
@@ -33,7 +47,7 @@ import { File, GitBranch, History } from "lucide-vue-next";
 import { computed } from "vue";
 import { useChangeHistoryStore, useBranchStore } from "@/store";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { getChangelistChangeSourceType } from "@/utils";
+import { extractIssueUID, getChangelistChangeSourceType } from "@/utils";
 
 const props = defineProps<{
   change: Change;

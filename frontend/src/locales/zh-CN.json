@@ -268,7 +268,8 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "nothing-changed": "没有改变",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "nickname": "昵称"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -518,7 +519,11 @@
       "remove-self-admin": {
         "title": "请确认您要移除您的@.lower:role.workspace-admin.self角色。",
         "description": "请确保剩下的@.lower:role.workspace-admin.self员可以登录，否则就无人可以管理用户了。"
-      }
+      },
+      "view-by-principals": "按成员查看",
+      "view-by-roles": "按角色查看",
+      "add-member": "添加成员",
+      "update-member": "更新成员"
     },
     "im-integration": {
       "enable": "启用",
@@ -3396,6 +3401,11 @@
       "conflict-not-resolved": "似乎还有尚未解决的冲突。",
       "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
       "preview-merge-result": "预览合并结果"
+    },
+    "source": {
+      "baseline-version": "基线版本",
+      "parent-branch": "父分支",
+      "self": "来源"
     }
   }
 }

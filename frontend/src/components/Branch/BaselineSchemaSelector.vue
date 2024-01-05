@@ -1,30 +1,24 @@
 <template>
-  <div class="w-full mx-auto flex flex-col justify-start items-start gap-y-3">
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center shrink-0 text-sm">
-        {{ $t("common.database") }}
-      </span>
-      <EnvironmentSelect
-        class="!w-60 mr-4 shrink-0"
-        name="environment"
-        :disabled="readonly || props.loading"
-        :selected-id="state.environmentId"
-        :select-default="false"
-        :environment="state.environmentId"
-        @update:environment="handleEnvironmentSelect"
-      />
-      <DatabaseSelect
-        class="!w-128"
-        :placeholder="$t('schema-designer.select-database-placeholder')"
-        :disabled="readonly || props.loading"
-        :allowed-engine-type-list="allowedEngineTypeList"
-        :environment="state.environmentId"
-        :project="projectId"
-        :database="state.databaseId ?? String(UNKNOWN_ID)"
-        :fallback-option="false"
-        @update:database="handleDatabaseSelect"
-      />
-    </div>
+  <div class="contents">
+    <EnvironmentSelect
+      name="environment"
+      :disabled="readonly || props.loading"
+      :selected-id="state.environmentId"
+      :select-default="false"
+      :environment="state.environmentId"
+      @update:environment="handleEnvironmentSelect"
+    />
+    <DatabaseSelect
+      style="width: 100%"
+      :placeholder="$t('schema-designer.select-database-placeholder')"
+      :disabled="readonly || props.loading"
+      :allowed-engine-type-list="allowedEngineTypeList"
+      :environment="state.environmentId"
+      :project="projectId"
+      :database="state.databaseId ?? String(UNKNOWN_ID)"
+      :fallback-option="false"
+      @update:database="handleDatabaseSelect"
+    />
   </div>
 </template>
 

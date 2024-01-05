@@ -1,13 +1,11 @@
 <template>
-  <BBGrid
-    :column-list="COLUMN_LIST"
-    :data-source="tableRows"
-    :show-header="false"
-    :row-clickable="false"
-    class="border"
-  >
-    <template #item="{ item: row }: BBGridRow<TableRow>">
-      <div class="bb-grid-cell">
+  <div class="space-y-5 divide-y pb-5">
+    <div
+      v-for="(row, i) in tableRows"
+      :key="i"
+      class="pt-5 first:pt-2 space-y-2"
+    >
+      <div class="flex items-center space-x-3">
         <div
           class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
           :class="statusIconClass(row.advice.status)"
@@ -19,50 +17,46 @@
             <heroicons-outline:exclamation class="h-4 w-4" />
           </template>
           <template v-else-if="row.advice.status === Advice_Status.ERROR">
-            <span class="text-white font-medium text-base" aria-hidden="true"
-              >!</span
-            >
+            <span class="text-white font-medium text-base" aria-hidden="true">
+              !
+            </span>
           </template>
         </div>
+        <div v-if="showCategoryColumn">
+          {{ row.category }}
+        </div>
+        <div class="font-semibold">{{ row.title }}</div>
       </div>
-      <div v-if="showCategoryColumn" class="bb-grid-cell">
-        {{ row.category }}
-      </div>
-      <div class="bb-grid-cell">
-        {{ row.title }}
-      </div>
-      <div class="bb-grid-cell">
-        <div>
-          <span>{{ row.content }}</span>
-          <template v-if="row.advice.detail">
-            <span
-              class="ml-1 normal-link"
-              @click="state.activeResultDefinition = row.advice.detail"
-              >{{ $t("sql-review.view-definition") }}</span
-            >
-            <span class="border-r border-control-border ml-1"></span>
-          </template>
-          <template v-if="getActiveRule(row.advice.title as RuleType)">
-            <span
-              class="ml-1 normal-link"
-              @click="setActiveRule(row.advice.title as RuleType)"
-              >{{ $t("sql-review.rule-detail") }}</span
-            >
-            <span class="border-r border-control-border ml-1"></span>
-          </template>
-
-          <a
-            v-if="row.link"
+      <div class="textinfolabel">
+        <span>{{ row.content }}</span>
+        <template v-if="row.advice.detail">
+          <span
             class="ml-1 normal-link"
-            :href="row.link.url"
-            :target="row.link.target"
+            @click="state.activeResultDefinition = row.advice.detail"
+            >{{ $t("sql-review.view-definition") }}</span
           >
-            {{ row.link.title }}
-          </a>
-        </div>
+          <span class="border-r border-control-border ml-1"></span>
+        </template>
+        <template v-if="getActiveRule(row.advice.title as RuleType)">
+          <span
+            class="ml-1 normal-link"
+            @click="setActiveRule(row.advice.title as RuleType)"
+            >{{ $t("sql-review.rule-detail") }}</span
+          >
+          <span class="border-r border-control-border ml-1"></span>
+        </template>
+
+        <a
+          v-if="row.link"
+          class="ml-1 normal-link"
+          :href="row.link.url"
+          :target="row.link.target"
+        >
+          {{ row.link.title }}
+        </a>
       </div>
-    </template>
-  </BBGrid>
+    </div>
+  </div>
 
   <SQLRuleEditDialog
     v-if="state.activeRule"
@@ -83,7 +77,6 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
@@ -99,8 +92,6 @@ import {
   ruleTemplateMap,
 } from "@/types";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
-
-// import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
   title: string;
@@ -219,29 +210,6 @@ const tableRows = computed(() => {
 const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
-
-const COLUMN_LIST = computed(() => {
-  const STATUS: BBGridColumn = {
-    title: "Status",
-    width: "auto",
-  };
-  const CATEGORY: BBGridColumn = {
-    title: "Category",
-    width: "minmax(4rem, 6rem)",
-  };
-  const TITLE: BBGridColumn = {
-    title: "Title",
-    width: "minmax(12rem, 1fr)",
-  };
-  const CONTENT: BBGridColumn = {
-    title: "Detail",
-    width: "2fr",
-  };
-  if (showCategoryColumn.value) {
-    return [STATUS, CATEGORY, TITLE, CONTENT];
-  }
-  return [STATUS, TITLE, CONTENT];
-});
 
 const environmentUID = computed(
   () => props.database.effectiveEnvironmentEntity.uid
