@@ -3401,6 +3401,11 @@
       "conflict-not-resolved": "似乎还有尚未解决的冲突。",
       "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
       "preview-merge-result": "预览合并结果"
+    },
+    "source": {
+      "baseline-version": "基线版本",
+      "parent-branch": "父分支",
+      "self": "来源"
     }
   }
 }
