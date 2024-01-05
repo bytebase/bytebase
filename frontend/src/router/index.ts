@@ -36,7 +36,6 @@ import {
   useDatabaseV1Store,
   useChangeHistoryStore,
   useChangelistStore,
-  useSQLEditorTreeStore,
   usePageMode,
 } from "@/store";
 import {
@@ -1447,25 +1446,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (connectionSlug) {
-    const [instanceSlug, databaseSlug = ""] = connectionSlug.split("_");
-    const instanceId = idFromSlug(instanceSlug);
-    const databaseId = idFromSlug(databaseSlug);
-    if (Number.isNaN(databaseId)) {
-      // Connected to instance
-      useSQLEditorTreeStore()
-        .fetchConnectionByInstanceId(String(instanceId))
-        .then(() => next())
-        .catch(() => next());
-    } else {
-      // Connected to db
-      useSQLEditorTreeStore()
-        .fetchConnectionByInstanceIdAndDatabaseId(
-          String(instanceId),
-          String(databaseId)
-        )
-        .then(() => next())
-        .catch(() => next());
-    }
+    // We've moved the preparation data fetch jobs into ProvideSQLEditorContext.
+    // so just next() here.
+    next();
     return;
   }
 
