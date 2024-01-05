@@ -205,16 +205,17 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		if databaseSchema == nil {
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
 		}
+		filteredBaseSchemaMetadata := filterDatabaseMetadata(databaseSchema.GetMetadata())
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
 			Engine:     instance.Engine,
 			Base: &storepb.BranchSnapshot{
-				Metadata:       databaseSchema.GetMetadata(),
+				Metadata:       filteredBaseSchemaMetadata,
 				DatabaseConfig: databaseSchema.GetConfig(),
 			},
 			Head: &storepb.BranchSnapshot{
-				Metadata:       databaseSchema.GetMetadata(),
+				Metadata:       filteredBaseSchemaMetadata,
 				DatabaseConfig: databaseSchema.GetConfig(),
 			},
 			BaseSchema: databaseSchema.GetSchema(),
@@ -287,6 +288,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if slices.Contains(request.UpdateMask.Paths, "schema_metadata") {
 		metadata, config := convertV1DatabaseMetadata(request.Branch.GetSchemaMetadata())
 		sanitizeCommentForSchemaMetadata(metadata)
+		filteredMetadata := filterDatabaseMetadata(metadata)
 
 		schema, err := schema.GetDesignSchema(branch.Engine, string(branch.BaseSchema), metadata)
 		if err != nil {
@@ -294,7 +296,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		}
 		schemaBytes := []byte(schema)
 		headUpdate := &storepb.BranchSnapshot{
-			Metadata:       metadata,
+			Metadata:       filteredMetadata,
 			DatabaseConfig: config,
 		}
 		updateBranchMessage := &store.UpdateBranchMessage{ProjectID: project.ResourceID, ResourceID: branchID, UpdaterID: principalID}
@@ -383,8 +385,9 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	mergedSchemaBytes := []byte(mergedSchema)
 
+	filteredMergedMetadata := filterDatabaseMetadata(mergedMetadata)
 	baseBranchNewHead := &storepb.BranchSnapshot{
-		Metadata:       mergedMetadata,
+		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
 	}
 	baseBranchNewHeadSchema := mergedSchemaBytes
@@ -443,6 +446,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if err != nil {
 		return nil, err
 	}
+	filteredNewBaseMetadata := filterDatabaseMetadata(newBaseMetadata)
 
 	var newHeadSchema string
 	var newHeadMetadata *storepb.DatabaseSchemaMetadata
@@ -455,7 +459,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
 	} else {
-		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, newBaseMetadata)
+		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
 			conflictSchema, err := diff3.Merge(
@@ -477,7 +481,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
 		}
 		if newHeadMetadata == nil {
-			return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", baseBranch.Base.Metadata, baseBranch.Head.Metadata, newBaseMetadata)
+			return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata)
 		}
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
@@ -495,14 +499,15 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	}
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
+	filteredNewHeadMetadata := filterDatabaseMetadata(newHeadMetadata)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
-			Metadata:       newBaseMetadata,
+			Metadata:       filteredNewBaseMetadata,
 			DatabaseConfig: newBaseConfig,
 		}
 		baseBranch.BaseSchema = newBaseSchemaBytes
 		baseBranch.Head = &storepb.BranchSnapshot{
-			Metadata:       newHeadMetadata,
+			Metadata:       filteredNewHeadMetadata,
 			DatabaseConfig: newHeadConfig,
 		}
 		baseBranch.HeadSchema = newHeadSchemaBytes
@@ -512,12 +517,12 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			ResourceID: baseBranchID,
 			UpdaterID:  principalID,
 			Base: &storepb.BranchSnapshot{
-				Metadata:       newBaseMetadata,
+				Metadata:       filteredNewBaseMetadata,
 				DatabaseConfig: newBaseConfig,
 			},
 			BaseSchema: &newBaseSchemaBytes,
 			Head: &storepb.BranchSnapshot{
-				Metadata: newHeadMetadata,
+				Metadata: filteredNewHeadMetadata,
 				// TODO(d): handle config.
 				DatabaseConfig: newHeadConfig,
 			},
@@ -828,6 +833,65 @@ func sanitizeCommentForSchemaMetadata(dbSchema *storepb.DatabaseSchemaMetadata) 
 			}
 		}
 	}
+}
+
+// filterDatabaseMetadata filter out the objects/attributes we do not support.
+// TODO: While supporting new objects/attributes, we should update this function.
+func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.DatabaseSchemaMetadata {
+	filteredDatabase := &storepb.DatabaseSchemaMetadata{
+		Name: metadata.Name,
+	}
+	for _, schema := range metadata.Schemas {
+		filteredSchema := &storepb.SchemaMetadata{
+			Name: schema.Name,
+		}
+		for _, table := range schema.Tables {
+			filteredTable := &storepb.TableMetadata{
+				Name:           table.Name,
+				Classification: table.Classification,
+				Comment:        table.Comment,
+				UserComment:    table.UserComment,
+			}
+			for _, column := range table.Columns {
+				filteredColumn := &storepb.ColumnMetadata{
+					Name:           column.Name,
+					Comment:        column.Comment,
+					UserComment:    column.UserComment,
+					Classification: column.Classification,
+					Type:           column.Type,
+					DefaultValue:   column.DefaultValue,
+					Nullable:       column.Nullable,
+					Position:       column.Position,
+				}
+				filteredTable.Columns = append(filteredTable.Columns, filteredColumn)
+			}
+			for _, index := range table.Indexes {
+				filteredIndex := &storepb.IndexMetadata{
+					Name:        index.Name,
+					Definition:  index.Definition,
+					Primary:     index.Primary,
+					Unique:      index.Unique,
+					Comment:     index.Comment,
+					Expressions: index.Expressions,
+				}
+				filteredTable.Indexes = append(filteredTable.Indexes, filteredIndex)
+			}
+			for _, fk := range table.ForeignKeys {
+				filteredFK := &storepb.ForeignKeyMetadata{
+					Name:              fk.Name,
+					Columns:           fk.Columns,
+					ReferencedTable:   fk.ReferencedTable,
+					ReferencedColumns: fk.ReferencedColumns,
+					ReferencedSchema:  fk.ReferencedSchema,
+				}
+				filteredTable.ForeignKeys = append(filteredTable.ForeignKeys, filteredFK)
+			}
+			filteredSchema.Tables = append(filteredSchema.Tables, filteredTable)
+		}
+		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
+	}
+
+	return filteredDatabase
 }
 
 func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, targetMetadata *storepb.DatabaseSchemaMetadata) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseSchemaMetadata) {
