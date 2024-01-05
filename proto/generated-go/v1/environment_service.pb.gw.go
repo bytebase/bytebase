@@ -120,18 +120,14 @@ func local_request_EnvironmentService_ListEnvironments_0(ctx context.Context, ma
 }
 
 var (
-	filter_EnvironmentService_CreateEnvironment_0 = &utilities.DoubleArray{Encoding: map[string]int{"environment": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_EnvironmentService_CreateEnvironment_0 = &utilities.DoubleArray{Encoding: map[string]int{"environment": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_EnvironmentService_CreateEnvironment_0(ctx context.Context, marshaler runtime.Marshaler, client EnvironmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateEnvironmentRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Environment); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Environment); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -151,11 +147,7 @@ func local_request_EnvironmentService_CreateEnvironment_0(ctx context.Context, m
 	var protoReq CreateEnvironmentRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Environment); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Environment); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -172,7 +164,7 @@ func local_request_EnvironmentService_CreateEnvironment_0(ctx context.Context, m
 }
 
 var (
-	filter_EnvironmentService_UpdateEnvironment_0 = &utilities.DoubleArray{Encoding: map[string]int{"environment": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_EnvironmentService_UpdateEnvironment_0 = &utilities.DoubleArray{Encoding: map[string]int{"environment": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_EnvironmentService_UpdateEnvironment_0(ctx context.Context, marshaler runtime.Marshaler, client EnvironmentServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -327,11 +319,7 @@ func request_EnvironmentService_UndeleteEnvironment_0(ctx context.Context, marsh
 	var protoReq UndeleteEnvironmentRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -361,11 +349,7 @@ func local_request_EnvironmentService_UndeleteEnvironment_0(ctx context.Context,
 	var protoReq UndeleteEnvironmentRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -395,11 +379,7 @@ func request_EnvironmentService_UpdateBackupSetting_0(ctx context.Context, marsh
 	var protoReq UpdateEnvironmentBackupSettingRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Setting); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Setting); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -429,11 +409,7 @@ func local_request_EnvironmentService_UpdateBackupSetting_0(ctx context.Context,
 	var protoReq UpdateEnvironmentBackupSettingRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Setting); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Setting); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
