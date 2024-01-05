@@ -39,25 +39,21 @@ type diffNode struct {
 	// Ignore the case sensitive when comparing the table and view names.
 	ignoreCaseSensitive bool
 
-	dropUnsupportedStatement   []string
 	dropForeignKeyList         []ast.Node
 	dropConstraintExceptFkList []ast.Node
 	dropIndexList              []ast.Node
 	dropViewList               []ast.Node
 	dropTableList              []ast.Node
 
-	createTableList                 []ast.Node
-	alterTableOptionList            []ast.Node
-	addAndModifyColumnList          []ast.Node
-	dropColumnList                  []ast.Node
-	createTempViewList              []ast.Node
-	createIndexList                 []ast.Node
-	addConstraintExceptFkList       []ast.Node
-	addForeignKeyList               []ast.Node
-	createViewList                  []ast.Node
-	createUnsupportedStatement      []string
-	inPlaceDropUnsupportedStatement []string
-	inPlaceAddUnsupportedStatement  []string
+	createTableList           []ast.Node
+	alterTableOptionList      []ast.Node
+	addAndModifyColumnList    []ast.Node
+	dropColumnList            []ast.Node
+	createTempViewList        []ast.Node
+	createIndexList           []ast.Node
+	addConstraintExceptFkList []ast.Node
+	addForeignKeyList         []ast.Node
+	createViewList            []ast.Node
 }
 
 func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) error {
@@ -421,15 +417,6 @@ func (diff *diffNode) deparse() (string, error) {
 	var buf bytes.Buffer
 	flag := format.DefaultRestoreFlags | format.RestoreStringWithoutCharset | format.RestorePrettyFormat
 
-	sort.Strings(diff.dropUnsupportedStatement)
-	for _, statement := range diff.dropUnsupportedStatement {
-		if _, err := buf.WriteString(statement); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n\n"); err != nil {
-			return "", err
-		}
-	}
 	if err := sortAndWriteNodeList(&buf, diff.dropForeignKeyList, flag); err != nil {
 		return "", err
 	}
@@ -471,36 +458,6 @@ func (diff *diffNode) deparse() (string, error) {
 	}
 	if err := sortAndWriteNodeList(&buf, diff.createViewList, flag); err != nil {
 		return "", err
-	}
-
-	sort.Strings(diff.createUnsupportedStatement)
-	for _, statement := range diff.createUnsupportedStatement {
-		if _, err := buf.WriteString(statement); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n\n"); err != nil {
-			return "", err
-		}
-	}
-
-	sort.Strings(diff.inPlaceDropUnsupportedStatement)
-	for _, statement := range diff.inPlaceDropUnsupportedStatement {
-		if _, err := buf.WriteString(statement); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n\n"); err != nil {
-			return "", err
-		}
-	}
-
-	sort.Strings(diff.inPlaceAddUnsupportedStatement)
-	for _, statement := range diff.inPlaceAddUnsupportedStatement {
-		if _, err := buf.WriteString(statement); err != nil {
-			return "", err
-		}
-		if _, err := buf.WriteString("\n\n"); err != nil {
-			return "", err
-		}
 	}
 
 	text := buf.String()
