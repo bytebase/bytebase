@@ -159,7 +159,7 @@ import {
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleTitle, randomString } from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
@@ -196,7 +196,11 @@ const isCreating = computed(() => !props.user);
 
 const allowConfirm = computed(() => {
   if (isCreating.value) {
-    return state.user.email;
+    if (isDevelopmentIAM.value) {
+      return state.user.email && state.user.roles.length > 0;
+    } else {
+      return state.user.email;
+    }
   } else {
     return getUpdateMaskFromUsers(props.user!, state.user).length > 0;
   }
@@ -239,6 +243,7 @@ const tryCreateOrUpdateUser = async () => {
     await userStore.createUser({
       ...state.user,
       title: state.user.title || state.user.email,
+      password: randomString(20),
     });
   } else {
     await userStore.updateUser(
