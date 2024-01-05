@@ -101,7 +101,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	migrationContext, err := ghost.NewMigrationContext(task.ID, database, adminDataSource, exec.secret, tableName, renderedStatement, false, flags, 10000000)
+	migrationContext, err := ghost.NewMigrationContext(task.ID, task.CreatedTs, database, adminDataSource, exec.secret, tableName, renderedStatement, false, flags, 10000000)
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}

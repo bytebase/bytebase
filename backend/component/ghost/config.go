@@ -202,17 +202,17 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 	return f, nil
 }
 
-func getSocketFilename(taskID int, databaseID int, databaseName string, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.sock", taskID, databaseID, databaseName, tableName)
+func getSocketFilename(taskID int, taskCreatedTs int64, databaseID int, databaseName, tableName string) string {
+	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.%v.sock", taskID, taskCreatedTs, databaseID, databaseName, tableName)
 }
 
 // GetPostponeFlagFilename gets the postpone flag filename for gh-ost.
-func GetPostponeFlagFilename(taskID int, databaseID int, databaseName string, tableName string) string {
-	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.postponeFlag", taskID, databaseID, databaseName, tableName)
+func GetPostponeFlagFilename(taskID int, taskCreatedTs int64, databaseID int, databaseName, tableName string) string {
+	return fmt.Sprintf("/tmp/gh-ost.%v.%v.%v.%v.%v.postponeFlag", taskID, taskCreatedTs, databaseID, databaseName, tableName)
 }
 
 // NewMigrationContext is the context for gh-ost migration.
-func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
+func NewMigrationContext(taskID int, taskCreatedTs int64, database *store.DatabaseMessage, dataSource *store.DataSourceMessage, secret string, tableName string, statement string, noop bool, flags map[string]string, serverIDOffset uint) (*base.MigrationContext, error) {
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, secret)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get password")
@@ -274,9 +274,9 @@ func NewMigrationContext(taskID int, database *store.DatabaseMessage, dataSource
 		}
 		migrationContext.OriginalTableName = parser.GetExplicitTable()
 	}
-	migrationContext.ServeSocketFile = getSocketFilename(taskID, database.UID, database.DatabaseName, tableName)
+	migrationContext.ServeSocketFile = getSocketFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
 	migrationContext.DropServeSocket = true
-	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, database.UID, database.DatabaseName, tableName)
+	migrationContext.PostponeCutOverFlagFile = GetPostponeFlagFilename(taskID, taskCreatedTs, database.UID, database.DatabaseName, tableName)
 	migrationContext.InitiallyDropGhostTable = true
 	migrationContext.TimestampOldTable = defaultConfig.timestampOldTable
 	migrationContext.SetHeartbeatIntervalMilliseconds(defaultConfig.heartbeatIntervalMilliseconds)
