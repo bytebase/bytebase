@@ -27,6 +27,18 @@
                   "name": "a",
                   "type": "int"
                 }
+              ],
+              "indexes": [
+                {
+                  "name": "t_a_uniq_idx",
+                  "expressions": [
+                    "a"
+                  ],
+                  "unique": true,
+                  "primary": false,
+                  "visible": true,
+                  "comment": "this is my comment ''!!"
+                }
               ]
             },
             {
@@ -204,7 +216,8 @@
     }
   result: |+
     CREATE TABLE `t` (
-      `a` int NOT NULL
+      `a` int NOT NULL,
+      UNIQUE KEY `t_a_uniq_idx` (`a`) COMMENT 'this is my comment ''!!'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',

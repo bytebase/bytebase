@@ -190,6 +190,29 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if err := g.currentTable.indexes["PRIMARY"].toString(&g.tableConstraints); err != nil {
 			return
 		}
+		delete(g.currentTable.indexes, "PRIMARY")
+	}
+
+	var indexes []*indexState
+	for _, index := range g.currentTable.indexes {
+		indexes = append(indexes, index)
+	}
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].id < indexes[j].id
+	})
+	for _, index := range indexes {
+		if g.firstElementInTable {
+			g.firstElementInTable = false
+		} else {
+			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+				g.err = err
+				return
+			}
+		}
+		if err := index.toString(&g.tableConstraints); err != nil {
+			g.err = err
+			return
+		}
 	}
 
 	var fks []*foreignKeyState
