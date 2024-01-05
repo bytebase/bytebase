@@ -341,6 +341,7 @@ type indexState struct {
 	primary bool
 	unique  bool
 	tp      string
+	comment string
 }
 
 func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
@@ -349,8 +350,10 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 		Expressions: i.keys,
 		Primary:     i.primary,
 		Unique:      i.unique,
+		Comment:     i.comment,
 		// Unsupported, for tests only.
 		Visible: true,
+		Type:    i.tp,
 	}
 }
 
@@ -362,6 +365,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		primary: index.Primary,
 		unique:  index.Unique,
 		tp:      index.Type,
+		comment: index.Comment,
 	}
 }
 
@@ -432,6 +436,12 @@ func (i *indexState) toString(buf *strings.Builder) error {
 			}
 		} else if strings.ToUpper(i.tp) == "HASH" {
 			if _, err := buf.WriteString(" USING HASH"); err != nil {
+				return err
+			}
+		}
+
+		if i.comment != "" {
+			if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", i.comment)); err != nil {
 				return err
 			}
 		}
