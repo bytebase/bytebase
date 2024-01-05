@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -59,45 +58,6 @@ type diffNode struct {
 	createUnsupportedStatement      []string
 	inPlaceDropUnsupportedStatement []string
 	inPlaceAddUnsupportedStatement  []string
-}
-
-func (diff *diffNode) diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupportedStmtList []string) error {
-	// We compare the CREATE TRIGGER/EVENT/FUNCTION/PROCEDURE statements based on strcmp.
-	oldUnsupportedMap, err := buildUnsupportedObjectMap(oldUnsupportedStmtList)
-	if err != nil {
-		return err
-	}
-	newUnsupportedMap, err := buildUnsupportedObjectMap(newUnsupportedStmtList)
-	if err != nil {
-		return err
-	}
-	for tp, objects := range newUnsupportedMap {
-		for newName, newStmt := range objects {
-			if oldStmt, ok := oldUnsupportedMap[tp][newName]; ok {
-				if strings.Compare(oldStmt, newStmt) != 0 {
-					// We should drop the old function and create the new function.
-					// https://dev.mysql.com/doc/refman/8.0/en/drop-procedure.html
-					// https://dev.mysql.com/doc/refman/5.7/en/drop-procedure.html
-					diff.inPlaceDropUnsupportedStatement = append(diff.inPlaceDropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, newName))
-					diff.inPlaceAddUnsupportedStatement = append(diff.inPlaceAddUnsupportedStatement, newStmt)
-				}
-				delete(oldUnsupportedMap[tp], newName)
-				continue
-			}
-			// Now, the input of differ comes from the our mysqldump, mysqldump use ;; to separate the CREATE TRIGGER/FUNCTION/PROCEDURE/EVENT statements;
-			// So we should append DELIMITER statement to the newStmt.
-			delimiterNewStmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", newStmt)
-			diff.createUnsupportedStatement = append(diff.createUnsupportedStatement, delimiterNewStmt)
-		}
-	}
-	// drop remaining TiDB unsupported objects
-	for tp, objects := range oldUnsupportedMap {
-		for name := range objects {
-			diff.dropUnsupportedStatement = append(diff.dropUnsupportedStatement, fmt.Sprintf("DROP %s IF EXISTS `%s`;", tp, name))
-		}
-	}
-
-	return nil
 }
 
 func (diff *diffNode) diffSupportedStatement(oldStatement, newStatement string) error {
@@ -556,49 +516,14 @@ type constraintMap map[string]*ast.Constraint
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
 func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
-	// 1. Preprocessing Stage.
-	// TiDB parser doesn't support some statements like `CREATE EVENT`, so we need to extract them out and diff them based on string compare.
-	oldUnsupportedStmtList, oldSupportedStmt, err := classifyStatement(oldStmt)
-	if err != nil {
-		return "", err
-	}
-	newUnsupportedStmtList, newSupportedStmt, err := classifyStatement(newStmt)
-	if err != nil {
-		return "", err
-	}
-
 	diff := &diffNode{
 		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
-	if err := diff.diffSupportedStatement(oldSupportedStmt, newSupportedStmt); err != nil {
-		return "", err
-	}
-	if err := diff.diffUnsupportedStatement(oldUnsupportedStmtList, newUnsupportedStmtList); err != nil {
+	if err := diff.diffSupportedStatement(oldStmt, newStmt); err != nil {
 		return "", err
 	}
 
 	return diff.deparse()
-}
-
-func classifyStatement(statement string) ([]string, string, error) {
-	unsupported, supported, err := ExtractTiDBUnsupportedStmts(statement)
-	if err != nil {
-		return nil, "", errors.Wrapf(err, "failed to extract TiDB unsupported statements from statements %q", statement)
-	}
-	var afterFilter []string
-	for _, stmt := range unsupported {
-		if !IsDelimiter(stmt) {
-			afterFilter = append(afterFilter, stmt)
-		}
-	}
-	return afterFilter, supported, nil
-}
-
-// IsDelimiter returns true if the statement is a delimiter statement.
-func IsDelimiter(stmt string) bool {
-	delimiterRegex := `(?i)^\s*DELIMITER\s+`
-	re := regexp.MustCompile(delimiterRegex)
-	return re.MatchString(stmt)
 }
 
 func writeNodeStatement(w format.RestoreWriter, n ast.Node, flags format.RestoreFlags) error {
@@ -773,23 +698,6 @@ func (diff *diffNode) buildSchemaInfo(nodes []ast.StmtNode) (*schemaInfo, error)
 		}
 	}
 	return result, nil
-}
-
-// buildUnsupportedObjectMap builds map for trigger, function, procedure, event to correspond create object string statements.
-func buildUnsupportedObjectMap(stmts []string) (map[objectType]map[string]string, error) {
-	m := make(map[objectType]map[string]string)
-	m[trigger] = make(map[string]string)
-	m[function] = make(map[string]string)
-	m[procedure] = make(map[string]string)
-	m[event] = make(map[string]string)
-	for _, stmt := range stmts {
-		objName, objType, err := extractUnsupportedObjectNameAndType(stmt)
-		if err != nil {
-			return nil, err
-		}
-		m[objType][objName] = stmt
-	}
-	return m, nil
 }
 
 // getTempView returns the temporary view name and the create statement.
