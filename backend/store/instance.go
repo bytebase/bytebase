@@ -268,8 +268,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err != nil {
 			return nil, err
 		}
-
-		set, args = append(set, fmt.Sprintf("options = options || $%d", len(args)+1)), append(args, options)
+		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, options)
 	}
 	if v := patch.Metadata; v != nil {
 		metadata, err := protojson.Marshal(v)

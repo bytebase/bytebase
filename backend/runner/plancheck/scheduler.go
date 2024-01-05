@@ -106,9 +106,18 @@ func (s *Scheduler) runPlanCheckRun(ctx context.Context, planCheckRun *store.Pla
 	}
 
 	instanceUID := int(planCheckRun.Config.InstanceUid)
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	if err != nil {
+		slog.Error("failed to find instance", slog.Int("uid", planCheckRun.UID), slog.Int64("plan_uid", planCheckRun.PlanUID), slog.Int("instance", instanceUID))
+		return
+	}
 
 	s.stateCfg.Lock()
-	if s.stateCfg.InstanceOutstandingConnections[instanceUID] >= state.InstanceMaximumConnectionNumber {
+	maximumConnections := int(instance.Options.GetMaximumConnections())
+	if maximumConnections == 0 {
+		maximumConnections = state.DefaultInstanceMaximumConnections
+	}
+	if s.stateCfg.InstanceOutstandingConnections[instanceUID] >= maximumConnections {
 		s.stateCfg.Unlock()
 		return
 	}

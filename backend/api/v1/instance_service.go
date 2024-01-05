@@ -277,20 +277,19 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.Activation = &request.Instance.Activation
 		case "options.schema_tenant_mode":
 			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SchemaTenantMode: request.Instance.Options.GetSchemaTenantMode(),
-				}
-			} else {
-				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
+				patch.OptionsUpsert = instance.Options
 			}
+			patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SyncInterval: request.Instance.Options.GetSyncInterval(),
-				}
-			} else {
-				patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
+				patch.OptionsUpsert = instance.Options
 			}
+			patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
+		case "options.maximum_connections":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = instance.Options
+			}
+			patch.OptionsUpsert.MaximumConnections = request.Instance.Options.GetMaximumConnections()
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -1071,8 +1070,9 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 	}
 
 	return &v1pb.InstanceOptions{
-		SchemaTenantMode: options.SchemaTenantMode,
-		SyncInterval:     options.SyncInterval,
+		SchemaTenantMode:   options.SchemaTenantMode,
+		SyncInterval:       options.SyncInterval,
+		MaximumConnections: options.MaximumConnections,
 	}
 }
 
@@ -1082,7 +1082,8 @@ func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOpti
 	}
 
 	return &storepb.InstanceOptions{
-		SchemaTenantMode: options.SchemaTenantMode,
-		SyncInterval:     options.SyncInterval,
+		SchemaTenantMode:   options.SchemaTenantMode,
+		SyncInterval:       options.SyncInterval,
+		MaximumConnections: options.MaximumConnections,
 	}
 }

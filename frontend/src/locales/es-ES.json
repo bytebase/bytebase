@@ -1366,6 +1366,12 @@
       "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
       "min-value": "Valor mínimo {value} minutos"
+    },
+    "maximum-connections": {
+      "self": "Conexiones Máximas",
+      "default-value": "Predeterminado (10)",
+      "description": "Limitar la conexión y el uso de recursos se logra estableciendo el número máximo de conexiones a la instancia.",
+      "max-value": "Máximo {value} conexiones"
     }
   },
   "environment": {
