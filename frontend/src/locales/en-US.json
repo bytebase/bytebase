@@ -3408,6 +3408,11 @@
       "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
       "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
       "preview-merge-result": "Preview merge result"
+    },
+    "source": {
+      "baseline-version": "Baseline version",
+      "parent-branch": "Parent branch",
+      "self": "Source"
     }
   }
 }
