@@ -1836,12 +1836,20 @@ func convertDefElemNodeIntegerToInt32(defElem *pgquery.DefElem) (*int32, error) 
 	if defElem.Arg == nil {
 		return nil, nil
 	}
-	interger, ok := defElem.Arg.Node.(*pgquery.Node_Integer)
-	if !ok {
-		return nil, NewConvertErrorf("expected integer but found %T", defElem.Arg.Node)
+	switch node := defElem.Arg.Node.(type) {
+	case *pgquery.Node_Integer:
+		val := int32(node.Integer.Ival)
+		return &val, nil
+	case *pgquery.Node_Float:
+		float, err := strconv.ParseFloat(node.Float.Fval, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse float")
+		}
+		val := int32(float)
+		return &val, nil
+	default:
+		return nil, NewConvertErrorf("failed to convert DefElemNode:expected integer or float but found %T", defElem.Arg.Node)
 	}
-	val := interger.Integer.Ival
-	return &val, nil
 }
 
 func convertDefElemToSeqType(defElem *pgquery.DefElem) (*ast.Integer, error) {
