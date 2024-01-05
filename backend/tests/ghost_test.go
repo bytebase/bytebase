@@ -41,7 +41,7 @@ var (
 	//go:embed test-data/ghost_test_schema2.result
 	wantDBSchema2 string
 
-	deletedRegex = regexp.MustCompile("_book_[0-9]+_del")
+	deletedRegex = regexp.MustCompile("~book_[0-9]+_del")
 )
 
 func TestGhostParser(t *testing.T) {
