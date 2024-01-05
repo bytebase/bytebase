@@ -55,6 +55,7 @@
                   "expressions": [
                     "c"
                   ],
+                  "type": "BTREE",
                   "unique": true,
                   "visible": true
                 },
@@ -63,6 +64,7 @@
                   "expressions": [
                     "((`c` + 5))"
                   ],
+                  "type": "BTREE",
                   "unique": true,
                   "visible": true
                 },
@@ -72,6 +74,7 @@
                     "((`c` + 5))",
                     "((`c` + 3))"
                   ],
+                  "type": "BTREE",
                   "unique": true,
                   "visible": true
                 },
@@ -80,6 +83,7 @@
                   "expressions": [
                     "c"
                   ],
+                  "type": "BTREE",
                   "visible": true
                 },
                 {
@@ -87,6 +91,7 @@
                   "expressions": [
                     "d"
                   ],
+                  "type": "BTREE",
                   "visible": true
                 },
                 {
@@ -94,6 +99,7 @@
                   "expressions": [
                     "d"
                   ],
+                  "type": "FULLTEXT",
                   "visible": true
                 }
               ],
