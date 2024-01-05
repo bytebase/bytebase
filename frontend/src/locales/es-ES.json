@@ -3406,6 +3406,11 @@
       "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
       "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
       "preview-merge-result": "Vista previa del resultado de la fusión"
+    },
+    "source": {
+      "baseline-version": "Versión básica",
+      "parent-branch": "Rama principal",
+      "self": "Fuente"
     }
   }
 }
