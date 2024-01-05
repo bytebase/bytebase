@@ -78,12 +78,12 @@ const issueCreateErrorList = computed(() => {
 });
 
 const doCreateIssue = async () => {
+  loading.value = true;
   const check = runSQLCheck.value;
   if (check && !(await check())) {
+    loading.value = false;
     return;
   }
-
-  loading.value = true;
 
   try {
     await createSheets();
