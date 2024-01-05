@@ -13,6 +13,7 @@
       <DatabaseLabelFilter
         v-model:selected="state.selectedLabels"
         :database-list="databaseList"
+        :placement="'left-start'"
       />
     </div>
 
