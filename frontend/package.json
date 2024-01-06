@@ -51,7 +51,7 @@
     "markdown-it": "^14.0.0",
     "match-sorter": "6.3.1",
     "maz-ui": "^3.29.10",
-    "monaco-editor": "0.44.0",
+    "monaco-editor": "0.45.0",
     "monaco-editor-workers": "0.44.0",
     "monaco-languageclient": "7.2.0",
     "naive-ui": "2.36.0",
