@@ -399,7 +399,7 @@ func (*PITRRestoreExecutor) doRestoreInPlacePostgres(ctx context.Context, stores
 		slog.Error("Failed to cast driver to pg.Driver")
 		return nil, errors.Errorf("[internal] cast driver to pg.Driver failed")
 	}
-	originalOwner, err := pgDriver.GetCurrentDatabaseOwner()
+	originalOwner, err := pgDriver.GetCurrentDatabaseOwner(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get the OWNER of database %q", database.DatabaseName)
 	}

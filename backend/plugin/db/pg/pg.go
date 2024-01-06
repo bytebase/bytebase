@@ -140,7 +140,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 	driver.db = db
 	if config.ConnectionContext.UseDatabaseOwner {
-		owner, err := driver.GetCurrentDatabaseOwner()
+		owner, err := driver.GetCurrentDatabaseOwner(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database owner")
 		}
@@ -279,7 +279,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, nil
 	}
 
-	owner, err := driver.GetCurrentDatabaseOwner()
+	owner, err := driver.GetCurrentDatabaseOwner(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -483,7 +483,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // GetCurrentDatabaseOwner gets the role of the current database.
-func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
+func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -492,25 +492,9 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 		WHERE
 			d.datname = current_database();
 		`
-	rows, err := driver.db.Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
 	var owner string
-	for rows.Next() {
-		var o string
-		if err := rows.Scan(&o); err != nil {
-			return "", err
-		}
-		owner = o
-	}
-	if err := rows.Err(); err != nil {
+	if err := driver.db.QueryRowContext(ctx, query).Scan(&owner); err != nil {
 		return "", err
-	}
-	if owner == "" {
-		return "", errors.Errorf("owner not found for the current database")
 	}
 	return owner, nil
 }
