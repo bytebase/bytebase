@@ -176,6 +176,9 @@ func backfillSchemaObjectOwner(ctx context.Context, metadataDriver dbdriver.Driv
 	if err != nil {
 		return err
 	}
+	if currentUser == databaseOwner {
+		return nil
+	}
 	if _, err := metadataDriver.GetDB().ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
 		return err
 	}
