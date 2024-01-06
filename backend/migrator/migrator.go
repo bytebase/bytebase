@@ -41,6 +41,10 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 	}
 	defer metadataDriver.Close(ctx)
 
+	if err := backfillSchemaObjectOwner(ctx, metadataDriver); err != nil {
+		return nil, err
+	}
+
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
 	if err != nil {
@@ -98,7 +102,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 
 	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
 	// Set role to database owner so that the schema owner and database owner are consistent.
-	owner, err := getCurrentDatabaseOwner(metadataDriver)
+	owner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
 	if err != nil {
 		return err
 	}
@@ -138,7 +142,7 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 }
 
 // getCurrentDatabaseOwner gets the role of the current database.
-func getCurrentDatabaseOwner(metadataDriver dbdriver.Driver) (string, error) {
+func getCurrentDatabaseOwner(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
 	const query = `
 		SELECT
 			u.rolname
@@ -147,27 +151,35 @@ func getCurrentDatabaseOwner(metadataDriver dbdriver.Driver) (string, error) {
 		WHERE
 			d.datname = current_database();
 		`
-	rows, err := metadataDriver.GetDB().Query(query)
-	if err != nil {
-		return "", err
-	}
-	defer rows.Close()
-
 	var owner string
-	for rows.Next() {
-		var o string
-		if err := rows.Scan(&o); err != nil {
-			return "", err
-		}
-		owner = o
-	}
-	if err := rows.Err(); err != nil {
+	if err := metadataDriver.GetDB().QueryRowContext(ctx, query).Scan(&owner); err != nil {
 		return "", err
-	}
-	if owner == "" {
-		return "", errors.Errorf("owner not found for the current database")
 	}
 	return owner, nil
+}
+
+func getCurrentUser(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
+	row := metadataDriver.GetDB().QueryRowContext(ctx, "SELECT current_user;")
+	var user string
+	if err := row.Scan(&user); err != nil {
+		return "", err
+	}
+	return user, nil
+}
+
+func backfillSchemaObjectOwner(ctx context.Context, metadataDriver dbdriver.Driver) error {
+	currentUser, err := getCurrentUser(ctx, metadataDriver)
+	if err != nil {
+		return err
+	}
+	databaseOwner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
+	if err != nil {
+		return err
+	}
+	if _, err := metadataDriver.GetDB().ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
+		return err
+	}
+	return nil
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
