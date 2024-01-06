@@ -97,7 +97,19 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 
 	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
+	// Set role to database owner so that the schema owner and database owner are consistent.
+	owner, err := getCurrentDatabaseOwner(metadataDriver)
+	if err != nil {
+		return err
+	}
+	conn, err := metadataDriver.GetDB().Conn(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
+		return err
+	}
+	if _, err := conn.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
 	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
@@ -123,6 +135,39 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	}
 	slog.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
 	return nil
+}
+
+// getCurrentDatabaseOwner gets the role of the current database.
+func getCurrentDatabaseOwner(metadataDriver dbdriver.Driver) (string, error) {
+	const query = `
+		SELECT
+			u.rolname
+		FROM
+			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
+		WHERE
+			d.datname = current_database();
+		`
+	rows, err := metadataDriver.GetDB().Query(query)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+
+	var owner string
+	for rows.Next() {
+		var o string
+		if err := rows.Scan(&o); err != nil {
+			return "", err
+		}
+		owner = o
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	if owner == "" {
+		return "", errors.Errorf("owner not found for the current database")
+	}
+	return owner, nil
 }
 
 // getLatestVersion returns the latest schema version in semantic versioning format.
