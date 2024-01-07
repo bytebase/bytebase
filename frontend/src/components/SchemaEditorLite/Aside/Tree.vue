@@ -75,6 +75,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
+import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import {
   TreeOption,
   NInput,
@@ -94,8 +95,6 @@ import {
   VNodeChild,
 } from "vue";
 import { useI18n } from "vue-i18n";
-import DuplicateIcon from "~icons/heroicons-outline/document-duplicate";
-import EllipsisIcon from "~icons/heroicons-solid/ellipsis-horizontal";
 import { DatabaseIcon, SchemaIcon, TableIcon } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -510,8 +509,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
 // Render a 'menu' icon in the right of the node
 const renderSuffix = ({ option }: { option: TreeOption }) => {
+  if (readonly.value) {
+    return null;
+  }
   const treeNode = option as TreeNode;
-  const menuIcon = h(EllipsisIcon, {
+  const menuIcon = h(MoreHorizontalIcon, {
     class: "w-4 h-auto text-gray-600",
     onClick: (e) => {
       handleShowDropdown(e, treeNode);
@@ -528,7 +530,7 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     const icons = [menuIcon];
 
     if (!readonly.value) {
-      const duplicateIcon = h(DuplicateIcon, {
+      const duplicateIcon = h(CopyIcon, {
         class: "w-4 h-auto mr-2 text-gray-600",
         onClick: (e) => {
           e.preventDefault();
