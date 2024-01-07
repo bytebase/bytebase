@@ -2,7 +2,14 @@
   <BBModal
     :title="$t('database.edit-schema')"
     :trap-focus="false"
-    class="schema-editor-modal-container !w-[96rem] h-auto overflow-auto !max-w-[calc(100vw-40px)] !max-h-[calc(100vh-40px)]"
+    class="schema-editor-modal-container overflow-auto"
+    style="
+      width: calc(100vw - 40px);
+      max-width: calc(100vw - 40px);
+      height: calc(100vh - 40px);
+      max-height: calc(100vh - 40px);
+    "
+    container-class="h-full flex flex-col gap-y-4"
     @close="dismissModal"
   >
     <MaskSpinner
@@ -17,108 +24,95 @@
       </span>
     </MaskSpinner>
 
-    <div class="w-full h-[46rem] max-h-full overflow-auto flex flex-col">
-      <div class="flex-1">
-        <NTabs
-          v-model:value="state.selectedTab"
-          type="card"
-          style="height: 100%"
-        >
-          <NTabPane
-            name="schema-editor"
-            :tab="$t('schema-editor.self')"
-            style="height: 100%"
-            display-directive="show:lazy"
-          >
-            <SchemaEditorLite
-              ref="schemaEditorRef"
-              resource-type="database"
-              :project="project"
-              :targets="state.targets"
-              :loading="state.isPreparingMetadata"
-              :diff-when-ready="false"
-            />
-          </NTabPane>
-          <NTabPane
-            name="raw-sql"
-            :tab="$t('schema-editor.raw-sql')"
-            style="height: 100%"
-            display-directive="show:lazy"
-          >
-            <div
-              class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto"
-            >
-              <div
-                class="w-full h-full shrink-0 flex flex-row justify-between items-center"
-              >
-                <div>{{ $t("sql-editor.self") }}</div>
-                <div class="flex flex-row justify-end items-center space-x-3">
-                  <NButton @click="onUploaderClick">
-                    <template #icon>
-                      <heroicons-outline:arrow-up-tray
-                        class="w-4 h-auto text-gray-500"
-                      />
-                    </template>
-                    {{ $t("issue.upload-sql") }}
-                    <input
-                      id="sql-file-input"
-                      ref="sqlFileUploader"
-                      type="file"
-                      accept=".sql,.txt,application/sql,text/plain"
-                      class="hidden"
-                      @change="handleUploadFile"
-                    />
-                  </NButton>
-                  <NButton @click="handleSyncSQLFromSchemaEditor">
-                    <template #icon>
-                      <heroicons-outline:arrow-path
-                        class="w-4 h-auto text-gray-500"
-                      />
-                    </template>
-                    {{ $t("schema-editor.sync-sql-from-schema-editor") }}
-                  </NButton>
-                </div>
-              </div>
-              <MonacoEditor
-                v-model:content="state.editStatement"
-                class="border w-[calc(100%-2px)] h-[calc(100%-2px)]"
-                data-label="bb-schema-editor-sql-editor"
-                :auto-focus="false"
-                :dialect="dialectOfEngineV1(databaseEngine)"
-              />
-            </div>
-          </NTabPane>
-          <template #suffix>
-            <SchemaEditorSQLCheckButton
-              :database-list="databaseList"
-              :get-statement="generateOrGetEditingDDL"
-            />
-          </template>
-        </NTabs>
-      </div>
-
-      <div class="w-full flex flex-row justify-between items-center mt-4 pr-px">
-        <div class="">
+    <NTabs v-model:value="state.selectedTab" type="card" style="flex: 1">
+      <NTabPane
+        name="schema-editor"
+        :tab="$t('schema-editor.self')"
+        style="flex: 1"
+        display-directive="show:lazy"
+      >
+        <SchemaEditorLite
+          ref="schemaEditorRef"
+          resource-type="database"
+          :project="project"
+          :targets="state.targets"
+          :loading="state.isPreparingMetadata"
+          :diff-when-ready="false"
+        />
+      </NTabPane>
+      <NTabPane
+        name="raw-sql"
+        :tab="$t('schema-editor.raw-sql')"
+        style="flex: 1"
+        display-directive="show:lazy"
+      >
+        <div class="w-full h-full grid grid-rows-[50px,_1fr] overflow-y-auto">
           <div
-            v-if="isBatchMode"
-            class="flex flex-row items-center text-sm text-gray-500"
+            class="w-full h-full shrink-0 flex flex-row justify-between items-center"
           >
-            <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
-            {{ $t("schema-editor.tenant-mode-tips") }}
+            <div>{{ $t("sql-editor.self") }}</div>
+            <div class="flex flex-row justify-end items-center space-x-3">
+              <NButton @click="onUploaderClick">
+                <template #icon>
+                  <heroicons-outline:arrow-up-tray
+                    class="w-4 h-auto text-gray-500"
+                  />
+                </template>
+                {{ $t("issue.upload-sql") }}
+                <input
+                  id="sql-file-input"
+                  ref="sqlFileUploader"
+                  type="file"
+                  accept=".sql,.txt,application/sql,text/plain"
+                  class="hidden"
+                  @change="handleUploadFile"
+                />
+              </NButton>
+              <NButton @click="handleSyncSQLFromSchemaEditor">
+                <template #icon>
+                  <heroicons-outline:arrow-path
+                    class="w-4 h-auto text-gray-500"
+                  />
+                </template>
+                {{ $t("schema-editor.sync-sql-from-schema-editor") }}
+              </NButton>
+            </div>
           </div>
+          <MonacoEditor
+            v-model:content="state.editStatement"
+            class="border w-[calc(100%-2px)] h-[calc(100%-2px)]"
+            data-label="bb-schema-editor-sql-editor"
+            :auto-focus="false"
+            :dialect="dialectOfEngineV1(databaseEngine)"
+          />
         </div>
-        <div class="flex justify-end items-center space-x-3">
-          <NButton @click="dismissModal">
-            {{ $t("common.cancel") }}
-          </NButton>
-          <NButton
-            type="primary"
-            :disabled="!allowPreviewIssue"
-            @click="handlePreviewIssue"
-          >
-            {{ $t("schema-editor.preview-issue") }}
-          </NButton>
-        </div>
+      </NTabPane>
+      <template #suffix>
+        <SchemaEditorSQLCheckButton
+          :database-list="databaseList"
+          :get-statement="generateOrGetEditingDDL"
+        />
+      </template>
+    </NTabs>
+
+    <div class="w-full flex flex-row justify-between items-center">
+      <div class="flex flex-row items-center text-sm text-gray-500">
+        <template v-if="isBatchMode">
+          <heroicons-outline:exclamation-circle class="w-4 h-auto mr-1" />
+          {{ $t("schema-editor.tenant-mode-tips") }}
+        </template>
+      </div>
+      <div class="flex justify-end items-center space-x-3">
+        <NButton @click="dismissModal">
+          {{ $t("common.cancel") }}
+        </NButton>
+        <NButton
+          type="primary"
+          :disabled="!allowPreviewIssue"
+          @click="handlePreviewIssue"
+        >
+          {{ $t("schema-editor.preview-issue") }}
+        </NButton>
       </div>
     </div>
   </BBModal>
@@ -564,10 +558,3 @@ const generateIssueName = (
   return issueNameParts.join(" ");
 };
 </script>
-
-<style lang="postcss">
-.schema-editor-modal-container > .modal-container {
-  @apply w-full h-[46rem] overflow-auto grid;
-  grid-template-rows: min-content 1fr min-content;
-}
-</style>
