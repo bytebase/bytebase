@@ -3,7 +3,7 @@ import { isEqual } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed } from "vue";
 import { authServiceClient } from "@/grpcweb";
-import { SignupInfo, ActivateInfo, unknownUser } from "@/types";
+import { SignupInfo, ActivateInfo, unknownUser, PresetRoleType } from "@/types";
 import {
   LoginRequest,
   LoginResponse,
@@ -48,6 +48,7 @@ export const useAuthStore = defineStore("auth_v1", {
           title: signupInfo.name,
           password: signupInfo.password,
           userType: UserType.USER,
+          roles: [PresetRoleType.WORKSPACE_MEMBER],
         },
       });
       await this.login({

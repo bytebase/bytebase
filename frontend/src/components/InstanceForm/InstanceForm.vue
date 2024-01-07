@@ -186,6 +186,14 @@
             @update:scan-interval="changeScanInterval"
           />
 
+          <MaximumConnectionsInput
+            v-if="!isCreating"
+            ref="maximumConnectionsInputRef"
+            :maximum-connections="basicInfo.options?.maximumConnections"
+            :allow-edit="allowEdit"
+            @update:maximum-connections="changeMaximumConnections"
+          />
+
           <!--Do not show external link on create to reduce cognitive load-->
           <div v-if="!isCreating" class="sm:col-span-3 sm:col-start-1">
             <label for="external-link" class="textlabel inline-flex">
@@ -640,6 +648,13 @@ const changeScanInterval = (duration: Duration | undefined) => {
   }
   basicInfo.value.options.syncInterval = duration;
 };
+const changeMaximumConnections = (maximumConnections: number) => {
+  if (!basicInfo.value.options) {
+    basicInfo.value.options = InstanceOptions.fromPartial({});
+  }
+  console.log(maximumConnections);
+  basicInfo.value.options.maximumConnections = maximumConnections;
+};
 
 const handleMongodbConnectionStringSchemaChange = (
   type: string,
@@ -808,6 +823,12 @@ const doUpdate = async () => {
       instance.options?.syncInterval?.seconds?.toNumber()
     ) {
       updateMask.push("options.sync_interval");
+    }
+    if (
+      instancePatch.options?.maximumConnections !==
+      instance.options?.maximumConnections
+    ) {
+      updateMask.push("options.maximum_connections");
     }
     return await instanceV1Store.updateInstance(instancePatch, updateMask);
   };

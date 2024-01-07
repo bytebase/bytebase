@@ -328,7 +328,7 @@ func local_request_OrgPolicyService_ListPolicies_0(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_ListPolicies_1 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_OrgPolicyService_ListPolicies_1 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_OrgPolicyService_ListPolicies_1(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -398,7 +398,7 @@ func local_request_OrgPolicyService_ListPolicies_1(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_ListPolicies_2 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_OrgPolicyService_ListPolicies_2 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_OrgPolicyService_ListPolicies_2(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -468,7 +468,7 @@ func local_request_OrgPolicyService_ListPolicies_2(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_ListPolicies_3 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_OrgPolicyService_ListPolicies_3 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_OrgPolicyService_ListPolicies_3(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -538,7 +538,7 @@ func local_request_OrgPolicyService_ListPolicies_3(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_ListPolicies_4 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_OrgPolicyService_ListPolicies_4 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_OrgPolicyService_ListPolicies_4(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -608,18 +608,14 @@ func local_request_OrgPolicyService_ListPolicies_4(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_CreatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_OrgPolicyService_CreatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_OrgPolicyService_CreatePolicy_0(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -639,11 +635,7 @@ func local_request_OrgPolicyService_CreatePolicy_0(ctx context.Context, marshale
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -660,18 +652,14 @@ func local_request_OrgPolicyService_CreatePolicy_0(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_CreatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
+	filter_OrgPolicyService_CreatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_OrgPolicyService_CreatePolicy_1(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -708,11 +696,7 @@ func local_request_OrgPolicyService_CreatePolicy_1(ctx context.Context, marshale
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -746,18 +730,14 @@ func local_request_OrgPolicyService_CreatePolicy_1(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_CreatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
+	filter_OrgPolicyService_CreatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_OrgPolicyService_CreatePolicy_2(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -794,11 +774,7 @@ func local_request_OrgPolicyService_CreatePolicy_2(ctx context.Context, marshale
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -832,18 +808,14 @@ func local_request_OrgPolicyService_CreatePolicy_2(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_CreatePolicy_3 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
+	filter_OrgPolicyService_CreatePolicy_3 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_OrgPolicyService_CreatePolicy_3(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -880,11 +852,7 @@ func local_request_OrgPolicyService_CreatePolicy_3(ctx context.Context, marshale
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -918,18 +886,14 @@ func local_request_OrgPolicyService_CreatePolicy_3(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_CreatePolicy_4 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 2, 4, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 2, 3, 3}}
+	filter_OrgPolicyService_CreatePolicy_4 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "parent": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
 func request_OrgPolicyService_CreatePolicy_4(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -966,11 +930,7 @@ func local_request_OrgPolicyService_CreatePolicy_4(ctx context.Context, marshale
 	var protoReq CreatePolicyRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Policy); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Policy); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -1004,7 +964,7 @@ func local_request_OrgPolicyService_CreatePolicy_4(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_UpdatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_OrgPolicyService_UpdatePolicy_0 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_OrgPolicyService_UpdatePolicy_0(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1104,7 +1064,7 @@ func local_request_OrgPolicyService_UpdatePolicy_0(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_UpdatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_OrgPolicyService_UpdatePolicy_1 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_OrgPolicyService_UpdatePolicy_1(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1204,7 +1164,7 @@ func local_request_OrgPolicyService_UpdatePolicy_1(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_UpdatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_OrgPolicyService_UpdatePolicy_2 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_OrgPolicyService_UpdatePolicy_2(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1304,7 +1264,7 @@ func local_request_OrgPolicyService_UpdatePolicy_2(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_UpdatePolicy_3 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_OrgPolicyService_UpdatePolicy_3 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_OrgPolicyService_UpdatePolicy_3(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -1404,7 +1364,7 @@ func local_request_OrgPolicyService_UpdatePolicy_3(ctx context.Context, marshale
 }
 
 var (
-	filter_OrgPolicyService_UpdatePolicy_4 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_OrgPolicyService_UpdatePolicy_4 = &utilities.DoubleArray{Encoding: map[string]int{"policy": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_OrgPolicyService_UpdatePolicy_4(ctx context.Context, marshaler runtime.Marshaler, client OrgPolicyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {

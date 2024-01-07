@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -14,6 +15,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 )
@@ -147,7 +149,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 // GetTableColumns parses the schema to get the table columns map.
 // This is used to generate rollback SQL from the binlog events.
 func GetTableColumns(schema string) (map[string][]string, error) {
-	_, supportStmts, err := tidbparser.ExtractTiDBUnsupportedStmts(schema)
+	_, supportStmts, err := extractTiDBUnsupportedStmts(schema)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract TiDB unsupported statements from old statements %q", schema)
 	}
@@ -166,6 +168,36 @@ func GetTableColumns(schema string) (map[string][]string, error) {
 		}
 	}
 	return tableMap, nil
+}
+
+// extractTiDBUnsupportedStmts returns a list of unsupported statements in TiDB extracted from the `stmts`,
+// and returns the remaining statements supported by TiDB from `stmts`.
+func extractTiDBUnsupportedStmts(stmts string) ([]string, string, error) {
+	var unsupportStmts []string
+	var supportedStmts bytes.Buffer
+	// We use our bb tokenizer to help us split the multi-statements into statement list.
+	singleSQLs, err := mysqlparser.SplitSQL(stmts)
+	if err != nil {
+		return nil, "", errors.Wrapf(err, "cannot split multi sql %q via bytebase parser", stmts)
+	}
+	for _, sql := range singleSQLs {
+		content := sql.Text
+		if isTiDBUnsupportStmt(content) {
+			unsupportStmts = append(unsupportStmts, content)
+			continue
+		}
+		_, _ = supportedStmts.WriteString(content)
+		_, _ = supportedStmts.WriteString("\n")
+	}
+	return unsupportStmts, supportedStmts.String(), nil
+}
+
+// isTiDBUnsupportStmt returns true if this statement is unsupported in TiDB.
+func isTiDBUnsupportStmt(stmt string) bool {
+	if _, err := tidbparser.ParseTiDB(stmt, "", ""); err != nil {
+		return true
+	}
+	return false
 }
 
 func (e *BinlogEvent) getRollbackSQL(tables map[string][]string) (string, error) {
