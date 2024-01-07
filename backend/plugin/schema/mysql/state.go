@@ -439,11 +439,11 @@ func (i *indexState) toString(buf *strings.Builder) error {
 				return err
 			}
 		}
+	}
 
-		if i.comment != "" {
-			if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", i.comment)); err != nil {
-				return err
-			}
+	if i.comment != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", i.comment)); err != nil {
+			return err
 		}
 	}
 	return nil
