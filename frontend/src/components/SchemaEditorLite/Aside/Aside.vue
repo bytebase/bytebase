@@ -1,12 +1,7 @@
 <template>
-  <BranchTree v-if="resourceType === 'branch'" />
-  <DatabaseTree v-else-if="resourceType === 'database'" />
+  <Tree />
 </template>
 
 <script lang="ts" setup>
-import { useSchemaEditorContext } from "../context";
-import BranchTree from "./BranchTree.vue";
-import DatabaseTree from "./DatabaseTree.vue";
-
-const { resourceType } = useSchemaEditorContext();
+import Tree from "./Tree.vue";
 </script>
