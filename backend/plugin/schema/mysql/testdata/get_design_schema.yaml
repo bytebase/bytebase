@@ -75,7 +75,8 @@
                   ],
                   "unique": true,
                   "primary": true,
-                  "visible": true
+                  "visible": true,
+                  "comment": "primary key of multiple key fields"
                 }
               ],
               "foreignKeys": [
@@ -224,7 +225,7 @@
       `c` int NOT NULL AUTO_INCREMENT,
       `e` int  NULL,
       `b` char(10) NOT NULL,
-      PRIMARY KEY (`a`, `b`, `c`),
+      PRIMARY KEY (`a`, `b`, `c`) COMMENT 'primary key of multiple key fields',
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
 
