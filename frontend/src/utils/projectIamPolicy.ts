@@ -1,4 +1,3 @@
-import { ProjectRoleType } from "@/types";
 import { Binding, type IamPolicy } from "@/types/proto/v1/iam_policy";
 
 const tidyUpPolicy = (policy: IamPolicy) => {
@@ -10,7 +9,7 @@ const tidyUpPolicy = (policy: IamPolicy) => {
 export const removeRoleFromProjectIamPolicy = (
   policy: IamPolicy,
   user: string,
-  role: ProjectRoleType
+  role: string
 ) => {
   const binding = policy.bindings.find((binding) => binding.role === role);
   if (binding) {
@@ -39,7 +38,7 @@ export const removeUserFromProjectIamPolicy = (
 export const addRoleToProjectIamPolicy = (
   policy: IamPolicy,
   user: string,
-  role: ProjectRoleType
+  role: string
 ) => {
   policy.bindings.push(
     Binding.fromPartial({
