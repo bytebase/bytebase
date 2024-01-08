@@ -9,7 +9,7 @@
         :environment="environment?.uid"
         :disabled="!allowEdit"
         :default-environment-name="database.instanceEntity.environment"
-        @select-environment-id="handleSelectEnvironmentUID"
+        @update:environment="handleSelectEnvironmentUID"
       />
     </div>
     <Labels :database="database" class="pt-5" />
@@ -20,8 +20,13 @@
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { EnvironmentSelect } from "@/components/v2";
-import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useEnvironmentV1Store,
+  pushNotification,
+} from "@/store";
 import { type ComposedDatabase } from "@/types";
 import Labels from "./components/Labels.vue";
 import Secrets from "./components/Secrets.vue";
@@ -33,12 +38,13 @@ const props = defineProps<{
 
 const databaseStore = useDatabaseV1Store();
 const envStore = useEnvironmentV1Store();
+const { t } = useI18n();
 
 const environment = computed(() => {
   return envStore.getEnvironmentByName(props.database.effectiveEnvironment);
 });
 
-const handleSelectEnvironmentUID = async (uid: number | string) => {
+const handleSelectEnvironmentUID = async (uid?: string) => {
   const environment = envStore.getEnvironmentByUID(String(uid));
   if (environment.name === props.database.effectiveEnvironment) {
     return;
@@ -48,6 +54,11 @@ const handleSelectEnvironmentUID = async (uid: number | string) => {
   await databaseStore.updateDatabase({
     database: databasePatch,
     updateMask: ["environment"],
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("common.updated"),
   });
 };
 </script>
