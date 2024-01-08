@@ -50,7 +50,10 @@
               </NRadio>
             </NRadioGroup>
           </NFormItem>
-          <NFormItem path="password" :label="$t('common.password')">
+          <NFormItem
+            path="password"
+            :label="$t('export-data.password-optional')"
+          >
             <BBTextField
               v-model:value="formData.password"
               type="password"
@@ -82,7 +85,7 @@
 
   <BBModal
     :show="state.showModal"
-    :title="$t('common.password')"
+    :title="$t('export-data.password-optional')"
     class="shadow-inner outline outline-gray-200"
     @close="state.showModal = false"
   >
@@ -135,7 +138,7 @@ interface LocalState {
   showModal: boolean;
 }
 
-interface FormData {
+export interface ExportOption {
   limit: number;
   format: ExportFormat;
   password: string;
@@ -156,7 +159,7 @@ const props = withDefaults(
   }
 );
 
-const defaultFormData = (): FormData => ({
+const defaultFormData = (): ExportOption => ({
   limit: 1000,
   format: props.supportFormats[0],
   password: "",
@@ -165,8 +168,8 @@ const defaultFormData = (): FormData => ({
 const emit = defineEmits<{
   (
     event: "export",
-    options: FormData,
-    download: (content: BinaryLike | Blob, format: ExportFormat) => void
+    options: ExportOption,
+    download: (content: BinaryLike | Blob, options: ExportOption) => void
   ): Promise<void>;
 }>();
 
@@ -177,7 +180,7 @@ const state = reactive<LocalState>({
   showModal: false,
 });
 const formRef = ref<FormInst>();
-const formData = ref<FormData>(defaultFormData());
+const formData = ref<ExportOption>(defaultFormData());
 
 const viewMode = computed(() => {
   return props.allowSpecifyRowCount ? "DRAWER" : "DROPDOWN";
@@ -276,10 +279,11 @@ const doExport = async () => {
   }
 };
 
+const downloadFileAsZip = (options: ExportOption) => {
+  return props.fileType === "zip" && !!options.password;
+};
+
 const getExportFileType = (format: ExportFormat) => {
-  if (props.fileType === "zip") {
-    return "application/zip";
-  }
   switch (format) {
     case ExportFormat.CSV:
       return "text/csv";
@@ -292,19 +296,23 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const doDownload = (content: BinaryLike | Blob, format: ExportFormat) => {
+const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
+  const isZip = downloadFileAsZip(options);
+  const fileType = isZip
+    ? "application/zip"
+    : getExportFileType(options.format);
   const blob = new Blob([content], {
-    type: getExportFileType(format),
+    type: fileType,
   });
   const url = window.URL.createObjectURL(blob);
+  console.log(`fileType: ${fileType}`);
 
-  const fileFormat = exportFormatToJSON(format).toLowerCase();
+  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
   const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
-  link.download = `${filename}.${
-    props.fileType === "zip" ? "zip" : fileFormat
-  }`;
+  link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
+  console.log(`download: ${link.download}`);
   link.href = url;
   link.click();
 };

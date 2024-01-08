@@ -3377,6 +3377,7 @@
       "export-rows-must-gt-zero": "导出行数必须大于 0"
     },
     "export-format": "导出格式",
+    "password-optional": "设置密码加密（可选）",
     "password-info": "提供密码来对导出的文件进行加密"
   },
   "branch": {

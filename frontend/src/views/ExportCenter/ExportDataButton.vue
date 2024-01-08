@@ -14,6 +14,7 @@
 
 <script lang="ts" setup>
 import { BinaryLike } from "node:crypto";
+import { ExportOption } from "@/components/DataExportButton.vue";
 import { useProjectIamPolicyStore } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import { ExportFormat } from "@/types/proto/v1/common";
@@ -27,8 +28,8 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const { exportData } = useExportData();
 
 const handleExportData = async (
-  { format, password }: { format: ExportFormat; password: string },
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+  options: ExportOption,
+  callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
   const exportRecord = props.exportRecord;
   const database = exportRecord.database;
@@ -36,14 +37,14 @@ const handleExportData = async (
   const content = await exportData({
     database: database.name,
     instance: database.instance,
-    format,
+    format: options.format,
     statement: exportRecord.statement,
     limit: exportRecord.maxRowCount,
     admin: false,
-    password,
+    password: options.password,
   });
 
-  callback(content, format);
+  callback(content, options);
 
   // Fetch the latest iam policy.
   await projectIamPolicyStore.fetchProjectIamPolicy(database.project, true);
