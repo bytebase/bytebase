@@ -295,7 +295,7 @@ const findFirstSchemaNode = (
 };
 const buildDatabaseTreeData = (openFirstChild: boolean) => {
   const treeNodeList = buildTree(targets.value, treeNodeMap, {
-    byInstance: true,
+    byInstance: resourceType.value === "database",
   });
   treeDataRef.value = treeNodeList;
 
