@@ -362,6 +362,9 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 }
 
 func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
+	if request.Password == "" {
+		return data, nil
+	}
 	var b bytes.Buffer
 	fzip := io.Writer(&b)
 
@@ -369,24 +372,13 @@ func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	defer zipw.Close()
 
 	filename := fmt.Sprintf("export.%s", strings.ToLower(request.Format.String()))
-	var w io.Writer
 
-	if request.Password != "" {
-		withPassword, err := zipw.Encrypt(filename, request.Password)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create encrypt export file")
-		}
-		w = withPassword
-	} else {
-		withoutPassword, err := zipw.Create(filename)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to create export file")
-		}
-		w = withoutPassword
+	writer, err := zipw.Encrypt(filename, request.Password)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create encrypt export file")
 	}
 
-	_, err := io.Copy(w, bytes.NewReader(data))
-	if err != nil {
+	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
 		return nil, errors.Wrapf(err, "failed to write export file")
 	}
 	if err := zipw.Close(); err != nil {

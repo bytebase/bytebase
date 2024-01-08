@@ -94,6 +94,7 @@ import { reactive, ref, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
+import { ExportOption } from "@/components/DataExportButton.vue";
 import { featureToRef, useUserStore, useActivityV1Store } from "@/store";
 import {
   AuditActivityTypeList,
@@ -249,13 +250,13 @@ const activityFind = computed((): FindActivityMessage => {
 });
 
 const handleExport = async (
-  { format }: { format: ExportFormat },
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+  options: ExportOption,
+  callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
   const content = await activityV1Store.exportData({
     find: activityFind.value,
-    format,
+    format: options.format,
   });
-  callback(content, format);
+  callback(content, options);
 };
 </script>

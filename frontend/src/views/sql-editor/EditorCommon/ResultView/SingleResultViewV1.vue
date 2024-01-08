@@ -149,6 +149,7 @@ import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { ExportOption } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
@@ -340,12 +341,8 @@ const pageSize = computed(() => {
 });
 
 const handleExportBtnClick = async (
-  {
-    format,
-    password,
-    limit: userSpecifiedLimit,
-  }: { format: ExportFormat; limit: number | undefined; password: string },
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void
+  options: ExportOption,
+  callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
@@ -355,19 +352,19 @@ const handleExportBtnClick = async (
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
-  const limit = userSpecifiedLimit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
+  const limit = options.limit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
 
   const content = await exportData({
     database,
     instance,
-    format,
+    format: options.format,
     statement,
     limit,
     admin,
-    password,
+    password: options.password,
   });
 
-  callback(content, format);
+  callback(content, options);
 };
 
 const showVisualizeButton = computed((): boolean => {
