@@ -283,12 +283,12 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 
 	roles := create.Roles
 	if len(roles) == 0 {
-		roles = []api.Role{create.Role}
+		roles = []api.Role{api.WorkspaceMember}
 	}
 	firstMember := count == 0
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
-		roles = append(roles, api.WorkspaceAdmin)
+		roles = []api.Role{api.WorkspaceAdmin}
 	}
 	roles = uniq(roles)
 
