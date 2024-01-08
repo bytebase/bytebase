@@ -179,6 +179,7 @@ func TestSQLExport(t *testing.T) {
 				Limit:              1,
 				Name:               instance.Name,
 				Statement:          tt.export,
+				Password:           tt.password,
 			}
 			export, err := ctl.sqlServiceClient.Export(ctx, request)
 			a.NoError(err)
