@@ -31,7 +31,7 @@
         <div class="bb-grid-cell justify-center">
           <NCheckbox
             :disabled="!review || !hasPermission"
-            :checked="review?.enforce"
+            :checked="review?.enforce ?? false"
             @update:checked="toggleReviewEnabled(review!, $event)"
           />
         </div>
