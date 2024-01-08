@@ -122,14 +122,10 @@
         </div>
       </template>
       <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
-        <NPerformantEllipsis
-          expand-trigger="click"
-          line-clamp="4"
-          :tooltip="false"
-          class="whitespace-pre-wrap break-words break-all"
-        >
-          <span v-html="highlight(issue.description)"></span>
-        </NPerformantEllipsis>
+        <div
+          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
+          v-html="highlight(issue.description)"
+        />
       </template>
     </BBGrid>
   </div>
