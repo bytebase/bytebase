@@ -28,6 +28,23 @@ const (
 	autoRandSymbol      = "AUTO_RANDOM"
 )
 
+func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
+	stmts, err := tidbparser.ParseTiDB(schema, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	transformer := &tidbTransformer{
+		state: newDatabaseState(),
+	}
+	transformer.state.schemas[""] = newSchemaState()
+
+	for _, stmt := range stmts {
+		(stmt).Accept(transformer)
+	}
+	return transformer.state.convertToDatabaseMetadata(), transformer.err
+}
+
 type databaseState struct {
 	name    string
 	schemas map[string]*schemaState
@@ -562,23 +579,6 @@ type tidbTransformer struct {
 
 	state *databaseState
 	err   error
-}
-
-func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
-	stmts, err := tidbparser.ParseTiDB(schema, "", "")
-	if err != nil {
-		return nil, err
-	}
-
-	transformer := &tidbTransformer{
-		state: newDatabaseState(),
-	}
-	transformer.state.schemas[""] = newSchemaState()
-
-	for _, stmt := range stmts {
-		(stmt).Accept(transformer)
-	}
-	return transformer.state.convertToDatabaseMetadata(), transformer.err
 }
 
 func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
