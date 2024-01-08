@@ -3382,6 +3382,7 @@
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
     "export-format": "Formato de exportación",
+    "password-optional": "Cifrar con contraseña (opcional)",
     "password-info": "Proporcione una contraseña para cifrar el archivo de exportación."
   },
   "branch": {
