@@ -147,8 +147,10 @@ import {
   NSelect,
 } from "naive-ui";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import {
   getUpdateMaskFromUsers,
+  pushNotification,
   useActuatorV1Store,
   useUserStore,
 } from "@/store";
@@ -156,6 +158,7 @@ import { PresetRoleType, emptyUser } from "@/types";
 import {
   UpdateUserRequest,
   User,
+  UserRole,
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -176,6 +179,7 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const { t } = useI18n();
 const actuatorStore = useActuatorV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
@@ -246,6 +250,38 @@ const tryCreateOrUpdateUser = async () => {
       password: randomString(20),
     });
   } else {
+    // If the user is the only workspace admin, we need to make sure the user is not removing the
+    // workspace admin role.
+    if (isDevelopmentIAM.value) {
+      if (props.user?.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+        if (
+          !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+          !hasMoreThanOneOwner.value
+        ) {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("settings.members.tooltip.not-allow-remove"),
+          });
+          return;
+        }
+      }
+    } else {
+      if (props.user?.userRole === UserRole.OWNER) {
+        if (
+          state.user.userRole !== UserRole.OWNER &&
+          !hasMoreThanOneOwner.value
+        ) {
+          pushNotification({
+            module: "bytebase",
+            style: "CRITICAL",
+            title: t("settings.members.remove-self-admin.description"),
+          });
+          return;
+        }
+      }
+    }
+
     await userStore.updateUser(
       UpdateUserRequest.fromPartial({
         user: state.user,
