@@ -139,4 +139,6 @@ message ActuatorInfo {
 
   // iam_guard is the enablement of IAM checks.
   bool iam_guard = 18;
+
+  repeated string unlicensed_features = 19;
 }
