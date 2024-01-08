@@ -190,12 +190,16 @@ export function getHighlightHTMLByKeyWords(s: string, k: string) {
 
 export function getHighlightHTMLByRegExp(
   s: string,
-  pattern: string,
-  caseSensitive = false
+  pattern: string | string[],
+  caseSensitive = false,
+  className = "text-accent"
 ) {
+  pattern = Array.isArray(pattern)
+    ? pattern.map((kw) => escapeRegExp(kw)).join("|")
+    : escapeRegExp(pattern);
   const flags = caseSensitive ? "g" : "gi";
-  const re = new RegExp(escapeRegExp(pattern), flags);
-  return s.replaceAll(re, (k) => `<b class="text-accent">${k}</b>`);
+  const re = new RegExp(pattern, flags);
+  return s.replaceAll(re, (k) => `<b class="${className}">${k}</b>`);
 }
 
 export type Defer<T> = {
