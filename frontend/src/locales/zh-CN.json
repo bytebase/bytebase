@@ -1459,7 +1459,8 @@
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Bytebase 工作空间管理员"
+      "manual-by-workspace-admin": "Bytebase 工作空间管理员",
+      "manual-by-custom-project-roles": "自定义项目角色"
     },
     "backup": {
       "name": "数据库备份策略",

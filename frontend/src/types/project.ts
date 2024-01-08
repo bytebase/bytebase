@@ -8,13 +8,6 @@ import { ProjectId } from "./id";
 import { Principal } from "./principal";
 import { ExternalRepositoryInfo, RepositoryConfig } from "./repository";
 
-export type ProjectRoleType =
-  | "OWNER"
-  | "DEVELOPER"
-  | "EXPORTER"
-  | "QUERIER"
-  | string;
-
 export type ProjectWorkflowType = "UI" | "VCS";
 
 export type ProjectVisibility = "PUBLIC" | "PRIVATE";
@@ -49,7 +42,7 @@ export type ProjectMember = {
   project: Project;
 
   // Domain specific fields
-  role: ProjectRoleType;
+  role: string;
   principal: Principal;
 };
 
