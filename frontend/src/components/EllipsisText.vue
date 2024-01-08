@@ -1,5 +1,6 @@
 <template>
-  <NEllipsis
+  <component
+    :is="performant ? NPerformantEllipsis : NEllipsis"
     :line-clamp="lineClamp"
     :tooltip="{
       showArrow: false,
@@ -8,13 +9,17 @@
     }"
   >
     <slot></slot>
-  </NEllipsis>
+  </component>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NEllipsis, NPerformantEllipsis } from "naive-ui";
 
 defineProps({
+  performant: {
+    type: Boolean,
+    default: false,
+  },
   lineClamp: {
     type: Number,
     default: 1,
