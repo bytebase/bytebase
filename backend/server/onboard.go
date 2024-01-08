@@ -59,7 +59,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if err := s.schemaSyncer.SyncInstance(ctx, testInstance); err != nil {
+	if _, err := s.schemaSyncer.SyncInstance(ctx, testInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync test onboarding instance")
 	}
 
@@ -118,7 +118,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 
 	// Sync the instance schema so we can transfer the sample database later.
-	if err := s.schemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
+	if _, err := s.schemaSyncer.SyncInstance(ctx, prodInstance); err != nil {
 		return errors.Wrapf(err, "failed to sync prod onboarding instance")
 	}
 
