@@ -73,7 +73,7 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					return true
 				}
 				// Sync all databases for instance.
-				if err := s.SyncInstance(ctx, instance); err != nil {
+				if _, err := s.SyncInstance(ctx, instance); err != nil {
 					slog.Error("failed to sync instance", log.BBError(err))
 				}
 				s.syncAllDatabases(ctx, instance)
@@ -139,7 +139,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		}
 
 		slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
-		if err := s.SyncInstance(ctx, instance); err != nil {
+		if _, err := s.SyncInstance(ctx, instance); err != nil {
 			slog.Debug("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
 				slog.String("error", err.Error()))
@@ -248,22 +248,22 @@ func (s *Syncer) syncAllDatabases(ctx context.Context, instance *store.InstanceM
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) error {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, error) {
 	if s.profile.Readonly {
-		return nil
+		return nil, nil
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err != nil {
 		s.upsertInstanceConnectionAnomaly(ctx, instance, err)
-		return err
+		return nil, err
 	}
 	defer driver.Close(ctx)
 	s.upsertInstanceConnectionAnomaly(ctx, instance, nil)
 
 	instanceMeta, err := driver.SyncInstance(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
+		return nil, errors.Wrapf(err, "failed to sync instance: %s", instance.ResourceID)
 	}
 
 	updateInstance := &store.UpdateInstanceMessage{
@@ -280,8 +280,9 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if !equalInstanceMetadata(instanceMeta.Metadata, instance.Metadata) {
 		updateInstance.Metadata.MysqlLowerCaseTableNames = instanceMeta.Metadata.GetMysqlLowerCaseTableNames()
 	}
-	if _, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1); err != nil {
-		return err
+	updatedInstance, err := s.store.UpdateInstanceV2(ctx, updateInstance, -1)
+	if err != nil {
+		return nil, err
 	}
 
 	var instanceUsers []*store.InstanceUserMessage
@@ -292,12 +293,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		})
 	}
 	if err := s.store.UpsertInstanceUsers(ctx, instance.UID, instanceUsers); err != nil {
-		return err
+		return updatedInstance, err
 	}
 
 	databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID})
 	if err != nil {
-		return errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
+		return updatedInstance, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
 	for _, databaseMetadata := range instanceMeta.Databases {
 		exist := false
@@ -316,7 +317,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				ServiceName:  databaseMetadata.ServiceName,
 				ProjectID:    api.DefaultProjectID,
 			}); err != nil {
-				return errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
+				return updatedInstance, errors.Wrapf(err, "failed to create instance %q database %q in sync runner", instance.ResourceID, databaseMetadata.Name)
 			}
 		}
 	}
@@ -336,12 +337,12 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 				DatabaseName: database.DatabaseName,
 				SyncState:    &syncStatus,
 			}, api.SystemBotID); err != nil {
-				return errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
+				return updatedInstance, errors.Errorf("failed to update database %q for instance %q", database.DatabaseName, instance.ResourceID)
 			}
 		}
 	}
 
-	return nil
+	return updatedInstance, nil
 }
 
 // SyncDatabaseSchema will sync the schema for a database.

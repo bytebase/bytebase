@@ -195,10 +195,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
 				log.BBError(err))
+		} else {
+			instance = updatedInstance
 		}
 		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
@@ -561,11 +564,12 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+	if err != nil {
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+	s.stateCfg.InstanceSyncs.Store(instance.UID, updatedInstance)
 	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return &v1pb.SyncInstanceResponse{}, nil
