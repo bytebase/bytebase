@@ -305,14 +305,12 @@ const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
     type: fileType,
   });
   const url = window.URL.createObjectURL(blob);
-  console.log(`fileType: ${fileType}`);
 
   const fileFormat = exportFormatToJSON(options.format).toLowerCase();
   const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
   link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
-  console.log(`download: ${link.download}`);
   link.href = url;
   link.click();
 };
