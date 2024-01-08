@@ -101,6 +101,7 @@ export interface ActuatorInfo {
   preUpdateBackup: boolean;
   /** iam_guard is the enablement of IAM checks. */
   iamGuard: boolean;
+  unlicensedFeatures: string[];
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -552,6 +553,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     lsp: false,
     preUpdateBackup: false,
     iamGuard: false,
+    unlicensedFeatures: [],
   };
 }
 
@@ -610,6 +612,9 @@ export const ActuatorInfo = {
     }
     if (message.iamGuard === true) {
       writer.uint32(144).bool(message.iamGuard);
+    }
+    for (const v of message.unlicensedFeatures) {
+      writer.uint32(154).string(v!);
     }
     return writer;
   },
@@ -747,6 +752,13 @@ export const ActuatorInfo = {
 
           message.iamGuard = reader.bool();
           continue;
+        case 19:
+          if (tag !== 154) {
+            break;
+          }
+
+          message.unlicensedFeatures.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -776,6 +788,9 @@ export const ActuatorInfo = {
       lsp: isSet(object.lsp) ? globalThis.Boolean(object.lsp) : false,
       preUpdateBackup: isSet(object.preUpdateBackup) ? globalThis.Boolean(object.preUpdateBackup) : false,
       iamGuard: isSet(object.iamGuard) ? globalThis.Boolean(object.iamGuard) : false,
+      unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
+        ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -835,6 +850,9 @@ export const ActuatorInfo = {
     if (message.iamGuard === true) {
       obj.iamGuard = message.iamGuard;
     }
+    if (message.unlicensedFeatures?.length) {
+      obj.unlicensedFeatures = message.unlicensedFeatures;
+    }
     return obj;
   },
 
@@ -861,6 +879,7 @@ export const ActuatorInfo = {
     message.lsp = object.lsp ?? false;
     message.preUpdateBackup = object.preUpdateBackup ?? false;
     message.iamGuard = object.iamGuard ?? false;
+    message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
     return message;
   },
 };
