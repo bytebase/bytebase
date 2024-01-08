@@ -93,9 +93,6 @@ const state = reactive<LocalState>({
 
 const showBanner = computed(() => {
   return (
-    subscriptionStore.currentPlan === PlanType.FREE &&
-    // Do not show banner in demo mode
-    actuatorStore.serverInfo?.demoName == "" &&
     unlicensedFeatures.value.length > 0 &&
     neededPlan.value > subscriptionStore.currentPlan
   );
