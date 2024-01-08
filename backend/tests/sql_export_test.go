@@ -206,7 +206,6 @@ func TestSQLExport(t *testing.T) {
 				statement = string(export.Content)
 			}
 
-			statement = string(export.Content)
 			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
