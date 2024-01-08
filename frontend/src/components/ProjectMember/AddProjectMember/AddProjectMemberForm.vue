@@ -20,7 +20,7 @@
     </div>
     <div class="w-full">
       <span>{{ $t("project.members.assign-role") }}</span>
-      <ProjectMemberRoleSelect v-model:role="state.role" class="mt-2" />
+      <ProjectRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
 
     <div
@@ -72,7 +72,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import ProjectMemberRoleSelect from "@/components/v2/Select/ProjectMemberRoleSelect.vue";
+import ProjectRoleSelect from "@/components/v2/Select/ProjectRoleSelect.vue";
 import { useUserStore } from "@/store";
 import { getUserId } from "@/store/modules/v1/common";
 import {

@@ -2,7 +2,7 @@ import { kebabCase } from "lodash-es";
 import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
 import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
-import { MaybeRef, ProjectRoleType, RoleType, PresetRoleType } from "@/types";
+import { MaybeRef, RoleType, PresetRoleType } from "@/types";
 import { UserRole } from "@/types/proto/v1/auth_service";
 
 export type WorkspacePermissionType =
@@ -107,7 +107,7 @@ export type ProjectPermissionType =
 // Returns true if RBAC is not enabled or the particular project role has the particular project permission.
 export function hasProjectPermission(
   permission: ProjectPermissionType,
-  role: ProjectRoleType
+  role: string
 ): boolean {
   if (!hasFeature("bb.feature.rbac")) {
     return true;
@@ -171,7 +171,7 @@ export function roleName(role: RoleType): string {
 }
 
 // Project Role
-export function projectRoleName(role: ProjectRoleType): string {
+export function projectRoleName(role: string): string {
   switch (role) {
     case "OWNER":
       return "Owner";
