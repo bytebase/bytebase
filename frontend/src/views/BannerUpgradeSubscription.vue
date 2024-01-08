@@ -48,15 +48,15 @@
     </p>
     <div class="pl-4 my-2">
       <ul class="list-disc list-inside">
-        <li v-for="item in overUsedFeatureList" :key="item.feature">
+        <li v-for="feature in unlicensedFeatures" :key="feature">
           {{
-            $t(
-              `subscription.features.${item.feature.split(".").join("-")}.title`
-            )
+            $t(`subscription.features.${feature.split(".").join("-")}.title`)
           }}
           ({{
             $t(
-              `subscription.plan.${planTypeToString(item.requiredPlan)}.title`
+              `subscription.plan.${planTypeToString(
+                subscriptionStore.getMinimumRequiredPlan(feature as FeatureType)
+              )}.title`
             )
           }})
         </li>
@@ -71,164 +71,47 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, watch, ref } from "vue";
-import { onMounted } from "vue";
+import { reactive } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  useIdentityProviderStore,
-  useInstanceV1Store,
-  useSubscriptionV1Store,
-  usePolicyV1Store,
-  useSettingV1Store,
-  defaultBackupSchedule,
-  useDBGroupStore,
-  useDatabaseV1Store,
-  useDatabaseSecretStore,
-  useActuatorV1Store,
-} from "@/store";
-import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import {
-  FeatureType,
-  planTypeToString,
-  defaultTokenDurationInHours,
-} from "@/types";
-import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
+import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   showModal: boolean;
-  ready: boolean;
 }
 
 const { t } = useI18n();
 const router = useRouter();
 const subscriptionStore = useSubscriptionV1Store();
+const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({
   showModal: false,
-  ready: false,
 });
 
-const actuatorStore = useActuatorV1Store();
-const idpStore = useIdentityProviderStore();
-const settingV1Store = useSettingV1Store();
-const instanceStore = useInstanceV1Store();
-const environmentV1Store = useEnvironmentV1Store();
-const policyV1Store = usePolicyV1Store();
-const dbV1Store = useDatabaseV1Store();
-const dbSecretStore = useDatabaseSecretStore();
-const dbGroupStore = useDBGroupStore();
+const showBanner = computed(() => {
+  return (
+    subscriptionStore.currentPlan === PlanType.FREE &&
+    // Do not show banner in demo mode
+    actuatorStore.serverInfo?.demoName == "" &&
+    unlicensedFeatures.value.length > 0 &&
+    neededPlan.value > subscriptionStore.currentPlan
+  );
+});
 
-const usedFeatureList = ref<FeatureType[]>([]);
-
-watch(
-  () => state.ready,
-  async (ready) => {
-    if (!ready) {
-      return;
-    }
-    const set: Set<FeatureType> = new Set();
-
-    if (idpStore.identityProviderList.length > 0) {
-      set.add("bb.feature.sso");
-    }
-
-    // setting
-    if (settingV1Store.brandingLogo) {
-      set.add("bb.feature.branding");
-    }
-    const watermarkSetting = settingV1Store.getSettingByName(
-      "bb.workspace.watermark"
-    );
-    if (watermarkSetting?.value?.stringValue === "1") {
-      set.add("bb.feature.watermark");
-    }
-    if (settingV1Store.workspaceProfileSetting?.disallowSignup ?? false) {
-      if (!actuatorStore.isSaaSMode) {
-        set.add("bb.feature.disallow-signup");
-      }
-    }
-    if (settingV1Store.workspaceProfileSetting?.require2fa ?? false) {
-      set.add("bb.feature.2fa");
-    }
-    if (
-      !!settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds &&
-      settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds.toNumber() !=
-        defaultTokenDurationInHours * 60 * 60
-    ) {
-      set.add("bb.feature.secure-token");
-    }
-    if (settingV1Store.workspaceProfileSetting?.announcement?.text ?? false) {
-      set.add("bb.feature.announcement");
-    }
-    const openAIKeySetting = settingV1Store.getSettingByName(
-      "bb.plugin.openai.key"
-    );
-    if (openAIKeySetting?.value?.stringValue) {
-      set.add("bb.feature.plugin.openai");
-    }
-    const imSetting = settingV1Store.getSettingByName("bb.app.im");
-    if (imSetting?.value?.appImSettingValue?.appId) {
-      set.add("bb.feature.im.approval");
-    }
-
-    for (const environment of environmentV1Store.environmentList) {
-      if (environment.tier === EnvironmentTier.PROTECTED) {
-        set.add("bb.feature.environment-tier-policy");
-      }
-      if (!set.has("bb.feature.backup-policy")) {
-        const backupPolicy =
-          await policyV1Store.getOrFetchPolicyByParentAndType({
-            parentPath: environment.name,
-            policyType: PolicyType.BACKUP_PLAN,
-          });
-        if (
-          backupPolicy?.backupPlanPolicy?.schedule &&
-          backupPolicy?.backupPlanPolicy?.schedule !== defaultBackupSchedule
-        ) {
-          set.add("bb.feature.backup-policy");
-        }
-      }
-    }
-
-    // database
-    for (const databse of dbV1Store.databaseList) {
-      const list = await dbSecretStore.fetchSecretList(databse.name);
-      if (list.length > 0) {
-        set.add("bb.feature.encrypted-secrets");
-        break;
-      }
-    }
-    if (dbGroupStore.getAllDatabaseGroupList().length > 0) {
-      set.add("bb.feature.database-grouping");
-    }
-
-    usedFeatureList.value = [...set.values()];
-  }
-);
-
-const overUsedFeatureList = computed(() => {
-  const currentPlan = subscriptionStore.currentPlan;
-  const resp = [];
-  for (const feature of usedFeatureList.value) {
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
-    if (requiredPlan > currentPlan) {
-      resp.push({
-        feature,
-        requiredPlan,
-      });
-    }
-  }
-  return resp;
+const unlicensedFeatures = computed(() => {
+  return actuatorStore.serverInfo?.unlicensedFeatures ?? [];
 });
 
 const neededPlan = computed(() => {
   let plan = PlanType.FREE;
 
-  for (const feature of usedFeatureList.value) {
-    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(feature);
+  for (const feature of unlicensedFeatures.value) {
+    const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
+      feature as FeatureType
+    );
     if (requiredPlan > plan) {
       plan = requiredPlan;
     }
@@ -237,39 +120,10 @@ const neededPlan = computed(() => {
   return plan;
 });
 
-const showBanner = computed(() => {
-  return (
-    // Do not show banner in demo mode
-    actuatorStore.serverInfo?.demoName == "" &&
-    overUsedFeatureList.value.length > 0 &&
-    neededPlan.value > subscriptionStore.currentPlan
-  );
-});
-
 const currentPlan = computed(() => {
   return t(
     `subscription.plan.${planTypeToString(subscriptionStore.currentPlan)}.title`
   );
-});
-
-onMounted(() => {
-  if (subscriptionStore.currentPlan !== PlanType.FREE) {
-    return;
-  }
-
-  Promise.all([
-    idpStore.fetchIdentityProviderList(),
-    settingV1Store.fetchSettingList(),
-    environmentV1Store.fetchEnvironments(),
-    instanceStore.fetchInstanceList(),
-    dbGroupStore.fetchAllDatabaseGroupList(),
-  ])
-    .catch(() => {
-      // ignore
-    })
-    .finally(() => {
-      state.ready = true;
-    });
 });
 
 const gotoSubscriptionPage = () => {
