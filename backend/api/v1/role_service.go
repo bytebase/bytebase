@@ -54,6 +54,11 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
+
+	if err := validateResourceID(request.RoleId); err != nil {
+		return nil, err
+	}
+
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
