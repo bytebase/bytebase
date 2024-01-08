@@ -1,7 +1,7 @@
 <template>
   <NSelect
     v-bind="$attrs"
-    :value="role"
+    :value="multiple ? roles : role"
     :options="roleOptions"
     :max-tag-count="'responsive'"
     :filterable="true"
@@ -9,8 +9,9 @@
     :render-option="renderOption"
     :placeholder="$t('role.select')"
     :render-label="renderLabel"
+    :multiple="multiple"
     class="bb-project-member-role-select"
-    @update:value="changeRole"
+    @update:value="handleChange"
   />
   <FeatureModal
     feature="bb.feature.custom-role"
@@ -20,12 +21,12 @@
 </template>
 
 <script setup lang="ts">
-import { type SelectOption, NSelect, NTooltip } from "naive-ui";
+import { type SelectOption, NSelect, NTooltip, TooltipProps } from "naive-ui";
 import { computed, h, ref, VNode } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
-import { ProjectRoleType, PresetRoleType, WorkspaceLevelRoles } from "@/types";
+import { PresetRoleType, WorkspaceLevelRoles } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
@@ -34,12 +35,17 @@ type ProjectRoleSelectOption = SelectOption & {
   role: Role;
 };
 
-defineProps<{
-  role?: ProjectRoleType;
+const props = defineProps<{
+  role?: string;
+  roles?: string[];
+  multiple?: boolean;
+  filter?: (role: Role) => boolean;
+  tooltipProps?: TooltipProps;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:role", role: ProjectRoleType): void;
+  (event: "update:role", role: string): void;
+  (event: "update:roles", roles: string[]): void;
 }>();
 
 const FREE_ROLE_LIST = [
@@ -59,18 +65,19 @@ const roleList = computed(() => {
 });
 
 const roleOptions = computed(() => {
-  return (
-    roleList.value
-      // Exclude workspace level roles.
-      .filter((role) => !WorkspaceLevelRoles.includes(role.name))
-      .map<ProjectRoleSelectOption>((role) => {
-        return {
-          label: displayRoleTitle(role.name),
-          value: role.name,
-          role,
-        };
-      })
-  );
+  let roles = roleList.value
+    // Exclude workspace level roles.
+    .filter((role) => !WorkspaceLevelRoles.includes(role.name));
+  if (props.filter) {
+    roles = roles.filter(props.filter);
+  }
+  return roles.map<ProjectRoleSelectOption>((role) => {
+    return {
+      label: displayRoleTitle(role.name),
+      value: role.name,
+      role,
+    };
+  });
 });
 
 const renderLabel = (option: SelectOption) => {
@@ -96,6 +103,21 @@ const renderLabel = (option: SelectOption) => {
   );
 };
 
+const changeRoles = (values: string[]) => {
+  if (
+    values.some((value) => !roleList.value.find((role) => role.name === value))
+  ) {
+    // some roles not found
+    return;
+  }
+  if (!hasCustomRoleFeature.value) {
+    if (values.some((value) => !FREE_ROLE_LIST.includes(value))) {
+      showFeatureModal.value = true;
+      return;
+    }
+  }
+  emit("update:roles", values);
+};
 const changeRole = (value: string) => {
   const role = roleList.value.find((role) => role.name === value);
   if (!role) return;
@@ -106,6 +128,14 @@ const changeRole = (value: string) => {
     }
   }
   emit("update:role", value);
+};
+const handleChange = (e: string | string[]) => {
+  if (props.multiple && Array.isArray(e)) {
+    changeRoles(e);
+  }
+  if (!props.multiple && typeof e === "string") {
+    changeRole(e);
+  }
 };
 
 const filterByName = (pattern: string, option: SelectOption) => {
@@ -122,7 +152,7 @@ const renderOption = ({
   option: SelectOption;
 }) => {
   const { role } = option as ProjectRoleSelectOption;
-  return h(NTooltip, null, {
+  return h(NTooltip, props.tooltipProps, {
     trigger: () => node,
     default: () => displayRoleDescription(role.name),
   });
