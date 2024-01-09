@@ -1064,6 +1064,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
 		find.ShowFull = true
 	}
+
 	changeHistory, err := s.store.ListInstanceChangeHistory(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list change history, error: %v", err)
@@ -1239,8 +1240,11 @@ func convertToChangeHistory(h *store.InstanceChangeHistoryMessage) (*v1pb.Change
 		Version:           h.Version.Version,
 		Description:       h.Description,
 		Statement:         h.Statement,
+		StatementSize:     h.StatementSize,
 		Schema:            h.Schema,
+		SchemaSize:        h.SchemaSize,
 		PrevSchema:        h.SchemaPrev,
+		PrevSchemaSize:    h.SchemaPrevSize,
 		ExecutionDuration: durationpb.New(time.Duration(h.ExecutionDurationNs)),
 		Issue:             "",
 	}

@@ -138,9 +138,28 @@
             </button>
           </a>
           <highlight-code-block
-            class="border px-2 whitespace-pre-wrap w-full"
-            :code="changeHistory.statement"
+            class="border p-2 whitespace-pre-wrap w-full"
+            :code="changeHistoryStatement"
           />
+          <div
+            v-if="
+              changeHistory.statement.length !==
+              changeHistory.statementSize.toNumber()
+            "
+          >
+            <NButton
+              quaternary
+              size="small"
+              :disabled="state.loading"
+              @click="fetchFullHistory"
+            >
+              <template #icon>
+                <BBSpin v-if="state.loading" />
+                <ChevronDownIcon v-else class="w-5" />
+              </template>
+              View full
+            </NButton>
+          </div>
         </div>
         <div v-if="showSchemaSnapshot" class="flex flex-col gap-y-2">
           <a
@@ -177,9 +196,11 @@
           <div class="flex flex-row items-center gap-x-2">
             <div v-if="allowShowDiff" class="flex space-x-1 items-center">
               <NSwitch
-                v-model:value="state.showDiff"
+                :value="state.showDiff"
                 size="small"
+                :disabled="state.loading"
                 data-label="bb-change-history-diff-switch"
+                @update:value="switchShowDiff"
               />
               <span class="text-sm font-semibold">
                 {{ $t("change-history.show-diff") }}
@@ -218,12 +239,32 @@
             :readonly="true"
           />
           <template v-else>
-            <highlight-code-block
-              v-if="changeHistory.schema"
-              class="border px-2 whitespace-pre-wrap w-full"
-              :code="changeHistory.schema"
-              data-label="bb-change-history-code-block"
-            />
+            <div v-if="changeHistory.schema" class="space-y-2">
+              <highlight-code-block
+                class="border p-2 whitespace-pre-wrap w-full"
+                :code="changeHistorySchema"
+                data-label="bb-change-history-code-block"
+              />
+              <div
+                v-if="
+                  changeHistory.schema.length !==
+                  changeHistory.schemaSize.toNumber()
+                "
+              >
+                <NButton
+                  quaternary
+                  size="small"
+                  :disabled="state.loading"
+                  @click="fetchFullHistory"
+                >
+                  <template #icon>
+                    <BBSpin v-if="state.loading" />
+                    <ChevronDownIcon v-else class="w-5" />
+                  </template>
+                  View full
+                </NButton>
+              </div>
+            </div>
             <div v-else>
               {{ $t("change-history.current-schema-empty") }}
             </div>
@@ -278,8 +319,10 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronDownIcon } from "lucide-vue-next";
 import { NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
+import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import {
@@ -299,6 +342,7 @@ import {
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
   DatabaseMetadataView,
+  ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
 import {
@@ -313,6 +357,7 @@ import {
 interface LocalState {
   showDiff: boolean;
   viewDrift: boolean;
+  loading: boolean;
 }
 
 const props = defineProps<{
@@ -320,6 +365,12 @@ const props = defineProps<{
   database: string;
   changeHistorySlug: string;
 }>();
+
+const state = reactive<LocalState>({
+  showDiff: false,
+  viewDrift: false,
+  loading: false,
+});
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
@@ -387,6 +438,26 @@ watch(
   { immediate: true }
 );
 
+const fetchFullHistory = async () => {
+  if (state.loading) {
+    return;
+  }
+  state.loading = true;
+  try {
+    await changeHistoryStore.getOrFetchChangeHistoryByName(
+      changeHistoryName.value,
+      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+    );
+  } finally {
+    state.loading = false;
+  }
+};
+
+const switchShowDiff = async (showDiff: boolean) => {
+  await fetchFullHistory();
+  state.showDiff = showDiff;
+};
+
 const getAffectedTableDisplayName = (affectedTable: AffectedTable): string => {
   const { schema, table, dropped } = affectedTable;
   let name = table;
@@ -432,6 +503,34 @@ const changeHistory = computed((): ChangeHistory | undefined => {
   return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
 });
 
+const changeHistorySchema = computed(() => {
+  if (!changeHistory.value) {
+    return "";
+  }
+  let schema = changeHistory.value.schema;
+  if (
+    changeHistory.value.schema.length !==
+    changeHistory.value.schemaSize.toNumber()
+  ) {
+    schema = `${schema}${schema.endsWith("\n") ? "" : "\n"}...`;
+  }
+  return schema;
+});
+
+const changeHistoryStatement = computed(() => {
+  if (!changeHistory.value) {
+    return "";
+  }
+  let statement = changeHistory.value.statement;
+  if (
+    changeHistory.value.statement.length !==
+    changeHistory.value.statementSize.toNumber()
+  ) {
+    statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
+  }
+  return statement;
+});
+
 // previousHistory is the last change history before the one of given id.
 // Only referenced if hasDrift is true.
 const previousHistory = computed((): ChangeHistory | undefined => {
@@ -443,7 +542,7 @@ const allowShowDiff = computed((): boolean => {
   if (!changeHistory.value) {
     return false;
   }
-  return changeHistory.value.schema !== changeHistory.value.prevSchema;
+  return true;
 });
 
 // A schema drift is detected when the schema AFTER previousHistory has been
@@ -468,11 +567,6 @@ const creator = computed(() => {
   }
   const email = extractUserResourceName(changeHistory.value.creator);
   return useUserStore().getUserByEmail(email);
-});
-
-const state = reactive<LocalState>({
-  showDiff: allowShowDiff.value, // "Show diff" is turned on by default if available.
-  viewDrift: false,
 });
 
 const previousHistoryLink = computed(() => {
@@ -524,11 +618,13 @@ const vcsBranchUrl = computed((): string => {
   return "";
 });
 
-const copyStatement = () => {
-  if (!changeHistory.value) {
+const copyStatement = async () => {
+  await fetchFullHistory();
+
+  if (!changeHistoryStatement.value) {
     return false;
   }
-  toClipboard(changeHistory.value.statement).then(() => {
+  toClipboard(changeHistoryStatement.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -537,11 +633,13 @@ const copyStatement = () => {
   });
 };
 
-const copySchema = () => {
-  if (!changeHistory.value) {
+const copySchema = async () => {
+  await fetchFullHistory();
+
+  if (!changeHistorySchema.value) {
     return false;
   }
-  toClipboard(changeHistory.value.schema).then(() => {
+  toClipboard(changeHistorySchema.value).then(() => {
     pushNotification({
       module: "bytebase",
       style: "INFO",
