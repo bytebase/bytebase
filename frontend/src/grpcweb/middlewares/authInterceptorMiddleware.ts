@@ -1,6 +1,7 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
 import { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 export type IgnoreErrorsOptions = {
@@ -37,7 +38,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
             try {
               await useAuthStore().logout();
             } finally {
-              router.push({ name: "auth.signin" });
+              router.push({ name: AUTH_SIGNIN_MODULE });
             }
           } else if (code === Status.PERMISSION_DENIED) {
             if (options.silent) return;

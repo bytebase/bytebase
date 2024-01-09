@@ -31,6 +31,7 @@ import NotificationContext from "./NotificationContext.vue";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { t } from "./plugins/i18n";
+import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import { useAuthStore, useNotificationStore } from "./store";
 import { isDev } from "./utils";
 
@@ -58,7 +59,7 @@ setInterval(() => {
     state.prevLoggedIn = loggedIn;
     if (!loggedIn) {
       authStore.logout().then(() => {
-        router.push({ name: "auth.signin" });
+        router.push({ name: AUTH_SIGNIN_MODULE });
       });
     }
   }
