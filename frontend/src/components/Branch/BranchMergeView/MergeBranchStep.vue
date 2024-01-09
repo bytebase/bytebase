@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
