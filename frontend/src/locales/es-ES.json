@@ -3420,6 +3420,9 @@
       "baseline-version": "Versión básica",
       "parent-branch": "Rama principal",
       "self": "Fuente"
+    },
+    "index": {
+      "drop-index-confirm": "¿Índice de caída?"
     }
   }
 }

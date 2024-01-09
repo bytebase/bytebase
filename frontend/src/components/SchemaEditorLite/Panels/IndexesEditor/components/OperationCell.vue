@@ -6,7 +6,9 @@
           <TrashIcon class="w-4 h-4" />
         </MiniActionButton>
       </template>
-      <template #default> asdf </template>
+      <template #default>
+        {{ $t("branch.index.drop-index-confirm") }}
+      </template>
     </NPopconfirm>
   </div>
 </template>

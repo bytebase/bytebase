@@ -3422,6 +3422,9 @@
       "baseline-version": "Baseline version",
       "parent-branch": "Parent branch",
       "self": "Source"
+    },
+    "index": {
+      "drop-index-confirm": "Drop index?"
     }
   }
 }

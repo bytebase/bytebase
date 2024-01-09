@@ -3415,6 +3415,9 @@
       "baseline-version": "基线版本",
       "parent-branch": "父分支",
       "self": "来源"
+    },
+    "index": {
+      "drop-index-confirm": "删除索引？"
     }
   }
 }
