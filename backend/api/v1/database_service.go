@@ -126,6 +126,38 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	return database, nil
 }
 
+func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
+	find := &store.FindDatabaseMessage{}
+	if request.Filter != "" {
+		projectFilter, err := getProjectFilter(request.Filter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		projectID, err := common.GetProjectID(projectFilter)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
+		}
+		find.ProjectID = &projectID
+	}
+	databases, err := s.store.ListDatabases(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	databases, err = s.filterDatabasesV2(ctx, databases)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	response := &v1pb.SearchDatabasesResponse{}
+	for _, databaseMessage := range databases {
+		database, err := s.convertToDatabase(ctx, databaseMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert database, error: %v", err)
+		}
+		response.Databases = append(response.Databases, database)
+	}
+	return response, nil
+}
+
 // ListDatabases lists all databases.
 func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListDatabasesRequest) (*v1pb.ListDatabasesResponse, error) {
 	instanceID, err := common.GetInstanceID(request.Parent)
@@ -164,6 +196,82 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		response.Databases = append(response.Databases, database)
 	}
 	return response, nil
+}
+
+func (s *DatabaseService) filterDatabasesV2(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	projectDatabases := make(map[string][]*store.DatabaseMessage)
+	for _, database := range databases {
+		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
+	}
+	var filteredDatabases []*store.DatabaseMessage
+	for projectID, dbs := range projectDatabases {
+		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s.store, s.iamManager, user, projectID, dbs)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
+		}
+		filteredDatabases = append(filteredDatabases, filteredProjectDatabases...)
+	}
+	return filteredDatabases, nil
+}
+
+// roles/projectQuerier and roles/projectExporter are too tedious to handle in the iam manager.
+// TODO(p0ny): eval cel time.
+func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
+		ProjectID: &projectID,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
+	}
+
+	for _, binding := range policy.Bindings {
+		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID != user.ID && member.Email != api.AllUsers {
+				continue
+			}
+			permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
+			for _, p := range permissions {
+				if p == iam.PermissionDatabasesGet {
+					return databases, nil
+				}
+			}
+		}
+	}
+
+	expressionDBsFromAllRoles := make(map[string]bool)
+	for _, binding := range policy.Bindings {
+		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
+			continue
+		}
+		for _, member := range binding.Members {
+			if member.ID != user.ID && member.Email != api.AllUsers {
+				continue
+			}
+			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
+			if len(expressionDBs) == 0 {
+				return databases, nil
+			}
+			for db := range expressionDBs {
+				expressionDBsFromAllRoles[db] = true
+			}
+		}
+	}
+
+	var filteredDatabases []*store.DatabaseMessage
+	for _, database := range databases {
+		databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
+		if expressionDBsFromAllRoles[databaseName] {
+			filteredDatabases = append(filteredDatabases, database)
+		}
+	}
+	return filteredDatabases, nil
 }
 
 func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {

@@ -58,6 +58,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.InstanceService_SyncSlowQueries_FullMethodName:   iam.PermissionInstancesSync,
 
 	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
+	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesGet,
 	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
 	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
