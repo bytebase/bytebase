@@ -103,13 +103,12 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return err
 	}
-	backupInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
-	if err != nil {
-		return err
-	}
 	backupDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 	if err != nil {
 		return err
+	}
+	if backupDatabase == nil {
+		return errors.Errorf("backup database %q not found", payload.PreUpdateBackupDetail.Database)
 	}
 
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
@@ -162,8 +161,7 @@ func (exec *DataUpdateExecutor) backupData(
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
 		slog.Error("failed to sync backup database schema",
-			slog.String("instanceName", backupInstance.ResourceID),
-			slog.String("databaseName", backupDatabase.DatabaseName),
+			slog.String("database", payload.PreUpdateBackupDetail.Database),
 			log.BBError(err),
 		)
 	}
