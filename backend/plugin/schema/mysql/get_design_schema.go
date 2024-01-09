@@ -769,6 +769,8 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					}
 				}
 			}
+		// default value
+		// https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html
 		case attribute.DEFAULT_SYMBOL() != nil && attribute.SERIAL_SYMBOL() == nil:
 			defaultValueStart := nextDefaultChannelTokenIndex(attribute.GetParser().GetTokenStream(), attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex())
 			defaultValueText := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
