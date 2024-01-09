@@ -42,7 +42,7 @@
       />
     </div>
   </div>
-  <div class="w-full flex-1 flex flex-col relative text-sm gap-y-1">
+  <div class="flex-1 flex flex-col relative text-sm gap-y-1 overflow-hidden">
     <div class="flex flex-row items-center gap-x-1">
       <span v-if="!headBranch || !sourceBranchOrDatabase">
         {{ $t("branch.merge-rebase.select-branches-to-rebase") }}
@@ -85,7 +85,7 @@
     </NTabs>
     <div
       v-show="tab === 'schema-editor'"
-      class="w-full flex-1 relative text-sm"
+      class="flex-1 relative text-sm overflow-hidden"
     >
       <SchemaEditorLite
         ref="schemaEditorRef"
