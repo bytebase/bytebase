@@ -4,13 +4,13 @@
       <img
         v-if="route == 'auth.signup'"
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signup.webp"
+        src="@/assets/illustration/signup.webp"
         alt=""
       />
       <img
         v-else
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signin.webp"
+        src="@/assets/illustration/signin.webp"
         alt=""
       />
     </div>
@@ -22,22 +22,13 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 
-export default {
-  name: "SplashLayout",
-  setup() {
-    const router = useRouter();
+const router = useRouter();
 
-    const route = computed(() => {
-      return router.currentRoute.value.name;
-    });
-
-    return {
-      route,
-    };
-  },
-};
+const route = computed(() => {
+  return router.currentRoute.value.name;
+});
 </script>
