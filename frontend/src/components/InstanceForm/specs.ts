@@ -27,7 +27,8 @@ export const useInstanceSpecs = (
     return instanceV1HasSSH(basicInfo.value.engine);
   });
   const isEngineBeta = (engine: Engine): boolean => {
-    return [Engine.DM].includes(engine);
+    return false;
+    // return [].includes(engine);
   };
   const defaultPort = computed(() => {
     return defaultPortForEngine(basicInfo.value.engine);
