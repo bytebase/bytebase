@@ -42,6 +42,7 @@ func TestGetDesignSchema(t *testing.T) {
 		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
 		result, err := GetDesignSchema(t.Baseline, targetMeta)
 		a.NoError(err)
+
 		// Addintional parse stage to verify the result is parsable.
 		_, err = parser.ParseMySQL(t.Result)
 		a.NoError(err)
