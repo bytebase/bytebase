@@ -497,7 +497,7 @@ const handlePreviewIssue = async () => {
         pushNotification({
           module: "bytebase",
           style: "WARN",
-          title: t("common.error"),
+          title: t("common.warning"),
           description: t("schema-editor.nothing-changed-for-database", {
             database,
           }),

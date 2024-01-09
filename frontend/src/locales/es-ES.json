@@ -2376,7 +2376,8 @@
       "indexes": "Índices",
       "edit-indexes": "Editar índices",
       "unique": "Único"
-    }
+    },
+    "generated-ddl-is-empty": "El DDL generado está vacío"
   },
   "label": {
     "empty-label-value": "Valor",

@@ -2380,7 +2380,8 @@
       "indexes": "Indexes",
       "edit-indexes": "Edit indexes",
       "unique": "Unique"
-    }
+    },
+    "generated-ddl-is-empty": "Generated DDL is empty"
   },
   "label": {
     "empty-label-value": "Empty",

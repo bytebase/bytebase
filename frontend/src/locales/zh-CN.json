@@ -2376,7 +2376,8 @@
       "indexes": "索引",
       "edit-indexes": "编辑索引",
       "unique": "唯一"
-    }
+    },
+    "generated-ddl-is-empty": "生成的 DDL 为空"
   },
   "label": {
     "empty-label-value": "空",
