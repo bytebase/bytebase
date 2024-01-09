@@ -35,7 +35,6 @@
         >
           <NFormItem path="limit" :label="$t('export-data.export-rows')">
             <NInputNumber
-              ref="limitInputRef"
               v-model:value="formData.limit"
               @keydown.enter.prevent
             />
@@ -50,6 +49,16 @@
                 {{ exportFormatToJSON(format) }}
               </NRadio>
             </NRadioGroup>
+          </NFormItem>
+          <NFormItem
+            path="password"
+            :label="$t('export-data.password-optional')"
+          >
+            <BBTextField
+              v-model:value="formData.password"
+              type="password"
+              :input-props="{ autocomplete: 'off' }"
+            />
           </NFormItem>
         </NForm>
       </template>
@@ -73,6 +82,32 @@
       </template>
     </DrawerContent>
   </Drawer>
+
+  <BBModal
+    :show="state.showModal"
+    :title="$t('export-data.password-optional')"
+    class="shadow-inner outline outline-gray-200"
+    @close="state.showModal = false"
+  >
+    <div class="w-80">
+      <span class="textinfolabel">{{ $t("export-data.password-info") }}</span>
+      <BBTextField
+        v-model:value="formData.password"
+        type="password"
+        :input-props="{ autocomplete: 'off' }"
+        class="my-2"
+        :focus-on-mount="true"
+      />
+    </div>
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <NButton @click="state.showModal = false">
+        {{ $t("common.cancel") }}
+      </NButton>
+      <NButton type="primary" @click="exportViaDropdown">
+        {{ $t("common.export") }}
+      </NButton>
+    </div>
+  </BBModal>
 </template>
 
 <script lang="ts" setup>
@@ -81,7 +116,6 @@ import dayjs from "dayjs";
 import {
   FormInst,
   FormRules,
-  InputNumberInst,
   NButton,
   NDropdown,
   NForm,
@@ -101,17 +135,22 @@ import { ErrorTipsButton } from "./v2";
 interface LocalState {
   isRequesting: boolean;
   showDrawer: boolean;
+  showModal: boolean;
 }
-interface FormData {
+
+export interface ExportOption {
   limit: number;
   format: ExportFormat;
+  password: string;
 }
+
 const props = withDefaults(
   defineProps<{
     size?: "small" | "tiny" | "medium" | "large";
     disabled?: boolean;
     supportFormats: ExportFormat[];
     allowSpecifyRowCount?: boolean;
+    fileType: "zip" | "raw";
   }>(),
   {
     size: "small",
@@ -119,17 +158,18 @@ const props = withDefaults(
     allowSpecifyRowCount: false,
   }
 );
-const defaultFormData = (): FormData => ({
+
+const defaultFormData = (): ExportOption => ({
   limit: 1000,
   format: props.supportFormats[0],
+  password: "",
 });
 
 const emit = defineEmits<{
   (
     event: "export",
-    format: ExportFormat,
-    download: (content: BinaryLike | Blob, format: ExportFormat) => void,
-    limit: number | undefined // number if allowSpecifyRowCount, undefined otherwise
+    options: ExportOption,
+    download: (content: BinaryLike | Blob, options: ExportOption) => void
   ): Promise<void>;
 }>();
 
@@ -137,10 +177,10 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   isRequesting: false,
   showDrawer: false,
+  showModal: false,
 });
 const formRef = ref<FormInst>();
-const limitInputRef = ref<InputNumberInst>();
-const formData = ref<FormData>(defaultFormData());
+const formData = ref<ExportOption>(defaultFormData());
 
 const viewMode = computed(() => {
   return props.allowSpecifyRowCount ? "DRAWER" : "DROPDOWN";
@@ -174,15 +214,27 @@ const exportDropdownOptions = computed(() => {
 });
 
 const tryExportViaDropdown = async (format: ExportFormat) => {
-  doExport(format, undefined);
+  formData.value.format = format;
+  if (props.fileType === "zip") {
+    state.showModal = true;
+  } else {
+    await doExport();
+  }
 };
+
+const exportViaDropdown = async () => {
+  state.showModal = false;
+  await doExport();
+};
+
 const tryExportViaForm = async (e: MouseEvent) => {
   e.preventDefault();
   formRef.value?.validate((errors) => {
     if (errors) return;
-    doExport(formData.value.format, formData.value.limit);
+    doExport();
   });
 };
+
 const formErrors = asyncComputed(() => {
   if (!formRef.value) return [];
   try {
@@ -205,7 +257,7 @@ const handleClickExportButton = (e: MouseEvent) => {
   state.showDrawer = true;
 };
 
-const doExport = async (format: ExportFormat, limit: number | undefined) => {
+const doExport = async () => {
   if (state.isRequesting) {
     return;
   }
@@ -213,7 +265,7 @@ const doExport = async (format: ExportFormat, limit: number | undefined) => {
   state.isRequesting = true;
 
   try {
-    await emit("export", format, doDownload, limit);
+    await emit("export", formData.value, doDownload);
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -225,6 +277,10 @@ const doExport = async (format: ExportFormat, limit: number | undefined) => {
     state.isRequesting = false;
     state.showDrawer = false;
   }
+};
+
+const downloadFileAsZip = (options: ExportOption) => {
+  return props.fileType === "zip" && !!options.password;
 };
 
 const getExportFileType = (format: ExportFormat) => {
@@ -240,25 +296,29 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const doDownload = (content: BinaryLike | Blob, format: ExportFormat) => {
+const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
+  const isZip = downloadFileAsZip(options);
+  const fileType = isZip
+    ? "application/zip"
+    : getExportFileType(options.format);
   const blob = new Blob([content], {
-    type: getExportFileType(format),
+    type: fileType,
   });
   const url = window.URL.createObjectURL(blob);
 
-  const fileFormat = exportFormatToJSON(format).toLowerCase();
+  const fileFormat = exportFormatToJSON(options.format).toLowerCase();
   const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
   const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
-  link.download = `${filename}.${fileFormat}`;
+  link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
   link.href = url;
   link.click();
 };
 
 watch(
-  () => state.showDrawer,
-  (show) => {
-    if (show) {
+  () => [state.showDrawer, state.showModal],
+  ([showDrawer, showModal]) => {
+    if (showDrawer || showModal) {
       formData.value = defaultFormData();
     }
   },

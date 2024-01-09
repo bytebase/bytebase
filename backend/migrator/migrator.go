@@ -29,7 +29,7 @@ import (
 var migrationFS embed.FS
 
 // MigrateSchema migrates the schema for metadata database.
-func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
+func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.Store, pgBinDir, serverVersion string, mode common.ReleaseMode) (*semver.Version, error) {
 	metadataDriver, err := dbdriver.Open(
 		ctx,
 		storepb.Engine_POSTGRES,
@@ -41,10 +41,10 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, pgBinDir, serverVersi
 	}
 	defer metadataDriver.Close(ctx)
 
-	storeInstance, err := store.New(storeDB)
-	if err != nil {
+	if err := backfillSchemaObjectOwner(ctx, metadataDriver); err != nil {
 		return nil, err
 	}
+
 	// Calculate prod cutoffSchemaVersion.
 	cutoffSchemaVersion, err := getProdCutoffVersion()
 	if err != nil {
@@ -101,7 +101,19 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 	stmt := fmt.Sprintf("%s\n%s", buf, dataBuf)
 
 	version := model.Version{Semantic: true, Version: cutoffSchemaVersion.String(), Suffix: time.Now().Format("20060102150405")}
-	if _, err := metadataDriver.GetDB().ExecContext(ctx, stmt); err != nil {
+	// Set role to database owner so that the schema owner and database owner are consistent.
+	owner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
+	if err != nil {
+		return err
+	}
+	conn, err := metadataDriver.GetDB().Conn(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s'", owner)); err != nil {
+		return err
+	}
+	if _, err := conn.ExecContext(ctx, stmt); err != nil {
 		return err
 	}
 	if err := storeInstance.CreateInstanceChangeHistoryForMigrator(ctx, &store.InstanceChangeHistoryMessage{
@@ -126,6 +138,50 @@ func initializeSchema(ctx context.Context, storeInstance *store.Store, metadataD
 		return err
 	}
 	slog.Info(fmt.Sprintf("Completed database initial migration with version %s.", cutoffSchemaVersion))
+	return nil
+}
+
+// getCurrentDatabaseOwner gets the role of the current database.
+func getCurrentDatabaseOwner(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
+	const query = `
+		SELECT
+			u.rolname
+		FROM
+			pg_roles AS u JOIN pg_database AS d ON (d.datdba = u.oid)
+		WHERE
+			d.datname = current_database();
+		`
+	var owner string
+	if err := metadataDriver.GetDB().QueryRowContext(ctx, query).Scan(&owner); err != nil {
+		return "", err
+	}
+	return owner, nil
+}
+
+func getCurrentUser(ctx context.Context, metadataDriver dbdriver.Driver) (string, error) {
+	row := metadataDriver.GetDB().QueryRowContext(ctx, "SELECT current_user;")
+	var user string
+	if err := row.Scan(&user); err != nil {
+		return "", err
+	}
+	return user, nil
+}
+
+func backfillSchemaObjectOwner(ctx context.Context, metadataDriver dbdriver.Driver) error {
+	currentUser, err := getCurrentUser(ctx, metadataDriver)
+	if err != nil {
+		return err
+	}
+	databaseOwner, err := getCurrentDatabaseOwner(ctx, metadataDriver)
+	if err != nil {
+		return err
+	}
+	if currentUser == databaseOwner {
+		return nil
+	}
+	if _, err := metadataDriver.GetDB().ExecContext(ctx, fmt.Sprintf("reassign owned by %s to %s;", currentUser, databaseOwner)); err != nil {
+		return err
+	}
 	return nil
 }
 

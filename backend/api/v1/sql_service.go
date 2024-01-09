@@ -15,6 +15,7 @@ import (
 
 	"log/slog"
 
+	"github.com/alexmullins/zip"
 	"github.com/google/cel-go/cel"
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -105,6 +106,7 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to normalize dumped SDL: %s", err.Error())
 	}
+
 	return &v1pb.PrettyResponse{
 		CurrentSchema:  prettyCurrentSchema,
 		ExpectedSchema: prettyExpectedSchema,
@@ -309,8 +311,13 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, exportErr
 	}
 
+	content, err := doEncrypt(bytes, request)
+	if err != nil {
+		return nil, err
+	}
+
 	return &v1pb.ExportResponse{
-		Content: bytes,
+		Content: content,
 	}, nil
 }
 
@@ -352,6 +359,33 @@ func (s *SQLService) postExport(ctx context.Context, activity *store.ActivityMes
 	}
 
 	return nil
+}
+
+func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
+	if request.Password == "" {
+		return data, nil
+	}
+	var b bytes.Buffer
+	fzip := io.Writer(&b)
+
+	zipw := zip.NewWriter(fzip)
+	defer zipw.Close()
+
+	filename := fmt.Sprintf("export.%s", strings.ToLower(request.Format.String()))
+
+	writer, err := zipw.Encrypt(filename, request.Password)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create encrypt export file")
+	}
+
+	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
+		return nil, errors.Wrapf(err, "failed to write export file")
+	}
+	if err := zipw.Close(); err != nil {
+		return nil, errors.Wrap(err, "failed to close zip writer")
+	}
+
+	return b.Bytes(), nil
 }
 
 func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, sensitiveSchemaInfo *base.SensitiveSchemaInfo) ([]byte, int64, error) {

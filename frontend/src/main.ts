@@ -15,6 +15,7 @@ import i18n from "./plugins/i18n";
 import NaiveUI from "./plugins/naive-ui";
 import { isSilent } from "./plugins/silent-request";
 import { router } from "./router";
+import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import {
   pinia,
   pushNotification,
@@ -94,7 +95,7 @@ axios.interceptors.response.use(
           try {
             await useAuthStore().logout();
           } finally {
-            router.push({ name: "auth.signin" });
+            router.push({ name: AUTH_SIGNIN_MODULE });
           }
         }
       }

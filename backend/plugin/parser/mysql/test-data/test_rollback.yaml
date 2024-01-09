@@ -1,0 +1,48 @@
+- input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `test`.* FROM test, test2 as t2 where test.id = t2.id;
+      tablename: test_rollback
+- input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test2_rollback` AS SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      tablename: test2_rollback
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      tablename: test_rollback
+- input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test2_rollback` AS SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      tablename: test2_rollback
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      tablename: test_rollback
+- input: DELETE FROM test as t1 WHERE t1.c1 = 1;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test as t1 WHERE t1.c1 = 1;
+      tablename: test_rollback
+- input: DELETE FROM test WHERE c1 = 1;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `test`.* FROM test WHERE c1 = 1;
+      tablename: test_rollback
+- input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `x`.* FROM test x WHERE x.c1 = 1;
+      tablename: test_rollback
+- input: UPDATE test SET c1 = 1 WHERE c1=2;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `test`.* FROM test WHERE c1=2;
+      tablename: test_rollback
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      tablename: test_rollback
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test2_rollback` AS SELECT `t2`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      tablename: test2_rollback
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      tablename: test_rollback
+- input: |-
+    UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
+    UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
+  result:
+    - statement: CREATE TABLE `backupDB`.`test_rollback` AS SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1 UNION SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5;
+      tablename: test_rollback

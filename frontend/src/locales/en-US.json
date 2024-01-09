@@ -75,16 +75,7 @@
     "updated": "Updated",
     "visit": "Visit",
     "role": {
-      "self": "Role",
-      "admin": "Admin",
-      "dba": "DBA",
-      "member": "Member",
-      "owner": "Owner",
-      "developer": "Developer",
-      "exporter": "Exporter",
-      "querier": "Querier",
-      "releaser": "Releaser",
-      "viewer": "Viewer"
+      "self": "Role"
     },
     "assignee": "Assignee",
     "revert": "Revert",
@@ -136,7 +127,7 @@
     "gitops": "GitOps",
     "restore": "Restore",
     "detailed-guide": "detailed guide",
-    "workspace": "workspace",
+    "workspace": "Workspace",
     "application": "Application",
     "confirm": "Confirm",
     "coming-later": "Coming later",
@@ -279,7 +270,8 @@
     "view-details": "View details",
     "force-verb": "Force {verb}",
     "nothing-changed": "Nothing changed",
-    "untitled": "Untitled"
+    "untitled": "Untitled",
+    "nickname": "Nickname"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -527,9 +519,13 @@
       "create-as-service-account": "Create as service account",
       "show-inactive": "Show inactive members",
       "remove-self-admin": {
-        "title": "Are you sure to revoke @.lower:common.role.admin from yourself?",
-        "description": "Please make sure the remaining @.lower:common.role.admin(s) can sign in, otherwise, no one can manage users."
-      }
+        "title": "Are you sure to revoke @.lower:role.workspace-admin.self from yourself?",
+        "description": "Please make sure the remaining @.lower:role.workspace-admin.self can sign in, otherwise, no one can manage users."
+      },
+      "view-by-principals": "View by principals",
+      "view-by-roles": "View by roles",
+      "add-member": "Add member",
+      "update-member": "Update member"
     },
     "im-integration": {
       "enable": "Enable",
@@ -1371,6 +1367,12 @@
       "default-never": "Default (never)",
       "description": "Bytebase periodically syncs instance schema and detects anomalies.",
       "min-value": "Min value {value} minutes"
+    },
+    "maximum-connections": {
+      "self": "Maximum Connections",
+      "default-value": "Default (10)",
+      "description": "Limiting connection and resource usage is achieved by setting the maximum number of connections to the instance.",
+      "max-value": "Maximum {value} connections"
     }
   },
   "environment": {
@@ -1460,7 +1462,8 @@
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
       "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Workspace admin"
+      "manual-by-workspace-admin": "Workspace admin",
+      "manual-by-custom-project-roles": "Custom project roles"
     },
     "backup": {
       "name": "Database backup schedule policy",
@@ -1510,7 +1513,8 @@
     "export": "Export Change History",
     "need-to-select-first": "Need to select change history first",
     "all-tables": "All tables",
-    "affected-tables": "Affected Tables"
+    "affected-tables": "Affected Tables",
+    "view-full": "View full"
   },
   "database": {
     "select": "Select database",
@@ -1927,8 +1931,8 @@
       "success-member-deleted-prompt": "Successfully revoked {name} access from the project.",
       "member-placeholder": "Select user",
       "manage-member": "Manage members",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archive project",
         "description": "Archived projects will not be displayed.",
@@ -2372,7 +2376,13 @@
     "edit-foreign-key": "Edit foreign key",
     "select-reference-schema": "Select a schema to reference to",
     "select-reference-table": "Select a table to reference to",
-    "select-reference-column": "Select a column to reference to"
+    "select-reference-column": "Select a column to reference to",
+    "index": {
+      "indexes": "Indexes",
+      "edit-indexes": "Edit indexes",
+      "unique": "Unique"
+    },
+    "generated-ddl-is-empty": "Generated DDL is empty"
   },
   "label": {
     "empty-label-value": "Empty",
@@ -3204,22 +3214,40 @@
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
-    "owner": {
+    "workspace-admin": {
+      "self": "Workspace Admin",
+      "description": "Workspace Admin has all permissions within the workspace."
+    },
+    "workspace-dba": {
+      "self": "Workspace DBA",
+      "description": "Workspace DBA has all permissions within the workspace except for managing workspace members."
+    },
+    "workspace-member": {
+      "self": "Workspace Member",
+      "description": "Workspace Member has all permissions within the workspace except for managing workspace members."
+    },
+    "project-owner": {
+      "self": "Project Owner",
       "description": "All permissions within the project"
     },
-    "developer": {
+    "project-developer": {
+      "self": "Project Developer",
       "description": "All viewer permissions, plus permissions for requesting database changes."
     },
-    "releaser": {
+    "project-releaser": {
+      "self": "Project Releaser",
       "description": "All viewer permissions, plus permission for reviewing database change requests for release purposes."
     },
-    "querier": {
+    "project-querier": {
+      "self": "Project Querier",
       "description": "Permissions for querying database data."
     },
-    "exporter": {
+    "project-exporter": {
+      "self": "Project Exporter",
       "description": "Permissions for exporting database data."
     },
-    "viewer": {
+    "project-viewer": {
+      "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
     }
   },
@@ -3357,7 +3385,9 @@
       "export-rows-required": "Export rows required",
       "export-rows-must-gt-zero": "Export rows must greater than 0"
     },
-    "export-format": "Export format"
+    "export-format": "Export format",
+    "password-optional": "Encrypt with password (Optional)",
+    "password-info": "Provide a password to encrypt the export file."
   },
   "branch": {
     "rollout": {
@@ -3388,6 +3418,14 @@
       "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
       "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
       "preview-merge-result": "Preview merge result"
+    },
+    "source": {
+      "baseline-version": "Baseline version",
+      "parent-branch": "Parent branch",
+      "self": "Source"
+    },
+    "index": {
+      "drop-index-confirm": "Drop index?"
     }
   }
 }

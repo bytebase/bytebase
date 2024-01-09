@@ -192,6 +192,10 @@ const (
 	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
 )
 
+func (e FeatureType) String() string {
+	return string(e)
+}
+
 // Name returns a readable name of the feature.
 func (e FeatureType) Name() string {
 	switch e {

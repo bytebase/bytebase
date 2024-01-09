@@ -75,16 +75,7 @@
     "updated": "Actualizado",
     "visit": "Visitar",
     "role": {
-      "self": "Rol",
-      "admin": "Administrador",
-      "dba": "DBA",
-      "member": "Miembro",
-      "owner": "Propietario",
-      "developer": "Desarrollador",
-      "exporter": "Exportador",
-      "querier": "Querier",
-      "releaser": "Liberador",
-      "viewer": "Espectador"
+      "self": "Rol"
     },
     "assignee": "Asignado",
     "revert": "Revertir",
@@ -279,7 +270,8 @@
     "view-details": "Ver detalles",
     "force-verb": "forzar {verbo}",
     "nothing-changed": "nada ha cambiado",
-    "untitled": "Intitulado"
+    "untitled": "Intitulado",
+    "nickname": "Apodo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -527,9 +519,13 @@
       "create-as-service-account": "Crear como cuenta de servicio",
       "show-inactive": "Mostrar miembros inactivos",
       "remove-self-admin": {
-        "title": "¿Estás seguro de revocarte @.lower:common.role.admin?",
-        "description": "Asegúrese de que los @.lower:common.role.admin restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
-      }
+        "title": "¿Estás seguro de revocarte @.lower:role.workspace-admin.self?",
+        "description": "Asegúrese de que los @.lower:role.workspace-admin.self restantes puedan iniciar sesión; de lo contrario, nadie podrá administrar los usuarios."
+      },
+      "view-by-principals": "Ver por responsables",
+      "view-by-roles": "Ver por roles",
+      "add-member": "Agregar miembro",
+      "update-member": "Actualizar miembro"
     },
     "im-integration": {
       "enable": "Habilitar",
@@ -1370,6 +1366,12 @@
       "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
       "min-value": "Valor mínimo {value} minutos"
+    },
+    "maximum-connections": {
+      "self": "Conexiones Máximas",
+      "default-value": "Predeterminado (10)",
+      "description": "Limitar la conexión y el uso de recursos se logra estableciendo el número máximo de conexiones a la instancia.",
+      "max-value": "Máximo {value} conexiones"
     }
   },
   "environment": {
@@ -1459,7 +1461,8 @@
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Administrador del espacio de trabajo"
+      "manual-by-workspace-admin": "Administrador del espacio de trabajo",
+      "manual-by-custom-project-roles": "Roles de proyecto personalizados"
     },
     "backup": {
       "name": "Política de programación de copias de seguridad de la base de datos",
@@ -1509,7 +1512,8 @@
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
-    "affected-tables": "Tablas afectadas"
+    "affected-tables": "Tablas afectadas",
+    "view-full": "Ver completo"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -1926,8 +1930,8 @@
       "success-member-deleted-prompt": "Se revocó el acceso de {name} al proyecto correctamente.",
       "member-placeholder": "Seleccionar usuario",
       "manage-member": "Administrar miembros",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "Archivar proyecto",
         "description": "Proyectos archivados no se mostrarán.",
@@ -2368,7 +2372,13 @@
     "edit-foreign-key": "Editar clave externa",
     "select-reference-schema": "Seleccionar un esquema de referencia",
     "select-reference-table": "Seleccionar una tabla de referencia",
-    "select-reference-column": "Seleccionar una columna de referencia"
+    "select-reference-column": "Seleccionar una columna de referencia",
+    "index": {
+      "indexes": "Índices",
+      "edit-indexes": "Editar índices",
+      "unique": "Único"
+    },
+    "generated-ddl-is-empty": "El DDL generado está vacío"
   },
   "label": {
     "empty-label-value": "Valor",
@@ -3201,23 +3211,41 @@
     "title": "Título",
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
-    "owner": {
-      "description": "Todas las permisos dentro del proyecto."
+    "workspace-admin": {
+      "self": "Administrador del espacio de trabajo",
+      "description": "El administrador del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo."
     },
-    "developer": {
-      "description": "Todas las permisos de visualización, más permisos para solicitar cambios en la base de datos."
+    "workspace-dba": {
+      "self": "DBA del espacio de trabajo",
+      "description": "El DBA del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
     },
-    "releaser": {
-      "description": "Todas las permisos de visualización, más permisos para revisar solicitudes de cambios en la base de datos con fines de lanzamiento."
+    "workspace-member": {
+      "self": "Miembro del espacio de trabajo",
+      "description": "El miembro del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
     },
-    "querier": {
-      "description": "Permisos para realizar consultas a datos de la base de datos"
+    "project-owner": {
+      "self": "Propietario del proyecto",
+      "description": "El propietario del proyecto tiene todos los permisos dentro del proyecto."
     },
-    "exporter": {
-      "description": "Permisos para exportar datos de la base de datos."
+    "project-developer": {
+      "self": "Desarrollador del proyecto",
+      "description": "El desarrollador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     },
-    "viewer": {
-      "description": "Permisos de solo lectura para ver información básica del proyecto, acceder a las bases de datos e iniciar solicitudes de privilegios."
+    "project-releaser": {
+      "self": "Liberador del proyecto",
+      "description": "El liberador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-querier": {
+      "self": "Consultor del proyecto",
+      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-exporter": {
+      "self": "Exportador del proyecto",
+      "description": "El exportador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-viewer": {
+      "self": "Espectador del proyecto",
+      "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
     }
   },
   "database-group": {
@@ -3355,7 +3383,9 @@
       "export-rows-required": "Se requieren filas de exportación",
       "export-rows-must-gt-zero": "Las filas de exportación deben ser mayores que 0"
     },
-    "export-format": "Formato de exportación"
+    "export-format": "Formato de exportación",
+    "password-optional": "Cifrar con contraseña (opcional)",
+    "password-info": "Proporcione una contraseña para cifrar el archivo de exportación."
   },
   "branch": {
     "rollout": {
@@ -3386,6 +3416,14 @@
       "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
       "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
       "preview-merge-result": "Vista previa del resultado de la fusión"
+    },
+    "source": {
+      "baseline-version": "Versión básica",
+      "parent-branch": "Rama principal",
+      "self": "Fuente"
+    },
+    "index": {
+      "drop-index-confirm": "¿Índice de caída?"
     }
   }
 }

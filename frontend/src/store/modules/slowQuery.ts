@@ -50,7 +50,8 @@ const composeSlowQueryLogDatabase = async (
       return getOrFetchV1Database(name);
     })
   );
-  return slowQueryLogList.map<ComposedSlowQueryLog>((log) => ({
+  return slowQueryLogList.map<ComposedSlowQueryLog>((log, index) => ({
+    id: `${index}`,
     log,
     database: useDatabaseV1Store().getDatabaseByName(log.resource),
   }));

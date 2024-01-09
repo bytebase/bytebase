@@ -133,8 +133,8 @@ import {
 import {
   ComposedProject,
   DatabaseResource,
-  PresetRoleType,
   getUserEmailInBinding,
+  PresetRoleType,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
@@ -246,7 +246,7 @@ onMounted(() => {
     }
     if (conditionExpr.databaseResources) {
       state.databaseResources = conditionExpr.databaseResources;
-      if (binding.role === "PresetRoleType.PROJECT_EXPORTER") {
+      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
         if (conditionExpr.databaseResources.length > 0) {
           const selectedDatabaseResource = conditionExpr.databaseResources[0];
           const database = databaseStore.getDatabaseByName(
@@ -324,12 +324,12 @@ const handleUpdateRole = async () => {
       ).toISOString()}")`
     );
   }
-  if (props.binding.role === "PresetRoleType.PROJECT_QUERIER") {
+  if (props.binding.role === PresetRoleType.PROJECT_QUERIER) {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
     }
   }
-  if (props.binding.role === "PresetRoleType.PROJECT_EXPORTER") {
+  if (props.binding.role === PresetRoleType.PROJECT_EXPORTER) {
     if (state.databaseResourceCondition) {
       expression.push(state.databaseResourceCondition);
 

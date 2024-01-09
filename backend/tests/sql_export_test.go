@@ -1,11 +1,15 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/alexmullins/zip"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -25,6 +29,7 @@ func TestSQLExport(t *testing.T) {
 		dbType            storepb.Engine
 		prepareStatements string
 		query             string
+		password          string
 		reset             string
 		export            string
 		want              bool
@@ -37,6 +42,7 @@ func TestSQLExport(t *testing.T) {
 			query:             "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
 			export:            "SELECT * FROM Test1.tbl;",
+			password:          "123",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -58,6 +64,7 @@ func TestSQLExport(t *testing.T) {
 			query:             "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 			reset:             "DELETE FROM tbl;",
 			export:            "SELECT * FROM tbl;",
+			password:          "",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -165,14 +172,16 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-			export, err := ctl.sqlServiceClient.Export(ctx, &v1pb.ExportRequest{
+			request := &v1pb.ExportRequest{
 				Admin:              true,
 				ConnectionDatabase: databaseNameQuery,
 				Format:             v1pb.ExportFormat_SQL,
 				Limit:              1,
 				Name:               instance.Name,
 				Statement:          tt.export,
-			})
+				Password:           tt.password,
+			}
+			export, err := ctl.sqlServiceClient.Export(ctx, request)
 			a.NoError(err)
 
 			statement = tt.reset
@@ -180,7 +189,24 @@ func TestSQLExport(t *testing.T) {
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
 
-			statement = string(export.Content)
+			if tt.password != "" {
+				reader := bytes.NewReader(export.Content)
+				zipReader, err := zip.NewReader(reader, int64(len(export.Content)))
+				a.NoError(err)
+				a.Equal(1, len(zipReader.File))
+
+				a.Equal(fmt.Sprintf("export.%s", strings.ToLower(request.Format.String())), zipReader.File[0].Name)
+				compressedFile := zipReader.File[0]
+				compressedFile.SetPassword(tt.password)
+				file, err := compressedFile.Open()
+				a.NoError(err)
+				content, err := io.ReadAll(file)
+				a.NoError(err)
+				statement = string(content)
+			} else {
+				statement = string(export.Content)
+			}
+
 			results, err = ctl.adminQuery(ctx, instance, tt.databaseName, statement)
 			a.NoError(err)
 			checkResults(a, tt.databaseName, statement, tt.affectedRows, results)

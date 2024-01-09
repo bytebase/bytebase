@@ -38587,7 +38587,7 @@ INSERT INTO public.repository (id, row_status, creator_id, created_ts, updater_i
 -- Data for Name: risk; Type: TABLE DATA; Schema: public; Owner: bbdev
 --
 
-INSERT INTO public.risk (id, row_status, creator_id, created_ts, updater_id, updated_ts, source, level, name, active, expression) VALUES (101, 'NORMAL', 101, 1699029149, 101, 1699110101, 'bb.risk.database.schema.update', 300, 'ALTER column in production environment is high risk', true, '{"expression": "environment_id == \"prod\" && sql_type == \"ALTER_COLUMN_TYPE\""}') ON CONFLICT DO NOTHING;
+INSERT INTO public.risk (id, row_status, creator_id, created_ts, updater_id, updated_ts, source, level, name, active, expression) VALUES (101, 'NORMAL', 101, 1699029149, 101, 1699110101, 'bb.risk.database.schema.update', 300, 'ALTER column in production environment is high risk', true, '{"expression": "environment_id == \"prod\" && sql_type == \"ALTER_TABLE\""}') ON CONFLICT DO NOTHING;
 INSERT INTO public.risk (id, row_status, creator_id, created_ts, updater_id, updated_ts, source, level, name, active, expression) VALUES (102, 'NORMAL', 101, 1699110145, 101, 1699110145, 'bb.risk.database.schema.update', 200, 'CREATE TABLE in production environment is moderate risk', true, '{"expression": "environment_id == \"prod\" && sql_type == \"CREATE_TABLE\""}') ON CONFLICT DO NOTHING;
 
 

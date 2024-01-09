@@ -2,10 +2,10 @@ import { orderBy, uniq } from "lodash-es";
 import slug from "slug";
 import { extractUserEmail, useUserStore } from "@/store";
 import {
-  ALL_USERS_USER_NAME,
+  ALL_USERS_USER_EMAIL,
   DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
   UNKNOWN_ID,
+  PresetRoleType,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -48,7 +48,7 @@ export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
     .filter((binding) => {
       return (
         binding.members.includes(`user:${user.email}`) ||
-        binding.members.includes(ALL_USERS_USER_NAME)
+        binding.members.includes(ALL_USERS_USER_EMAIL)
       );
     })
     .map((binding) => binding.role);

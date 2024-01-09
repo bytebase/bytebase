@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,6 +22,7 @@ import (
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -103,13 +103,12 @@ func (exec *DataUpdateExecutor) backupData(
 	if err != nil {
 		return err
 	}
-	backupInstance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &backupInstanceID})
-	if err != nil {
-		return err
-	}
 	backupDatabase, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &backupInstanceID, DatabaseName: &backupDatabaseName})
 	if err != nil {
 		return err
+	}
+	if backupDatabase == nil {
+		return errors.Errorf("backup database %q not found", payload.PreUpdateBackupDetail.Database)
 	}
 
 	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
@@ -117,62 +116,54 @@ func (exec *DataUpdateExecutor) backupData(
 		return err
 	}
 
-	suffix := time.Now().Format("20060102150405")
-	selectIntoStatement, targetTableName := updateToSelect(statement, backupDatabaseName, suffix, issue.UID)
-	if _, err := driver.Execute(driverCtx, selectIntoStatement, db.ExecuteOptions{}); err != nil {
-		return err
-	}
-	createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{
-		TaskID: task.ID,
-		BackupSchemaMetadata: []api.SchemaMetadata{
-			{
-				Table: targetTableName,
-			},
-		},
-		IssueName: issue.Title,
-		TaskName:  task.Name,
-	}
-	bytes, err := json.Marshal(createActivityPayload)
+	suffix := "_" + time.Now().Format("20060102150405")
+	statements, err := base.TransformDMLToSelect(instance.Engine, statement, database.DatabaseName, backupDatabaseName, suffix)
 	if err != nil {
-		return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
+		return errors.Wrap(err, "failed to transform DML to select")
 	}
-	activityCreate := &store.ActivityMessage{
-		CreatorUID:   api.SystemBotID,
-		ContainerUID: issue.UID,
-		Type:         api.ActivityPipelineTaskPriorBackup,
-		Level:        api.ActivityInfo,
-		Payload:      string(bytes),
+
+	for _, statement := range statements {
+		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
+			return err
+		}
+		if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			return err
+		}
+
+		createActivityPayload := api.ActivityPipelineTaskPriorBackupPayload{
+			TaskID: task.ID,
+			BackupSchemaMetadata: []api.SchemaMetadata{
+				{
+					Table: statement.TableName,
+				},
+			},
+			IssueName: issue.Title,
+			TaskName:  task.Name,
+		}
+		bytes, err := json.Marshal(createActivityPayload)
+		if err != nil {
+			return errors.Wrapf(err, "failed to marshal ActivityIssueCreate activity")
+		}
+		activityCreate := &store.ActivityMessage{
+			CreatorUID:   api.SystemBotID,
+			ContainerUID: issue.UID,
+			Type:         api.ActivityPipelineTaskPriorBackup,
+			Level:        api.ActivityInfo,
+			Payload:      string(bytes),
+		}
+		if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
+			slog.Error("failed to create activity",
+				slog.Int("task", task.ID),
+				log.BBError(err),
+			)
+		}
 	}
-	if _, err := exec.activityManager.CreateActivity(ctx, activityCreate, &activity.Metadata{Issue: issue}); err != nil {
-		slog.Error("failed to create activity",
-			slog.Int("task", task.ID),
-			log.BBError(err),
-		)
-	}
+
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, backupDatabase, true /* force */); err != nil {
 		slog.Error("failed to sync backup database schema",
-			slog.String("instanceName", backupInstance.ResourceID),
-			slog.String("databaseName", backupDatabase.DatabaseName),
+			slog.String("database", payload.PreUpdateBackupDetail.Database),
 			log.BBError(err),
 		)
 	}
 	return nil
-}
-
-func updateToSelect(statement, databaseName, suffix string, issueID int) (string, string) {
-	// TODO(rebelice): use parser.
-	lowerStatement := strings.ToLower(statement)
-	whereIndex := strings.LastIndex(lowerStatement, "where")
-	condition := statement[whereIndex:len(lowerStatement)]
-	updateIndex := strings.Index(lowerStatement, "update")
-	setIndex := strings.Index(lowerStatement, "set")
-	tableName := strings.Trim(statement[updateIndex+6:setIndex], " \n\t")
-	tableName = strings.Trim(tableName, "`")
-	targetTableName := fmt.Sprintf("`%s`.`%s_%s`", databaseName, tableName, suffix)
-	activityTargetTableName := fmt.Sprintf("%s_%s", tableName, suffix)
-	query := fmt.Sprintf("CREATE TABLE %s LIKE %s;"+
-		"ALTER TABLE %s COMMENT = 'issue %d';"+
-		"INSERT INTO %s SELECT * FROM %s %s",
-		targetTableName, tableName, targetTableName, issueID, targetTableName, tableName, condition)
-	return query, activityTargetTableName
 }

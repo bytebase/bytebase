@@ -290,7 +290,7 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
     option.disabled ||
     !option.changeHistory
   ) {
-    return option.label;
+    return option.label as string;
   }
   const changeHistory = option.changeHistory as ChangeHistory;
   const index = option.index as number;

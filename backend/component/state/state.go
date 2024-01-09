@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// InstanceMaximumConnectionNumber is the maximum number of connections outstanding per instance.
-const InstanceMaximumConnectionNumber = 10
+// DefaultInstanceMaximumConnections is the maximum number of connections outstanding per instance by default.
+const DefaultInstanceMaximumConnections = 10
 
 // State is the state for all in-memory states within the server.
 type State struct {

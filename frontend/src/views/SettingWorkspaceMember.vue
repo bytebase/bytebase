@@ -7,17 +7,10 @@
     />
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <div
-      v-if="allowAddOrInvite"
-      class="w-full flex justify-center mb-6 border-b pb-6"
-    >
-      <MemberAddOrInvite />
-    </div>
-
     <div class="flex justify-between items-center">
       <div class="flex-1 flex space-x-2">
         <p class="text-lg font-medium leading-7 text-main">
-          <span>{{ $t("settings.members.active") }}</span>
+          <span>{{ $t("common.members") }}</span>
           <span class="ml-1 font-normal text-control-light">
             ({{ activeUserList.length }})
           </span>
@@ -34,16 +27,35 @@
       </div>
 
       <div>
-        <SearchBox v-model:value="state.activeUserFilterText" />
+        <NButton type="primary" @click="handleCreateUser">
+          <template #icon>
+            <PlusIcon class="h-5 w-5" />
+          </template>
+          {{ $t(`settings.members.add-member`) }}
+        </NButton>
       </div>
     </div>
 
-    <UserTable :user-list="activeUserList" />
+    <NTabs class="!mt-2" type="bar" animated>
+      <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
+        <UserDataTable
+          :user-list="activeUserList"
+          @update-user="handleUpdateUser"
+        />
+      </NTabPane>
+      <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
+        <UserDataTableByRole
+          :user-list="activeUserList"
+          @update-user="handleUpdateUser"
+        />
+      </NTabPane>
 
-    <div
-      v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText"
-      class="mt-8"
-    >
+      <template #suffix>
+        <SearchBox v-model:value="state.activeUserFilterText" />
+      </template>
+    </NTabs>
+
+    <div v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText">
       <div>
         <NCheckbox v-model:checked="state.showInactiveUserList">
           <span class="textinfolabel">
@@ -53,7 +65,7 @@
       </div>
 
       <template v-if="state.showInactiveUserList">
-        <div class="flex justify-between items-center mt-2">
+        <div class="flex justify-between items-center mt-2 mb-4">
           <p class="text-lg font-medium leading-7">
             <span>{{ $t("settings.members.inactive") }}</span>
             <span class="ml-1 font-normal text-control-light">
@@ -66,17 +78,26 @@
           </div>
         </div>
 
-        <UserTable :user-list="inactiveUserList" />
+        <UserDataTable :user-list="inactiveUserList" />
       </template>
     </div>
   </div>
+
+  <CreateUserDrawer
+    v-if="state.showCreateUserDrawer"
+    :user="state.editingUser"
+    @close="state.showCreateUserDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox } from "naive-ui";
+import { orderBy } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NTabs, NTabPane } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { MemberAddOrInvite, UserTable } from "@/components/User/Settings";
+import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
+import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
 import { SearchBox } from "@/components/v2";
 import {
   useSubscriptionV1Store,
@@ -84,21 +105,28 @@ import {
   useUserStore,
   useUIStateStore,
 } from "@/store";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { SYSTEM_BOT_USER_NAME, filterUserListByKeyword } from "../types";
+import {
+  ALL_USERS_USER_EMAIL,
+  PresetRoleType,
+  filterUserListByKeyword,
+} from "../types";
 import { hasWorkspacePermissionV1 } from "../utils";
 
 type LocalState = {
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
+  showCreateUserDrawer: boolean;
+  editingUser?: User;
 };
 
 const state = reactive<LocalState>({
   activeUserFilterText: "",
   inactiveUserFilterText: "",
   showInactiveUserList: false,
+  showCreateUserDrawer: false,
 });
 
 const { t } = useI18n();
@@ -119,37 +147,42 @@ onMounted(() => {
   }
 });
 
-const activeUserList = computed(() => {
-  const list = userStore.userList.filter((user) => user.state === State.ACTIVE);
-
-  // Try to shift SYSTEM_BOT to the top of the list.
-  const systemBotUserIndex = list.findIndex(
-    (user) => user.name === SYSTEM_BOT_USER_NAME
+const userList = computed(() => {
+  return userStore.userList.filter(
+    (user) => user.email !== ALL_USERS_USER_EMAIL
   );
-  if (systemBotUserIndex >= 0) {
-    const systemBotUser = list[systemBotUserIndex];
-    list.splice(systemBotUserIndex, 1);
-    list.unshift(systemBotUser);
-  }
+});
 
-  return filterUserListByKeyword(list, state.activeUserFilterText);
+const activeUserList = computed(() => {
+  const list = userList.value.filter((user) => user.state === State.ACTIVE);
+  return orderBy(
+    filterUserListByKeyword(list, state.activeUserFilterText),
+    [
+      (user) =>
+        user.userType === UserType.SYSTEM_BOT
+          ? 0
+          : user.userType === UserType.SERVICE_ACCOUNT
+          ? 1
+          : 2,
+      (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
+      (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
+    ],
+    ["asc", "desc", "desc"]
+  );
 });
 
 const inactiveUserList = computed(() => {
-  const list = userStore.userList.filter(
+  const list = userList.value.filter(
     (user) =>
       user.state === State.DELETED && user.userType !== UserType.SYSTEM_BOT
   );
-  return filterUserListByKeyword(list, state.inactiveUserFilterText);
-});
-
-const allowAddOrInvite = computed(() => {
-  // TODO(tianzhou): Implement invite mode for DBA and developer
-  // If current user has manage user permission, MemberAddOrInvite is in Add mode.
-  // Otherwise, MemberAddOrInvite is in Invite mode.
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-member",
-    currentUserV1.value.userRole
+  return orderBy(
+    filterUserListByKeyword(list, state.inactiveUserFilterText),
+    [
+      (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
+      (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
+    ],
+    ["desc", "desc"]
   );
 });
 
@@ -193,4 +226,14 @@ const userCountAttention = computed((): string => {
 
   return `${status} ${upgrade}`;
 });
+
+const handleCreateUser = () => {
+  state.editingUser = undefined;
+  state.showCreateUserDrawer = true;
+};
+
+const handleUpdateUser = (user: User) => {
+  state.editingUser = user;
+  state.showCreateUserDrawer = true;
+};
 </script>

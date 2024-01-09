@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/secret"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -40,10 +41,11 @@ type InstanceService struct {
 	stateCfg       *state.State
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
+	iamManager     *iam.Manager
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer) *InstanceService {
+func NewInstanceService(store *store.Store, licenseService enterprise.LicenseService, metricReporter *metricreport.Reporter, secret string, stateCfg *state.State, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, iamManager *iam.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		licenseService: licenseService,
@@ -52,6 +54,7 @@ func NewInstanceService(store *store.Store, licenseService enterprise.LicenseSer
 		stateCfg:       stateCfg,
 		dbFactory:      dbFactory,
 		schemaSyncer:   schemaSyncer,
+		iamManager:     iamManager,
 	}
 }
 
@@ -95,7 +98,6 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 }
 
 // SearchInstance searches for instances.
-// TODO(p0ny): filter the instances by the user's permission.
 func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.SearchInstancesRequest) (*v1pb.SearchInstancesResponse, error) {
 	var project *store.ProjectMessage
 	if request.Parent != "" {
@@ -108,13 +110,30 @@ func (s *InstanceService) SearchInstances(ctx context.Context, request *v1pb.Sea
 		}
 		project = p
 	}
-	find := &store.FindInstanceMessage{
-		ShowDeleted: request.ShowDeleted,
-	}
+
+	databaseFind := &store.FindDatabaseMessage{}
 	if project != nil {
-		find.ProjectUID = &project.UID
+		databaseFind.ProjectID = &project.ResourceID
 	}
-	instances, err := s.store.ListInstancesV2(ctx, find)
+
+	databases, err := searchDatabases(ctx, s.store, s.iamManager, databaseFind)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get databases, error: %v", err)
+	}
+
+	instanceResourceIDsSet := make(map[string]struct{})
+	for _, db := range databases {
+		instanceResourceIDsSet[db.InstanceID] = struct{}{}
+	}
+	var instanceResourceIDs []string
+	for id := range instanceResourceIDsSet {
+		instanceResourceIDs = append(instanceResourceIDs, id)
+	}
+
+	instances, err := s.store.ListInstancesV2(ctx, &store.FindInstanceMessage{
+		ResourceIDs: &instanceResourceIDs,
+		ShowDeleted: request.ShowDeleted,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -195,10 +214,13 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
 				log.BBError(err))
+		} else {
+			instance = updatedInstance
 		}
 		// Sync all databases in the instance asynchronously.
 		s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
@@ -277,20 +299,19 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			patch.Activation = &request.Instance.Activation
 		case "options.schema_tenant_mode":
 			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SchemaTenantMode: request.Instance.Options.GetSchemaTenantMode(),
-				}
-			} else {
-				patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
+				patch.OptionsUpsert = instance.Options
 			}
+			patch.OptionsUpsert.SchemaTenantMode = request.Instance.Options.GetSchemaTenantMode()
 		case "options.sync_interval":
 			if patch.OptionsUpsert == nil {
-				patch.OptionsUpsert = &storepb.InstanceOptions{
-					SyncInterval: request.Instance.Options.GetSyncInterval(),
-				}
-			} else {
-				patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
+				patch.OptionsUpsert = instance.Options
 			}
+			patch.OptionsUpsert.SyncInterval = request.Instance.Options.GetSyncInterval()
+		case "options.maximum_connections":
+			if patch.OptionsUpsert == nil {
+				patch.OptionsUpsert = instance.Options
+			}
+			patch.OptionsUpsert.MaximumConnections = request.Instance.Options.GetMaximumConnections()
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupported update_mask "%s"`, path)
 		}
@@ -562,11 +583,12 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	if err := s.schemaSyncer.SyncInstance(ctx, instance); err != nil {
+	updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+	if err != nil {
 		return nil, err
 	}
 	// Sync all databases in the instance asynchronously.
-	s.stateCfg.InstanceSyncs.Store(instance.UID, instance)
+	s.stateCfg.InstanceSyncs.Store(instance.UID, updatedInstance)
 	s.stateCfg.InstanceSyncTickleChan <- 0
 
 	return &v1pb.SyncInstanceResponse{}, nil
@@ -1071,8 +1093,9 @@ func convertToInstanceOptions(options *storepb.InstanceOptions) *v1pb.InstanceOp
 	}
 
 	return &v1pb.InstanceOptions{
-		SchemaTenantMode: options.SchemaTenantMode,
-		SyncInterval:     options.SyncInterval,
+		SchemaTenantMode:   options.SchemaTenantMode,
+		SyncInterval:       options.SyncInterval,
+		MaximumConnections: options.MaximumConnections,
 	}
 }
 
@@ -1082,7 +1105,8 @@ func convertInstanceOptions(options *v1pb.InstanceOptions) *storepb.InstanceOpti
 	}
 
 	return &storepb.InstanceOptions{
-		SchemaTenantMode: options.SchemaTenantMode,
-		SyncInterval:     options.SyncInterval,
+		SchemaTenantMode:   options.SchemaTenantMode,
+		SyncInterval:       options.SyncInterval,
+		MaximumConnections: options.MaximumConnections,
 	}
 }

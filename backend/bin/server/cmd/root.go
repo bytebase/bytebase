@@ -128,7 +128,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", true, "whether to enable lsp in SQL Editor")
-	rootCmd.PersistentFlags().BoolVar(&flags.preUpdateBackup, "pre-update-backup", false, "whether to enable feature of data backup prior to data update")
+	rootCmd.PersistentFlags().BoolVar(&flags.preUpdateBackup, "pre-update-backup", true, "whether to enable feature of data backup prior to data update")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.

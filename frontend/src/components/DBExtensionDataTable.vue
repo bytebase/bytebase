@@ -34,21 +34,21 @@ const columns = computed(() => {
       },
     },
     {
-      key: "name",
+      key: "version",
       title: t("common.version"),
       render: (row) => {
         return row.version;
       },
     },
     {
-      key: "name",
+      key: "schema",
       title: t("common.schema"),
       render: (row) => {
         return row.schema;
       },
     },
     {
-      key: "name",
+      key: "description",
       title: t("common.description"),
       render: (row) => {
         return row.description;

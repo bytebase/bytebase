@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { first, isEqual } from "lodash-es";
+import { first, isEqual, orderBy } from "lodash-es";
 import { NCheckbox, NCheckboxGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { AffectedTableSelect } from "@/components/ChangeHistory";
@@ -79,8 +79,8 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
+  extractIssueUID,
   getAffectedTablesOfChangeHistory,
-  keyBy,
 } from "@/utils";
 import ChangeHistoryDetailPanel from "../../ChangeHistoryDetailPanel";
 import { useChangelistDetailContext } from "../../context";
@@ -153,27 +153,25 @@ const selectedChangeHistoryList = computed<string[]>({
     });
   },
   set(selected) {
-    const existedChangesByChangeHistoryName = keyBy(
-      changes.value,
-      (change) => change.source
-    );
-    const updatedChanges: Change[] = [];
+    const changeHistories: ChangeHistory[] = [];
     for (let i = 0; i < selected.length; i++) {
       const name = selected[i];
       const changeHistory =
         useChangeHistoryStore().getChangeHistoryByName(name);
       if (changeHistory) {
-        const existedChange = existedChangesByChangeHistoryName.get(name);
-        if (existedChange) {
-          updatedChanges.push(existedChange);
-        } else {
-          updatedChanges.push({
-            sheet: changeHistory.statementSheet,
-            source: changeHistory.name,
-          });
-        }
+        changeHistories.push(changeHistory);
       }
     }
+
+    const updatedChanges = orderBy(
+      changeHistories,
+      [(ch) => parseInt(extractIssueUID(ch.issue), 10)],
+      ["asc"]
+    ).map<Change>((changeHistory) => ({
+      sheet: changeHistory.statementSheet,
+      source: changeHistory.name,
+      version: changeHistory.version,
+    }));
     changes.value = updatedChanges;
   },
 });

@@ -5,6 +5,7 @@
     :options="options"
     :placeholder="$t('label.filter-by-label')"
     :render-label="renderLabel"
+    :placement="placement"
     :multiple="true"
     :show-path="true"
     :check-strategy="'child'"
@@ -41,10 +42,16 @@ type KeyValueOption = CascaderOption & {
   value: string;
 };
 
-const props = defineProps<{
-  selected: KV[];
-  databaseList: ComposedDatabase[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    selected: KV[];
+    databaseList: ComposedDatabase[];
+    placement?: "bottom-start" | "left-start";
+  }>(),
+  {
+    placement: "bottom-start",
+  }
+);
 
 const emit = defineEmits<{
   (event: "update:selected", selected: KV[]): void;

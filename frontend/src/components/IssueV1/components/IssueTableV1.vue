@@ -1,4 +1,5 @@
 <template>
+  <!-- eslint-disable vue/no-v-html -->
   <div
     v-if="title"
     class="text-left pl-4 pt-4 pb-2 py-text-base leading-6 font-medium text-gray-900"
@@ -51,50 +52,48 @@
             :task-status="issueTaskStatus(issue)"
           />
         </div>
-        <div class="bb-grid-cell">
-          <div class="flex items-center">
-            <div class="whitespace-nowrap mr-2 text-control">
-              <template v-if="mode == 'ALL'">
-                {{ issue.projectEntity.key }}-{{ issue.uid }}
-              </template>
-              <template v-else> #{{ issue.uid }} </template>
-            </div>
-            <div
-              class="flex truncate items-center"
-              :class="{
-                'font-semibold': isAssigneeAttentionOn(issue),
-              }"
-            >
-              <span
-                v-for="(item, index) in issueHighlightSections(
-                  issue.title,
-                  highlights
-                )"
-                :key="index"
-                :class="[
-                  'whitespace-pre',
-                  item.highlight ? 'bg-yellow-100' : '',
-                ]"
-              >
-                {{ item.text }}
-              </span>
-            </div>
-            <NTooltip v-if="isAssigneeAttentionOn(issue)">
-              <template #trigger>
-                <span>
-                  <heroicons-outline:bell-alert
-                    class="w-4 h-4 text-accent ml-1"
-                  />
-                </span>
-              </template>
-              <span class="whitespace-nowrap">
-                {{ $t("issue.assignee-attention.needs-attention") }}
-              </span>
-            </NTooltip>
+        <div class="bb-grid-cell overflow-hidden">
+          <div class="whitespace-nowrap mr-2 text-control">
+            <template v-if="mode == 'ALL'">
+              {{ issue.projectEntity.key }}-{{ issue.uid }}
+            </template>
+            <template v-else> #{{ issue.uid }} </template>
           </div>
+          <NPerformantEllipsis
+            class="flex-1 truncate"
+            :class="{
+              'font-semibold': isAssigneeAttentionOn(issue),
+            }"
+          >
+            <template #default>
+              <span v-html="highlight(issue.title)"></span>
+            </template>
+            <template #tooltip>
+              <div
+                class="whitespace-pre-wrap break-words break-all"
+                :style="{
+                  'max-width': `${tableWidth * 0.9}px`,
+                }"
+              >
+                {{ issue.title }}
+              </div>
+            </template>
+          </NPerformantEllipsis>
+          <NTooltip v-if="isAssigneeAttentionOn(issue)">
+            <template #trigger>
+              <span>
+                <heroicons-outline:bell-alert
+                  class="w-4 h-4 text-accent ml-1"
+                />
+              </span>
+            </template>
+            <span class="whitespace-nowrap">
+              {{ $t("issue.assignee-attention.needs-attention") }}
+            </span>
+          </NTooltip>
         </div>
         <div v-if="showExtendedColumns" class="bb-grid-cell">
-          <EllipsisText>
+          <EllipsisText :performant="true">
             {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
           </EllipsisText>
         </div>
@@ -123,18 +122,10 @@
         </div>
       </template>
       <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
-        <div class="w-full max-h-[20rem] overflow-auto pl-2">
-          <span
-            v-for="(item, index) in issueHighlightSections(
-              issue.description,
-              highlights
-            )"
-            :key="index"
-            :class="['whitespace-pre', item.highlight ? 'bg-yellow-100' : '']"
-          >
-            {{ item.text }}
-          </span>
-        </div>
+        <div
+          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
+          v-html="highlight(issue.description)"
+        />
       </template>
     </BBGrid>
   </div>
@@ -150,7 +141,8 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { NCheckbox } from "naive-ui";
+import { escape } from "lodash-es";
+import { NCheckbox, NPerformantEllipsis } from "naive-ui";
 import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -166,8 +158,12 @@ import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
-import { issueSlug } from "@/utils";
-import { isDatabaseRelatedIssue, activeTaskInRollout } from "@/utils";
+import {
+  getHighlightHTMLByRegExp,
+  issueSlug,
+  isDatabaseRelatedIssue,
+  activeTaskInRollout,
+} from "@/utils";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -372,6 +368,15 @@ const highlights = computed(() => {
   }
   return props.highlightText.toLowerCase().split(" ");
 });
+
+const highlight = (content: string) => {
+  return getHighlightHTMLByRegExp(
+    escape(content),
+    highlights.value.map((kw) => escape(kw)),
+    /* !caseSensitive */ false,
+    /* className */ "bg-yellow-100"
+  );
+};
 
 const issueHighlightSections = (
   text: string,

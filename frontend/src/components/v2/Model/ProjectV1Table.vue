@@ -83,7 +83,7 @@ const clickProject = function (
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {
-    router.push(url);
+    window.location.href = url;
   }
   emit("click");
 };

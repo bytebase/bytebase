@@ -65,6 +65,7 @@
           <DataExportButton
             v-if="allowToExportData"
             size="small"
+            :file-type="'zip'"
             :disabled="props.result === null || isEmpty(props.result)"
             :support-formats="[
               ExportFormat.CSV,
@@ -148,6 +149,7 @@ import { NInput, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import { ExportOption } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
@@ -339,9 +341,8 @@ const pageSize = computed(() => {
 });
 
 const handleExportBtnClick = async (
-  format: ExportFormat,
-  callback: (content: BinaryLike | Blob, format: ExportFormat) => void,
-  userSpecifiedLimit: number | undefined
+  options: ExportOption,
+  callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
   const { instanceId, databaseId } = tabStore.currentTab.connection;
   const instance = instanceStore.getInstanceByUID(instanceId).name;
@@ -351,18 +352,19 @@ const handleExportBtnClick = async (
       : databaseStore.getDatabaseByUID(databaseId).name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
-  const limit = userSpecifiedLimit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
+  const limit = options.limit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
 
   const content = await exportData({
     database,
     instance,
-    format,
+    format: options.format,
     statement,
     limit,
     admin,
+    password: options.password,
   });
 
-  callback(content, format);
+  callback(content, options);
 };
 
 const showVisualizeButton = computed((): boolean => {

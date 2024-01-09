@@ -20,6 +20,7 @@ import { computed, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -55,7 +56,7 @@ const { currentPlan } = storeToRefs(subscriptionStore);
 
 const logout = () => {
   authStore.logout().then(() => {
-    router.push({ name: "auth.signin" });
+    router.push({ name: AUTH_SIGNIN_MODULE });
   });
 };
 

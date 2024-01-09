@@ -75,16 +75,7 @@
     "updated": "已更新",
     "visit": "访问",
     "role": {
-      "self": "角色",
-      "admin": "管理员",
-      "dba": "DBA",
-      "member": "成员",
-      "owner": "所有者",
-      "developer": "开发者",
-      "exporter": "数据导出者",
-      "querier": "数据查询者",
-      "releaser": "发布者",
-      "viewer": "查看者"
+      "self": "角色"
     },
     "assignee": "指派人",
     "revert": "恢复",
@@ -277,7 +268,8 @@
     "view-details": "查看详情",
     "force-verb": "强制{verb}",
     "nothing-changed": "没有改变",
-    "untitled": "未命名"
+    "untitled": "未命名",
+    "nickname": "昵称"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -525,9 +517,13 @@
       "create-as-service-account": "创建为服务账号",
       "show-inactive": "查看未激活的成员",
       "remove-self-admin": {
-        "title": "请确认您要移除您的@.lower:common.role.admin角色。",
-        "description": "请确保剩下的@.lower:common.role.admin成员可以登录，否则就无人可以管理用户了。"
-      }
+        "title": "请确认您要移除您的@.lower:role.workspace-admin.self角色。",
+        "description": "请确保剩下的@.lower:role.workspace-admin.self员可以登录，否则就无人可以管理用户了。"
+      },
+      "view-by-principals": "按成员查看",
+      "view-by-roles": "按角色查看",
+      "add-member": "添加成员",
+      "update-member": "更新成员"
     },
     "im-integration": {
       "enable": "启用",
@@ -1368,6 +1364,12 @@
       "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
       "min-value": "最小值 {value} 分钟"
+    },
+    "maximum-connections": {
+      "self": "最大连接数",
+      "default-value": "默认 (10 个连接)",
+      "description": "通过设置实例的最大连接数来限制连接和资源的使用。",
+      "max-value": "最大连接数 {value} 个"
     }
   },
   "environment": {
@@ -1457,7 +1459,8 @@
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Bytebase 工作空间管理员"
+      "manual-by-workspace-admin": "Bytebase 工作空间管理员",
+      "manual-by-custom-project-roles": "自定义项目角色"
     },
     "backup": {
       "name": "数据库备份策略",
@@ -1507,7 +1510,8 @@
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
     "all-tables": "所有表",
-    "affected-tables": "受影响的表"
+    "affected-tables": "受影响的表",
+    "view-full": "查看全部"
   },
   "database": {
     "select": "选择数据库",
@@ -1922,8 +1926,8 @@
       "success-member-deleted-prompt": "成功将 {name} 从当前项目移除.",
       "member-placeholder": "选择用户",
       "manage-member": "管理成员",
-      "owner": "@.upper:common.role.owner",
-      "developer": "@.upper:common.role.member",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
       "archive": {
         "title": "归档项目",
         "description": "已归档项目将不再显示。",
@@ -2368,7 +2372,13 @@
     "edit-foreign-key": "修改外键",
     "select-reference-schema": "选择外键的 Schema",
     "select-reference-table": "选择外键的表",
-    "select-reference-column": "选择外键的列"
+    "select-reference-column": "选择外键的列",
+    "index": {
+      "indexes": "索引",
+      "edit-indexes": "编辑索引",
+      "unique": "唯一"
+    },
+    "generated-ddl-is-empty": "生成的 DDL 为空"
   },
   "label": {
     "empty-label-value": "空",
@@ -3197,22 +3207,40 @@
     "title": "称谓",
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
-    "owner": {
+    "workspace-admin": {
+      "self": "工作空间管理员",
+      "description": "工作空间内的所有权限。"
+    },
+    "workspace-dba": {
+      "self": "工作空间 DBA",
+      "description": "可以管理工作空间的所有数据库和实例"
+    },
+    "workspace-member": {
+      "self": "工作空间成员",
+      "description": ""
+    },
+    "project-owner": {
+      "self": "项目所有者",
       "description": "项目内的所有权限。"
     },
-    "developer": {
+    "project-developer": {
+      "self": "项目开发者",
       "description": "可查看项目基本信息，并可自助发起数据库变更、数据查询、数据导出请求。"
     },
-    "releaser": {
+    "project-releaser": {
+      "self": "项目发布者",
       "description": "可查看项目基本信息，并可在指定流程中发布变更。"
     },
-    "querier": {
+    "project-querier": {
+      "self": "项目查询者",
       "description": "可查询指定范围的数据。"
     },
-    "exporter": {
+    "project-exporter": {
+      "self": "项目导出者",
       "description": "可导出指定范围的数据。"
     },
-    "viewer": {
+    "project-viewer": {
+      "self": "项目查看者",
       "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
     }
   },
@@ -3350,7 +3378,9 @@
       "export-rows-required": "需要指定导出行数",
       "export-rows-must-gt-zero": "导出行数必须大于 0"
     },
-    "export-format": "导出格式"
+    "export-format": "导出格式",
+    "password-optional": "设置密码加密（可选）",
+    "password-info": "提供密码来对导出的文件进行加密"
   },
   "branch": {
     "rollout": {
@@ -3381,6 +3411,14 @@
       "conflict-not-resolved": "似乎还有尚未解决的冲突。",
       "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
       "preview-merge-result": "预览合并结果"
+    },
+    "source": {
+      "baseline-version": "基线版本",
+      "parent-branch": "父分支",
+      "self": "来源"
+    },
+    "index": {
+      "drop-index-confirm": "删除索引？"
     }
   }
 }

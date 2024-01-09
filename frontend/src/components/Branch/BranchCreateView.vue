@@ -2,61 +2,59 @@
   <div
     class="w-full h-full flex flex-col gap-y-3 relative overflow-y-hidden overflow-x-auto pt-0.5"
   >
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-40 items-center text-sm">
-        {{ $t("database.branch-name") }}
-      </span>
-      <BBTextField
-        v-model:value="branchId"
-        required
-        class="!w-60 text-sm"
-        :placeholder="'feature/add-billing'"
-      />
-      <span class="ml-4 mr-4 flex items-center text-sm">
-        {{ $t("schema-designer.parent-branch") }}
-      </span>
-      <BranchSelector
-        v-model:branch="parentBranchName"
-        :project="project"
+    <div
+      class="w-[32rem] grid gap-y-3 gap-x-4 whitespace-nowrap items-center"
+      style="grid-template-columns: minmax(auto, 8rem) 1fr"
+    >
+      <div class="contents">
+        <div class="text-sm">
+          {{ $t("database.branch-name") }}
+        </div>
+        <BBTextField
+          v-model:value="branchId"
+          required
+          class="!w-60 text-sm"
+          :placeholder="'feature/add-billing'"
+        />
+      </div>
+      <div class="contents">
+        <div class="text-sm">
+          {{ $t("branch.source.self") }}
+        </div>
+        <NRadioGroup
+          :value="source"
+          class="!flex flex-row gap-x-2"
+          @update:value="handleSwitchSource"
+        >
+          <NRadio value="PARENT">
+            {{ $t("branch.source.parent-branch") }}
+          </NRadio>
+          <NRadio value="BASELINE">
+            {{ $t("branch.source.baseline-version") }}
+          </NRadio>
+        </NRadioGroup>
+      </div>
+      <div v-if="source === 'PARENT'" class="contents">
+        <div class="text-sm">
+          {{ $t("schema-designer.parent-branch") }}
+        </div>
+        <BranchSelector
+          v-model:branch="parentBranchName"
+          :project="project"
+          :loading="isPreparingBranch"
+          :filter="filterParentBranch"
+          class=""
+          clearable
+        />
+      </div>
+      <BaselineSchemaSelector
+        v-if="source === 'BASELINE'"
+        v-model:database-id="databaseId"
+        :project-id="projectId"
         :loading="isPreparingBranch"
-        class="!w-60"
-        clearable
       />
     </div>
     <NDivider class="!my-0" />
-    <div class="w-full flex flex-row justify-start items-center">
-      <span class="flex w-full items-center text-sm font-medium">
-        {{
-          parentBranchName
-            ? $t("schema-designer.baseline-version-from-parent")
-            : $t("schema-designer.baseline-version")
-        }}
-      </span>
-    </div>
-    <BaselineSchemaSelector
-      v-model:database-id="databaseId"
-      :project-id="projectId"
-      :readonly="disallowToChangeBaseline"
-      :loading="isPreparingBranch"
-    />
-    <div v-if="false" class="w-full text-xs font-mono">
-      <div>debug info</div>
-      <div>isPreparingBranch: {{ isPreparingBranch }}</div>
-      <div>databaseId: {{ databaseId }}</div>
-      <div>parentBranchName: {{ parentBranchName }}</div>
-      <div>state.parent: {{ branchData?.parent }}</div>
-      <div>state.branch.name: {{ branchData?.branch.name }}</div>
-      <div>
-        flatten table count:
-        {{
-          branchData?.branch.schemaMetadata?.schemas.map((s) => s.tables.length)
-        }}
-      </div>
-      <div v-if="branchData">
-        size(state.branch):
-        {{ bytesToString(JSON.stringify(branchData?.branch).length) }}
-      </div>
-    </div>
     <div class="w-full flex-1 overflow-y-hidden">
       <SchemaEditorLite
         :key="branchData?.branch.name ?? ''"
@@ -85,7 +83,7 @@
 <script lang="ts" setup>
 import { useDebounce } from "@vueuse/core";
 import { cloneDeep, uniqueId } from "lodash-es";
-import { NButton, NDivider } from "naive-ui";
+import { NButton, NDivider, NRadio, NRadioGroup } from "naive-ui";
 import { computed, ref, shallowRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -100,9 +98,12 @@ import { useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { bytesToString, projectV1Slug } from "@/utils";
+import { projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
+import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
+
+type Source = "PARENT" | "BASELINE";
 
 type BranchData = {
   branch: Branch;
@@ -122,6 +123,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
+const source = ref<Source>("PARENT");
 const projectId = ref(props.projectId);
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
@@ -138,9 +140,11 @@ const project = computed(() => {
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
-const disallowToChangeBaseline = computed(() => {
-  return !!parentBranchName.value;
-});
+
+const filterParentBranch = (branch: Branch) => {
+  // Only "main branch" aka parent-less branches can be parents.
+  return !branch.parentBranch;
+};
 
 const nextFakeBranchName = () => {
   return `${project.value.name}/branches/-${uniqueId()}`;
@@ -222,6 +226,15 @@ const prepareBranch = async (
     });
   }
   return finish(undefined);
+};
+
+const handleSwitchSource = (src: Source) => {
+  source.value = src;
+  if (src === "PARENT") {
+    databaseId.value = undefined;
+  } else {
+    parentBranchName.value = undefined;
+  }
 };
 
 watch(

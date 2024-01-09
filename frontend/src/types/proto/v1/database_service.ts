@@ -149,12 +149,6 @@ export interface ListDatabasesResponse {
 
 export interface SearchDatabasesRequest {
   /**
-   * The parent, which owns this collection of databases.
-   * Format: instances/{instance}
-   * Use "instances/-" to list all databases.
-   */
-  parent: string;
-  /**
    * The maximum number of databases to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 databases will be returned.
@@ -1253,13 +1247,16 @@ export interface ChangeHistory {
   description: string;
   /** The statement is used for preview purpose. */
   statement: string;
+  statementSize: Long;
   /**
    * The name of the sheet resource.
    * Format: projects/{project}/sheets/{sheet}
    */
   statementSheet: string;
   schema: string;
+  schemaSize: Long;
   prevSchema: string;
+  prevSchemaSize: Long;
   executionDuration:
     | Duration
     | undefined;
@@ -1745,22 +1742,19 @@ export const ListDatabasesResponse = {
 };
 
 function createBaseSearchDatabasesRequest(): SearchDatabasesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", filter: "" };
+  return { pageSize: 0, pageToken: "", filter: "" };
 }
 
 export const SearchDatabasesRequest = {
   encode(message: SearchDatabasesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
     if (message.pageSize !== 0) {
-      writer.uint32(16).int32(message.pageSize);
+      writer.uint32(8).int32(message.pageSize);
     }
     if (message.pageToken !== "") {
-      writer.uint32(26).string(message.pageToken);
+      writer.uint32(18).string(message.pageToken);
     }
     if (message.filter !== "") {
-      writer.uint32(34).string(message.filter);
+      writer.uint32(26).string(message.filter);
     }
     return writer;
   },
@@ -1773,28 +1767,21 @@ export const SearchDatabasesRequest = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
+          if (tag !== 8) {
             break;
           }
 
           message.pageSize = reader.int32();
           continue;
-        case 3:
-          if (tag !== 26) {
+        case 2:
+          if (tag !== 18) {
             break;
           }
 
           message.pageToken = reader.string();
           continue;
-        case 4:
-          if (tag !== 34) {
+        case 3:
+          if (tag !== 26) {
             break;
           }
 
@@ -1811,7 +1798,6 @@ export const SearchDatabasesRequest = {
 
   fromJSON(object: any): SearchDatabasesRequest {
     return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
@@ -1820,9 +1806,6 @@ export const SearchDatabasesRequest = {
 
   toJSON(message: SearchDatabasesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
@@ -1840,7 +1823,6 @@ export const SearchDatabasesRequest = {
   },
   fromPartial(object: DeepPartial<SearchDatabasesRequest>): SearchDatabasesRequest {
     const message = createBaseSearchDatabasesRequest();
-    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
@@ -7419,9 +7401,12 @@ function createBaseChangeHistory(): ChangeHistory {
     version: "",
     description: "",
     statement: "",
+    statementSize: Long.ZERO,
     statementSheet: "",
     schema: "",
+    schemaSize: Long.ZERO,
     prevSchema: "",
+    prevSchemaSize: Long.ZERO,
     executionDuration: undefined,
     issue: "",
     pushEvent: undefined,
@@ -7470,14 +7455,23 @@ export const ChangeHistory = {
     if (message.statement !== "") {
       writer.uint32(106).string(message.statement);
     }
+    if (!message.statementSize.isZero()) {
+      writer.uint32(168).int64(message.statementSize);
+    }
     if (message.statementSheet !== "") {
       writer.uint32(162).string(message.statementSheet);
     }
     if (message.schema !== "") {
       writer.uint32(114).string(message.schema);
     }
+    if (!message.schemaSize.isZero()) {
+      writer.uint32(176).int64(message.schemaSize);
+    }
     if (message.prevSchema !== "") {
       writer.uint32(122).string(message.prevSchema);
+    }
+    if (!message.prevSchemaSize.isZero()) {
+      writer.uint32(184).int64(message.prevSchemaSize);
     }
     if (message.executionDuration !== undefined) {
       Duration.encode(message.executionDuration, writer.uint32(130).fork()).ldelim();
@@ -7592,6 +7586,13 @@ export const ChangeHistory = {
 
           message.statement = reader.string();
           continue;
+        case 21:
+          if (tag !== 168) {
+            break;
+          }
+
+          message.statementSize = reader.int64() as Long;
+          continue;
         case 20:
           if (tag !== 162) {
             break;
@@ -7606,12 +7607,26 @@ export const ChangeHistory = {
 
           message.schema = reader.string();
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.schemaSize = reader.int64() as Long;
+          continue;
         case 15:
           if (tag !== 122) {
             break;
           }
 
           message.prevSchema = reader.string();
+          continue;
+        case 23:
+          if (tag !== 184) {
+            break;
+          }
+
+          message.prevSchemaSize = reader.int64() as Long;
           continue;
         case 16:
           if (tag !== 130) {
@@ -7665,9 +7680,12 @@ export const ChangeHistory = {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
       statementSheet: isSet(object.statementSheet) ? globalThis.String(object.statementSheet) : "",
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      schemaSize: isSet(object.schemaSize) ? Long.fromValue(object.schemaSize) : Long.ZERO,
       prevSchema: isSet(object.prevSchema) ? globalThis.String(object.prevSchema) : "",
+      prevSchemaSize: isSet(object.prevSchemaSize) ? Long.fromValue(object.prevSchemaSize) : Long.ZERO,
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
@@ -7716,14 +7734,23 @@ export const ChangeHistory = {
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
+    if (!message.statementSize.isZero()) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
     if (message.statementSheet !== "") {
       obj.statementSheet = message.statementSheet;
     }
     if (message.schema !== "") {
       obj.schema = message.schema;
     }
+    if (!message.schemaSize.isZero()) {
+      obj.schemaSize = (message.schemaSize || Long.ZERO).toString();
+    }
     if (message.prevSchema !== "") {
       obj.prevSchema = message.prevSchema;
+    }
+    if (!message.prevSchemaSize.isZero()) {
+      obj.prevSchemaSize = (message.prevSchemaSize || Long.ZERO).toString();
     }
     if (message.executionDuration !== undefined) {
       obj.executionDuration = Duration.toJSON(message.executionDuration);
@@ -7758,9 +7785,18 @@ export const ChangeHistory = {
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     message.statementSheet = object.statementSheet ?? "";
     message.schema = object.schema ?? "";
+    message.schemaSize = (object.schemaSize !== undefined && object.schemaSize !== null)
+      ? Long.fromValue(object.schemaSize)
+      : Long.ZERO;
     message.prevSchema = object.prevSchema ?? "";
+    message.prevSchemaSize = (object.prevSchemaSize !== undefined && object.prevSchemaSize !== null)
+      ? Long.fromValue(object.prevSchemaSize)
+      : Long.ZERO;
     message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
@@ -8472,6 +8508,46 @@ export const DatabaseServiceDefinition = {
               115,
               101,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    /** Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query. */
+    searchDatabases: {
+      name: "SearchDatabases",
+      requestType: SearchDatabasesRequest,
+      requestStream: false,
+      responseType: SearchDatabasesResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              22,
+              18,
+              20,
+              47,
+              118,
+              49,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
             ]),
           ],
         },

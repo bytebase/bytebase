@@ -22,6 +22,7 @@ var (
 	completers              = make(map[storepb.Engine]CompletionFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	affectedRows            = make(map[storepb.Engine]GetAffectedRowsFunc)
+	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, error)
@@ -37,6 +38,9 @@ type GetQuerySpanFunc func(ctx context.Context, statement, database string, meta
 
 // GetAffectedRows is the interface of getting the affected rows for a statement.
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
+
+// TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
+type TransformDMLToSelectFunc func(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]RollbackStatement, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -222,4 +226,23 @@ func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAf
 		return 0, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, stmt, getAffectedRowsByQueryFunc, getTableDataSizeFunc)
+}
+
+// RegisterTransformDMLToSelect registers the transformDMLToSelect function for the engine.
+func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := transformDMLToSelect[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	transformDMLToSelect[engine] = f
+}
+
+// TransformDMLToSelect transforms the DML statement to SELECT statement.
+func TransformDMLToSelect(engine storepb.Engine, statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]RollbackStatement, error) {
+	f, ok := transformDMLToSelect[engine]
+	if !ok {
+		return nil, errors.Errorf("engine %s is not supported", engine)
+	}
+	return f(statement, sourceDatabase, targetDatabase, tableSuffix)
 }

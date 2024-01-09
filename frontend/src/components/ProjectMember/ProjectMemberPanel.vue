@@ -126,9 +126,9 @@ import {
 import {
   ComposedProject,
   DEFAULT_PROJECT_V1_NAME,
-  PresetRoleType,
   getUserEmailInBinding,
   unknownUser,
+  PresetRoleType,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {

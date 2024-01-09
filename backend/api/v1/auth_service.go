@@ -198,6 +198,13 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			userMessage.Role = userRole
+			for _, r := range request.User.GetRoles() {
+				role, err := common.GetRoleID(r)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, "invalid role %s", r)
+				}
+				userMessage.Roles = append(userMessage.Roles, api.Role(role))
+			}
 		} else {
 			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with role")
 		}
@@ -333,6 +340,16 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			patch.Role = &userRole
+		case "roles":
+			var roles []api.Role
+			for _, r := range request.User.Roles {
+				roleID, err := common.GetRoleID(r)
+				if err != nil {
+					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				}
+				roles = append(roles, api.Role(roleID))
+			}
+			patch.Roles = &roles
 		case "mfa_enabled":
 			if request.User.MfaEnabled {
 				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
@@ -527,6 +544,9 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		Title:    user.Name,
 		UserType: userType,
 		UserRole: role,
+	}
+	for _, r := range user.Roles {
+		convertedUser.Roles = append(convertedUser.Roles, common.FormatRole(r.String()))
 	}
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""

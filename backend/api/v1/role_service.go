@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -19,13 +20,15 @@ import (
 type RoleService struct {
 	v1pb.UnimplementedRoleServiceServer
 	store          *store.Store
+	iamManager     *iam.Manager
 	licenseService enterprise.LicenseService
 }
 
 // NewRoleService returns a new instance of the role service.
-func NewRoleService(store *store.Store, licenseService enterprise.LicenseService) *RoleService {
+func NewRoleService(store *store.Store, iamManager *iam.Manager, licenseService enterprise.LicenseService) *RoleService {
 	return &RoleService{
 		store:          store,
+		iamManager:     iamManager,
 		licenseService: licenseService,
 	}
 }
@@ -38,7 +41,7 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 	}
 
 	return &v1pb.ListRolesResponse{
-		Roles: convertToRoles(roleMessages),
+		Roles: convertToRoles(s.iamManager, roleMessages),
 	}, nil
 }
 
@@ -51,6 +54,11 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
+
+	if err := validateResourceID(request.RoleId); err != nil {
+		return nil, err
+	}
+
 	create := &store.RoleMessage{
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
@@ -60,7 +68,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create role: %v", err)
 	}
-	return convertToRole(roleMessage), nil
+	return convertToRole(s.iamManager, roleMessage), nil
 }
 
 // UpdateRole updates an existing role.
@@ -105,7 +113,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update role: %v", err)
 	}
-	return convertToRole(roleMessage), nil
+	return convertToRole(s.iamManager, roleMessage), nil
 }
 
 // DeleteRole deletes an existing role.
@@ -134,19 +142,25 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	return &emptypb.Empty{}, nil
 }
 
-func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {
+func convertToRoles(iamManager *iam.Manager, roleMessages []*store.RoleMessage) []*v1pb.Role {
 	var roles []*v1pb.Role
 	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(roleMessage))
+		roles = append(roles, convertToRole(iamManager, roleMessage))
 	}
 	return roles
 }
 
-func convertToRole(role *store.RoleMessage) *v1pb.Role {
+func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role {
+	name := convertToRoleName(role.ResourceID)
+	permissions := []string{}
+	for _, permission := range iamManager.GetPermissions(name) {
+		permissions = append(permissions, string(permission))
+	}
 	return &v1pb.Role{
-		Name:        convertToRoleName(role.ResourceID),
+		Name:        name,
 		Title:       role.Name,
 		Description: role.Description,
+		Permissions: permissions,
 	}
 }
 

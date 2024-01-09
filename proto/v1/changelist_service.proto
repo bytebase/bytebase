@@ -145,6 +145,8 @@ message Changelist {
     // 2) branch: projects/{project}/branches/{branch}.
     // 3) raw SQL if empty.
     string source = 2;
+    // The migration version for a change.
+    string version = 3;
   }
   repeated Change changes = 7;
 }

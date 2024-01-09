@@ -101,7 +101,7 @@ import {
   useEnvironmentV1List,
 } from "@/store";
 import { usePolicyV1Store } from "@/store/modules/v1/policy";
-import { ALL_USERS_USER_NAME } from "@/types";
+import { ALL_USERS_USER_EMAIL, PresetRoleType } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Binding, IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
@@ -179,7 +179,7 @@ onMounted(async () => {
     }
 
     for (const binding of policy.workspaceIamPolicy.bindings) {
-      if (!binding.members.includes(ALL_USERS_USER_NAME)) {
+      if (!binding.members.includes(ALL_USERS_USER_EMAIL)) {
         continue;
       }
 
@@ -198,9 +198,9 @@ onMounted(async () => {
           if (
             environmentNameList.includes(environmentPolicy.environment.name)
           ) {
-            if (binding.role === "PresetRoleType.PROJECT_QUERIER") {
+            if (binding.role === PresetRoleType.PROJECT_QUERIER) {
               environmentPolicy.allowQueryData = true;
-            } else if (binding.role === "PresetRoleType.PROJECT_EXPORTER") {
+            } else if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
               environmentPolicy.allowExportData = true;
             }
           }
@@ -248,8 +248,8 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   if (allowQueryEnvNameList.length > 0) {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
-        role: "PresetRoleType.PROJECT_QUERIER",
-        members: [ALL_USERS_USER_NAME],
+        role: PresetRoleType.PROJECT_QUERIER,
+        members: [ALL_USERS_USER_EMAIL],
         condition: {
           expression: `resource.environment_name in ["${allowQueryEnvNameList.join(
             '", "'
@@ -261,8 +261,8 @@ const buildWorkspaceIAMPolicy = (envPolicyList: EnvironmentPolicy[]) => {
   if (allowExportEnvNameList.length > 0) {
     workspaceIamPolicy.bindings.push(
       Binding.fromPartial({
-        role: "PresetRoleType.PROJECT_EXPORTER",
-        members: [ALL_USERS_USER_NAME],
+        role: PresetRoleType.PROJECT_EXPORTER,
+        members: [ALL_USERS_USER_EMAIL],
         condition: {
           expression: `resource.environment_name in ["${allowExportEnvNameList.join(
             '", "'

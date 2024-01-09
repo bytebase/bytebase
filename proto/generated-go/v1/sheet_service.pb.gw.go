@@ -35,11 +35,7 @@ func request_SheetService_CreateSheet_0(ctx context.Context, marshaler runtime.M
 	var protoReq CreateSheetRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -69,11 +65,7 @@ func local_request_SheetService_CreateSheet_0(ctx context.Context, marshaler run
 	var protoReq CreateSheetRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Sheet); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -100,7 +92,7 @@ func local_request_SheetService_CreateSheet_0(ctx context.Context, marshaler run
 }
 
 var (
-	filter_SheetService_GetSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_SheetService_GetSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"name": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_SheetService_GetSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -170,7 +162,7 @@ func local_request_SheetService_GetSheet_0(ctx context.Context, marshaler runtim
 }
 
 var (
-	filter_SheetService_SearchSheets_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_SheetService_SearchSheets_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_SheetService_SearchSheets_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -240,7 +232,7 @@ func local_request_SheetService_SearchSheets_0(ctx context.Context, marshaler ru
 }
 
 var (
-	filter_SheetService_UpdateSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"sheet": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_SheetService_UpdateSheet_0 = &utilities.DoubleArray{Encoding: map[string]int{"sheet": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_SheetService_UpdateSheet_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -340,18 +332,14 @@ func local_request_SheetService_UpdateSheet_0(ctx context.Context, marshaler run
 }
 
 var (
-	filter_SheetService_UpdateSheetOrganizer_0 = &utilities.DoubleArray{Encoding: map[string]int{"organizer": 0, "sheet": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_SheetService_UpdateSheetOrganizer_0 = &utilities.DoubleArray{Encoding: map[string]int{"organizer": 0, "sheet": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_SheetService_UpdateSheetOrganizer_0(ctx context.Context, marshaler runtime.Marshaler, client SheetServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UpdateSheetOrganizerRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Organizer); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Organizer); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -388,11 +376,7 @@ func local_request_SheetService_UpdateSheetOrganizer_0(ctx context.Context, mars
 	var protoReq UpdateSheetOrganizerRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Organizer); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Organizer); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 

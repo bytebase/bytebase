@@ -1,51 +1,77 @@
 <template>
-  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
-    <div
-      v-if="!readonly || selectionEnabled"
-      class="w-full flex flex-row justify-between items-center"
-    >
-      <div
-        v-if="!readonly"
-        class="w-full flex justify-start items-center space-x-2"
-      >
-        <NButton
-          size="small"
-          :disabled="disableChangeTable"
-          @click="handleAddColumn"
-        >
-          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          {{ $t("schema-editor.actions.add-column") }}
-        </NButton>
-        <NButton
-          size="small"
-          :disabled="disableChangeTable"
-          @click="state.showSchemaTemplateDrawer = true"
-        >
-          <FeatureBadge feature="bb.feature.schema-template" />
-          <heroicons-outline:plus class="w-4 h-auto mr-1 text-gray-400" />
-          {{ $t("schema-editor.actions.add-from-template") }}
-        </NButton>
+  <div
+    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden px-1 -mx-1"
+  >
+    <div class="w-full flex flex-row justify-between items-center">
+      <div class="w-full flex justify-start items-center gap-x-2">
+        <template v-if="state.mode === 'INDEXES'">
+          <NButton size="small" @click="state.mode = 'COLUMNS'">
+            <ArrowLeftIcon class="w-4 h-4" />
+          </NButton>
+          <template v-if="!readonly">
+            <NButton size="small" @click="handleAddIndex">
+              <PlusIcon class="w-4 h-4 mr-1" />
+              {{ $t("common.add") }}
+            </NButton>
+          </template>
+        </template>
+        <template v-if="state.mode === 'COLUMNS'">
+          <template v-if="!readonly">
+            <NButton
+              size="small"
+              :disabled="disableChangeTable"
+              @click="handleAddColumn"
+            >
+              <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
+              {{ $t("schema-editor.actions.add-column") }}
+            </NButton>
+            <NButton
+              size="small"
+              :disabled="disableChangeTable"
+              @click="state.showSchemaTemplateDrawer = true"
+            >
+              <FeatureBadge feature="bb.feature.schema-template" />
+              <PlusIcon class="w-4 h-auto mr-1 text-gray-400" />
+              {{ $t("schema-editor.actions.add-from-template") }}
+            </NButton>
+          </template>
+          <NButton
+            size="small"
+            :disabled="disableChangeTable"
+            @click="state.mode = 'INDEXES'"
+          >
+            <IndexIcon class="mr-1" />
+            {{
+              readonly
+                ? $t("schema-editor.index.indexes")
+                : $t("schema-editor.index.edit-indexes")
+            }}
+          </NButton>
+        </template>
       </div>
-      <div
-        v-if="selectionEnabled"
-        class="text-sm flex flex-row items-center gap-x-2 h-[28px] whitespace-nowrap"
-      >
-        <span class="text-main">
-          {{ $t("branch.select-tables-to-rollout") }}
-        </span>
-        <ColumnSelectionSummary
-          :db="db"
-          :metadata="{
-            database,
-            schema,
-            table,
-          }"
-        />
+      <div class="text-sm flex flex-row items-center justify-end gap-x-2">
+        <div
+          v-if="selectionEnabled"
+          class="text-sm flex flex-row items-center gap-x-2 h-[28px] whitespace-nowrap"
+        >
+          <span class="text-main">
+            {{ $t("branch.select-tables-to-rollout") }}
+          </span>
+          <ColumnSelectionSummary
+            :db="db"
+            :metadata="{
+              database,
+              schema,
+              table,
+            }"
+          />
+        </div>
       </div>
     </div>
 
     <div class="flex-1 overflow-y-hidden">
       <TableColumnEditor
+        :show="state.mode === 'COLUMNS'"
         :readonly="readonly"
         :show-foreign-key="true"
         :db="db"
@@ -65,6 +91,15 @@
         @primary-key-set="setColumnPrimaryKey"
         @foreign-key-edit="handleEditColumnForeignKey"
         @foreign-key-click="gotoForeignKeyReferencedTable"
+      />
+      <IndexesEditor
+        :show="state.mode === 'INDEXES'"
+        :readonly="readonly"
+        :db="db"
+        :database="database"
+        :schema="schema"
+        :table="table"
+        @update="markTableStatus('updated')"
       />
     </div>
   </div>
@@ -103,8 +138,11 @@
 
 <script lang="ts" setup>
 import { cloneDeep, pull } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
+import { ArrowLeftIcon } from "lucide-vue-next";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { IndexIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
@@ -112,11 +150,16 @@ import {
   ColumnMetadata,
   DatabaseMetadata,
   ForeignKeyMetadata,
+  IndexMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
+import {
+  arraySwap,
+  instanceV1AllowsReorderColumns,
+  randomString,
+} from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import EditColumnForeignKeyModal from "../Modals/EditColumnForeignKeyModal.vue";
 import { useSchemaEditorContext } from "../context";
@@ -127,7 +170,10 @@ import {
 } from "../edit";
 import { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
+import IndexesEditor from "./IndexesEditor";
 import TableColumnEditor from "./TableColumnEditor";
+
+type EditMode = "COLUMNS" | "INDEXES";
 
 const props = withDefaults(
   defineProps<{
@@ -143,6 +189,7 @@ const props = withDefaults(
 );
 
 interface LocalState {
+  mode: EditMode;
   showEditColumnForeignKeyModal: boolean;
   showSchemaTemplateDrawer: boolean;
   showFeatureModal: boolean;
@@ -167,6 +214,7 @@ const engine = computed(() => {
   return props.db.instanceEntity.engine;
 });
 const state = reactive<LocalState>({
+  mode: "COLUMNS",
   showEditColumnForeignKeyModal: false,
   showSchemaTemplateDrawer: false,
   showFeatureModal: false,
@@ -308,6 +356,15 @@ const handleApplyColumnTemplate = (
     openFirstChild: false,
   });
 };
+const handleAddIndex = () => {
+  // eslint-disable-next-line vue/no-mutating-props
+  props.table.indexes.push(
+    IndexMetadata.fromPartial({
+      name: `${props.table.name}_index_${randomString(8).toLowerCase()}`,
+    })
+  );
+  markTableStatus("updated");
+};
 
 const gotoForeignKeyReferencedTable = (
   column: ColumnMetadata,
@@ -415,5 +472,24 @@ const handleReorderColumn = (
   if (target < 0) return;
   if (target >= columns.length) return;
   arraySwap(columns, index, target);
+};
+
+const markTableStatus = (status: EditStatus) => {
+  const oldStatus = statusForTable();
+  if (
+    (oldStatus === "created" || oldStatus === "dropped") &&
+    status === "updated"
+  ) {
+    return;
+  }
+  markEditStatus(
+    props.db,
+    {
+      database: props.database,
+      schema: props.schema,
+      table: props.table,
+    },
+    status
+  );
 };
 </script>

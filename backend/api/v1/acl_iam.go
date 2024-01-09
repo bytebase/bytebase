@@ -239,9 +239,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_StringifyMetadata_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
-		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
-		v1pb.ProjectService_SearchProjects_FullMethodName,   // TODO(p0ny): implement me please.
-		v1pb.InstanceService_SearchInstances_FullMethodName: // TODO(p0ny): implement me please.
+		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
 		return true
 	// skip checking for sheet service because we want to
 	// discriminate bytebase artifact sheets and user sheets first.
@@ -262,10 +260,13 @@ func isSkippedMethod(fullMethod string) bool {
 		return true
 	// handled in the method because checking is complex.
 	case
+		v1pb.InstanceService_SearchInstances_FullMethodName,
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
+		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+		v1pb.ProjectService_SearchProjects_FullMethodName,
 		v1pb.ChangelistService_ListChangelists_FullMethodName,
 		v1pb.RolloutService_ListPlans_FullMethodName,
 		v1pb.ProjectService_ListSchemaGroups_FullMethodName:

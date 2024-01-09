@@ -57,6 +57,7 @@ type FindInstanceMessage struct {
 	UID           *int
 	EnvironmentID *string
 	ResourceID    *string
+	ResourceIDs   *[]string
 	ShowDeleted   bool
 	ProjectUID    *int
 }
@@ -268,8 +269,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		if err != nil {
 			return nil, err
 		}
-
-		set, args = append(set, fmt.Sprintf("options = options || $%d", len(args)+1)), append(args, options)
+		set, args = append(set, fmt.Sprintf("options = $%d", len(args)+1)), append(args, options)
 	}
 	if v := patch.Metadata; v != nil {
 		metadata, err := protojson.Marshal(v)
@@ -390,6 +390,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)

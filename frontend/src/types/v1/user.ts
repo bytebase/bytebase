@@ -26,14 +26,14 @@ export const unknownUser = () => {
 };
 
 export const ALL_USERS_USER_ID = "2";
-export const ALL_USERS_USER_NAME = "allUsers";
+export const ALL_USERS_USER_EMAIL = "allUsers";
 // Pseudo allUsers account.
 export const allUsersUser = () => {
   return {
     ...emptyUser(),
     name: `users/${ALL_USERS_USER_ID}`,
     title: "All users",
-    email: ALL_USERS_USER_NAME,
+    email: ALL_USERS_USER_EMAIL,
   };
 };
 
@@ -49,8 +49,8 @@ export const filterUserListByKeyword = (userList: User[], keyword: string) => {
 };
 
 export const getUserEmailInBinding = (email: string) => {
-  if (email === ALL_USERS_USER_NAME) {
-    return ALL_USERS_USER_NAME;
+  if (email === ALL_USERS_USER_EMAIL) {
+    return ALL_USERS_USER_EMAIL;
   }
   return `user:${email}`;
 };
