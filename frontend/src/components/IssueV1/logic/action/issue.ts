@@ -6,10 +6,9 @@ import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   isDatabaseRelatedIssue,
   isGrantRequestIssue,
-  isOwnerOfProjectV1,
 } from "@/utils";
 import { isTaskFinished } from "..";
 
@@ -93,19 +92,24 @@ export const allowUserToApplyIssueStatusAction = (
   user: User,
   action: IssueStatusAction
 ) => {
-  // Workspace level high-privileged user (DBA/OWNER) are always allowed.
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      user.userRole
-    )
-  ) {
-    return true;
-  }
+  // // Workspace level high-privileged user (DBA/OWNER) are always allowed.
+  // hasWorkspacePermissionV2(user, '')
+  // if (
+  //   hasWorkspacePermissionV1(
+  //     "bb.permission.workspace.manage-issue",
+  //     user.userRole
+  //   )
+  // ) {
+  //   return true;
+  // }
 
-  // Project owners are also allowed
-  const project = issue.projectEntity;
-  if (isOwnerOfProjectV1(project.iamPolicy, user)) {
+  // // Project owners are also allowed
+  // const project = issue.projectEntity;
+  // if (isOwnerOfProjectV1(project.iamPolicy, user)) {
+  //   return true;
+  // }
+
+  if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
     return true;
   }
 
