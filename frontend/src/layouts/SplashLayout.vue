@@ -2,7 +2,7 @@
   <div class="min-h-screen overflow-hidden flex">
     <div class="hidden bg-white lg:block relative w-0 flex-1">
       <img
-        v-if="route == 'auth.signup'"
+        v-if="route === AUTH_SIGNUP_MODULE"
         class="absolute inset-0 h-full w-full object-cover"
         src="@/assets/illustration/signup.webp"
         alt=""
@@ -25,6 +25,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 
 const router = useRouter();
 

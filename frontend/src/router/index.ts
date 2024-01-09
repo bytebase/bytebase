@@ -12,7 +12,6 @@ import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
-import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 import { t } from "@/plugins/i18n";
 import {
   hasFeature,
@@ -61,9 +60,9 @@ import authRoutes, {
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
 } from "./auth";
+import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
 
 const HOME_MODULE = "workspace.home";
-const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -827,39 +826,11 @@ const routes: RouteRecordRaw[] = [
       },
     ],
   },
-  {
-    path: "/sql-editor",
-    name: "sql-editor",
-    component: SQLEditorLayout,
-    children: [
-      {
-        path: "",
-        name: SQL_EDITOR_HOME_MODULE,
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-      {
-        path: ":connectionSlug",
-        name: "sql-editor.detail",
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-      {
-        path: "sheet/:sheetSlug",
-        name: "sql-editor.share",
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-    ],
-  },
 ];
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...authRoutes, ...routes],
+  routes: [...authRoutes, ...routes, ...sqlEditorRoutes],
   linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
     if (to.hash) {
@@ -1047,7 +1018,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
-    to.name === "sql-editor.home" ||
+    to.name === SQL_EDITOR_HOME_MODULE ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&
       to.name?.toString() != "setting.workspace.sql-review.detail" &&

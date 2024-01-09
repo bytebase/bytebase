@@ -16,6 +16,7 @@
 import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { AUTH_MFA_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import { OAuthState, OAuthWindowEventPayload } from "../types";
 
@@ -95,7 +96,7 @@ const triggerAuthCallback = async () => {
       });
       if (mfaTempToken) {
         const route = router.resolve({
-          name: "auth.mfa",
+          name: AUTH_MFA_MODULE,
           query: {
             mfaTempToken,
             redirect: oAuthState.redirect || "",
