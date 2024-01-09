@@ -495,7 +495,6 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	if !find.ShowFull {
 		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
-
 	query := fmt.Sprintf(`
 		SELECT
 			instance_change_history.id,
@@ -515,7 +514,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.version,
 			instance_change_history.description,
 			%s,
-			LENGTH(sheet.statement),
+			LENGTH(COALESCE(sheet.statement, instance_change_history.statement)),
 			%s,
 			LENGTH(instance_change_history.schema),
 			%s,
