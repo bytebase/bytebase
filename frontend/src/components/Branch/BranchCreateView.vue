@@ -42,6 +42,7 @@
           v-model:branch="parentBranchName"
           :project="project"
           :loading="isPreparingBranch"
+          :filter="filterParentBranch"
           class=""
           clearable
         />
@@ -99,6 +100,7 @@ import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
+import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
 
 type Source = "PARENT" | "BASELINE";
@@ -138,6 +140,11 @@ const project = computed(() => {
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
+
+const filterParentBranch = (branch: Branch) => {
+  // Only "main branch" aka parent-less branches can be parents.
+  return !!branch.parentBranch;
+};
 
 const nextFakeBranchName = () => {
   return `${project.value.name}/branches/-${uniqueId()}`;
