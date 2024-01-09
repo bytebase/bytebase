@@ -203,11 +203,11 @@ func (s *DatabaseService) filterDatabasesV2(ctx context.Context, databases []*st
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	var filteredDatabases []*store.DatabaseMessage
 	projectDatabases := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
 		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
 	}
+	var filteredDatabases []*store.DatabaseMessage
 	for projectID, dbs := range projectDatabases {
 		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s.store, s.iamManager, user, projectID, dbs)
 		if err != nil {
@@ -236,7 +236,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
 			}
-			permissions := iamManager.GetPermissions(binding.Role.String())
+			permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
 			for _, p := range permissions {
 				if p == iam.PermissionDatabasesGet {
 					return databases, nil
