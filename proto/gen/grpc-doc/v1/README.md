@@ -2520,9 +2520,12 @@ Default (empty): Disable automatic backup. |
 | version | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
+| statement_size | [int64](#int64) |  |  |
 | statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
 | schema | [string](#string) |  |  |
+| schema_size | [int64](#int64) |  |  |
 | prev_schema | [string](#string) |  |  |
+| prev_schema_size | [int64](#int64) |  |  |
 | execution_duration | [google.protobuf.Duration](#google-protobuf-Duration) |  |  |
 | issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |

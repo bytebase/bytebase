@@ -1247,13 +1247,16 @@ export interface ChangeHistory {
   description: string;
   /** The statement is used for preview purpose. */
   statement: string;
+  statementSize: Long;
   /**
    * The name of the sheet resource.
    * Format: projects/{project}/sheets/{sheet}
    */
   statementSheet: string;
   schema: string;
+  schemaSize: Long;
   prevSchema: string;
+  prevSchemaSize: Long;
   executionDuration:
     | Duration
     | undefined;
@@ -7398,9 +7401,12 @@ function createBaseChangeHistory(): ChangeHistory {
     version: "",
     description: "",
     statement: "",
+    statementSize: Long.ZERO,
     statementSheet: "",
     schema: "",
+    schemaSize: Long.ZERO,
     prevSchema: "",
+    prevSchemaSize: Long.ZERO,
     executionDuration: undefined,
     issue: "",
     pushEvent: undefined,
@@ -7449,14 +7455,23 @@ export const ChangeHistory = {
     if (message.statement !== "") {
       writer.uint32(106).string(message.statement);
     }
+    if (!message.statementSize.isZero()) {
+      writer.uint32(168).int64(message.statementSize);
+    }
     if (message.statementSheet !== "") {
       writer.uint32(162).string(message.statementSheet);
     }
     if (message.schema !== "") {
       writer.uint32(114).string(message.schema);
     }
+    if (!message.schemaSize.isZero()) {
+      writer.uint32(176).int64(message.schemaSize);
+    }
     if (message.prevSchema !== "") {
       writer.uint32(122).string(message.prevSchema);
+    }
+    if (!message.prevSchemaSize.isZero()) {
+      writer.uint32(184).int64(message.prevSchemaSize);
     }
     if (message.executionDuration !== undefined) {
       Duration.encode(message.executionDuration, writer.uint32(130).fork()).ldelim();
@@ -7571,6 +7586,13 @@ export const ChangeHistory = {
 
           message.statement = reader.string();
           continue;
+        case 21:
+          if (tag !== 168) {
+            break;
+          }
+
+          message.statementSize = reader.int64() as Long;
+          continue;
         case 20:
           if (tag !== 162) {
             break;
@@ -7585,12 +7607,26 @@ export const ChangeHistory = {
 
           message.schema = reader.string();
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.schemaSize = reader.int64() as Long;
+          continue;
         case 15:
           if (tag !== 122) {
             break;
           }
 
           message.prevSchema = reader.string();
+          continue;
+        case 23:
+          if (tag !== 184) {
+            break;
+          }
+
+          message.prevSchemaSize = reader.int64() as Long;
           continue;
         case 16:
           if (tag !== 130) {
@@ -7644,9 +7680,12 @@ export const ChangeHistory = {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
       statementSheet: isSet(object.statementSheet) ? globalThis.String(object.statementSheet) : "",
       schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      schemaSize: isSet(object.schemaSize) ? Long.fromValue(object.schemaSize) : Long.ZERO,
       prevSchema: isSet(object.prevSchema) ? globalThis.String(object.prevSchema) : "",
+      prevSchemaSize: isSet(object.prevSchemaSize) ? Long.fromValue(object.prevSchemaSize) : Long.ZERO,
       executionDuration: isSet(object.executionDuration) ? Duration.fromJSON(object.executionDuration) : undefined,
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
@@ -7695,14 +7734,23 @@ export const ChangeHistory = {
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
+    if (!message.statementSize.isZero()) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
     if (message.statementSheet !== "") {
       obj.statementSheet = message.statementSheet;
     }
     if (message.schema !== "") {
       obj.schema = message.schema;
     }
+    if (!message.schemaSize.isZero()) {
+      obj.schemaSize = (message.schemaSize || Long.ZERO).toString();
+    }
     if (message.prevSchema !== "") {
       obj.prevSchema = message.prevSchema;
+    }
+    if (!message.prevSchemaSize.isZero()) {
+      obj.prevSchemaSize = (message.prevSchemaSize || Long.ZERO).toString();
     }
     if (message.executionDuration !== undefined) {
       obj.executionDuration = Duration.toJSON(message.executionDuration);
@@ -7737,9 +7785,18 @@ export const ChangeHistory = {
     message.version = object.version ?? "";
     message.description = object.description ?? "";
     message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     message.statementSheet = object.statementSheet ?? "";
     message.schema = object.schema ?? "";
+    message.schemaSize = (object.schemaSize !== undefined && object.schemaSize !== null)
+      ? Long.fromValue(object.schemaSize)
+      : Long.ZERO;
     message.prevSchema = object.prevSchema ?? "";
+    message.prevSchemaSize = (object.prevSchemaSize !== undefined && object.prevSchemaSize !== null)
+      ? Long.fromValue(object.prevSchemaSize)
+      : Long.ZERO;
     message.executionDuration = (object.executionDuration !== undefined && object.executionDuration !== null)
       ? Duration.fromPartial(object.executionDuration)
       : undefined;
