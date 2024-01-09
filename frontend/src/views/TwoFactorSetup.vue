@@ -212,6 +212,9 @@ const tryFinishSetup = async () => {
     style: "SUCCESS",
     title: t("two-factor.messages.2fa-enabled"),
   });
+
+  // When user is on the 2fa.setup page, we'd like to redirect to the home page.
+  // Only happens when the workspace level 2fa-setup is enabled.
   if (router.currentRoute.value.name === "2fa.setup") {
     router.replace({
       path: "/",
