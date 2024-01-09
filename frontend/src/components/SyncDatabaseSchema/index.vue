@@ -65,6 +65,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -265,7 +266,7 @@ const generateIssueName = (databaseNameList: string[]) => {
 
 const cancelSetup = () => {
   router.replace({
-    name: "workspace.home",
+    name: WORKSPACE_HOME_MODULE,
   });
 };
 </script>
