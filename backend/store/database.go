@@ -415,24 +415,6 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 	); err != nil {
 		return nil, err
 	}
-	// When we update the project ID of the database, we should update the project ID of the related sheets in the same transaction.
-	if patch.ProjectID != nil {
-		sheetList, err := s.ListSheets(ctx, &FindSheetMessage{DatabaseUID: &databaseUID}, updaterID)
-		if err != nil {
-			return nil, err
-		}
-		if len(sheetList) > 0 {
-			project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: patch.ProjectID})
-			if err != nil {
-				return nil, err
-			}
-			for _, sheet := range sheetList {
-				if _, err := patchSheetImpl(ctx, tx, &PatchSheetMessage{UID: sheet.UID, ProjectUID: &project.UID, UpdaterID: updaterID}); err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
