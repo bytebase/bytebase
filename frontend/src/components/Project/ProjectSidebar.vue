@@ -312,8 +312,10 @@ const selectProjectTabOnHash = () => {
       state.selectedHash = "issues";
       return;
     case "workspace.database.detail":
-    case "workspace.database.history.detail":
       state.selectedHash = "databases";
+      return;
+    case "workspace.database.history.detail":
+      state.selectedHash = "change-history";
       return;
   }
 };

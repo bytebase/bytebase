@@ -223,7 +223,7 @@ func (s *Store) UpsertSlowLog(ctx context.Context, upsert *UpsertSlowLogMessage)
 		}
 	}
 
-	logDate, err := strconv.Atoi(upsert.LogDate.Format("20060102"))
+	logDate, err := strconv.Atoi(upsert.LogDate.UTC().Format("20060102"))
 	if err != nil {
 		return err
 	}
