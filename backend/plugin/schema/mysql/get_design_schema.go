@@ -204,7 +204,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if g.firstElementInTable {
 			g.firstElementInTable = false
 		} else {
-			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
 				g.err = err
 				return
 			}
@@ -226,7 +226,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if g.firstElementInTable {
 			g.firstElementInTable = false
 		} else {
-			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
 				g.err = err
 				return
 			}
@@ -393,7 +393,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 		return
 	}
 
-	switch strings.ToUpper(ctx.GetType_().GetText()) {
+	upperTp := strings.ToUpper(ctx.GetType_().GetText())
+	switch upperTp {
 	case "PRIMARY":
 		if g.currentTable.indexes["PRIMARY"] != nil {
 			if g.firstElementInTable {
@@ -453,6 +454,199 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 				}
 			}
 			delete(g.currentTable.foreignKeys, name)
+		}
+	case "KEY", "INDEX":
+		var name string
+		if ctx.IndexNameAndType() != nil {
+			if ctx.IndexNameAndType().IndexName() != nil {
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexNameAndType().IndexName().Identifier())
+			}
+		}
+		if g.currentTable.indexes[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+					return
+				}
+			}
+
+			idx := g.currentTable.indexes[name]
+
+			keys := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys)
+
+			var comment string
+			for _, v := range ctx.AllIndexOption() {
+				if v.CommonIndexOption() != nil && v.CommonIndexOption().COMMENT_SYMBOL() != nil {
+					comment = v.CommonIndexOption().TextLiteral().GetText()
+					if len(comment) > 2 {
+						quotes := comment[0]
+						escape := fmt.Sprintf("%c%c", quotes, quotes)
+						comment = strings.ReplaceAll(comment[1:len(comment)-1], escape, string(quotes))
+					}
+					break
+				}
+			}
+
+			equal = equal && (comment == idx.comment)
+			equal = equal && (!idx.primary) && (!idx.unique)
+
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := idx.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+			delete(g.currentTable.indexes, name)
+		}
+	case "UNIQUE":
+		var name string
+		if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
+			name = mysqlparser.NormalizeMySQLIdentifier(ctx.ConstraintName().Identifier())
+		}
+		if ctx.IndexNameAndType() != nil {
+			if ctx.IndexNameAndType().IndexName() != nil {
+				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexNameAndType().IndexName().Identifier())
+			}
+		}
+		if g.currentTable.indexes[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+					return
+				}
+			}
+
+			var comment string
+			for _, v := range ctx.AllFulltextIndexOption() {
+				if v.CommonIndexOption() != nil {
+					if v.CommonIndexOption().COMMENT_SYMBOL() != nil {
+						comment = v.CommonIndexOption().TextLiteral().GetText()
+						if len(comment) > 2 {
+							quotes := comment[0]
+							escape := fmt.Sprintf("%c%c", quotes, quotes)
+							comment = strings.ReplaceAll(comment[1:len(comment)-1], escape, string(quotes))
+						}
+					}
+				}
+			}
+
+			idx := g.currentTable.indexes[name]
+			keys := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys)
+			equal = equal && (!idx.primary) && (idx.unique) && (idx.comment == comment)
+
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := idx.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+			delete(g.currentTable.indexes, name)
+		}
+	case "FULLTEXT":
+		var name string
+		if ctx.IndexName() != nil {
+			name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+		}
+		if g.currentTable.indexes[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+				}
+			}
+
+			var comment string
+			for _, v := range ctx.AllFulltextIndexOption() {
+				if v.CommonIndexOption() != nil {
+					if v.CommonIndexOption().COMMENT_SYMBOL() != nil {
+						comment = v.CommonIndexOption().TextLiteral().GetText()
+						if len(comment) > 2 {
+							quotes := comment[0]
+							escape := fmt.Sprintf("%c%c", quotes, quotes)
+							comment = strings.ReplaceAll(comment[1:len(comment)-1], escape, string(quotes))
+						}
+					}
+				}
+			}
+
+			idx := g.currentTable.indexes[name]
+			keys := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys)
+			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
+
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := idx.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
+		}
+	case "SPATIAL":
+		var name string
+		if ctx.IndexName() != nil {
+			name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
+		}
+		if g.currentTable.indexes[name] != nil {
+			if g.firstElementInTable {
+				g.firstElementInTable = false
+			} else {
+				if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
+					g.err = err
+				}
+			}
+
+			var comment string
+			for _, v := range ctx.AllSpatialIndexOption() {
+				if v.CommonIndexOption() != nil {
+					if v.CommonIndexOption().COMMENT_SYMBOL() != nil {
+						comment = v.CommonIndexOption().TextLiteral().GetText()
+						if len(comment) > 2 {
+							quotes := comment[0]
+							escape := fmt.Sprintf("%c%c", quotes, quotes)
+							comment = strings.ReplaceAll(comment[1:len(comment)-1], escape, string(quotes))
+						}
+					}
+				}
+			}
+
+			idx := g.currentTable.indexes[name]
+			keys := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys)
+			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
+
+			if equal {
+				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+					g.err = err
+					return
+				}
+			} else {
+				if err := idx.toString(&g.tableConstraints); err != nil {
+					g.err = err
+					return
+				}
+			}
 		}
 	default:
 		if g.firstElementInTable {
