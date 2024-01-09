@@ -23,6 +23,16 @@ export const hasProjectPermissionV2 = (
   permission: ProjectPermission
 ): boolean => {
   const roleStore = useRoleStore();
+  // Check workspace-level permissions first.
+  // For those users who have workspace-level project roles, they should have all project-level permissions.
+  const workspaceLevelPermissions = user.roles
+    .map((role) => roleStore.getRoleByName(role))
+    .flatMap((role) => (role ? role.permissions : []));
+  if (workspaceLevelPermissions.includes(permission)) {
+    return true;
+  }
+
+  // Check project-level permissions.
   const projectIAMPolicy = project.iamPolicy;
   const roles = [];
   for (const binding of projectIAMPolicy.bindings) {

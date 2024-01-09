@@ -12,8 +12,6 @@ import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
-import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
-import SplashLayout from "@/layouts/SplashLayout.vue";
 import { t } from "@/plugins/i18n";
 import {
   hasFeature,
@@ -55,91 +53,18 @@ import {
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import SettingSidebar from "@/views/SettingSidebar.vue";
-import MultiFactor from "@/views/auth/MultiFactor.vue";
-import Signin from "@/views/auth/Signin.vue";
-import Signup from "@/views/auth/Signup.vue";
+import authRoutes, {
+  AUTH_2FA_SETUP_MODULE,
+  AUTH_MFA_MODULE,
+  AUTH_PASSWORD_FORGOT_MODULE,
+  AUTH_SIGNIN_MODULE,
+  AUTH_SIGNUP_MODULE,
+} from "./auth";
+import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
 
 const HOME_MODULE = "workspace.home";
-const AUTH_MODULE = "auth";
-const SIGNIN_MODULE = "auth.signin";
-const SIGNUP_MODULE = "auth.signup";
-const MFA_MODULE = "auth.mfa";
-const ACTIVATE_MODULE = "auth.activate";
-const PASSWORD_RESET_MODULE = "auth.password.reset";
-const PASSWORD_FORGOT_MODULE = "auth.password.forgot";
-const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
 
-const routes: Array<RouteRecordRaw> = [
-  {
-    path: "/auth",
-    name: AUTH_MODULE,
-    component: SplashLayout,
-    children: [
-      {
-        path: "",
-        name: SIGNIN_MODULE,
-        meta: { title: () => t("common.sign-in") },
-        component: Signin,
-        alias: "signin",
-        props: true,
-      },
-      {
-        path: "signup",
-        name: SIGNUP_MODULE,
-        meta: { title: () => t("common.sign-up") },
-        component: Signup,
-        props: true,
-      },
-      // TODO(tianzhou): Disable activate page for now, requires implementing invite
-      // {
-      //   path: "activate",
-      //   name: ACTIVATE_MODULE,
-      //   meta: { title: () => "Activate" },
-      //   component: Activate,
-      //   props: true,
-      // },
-      // {
-      //   path: "password-reset",
-      //   name: PASSWORD_RESET_MODULE,
-      //   meta: { title: () => "Reset Password" },
-      //   component: PasswordReset,
-      //   props: true,
-      // },
-      {
-        path: "password-forgot",
-        name: PASSWORD_FORGOT_MODULE,
-        meta: { title: () => `${t("auth.password-forgot")}` },
-        component: () => import("../views/auth/PasswordForgot.vue"),
-        props: true,
-      },
-    ],
-  },
-  {
-    path: "/auth/mfa",
-    name: MFA_MODULE,
-    meta: { title: () => t("multi-factor.self") },
-    component: MultiFactor,
-    props: true,
-  },
-  {
-    path: "/oauth/callback",
-    name: "oauth-callback",
-    component: () => import("../views/OAuthCallback.vue"),
-  },
-  {
-    path: "/oidc/callback",
-    name: "oidc-callback",
-    component: () => import("../views/OAuthCallback.vue"),
-  },
-  {
-    path: "/2fa/setup",
-    name: "2fa.setup",
-    meta: {
-      title: () => t("two-factor.self"),
-    },
-    component: () => import("../views/TwoFactorRequired.vue"),
-    props: true,
-  },
+const routes: RouteRecordRaw[] = [
   {
     path: "/",
     component: DashboardLayout,
@@ -901,39 +826,11 @@ const routes: Array<RouteRecordRaw> = [
       },
     ],
   },
-  {
-    path: "/sql-editor",
-    name: "sql-editor",
-    component: SQLEditorLayout,
-    children: [
-      {
-        path: "",
-        name: SQL_EDITOR_HOME_MODULE,
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-      {
-        path: ":connectionSlug",
-        name: "sql-editor.detail",
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-      {
-        path: "sheet/:sheetSlug",
-        name: "sql-editor.share",
-        meta: { title: () => "Bytebase SQL Editor" },
-        component: () => import("../views/sql-editor/SQLEditorPage.vue"),
-        props: true,
-      },
-    ],
-  },
 ];
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes,
+  routes: [...authRoutes, ...routes, ...sqlEditorRoutes],
   linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
     if (to.hash) {
@@ -1000,12 +897,10 @@ router.beforeEach((to, from, next) => {
   }
 
   if (
-    to.name === SIGNIN_MODULE ||
-    to.name === SIGNUP_MODULE ||
-    to.name === MFA_MODULE ||
-    to.name === ACTIVATE_MODULE ||
-    to.name === PASSWORD_RESET_MODULE ||
-    to.name === PASSWORD_FORGOT_MODULE
+    to.name === AUTH_SIGNIN_MODULE ||
+    to.name === AUTH_SIGNUP_MODULE ||
+    to.name === AUTH_MFA_MODULE ||
+    to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
     useTabStore().reset();
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
@@ -1018,18 +913,7 @@ router.beforeEach((to, from, next) => {
       }
       next({ name: HOME_MODULE, replace: true });
     } else {
-      if (to.name === ACTIVATE_MODULE) {
-        const token = to.query.token;
-        if (token) {
-          // TODO(tianzhou): Needs to validate the activate token
-          next();
-        } else {
-          // Go to signup if token is missing
-          next({ name: SIGNUP_MODULE, replace: true });
-        }
-      } else {
-        next();
-      }
+      next();
     }
     return;
   } else {
@@ -1040,7 +924,7 @@ router.beforeEach((to, from, next) => {
       }
 
       next({
-        name: SIGNIN_MODULE,
+        name: AUTH_SIGNIN_MODULE,
         query: query,
         replace: true,
       });
@@ -1050,14 +934,14 @@ router.beforeEach((to, from, next) => {
 
   // If there is a `redirect` in query param and prev page is signin or signup, redirect to the target route
   if (
-    (from.name === SIGNIN_MODULE || from.name === SIGNUP_MODULE) &&
+    (from.name === AUTH_SIGNIN_MODULE || from.name === AUTH_SIGNUP_MODULE) &&
     typeof from.query.redirect === "string"
   ) {
     window.location.href = from.query.redirect;
     return;
   }
 
-  if (to.name === "2fa.setup") {
+  if (to.name === AUTH_2FA_SETUP_MODULE) {
     next();
     return;
   }
@@ -1070,7 +954,7 @@ router.beforeEach((to, from, next) => {
     const user = currentUserV1.value;
     if (user && !user.mfaEnabled) {
       next({
-        name: "2fa.setup",
+        name: AUTH_2FA_SETUP_MODULE,
         replace: true,
       });
       return;
@@ -1134,7 +1018,7 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.database" ||
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
-    to.name === "sql-editor.home" ||
+    to.name === SQL_EDITOR_HOME_MODULE ||
     (to.name?.toString().startsWith("setting") &&
       to.name?.toString() != "setting.workspace.gitops.detail" &&
       to.name?.toString() != "setting.workspace.sql-review.detail" &&

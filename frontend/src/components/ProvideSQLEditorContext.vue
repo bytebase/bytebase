@@ -14,6 +14,11 @@ import { onMounted, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import {
+  SQL_EDITOR_DETAIL_MODULE,
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_SHARE_MODULE,
+} from "@/router/sqlEditor";
+import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   usePolicyV1Store,
@@ -281,7 +286,7 @@ const syncURLWithConnection = () => {
         const sheet = sheetV1Store.getSheetByName(sheetName);
         if (sheet) {
           router.replace({
-            name: "sql-editor.share",
+            name: SQL_EDITOR_SHARE_MODULE,
             params: {
               sheetSlug: sheetSlugV1(sheet),
             },
@@ -310,7 +315,7 @@ const syncURLWithConnection = () => {
           },
         });
         router.replace({
-          name: "sql-editor.detail",
+          name: SQL_EDITOR_DETAIL_MODULE,
           params: {
             connectionSlug: makeConnectionV1Slug(instance, database),
           },
@@ -318,7 +323,7 @@ const syncURLWithConnection = () => {
         return;
       }
       router.replace({
-        name: "sql-editor.home",
+        name: SQL_EDITOR_HOME_MODULE,
       });
     },
     { immediate: true }
