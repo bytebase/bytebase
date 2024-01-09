@@ -204,7 +204,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if g.firstElementInTable {
 			g.firstElementInTable = false
 		} else {
-			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
 				g.err = err
 				return
 			}
@@ -226,7 +226,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		if g.firstElementInTable {
 			g.firstElementInTable = false
 		} else {
-			if _, err := g.columnDefine.WriteString(",\n  "); err != nil {
+			if _, err := g.tableConstraints.WriteString(",\n  "); err != nil {
 				g.err = err
 				return
 			}
@@ -491,7 +491,7 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			}
 
 			equal = equal && (comment == idx.comment)
-			equal = equal && (idx.primary == false) && (idx.unique == false)
+			equal = equal && (!idx.primary) && (!idx.unique)
 
 			if equal {
 				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
@@ -543,7 +543,7 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			idx := g.currentTable.indexes[name]
 			keys := extractKeyListVariants(ctx.KeyListVariants())
 			equal := equalKeys(keys, idx.keys)
-			equal = equal && (idx.primary == false) && (idx.unique == true) && (idx.comment == comment)
+			equal = equal && (!idx.primary) && (idx.unique) && (idx.comment == comment)
 
 			if equal {
 				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
@@ -589,7 +589,7 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			idx := g.currentTable.indexes[name]
 			keys := extractKeyListVariants(ctx.KeyListVariants())
 			equal := equalKeys(keys, idx.keys)
-			equal = equal && (idx.primary == false) && (idx.unique == false) && (idx.comment == comment)
+			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
 
 			if equal {
 				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
@@ -634,7 +634,7 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			idx := g.currentTable.indexes[name]
 			keys := extractKeyListVariants(ctx.KeyListVariants())
 			equal := equalKeys(keys, idx.keys)
-			equal = equal && (idx.primary == false) && (idx.unique == false) && (idx.comment == comment)
+			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
 
 			if equal {
 				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
