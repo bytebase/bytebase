@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -544,11 +545,14 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 }
 
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
+	hasDefault := column.GetDefaultValue() != nil && (!slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+		return strings.EqualFold(s, column.Type)
+	}))
 	result := &columnState{
 		id:         id,
 		name:       column.Name,
 		tp:         column.Type,
-		hasDefault: column.GetDefaultValue() != nil,
+		hasDefault: hasDefault,
 		nullable:   column.Nullable,
 		comment:    column.Comment,
 	}

@@ -14,6 +14,29 @@ const (
 	autoRandSymbol      = "AUTO_RANDOM"
 )
 
+var (
+	// https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html
+	// expressionDefaultOnlyTypes is a list of types that only accept expression as default
+	// value.
+	expressionDefaultOnlyTypes = []string{
+		// BLOB & TEXT
+		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
+		"TINYBLOB",
+		"BLOB",
+		"MEIDUMBLOB",
+		"LONGBLOB",
+		"TINYTEXT",
+		"TEXT",
+		"MEDIUMTEXT",
+		"LONGTEXT",
+		// GEOMETRY
+		"GEOMETRY",
+		// JSON
+		// https://dev.mysql.com/doc/refman/8.0/en/json.html
+		"JSON",
+	}
+)
+
 func extractReference(ctx mysql.IReferencesContext) (string, []string) {
 	_, table := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	if ctx.IdentifierListWithParentheses() != nil {
