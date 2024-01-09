@@ -27,14 +27,14 @@
     </div>
   </div>
   <div v-else-if="!hasIndexAdvisorFeature">
-    <div class="btn btn-primary !w-auto" @click="state.showFeatureModal = true">
+    <NButton type="primary" @click="state.showFeatureModal = true">
       {{ $t("subscription.features.bb-feature-index-advisor.title") }}
       <FeatureBadge
-        custom-class="ml-1"
+        custom-class="ml-1 text-white"
         feature="bb.feature.index-advisor"
         :instance="slowQueryLog.database.instanceEntity"
       />
-    </div>
+    </NButton>
   </div>
   <div v-else-if="!hasOpenAIKeySetup">
     <router-link class="normal-link" to="/setting/general">{{
