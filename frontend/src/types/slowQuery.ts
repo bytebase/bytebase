@@ -3,6 +3,7 @@ import type { ComposedDatabase } from "./v1/database";
 import { ComposedInstance } from "./v1/instance";
 
 export type ComposedSlowQueryLog = {
+  id: string;
   log: SlowQueryLog;
   database: ComposedDatabase;
 };
