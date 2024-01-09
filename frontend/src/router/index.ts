@@ -239,19 +239,6 @@ const routes: Array<RouteRecordRaw> = [
             },
           },
           {
-            path: "sync-schema",
-            name: "workspace.sync-schema",
-            meta: { title: () => startCase(t("database.sync-schema.title")) },
-            components: {
-              content: () => import("../views/SyncDatabaseSchema.vue"),
-              leftSidebar: DashboardSidebar,
-            },
-            props: {
-              content: true,
-              leftSidebar: true,
-            },
-          },
-          {
             path: "export-center",
             name: "workspace.export-center",
             meta: { title: () => startCase(t("export-center.self")) },
@@ -479,14 +466,6 @@ const routes: Array<RouteRecordRaw> = [
                 meta: { title: () => t("settings.sidebar.subscription") },
                 component: () =>
                   import("../views/SettingWorkspaceSubscription.vue"),
-                props: true,
-              },
-              {
-                path: "integration/slack",
-                name: "setting.workspace.integration.slack",
-                meta: { title: () => t("common.slack") },
-                component: () =>
-                  import("../views/SettingWorkspaceIntegrationSlack.vue"),
                 props: true,
               },
               {
@@ -935,14 +914,14 @@ const routes: Array<RouteRecordRaw> = [
         props: true,
       },
       {
-        path: "/sql-editor/:connectionSlug",
+        path: ":connectionSlug",
         name: "sql-editor.detail",
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
         props: true,
       },
       {
-        path: "/sql-editor/sheet/:sheetSlug",
+        path: "sheet/:sheetSlug",
         name: "sql-editor.share",
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
