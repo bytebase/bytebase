@@ -39,9 +39,12 @@ type InstanceChangeHistoryMessage struct {
 	Version             model.Version
 	Description         string
 	Statement           string
+	StatementSize       int64
 	SheetID             *int
 	Schema              string
+	SchemaSize          int64
 	SchemaPrev          string
+	SchemaPrevSize      int64
 	ExecutionDurationNs int64
 	Payload             *storepb.InstanceChangeHistoryPayload
 
@@ -492,7 +495,6 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 	if !find.ShowFull {
 		schemaPrevField = fmt.Sprintf("LEFT(%s, %d)", schemaPrevField, find.TruncateSize)
 	}
-
 	query := fmt.Sprintf(`
 		SELECT
 			instance_change_history.id,
@@ -512,8 +514,11 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.version,
 			instance_change_history.description,
 			%s,
+			LENGTH(COALESCE(sheet.statement, instance_change_history.statement)),
 			%s,
+			LENGTH(instance_change_history.schema),
 			%s,
+			LENGTH(instance_change_history.schema_prev),
 			%s,
 			instance_change_history.execution_duration_ns,
 			instance_change_history.payload,
@@ -523,7 +528,12 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		LEFT JOIN sheet ON sheet.id = instance_change_history.sheet_id
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`, statementField, schemaField, schemaPrevField, sheetField)
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`,
+		statementField,
+		schemaField,
+		schemaPrevField,
+		sheetField,
+	)
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -566,8 +576,11 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			&storedVersion,
 			&changeHistory.Description,
 			&changeHistory.Statement,
+			&changeHistory.StatementSize,
 			&changeHistory.Schema,
+			&changeHistory.SchemaSize,
 			&changeHistory.SchemaPrev,
+			&changeHistory.SchemaPrevSize,
 			&sheetID,
 			&changeHistory.ExecutionDurationNs,
 			&payload,
