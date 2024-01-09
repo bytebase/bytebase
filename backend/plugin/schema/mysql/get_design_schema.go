@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -758,9 +759,13 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 				if column.nullable {
-					if _, err := g.columnDefine.WriteString(" NULL"); err != nil {
-						g.err = err
-						return
+					if !slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+						return strings.EqualFold(s, column.tp)
+					}) {
+						if _, err := g.columnDefine.WriteString(" NULL"); err != nil {
+							g.err = err
+							return
+						}
 					}
 				} else {
 					if _, err := g.columnDefine.WriteString(" NOT NULL"); err != nil {

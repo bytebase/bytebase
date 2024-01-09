@@ -492,8 +492,12 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		return err
 	}
 	if c.nullable {
-		if _, err := buf.WriteString(" NULL"); err != nil {
-			return err
+		if !slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+			return strings.EqualFold(s, c.tp)
+		}) {
+			if _, err := buf.WriteString(" NULL"); err != nil {
+				return err
+			}
 		}
 	} else {
 		if _, err := buf.WriteString(" NOT NULL"); err != nil {
