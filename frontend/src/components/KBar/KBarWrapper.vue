@@ -32,6 +32,7 @@ import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useOverlayStackContext } from "@/components/misc/OverlayStackManager.vue";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import KBarFooter from "./KBarFooter.vue";
@@ -85,7 +86,7 @@ export default defineComponent({
         shortcut: ["g", "h"],
         section: t("kbar.navigation"),
         keywords: "navigation",
-        perform: () => router.push({ name: "workspace.home" }),
+        perform: () => router.push({ name: WORKSPACE_HOME_MODULE }),
       }),
     ]);
 
