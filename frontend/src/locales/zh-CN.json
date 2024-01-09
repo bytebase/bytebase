@@ -1510,7 +1510,8 @@
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
     "all-tables": "所有表",
-    "affected-tables": "受影响的表"
+    "affected-tables": "受影响的表",
+    "view-full": "查看全部"
   },
   "database": {
     "select": "选择数据库",

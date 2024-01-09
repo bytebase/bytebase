@@ -157,7 +157,7 @@
                 <BBSpin v-if="state.loading" />
                 <ChevronDownIcon v-else class="w-5" />
               </template>
-              View full
+              {{ $t("change-history.view-full") }}
             </NButton>
           </div>
         </div>
@@ -261,7 +261,7 @@
                     <BBSpin v-if="state.loading" />
                     <ChevronDownIcon v-else class="w-5" />
                   </template>
-                  View full
+                  {{ $t("change-history.view-full") }}
                 </NButton>
               </div>
             </div>
