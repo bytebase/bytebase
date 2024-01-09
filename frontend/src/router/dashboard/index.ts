@@ -6,7 +6,7 @@ import environmentRoutes from "./environment";
 import instanceRoutes from "./instance";
 import issueRoutes from "./issue";
 import projectRoutes from "./project";
-import projectV1Routes from "./projectv1";
+import projectV1Routes from "./projectV1";
 import workspaceRoutes from "./workspace";
 import workspaceSettingRoutes from "./workspaceSetting";
 
