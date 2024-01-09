@@ -139,11 +139,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		}
 		find.ProjectID = &projectID
 	}
-	databases, err := s.store.ListDatabases(ctx, find)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	databases, err = s.filterDatabasesV2(ctx, databases)
+	databases, err := searchDatabases(ctx, s.store, s.iamManager, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -156,6 +152,14 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		response.Databases = append(response.Databases, database)
 	}
 	return response, nil
+}
+
+func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manager, find *store.FindDatabaseMessage) ([]*store.DatabaseMessage, error) {
+	databases, err := s.ListDatabases(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	return filterDatabasesV2(ctx, s, iamManager, databases)
 }
 
 // ListDatabases lists all databases.
@@ -198,7 +202,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	return response, nil
 }
 
-func (s *DatabaseService) filterDatabasesV2(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
@@ -209,7 +213,7 @@ func (s *DatabaseService) filterDatabasesV2(ctx context.Context, databases []*st
 	}
 	var filteredDatabases []*store.DatabaseMessage
 	for projectID, dbs := range projectDatabases {
-		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s.store, s.iamManager, user, projectID, dbs)
+		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s, iamManager, user, projectID, dbs)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
 		}
