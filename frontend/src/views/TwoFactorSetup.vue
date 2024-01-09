@@ -88,6 +88,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
 import { StepTab } from "@/components/v2";
+import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
 import { pushNotification, useAuthStore, useUserStore } from "@/store";
 import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 
@@ -215,7 +216,7 @@ const tryFinishSetup = async () => {
 
   // When user is on the 2fa.setup page, we'd like to redirect to the home page.
   // Only happens when the workspace level 2fa-setup is enabled.
-  if (router.currentRoute.value.name === "2fa.setup") {
+  if (router.currentRoute.value.name === AUTH_2FA_SETUP_MODULE) {
     router.replace({
       path: "/",
     });

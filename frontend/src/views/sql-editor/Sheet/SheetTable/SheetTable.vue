@@ -48,6 +48,7 @@ import dayjs from "dayjs";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
 import { useUserStore, useProjectV1Store } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
@@ -85,7 +86,7 @@ const showCreator = computed(() => {
 
 const handleSheetClick = (sheet: Sheet) => {
   router.push({
-    name: "sql-editor.share",
+    name: SQL_EDITOR_SHARE_MODULE,
     params: {
       sheetSlug: sheetSlugV1(sheet),
     },
