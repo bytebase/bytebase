@@ -545,9 +545,17 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 }
 
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
-	hasDefault := column.GetDefaultValue() != nil && (!slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
-		return strings.EqualFold(s, column.Type)
-	}))
+	hasDefault := column.GetDefaultValue() != nil
+	if hasDefault {
+		_, isDefaultNull := column.GetDefaultValue().(*storepb.ColumnMetadata_DefaultNull)
+		// Some types do not default to NULL, but support default expressions.
+		if isDefaultNull && slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+			return strings.EqualFold(s, column.Type)
+		}) {
+			hasDefault = false
+		}
+	}
+
 	result := &columnState{
 		id:         id,
 		name:       column.Name,
