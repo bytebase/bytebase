@@ -20,7 +20,7 @@
           :placeholder="$t('slow-query.filter.from-date')"
           type="date"
           clearable
-          format="yyyy-MM-dd z"
+          format="yyyy-MM-dd"
           style="width: 12rem"
           @update:value="changeFromTime($event)"
         />
@@ -31,7 +31,7 @@
           :placeholder="$t('slow-query.filter.to-date')"
           type="date"
           clearable
-          format="yyyy-MM-dd z"
+          format="yyyy-MM-dd"
           style="width: 12rem"
           @update:value="changeToTime($event)"
         />
