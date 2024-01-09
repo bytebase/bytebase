@@ -5,7 +5,7 @@
     <div class="w-80 bg-white p-8 py-6 rounded-lg shadow">
       <img
         class="h-12 w-auto mx-auto mb-8"
-        src="../../assets/logo-full.svg"
+        src="@/assets/logo-full.svg"
         alt="Bytebase"
       />
       <form
