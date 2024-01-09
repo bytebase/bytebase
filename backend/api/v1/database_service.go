@@ -1720,7 +1720,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t = t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1).UTC()
 				startLogDate = &t
 			case comparatorTypeGreaterEqual:
 				if startLogDate != nil {
@@ -1730,6 +1730,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
+				t = t.UTC()
 				startLogDate = &t
 			case comparatorTypeLess:
 				if endLogDate != nil {
@@ -1739,6 +1740,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
+				t = t.UTC()
 				endLogDate = &t
 			case comparatorTypeLessEqual:
 				if endLogDate != nil {
@@ -1748,7 +1750,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q", expr.value)
 				}
-				t = t.AddDate(0, 0, 1)
+				t = t.AddDate(0, 0, 1).UTC()
 				endLogDate = &t
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid start_time filter %q %q %q", expr.key, expr.operator, expr.value)
