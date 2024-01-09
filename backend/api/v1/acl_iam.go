@@ -263,6 +263,7 @@ func isSkippedMethod(fullMethod string) bool {
 	case
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
+		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ProjectService_SearchProjects_FullMethodName,
