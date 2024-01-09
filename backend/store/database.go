@@ -419,7 +419,7 @@ func (s *Store) UpdateDatabase(ctx context.Context, patch *UpdateDatabaseMessage
 		return nil, err
 	}
 
-	// Invalidate and update the cache.
+	// Invalidate and update database cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(patch.InstanceID, patch.DatabaseName))
 	s.databaseIDCache.Remove(databaseUID)
 	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
