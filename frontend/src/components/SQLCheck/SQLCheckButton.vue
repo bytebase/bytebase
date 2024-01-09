@@ -152,9 +152,6 @@ const runChecks = async () => {
     advices.value = [];
   }
   const { statement, errors } = await props.getStatement();
-  if (statement.length === 0) {
-    return handleErrors([t("common.nothing-changed")]);
-  }
   if (statement.length > SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }

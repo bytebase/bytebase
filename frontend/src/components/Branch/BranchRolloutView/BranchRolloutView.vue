@@ -106,6 +106,7 @@
         :content="rawSQLPreviewState.value"
         :readonly="true"
         :auto-focus="false"
+        :placeholder="rawSQLPreviewPlaceholder"
       />
     </div>
 
@@ -169,6 +170,11 @@ const state = reactive<LocalState>({
 const rawSQLPreviewState = reactive({
   value: "",
   isFetching: false,
+});
+const rawSQLPreviewPlaceholder = computed(() => {
+  if (rawSQLPreviewState.isFetching) return undefined;
+  if (rawSQLPreviewPlaceholder.value) return undefined;
+  return t("schema-editor.generated-ddl-is-empty");
 });
 
 const router = useRouter();

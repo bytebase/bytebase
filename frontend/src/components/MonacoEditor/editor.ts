@@ -132,7 +132,7 @@ export const defaultDiffEditorOptions =
       minimap: {
         enabled: false,
       },
-      wordWrap: "on",
+      wordWrap: "off",
       fixedOverflowWidgets: true,
       fontSize: 14,
       lineHeight: 24,

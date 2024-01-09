@@ -2376,7 +2376,8 @@
       "indexes": "Índices",
       "edit-indexes": "Editar índices",
       "unique": "Único"
-    }
+    },
+    "generated-ddl-is-empty": "El DDL generado está vacío"
   },
   "label": {
     "empty-label-value": "Valor",
@@ -3419,6 +3420,9 @@
       "baseline-version": "Versión básica",
       "parent-branch": "Rama principal",
       "self": "Fuente"
+    },
+    "index": {
+      "drop-index-confirm": "¿Índice de caída?"
     }
   }
 }
