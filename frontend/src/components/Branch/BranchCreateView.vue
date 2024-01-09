@@ -143,7 +143,7 @@ const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
 
 const filterParentBranch = (branch: Branch) => {
   // Only "main branch" aka parent-less branches can be parents.
-  return !!branch.parentBranch;
+  return !branch.parentBranch;
 };
 
 const nextFakeBranchName = () => {
