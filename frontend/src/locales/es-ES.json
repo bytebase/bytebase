@@ -1512,7 +1512,8 @@
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
-    "affected-tables": "Tablas afectadas"
+    "affected-tables": "Tablas afectadas",
+    "view-full": "Ver completo"
   },
   "database": {
     "select": "Seleccionar base de datos",

@@ -58,10 +58,21 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     await upsertChangeHistoryMap([changeHistory]);
     return changeHistory;
   };
-  const getOrFetchChangeHistoryByName = async (name: string) => {
+  const getOrFetchChangeHistoryByName = async (
+    name: string,
+    view: ChangeHistoryView = ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+  ) => {
     const changeHistory = changeHistoryMapByName.get(name);
-    if (changeHistory) return changeHistory;
-    return await fetchChangeHistory({ name });
+    if (changeHistory) {
+      if (
+        changeHistory.statement.length ===
+          changeHistory.statementSize.toNumber() ||
+        view === ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+      ) {
+        return changeHistory;
+      }
+    }
+    return await fetchChangeHistory({ name, view });
   };
   const getChangeHistoryByName = (name: string) => {
     const detail = changeHistoryMapByName.get(name);
