@@ -6,6 +6,18 @@
     >
       <BBSpin />
     </div>
+    <div
+      v-if="ready && !content && placeholder"
+      class="absolute pointer-events-none font-mono text-control-placeholder"
+      style="
+        font-family: 'Droid Sans Mono', monospace;
+        font-size: 14px;
+        left: 52px;
+        top: 8px;
+      "
+    >
+      {{ placeholder }}
+    </div>
   </div>
 </template>
 
@@ -19,6 +31,7 @@ import {
   onBeforeUnmount,
   watch,
   watchEffect,
+  computed,
 } from "vue";
 import { useLegacyAutoComplete } from "@/plugins/sql-lsp/client";
 import type { SQLDialect } from "@/types";
@@ -59,6 +72,7 @@ const props = withDefaults(
     advices?: AdviceOption[];
     lineHighlights?: LineHighlightOption[];
     options?: IStandaloneEditorConstructionOptions;
+    placeholder?: string;
   }>(),
   {
     model: undefined,
@@ -70,6 +84,7 @@ const props = withDefaults(
     advices: () => [],
     lineHighlights: () => [],
     options: undefined,
+    placeholder: undefined,
   }
 );
 
@@ -145,6 +160,10 @@ onMounted(async () => {
   } catch (ex) {
     console.error("[MonacoEditor] initialize failed", ex);
   }
+});
+
+const content = computed(() => {
+  return props.model?.getValue();
 });
 
 onBeforeUnmount(() => {
