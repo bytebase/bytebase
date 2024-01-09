@@ -448,6 +448,9 @@ func isIgnoredStatement(stmt string) bool {
 }
 
 var (
+	// DROP DATABASE cannot run inside a transaction block.
+	// DROP DATABASE [ IF EXISTS ] name [ [ WITH ] ( option [, ...] ) ]。
+	dropDatabaseReg = regexp.MustCompile(`(?i)DROP DATABASE`)
 	// CREATE INDEX CONCURRENTLY cannot run inside a transaction block.
 	// CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ [ IF NOT EXISTS ] name ] ON [ ONLY ] table_name [ USING method ] ...
 	createIndexReg = regexp.MustCompile(`(?i)CREATE(\s+(UNIQUE\s+)?)INDEX(\s+)CONCURRENTLY`)
@@ -461,6 +464,9 @@ var (
 )
 
 func isNonTransactionStatement(stmt string) bool {
+	if len(dropDatabaseReg.FindString(stmt)) > 0 {
+		return true
+	}
 	if len(createIndexReg.FindString(stmt)) > 0 {
 		return true
 	}
