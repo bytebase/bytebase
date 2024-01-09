@@ -247,6 +247,7 @@
 import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -294,7 +295,7 @@ onMounted(async () => {
   // Unable to achieve it in router.beforeEach because actuator/info is fetched async and returns
   // after router has already made the decision on first page load.
   if (actuatorStore.needAdminSetup && !disallowSignup.value) {
-    router.push({ name: "auth.signup", replace: true });
+    router.push({ name: AUTH_SIGNUP_MODULE, replace: true });
   }
 
   const url = new URL(window.location.href);
@@ -330,7 +331,7 @@ const trySignin = async (idpName?: string) => {
   });
   if (mfaTempToken) {
     router.push({
-      name: "auth.mfa",
+      name: AUTH_MFA_MODULE,
       query: {
         mfaTempToken,
         redirect: route.query.redirect as string,

@@ -12,6 +12,7 @@
 
 <script lang="ts" setup>
 import { useRouter } from "vue-router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import TwoFactorSetup from "./TwoFactorSetup.vue";
 
@@ -20,7 +21,7 @@ const authStore = useAuthStore();
 
 const handleSetupCancel = () => {
   authStore.logout().then(() => {
-    router.push({ name: "auth.signin" });
+    router.push({ name: AUTH_SIGNIN_MODULE });
   });
 };
 </script>
