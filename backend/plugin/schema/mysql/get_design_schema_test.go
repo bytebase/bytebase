@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"gopkg.in/yaml.v3"
 
+	parser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -41,6 +42,10 @@ func TestGetDesignSchema(t *testing.T) {
 		a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
 		result, err := GetDesignSchema(t.Baseline, targetMeta)
 		a.NoError(err)
+		// Addintional parse stage to verify the result is parsable.
+		_, err = parser.ParseMySQL(t.Result)
+		a.NoError(err)
+
 		if record {
 			tests[i].Result = result
 		} else {
