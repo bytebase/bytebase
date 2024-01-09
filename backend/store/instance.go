@@ -57,6 +57,7 @@ type FindInstanceMessage struct {
 	UID           *int
 	EnvironmentID *string
 	ResourceID    *string
+	ResourceIDs   *[]string
 	ShowDeleted   bool
 	ProjectUID    *int
 }
@@ -389,6 +390,9 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 	if v := find.ResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourceIDs; v != nil {
+		where, args = append(where, fmt.Sprintf("instance.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("instance.id = $%d", len(args)+1)), append(args, *v)
