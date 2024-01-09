@@ -1,6 +1,7 @@
 - baseline: |-
     CREATE TABLE `t` (
       `a` int,
+      `b` text,
       PRIMARY KEY (`a`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -26,6 +27,12 @@
                 {
                   "name": "a",
                   "type": "int"
+                },
+                {
+                  "name": "b",
+                  "type": "text",
+                  "nullable": true,
+                  "defaultNull": true
                 }
               ],
               "indexes": [
@@ -218,6 +225,7 @@
   result: |+
     CREATE TABLE `t` (
       `a` int NOT NULL,
+      `b` text,
       UNIQUE KEY `t_a_uniq_idx` (`a`) COMMENT 'this is my comment ''!!'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
     CREATE TABLE `t4` (
