@@ -7,7 +7,7 @@ import (
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type stringsManipulateTest struct {
