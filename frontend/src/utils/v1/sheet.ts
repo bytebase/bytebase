@@ -1,4 +1,3 @@
-import Long from "long";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import {
   getUserEmailFromIdentifier,
@@ -9,7 +8,8 @@ import {
   hasPermissionInProjectV1,
   hasWorkspacePermissionV1,
   isMemberOfProjectV1,
-} from "../../utils";
+  getStatementSize,
+} from "@/utils";
 
 export const extractSheetUID = (name: string) => {
   const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
@@ -103,7 +103,7 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
 
 export const setSheetStatement = (sheet: Sheet, statement: string) => {
   sheet.content = new TextEncoder().encode(statement);
-  sheet.contentSize = Long.fromNumber(statement.length);
+  sheet.contentSize = getStatementSize(statement);
 };
 
 export const getSheetStatement = (sheet: Sheet) => {
