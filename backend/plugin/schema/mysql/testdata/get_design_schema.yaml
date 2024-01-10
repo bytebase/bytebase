@@ -246,7 +246,7 @@
         }
       ]
     }
-  result: |-
+  result: |
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
@@ -324,7 +324,7 @@
         }
       ]
     }
-  result: |-
+  result: |
     CREATE TABLE `t` (
       `a` int NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment';
@@ -394,7 +394,7 @@
         }
       ]
     }
-  result: |-
+  result: |
     CREATE TABLE `t1` (
       `a` int primary key AUTO_INCREMENT
     );
