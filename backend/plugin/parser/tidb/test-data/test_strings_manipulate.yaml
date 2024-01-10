@@ -1,0 +1,46 @@
+- input: |-
+    -- Table structure for `t`
+    CREATE TABLE `t` (
+      `id` int
+    );
+    -- Table structure for `t1`
+    CREATE TABLE `t1` (
+      `id` int
+    );
+  actions:
+  - type: dropTable
+    arguments:
+    - t
+  - type: addColumnOption
+    arguments:
+    - t1
+    - id
+    - primaryKey
+    - PRIMARY KEY
+  - type: addColumnOption
+    arguments:
+    - t1
+    - id
+    - notNull
+    - NOT NULL
+  want: |-
+    -- Table structure for `t1`
+    CREATE TABLE `t1` (
+      `id` int PRIMARY KEY NOT NULL
+    );
+- input: |-
+    -- Table structure for `t`
+    CREATE TABLE `t` (
+      `id` int
+    );
+  actions:
+  - type: modifyColumnType
+    arguments:
+    - t
+    - id
+    - varchar(10)
+  want: |-
+    -- Table structure for `t`
+    CREATE TABLE `t` (
+      `id` varchar(10)
+    );
