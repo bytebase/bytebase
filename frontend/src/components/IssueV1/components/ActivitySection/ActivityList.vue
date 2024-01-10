@@ -209,6 +209,7 @@ const cancelEditComment = () => {
 
 const doCreateComment = async (comment: string) => {
   await issueV1Store.createIssueComment({
+    issueName: issue.value.name,
     issueId: issue.value.uid,
     comment,
   });
