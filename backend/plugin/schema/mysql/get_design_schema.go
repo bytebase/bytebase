@@ -60,6 +60,15 @@ func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) 
 		return "", err
 	}
 
+	result := listener.result.String()
+	if !strings.HasSuffix(result, "\n") {
+		// The last statement of the result is SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+		// We should append a 0xa to the end of the result to avoid the extra newline diff.
+		// TODO(rebelice/zp): find a more elegant way to do this.
+		if err := listener.result.WriteByte('\n'); err != nil {
+			return "", err
+		}
+	}
 	return listener.result.String(), nil
 }
 
