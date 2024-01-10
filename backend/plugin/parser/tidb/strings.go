@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"bufio"
 	"regexp"
 	"strings"
 
@@ -18,7 +17,7 @@ type StringsManipulator struct {
 	l      *parser.TiDBLexer
 	stream antlr.TokenStream
 	p      *parser.TiDBParser
-	tree   antlr.Tree
+	tree   parser.ISingleCreateTableContext
 }
 
 func NewStringsManipulator(s string) *StringsManipulator {
@@ -293,7 +292,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			results = append(results, stmt.Text)
 			continue
 		}
-		isCreateTable, tableName := extractTableNameForCreateTable(stmt.Text)
+		isCreateTable, tableName := s.extractTableNameForCreateTable(stmt.Text)
 		if !isCreateTable {
 			results = append(results, stmt.Text)
 			continue
@@ -304,7 +303,6 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			continue
 		}
 
-		var tableDefinition strings.Builder
 		var tableActions []StringsManipulatorAction
 		actionsMap := make(map[string][]StringsManipulatorAction)
 		for _, action := range actions {
@@ -329,65 +327,26 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			continue
 		}
 
-		scanner := bufio.NewScanner(strings.NewReader(stmt.Text))
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			columnMatch := regexpColumn.FindStringSubmatch(line)
-			if len(columnMatch) > 1 {
-				// is column definition
-				columnName := columnMatch[1]
-				actions, ok := actionsMap[columnName]
-				if !ok || len(actions) == 0 {
-					if _, err := tableDefinition.WriteString(line); err != nil {
-						return "", errors.Wrap(err, "failed to write string")
-					}
-					continue
-				}
-
-				s.Load(line)
-				if err := s.ParseColumnDef(); err != nil {
-					return "", errors.Wrapf(err, "failed to parse column def: %s", line)
-				}
-
-				columnActionMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
-				for _, action := range actions {
-					columnActionMap[action.GetType()] = append(columnActionMap[action.GetType()], action)
-				}
-				result, err := s.RewriteColumnDef(columnActionMap)
-				if err != nil {
-					return "", errors.Wrapf(err, "failed to rewrite column def: %s", line)
-				}
-				if len(result) > 0 {
-					results = append(results, result)
-				}
-				continue
-			}
-
-			results = append(results, line)
+		result, err := s.RewriteCreateTable(actionsMap)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to rewrite create table: %s", stmt.Text)
 		}
-		if err := scanner.Err(); err != nil {
-			return "", errors.Wrap(err, "failed to scan create table statement")
+		if len(result) > 0 {
+			results = append(results, result)
 		}
 	}
 
 	return strings.Join(results, "\n"), nil
 }
 
-func (s *StringsManipulator) RewriteColumnDef(columnActionMap map[StringsManipulatorActionType][]StringsManipulatorAction) (string, error) {
-	if columnActionMap == nil {
-		return s.stream.GetAllText(), nil
-	}
-	if dropTable, exists := columnActionMap[StringsManipulatorActionTypeDropColumn]; exists && len(dropTable) > 0 {
-		return "", nil
-	}
+func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]StringsManipulatorAction) (string, error) {
 	listener := &rewriter{
 		rewriter: antlr.NewTokenStreamRewriter(s.stream),
-		actions:  columnActionMap,
+		actions:  actionsMap,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, s.tree)
 	if listener.err != nil {
-		return "", errors.Wrap(listener.err, "failed to rewrite column def for column")
+		return "", errors.Wrap(listener.err, "failed to rewrite create table")
 	}
 	return listener.rewriter.GetTextDefault(), nil
 }
@@ -396,12 +355,32 @@ type rewriter struct {
 	*parser.BaseTiDBParserListener
 
 	rewriter *antlr.TokenStreamRewriter
-	actions  map[StringsManipulatorActionType][]StringsManipulatorAction
+	actions  map[string][]StringsManipulatorAction
 	err      error
 }
 
 func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
-	if modifyType, exists := r.actions[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
+	if r.err != nil {
+		return
+	}
+
+	_, _, columnName := NormalizeTiDBColumnName(ctx.ColumnName())
+	if columnName == "" {
+		r.err = errors.New("invalid column name")
+		return
+	}
+
+	actions, exists := r.actions[columnName]
+	if !exists {
+		// no action for this column
+		return
+	}
+	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
+	for _, action := range actions {
+		actionsMap[action.GetType()] = append(actionsMap[action.GetType()], action)
+	}
+
+	if modifyType, exists := actionsMap[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
 		if len(modifyType) > 1 {
 			r.err = errors.New("multiple modify column type actions")
 			return
@@ -415,7 +394,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	}
 
 	modifyOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionModifyColumnOption)
-	for _, action := range r.actions[StringsManipulatorActionTypeModifyColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeModifyColumnOption] {
 		action, ok := action.(*StringsManipulatorActionModifyColumnOption)
 		if !ok {
 			r.err = errors.New("invalid modify column option action")
@@ -424,7 +403,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		modifyOptionMap[action.OldOption] = action
 	}
 	dropOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionDropColumnOption)
-	for _, action := range r.actions[StringsManipulatorActionTypeDropColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeDropColumnOption] {
 		action, ok := action.(*StringsManipulatorActionDropColumnOption)
 		if !ok {
 			r.err = errors.New("invalid drop column option action")
@@ -445,7 +424,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		}
 	}
 	newOptionBuf := strings.Builder{}
-	for _, action := range r.actions[StringsManipulatorActionTypeAddColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeAddColumnOption] {
 		action, ok := action.(*StringsManipulatorActionAddColumnOption)
 		if !ok {
 			r.err = errors.New("invalid add column option action")
@@ -510,7 +489,7 @@ func (s *StringsManipulator) Load(text string) {
 	s.p.SetInputStream(s.stream)
 }
 
-func (s *StringsManipulator) ParseColumnDef() error {
+func (s *StringsManipulator) ParseCreateTable() error {
 	lexerErrorListener := &base.ParseErrorListener{}
 	s.p.SetErrorHandler(antlr.NewBailErrorStrategy())
 	s.l.RemoveErrorListeners()
@@ -522,7 +501,7 @@ func (s *StringsManipulator) ParseColumnDef() error {
 
 	s.p.BuildParseTrees = true
 
-	s.tree = s.p.SingleColumnDef()
+	s.tree = s.p.SingleCreateTable()
 
 	if lexerErrorListener.Err != nil {
 		return lexerErrorListener.Err
@@ -535,14 +514,17 @@ func (s *StringsManipulator) ParseColumnDef() error {
 	return nil
 }
 
-var (
-	regexpPattern = regexp.MustCompile("(?m)^-- Table structure for `([^`]+)`")
-)
-
-func extractTableNameForCreateTable(s string) (bool, string) {
-	matches := regexpPattern.FindStringSubmatch(s)
-	if len(matches) > 1 {
-		return true, matches[1]
+func (s *StringsManipulator) extractTableNameForCreateTable(text string) (bool, string) {
+	s.Load(text)
+	if err := s.ParseCreateTable(); err != nil {
+		return false, ""
 	}
-	return false, ""
+	if s.tree == nil || s.tree.CreateTable() == nil || s.tree.CreateTable().TableName() == nil {
+		return false, ""
+	}
+	_, tableName := NormalizeTiDBTableName(s.tree.CreateTable().TableName())
+	if tableName == "" {
+		return false, ""
+	}
+	return true, tableName
 }
