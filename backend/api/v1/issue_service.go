@@ -74,6 +74,10 @@ func NewIssueService(
 
 // GetIssue gets a issue.
 func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueRequest) (*v1pb.Issue, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
 	issue, err := s.getIssueMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
@@ -109,12 +113,22 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	if s.profile.DevelopmentIAM {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssuesGet)
+		}
+	} else {
+		ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
