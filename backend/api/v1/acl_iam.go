@@ -115,7 +115,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	case
 		v1pb.IssueService_GetIssue_FullMethodName,
 		v1pb.IssueService_CreateIssue_FullMethodName,
-		v1pb.IssueService_UpdateIssue_FullMethodName,
 		v1pb.IssueService_CreateIssueComment_FullMethodName,
 		v1pb.IssueService_UpdateIssueComment_FullMethodName,
 		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
@@ -251,6 +250,9 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SheetService_UpdateSheet_FullMethodName,
 		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
 		v1pb.SheetService_DeleteSheet_FullMethodName:
+		return true
+	// handled in the method because we need to consider issue.Creator.
+	case v1pb.IssueService_UpdateIssue_FullMethodName:
 		return true
 	// skip checking for custom approval.
 	case
@@ -565,8 +567,6 @@ func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) 
 	case *v1pb.GetIssueRequest:
 		issueNames = append(issueNames, r.GetName())
 	case *v1pb.CreateIssueRequest:
-		issueNames = append(issueNames, r.GetIssue().GetName())
-	case *v1pb.UpdateIssueRequest:
 		issueNames = append(issueNames, r.GetIssue().GetName())
 	case *v1pb.CreateIssueCommentRequest:
 		issueNames = append(issueNames, r.GetParent())
