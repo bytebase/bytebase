@@ -1341,9 +1341,9 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 
 // BatchUpdateIssuesStatus batch updates issues status.
 func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1pb.BatchUpdateIssuesStatusRequest) (*v1pb.BatchUpdateIssuesStatusResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	var issueIDs []int
@@ -1359,12 +1359,27 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		issueIDs = append(issueIDs, issue.UID)
 		issues = append(issues, issue)
 
-		ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue status, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		if s.profile.DevelopmentIAM {
+			ok, err := func() (bool, error) {
+				if issue.Creator.ID == user.ID {
+					return true, nil
+				}
+				return s.iamManager.CheckPermission(ctx, iam.PermissionIssuesUpdate, user, issue.Project.ResourceID)
+			}()
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue status, error: %v", err)
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q for issue %q", iam.PermissionIssuesUpdate, issueName)
+			}
+		} else {
+			ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue status, error: %v", err)
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+			}
 		}
 	}
 
@@ -1377,7 +1392,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 		return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
 	}
 
-	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus, principalID); err != nil {
+	if err := s.store.BatchUpdateIssueStatuses(ctx, issueIDs, newStatus, user.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to batch update issues, err: %v", err)
 	}
 
@@ -1400,7 +1415,7 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 				continue
 			}
 			activityCreate := &store.ActivityMessage{
-				CreatorUID:   principalID,
+				CreatorUID:   user.ID,
 				ContainerUID: updatedIssue.UID,
 				Type:         api.ActivityIssueStatusUpdate,
 				Level:        api.ActivityInfo,
