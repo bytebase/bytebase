@@ -143,8 +143,9 @@
           />
           <div
             v-if="
-              changeHistory.statement.length !==
-              changeHistory.statementSize.toNumber()
+              getStatementSize(changeHistory.statement).ne(
+                changeHistory.statementSize
+              )
             "
           >
             <NButton
@@ -247,8 +248,9 @@
               />
               <div
                 v-if="
-                  changeHistory.schema.length !==
-                  changeHistory.schemaSize.toNumber()
+                  getStatementSize(changeHistory.schema).ne(
+                    changeHistory.schemaSize
+                  )
                 "
               >
                 <NButton
@@ -352,6 +354,7 @@ import {
   uidFromSlug,
   getAffectedTablesOfChangeHistory,
   toClipboard,
+  getStatementSize,
 } from "@/utils";
 
 interface LocalState {
@@ -509,8 +512,9 @@ const changeHistorySchema = computed(() => {
   }
   let schema = changeHistory.value.schema;
   if (
-    changeHistory.value.schema.length !==
-    changeHistory.value.schemaSize.toNumber()
+    getStatementSize(changeHistory.value.schema).lt(
+      changeHistory.value.schemaSize
+    )
   ) {
     schema = `${schema}${schema.endsWith("\n") ? "" : "\n"}...`;
   }
@@ -523,8 +527,9 @@ const changeHistoryStatement = computed(() => {
   }
   let statement = changeHistory.value.statement;
   if (
-    changeHistory.value.statement.length !==
-    changeHistory.value.statementSize.toNumber()
+    getStatementSize(changeHistory.value.statement).lt(
+      changeHistory.value.statementSize
+    )
   ) {
     statement = `${statement}${statement.endsWith("\n") ? "" : "\n"}...`;
   }

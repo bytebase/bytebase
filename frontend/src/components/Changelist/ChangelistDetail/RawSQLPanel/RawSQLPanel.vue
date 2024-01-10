@@ -61,7 +61,6 @@
 </template>
 
 <script setup lang="ts">
-import Long from "long";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -70,7 +69,12 @@ import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { pushNotification, useSheetV1Store } from "@/store";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { getSheetStatement, readFileAsync, setSheetStatement } from "@/utils";
+import {
+  getSheetStatement,
+  readFileAsync,
+  setSheetStatement,
+  getStatementSize,
+} from "@/utils";
 import RawSQLEditor from "../RawSQLEditor";
 import { useChangelistDetailContext } from "../context";
 
@@ -101,7 +105,7 @@ const show = computed(() => {
 
 const isSheetOversize = computed(() => {
   if (!sheet.value) return false;
-  return Long.fromNumber(getSheetStatement(sheet.value).length).lt(
+  return getStatementSize(getSheetStatement(sheet.value)).lt(
     sheet.value.contentSize
   );
 });
