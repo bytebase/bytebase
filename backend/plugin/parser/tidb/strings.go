@@ -69,7 +69,7 @@ func (s *StringsManipulatorActionDropTable) GetTopLevelNaming() string {
 	return s.Table
 }
 
-func (s *StringsManipulatorActionDropTable) GetSecondLevelNaming() string {
+func (*StringsManipulatorActionDropTable) GetSecondLevelNaming() string {
 	return ""
 }
 
