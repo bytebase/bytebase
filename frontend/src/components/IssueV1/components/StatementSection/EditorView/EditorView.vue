@@ -397,7 +397,7 @@ const allowApplyTaskStateToOthers = computed(() => {
     return false;
   }
   if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return false;
+    return !isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value);
   }
 
   const taskList = flattenTaskV1List(issue.value.rolloutEntity);
