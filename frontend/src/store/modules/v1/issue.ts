@@ -83,16 +83,18 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   };
 
   const createIssueComment = async ({
+    issueName,
     issueId,
     comment,
     payload,
   }: {
+    issueName: string;
     issueId: string;
     comment: string;
     payload?: ActivityIssueCommentCreatePayload;
   }) => {
     await issueServiceClient.createIssueComment({
-      parent: `${projectNamePrefix}-/${issueNamePrefix}${issueId}`,
+      parent: issueName,
       issueComment: {
         comment,
         payload: JSON.stringify(payload ?? {}),
