@@ -1,5 +1,4 @@
 import { isEqual, isUndefined } from "lodash-es";
-import Long from "long";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
@@ -9,7 +8,12 @@ import {
   SheetOrganizer,
   Sheet_Source,
 } from "@/types/proto/v1/sheet_service";
-import { extractSheetUID, getSheetStatement, isSheetReadableV1 } from "@/utils";
+import {
+  extractSheetUID,
+  getSheetStatement,
+  isSheetReadableV1,
+  getStatementSize,
+} from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
 import { getUserEmailFromIdentifier } from "./common";
@@ -291,7 +295,7 @@ export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
 
     // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
     const statement = getSheetStatement(sheet);
-    if (Long.fromNumber(statement.length).ne(sheet.contentSize)) {
+    if (getStatementSize(statement).ne(sheet.contentSize)) {
       return true;
     }
 

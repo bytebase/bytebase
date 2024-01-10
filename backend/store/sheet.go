@@ -255,7 +255,7 @@ func (s *Store) ListSheets(ctx context.Context, find *FindSheetMessage, currentP
 			sheet.source,
 			sheet.type,
 			sheet.payload,
-			LENGTH(sheet.statement),
+			OCTET_LENGTH(sheet.statement),
 			COALESCE(sheet_organizer.starred, FALSE),
 			COALESCE(sheet_organizer.pinned, FALSE)
 		FROM sheet
@@ -340,7 +340,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id, row_status, created_ts, updated_ts, LENGTH(statement)
+		RETURNING id, row_status, created_ts, updated_ts, OCTET_LENGTH(statement)
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -457,7 +457,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, LENGTH(statement)
+		RETURNING id, row_status, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, source, type, payload, OCTET_LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(

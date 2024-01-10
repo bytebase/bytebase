@@ -32,6 +32,7 @@ export * from "./slowQuery";
 export * from "./resource-composer";
 export * from "./quickAction";
 export * from "./TinyTimer";
+export * from "./sheet";
 
 export * from "./v1";
 export * from "./iam";
