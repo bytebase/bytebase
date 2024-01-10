@@ -18,10 +18,10 @@
 </template>
 
 <script lang="ts" setup>
-import Long from "long";
 import { computed } from "vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import { useSheetV1Store, useTabStore } from "@/store";
+import { getStatementSize } from "@/utils";
 
 const tabStore = useTabStore();
 const sheetV1Store = useSheetV1Store();
@@ -38,8 +38,6 @@ const isSheetOversize = computed(() => {
     return false;
   }
 
-  return Long.fromNumber(
-    new TextDecoder().decode(sheet.value.content).length
-  ).lt(sheet.value.contentSize);
+  return getStatementSize(sheet.value.content).lt(sheet.value.contentSize);
 });
 </script>
