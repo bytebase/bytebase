@@ -12,6 +12,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+const (
+	PrimarySymbol = "PRIMARY"
+)
+
 type StringsManipulator struct {
 	s      string
 	l      *parser.TiDBLexer
@@ -43,6 +47,7 @@ const (
 	StringsManipulatorActionTypeModifyColumnOption
 	StringsManipulatorActionTypeDropTableConstraint
 	StringsManipulatorActionTypeModifyTableConstraint
+	StringsManipulatorActionTypeAddTableConstraint
 )
 
 type StringsManipulatorAction interface {
@@ -266,6 +271,32 @@ func NewModifyTableConstraintAction(tableName string, oldConstraint tidbast.Cons
 	}
 }
 
+type StringsManipulatorActionAddTableConstraint struct {
+	StringsManipulatorActionBase
+	Table               string
+	Type                tidbast.ConstraintType
+	NewConstraintDefine string
+}
+
+func (s *StringsManipulatorActionAddTableConstraint) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddTableConstraint) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddTableConstraintAction(tableName string, constraintType tidbast.ConstraintType, newConstraintDefine string) *StringsManipulatorActionAddTableConstraint {
+	return &StringsManipulatorActionAddTableConstraint{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddTableConstraint,
+		},
+		Table:               tableName,
+		Type:                constraintType,
+		NewConstraintDefine: newConstraintDefine,
+	}
+}
+
 var (
 	regexpColumn = regexp.MustCompile("^  `([^`]+)`")
 )
@@ -359,6 +390,52 @@ type rewriter struct {
 	err      error
 }
 
+func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext) {
+	if r.err != nil {
+		return
+	}
+
+	secondName := extractTableConstraintName(ctx)
+	if secondName == "" {
+		r.err = errors.New("invalid table constraint name")
+		return
+	}
+
+	actions, exists := r.actions[secondName]
+	if !exists {
+		// no action for this table constraint
+		return
+	}
+	if len(actions) > 1 {
+		r.err = errors.New("multiple actions for table constraint")
+		return
+	}
+	switch action := actions[0].(type) {
+	case *StringsManipulatorActionDropTableConstraint:
+		r.rewriter.DeleteTokenDefault(ctx.GetStart(), ctx.GetStop())
+	case *StringsManipulatorActionModifyTableConstraint:
+		r.rewriter.ReplaceTokenDefault(ctx.ConstraintName().GetStart(), ctx.ConstraintName().GetStop(), action.NewConstraintDefine)
+	default:
+		r.err = errors.Errorf("invalid table constraint action: %T", action)
+	}
+}
+
+func extractTableConstraintName(ctx *parser.TableConstraintDefContext) string {
+	if ctx.PRIMARY_SYMBOL() != nil {
+		return PrimarySymbol
+	}
+	if ctx.ConstraintName() != nil {
+		return NormalizeConstraintName(ctx.ConstraintName())
+	}
+	if ctx.IndexName() != nil {
+		return NormalizeIndexName(ctx.IndexName())
+	}
+	if ctx.IndexNameAndType() != nil {
+		return NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+	return ""
+}
+
 func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	if r.err != nil {
 		return
@@ -377,6 +454,11 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	}
 	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
 	for _, action := range actions {
+		if action.GetType() == StringsManipulatorActionTypeDropColumn {
+			// drop column action is special, we need to handle it first
+			r.rewriter.DeleteTokenDefault(ctx.GetStart(), ctx.GetStop())
+			return
+		}
 		actionsMap[action.GetType()] = append(actionsMap[action.GetType()], action)
 	}
 
