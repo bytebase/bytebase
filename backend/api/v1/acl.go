@@ -177,6 +177,8 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
 		user.Role = api.WorkspaceAdmin
+		// TODO(p0ny): append projectOwner, projectQuerier, projectExporter as we will split workspaceAdmin into these roles.
+		user.Roles = uniq(append(user.Roles, api.WorkspaceAdmin))
 	}
 	return user, nil
 }
