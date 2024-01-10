@@ -312,6 +312,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				singleSQL.Text = strings.ReplaceAll(singleSQL.Text, "EXECUTE FUNCTION", "EXECUTE PROCEDURE")
 			}
 			// Use superuser privilege to run privileged statements.
+			slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", singleSQL.Text))
 			singleSQL.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", singleSQL.Text, owner)
 		}
 		remainingSQLs = append(remainingSQLs, singleSQL)
@@ -433,7 +434,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 }
 
 func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(stmt)
+	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
 	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
@@ -443,7 +444,7 @@ func isSuperuserStatement(stmt string) bool {
 func isIgnoredStatement(stmt string) bool {
 	// Extensions created in AWS Aurora PostgreSQL are owned by rdsadmin.
 	// We don't have privileges to comment on the extension and have to ignore it.
-	upperCaseStmt := strings.ToUpper(stmt)
+	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
 	return strings.HasPrefix(upperCaseStmt, "COMMENT ON EXTENSION")
 }
 
@@ -543,7 +544,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := strings.Trim(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
