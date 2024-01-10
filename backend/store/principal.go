@@ -216,9 +216,6 @@ func (*Store) listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) (
 			return nil, errors.Wrapf(err, "failed to scan roles")
 		}
 		for _, r := range rolesString {
-			if r == "" {
-				continue
-			}
 			userMessage.Roles = append(userMessage.Roles, api.Role(r))
 		}
 		if userMessage.ID == api.SystemBotID {
