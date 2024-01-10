@@ -886,6 +886,7 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 
 	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
 		g.err = err
+		return
 	}
 }
 
