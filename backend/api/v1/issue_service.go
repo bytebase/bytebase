@@ -1489,27 +1489,52 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 	if err != nil {
 		return nil, err
 	}
-	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue comment, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-	}
 
 	activityUID, err := strconv.Atoi(request.IssueComment.Uid)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, `invalid comment id "%s": %v`, request.IssueComment.Uid, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "invalid comment id %q: %v", request.IssueComment.Uid, err)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	issueComment, err := s.store.GetActivityV2(ctx, activityUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get issue comment: %v", err)
 	}
+	if issueComment == nil {
+		return nil, status.Errorf(codes.NotFound, "issue comment not found")
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if issueComment.CreatorUID == user.ID {
+				return true, nil
+			}
+			return s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsUpdate, user, issue.Project.ResourceID)
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssueCommentsUpdate)
+		}
+	} else {
+		ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue comment, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
+	}
+
 	update := &store.UpdateActivityMessage{
 		UID:        activityUID,
-		CreatorUID: &principalID,
-		UpdaterUID: principalID,
+		CreatorUID: &user.ID,
+		UpdaterUID: user.ID,
 	}
 
 	for _, path := range request.UpdateMask.Paths {
