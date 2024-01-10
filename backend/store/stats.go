@@ -155,7 +155,7 @@ func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.
 	defer tx.Rollback()
 
 	rows, err := tx.QueryContext(ctx, `
-		SELECT role, status, principal.row_status AS row_status, principal.type, COUNT(*)
+		SELECT role, 'ACTIVE' AS status, principal.row_status AS row_status, principal.type, COUNT(*)
 		FROM member
 		LEFT JOIN principal ON principal.id = member.principal_id
 		GROUP BY role, status, principal.row_status, principal.type`,
