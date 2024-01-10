@@ -330,7 +330,7 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 }
 
 func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(stmt)
+	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
 	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
@@ -427,7 +427,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.TrimRight(singleSQL.Text, " \n\t;")
+	statement := strings.Trim(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
