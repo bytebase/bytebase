@@ -1,4 +1,9 @@
 - baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `t`
+    --
     CREATE TABLE `t` (
       `a` int,
       `b` text,
@@ -8,6 +13,10 @@
     CREATE TABLE `t3` (
       `a` int
     );
+
+    --
+    -- Table structure for `t4`
+    --
     CREATE TABLE `t4` (
       `a` int,
       `c` int,
@@ -16,6 +25,9 @@
       PRIMARY KEY (`a`, `c`, `d`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
     );
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -234,7 +246,12 @@
         }
       ]
     }
-  result: |+
+  result: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `t`
+    --
     CREATE TABLE `t` (
       `a` int NOT NULL,
       `b` text,
@@ -242,6 +259,10 @@
       `d` text DEFAULT (NULL),
       UNIQUE KEY `t_a_uniq_idx` (`a`) COMMENT 'this is my comment ''!!'
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `t4`
+    --
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL AUTO_INCREMENT,
@@ -251,12 +272,19 @@
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
 
+    --
+    -- Table structure for table `t2`
+    --
     CREATE TABLE `t2` (
       `b` int NULL,
       `a` int NULL,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
+
+    --
+    -- Table structure for table `t5`
+    --
     CREATE TABLE `t5` (
       `a` int NOT NULL COMMENT 'this is comment',
       `b` VARCHAR(20) NOT NULL,
@@ -271,6 +299,8 @@
       KEY `t_d_fulltext_idx` (`d`)
     ) COMMENT 'this is comment with '' escaped';
 
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - baseline: |-
     CREATE TABLE `t` (
       `a` int
@@ -294,7 +324,7 @@
         }
       ]
     }
-  result: |
+  result: |-
     CREATE TABLE `t` (
       `a` int NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment';
@@ -364,7 +394,7 @@
         }
       ]
     }
-  result: |
+  result: |-
     CREATE TABLE `t1` (
       `a` int primary key AUTO_INCREMENT
     );
