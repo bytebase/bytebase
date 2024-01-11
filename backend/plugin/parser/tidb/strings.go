@@ -41,6 +41,7 @@ const (
 	StringsManipulatorActionTypeNone StringsManipulatorActionType = iota
 	StringsManipulatorActionTypeDropTable
 	StringsManipulatorActionTypeDropColumn
+	StringsManipulatorActionTypeAddColumn
 	StringsManipulatorActionTypeModifyColumnType
 	StringsManipulatorActionTypeDropColumnOption
 	StringsManipulatorActionTypeAddColumnOption
@@ -123,6 +124,30 @@ func (s *StringsManipulatorActionModifyColumnType) GetTopLevelNaming() string {
 
 func (s *StringsManipulatorActionModifyColumnType) GetSecondLevelNaming() string {
 	return s.Column
+}
+
+type StringsManipulatorActionAddColumn struct {
+	StringsManipulatorActionBase
+	Table            string
+	ColumnDefinition string
+}
+
+func (s *StringsManipulatorActionAddColumn) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddColumn) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddColumnAction(tableName string, columnDefinition string) *StringsManipulatorActionAddColumn {
+	return &StringsManipulatorActionAddColumn{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddColumn,
+		},
+		Table:            tableName,
+		ColumnDefinition: columnDefinition,
+	}
 }
 
 func NewModifyColumnTypeAction(tableName string, columnName string, columnType string) *StringsManipulatorActionModifyColumnType {
@@ -334,26 +359,18 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			continue
 		}
 
-		var tableActions []StringsManipulatorAction
+		hasDropTable := false
 		actionsMap := make(map[string][]StringsManipulatorAction)
 		for _, action := range actions {
 			// do copy
 			action := action
 			secondName := action.GetSecondLevelNaming()
-			if secondName == "" {
-				tableActions = append(tableActions, action)
-			} else {
-				actionsMap[secondName] = append(actionsMap[secondName], action)
+			actionsMap[secondName] = append(actionsMap[secondName], action)
+			if action.GetType() == StringsManipulatorActionTypeDropTable {
+				hasDropTable = true
 			}
 		}
 
-		hasDropTable := false
-		for _, action := range tableActions {
-			if _, ok := action.(*StringsManipulatorActionDropTable); ok {
-				hasDropTable = true
-				continue
-			}
-		}
 		if hasDropTable {
 			continue
 		}
@@ -372,22 +389,104 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 
 func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]StringsManipulatorAction) (string, error) {
 	listener := &rewriter{
-		rewriter: antlr.NewTokenStreamRewriter(s.stream),
-		actions:  actionsMap,
+		actions: actionsMap,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, s.tree)
 	if listener.err != nil {
 		return "", errors.Wrap(listener.err, "failed to rewrite create table")
 	}
-	return listener.rewriter.GetTextDefault(), nil
+	return listener.generateStatement()
 }
 
 type rewriter struct {
 	*parser.BaseTiDBParserListener
 
-	rewriter *antlr.TokenStreamRewriter
-	actions  map[string][]StringsManipulatorAction
-	err      error
+	actions map[string][]StringsManipulatorAction
+	err     error
+
+	prefixString     string
+	columnDefines    []string
+	tableConstraints []string
+	suffixString     string
+}
+
+func (r *rewriter) generateStatement() (string, error) {
+	buf := strings.Builder{}
+	if _, err := buf.WriteString(r.prefixString); err != nil {
+		return "", errors.Wrap(err, "failed to write string")
+	}
+	if len(r.columnDefines) > 0 {
+		if _, err := buf.WriteString("\n  "); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+		if _, err := buf.WriteString(strings.Join(r.columnDefines, ",\n  ")); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+	}
+	if len(r.tableConstraints) > 0 {
+		if len(r.columnDefines) > 0 {
+			if _, err := buf.WriteString(",\n  "); err != nil {
+				return "", errors.Wrap(err, "failed to write string")
+			}
+		}
+		if _, err := buf.WriteString(strings.Join(r.tableConstraints, ",\n  ")); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+	}
+	if err := buf.WriteByte('\n'); err != nil {
+		return "", errors.Wrap(err, "failed to write byte")
+	}
+	if _, err := buf.WriteString(r.suffixString); err != nil {
+		return "", errors.Wrap(err, "failed to write string")
+	}
+	return buf.String(), nil
+}
+
+func (r *rewriter) EnterCreateTable(ctx *parser.CreateTableContext) {
+	if r.err != nil {
+		return
+	}
+
+	if ctx.OPEN_PAR_SYMBOL() == nil {
+		r.err = errors.New("invalid create table statement: no open parenthesis")
+		return
+	}
+	if ctx.CLOSE_PAR_SYMBOL() == nil {
+		r.err = errors.New("invalid create table statement: no close parenthesis")
+		return
+	}
+	r.prefixString = ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			0, // We need to include the non-default channel tokens
+			ctx.OPEN_PAR_SYMBOL().GetSourceInterval().Stop,
+		),
+	)
+	r.suffixString = ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			ctx.CLOSE_PAR_SYMBOL().GetSourceInterval().Start,
+			ctx.GetParser().GetTokenStream().Size()-1, // We need to include the non-default channel tokens
+		),
+	)
+}
+
+func (r *rewriter) ExitCreateTable(ctx *parser.CreateTableContext) {
+	if r.err != nil {
+		return
+	}
+	actions, exists := r.actions[""]
+	if exists && len(actions) > 0 {
+		for _, action := range actions {
+			switch action := action.(type) {
+			case *StringsManipulatorActionAddColumn:
+				r.columnDefines = append(r.columnDefines, action.ColumnDefinition)
+			case *StringsManipulatorActionAddTableConstraint:
+				r.tableConstraints = append(r.tableConstraints, action.NewConstraintDefine)
+			default:
+				r.err = errors.Errorf("invalid table action in ExitCreateTable: %T", action)
+				return
+			}
+		}
+	}
 }
 
 func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext) {
@@ -406,17 +505,14 @@ func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext
 		// no action for this table constraint
 		return
 	}
-	if len(actions) > 1 {
-		r.err = errors.New("multiple actions for table constraint")
-		return
-	}
-	switch action := actions[0].(type) {
-	case *StringsManipulatorActionDropTableConstraint:
-		r.rewriter.DeleteTokenDefault(ctx.GetStart(), ctx.GetStop())
-	case *StringsManipulatorActionModifyTableConstraint:
-		r.rewriter.ReplaceTokenDefault(ctx.ConstraintName().GetStart(), ctx.ConstraintName().GetStop(), action.NewConstraintDefine)
-	default:
-		r.err = errors.Errorf("invalid table constraint action: %T", action)
+	// column name and constraint name are in the different namespace for tidb
+	for _, action := range actions {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropTableConstraint:
+			return
+		case *StringsManipulatorActionModifyTableConstraint:
+			r.tableConstraints = append(r.tableConstraints, action.NewConstraintDefine)
+		}
 	}
 }
 
@@ -449,17 +545,26 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 
 	actions, exists := r.actions[columnName]
 	if !exists {
-		// no action for this column
+		r.columnDefines = append(r.columnDefines, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
 		return
 	}
 	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
 	for _, action := range actions {
 		if action.GetType() == StringsManipulatorActionTypeDropColumn {
 			// drop column action is special, we need to handle it first
-			r.rewriter.DeleteTokenDefault(ctx.GetStart(), ctx.GetStop())
 			return
 		}
 		actionsMap[action.GetType()] = append(actionsMap[action.GetType()], action)
+	}
+
+	buf := strings.Builder{}
+	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.ColumnName())); err != nil {
+		r.err = errors.Wrap(err, "failed to write string")
+		return
+	}
+	if err := buf.WriteByte(' '); err != nil {
+		r.err = errors.Wrap(err, "failed to write byte")
+		return
 	}
 
 	if modifyType, exists := actionsMap[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
@@ -472,7 +577,15 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 			r.err = errors.New("invalid modify column type action")
 			return
 		}
-		r.rewriter.ReplaceTokenDefault(ctx.DataType().GetStart(), ctx.DataType().GetStop(), modifyType.Type)
+		if _, err := buf.WriteString(modifyType.Type); err != nil {
+			r.err = errors.Wrap(err, "failed to write string")
+			return
+		}
+	} else {
+		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.DataType())); err != nil {
+			r.err = errors.Wrap(err, "failed to write string")
+			return
+		}
 	}
 
 	modifyOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionModifyColumnOption)
@@ -497,31 +610,44 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		for _, option := range ctx.ColumnOptionList().AllColumnOption() {
 			optionType := convertColumnOptionType(option)
 			if _, exists := dropOptionMap[optionType]; exists {
-				r.rewriter.DeleteTokenDefault(option.GetStart(), option.GetStop())
+				// Drop column option
 				continue
 			}
+			if err := buf.WriteByte(' '); err != nil {
+				r.err = errors.Wrap(err, "failed to write byte")
+				return
+			}
+			// Modify column option
 			if action, exists := modifyOptionMap[optionType]; exists {
-				r.rewriter.ReplaceTokenDefault(option.GetStart(), option.GetStop(), action.NewOptionDefine)
+				if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+					r.err = errors.Wrap(err, "failed to write string")
+					return
+				}
+				continue
+			}
+			// Original column option
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+				r.err = errors.Wrap(err, "failed to write string")
+				return
 			}
 		}
 	}
-	newOptionBuf := strings.Builder{}
 	for _, action := range actionsMap[StringsManipulatorActionTypeAddColumnOption] {
 		action, ok := action.(*StringsManipulatorActionAddColumnOption)
 		if !ok {
 			r.err = errors.New("invalid add column option action")
 			return
 		}
-		if _, err := newOptionBuf.WriteString(" "); err != nil {
+		if _, err := buf.WriteString(" "); err != nil {
 			r.err = errors.Wrap(err, "failed to write string")
 			return
 		}
-		if _, err := newOptionBuf.WriteString(action.NewOptionDefine); err != nil {
+		if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
 			r.err = errors.Wrap(err, "failed to write string")
 			return
 		}
 	}
-	r.rewriter.InsertAfterDefault(ctx.GetStop().GetTokenIndex(), newOptionBuf.String())
+	r.columnDefines = append(r.columnDefines, buf.String())
 }
 
 func convertColumnOptionType(ctx parser.IColumnOptionContext) tidbast.ColumnOptionType {
