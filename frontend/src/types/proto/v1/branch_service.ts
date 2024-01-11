@@ -269,6 +269,12 @@ export interface DeleteBranchRequest {
    * Format: projects/{project}/branches/{branch}
    */
   name: string;
+  /**
+   * By default, server will return `FAILED_PRECONDITION` error
+   * if delete the branch that is parent of other branches.
+   * If true, server will delete the branch forcely but will not delete its children branches.
+   */
+  force: boolean;
 }
 
 export interface DiffDatabaseRequest {
@@ -1336,13 +1342,16 @@ export const RebaseBranchResponse = {
 };
 
 function createBaseDeleteBranchRequest(): DeleteBranchRequest {
-  return { name: "" };
+  return { name: "", force: false };
 }
 
 export const DeleteBranchRequest = {
   encode(message: DeleteBranchRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.force === true) {
+      writer.uint32(16).bool(message.force);
     }
     return writer;
   },
@@ -1361,6 +1370,13 @@ export const DeleteBranchRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.force = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1371,13 +1387,19 @@ export const DeleteBranchRequest = {
   },
 
   fromJSON(object: any): DeleteBranchRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      force: isSet(object.force) ? globalThis.Boolean(object.force) : false,
+    };
   },
 
   toJSON(message: DeleteBranchRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.force === true) {
+      obj.force = message.force;
     }
     return obj;
   },
@@ -1388,6 +1410,7 @@ export const DeleteBranchRequest = {
   fromPartial(object: DeepPartial<DeleteBranchRequest>): DeleteBranchRequest {
     const message = createBaseDeleteBranchRequest();
     message.name = object.name ?? "";
+    message.force = object.force ?? false;
     return message;
   },
 };
