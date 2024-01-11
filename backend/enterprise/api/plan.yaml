@@ -27,7 +27,6 @@ categoryList:
       - read-replica
   - type: collaboration
     featureList:
-      - inbox-notification
       - ui-based-sql-review
       - shared-sql-script
       - gitops-workflow
@@ -105,7 +104,6 @@ planList:
       - type: admin-mode
       - type: saved-sql-script
       # Collaboration
-      - type: inbox-notification
       - type: ui-based-sql-review
       - type: gitops-workflow
         content: gitops-workflow-basic
@@ -180,7 +178,6 @@ planList:
       - type: admin-mode
       - type: saved-sql-script
       # Collaboration
-      - type: inbox-notification
       - type: ui-based-sql-review
       - type: shared-sql-script
       - type: gitops-workflow
@@ -258,7 +255,6 @@ planList:
       - type: read-replica
       - type: saved-sql-script
       # Collaboration
-      - type: inbox-notification
       - type: ui-based-sql-review
       - type: shared-sql-script
       - type: gitops-workflow

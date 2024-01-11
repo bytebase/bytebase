@@ -177,7 +177,6 @@ type ActivityIssueCreatePayload struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Used by inbox to display info without paying the join cost
 	IssueName string `protobuf:"bytes,1,opt,name=issue_name,json=issueName,proto3" json:"issue_name,omitempty"`
 }
 
@@ -231,9 +230,8 @@ type ActivityIssueCommentCreatePayload struct {
 	//	*ActivityIssueCommentCreatePayload_ExternalApprovalEvent_
 	//	*ActivityIssueCommentCreatePayload_TaskRollbackBy_
 	//	*ActivityIssueCommentCreatePayload_ApprovalEvent_
-	Event isActivityIssueCommentCreatePayload_Event `protobuf_oneof:"event"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `protobuf:"bytes,4,opt,name=issue_name,json=issueName,proto3" json:"issue_name,omitempty"`
+	Event     isActivityIssueCommentCreatePayload_Event `protobuf_oneof:"event"`
+	IssueName string                                    `protobuf:"bytes,4,opt,name=issue_name,json=issueName,proto3" json:"issue_name,omitempty"`
 }
 
 func (x *ActivityIssueCommentCreatePayload) Reset() {
