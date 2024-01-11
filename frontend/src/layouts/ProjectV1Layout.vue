@@ -19,7 +19,11 @@
       :quick-action-list="quickActionList"
       class="mb-4"
     />
-    <router-view :project-id="projectId" :allow-edit="allowEdit" />
+    <router-view
+      :project-id="projectId"
+      :allow-edit="allowEdit"
+      v-bind="$attrs"
+    />
   </div>
 </template>
 
