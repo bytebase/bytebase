@@ -58,13 +58,6 @@
       <router-link to="/setting/general" exact-active-class="">
         <Settings class="w-6 h-6" />
       </router-link>
-      <router-link to="/inbox" exact-active-class="">
-        <span
-          v-if="inboxSummary.unread > 0"
-          class="absolute rounded-full ml-4 -mt-1 h-2 w-2 bg-accent opacity-75"
-        ></span>
-        <heroicons-outline:bell class="w-6 h-6" />
-      </router-link>
       <div class="ml-2">
         <ProfileBrandingLogo>
           <ProfileDropdown />
@@ -91,17 +84,12 @@ import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import { Settings, ChevronDownIcon } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
-import {
-  useSubscriptionV1Store,
-  useInboxV1Store,
-  useCurrentUserV1,
-} from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { extractUserUID } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -114,7 +102,6 @@ interface LocalState {
 }
 
 const { t } = useI18n();
-const inboxV1Store = useInboxV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
 const { locale } = useLanguage();
@@ -142,22 +129,7 @@ const onClickSearchButton = () => {
   handler.value.show();
 };
 
-const me = useCurrentUserV1();
-
 const { currentPlan } = storeToRefs(subscriptionStore);
-
-const prepareInboxSummary = () => {
-  // It will also be called when user logout
-  if (extractUserUID(me.value.name) !== String(UNKNOWN_ID)) {
-    inboxV1Store.fetchInboxSummary();
-  }
-};
-
-watchEffect(prepareInboxSummary);
-
-const inboxSummary = computed(() => {
-  return inboxV1Store.inboxSummary;
-});
 
 const kbarActions = computed(() => {
   return [
@@ -167,13 +139,6 @@ const kbarActions = computed(() => {
       section: t("kbar.navigation"),
       keywords: "navigation",
       perform: () => router.push({ name: "setting.workspace.member" }),
-    }),
-    defineAction({
-      id: "bb.navigation.global.inbox",
-      name: "Inbox",
-      section: t("kbar.navigation"),
-      keywords: "navigation",
-      perform: () => router.push({ name: "setting.inbox" }),
     }),
   ];
 });
