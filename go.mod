@@ -19,7 +19,7 @@ require (
 	github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
-	github.com/bytebase/tidb-parser v0.0.0-20240109071930-24fa1cb6c62b
+	github.com/bytebase/tidb-parser v0.0.0-20240110090403-89a0e2f8ecc1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/epiclabs-io/diff3 v0.0.0-20181217103619-05282cece609
