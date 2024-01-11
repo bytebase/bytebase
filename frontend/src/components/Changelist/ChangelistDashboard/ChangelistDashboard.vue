@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useChangelistStore, useCurrentUserV1 } from "@/store";
+import { useChangelistStore } from "@/store";
 import { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
 import ChangelistTable from "./ChangelistTable.vue";
