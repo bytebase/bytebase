@@ -116,8 +116,8 @@ import {
   instanceV1HasAlterSchema,
   allowUsingSchemaEditorV1,
   generateIssueName,
-  extractProjectResourceName,
   hasProjectPermissionV2,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface DatabaseAction {

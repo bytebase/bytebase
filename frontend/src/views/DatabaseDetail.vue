@@ -273,6 +273,7 @@ import {
   allowUsingSchemaEditorV1,
   extractProjectResourceName,
   hasProjectPermissionV2,
+  extractProjectResourceName,
 } from "@/utils";
 
 const databaseHashList = [
