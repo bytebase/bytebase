@@ -168,7 +168,11 @@ import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import { issueSlug, memberListInProjectV1 } from "@/utils";
+import {
+  extractProjectResourceName,
+  issueSlug,
+  memberListInProjectV1,
+} from "@/utils";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 
@@ -376,7 +380,11 @@ const doCreateIssue = async () => {
 
   if (props.redirectToIssuePage) {
     const route = router.resolve({
-      path: `/issue/${issueSlug(createdIssue.title, createdIssue.uid)}`,
+      name: "workspace.project.issue.detail",
+      params: {
+        projectId: extractProjectResourceName(project.name),
+        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+      },
     });
     window.open(route.href, "_blank");
   }

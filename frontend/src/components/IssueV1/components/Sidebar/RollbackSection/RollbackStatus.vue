@@ -21,8 +21,18 @@
         <template
           v-if="taskRollbackBy && rollbackByIssue.uid !== String(UNKNOWN_ID)"
         >
+          <!--
+          here we assume that the rollbackBy issue and the original issue 
+          are always in the same project
+        -->
           <router-link
-            :to="`/issue/${taskRollbackBy.rollbackByIssueId}`"
+            :to="{
+              name: 'workspace.project.issue.detail',
+              params: {
+                projectId: extractProjectResourceName(issue.project),
+                issueSlug: taskRollbackBy.rollbackByIssueId,
+              },
+            }"
             class="text-accent inline-flex gap-x-1"
           >
             <span>{{ $t("common.issue") }}</span>

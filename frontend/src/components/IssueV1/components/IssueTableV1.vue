@@ -163,6 +163,7 @@ import {
   issueSlug,
   isDatabaseRelatedIssue,
   activeTaskInRollout,
+  extractProjectResourceName,
 } from "@/utils";
 
 type Mode = "ALL" | "PROJECT";
@@ -334,7 +335,14 @@ const clickIssue = (
   emitWindowEvent("bb.issue-detail", {
     uid: issue.uid,
   });
-  const url = `/issue/${issueSlug(issue.title, issue.uid)}`;
+  const route = router.resolve({
+    name: "workspace.project.issue.detail",
+    params: {
+      projectId: extractProjectResourceName(issue.project),
+      issueSlug: issueSlug(issue.title, issue.uid),
+    },
+  });
+  const url = route.fullPath;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {

@@ -20,13 +20,19 @@
         {{ $t("common.issue") }}
       </label>
       <div class="flex-1">
-        <a
-          :href="`/issue/${extractIssueUID(changeHistory.issue)}`"
-          target="__BLANK"
+        <router-link
+          :to="{
+            name: 'workspace.project.issue.detail',
+            params: {
+              projectId: extractProjectResourceName(changeHistory.issue),
+              issueSlug: extractIssueUID(changeHistory.issue),
+            },
+          }"
+          target="_blank"
           class="normal-link flex items-center gap-x-1"
         >
           {{ extractIssueUID(changeHistory.issue) }}
-        </a>
+        </router-link>
       </div>
     </div>
 
@@ -88,6 +94,7 @@ import {
   extractUserResourceName,
   extractIssueUID,
   changeHistoryLink as makeChangeHistoryLink,
+  extractProjectResourceName,
 } from "@/utils";
 
 const props = defineProps({

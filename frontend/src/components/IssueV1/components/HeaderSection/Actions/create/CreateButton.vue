@@ -51,9 +51,11 @@ import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDeploymentConfigName,
+  extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
   getSheetStatement,
+  issueSlug,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
@@ -118,7 +120,13 @@ const doCreateIssue = async () => {
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
-      router.push(`/issue/${composedIssue.uid}`);
+      router.push({
+        name: "workspace.project.issue.detail",
+        params: {
+          projectId: extractProjectResourceName(composedIssue.project),
+          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+        },
+      });
     });
 
     return composedIssue;

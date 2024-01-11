@@ -169,6 +169,7 @@ import {
   Plan_RestoreDatabaseConfig,
   Plan_Spec,
 } from "@/types/proto/v1/rollout_service";
+import { extractProjectResourceName, issueSlug } from "@/utils";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
@@ -404,7 +405,13 @@ const onConfirmV1 = async () => {
       planCreate
     );
 
-    router.push(`/issue/${createdIssue.uid}`);
+    router.push({
+      name: "workspace.project.issue.detail",
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+      },
+    });
   } catch (ex) {
     // TODO: error handling
   } finally {

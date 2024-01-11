@@ -170,7 +170,11 @@ import {
 } from "@/types/proto/v1/database_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
-import { extractBackupResourceName } from "@/utils";
+import {
+  extractBackupResourceName,
+  extractProjectResourceName,
+  issueSlug,
+} from "@/utils";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -364,7 +368,13 @@ const doRestoreInPlaceV1 = async () => {
       planCreate
     );
 
-    router.push(`/issue/${createdIssue.uid}`);
+    router.push({
+      name: "workspace.project.issue.detail",
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+      },
+    });
   } catch {
     state.creatingRestoreIssue = false;
   }

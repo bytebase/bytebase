@@ -105,7 +105,11 @@ import {
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
-import { issueSlug, memberListInProjectV1 } from "@/utils";
+import {
+  extractProjectResourceName,
+  issueSlug,
+  memberListInProjectV1,
+} from "@/utils";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -263,7 +267,13 @@ const doCreateIssue = async () => {
     issue: newIssue,
   });
 
-  router.push(`/issue/${issueSlug(createdIssue.title, createdIssue.uid)}`);
+  router.push({
+    name: "workspace.project.issue.detail",
+    params: {
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+    },
+  });
 };
 
 const generateIssueName = () => {

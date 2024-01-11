@@ -79,7 +79,13 @@
         <template v-if="extractIssueUID(history.issue)">
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
-            :to="`/issue/${extractIssueUID(history.issue)}`"
+            :to="{
+              name: 'workspace.project.issue.detail',
+              params: {
+                projectId: extractProjectResourceName(history.issue),
+                issueSlug: extractIssueUID(history.issue),
+              },
+            }"
             class="normal-link"
             @click.stop=""
             >{{ extractIssueUID(history.issue) }}
@@ -140,6 +146,7 @@ import {
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
+  extractProjectResourceName,
 } from "@/utils";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
 
