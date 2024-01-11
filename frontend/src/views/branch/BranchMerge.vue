@@ -15,24 +15,28 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchMergeView from "@/components/Branch/BranchMergeView";
+import {
+  PROJECT_V1_BRANCHE_MERGE,
+  PROJECT_V1_BRANCHE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
-  projectSlug: string;
+  projectId: string;
   branchName: string;
 }>();
 
 const router = useRouter();
 
 const project = computed(() => {
-  if (props.projectSlug === "-") {
+  if (props.projectId === "-") {
     return;
   }
-  return useProjectV1Store().getProjectByUID(
-    String(idFromSlug(props.projectSlug as string))
+  return useProjectV1Store().getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 
@@ -45,9 +49,8 @@ const branchFullName = computed(() => {
 const handleUpdateHeadBranchName = (branchName: string | null) => {
   const branchId = branchName ? getProjectAndBranchId(branchName)[1] : "-";
   router.replace({
-    name: "workspace.project.branch.merge",
+    name: PROJECT_V1_BRANCHE_MERGE,
     params: {
-      projectSlug: props.projectSlug,
       branchName: branchId,
     },
     query: router.currentRoute.value.query,
@@ -61,9 +64,8 @@ const handleMerged = (
   headBranch: Branch | undefined
 ) => {
   router.replace({
-    name: "workspace.project.branch.detail",
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: props.projectSlug,
       branchName: mergedBranch.branchId,
     },
   });

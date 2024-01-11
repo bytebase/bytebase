@@ -12,7 +12,6 @@ import { idFromSlug } from "@/utils";
 
 export const useCurrentProject = (
   params: ComputedRef<{
-    projectSlug?: string;
     projectId?: string;
     issueSlug?: string;
     databaseSlug?: string;
@@ -52,10 +51,6 @@ export const useCurrentProject = (
 
       const existedIssue = await experimentalFetchIssueByUID(issueUID.value);
       return existedIssue.projectEntity;
-    } else if (unref(params).projectSlug) {
-      return useProjectV1Store().getProjectByUID(
-        String(idFromSlug(unref(params).projectSlug!))
-      );
     } else if (unref(params).projectId) {
       return useProjectV1Store().getProjectByName(
         `${projectNamePrefix}${unref(params).projectId}`

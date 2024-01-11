@@ -1,18 +1,50 @@
 import { RouteRecordRaw } from "vue-router";
-import ProjectSidebar from "@/components/Project/ProjectSidebar.vue";
+import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
+import { t } from "@/plugins/i18n";
+
+export const PROJECT_V1_ROUTE = "workspace.projectV1";
+export const PROJECT_V1_DETAIL = `${PROJECT_V1_ROUTE}.detail`;
+export const PROJECT_V1_DATABASES = `${PROJECT_V1_ROUTE}.database.dashboard`;
+export const PROJECT_V1_DATABASE_GROUPS = `${PROJECT_V1_ROUTE}.database-group.dashboard`;
+export const PROJECT_V1_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.detail`;
+export const PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.table-group.detail`;
+export const PROJECT_V1_BRANCHES = `${PROJECT_V1_ROUTE}.branch.dashboard`;
+export const PROJECT_V1_BRANCHE_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
+export const PROJECT_V1_BRANCHE_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
+export const PROJECT_V1_BRANCHE_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
+export const PROJECT_V1_BRANCHE_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
+export const PROJECT_V1_ISSUES = `${PROJECT_V1_ROUTE}.issue.dashboard`;
+export const PROJECT_V1_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE}.change-histories.dashboard`;
+export const PROJECT_V1_CHANGELISTS = `${PROJECT_V1_ROUTE}.changelist.dashboard`;
+export const PROJECT_V1_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE}.changelist.detail`;
+export const PROJECT_V1_SYNC_SCHEMA = `${PROJECT_V1_ROUTE}.sync-schema`;
+export const PROJECT_V1_SLOW_QUERIES = `${PROJECT_V1_ROUTE}.slow-queries`;
+export const PROJECT_V1_ANOMALIES = `${PROJECT_V1_ROUTE}.anomalies`;
+export const PROJECT_V1_ACTIVITIES = `${PROJECT_V1_ROUTE}.activities`;
+export const PROJECT_V1_GITOPS = `${PROJECT_V1_ROUTE}.gitops`;
+export const PROJECT_V1_WEBHOOKS = `${PROJECT_V1_ROUTE}.webhook.dashboard`;
+export const PROJECT_V1_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE}.webhook.create`;
+export const PROJECT_V1_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE}.webhook.detail`;
+export const PROJECT_V1_MEMBERS = `${PROJECT_V1_ROUTE}.members`;
+export const PROJECT_V1_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
     path: "projects/:projectId",
     components: {
       content: () => import("@/layouts/ProjectV1Layout.vue"),
-      leftSidebar: ProjectSidebar,
+      leftSidebar: ProjectSidebarV1,
     },
     props: { content: true, leftSidebar: true },
     children: [
       {
+        path: "",
+        name: PROJECT_V1_DETAIL,
+        redirect: { name: PROJECT_V1_DATABASES },
+      },
+      {
         path: "databases",
-        name: "workspace.project.database.dashboard",
+        name: PROJECT_V1_DATABASES,
         meta: {
           overrideTitle: true,
         },
@@ -20,12 +52,240 @@ const projectV1Routes: RouteRecordRaw[] = [
         props: true,
       },
       {
+        path: "database-groups",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_DATABASE_GROUPS,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () =>
+              import("@/views/project/ProjectDatabaseGroupDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":databaseGroupName",
+            name: PROJECT_V1_DATABASE_GROUP_DETAIL,
+            component: () => import("@/views/DatabaseGroupDetail.vue"),
+            props: true,
+          },
+          {
+            path: ":databaseGroupName/table-groups/:schemaGroupName",
+            name: PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+            component: () => import("@/views/SchemaGroupDetail.vue"),
+            props: true,
+          },
+        ],
+      },
+      {
+        path: "branches",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_BRANCHES,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () =>
+              import("@/views/project/ProjectBrancheDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":branchName",
+            name: PROJECT_V1_BRANCHE_DETAIL,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () => import("@/views/branch/BranchDetail.vue"),
+            props: true,
+          },
+          {
+            path: ":branchName/rollout",
+            name: PROJECT_V1_BRANCHE_ROLLOUT,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () => import("@/views/branch/BranchRollout.vue"),
+            props: true,
+          },
+          {
+            path: ":branchName/merge",
+            name: PROJECT_V1_BRANCHE_MERGE,
+            meta: {
+              title: () => t("branch.merge-rebase.merge-branch"),
+            },
+            component: () => import("@/views/branch/BranchMerge.vue"),
+            props: true,
+          },
+          {
+            path: ":branchName/rebase",
+            name: PROJECT_V1_BRANCHE_REBASE,
+            meta: {
+              title: () => t("branch.merge-rebase.rebase-branch"),
+            },
+            component: () => import("@/views/branch/BranchRebase.vue"),
+            props: true,
+          },
+        ],
+      },
+      {
         path: "issues",
-        name: "workspace.project.issue.dashboard",
+        name: PROJECT_V1_ISSUES,
         meta: {
           overrideTitle: true,
         },
         component: () => import("@/views/project/ProjectIssueDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "change-histories",
+        name: PROJECT_V1_CHANGE_HISTORIES,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () =>
+          import("@/views/project/ProjectChangeHistoryDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "changelists",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_CHANGELISTS,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () =>
+              import("@/views/project/ProjectChangelistDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":changelistName",
+            name: PROJECT_V1_CHANGELIST_DETAIL,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () =>
+              import("@/components/Changelist/ChangelistDetail/"),
+            props: true,
+          },
+        ],
+      },
+      {
+        path: "sync-schema",
+        name: PROJECT_V1_SYNC_SCHEMA,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () => import("@/views/project/ProjectSyncDatabasePanel.vue"),
+        props: true,
+      },
+      {
+        path: "slow-queries",
+        name: PROJECT_V1_SLOW_QUERIES,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () =>
+          import("@/views/project/ProjectSlowQueryDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "anomalies",
+        name: PROJECT_V1_ANOMALIES,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () =>
+          import("@/views/project/ProjectAnomalyCenterDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "activities",
+        name: PROJECT_V1_ACTIVITIES,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () => import("@/views/project/ProjectActivityDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "gitops",
+        name: PROJECT_V1_GITOPS,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () =>
+          import("@/views/project/ProjectVersionControlPanel.vue"),
+        props: true,
+      },
+      {
+        path: "webhooks",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_WEBHOOKS,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () =>
+              import("@/views/project/ProjectWebhookDashboard.vue"),
+            props: true,
+          },
+          {
+            path: "new",
+            name: PROJECT_V1_WEBHOOK_CREATE,
+            meta: {
+              title: () => t("project.webhook.create-webhook"),
+            },
+            component: () => import("@/views/project/ProjectWebhookCreate.vue"),
+            props: true,
+          },
+          {
+            path: ":projectWebhookSlug",
+            name: PROJECT_V1_WEBHOOK_DETAIL,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () => import("@/views/project/ProjectWebhookDetail.vue"),
+            props: true,
+          },
+        ],
+      },
+      {
+        path: "members",
+        name: PROJECT_V1_MEMBERS,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () => import("@/views/project/ProjectMemberDashboard.vue"),
+        props: true,
+      },
+      {
+        path: "settings",
+        name: PROJECT_V1_SETTINGS,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
       },
     ],

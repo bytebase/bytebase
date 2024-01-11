@@ -45,7 +45,6 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 export type RouterSlug = {
   principalEmail?: string;
   environmentSlug?: string;
-  projectSlug?: string;
   projectWebhookSlug?: string;
   issueSlug?: string;
   instanceSlug?: string;
@@ -58,6 +57,7 @@ export type RouterSlug = {
   ssoName?: string;
 
   // Resource names.
+  projectId?: string;
   databaseGroupName?: string;
   schemaGroupName?: string;
   changelistName?: string;

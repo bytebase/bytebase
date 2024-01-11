@@ -44,32 +44,26 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProjectWebhook } from "@/types";
 import { Webhook_Type } from "@/types/proto/v1/project_service";
-import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
-import { idFromSlug } from "../utils";
+import { idFromSlug } from "@/utils";
 
-const props = defineProps({
-  projectSlug: {
-    required: true,
-    type: String,
-  },
-  projectWebhookSlug: {
-    required: true,
-    type: String,
-  },
-  allowEdit: {
-    required: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  projectWebhookSlug: string;
+  allowEdit: boolean;
+}>();
 
 const projectV1Store = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
 
 const project = computed(() => {
-  return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
+  return projectV1Store.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 
 const projectWebhook = computed(() => {

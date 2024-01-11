@@ -1,6 +1,6 @@
 import { pull } from "lodash-es";
 import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
-import ProjectSidebar from "@/components/Project/ProjectSidebar.vue";
+import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import { t } from "@/plugins/i18n";
 import { hasFeature, useDatabaseV1Store } from "@/store";
@@ -45,7 +45,7 @@ const databaseRoutes: RouteRecordRaw[] = [
     path: "db/:databaseSlug",
     components: {
       content: DatabaseLayout,
-      leftSidebar: ProjectSidebar,
+      leftSidebar: ProjectSidebarV1,
     },
     props: { content: true, leftSidebar: true },
     children: [

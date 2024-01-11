@@ -44,14 +44,14 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /project/:projectSlug/webhook/:hookSlug
+        // /projects/:projectId/webhook/:hookSlug
         // Total 3 elements, 2nd element is the project slug, 3rd element is the project webhook slug
         const projectComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)/webhook/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/webhook/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined, undefined];
         if (projectComponents[1] && projectComponents[2]) {
           return {
-            projectSlug: projectComponents[1],
+            projectId: projectComponents[1],
             projectWebhookSlug:
               projectComponents[2].toLowerCase() == "new"
                 ? undefined
@@ -61,28 +61,28 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /project/:projectSlug/changelists/:changelistName
+        // /projects/:projectId/changelists/:changelistName
         // Total 3 elements, 2nd element is the project slug, 3rd element is the project changelist name.
         const projectComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)/changelists/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/changelists/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (projectComponents.length === 3) {
           return {
-            projectSlug: projectComponents[1],
+            projectId: projectComponents[1],
             changelistName: projectComponents[2],
           };
         }
       }
 
       {
-        // /project/:projectSlug/branches/:branchName
+        // /projects/:projectId/branches/:branchName
         // Total 3 elements, 2nd element is the project slug, 3rd element is the project changelist name.
         const projectComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)/branches/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/branches/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (projectComponents.length === 3) {
           return {
-            projectSlug: projectComponents[1],
+            projectId: projectComponents[1],
             branchName: projectComponents[2],
           };
         }
@@ -209,14 +209,14 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /project/proj-nt-iq3z/database-groups/test/table-groups/asd123
+        // /projects/proj-nt-iq3z/database-groups/test/table-groups/asd123
         const schemaGroupDetailComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)/table-groups/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)/table-groups/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
 
         if (schemaGroupDetailComponents.length === 4) {
           return {
-            projectSlug: schemaGroupDetailComponents[1],
+            projectId: schemaGroupDetailComponents[1],
             databaseGroupName: schemaGroupDetailComponents[2],
             schemaGroupName: schemaGroupDetailComponents[3],
           };
@@ -224,28 +224,28 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /project/proj-nt-iq3z/database-groups/test
+        // /projects/proj-nt-iq3z/database-groups/test
         const schemaGroupDetailComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)/database-groups/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
 
         if (schemaGroupDetailComponents.length === 3) {
           return {
-            projectSlug: schemaGroupDetailComponents[1],
+            projectId: schemaGroupDetailComponents[1],
             databaseGroupName: schemaGroupDetailComponents[2],
           };
         }
       }
 
       {
-        // /project/:projectSlug
+        // /projects/:projectId
         // Total 2 elements, 2nd element is the project slug
         const projectComponents = currentRoute.path.match(
-          "/project/([0-9a-zA-Z_-]+)"
+          "/projects/([0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
         if (projectComponents[1]) {
           return {
-            projectSlug: projectComponents[1],
+            projectId: projectComponents[1],
           };
         }
       }

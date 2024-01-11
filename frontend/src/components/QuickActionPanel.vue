@@ -35,27 +35,27 @@
     />
     <CreateDatabasePrepPanel
       v-if="state.quickActionType === 'quickaction.bb.database.create'"
-      :project-id="projectId"
+      :project-id="project?.uid"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
       v-if="state.quickActionType === 'quickaction.bb.database.schema.update'"
-      :project-id="projectId"
+      :project-id="project?.uid"
       :type="'bb.issue.database.schema.update'"
       @dismiss="state.quickActionType = undefined"
     />
     <AlterSchemaPrepForm
       v-if="state.quickActionType === 'quickaction.bb.database.data.update'"
-      :project-id="projectId"
+      :project-id="project?.uid"
       :type="'bb.issue.database.data.update'"
       @dismiss="state.quickActionType = undefined"
     />
     <TransferDatabaseForm
       v-if="
-        projectId &&
+        project &&
         state.quickActionType === 'quickaction.bb.project.database.transfer'
       "
-      :project-id="projectId"
+      :project-id="project.uid"
       @dismiss="state.quickActionType = undefined"
     />
   </Drawer>
@@ -111,7 +111,7 @@ import {
 import { NButton, NEllipsis } from "naive-ui";
 import { reactive, PropType, computed, watch, VNode, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import InstanceForm from "@/components/InstanceForm/";
@@ -120,6 +120,7 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import { Drawer } from "@/components/v2";
+import { PROJECT_V1_ROUTE } from "@/router/dashboard/projectV1";
 import {
   useInstanceV1Store,
   useCommandStore,
@@ -128,12 +129,12 @@ import {
   useSubscriptionV1Store,
   useProjectV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
   QuickActionType,
   DatabaseGroupQuickActionType,
   FeatureType,
 } from "@/types";
-import { idFromSlug } from "@/utils";
 
 interface LocalState {
   feature?: FeatureType;
@@ -158,7 +159,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const router = useRouter();
 const route = useRoute();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
@@ -175,9 +175,8 @@ const state = reactive<LocalState>({
 });
 
 const projectId = computed((): string | undefined => {
-  if (router.currentRoute.value.name == "workspace.project.detail") {
-    const parts = router.currentRoute.value.path.split("/");
-    return String(idFromSlug(parts[parts.length - 1]));
+  if (route.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
+    return route.params.projectId as string;
   }
   return undefined;
 });
@@ -186,7 +185,9 @@ const project = computed(() => {
   if (!projectId.value) {
     return;
   }
-  return projectStore.getProjectByUID(projectId.value);
+  return projectStore.getProjectByName(
+    `${projectNamePrefix}${projectId.value}`
+  );
 });
 
 // Only show alter schema and change data if the user has permission to alter schema of at least one project.

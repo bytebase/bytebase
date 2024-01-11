@@ -19,49 +19,37 @@ import {
   RefreshCcw,
   PencilRuler,
 } from "lucide-vue-next";
-import { computed, h, reactive, watch, nextTick } from "vue";
+import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
+import {
+  PROJECT_V1_WEBHOOK_CREATE,
+  PROJECT_V1_WEBHOOK_DETAIL,
+  PROJECT_V1_BRANCHE_DETAIL,
+  PROJECT_V1_BRANCHE_ROLLOUT,
+  PROJECT_V1_BRANCHE_MERGE,
+  PROJECT_V1_BRANCHE_REBASE,
+  PROJECT_V1_CHANGELIST_DETAIL,
+} from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { projectSlugV1 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
 import { useCurrentProject } from "./useCurrentProject";
 
-const projectHashList = [
-  "databases",
-  "database-groups",
-  "change-history",
-  "slow-query",
-  "anomalies",
-  "issues",
-  "branches",
-  "changelists",
-  "sync-schema",
-  "gitops",
-  "webhook",
-  "members",
-  "activities",
-  "setting",
-] as const;
-export type ProjectHash = typeof projectHashList[number];
-const isProjectHash = (x: any): x is ProjectHash => projectHashList.includes(x);
-
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
-  type: "div" | "link";
+  type: "div" | "route";
   children?: {
     title: string;
     path: string;
     hide?: boolean;
-    type: "link";
+    type: "route";
   }[];
 }
 
 const props = defineProps<{
-  projectSlug?: string;
   projectId?: string;
   issueSlug?: string;
   databaseSlug?: string;
@@ -69,21 +57,11 @@ const props = defineProps<{
 }>();
 
 const route = useRoute();
-
-interface LocalState {
-  selectedHash: ProjectHash;
-}
-
 const { t } = useI18n();
 const router = useRouter();
 
-const state = reactive<LocalState>({
-  selectedHash: "databases",
-});
-
 const params = computed(() => {
   return {
-    projectSlug: props.projectSlug,
     projectId: props.projectId,
     issueSlug: props.issueSlug,
     databaseSlug: props.databaseSlug,
@@ -92,10 +70,6 @@ const params = computed(() => {
 });
 
 const { project } = useCurrentProject(params);
-
-const defaultHash = computed((): ProjectHash => {
-  return "databases";
-});
 
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 
@@ -107,8 +81,9 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
+// TODO(ed): use route name instead of fullpath
 const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
-  const projectPath = `/project/${projectSlugV1(project.value)}`;
+  const projectPath = `/${project.value.name}`;
   return [
     {
       title: t("common.database"),
@@ -117,53 +92,53 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.databases"),
-          path: `${projectPath}#databases`,
-          type: "link",
+          path: `${projectPath}/databases`,
+          type: "route",
         },
         {
           title: t("common.groups"),
-          path: `${projectPath}#database-groups`,
-          type: "link",
+          path: `${projectPath}/database-groups`,
+          type: "route",
           hide:
             !isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.change-history"),
-          path: `${projectPath}#change-history`,
-          type: "link",
+          path: `${projectPath}/change-histories`,
+          type: "route",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: startCase(t("slow-query.slow-queries")),
-          path: `${projectPath}#slow-query`,
-          type: "link",
+          path: `${projectPath}/slow-queries`,
+          type: "route",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.anomalies"),
-          path: `${projectPath}#anomalies`,
-          type: "link",
+          path: `${projectPath}/anomalies`,
+          type: "route",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
       ],
     },
     {
       title: t("common.issues"),
-      path: `${projectPath}#issues`,
+      path: `${projectPath}/issues`,
       icon: h(CircleDot),
-      type: "link",
+      type: "route",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("common.branches"),
-      path: `${projectPath}#branches`,
+      path: `${projectPath}/branches`,
       icon: h(GitBranch),
-      type: "link",
+      type: "route",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -172,18 +147,18 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("changelist.changelists"),
-      path: `${projectPath}#changelists`,
+      path: `${projectPath}/changelists`,
       icon: h(PencilRuler),
-      type: "link",
+      type: "route",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("database.sync-schema.title"),
-      path: `${projectPath}#sync-schema`,
+      path: `${projectPath}/sync-schema`,
       icon: h(RefreshCcw),
-      type: "link",
+      type: "route",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -200,13 +175,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.gitops"),
-          path: `${projectPath}#gitops`,
-          type: "link",
+          path: `${projectPath}/gitops`,
+          type: "route",
         },
         {
           title: t("common.webhooks"),
-          path: `${projectPath}#webhook`,
-          type: "link",
+          path: `${projectPath}/webhooks`,
+          type: "route",
         },
       ],
     },
@@ -220,21 +195,21 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.members"),
-          path: `${projectPath}#members`,
-          type: "link",
+          path: `${projectPath}/members`,
+          type: "route",
         },
         {
           title: t("common.activities"),
-          path: `${projectPath}#activities`,
-          type: "link",
+          path: `${projectPath}/activities`,
+          type: "route",
         },
       ],
     },
     {
       title: t("common.setting"),
       icon: h(Settings),
-      path: `${projectPath}#setting`,
-      type: "link",
+      path: `${projectPath}/settings`,
+      type: "route",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -242,112 +217,74 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
   ];
 });
 
-const getHashByFullPath = (fullpath: string | undefined): ProjectHash => {
-  if (!fullpath) {
-    return "" as ProjectHash;
-  }
-  return fullpath.split("#").splice(-1)[0] as ProjectHash;
-};
+const getItemClass = (path: string | undefined) => {
+  const projectPath = `/${project.value.name}`;
 
-const getItemClass = (fullpath: string | undefined) => {
-  const hash = getHashByFullPath(fullpath);
   const list = ["outline-item"];
-  if (!isProjectHash(hash)) {
-    return list;
-  }
-  const projectHash = hash as ProjectHash;
-  if (state.selectedHash === projectHash) {
-    list.push("bg-link-hover");
+  switch (route.name) {
+    case PROJECT_V1_WEBHOOK_CREATE:
+    case PROJECT_V1_WEBHOOK_DETAIL:
+      if (path === `${projectPath}/webhooks`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case PROJECT_V1_BRANCHE_DETAIL:
+    case PROJECT_V1_BRANCHE_ROLLOUT:
+    case PROJECT_V1_BRANCHE_MERGE:
+    case PROJECT_V1_BRANCHE_REBASE:
+      if (path === `${projectPath}/branches`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case PROJECT_V1_CHANGELIST_DETAIL:
+      if (path === `${projectPath}/changelists`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case "workspace.issue.detail":
+      if (path === `${projectPath}/issues`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case "workspace.database.history.detail":
+      if (path === `${projectPath}/change-histories`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case "workspace.database.detail":
+      if (path === `${projectPath}/databases`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
   }
   return list;
 };
 
-const onSelect = (hash: ProjectHash | undefined) => {
-  if (!hash || !isProjectHash(hash)) {
+const onSelect = (path: string) => {
+  if (!path) {
     return;
   }
-  let validHash = hash || defaultHash.value;
-  const tab = flattenNavigationItems.value.find((item) => item.path === hash);
-  if (!tab || tab.hide) {
-    validHash = defaultHash.value;
-  }
-  state.selectedHash = validHash;
   router.replace({
-    name: "workspace.project.detail",
-    hash: `#${validHash}`,
-    query: route.query,
-    params: {
-      projectSlug: props.projectSlug || projectSlugV1(project.value),
-    },
+    path,
   });
 };
 
-const selectProjectTabOnHash = () => {
-  const { name, hash } = router.currentRoute.value;
-
-  switch (name) {
-    case "workspace.project.detail": {
-      let targetHash = hash.replace(/^#?/g, "");
-      if (!isProjectHash(targetHash)) {
-        targetHash = defaultHash.value;
-      }
-      onSelect(targetHash as ProjectHash);
-      return;
-    }
-    case "workspace.project.hook.create":
-    case "workspace.project.hook.detail":
-      state.selectedHash = "webhook";
-      return;
-    case "workspace.project.changelist.detail":
-      state.selectedHash = "changelists";
-      return;
-    case "workspace.project.branch.detail":
-      state.selectedHash = "branches";
-      return;
-    case "workspace.project.database-group.detail":
-    case "workspace.project.database-group.table-group.detail":
-      state.selectedHash = "database-groups";
-      return;
-    case "workspace.issue.detail":
-      state.selectedHash = "issues";
-      return;
-    case "workspace.database.detail":
-      state.selectedHash = "databases";
-      return;
-    case "workspace.database.history.detail":
-      state.selectedHash = "change-history";
-      return;
-  }
-};
-
-watch(
-  () => [router.currentRoute.value.hash],
-  () => {
-    nextTick(() => {
-      selectProjectTabOnHash();
-    });
-  },
-  {
-    immediate: true,
-  }
-);
-
 const flattenNavigationItems = computed(() => {
   return projectSidebarItemList.value.flatMap<{
-    path: ProjectHash;
+    path: string;
     title: string;
     hide?: boolean;
   }>((item) => {
     if (item.children && item.children.length > 0) {
       return item.children.map((child) => ({
-        path: getHashByFullPath(child.path),
+        path: child.path,
         title: child.title,
         hide: child.hide,
       }));
     }
     return [
       {
-        path: getHashByFullPath(item.path),
+        path: item.path ?? "",
         title: item.title,
         hide: item.hide,
       },

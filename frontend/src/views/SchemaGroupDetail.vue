@@ -111,8 +111,8 @@ import {
   databaseGroupNamePrefix,
   schemaGroupNamePrefix,
 } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ComposedSchemaGroupTable } from "@/types";
-import { idFromSlug } from "@/utils";
 import { convertCELStringToExpr } from "@/utils/databaseGroup/cel";
 
 interface LocalState {
@@ -121,20 +121,11 @@ interface LocalState {
   expr?: ConditionGroupExpr;
 }
 
-const props = defineProps({
-  projectSlug: {
-    required: true,
-    type: String,
-  },
-  databaseGroupName: {
-    required: true,
-    type: String,
-  },
-  schemaGroupName: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  databaseGroupName: string;
+  schemaGroupName: string;
+}>();
 
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -145,7 +136,9 @@ const state = reactive<LocalState>({
   showConfigurePanel: false,
 });
 const project = computed(() => {
-  return projectStore.getProjectByUID(String(idFromSlug(props.projectSlug)));
+  return projectStore.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 const schemaGroup = computed(() => {
   return dbGroupStore.getSchemaGroupByName(

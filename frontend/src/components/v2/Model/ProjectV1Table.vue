@@ -35,8 +35,12 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
+import {
+  PROJECT_V1_DETAIL,
+  PROJECT_V1_ROUTE,
+} from "@/router/dashboard/projectV1";
+import { getProjectName } from "@/store/modules/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
-import { projectV1Slug } from "@/utils";
 
 export type ProjectGridRow = BBGridRow<Project>;
 
@@ -77,13 +81,22 @@ const clickProject = function (
   row: number,
   e: MouseEvent
 ) {
-  const url = `/project/${projectV1Slug(project)}${
-    router.currentRoute.value.hash
-  }`;
+  let routeName = PROJECT_V1_DETAIL;
+  if (router.currentRoute.value.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
+    routeName = router.currentRoute.value.name?.toString();
+  }
+
+  const route = router.resolve({
+    name: routeName,
+    params: {
+      projectId: getProjectName(project.name),
+    },
+  });
+
   if (e.ctrlKey || e.metaKey) {
-    window.open(url, "_blank");
+    window.open(route.fullPath, "_blank");
   } else {
-    window.location.href = url;
+    window.location.href = route.fullPath;
   }
   emit("click");
 };
