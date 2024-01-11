@@ -42,7 +42,13 @@ export const useCurrentProject = (
   });
 
   const project = computedAsync(async () => {
-    if (issueUID.value !== String(UNKNOWN_ID)) {
+    if (unref(params).projectId) {
+      return useProjectV1Store().getProjectByName(
+        `${projectNamePrefix}${unref(params).projectId}`
+      );
+    } else if (unref(params).databaseSlug || unref(params).changeHistorySlug) {
+      return database.value.projectEntity;
+    } else if (issueUID.value !== String(UNKNOWN_ID)) {
       if (issueUID.value === String(EMPTY_ID)) {
         const projectUID = route.query.project as string;
         if (!projectUID) return unknownProject();
@@ -51,12 +57,6 @@ export const useCurrentProject = (
 
       const existedIssue = await experimentalFetchIssueByUID(issueUID.value);
       return existedIssue.projectEntity;
-    } else if (unref(params).projectId) {
-      return useProjectV1Store().getProjectByName(
-        `${projectNamePrefix}${unref(params).projectId}`
-      );
-    } else if (unref(params).databaseSlug || unref(params).changeHistorySlug) {
-      return database.value.projectEntity;
     }
     return unknownProject();
   }, unknownProject());

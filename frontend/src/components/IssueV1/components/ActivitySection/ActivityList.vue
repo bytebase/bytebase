@@ -210,7 +210,6 @@ const cancelEditComment = () => {
 const doCreateComment = async (comment: string) => {
   await issueV1Store.createIssueComment({
     issueName: issue.value.name,
-    issueId: issue.value.uid,
     comment,
   });
   state.newComment = "";
@@ -258,8 +257,8 @@ const doUpdateComment = () => {
   const activityId = getLogId(state.activeActivity.name);
   issueV1Store
     .updateIssueComment({
+      issueName: issue.value.name,
       commentId: `${activityId}`,
-      issueId: issue.value.uid,
       comment: state.editComment,
     })
     .then(() => {

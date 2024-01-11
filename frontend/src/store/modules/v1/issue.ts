@@ -19,8 +19,10 @@ import {
 import { memberListInProjectV1 } from "@/utils";
 import { useUserStore } from "../user";
 import { useActivityV1Store } from "./activity";
-import { projectNamePrefix, issueNamePrefix } from "./common";
-import { shallowComposeIssue } from "./experimental-issue";
+import {
+  experimentalFetchIssueByName,
+  shallowComposeIssue,
+} from "./experimental-issue";
 
 export type ListIssueParams = {
   find: IssueFilter;
@@ -84,12 +86,10 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
 
   const createIssueComment = async ({
     issueName,
-    issueId,
     comment,
     payload,
   }: {
     issueName: string;
-    issueId: string;
     comment: string;
     payload?: ActivityIssueCommentCreatePayload;
   }) => {
@@ -100,27 +100,29 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
         payload: JSON.stringify(payload ?? {}),
       },
     });
-    await useActivityV1Store().fetchActivityListByIssueUID(issueId);
+    const issue = await experimentalFetchIssueByName(issueName);
+    await useActivityV1Store().fetchActivityListForIssueV1(issue);
   };
 
   const updateIssueComment = async ({
+    issueName,
     commentId,
-    issueId,
     comment,
   }: {
+    issueName: string;
     commentId: string;
-    issueId: string;
     comment: string;
   }) => {
     await issueServiceClient.updateIssueComment({
-      parent: `${projectNamePrefix}-/${issueNamePrefix}${issueId}`,
+      parent: issueName,
       issueComment: {
         uid: commentId,
         comment,
       },
       updateMask: ["comment"],
     });
-    await useActivityV1Store().fetchActivityListByIssueUID(issueId);
+    const issue = await experimentalFetchIssueByName(issueName);
+    await useActivityV1Store().fetchActivityListForIssueV1(issue);
   };
 
   const listIssues = async ({ find, pageSize, pageToken }: ListIssueParams) => {
