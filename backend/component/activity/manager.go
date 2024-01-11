@@ -308,15 +308,6 @@ func (m *Manager) CreateActivity(ctx context.Context, create *store.ActivityMess
 	if meta.Issue == nil {
 		return activity, nil
 	}
-	postInbox, err := shouldPostInbox(activity, create.Type)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to post webhook event after changing the issue task status: %s", meta.Issue.Title)
-	}
-	if postInbox {
-		if err := m.postInboxIssueActivity(ctx, meta.Issue, activity.UID); err != nil {
-			return nil, err
-		}
-	}
 
 	webhookList, err := m.store.FindProjectWebhookV2(ctx, &store.FindProjectWebhookMessage{
 		ProjectID:    &meta.Issue.Project.UID,
@@ -765,72 +756,6 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 		MentionUsersByPhone: mentions,
 	}
 	return &webhookCtx, nil
-}
-
-func (m *Manager) postInboxIssueActivity(ctx context.Context, issue *store.IssueMessage, activityID int) error {
-	if issue.Creator.ID != api.SystemBotID {
-		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
-			ReceiverUID: issue.Creator.ID,
-			ActivityUID: activityID,
-		}); err != nil {
-			return errors.Wrapf(err, "failed to post activity to creator inbox: %d", issue.Creator.ID)
-		}
-	}
-
-	if issue.Assignee != nil && issue.Assignee.ID != api.SystemBotID && issue.Assignee.ID != issue.Creator.ID {
-		if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
-			ReceiverUID: issue.Assignee.ID,
-			ActivityUID: activityID,
-		}); err != nil {
-			return errors.Wrapf(err, "failed to post activity to assignee inbox: %d", issue.Assignee.ID)
-		}
-	}
-
-	for _, subscriber := range issue.Subscribers {
-		if subscriber.ID != api.SystemBotID && subscriber.ID != issue.Creator.ID && (issue.Assignee == nil || subscriber.ID != issue.Assignee.ID) {
-			if _, err := m.store.CreateInbox(ctx, &store.InboxMessage{
-				ReceiverUID: subscriber.ID,
-				ActivityUID: activityID,
-			}); err != nil {
-				return errors.Wrapf(err, "failed to post activity to subscriber inbox: %d", subscriber.ID)
-			}
-		}
-	}
-
-	return nil
-}
-
-func shouldPostInbox(activity *store.ActivityMessage, createType api.ActivityType) (bool, error) {
-	switch createType {
-	case api.ActivityIssueCreate:
-		return true, nil
-	case api.ActivityIssueStatusUpdate:
-		return true, nil
-	case api.ActivityIssueCommentCreate:
-		return true, nil
-	case api.ActivityIssueFieldUpdate:
-		return true, nil
-	case api.ActivityPipelineTaskStatementUpdate:
-		return true, nil
-	case api.ActivityPipelineTaskEarliestAllowedTimeUpdate:
-		return true, nil
-	case api.ActivityPipelineStageStatusUpdate:
-		return false, nil
-	case api.ActivityPipelineTaskStatusUpdate:
-		update := new(api.ActivityPipelineTaskStatusUpdatePayload)
-		if err := json.Unmarshal([]byte(activity.Payload), update); err != nil {
-			return false, err
-		}
-		// To reduce noise, for now we only post status update to inbox upon task failure.
-		if update.NewStatus == api.TaskFailed {
-			return true, nil
-		}
-	case api.ActivityNotifyIssueApproved:
-		return false, nil
-	case api.ActivityNotifyPipelineRollout:
-		return false, nil
-	}
-	return false, nil
 }
 
 func getUsersFromWorkspaceRole(s *store.Store, role api.Role) func(context.Context) ([]*store.UserMessage, error) {

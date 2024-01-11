@@ -15,7 +15,6 @@ import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
 import { ExternalVersionControlServiceDefinition } from "@/types/proto/v1/externalvs_service";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
-import { InboxServiceDefinition } from "@/types/proto/v1/inbox_service";
 import { InstanceRoleServiceDefinition } from "@/types/proto/v1/instance_role_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
@@ -165,11 +164,6 @@ export const externalVersionControlServiceClient = clientFactory.create(
 
 export const loggingServiceClient = clientFactory.create(
   LoggingServiceDefinition,
-  channel
-);
-
-export const inboxServiceClient = clientFactory.create(
-  InboxServiceDefinition,
   channel
 );
 
