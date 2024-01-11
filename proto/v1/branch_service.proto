@@ -270,6 +270,11 @@ message DeleteBranchRequest {
   // The name of the branch to delete.
   // Format: projects/{project}/branches/{branch}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // By default, server will return `FAILED_PRECONDITION` error
+  // if delete the branch that is parent of other branches.
+  // If true, server will delete the branch forcely but will not delete its children branches.
+  bool force = 2;
 }
 
 message DiffDatabaseRequest {
