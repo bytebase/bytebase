@@ -652,7 +652,6 @@ const changeMaximumConnections = (maximumConnections: number) => {
   if (!basicInfo.value.options) {
     basicInfo.value.options = InstanceOptions.fromPartial({});
   }
-  console.log(maximumConnections);
   basicInfo.value.options.maximumConnections = maximumConnections;
 };
 

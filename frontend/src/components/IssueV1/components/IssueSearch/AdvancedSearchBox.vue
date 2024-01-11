@@ -58,7 +58,6 @@
         v-show="showMenu"
         v-zindexable="{ enabled: true }"
         class="absolute top-[36px] w-full bg-gray-100 shadow-xl origin-top-left rounded-[3px] overflow-clip"
-        @wheel="console.log('wheel', $event)"
       >
         <ScopeMenu
           :show="menuView === 'scope'"

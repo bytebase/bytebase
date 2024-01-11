@@ -164,7 +164,6 @@ const prepareBranchFromParentBranch = async (parent: string) => {
 };
 const prepareBranchFromDatabaseHead = async (uid: string) => {
   const tag = `prepareBranchFromDatabaseHead(${uid})`;
-  console.log(tag);
   console.time(tag);
 
   console.time("--fetch metadata");
