@@ -248,7 +248,6 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					return in, true
 				}
 				if g.currentTable.foreignKeys[fkName] != nil {
-
 					fk := g.currentTable.foreignKeys[fkName]
 
 					var columns []string

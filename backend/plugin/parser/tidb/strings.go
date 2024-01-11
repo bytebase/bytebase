@@ -95,7 +95,7 @@ type StringsManipulatorActionAddTable struct {
 	TableDefinition string
 }
 
-func (s *StringsManipulatorActionAddTable) GetTopLevelNaming() string {
+func (*StringsManipulatorActionAddTable) GetTopLevelNaming() string {
 	return ""
 }
 
@@ -355,7 +355,7 @@ func (s *StringsManipulatorActionDropTableOption) GetTopLevelNaming() string {
 	return s.Table
 }
 
-func (s *StringsManipulatorActionDropTableOption) GetSecondLevelNaming() string {
+func (*StringsManipulatorActionDropTableOption) GetSecondLevelNaming() string {
 	return ""
 }
 
@@ -380,7 +380,7 @@ func (s *StringsManipulatorActionModifyTableOption) GetTopLevelNaming() string {
 	return s.Table
 }
 
-func (s *StringsManipulatorActionModifyTableOption) GetSecondLevelNaming() string {
+func (*StringsManipulatorActionModifyTableOption) GetSecondLevelNaming() string {
 	return ""
 }
 

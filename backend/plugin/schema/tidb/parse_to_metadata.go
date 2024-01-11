@@ -894,26 +894,12 @@ func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, e
 	return buffer.String(), nil
 }
 
-func tidbRestoreNodeDefault(node tidbast.Node) (string, error) {
-	return tidbRestoreNode(node, tidbformat.DefaultRestoreFlags)
-}
-
 func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 	var buffer strings.Builder
 	// we want to use Default format flags but with lowercase keyword.
 	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
-func tidbRestoreTableOption(tableOption *tidbast.TableOption) (string, error) {
-	var buffer strings.Builder
-	flag := tidbformat.DefaultRestoreFlags
-	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
-	if err := tableOption.Restore(ctx); err != nil {
 		return "", err
 	}
 	return buffer.String(), nil
