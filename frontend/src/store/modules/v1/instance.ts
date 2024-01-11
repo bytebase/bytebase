@@ -17,6 +17,7 @@ import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
+import { useActuatorV1Store } from "./actuator";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
@@ -59,16 +60,24 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composedInstances;
   };
   const fetchInstanceList = async (showDeleted = false) => {
-    const { instances } = await instanceServiceClient.searchInstances({
-      showDeleted,
-    });
+    const actuatorStore = useActuatorV1Store();
+    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
+    const { instances } = isDevelopmentIAM
+      ? await instanceServiceClient.searchInstances({ showDeleted })
+      : await instanceServiceClient.listInstances({ showDeleted });
     const composed = await upsertInstances(instances);
     return composed;
   };
   const fetchProjectInstanceList = async (project: string) => {
-    const { instances } = await instanceServiceClient.searchInstances({
-      parent: `${projectNamePrefix}${project}`,
-    });
+    const actuatorStore = useActuatorV1Store();
+    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
+    const { instances } = isDevelopmentIAM
+      ? await instanceServiceClient.searchInstances({
+          parent: `${projectNamePrefix}${project}`,
+        })
+      : await instanceServiceClient.listInstances({
+          parent: `${projectNamePrefix}${project}`,
+        });
     const composed = await upsertInstances(instances);
     return composed;
   };
