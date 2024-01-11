@@ -22,7 +22,7 @@
         </NButton>
       </template>
     </LogFilter>
-    <div class="relative min-h-[8rem]">
+    <div class="relative min-h-[8rem] w-full max-w-full overflow-auto">
       <LogTable
         :slow-query-log-list="slowQueryLogList"
         :show-placeholder="!loading"
