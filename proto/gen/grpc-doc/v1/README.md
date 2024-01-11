@@ -3803,6 +3803,7 @@ The type of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the branch to delete. Format: projects/{project}/branches/{branch} |
+| force | [bool](#bool) |  | By default, server will return `FAILED_PRECONDITION` error if delete the branch that is parent of other branches. If true, server will delete the branch forcely but will not delete its children branches. |
 
 
 
