@@ -1,5 +1,66 @@
 - input: |-
     -- Table structure for `t`
+     CREATE TABLE `t` (
+        `id` int,
+        `name` varchar(10) NOT NULL,
+        `age` int,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `name` (`name`)
+     );
+     -- Table structure for `t1`
+     CREATE TABLE `t1` (
+       `id` int
+     );
+  actions:
+    - type: dropColumn
+      arguments:
+        - t
+        - age
+    - type: dropColumnOption
+      arguments:
+        - t
+        - name
+        - notNull
+    - type: addColumnOption
+      arguments:
+        - t
+        - id
+        - notNull
+        - NOT NULL
+    - type: dropTableConstraint
+      arguments:
+        - t
+        - PRIMARY KEY
+    - type: modifyTableConstraint
+      arguments:
+        - t
+        - uniqueKey
+        - name
+        - UNIQUE KEY `name` (`id`, `name`)
+    - type: addTableConstraint
+      arguments:
+        - t
+        - uniqueKey
+        - UNIQUE KEY `id` (`id`)
+    - type: addColumn
+      arguments:
+        - t1
+        - age int NOT NULL
+  want: |-
+    -- Table structure for `t`
+     CREATE TABLE `t` (
+      `id` int NOT NULL,
+      `name` varchar(10),
+      UNIQUE KEY `name` (`id`, `name`),
+      UNIQUE KEY `id` (`id`)
+    );
+    -- Table structure for `t1`
+     CREATE TABLE `t1` (
+      `id` int,
+      age int NOT NULL
+    );
+- input: |-
+    -- Table structure for `t`
     CREATE TABLE `t` (
       `id` int
     );
@@ -8,21 +69,21 @@
       `id` int
     );
   actions:
-  - type: dropTable
-    arguments:
-    - t
-  - type: addColumnOption
-    arguments:
-    - t1
-    - id
-    - primaryKey
-    - PRIMARY KEY
-  - type: addColumnOption
-    arguments:
-    - t1
-    - id
-    - notNull
-    - NOT NULL
+    - type: dropTable
+      arguments:
+        - t
+    - type: addColumnOption
+      arguments:
+        - t1
+        - id
+        - primaryKey
+        - PRIMARY KEY
+    - type: addColumnOption
+      arguments:
+        - t1
+        - id
+        - notNull
+        - NOT NULL
   want: |-
     -- Table structure for `t1`
     CREATE TABLE `t1` (
@@ -34,11 +95,11 @@
       `id` int
     );
   actions:
-  - type: modifyColumnType
-    arguments:
-    - t
-    - id
-    - varchar(10)
+    - type: modifyColumnType
+      arguments:
+        - t
+        - id
+        - varchar(10)
   want: |-
     -- Table structure for `t`
     CREATE TABLE `t` (
