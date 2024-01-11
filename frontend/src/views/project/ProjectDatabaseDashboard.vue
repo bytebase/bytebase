@@ -1,7 +1,9 @@
 <template>
-  <div v-if="showQuickActionPanel" class="flex-1 pb-4">
-    <QuickActionPanel :quick-action-list="quickActionList" />
-  </div>
+  <QuickActionPanel
+    v-if="showQuickActionPanel"
+    :quick-action-list="quickActionList"
+    class="mb-4"
+  />
   <ProjectDatabasesPanel :project="project" :database-list="databaseV1List" />
 </template>
 
