@@ -71,19 +71,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
   },
   {
-    path: "inbox",
-    name: "workspace.inbox",
-    meta: { title: () => t("common.inbox") },
-    components: {
-      content: () => import("@/views/Inbox.vue"),
-      leftSidebar: DashboardSidebar,
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
-  },
-  {
     path: "slow-query",
     name: "workspace.slow-query",
     meta: { title: () => startCase(t("slow-query.slow-queries")) },
