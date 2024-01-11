@@ -59,6 +59,7 @@ import { databaseServiceClient } from "@/grpcweb";
 import { featureToRef, hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { ComposedSlowQueryLog } from "@/types";
+import { extractProjectResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 
 const props = defineProps<{
@@ -116,9 +117,10 @@ const handleCreateIndex = () => {
   query.name = generateIssueName();
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(database.value.project),
+      issueSlug: "create",
     },
     query,
   };

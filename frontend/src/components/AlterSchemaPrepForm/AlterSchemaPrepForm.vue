@@ -260,7 +260,7 @@
           >
             {{ $t("common.next") }}
           </NButton>
-          <NTooltip v-else :disabled="flattenSelectedProjectSet.size <= 1">
+          <NTooltip v-else :disabled="flattenSelectedProjectList.length <= 1">
             <template #trigger>
               <NButton
                 type="primary"
@@ -301,6 +301,7 @@
 </template>
 
 <script lang="ts" setup>
+import { uniqBy } from "lodash-es";
 import {
   NButton,
   NTabs,
@@ -341,6 +342,7 @@ import {
   SearchParams,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
+  extractProjectResourceName,
 } from "@/utils";
 import { DatabaseLabelFilter, DatabaseV1Table, DrawerContent } from "../v2";
 import DatabaseGroupPrevEditorModal from "./DatabaseGroupPrevEditorModal.vue";
@@ -578,19 +580,17 @@ const flattenSelectedDatabaseUidList = computed(() => {
   return [...state.selectedDatabaseUidList];
 });
 
-const flattenSelectedProjectSet = computed(() => {
-  const projectSet: Set<string> = new Set();
-  for (const uid of flattenSelectedDatabaseUidList.value) {
-    const database = databaseV1Store.getDatabaseByUID(uid);
-    projectSet.add(database.projectEntity.uid);
-  }
-  return projectSet;
+const flattenSelectedProjectList = computed(() => {
+  const projects = flattenSelectedDatabaseUidList.value.map((uid) => {
+    return databaseV1Store.getDatabaseByUID(uid).projectEntity;
+  });
+  return uniqBy(projects, (project) => project.name);
 });
 
 const allowGenerateMultiDb = computed(() => {
   if (state.databaseSelectedTab === "DATABASE") {
     return (
-      flattenSelectedProjectSet.value.size === 1 &&
+      flattenSelectedProjectList.value.length === 1 &&
       flattenSelectedDatabaseUidList.value.length > 0
     );
   } else {
@@ -623,25 +623,27 @@ const generateMultiDb = async () => {
     return;
   }
 
-  if (flattenSelectedProjectSet.value.size !== 1) {
+  if (flattenSelectedProjectList.value.length !== 1) {
     return;
   }
 
+  const project = flattenSelectedProjectList.value[0];
   const query: Record<string, any> = {
     template: props.type,
     name: generateIssueName(
       props.type,
       selectedDatabaseList.map((db) => db.databaseName)
     ),
-    project: [...flattenSelectedProjectSet.value][0],
+    project: project.uid,
     // The server-side will sort the databases by environment.
     // So we need not to sort them here.
     databaseList: flattenSelectedDatabaseUidList.value.join(","),
   };
   router.push({
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
     },
     query,
   });
@@ -788,9 +790,10 @@ const generateTenant = async () => {
   emit("dismiss");
 
   router.push({
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(selectedProject.value.name),
+      issueSlug: "create",
     },
     query,
   });

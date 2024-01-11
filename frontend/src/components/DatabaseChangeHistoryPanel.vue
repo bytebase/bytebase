@@ -126,6 +126,7 @@ import {
   getAffectedTablesOfChangeHistory,
   instanceV1HasAlterSchema,
   getHistoryChangeType,
+  extractProjectResourceName,
 } from "@/utils";
 import { TooltipButton } from "./v2";
 
@@ -294,9 +295,10 @@ const doCreateBaseline = () => {
   state.showBaselineModal = false;
 
   router.push({
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(props.database.project),
+      issueSlug: "create",
     },
     query: {
       template: "bb.issue.database.schema.baseline",

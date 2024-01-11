@@ -124,7 +124,7 @@ export const useBaseIssueContext = (
       : taskV1Slug(task);
 
     router.replace({
-      name: "workspace.issue.detail",
+      name: "workspace.project.issue.detail",
       query: {
         ...route.query,
         stage: stageParam,

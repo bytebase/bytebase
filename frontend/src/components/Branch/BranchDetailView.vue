@@ -145,7 +145,7 @@ import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { defer } from "@/utils";
+import { defer, extractProjectResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
@@ -469,9 +469,10 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
     targetDatabaseList.map((db) => db.databaseName)
   );
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(props.project.name),
+      issueSlug: "create",
     },
     query,
   };

@@ -16,6 +16,7 @@ export const PROJECT_V1_ROUTE_BRANCH_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollo
 export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
 export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE}.issue.dashboard`;
+export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE}.issue.detail`;
 export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE}.change-histories.dashboard`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE}.changelist.dashboard`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE}.changelist.detail`;
@@ -179,7 +180,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "issues/:issueSlug",
-        name: "workspace.project.issue.detail",
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         meta: {
           overrideTitle: true,
         },

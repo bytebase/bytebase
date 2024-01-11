@@ -152,7 +152,7 @@ import {
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { TinyTimer } from "@/utils";
+import { TinyTimer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import SchemaEditorLite, {
@@ -523,9 +523,10 @@ const handlePreviewIssue = async () => {
   }
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.value.name),
+      issueSlug: "create",
     },
     query,
   };

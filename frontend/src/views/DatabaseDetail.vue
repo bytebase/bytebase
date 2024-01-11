@@ -244,7 +244,7 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
-import { DATABASE_ROUTE_DETAIL } from "@/router/dashboard/database";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useAnomalyV1Store,
@@ -273,6 +273,7 @@ import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
+  extractProjectResourceName,
 } from "@/utils";
 
 const databaseHashList = [
@@ -521,9 +522,10 @@ const createMigration = async (
   };
 
   router.push({
-    name: DATABASE_ROUTE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.value.name),
+      issueSlug: "create",
     },
     query,
   });

@@ -149,7 +149,11 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { extractSheetUID, setSheetStatement } from "@/utils";
+import {
+  extractProjectResourceName,
+  extractSheetUID,
+  setSheetStatement,
+} from "@/utils";
 import { useVirtualBranch } from "./useVirtualBranch";
 
 type TabType = "schema-editor" | "raw-sql-preview";
@@ -355,9 +359,10 @@ const handlePreviewIssue = async () => {
     name: generateIssueName(db.databaseName),
   };
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      project: extractProjectResourceName(props.project.name),
+      issueSlug: "create",
     },
     query,
   };

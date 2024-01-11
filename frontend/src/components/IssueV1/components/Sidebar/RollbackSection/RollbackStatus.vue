@@ -79,7 +79,7 @@ import {
 } from "@/types";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { Task_DatabaseDataUpdate_RollbackSqlStatus as RollbackSqlStatus } from "@/types/proto/v1/rollout_service";
-import { extractSheetUID } from "@/utils";
+import { extractProjectResourceName, extractSheetUID } from "@/utils";
 import IssueStatusIcon from "../../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
@@ -165,9 +165,10 @@ const tryRollbackTask = async () => {
     ].join("\n");
 
     router.push({
-      name: "workspace.issue.detail",
+      name: "workspace.project.issue.detail",
       params: {
-        issueSlug: "new",
+        projectId: extractProjectResourceName(issue.value.project),
+        issueSlug: "create",
       },
       query: {
         template: "bb.issue.database.data.update",

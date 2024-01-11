@@ -69,6 +69,7 @@ import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
@@ -241,9 +242,10 @@ const tryFinishSetup = async () => {
   );
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
     },
     query,
   };

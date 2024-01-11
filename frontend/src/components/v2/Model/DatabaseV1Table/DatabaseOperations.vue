@@ -113,6 +113,7 @@ import {
   instanceV1HasAlterSchema,
   allowUsingSchemaEditorV1,
   generateIssueName,
+  extractProjectResourceName,
 } from "@/utils";
 import { ProjectPermissionType } from "@/utils/role";
 
@@ -302,10 +303,12 @@ const generateMultiDb = async (
     // So we need not to sort them here.
     databaseList: selectedDatabaseUidList.value.join(","),
   };
+  const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
   router.push({
-    name: "workspace.issue.detail",
+    name: "workspace.project.issue.detail",
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
     },
     query,
   });

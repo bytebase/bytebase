@@ -95,6 +95,7 @@ import {
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
+  extractProjectResourceName,
   filterDatabaseV1ByKeyword,
   guessChangelistChangeType,
   instanceV1HasAlterSchema,
@@ -218,9 +219,10 @@ const handleClickNext = async () => {
     };
 
     router.push({
-      name: "workspace.issue.detail",
+      name: "workspace.project.issue.detail",
       params: {
-        issueSlug: "new",
+        projectId: extractProjectResourceName(project.value.name),
+        issueSlug: "create",
       },
       query,
     });

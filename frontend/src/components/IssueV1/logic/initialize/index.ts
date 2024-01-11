@@ -17,14 +17,16 @@ export function useInitializeIssue(
   project: MaybeRef<string> = "-",
   redirectNotFound: boolean = true
 ) {
-  const isCreating = computed(
-    () =>
+  const isCreating = computed(() => {
+    return (
       unref(issueSlug).toLowerCase() == "new" ||
       unref(issueSlug).toLowerCase() === "create"
-  );
+    );
+  });
   const uid = computed(() => {
     const slug = unref(issueSlug);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
+    if (slug.toLowerCase() === "create") return String(EMPTY_ID);
     const uid = Number(idFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);

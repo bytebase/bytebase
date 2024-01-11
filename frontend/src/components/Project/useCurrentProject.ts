@@ -24,6 +24,7 @@ export const useCurrentProject = (
     const slug = unref(params).issueSlug;
     if (!slug) return String(UNKNOWN_ID);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
+    if (slug.toLowerCase() === "create") return String(EMPTY_ID);
     const uid = Number(idFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
