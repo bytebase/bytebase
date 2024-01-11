@@ -19,7 +19,6 @@ import {
 } from "@/types";
 import { activeTask } from "./pipeline";
 import { hasWorkspacePermissionV1 } from "./role";
-import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { extractUserUID } from "./v1";
 
 export const extractDatabaseNameFromTask = (
@@ -69,27 +68,6 @@ export const extractDatabaseNameFromTask = (
 
   // Fallback to <<Unknown database>>. Won't be happy to see it.
   return unknownDatabase().databaseName;
-};
-
-export const buildIssueLinkWithTask = (
-  issue: Issue,
-  task: Task,
-  simple = false
-) => {
-  const stage = task.stage;
-  const stageIndex = issue.pipeline!.stageList.findIndex(
-    (s) => s.id === stage.id
-  );
-
-  const issuePart = simple ? String(issue.id) : issueSlug(issue.name, issue.id);
-  const stagePart = simple
-    ? String(stageIndex + 1)
-    : stageSlug(stage.name, stageIndex + 1);
-  const taskPart = simple ? String(task.id) : taskSlug(task.name, task.id);
-
-  const url = `/issue/${issuePart}?stage=${stagePart}&task=${taskPart}`;
-
-  return url;
 };
 
 export const HiddenCheckTypes = new Set<TaskCheckType>([

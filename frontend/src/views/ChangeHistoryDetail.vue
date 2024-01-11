@@ -27,7 +27,13 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${extractIssueUID(changeHistory.issue)}`"
+                :to="{
+                  name: 'workspace.project.issue.detail',
+                  params: {
+                    projectId: extractProjectResourceName(changeHistory.issue),
+                    issueSlug: extractIssueUID(changeHistory.issue),
+                  },
+                }"
                 class="normal-link"
               >
                 {{ extractIssueUID(changeHistory.issue) }}
@@ -355,6 +361,7 @@ import {
   getAffectedTablesOfChangeHistory,
   toClipboard,
   getStatementSize,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {

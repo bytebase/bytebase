@@ -141,9 +141,9 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
-import { stringify } from "qs";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
+import { useRouter } from "vue-router";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -155,7 +155,11 @@ import {
   useTabStore,
 } from "@/store";
 import { DatabaseId, TabMode } from "@/types";
-import { allowUsingSchemaEditorV1, instanceV1HasReadonlyMode } from "@/utils";
+import {
+  allowUsingSchemaEditorV1,
+  extractProjectResourceName,
+  instanceV1HasReadonlyMode,
+} from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
@@ -184,6 +188,7 @@ const state = reactive<LocalState>({
   sidebarExpanded: false,
 });
 
+const router = useRouter();
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
@@ -241,8 +246,15 @@ useEmitteryEventListener(
         databaseList: databaseUID,
         sql: exampleSQL.join(" "),
       };
-      const url = `/issue/new?${stringify(query)}`;
-      window.open(url, "_blank");
+      const route = router.resolve({
+        name: "workspace.project.issue.detail",
+        params: {
+          projectId: extractProjectResourceName(database.project),
+          issueSlug: "create",
+        },
+        query,
+      });
+      window.open(route.fullPath, "_blank");
     }
   }
 );
