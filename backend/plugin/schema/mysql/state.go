@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"io"
 	"slices"
 	"sort"
 	"strings"
@@ -104,7 +105,7 @@ type tableState struct {
 	comment     string
 }
 
-func (t *tableState) toString(buf *strings.Builder) error {
+func (t *tableState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -278,7 +279,7 @@ func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *f
 	}
 }
 
-func (f *foreignKeyState) toString(buf *strings.Builder) error {
+func (f *foreignKeyState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString("CONSTRAINT `"); err != nil {
 		return err
 	}
@@ -370,7 +371,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	}
 }
 
-func (i *indexState) toString(buf *strings.Builder) error {
+func (i *indexState) toString(buf io.StringWriter) error {
 	if i.primary {
 		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
 			return err
@@ -487,7 +488,7 @@ type columnState struct {
 	nullable     bool
 }
 
-func (c *columnState) toString(buf *strings.Builder) error {
+func (c *columnState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}

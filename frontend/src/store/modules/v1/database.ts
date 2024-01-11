@@ -2,6 +2,7 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
+import { useActuatorV1Store } from "@/store";
 import {
   ComposedInstance,
   ComposedDatabase,
@@ -68,7 +69,11 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     }
   };
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.listDatabases(args);
+    const actuatorStore = useActuatorV1Store();
+    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
+    const { databases } = isDevelopmentIAM
+      ? await databaseServiceClient.searchDatabases(args)
+      : await databaseServiceClient.listDatabases(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
