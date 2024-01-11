@@ -31,6 +31,8 @@ import {
   PROJECT_V1_BRANCHE_MERGE,
   PROJECT_V1_BRANCHE_REBASE,
   PROJECT_V1_CHANGELIST_DETAIL,
+  PROJECT_V1_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -238,6 +240,12 @@ const getItemClass = (path: string | undefined) => {
       break;
     case PROJECT_V1_CHANGELIST_DETAIL:
       if (path === `${projectPath}/changelists`) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case PROJECT_V1_DATABASE_GROUP_DETAIL:
+    case PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL:
+      if (path === `${projectPath}/database-groups`) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;

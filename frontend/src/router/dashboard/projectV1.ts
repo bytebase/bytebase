@@ -1,6 +1,7 @@
 import { RouteRecordRaw } from "vue-router";
 import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
+import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
 export const PROJECT_V1_ROUTE = "workspace.projectV1";
 export const PROJECT_V1_DETAIL = `${PROJECT_V1_ROUTE}.detail`;
@@ -29,6 +30,25 @@ export const PROJECT_V1_MEMBERS = `${PROJECT_V1_ROUTE}.members`;
 export const PROJECT_V1_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
 
 const projectV1Routes: RouteRecordRaw[] = [
+  {
+    path: "project",
+    name: "workspace.project",
+    meta: {
+      title: () => t("common.projects"),
+      quickActionListByRole: () => {
+        return new Map([
+          ["OWNER", ["quickaction.bb.project.create"]],
+          ["DBA", ["quickaction.bb.project.create"]],
+          ["DEVELOPER", ["quickaction.bb.project.create"]],
+        ]);
+      },
+    },
+    components: {
+      content: () => import("@/views/ProjectDashboard.vue"),
+      leftSidebar: DashboardSidebar,
+    },
+    props: { content: true, leftSidebar: true },
+  },
   {
     path: "projects/:projectId",
     components: {
