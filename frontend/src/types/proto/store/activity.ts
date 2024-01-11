@@ -13,7 +13,6 @@ export const protobufPackage = "bytebase.store";
  * convert to the expected struct there.
  */
 export interface ActivityIssueCreatePayload {
-  /** Used by inbox to display info without paying the join cost */
   issueName: string;
 }
 
@@ -21,10 +20,7 @@ export interface ActivityIssueCreatePayload {
 export interface ActivityIssueCommentCreatePayload {
   externalApprovalEvent?: ActivityIssueCommentCreatePayload_ExternalApprovalEvent | undefined;
   taskRollbackBy?: ActivityIssueCommentCreatePayload_TaskRollbackBy | undefined;
-  approvalEvent?:
-    | ActivityIssueCommentCreatePayload_ApprovalEvent
-    | undefined;
-  /** Used by inbox to display info without paying the join cost */
+  approvalEvent?: ActivityIssueCommentCreatePayload_ApprovalEvent | undefined;
   issueName: string;
 }
 

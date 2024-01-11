@@ -102,7 +102,6 @@ const (
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
 // convert to the expected struct there.
 type ActivityIssueCreatePayload struct {
-	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
@@ -128,25 +127,22 @@ type ActivityIssueCommentCreatePayload struct {
 
 	ApprovalEvent *ApprovalEvent `json:"approvalEvent,omitempty"`
 
-	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 }
 
 // ActivityIssueFieldUpdatePayload is the API message payloads for updating issue fields.
 type ActivityIssueFieldUpdatePayload struct {
-	FieldID  IssueFieldID `json:"fieldId"`
-	OldValue string       `json:"oldValue,omitempty"`
-	NewValue string       `json:"newValue,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
+	FieldID   IssueFieldID `json:"fieldId"`
+	OldValue  string       `json:"oldValue,omitempty"`
+	NewValue  string       `json:"newValue,omitempty"`
+	IssueName string       `json:"issueName"`
 }
 
 // ActivityIssueStatusUpdatePayload is the API message payloads for updating issue status.
 type ActivityIssueStatusUpdatePayload struct {
 	OldStatus IssueStatus `json:"oldStatus,omitempty"`
 	NewStatus IssueStatus `json:"newStatus,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
+	IssueName string      `json:"issueName"`
 }
 
 // ActivityIssueApprovalNotifyPayload is the API message payloads for notifying issue approval.
@@ -160,7 +156,6 @@ type ActivityPipelineStageStatusUpdatePayload struct {
 	StageID               int                   `json:"stageId"`
 	StageStatusUpdateType StageStatusUpdateType `json:"stageStatusUpdateType"`
 
-	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	StageName string `json:"stageName"`
 }
@@ -170,17 +165,15 @@ type ActivityPipelineTaskStatusUpdatePayload struct {
 	TaskID    int        `json:"taskId"`
 	OldStatus TaskStatus `json:"oldStatus,omitempty"`
 	NewStatus TaskStatus `json:"newStatus,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
-	TaskName  string `json:"taskName"`
+	IssueName string     `json:"issueName"`
+	TaskName  string     `json:"taskName"`
 }
 
 type ActivityPipelineTaskRunStatusUpdatePayload struct {
 	TaskID    int           `json:"taskId"`
 	NewStatus TaskRunStatus `json:"newStatus,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
-	TaskName  string `json:"taskName"`
+	IssueName string        `json:"issueName"`
+	TaskName  string        `json:"taskName"`
 }
 
 // ActivityPipelineTaskFileCommitPayload is the API message payloads for committing pipeline task files.
@@ -200,19 +193,17 @@ type ActivityPipelineTaskStatementUpdatePayload struct {
 	NewStatement string `json:"newStatement,omitempty"`
 	OldSheetID   int    `json:"oldSheetId,omitempty"`
 	NewSheetID   int    `json:"newSheetId,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
-	TaskName  string `json:"taskName"`
+	IssueName    string `json:"issueName"`
+	TaskName     string `json:"taskName"`
 }
 
 // ActivityPipelineTaskEarliestAllowedTimeUpdatePayload is the API message payloads for pipeline task the earliest allowed time updates.
 type ActivityPipelineTaskEarliestAllowedTimeUpdatePayload struct {
-	TaskID               int   `json:"taskId"`
-	OldEarliestAllowedTs int64 `json:"oldEarliestAllowedTs,omitempty"`
-	NewEarliestAllowedTs int64 `json:"newEarliestAllowedTs,omitempty"`
-	// Used by inbox to display info without paying the join cost
-	IssueName string `json:"issueName"`
-	TaskName  string `json:"taskName"`
+	TaskID               int    `json:"taskId"`
+	OldEarliestAllowedTs int64  `json:"oldEarliestAllowedTs,omitempty"`
+	NewEarliestAllowedTs int64  `json:"newEarliestAllowedTs,omitempty"`
+	IssueName            string `json:"issueName"`
+	TaskName             string `json:"taskName"`
 }
 
 // ActivityPipelineTaskPriorBackupPayload is the API message payloads for pipeline task prior backup.
@@ -220,7 +211,6 @@ type ActivityPipelineTaskPriorBackupPayload struct {
 	TaskID               int              `json:"taskId"`
 	BackupSchemaMetadata []SchemaMetadata `json:"schemaMetadata"`
 
-	// Used by inbox to display info without paying the join cost
 	IssueName string `json:"issueName"`
 	TaskName  string `json:"taskName"`
 }

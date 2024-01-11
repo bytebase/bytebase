@@ -420,7 +420,7 @@ ActivityIssueCommentCreatePayload is the payloads for creating issue comments.
 | external_approval_event | [ActivityIssueCommentCreatePayload.ExternalApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ExternalApprovalEvent) |  |  |
 | task_rollback_by | [ActivityIssueCommentCreatePayload.TaskRollbackBy](#bytebase-store-ActivityIssueCommentCreatePayload-TaskRollbackBy) |  |  |
 | approval_event | [ActivityIssueCommentCreatePayload.ApprovalEvent](#bytebase-store-ActivityIssueCommentCreatePayload-ApprovalEvent) |  |  |
-| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+| issue_name | [string](#string) |  |  |
 
 
 
@@ -490,7 +490,7 @@ convert to the expected struct there.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| issue_name | [string](#string) |  | Used by inbox to display info without paying the join cost |
+| issue_name | [string](#string) |  |  |
 
 
 

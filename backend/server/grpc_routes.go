@@ -88,7 +88,6 @@ func configureGrpcRouters(
 	v1pb.RegisterBranchServiceServer(grpcServer, apiv1.NewBranchService(stores, licenseService))
 	v1pb.RegisterCelServiceServer(grpcServer, apiv1.NewCelService())
 	v1pb.RegisterLoggingServiceServer(grpcServer, apiv1.NewLoggingService(stores))
-	v1pb.RegisterInboxServiceServer(grpcServer, apiv1.NewInboxService(stores))
 	v1pb.RegisterChangelistServiceServer(grpcServer, apiv1.NewChangelistService(stores, profile, iamManager))
 
 	// REST gateway proxy.
@@ -153,9 +152,6 @@ func configureGrpcRouters(
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterLoggingServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, err
-	}
-	if err := v1pb.RegisterInboxServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, err
 	}
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
