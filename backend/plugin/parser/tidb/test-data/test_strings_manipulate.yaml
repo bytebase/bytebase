@@ -1,6 +1,35 @@
 - input: |-
     -- Table structure for `t`
      CREATE TABLE `t` (
+        `id` int /* this is comment */,
+        `name` varchar(10) NOT NULL,
+        PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+     );
+    -- Table structure for `t1`
+     CREATE TABLE `t1` (
+       `id` int
+     ) COMMENT 'this is comment';
+  actions:
+    - type: addColumn
+      arguments:
+        - t
+        - '`age` int NOT NULL'
+  want: |-
+    -- Table structure for `t`
+     CREATE TABLE `t` (
+      `id` int /* this is comment */,
+      `name` varchar(10) NOT NULL,
+      `age` int NOT NULL,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+    );
+
+    -- Table structure for `t1`
+     CREATE TABLE `t1` (
+       `id` int
+     ) COMMENT 'this is comment';
+- input: |-
+    -- Table structure for `t`
+     CREATE TABLE `t` (
         `id` int,
         `name` varchar(10) NOT NULL,
         `age` int,
@@ -10,8 +39,24 @@
      -- Table structure for `t1`
      CREATE TABLE `t1` (
        `id` int
-     );
+     ) COMMENT 'this is comment';
   actions:
+    - type: addTable
+      arguments:
+        - |-
+          -- Table structure for `t2`
+          CREATE TABLE `t2` (
+            `id` int
+          );
+    - type: addTableOption
+      arguments:
+        - t
+        - COMMENT 'this is comment'
+    - type: modifyTableOption
+      arguments:
+        - t1
+        - comment
+        - COMMENT 'this is comment 2'
     - type: dropColumn
       arguments:
         - t
@@ -25,7 +70,6 @@
       arguments:
         - t
         - id
-        - notNull
         - NOT NULL
     - type: dropTableConstraint
       arguments:
@@ -51,13 +95,20 @@
      CREATE TABLE `t` (
       `id` int NOT NULL,
       `name` varchar(10),
+      PRIMARY KEY (`id`),
       UNIQUE KEY `name` (`id`, `name`),
       UNIQUE KEY `id` (`id`)
-    );
+    ) COMMENT 'this is comment' ;
+
     -- Table structure for `t1`
      CREATE TABLE `t1` (
       `id` int,
       age int NOT NULL
+    ) COMMENT 'this is comment 2';
+
+    -- Table structure for `t2`
+    CREATE TABLE `t2` (
+      `id` int
     );
 - input: |-
     -- Table structure for `t`
@@ -76,15 +127,13 @@
       arguments:
         - t1
         - id
-        - primaryKey
         - PRIMARY KEY
     - type: addColumnOption
       arguments:
         - t1
         - id
-        - notNull
         - NOT NULL
-  want: |-
+  want: |
     -- Table structure for `t1`
     CREATE TABLE `t1` (
       `id` int PRIMARY KEY NOT NULL
@@ -93,15 +142,19 @@
     -- Table structure for `t`
     CREATE TABLE `t` (
       `id` int
-    );
+    ) COMMENT 'this is comment';
   actions:
     - type: modifyColumnType
       arguments:
         - t
         - id
         - varchar(10)
-  want: |-
+    - type: dropTableOption
+      arguments:
+        - t
+        - comment
+  want: |
     -- Table structure for `t`
     CREATE TABLE `t` (
       `id` varchar(10)
-    );
+    ) ;

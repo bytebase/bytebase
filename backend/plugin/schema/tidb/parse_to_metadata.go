@@ -138,7 +138,17 @@ type tableState struct {
 	comment     string
 }
 
+const (
+	tableStmtFmt = "" +
+		"--\n" +
+		"-- Table structure for `%s`\n" +
+		"--\n"
+)
+
 func (t *tableState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(fmt.Sprintf(tableStmtFmt, t.name)); err != nil {
+		return err
+	}
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -884,26 +894,12 @@ func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, e
 	return buffer.String(), nil
 }
 
-func tidbRestoreNodeDefault(node tidbast.Node) (string, error) {
-	return tidbRestoreNode(node, tidbformat.DefaultRestoreFlags)
-}
-
 func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
 	var buffer strings.Builder
 	// we want to use Default format flags but with lowercase keyword.
 	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := fieldType.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
-func tidbRestoreTableOption(tableOption *tidbast.TableOption) (string, error) {
-	var buffer strings.Builder
-	flag := tidbformat.DefaultRestoreFlags
-	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
-	if err := tableOption.Restore(ctx); err != nil {
 		return "", err
 	}
 	return buffer.String(), nil
