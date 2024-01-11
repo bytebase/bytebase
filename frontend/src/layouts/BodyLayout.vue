@@ -192,9 +192,10 @@
               <div
                 class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
               >
-                <div v-if="quickActionList.length > 0" class="flex-1 pt-3 pb-4">
-                  <QuickActionPanel :quick-action-list="quickActionList" />
-                </div>
+                <QuickActionPanel
+                  :quick-action-list="quickActionList"
+                  class="flex-1 pt-3 pb-4"
+                />
               </div>
             </div>
           </div>

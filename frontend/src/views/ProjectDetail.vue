@@ -1,7 +1,5 @@
 <template>
-  <div v-if="quickActionList.length > 0" class="flex-1 pb-4">
-    <QuickActionPanel :quick-action-list="quickActionList" />
-  </div>
+  <QuickActionPanel :quick-action-list="quickActionList" class="mb-4" />
   <template v-if="hash === 'issues'">
     <ProjectIssuesPanel id="issues" :project="project" />
   </template>
