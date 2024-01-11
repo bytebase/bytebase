@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -322,10 +321,6 @@ func NewAddTableConstraintAction(tableName string, constraintType tidbast.Constr
 	}
 }
 
-var (
-	regexpColumn = regexp.MustCompile("^  `([^`]+)`")
-)
-
 func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (string, error) {
 	tableActions := make(map[string][]StringsManipulatorAction)
 
@@ -469,7 +464,7 @@ func (r *rewriter) EnterCreateTable(ctx *parser.CreateTableContext) {
 	)
 }
 
-func (r *rewriter) ExitCreateTable(ctx *parser.CreateTableContext) {
+func (r *rewriter) ExitCreateTable(_ *parser.CreateTableContext) {
 	if r.err != nil {
 		return
 	}

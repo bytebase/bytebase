@@ -267,10 +267,6 @@ func NormalizeTiDBColumnInternalRef(ctx parser.IColumnInternalRefContext) string
 	return ""
 }
 
-func normalizeTiDBColumnRef(ctx parser.IColumnRefContext) (string, string, string) {
-	return NormalizeTiDBFieldIdentifier(ctx.FieldIdentifier())
-}
-
 // NormalizeTiDBCharsetName noamalizes the given charset name.
 func NormalizeTiDBCharsetName(ctx parser.ICharsetNameContext) string {
 	switch {
