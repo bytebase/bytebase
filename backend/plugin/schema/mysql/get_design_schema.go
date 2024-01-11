@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"io"
 	"slices"
 	"sort"
 	"strings"
@@ -29,6 +30,7 @@ func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) 
 	listener := &mysqlDesignSchemaGenerator{
 		lastTokenIndex: 0,
 		to:             toState,
+		desired:        to,
 	}
 
 	for _, stmt := range list {
@@ -51,39 +53,22 @@ func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) 
 		return "", listener.err
 	}
 
-	firstTable := true
-
-	// Follow the order of the input schemas.
-	for _, schema := range to.Schemas {
-		schemaState, ok := toState.schemas[schema.Name]
-		if !ok {
-			continue
-		}
-		// Follow the order of the input tables.
-		for _, table := range schema.Tables {
-			table, ok := schemaState.tables[table.Name]
-			if !ok {
-				continue
-			}
-			if firstTable {
-				firstTable = false
-				if _, err := listener.result.WriteString("\n\n"); err != nil {
-					return "", err
-				}
-			}
-			if err := table.toString(&listener.result); err != nil {
-				return "", err
-			}
-		}
-	}
-
-	// The last statement of the result is SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-	// We should append a 0xa to the end of the result to avoid the extra newline diff.
-	// TODO(rebelice/zp): find a more elegant way to do this.
-	if err := listener.result.WriteByte('\n'); err != nil {
+	// Expectedly, EnterSetStatement is called when production setStatement is entered.
+	// And we would like to generate the remaining tables before the set statement mentioned above.
+	// But users can remove the set statement during the rebase process.
+	if err := writeRemainingTables(&listener.result, to, toState); err != nil {
 		return "", err
 	}
 
+	result := listener.result.String()
+	if !strings.HasSuffix(result, "\n") {
+		// The last statement of the result is SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+		// We should append a 0xa to the end of the result to avoid the extra newline diff.
+		// TODO(rebelice/zp): find a more elegant way to do this.
+		if err := listener.result.WriteByte('\n'); err != nil {
+			return "", err
+		}
+	}
 	return listener.result.String(), nil
 }
 
@@ -101,6 +86,8 @@ type mysqlDesignSchemaGenerator struct {
 
 	lastTokenIndex        int
 	tableOptionTokenIndex int
+
+	desired *storepb.DatabaseSchemaMetadata
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -881,4 +868,72 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 		g.err = err
 		return
 	}
+}
+
+// EnterSetStatement is called when production setStatement is entered.
+//
+// mysqldump generate `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;` statement at the end of the file,
+// to provide the better user experience, we generate the remaining tables before the set statement mentioned above.
+func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementContext) {
+	if g.err != nil {
+		return
+	}
+
+	curSet := strings.TrimSpace(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
+	if curSet != `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS` {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+	firstTable := true
+	// Follow the order of the input schemas.
+	for _, schema := range to.Schemas {
+		schemaState, ok := state.schemas[schema.Name]
+		if !ok {
+			continue
+		}
+		// Follow the order of the input tables.
+		for idx, table := range schema.Tables {
+			table, ok := schemaState.tables[table.Name]
+			if !ok {
+				continue
+			}
+			if firstTable {
+				firstTable = false
+				if _, err := w.WriteString("\n"); err != nil {
+					return err
+				}
+			}
+			if _, err := w.WriteString(getTableAnnouncement(table.name)); err != nil {
+				return err
+			}
+
+			// Avoid new line.
+			buf := &strings.Builder{}
+			if err := table.toString(buf); err != nil {
+				return err
+			}
+			if idx == len(schema.Tables)-1 && buf.String()[len(buf.String())-1] == '\n' {
+				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.WriteString(buf.String()); err != nil {
+					return err
+				}
+			}
+			delete(schemaState.tables, table.name)
+		}
+	}
+	return nil
+}
+
+func getTableAnnouncement(name string) string {
+	return fmt.Sprintf("\n--\n-- Table structure for table `%s`\n--\n", name)
 }
