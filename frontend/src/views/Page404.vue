@@ -20,6 +20,7 @@
 
 <script lang="ts">
 import { useRouter } from "vue-router";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 
 export default {
   name: "ThePage404",
@@ -27,7 +28,7 @@ export default {
     const router = useRouter();
 
     const goHome = () => {
-      router.push({ name: "workspace.home" });
+      router.push({ name: WORKSPACE_HOME_MODULE });
     };
 
     return {

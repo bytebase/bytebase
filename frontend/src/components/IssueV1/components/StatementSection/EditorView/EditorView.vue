@@ -214,7 +214,6 @@
 <script setup lang="ts">
 import { useElementSize } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
-import Long from "long";
 import { ExpandIcon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -260,6 +259,7 @@ import {
   setSheetStatement,
   sheetNameOfTaskV1,
   useInstanceV1EditorLanguage,
+  getStatementSize,
 } from "@/utils";
 import { readFileAsync } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
@@ -365,7 +365,7 @@ const isTaskSheetOversize = computed(() => {
   if (state.isEditing) return false;
   if (!sheetReady.value) return false;
   if (!sheet.value) return false;
-  return Long.fromNumber(getSheetStatement(sheet.value).length).lt(
+  return getStatementSize(getSheetStatement(sheet.value)).lt(
     sheet.value.contentSize
   );
 });
@@ -397,7 +397,7 @@ const allowApplyTaskStateToOthers = computed(() => {
     return false;
   }
   if (project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED) {
-    return false;
+    return !isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value);
   }
 
   const taskList = flattenTaskV1List(issue.value.rolloutEntity);

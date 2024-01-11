@@ -2,15 +2,15 @@
   <div class="min-h-screen overflow-hidden flex">
     <div class="hidden bg-white lg:block relative w-0 flex-1">
       <img
-        v-if="route == 'auth.signup'"
+        v-if="route === AUTH_SIGNUP_MODULE"
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signup.webp"
+        src="@/assets/illustration/signup.webp"
         alt=""
       />
       <img
         v-else
         class="absolute inset-0 h-full w-full object-cover"
-        src="../assets/illustration/signin.webp"
+        src="@/assets/illustration/signin.webp"
         alt=""
       />
     </div>
@@ -22,22 +22,14 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 
-export default {
-  name: "SplashLayout",
-  setup() {
-    const router = useRouter();
+const router = useRouter();
 
-    const route = computed(() => {
-      return router.currentRoute.value.name;
-    });
-
-    return {
-      route,
-    };
-  },
-};
+const route = computed(() => {
+  return router.currentRoute.value.name;
+});
 </script>

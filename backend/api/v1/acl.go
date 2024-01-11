@@ -58,7 +58,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if isOwnerOrDBA(user.Role) {
+	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
 		return handler(ctx, request)
 	}
 
@@ -90,7 +90,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if user == nil {
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if isOwnerOrDBA(user.Role) {
+	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
 		return handler(request, ss)
 	}
 
@@ -177,6 +177,8 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	// If RBAC feature is not enabled, all users are treated as OWNER.
 	if in.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
 		user.Role = api.WorkspaceAdmin
+		// TODO(p0ny): append projectOwner, projectQuerier, projectExporter as we will split workspaceAdmin into these roles.
+		user.Roles = uniq(append(user.Roles, api.WorkspaceAdmin))
 	}
 	return user, nil
 }

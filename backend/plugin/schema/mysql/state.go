@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"fmt"
+	"io"
+	"slices"
 	"sort"
 	"strings"
 
@@ -103,7 +105,7 @@ type tableState struct {
 	comment     string
 }
 
-func (t *tableState) toString(buf *strings.Builder) error {
+func (t *tableState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -277,7 +279,7 @@ func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *f
 	}
 }
 
-func (f *foreignKeyState) toString(buf *strings.Builder) error {
+func (f *foreignKeyState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString("CONSTRAINT `"); err != nil {
 		return err
 	}
@@ -369,7 +371,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	}
 }
 
-func (i *indexState) toString(buf *strings.Builder) error {
+func (i *indexState) toString(buf io.StringWriter) error {
 	if i.primary {
 		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
 			return err
@@ -486,13 +488,17 @@ type columnState struct {
 	nullable     bool
 }
 
-func (c *columnState) toString(buf *strings.Builder) error {
+func (c *columnState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
 	if c.nullable {
-		if _, err := buf.WriteString(" NULL"); err != nil {
-			return err
+		if !slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+			return strings.EqualFold(s, c.tp)
+		}) {
+			if _, err := buf.WriteString(" NULL"); err != nil {
+				return err
+			}
 		}
 	} else {
 		if _, err := buf.WriteString(" NOT NULL"); err != nil {
@@ -544,11 +550,22 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 }
 
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
+	hasDefault := column.GetDefaultValue() != nil
+	if hasDefault {
+		_, isDefaultNull := column.GetDefaultValue().(*storepb.ColumnMetadata_DefaultNull)
+		// Some types do not default to NULL, but support default expressions.
+		if isDefaultNull && slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
+			return strings.EqualFold(s, column.Type)
+		}) {
+			hasDefault = false
+		}
+	}
+
 	result := &columnState{
 		id:         id,
 		name:       column.Name,
 		tp:         column.Type,
-		hasDefault: column.GetDefaultValue() != nil,
+		hasDefault: hasDefault,
 		nullable:   column.Nullable,
 		comment:    column.Comment,
 	}

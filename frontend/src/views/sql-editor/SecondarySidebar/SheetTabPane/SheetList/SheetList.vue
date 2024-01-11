@@ -82,7 +82,11 @@ import {
   useDatabaseV1Store,
   useTabStore,
 } from "@/store";
-import { ComposedProject, ComposedDatabase, DEFAULT_PROJECT_ID } from "@/types";
+import {
+  getProjectAndSheetId,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
+import { ComposedProject, ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { connectionForTab } from "@/utils";
 import {
   SheetViewMode,
@@ -180,14 +184,19 @@ const treeData = computed((): TreeNode[] => {
   const map: TreeNodeMap = {};
   for (const item of mergedItemList.value) {
     let database: ComposedDatabase | undefined;
+    let project: ComposedProject | undefined;
     if (isTabItem(item)) {
       database = connectionForTab(item.target).database;
+      project = database?.projectEntity;
     } else {
       database = databaseStore.getDatabaseByName(item.target.database);
+      const [projectId, _] = getProjectAndSheetId(item.target.name);
+      project = projectStore.getProjectByName(
+        `${projectNamePrefix}${projectId}`
+      );
     }
-    const project =
-      database?.projectEntity ??
-      projectStore.getProjectByUID(String(DEFAULT_PROJECT_ID));
+
+    project = project ?? projectStore.getProjectByUID(String(UNKNOWN_ID));
     if (!map[project.name]) {
       map[project.name] = {
         key: project.name,
@@ -197,7 +206,7 @@ const treeData = computed((): TreeNode[] => {
       };
     }
 
-    if (database) {
+    if (database && database.uid !== `${UNKNOWN_ID}`) {
       if (!map[project.name].children[database.name]) {
         map[project.name].children[database.name] = {
           key: database.name,
@@ -238,7 +247,7 @@ const getTreeNodeList = (treeNodeMap: TreeNodeMap): TreeNode[] => {
 const renderPrefix = ({ option }: { option: TreeOption }) => {
   const treeNode = option as TreeNode;
   if (treeNode.project) {
-    if (treeNode.project.uid === `${DEFAULT_PROJECT_ID}`) {
+    if (treeNode.project.uid === `${UNKNOWN_ID}`) {
       return h("div", {}, t("sheet.unconnected"));
     }
     return h(ProjectV1Name, {

@@ -75,7 +75,6 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import Long from "long";
 import { NSelect } from "naive-ui";
 import { computed, onMounted, nextTick, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -94,7 +93,7 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { engineNameV1, extractSheetUID } from "@/utils";
+import { engineNameV1, extractSheetUID, getStatementSize } from "@/utils";
 import { RawSQLState } from "./types";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -148,9 +147,7 @@ const isSheetOversized = computed(() => {
   if (!sheet.value) {
     return false;
   }
-  return Long.fromNumber(
-    new TextDecoder().decode(sheet.value.content).length
-  ).lt(sheet.value.contentSize);
+  return getStatementSize(sheet.value.content).lt(sheet.value.contentSize);
 });
 
 onMounted(async () => {

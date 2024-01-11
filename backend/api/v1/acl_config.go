@@ -44,7 +44,7 @@ var transferDatabaseMethods = map[string]bool{
 
 var methodPermissionMap = map[string]iam.Permission{
 	v1pb.InstanceService_ListInstances_FullMethodName:     iam.PermissionInstancesList,
-	v1pb.InstanceService_SearchInstances_FullMethodName:   "", // TODO(p0ny): implement me please.
+	v1pb.InstanceService_SearchInstances_FullMethodName:   "", // handled in the method; if the user can get the database, then the user can get the instance.
 	v1pb.InstanceService_GetInstance_FullMethodName:       iam.PermissionInstancesGet,
 	v1pb.InstanceService_CreateInstance_FullMethodName:    iam.PermissionInstancesCreate,
 	v1pb.InstanceService_UpdateInstance_FullMethodName:    iam.PermissionInstancesUpdate,
@@ -58,6 +58,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.InstanceService_SyncSlowQueries_FullMethodName:   iam.PermissionInstancesSync,
 
 	v1pb.DatabaseService_GetDatabase_FullMethodName:            iam.PermissionDatabasesGet,
+	v1pb.DatabaseService_SearchDatabases_FullMethodName:        iam.PermissionDatabasesGet,
 	v1pb.DatabaseService_ListDatabases_FullMethodName:          iam.PermissionDatabasesList,
 	v1pb.DatabaseService_UpdateDatabase_FullMethodName:         iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName:   iam.PermissionDatabasesUpdate,
@@ -65,7 +66,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.DatabaseService_GetDatabaseMetadata_FullMethodName:    iam.PermissionDatabasesGetSchema,
 	v1pb.DatabaseService_UpdateDatabaseMetadata_FullMethodName: iam.PermissionDatabasesUpdate,
 	v1pb.DatabaseService_GetDatabaseSchema_FullMethodName:      iam.PermissionDatabasesGetSchema,
-	v1pb.DatabaseService_DiffSchema_FullMethodName:             "", // handled in the method.
+	v1pb.DatabaseService_DiffSchema_FullMethodName:             "",
 	v1pb.DatabaseService_GetBackupSetting_FullMethodName:       iam.PermissionDatabasesGetBackupSetting,
 	v1pb.DatabaseService_UpdateBackupSetting_FullMethodName:    iam.PermissionDatabasesUpdateBackupSetting,
 	v1pb.DatabaseService_CreateBackup_FullMethodName:           iam.PermissionBackupsCreate,

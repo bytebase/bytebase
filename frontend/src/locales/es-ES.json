@@ -1512,7 +1512,8 @@
     "export": "Exportar historial de cambios",
     "need-to-select-first": "Necesita seleccionar primero el historial de cambios",
     "all-tables": "Todas las tablas",
-    "affected-tables": "Tablas afectadas"
+    "affected-tables": "Tablas afectadas",
+    "view-full": "Ver completo"
   },
   "database": {
     "select": "Seleccionar base de datos",
@@ -2376,7 +2377,8 @@
       "indexes": "Índices",
       "edit-indexes": "Editar índices",
       "unique": "Único"
-    }
+    },
+    "generated-ddl-is-empty": "El DDL generado está vacío"
   },
   "label": {
     "empty-label-value": "Valor",
@@ -3419,6 +3421,9 @@
       "baseline-version": "Versión básica",
       "parent-branch": "Rama principal",
       "self": "Fuente"
+    },
+    "index": {
+      "drop-index-confirm": "¿Índice de caída?"
     }
   }
 }

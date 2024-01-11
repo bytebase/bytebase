@@ -6,7 +6,7 @@
       :show-cancel="false"
       :allow-next="allowNextStep"
       class="h-full flex flex-col !space-y-0 gap-y-2"
-      pane-class="flex-1 flex flex-col gap-y-2 relative"
+      pane-class="flex-1 flex flex-col gap-y-2 relative overflow-hidden"
       footer-class="!space-y-0 !border-0 !pt-0"
       @update:current-index="tryChangeStep"
       @finish="handleRebaseBranch"

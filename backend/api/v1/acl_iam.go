@@ -113,12 +113,8 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 		projectIDsGetter = in.getProjectIDsForDatabaseService
 	case
-		v1pb.IssueService_GetIssue_FullMethodName,
 		v1pb.IssueService_CreateIssue_FullMethodName,
-		v1pb.IssueService_UpdateIssue_FullMethodName,
-		v1pb.IssueService_CreateIssueComment_FullMethodName,
-		v1pb.IssueService_UpdateIssueComment_FullMethodName,
-		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:
+		v1pb.IssueService_CreateIssueComment_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForIssueService
 	case
@@ -239,8 +235,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_StringifyMetadata_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
 		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
-		v1pb.SubscriptionService_UpdateSubscription_FullMethodName,
-		v1pb.InstanceService_SearchInstances_FullMethodName: // TODO(p0ny): implement me please.
+		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
 		return true
 	// skip checking for sheet service because we want to
 	// discriminate bytebase artifact sheets and user sheets first.
@@ -253,6 +248,16 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
 		v1pb.SheetService_DeleteSheet_FullMethodName:
 		return true
+	// project may not be present in request.Issue.Name.
+	case
+		v1pb.IssueService_GetIssue_FullMethodName:
+		return true
+	// handled in the method because we need to consider issue.Creator.
+	case
+		v1pb.IssueService_UpdateIssue_FullMethodName,
+		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName,
+		v1pb.IssueService_UpdateIssueComment_FullMethodName:
+		return true
 	// skip checking for custom approval.
 	case
 		v1pb.IssueService_ApproveIssue_FullMethodName,
@@ -261,8 +266,10 @@ func isSkippedMethod(fullMethod string) bool {
 		return true
 	// handled in the method because checking is complex.
 	case
+		v1pb.InstanceService_SearchInstances_FullMethodName,
 		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
 		v1pb.DatabaseService_ListDatabases_FullMethodName,
+		v1pb.DatabaseService_SearchDatabases_FullMethodName,
 		v1pb.IssueService_ListIssues_FullMethodName,
 		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
 		v1pb.ProjectService_SearchProjects_FullMethodName,
@@ -561,18 +568,10 @@ func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) 
 	var issueNames []string
 
 	switch r := req.(type) {
-	case *v1pb.GetIssueRequest:
-		issueNames = append(issueNames, r.GetName())
 	case *v1pb.CreateIssueRequest:
-		issueNames = append(issueNames, r.GetIssue().GetName())
-	case *v1pb.UpdateIssueRequest:
 		issueNames = append(issueNames, r.GetIssue().GetName())
 	case *v1pb.CreateIssueCommentRequest:
 		issueNames = append(issueNames, r.GetParent())
-	case *v1pb.UpdateIssueCommentRequest:
-		issueNames = append(issueNames, r.GetParent())
-	case *v1pb.BatchUpdateIssuesStatusRequest:
-		issueNames = append(issueNames, r.GetIssues()...)
 	}
 
 	var projectIDs []string

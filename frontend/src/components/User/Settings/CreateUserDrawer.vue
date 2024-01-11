@@ -244,6 +244,10 @@ const handleArchiveUser = () => {
 
 const tryCreateOrUpdateUser = async () => {
   if (isCreating.value) {
+    if (state.user.userType === UserType.SERVICE_ACCOUNT) {
+      state.user.email += serviceAccountEmailSuffix;
+    }
+
     await userStore.createUser({
       ...state.user,
       title: state.user.title || state.user.email,

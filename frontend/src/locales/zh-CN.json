@@ -1510,7 +1510,8 @@
     "export": "导出变更历史",
     "need-to-select-first": "需要先选择变更历史",
     "all-tables": "所有表",
-    "affected-tables": "受影响的表"
+    "affected-tables": "受影响的表",
+    "view-full": "查看全部"
   },
   "database": {
     "select": "选择数据库",
@@ -2376,7 +2377,8 @@
       "indexes": "索引",
       "edit-indexes": "编辑索引",
       "unique": "唯一"
-    }
+    },
+    "generated-ddl-is-empty": "生成的 DDL 为空"
   },
   "label": {
     "empty-label-value": "空",
@@ -3414,6 +3416,9 @@
       "baseline-version": "基线版本",
       "parent-branch": "父分支",
       "self": "来源"
+    },
+    "index": {
+      "drop-index-confirm": "删除索引？"
     }
   }
 }

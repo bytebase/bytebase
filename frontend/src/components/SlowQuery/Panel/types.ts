@@ -35,11 +35,11 @@ export const buildListSlowQueriesRequest = (
     query.push(`project = "projects/${project}"`);
   }
   if (fromTime) {
-    const start = dayjs(fromTime).toISOString();
+    const start = dayjs(fromTime).format("YYYY-MM-DDT00:00:00.000Z");
     query.push(`start_time >= "${start}"`);
   }
   if (toTime) {
-    const end = dayjs(toTime).toISOString();
+    const end = dayjs(toTime).format("YYYY-MM-DDT00:00:00.000Z");
     query.push(`start_time <= "${end}"`);
   }
   if (query.length > 0) {

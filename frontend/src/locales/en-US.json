@@ -1513,7 +1513,8 @@
     "export": "Export Change History",
     "need-to-select-first": "Need to select change history first",
     "all-tables": "All tables",
-    "affected-tables": "Affected Tables"
+    "affected-tables": "Affected Tables",
+    "view-full": "View full"
   },
   "database": {
     "select": "Select database",
@@ -2380,7 +2381,8 @@
       "indexes": "Indexes",
       "edit-indexes": "Edit indexes",
       "unique": "Unique"
-    }
+    },
+    "generated-ddl-is-empty": "Generated DDL is empty"
   },
   "label": {
     "empty-label-value": "Empty",
@@ -3421,6 +3423,9 @@
       "baseline-version": "Baseline version",
       "parent-branch": "Parent branch",
       "self": "Source"
+    },
+    "index": {
+      "drop-index-confirm": "Drop index?"
     }
   }
 }
