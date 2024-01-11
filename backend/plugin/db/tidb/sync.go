@@ -398,7 +398,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				autoRandText := autoRandSymbol
 				if randomBitsMatch := pkAutoRandomBitsRegex.FindStringSubmatch(shardingInfo); len(randomBitsMatch) > 1 {
 					if rangeBitsMatch := RangeBitsRegex.FindStringSubmatch(shardingInfo); len(rangeBitsMatch) > 1 {
-						autoRandText += fmt.Sprintf("(%s,%s)", randomBitsMatch[1], rangeBitsMatch[1])
+						autoRandText += fmt.Sprintf("(%s, %s)", randomBitsMatch[1], rangeBitsMatch[1])
 					} else {
 						autoRandText += fmt.Sprintf("(%s)", randomBitsMatch[1])
 					}
