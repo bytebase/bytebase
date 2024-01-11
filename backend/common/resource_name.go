@@ -42,7 +42,6 @@ const (
 	IssueNamePrefix              = "issues/"
 	PipelineNamePrefix           = "pipelines/"
 	LogNamePrefix                = "logs/"
-	InboxNamePrefix              = "inbox/"
 	BranchPrefix                 = "branches/"
 	DeploymentConfigPrefix       = "deploymentConfigs/"
 	ChangelistsPrefix            = "changelists/"

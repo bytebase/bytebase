@@ -12,7 +12,6 @@ option go_package = "generated-go/store";
 // json naming convention. More importantly, frontend code can simply use JSON.parse to
 // convert to the expected struct there.
 message ActivityIssueCreatePayload {
-  // Used by inbox to display info without paying the join cost
   string issue_name = 1;
 }
 
@@ -59,7 +58,6 @@ message ActivityIssueCommentCreatePayload {
     TaskRollbackBy task_rollback_by = 2;
     ApprovalEvent approval_event = 3;
   }
-  // Used by inbox to display info without paying the join cost
   string issue_name = 4;
 }
 
