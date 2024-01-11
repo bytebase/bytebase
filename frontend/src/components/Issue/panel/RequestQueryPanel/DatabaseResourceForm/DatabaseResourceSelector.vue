@@ -171,7 +171,6 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     checkable: true,
     selectable: false,
     checkOnClick: true,
-    virtualScroll: true,
     data: sourceTreeOptions.value,
     blockLine: true,
     style: "height: 428px", // since <NTransfer> height is 512
@@ -201,7 +200,6 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     checkable: true,
     selectable: false,
     checkOnClick: true,
-    virtualScroll: true,
     defaultExpandAll: true,
     data: targetTreeOptions.value,
     blockLine: true,

@@ -204,8 +204,8 @@ const canEditDatabase = (
   if (isArchivedDatabaseV1(db)) {
     return false;
   }
-  if (!currentUserIamPolicy.allowToChangeDatabaseOfProject(db.project)) {
-    return false;
+  if (currentUserIamPolicy.allowToChangeDatabaseOfProject(db.project)) {
+    return true;
   }
 
   if (
