@@ -19,14 +19,9 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import {
-  useChangelistStore,
-  useCurrentUserV1,
-  useProjectV1Store,
-} from "@/store";
+import { useChangelistStore, useCurrentUserV1 } from "@/store";
 import { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
-import { extractProjectResourceName, isMemberOfProjectV1 } from "@/utils";
 import ChangelistTable from "./ChangelistTable.vue";
 import CreateChangelistPanel from "./CreateChangelistPanel.vue";
 import NavBar from "./NavBar.vue";
@@ -36,7 +31,6 @@ const props = defineProps<{
   project?: ComposedProject;
 }>();
 
-const me = useCurrentUserV1();
 const { filter, events } = provideChangelistDashboardContext(
   props.project?.name
 );
@@ -45,14 +39,7 @@ const isFetching = ref(false);
 const changelists = ref<Changelist[]>([]);
 
 const filteredChangelists = computed(() => {
-  let list = changelists.value.filter((changelist) => {
-    // The server-side has not implemented ACL by now.
-    // So we manually filter the changelists by project here to workaround.
-    const project = useProjectV1Store().getProjectByName(
-      `projects/${extractProjectResourceName(changelist.name)}`
-    );
-    return isMemberOfProjectV1(project.iamPolicy, me.value);
-  });
+  let list = changelists.value;
   const keyword = filter.value.keyword.trim();
   if (keyword) {
     list = list.filter((changelist) => {
