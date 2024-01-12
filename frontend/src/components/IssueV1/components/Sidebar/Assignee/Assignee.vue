@@ -73,6 +73,7 @@ import {
   extractUserUID,
   hasProjectPermissionV2,
   isDatabaseRelatedIssue,
+  isMemberOfProjectV1,
   isOwnerOfProjectV1,
 } from "@/utils";
 
