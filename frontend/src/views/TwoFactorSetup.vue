@@ -89,6 +89,7 @@ import RecoveryCodesView from "@/components/RecoveryCodesView.vue";
 import TwoFactorSecretModal from "@/components/TwoFactorSecretModal.vue";
 import { StepTab } from "@/components/v2";
 import { AUTH_2FA_SETUP_MODULE } from "@/router/auth";
+import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useAuthStore, useUserStore } from "@/store";
 import { UpdateUserRequest } from "@/types/proto/v1/auth_service";
 
@@ -182,7 +183,7 @@ const cancelSetup = () => {
     props.cancelAction();
   } else {
     router.replace({
-      name: "setting.profile",
+      name: SETTING_ROUTE_PROFILE,
     });
   }
 };
@@ -222,7 +223,7 @@ const tryFinishSetup = async () => {
     });
   } else {
     router.replace({
-      name: "setting.profile",
+      name: SETTING_ROUTE_PROFILE,
     });
   }
 };

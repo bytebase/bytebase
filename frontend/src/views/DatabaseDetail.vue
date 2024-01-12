@@ -244,6 +244,7 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
+import { DATABASE_ROUTE_DETAIL } from "@/router/dashboard/database";
 import {
   pushNotification,
   useAnomalyV1Store,
@@ -520,7 +521,7 @@ const createMigration = async (
   };
 
   router.push({
-    name: "workspace.issue.detail",
+    name: DATABASE_ROUTE_DETAIL,
     params: {
       issueSlug: "new",
     },

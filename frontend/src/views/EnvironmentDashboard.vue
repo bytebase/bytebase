@@ -63,6 +63,7 @@ import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
+import { ENVIRONMENT_ROUTE_DASHBOARD } from "@/router/dashboard/environment";
 import {
   useRegisterCommand,
   useUIStateStore,
@@ -312,7 +313,7 @@ const selectEnvironment = (index: number) => {
 const onTabChange = (uid: string) => {
   state.selectedUid = uid;
   router.replace({
-    name: "workspace.environment",
+    name: ENVIRONMENT_ROUTE_DASHBOARD,
     hash: "#" + uid,
   });
 };

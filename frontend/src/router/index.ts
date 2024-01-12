@@ -42,6 +42,13 @@ import authRoutes, {
 import dashboardRoutes from "./dashboard";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "./dashboard/workspace";
+import {
+  SETTING_ROUTE_WORKSPACE,
+  SETTING_ROUTE,
+  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+} from "./dashboard/workspaceSetting";
 import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
 
 export const router = createRouter({
@@ -193,7 +200,7 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  if (to.name?.toString().startsWith("setting.workspace.")) {
+  if (to.name?.toString().startsWith(SETTING_ROUTE_WORKSPACE)) {
     const hasPermission = hasSettingPagePermission(
       to.name.toString(),
       currentUserV1.value.userRole
@@ -238,10 +245,10 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.issue" ||
     to.name === "workspace.environment" ||
     to.name === SQL_EDITOR_HOME_MODULE ||
-    (to.name?.toString().startsWith("setting") &&
-      to.name?.toString() != "setting.workspace.gitops.detail" &&
-      to.name?.toString() != "setting.workspace.sql-review.detail" &&
-      to.name?.toString() != "setting.workspace.sso.detail")
+    (to.name?.toString().startsWith(SETTING_ROUTE) &&
+      to.name?.toString() != SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL &&
+      to.name?.toString() != SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL &&
+      to.name?.toString() != SETTING_ROUTE_WORKSPACE_SSO_DETAIL)
   ) {
     next();
     return;

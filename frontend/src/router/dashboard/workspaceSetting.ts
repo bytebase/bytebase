@@ -9,10 +9,38 @@ import {
 import { idFromSlug } from "@/utils";
 import SettingSidebar from "@/views/SettingSidebar.vue";
 
+export const SETTING_ROUTE = "setting";
+export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
+export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
+export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
+export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
+export const SETTING_ROUTE_WORKSPACE_AGENT = `${SETTING_ROUTE_WORKSPACE}.agent`;
+export const SETTING_ROUTE_WORKSPACE_MEMBER = `${SETTING_ROUTE_WORKSPACE}.member`;
+export const SETTING_ROUTE_WORKSPACE_ROLE = `${SETTING_ROUTE_WORKSPACE}.role`;
+export const SETTING_ROUTE_WORKSPACE_SSO = `${SETTING_ROUTE_WORKSPACE}.sso`;
+export const SETTING_ROUTE_WORKSPACE_SSO_CREATE = `${SETTING_ROUTE_WORKSPACE_SSO}.create`;
+export const SETTING_ROUTE_WORKSPACE_SSO_DETAIL = `${SETTING_ROUTE_WORKSPACE_SSO}.detail`;
+export const SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA = `${SETTING_ROUTE_WORKSPACE}.sensitive-data`;
+export const SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL = `${SETTING_ROUTE_WORKSPACE}.access-control`;
+export const SETTING_ROUTE_WORKSPACE_RISK_CENTER = `${SETTING_ROUTE_WORKSPACE}.risk-center`;
+export const SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL = `${SETTING_ROUTE_WORKSPACE}.custom-approval`;
+export const SETTING_ROUTE_WORKSPACE_SLOW_QUERY = `${SETTING_ROUTE_WORKSPACE}.slow-query`;
+export const SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE = `${SETTING_ROUTE_WORKSPACE}.schema-template`;
+export const SETTING_ROUTE_WORKSPACE_GITOPS = `${SETTING_ROUTE_WORKSPACE}.gitops`;
+export const SETTING_ROUTE_WORKSPACE_GITOPS_CREATE = `${SETTING_ROUTE_WORKSPACE_GITOPS}.create`;
+export const SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL = `${SETTING_ROUTE_WORKSPACE_GITOPS}.detail`;
+export const SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY = `${SETTING_ROUTE_WORKSPACE}.mail-delivery`;
+export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
+export const SETTING_ROUTE_WORKSPACE_SQL_REVIEW = `${SETTING_ROUTE_WORKSPACE}.sql-review`;
+export const SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE = `${SETTING_ROUTE_WORKSPACE_SQL_REVIEW}.create`;
+export const SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL = `${SETTING_ROUTE_WORKSPACE_SQL_REVIEW}.detail`;
+export const SETTING_ROUTE_WORKSPACE_AUDIT_LOG = `${SETTING_ROUTE_WORKSPACE}.audit-log`;
+export const SETTING_ROUTE_WORKSPACE_DEBUG_LOG = `${SETTING_ROUTE_WORKSPACE}.debug-log`;
+export const SETTING_ROUTE_WORKSPACE_ARCHIVE = `${SETTING_ROUTE_WORKSPACE}.archive`;
+
 const workspaceSettingRoutes: RouteRecordRaw[] = [
   {
     path: "setting",
-    name: "setting",
     meta: { title: () => t("common.settings") },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -25,7 +53,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        name: "setting.profile",
+        name: SETTING_ROUTE_PROFILE,
         meta: { title: () => t("settings.sidebar.profile") },
         component: () => import("@/views/ProfileDashboard.vue"),
         alias: "profile",
@@ -33,7 +61,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "profile/two-factor",
-        name: "setting.profile.two-factor",
+        name: SETTING_ROUTE_PROFILE_TWO_FACTOR,
         meta: {
           title: () => t("two-factor.self"),
         },
@@ -42,47 +70,47 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "general",
-        name: "setting.workspace.general",
+        name: SETTING_ROUTE_WORKSPACE_GENERAL,
         meta: { title: () => t("settings.sidebar.general") },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
         props: true,
       },
       {
         path: "agent",
-        name: "setting.workspace.agent",
+        name: SETTING_ROUTE_WORKSPACE_AGENT,
         meta: { title: () => t("common.agents") },
         component: () => import("@/views/SettingWorkspaceAgent.vue"),
         props: true,
       },
       {
         path: "member",
-        name: "setting.workspace.member",
+        name: SETTING_ROUTE_WORKSPACE_MEMBER,
         meta: { title: () => t("settings.sidebar.members") },
         component: () => import("@/views/SettingWorkspaceMember.vue"),
         props: true,
       },
       {
         path: "role",
-        name: "setting.workspace.role",
+        name: SETTING_ROUTE_WORKSPACE_ROLE,
         meta: { title: () => t("settings.sidebar.custom-roles") },
         component: () => import("@/views/SettingWorkspaceRole.vue"),
         props: true,
       },
       {
         path: "sso",
-        name: "setting.workspace.sso",
+        name: SETTING_ROUTE_WORKSPACE_SSO,
         meta: { title: () => t("settings.sidebar.sso") },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
       {
         path: "sso/new",
-        name: "setting.workspace.sso.create",
+        name: SETTING_ROUTE_WORKSPACE_SSO_CREATE,
         meta: { title: () => t("settings.sidebar.sso") },
         component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
       },
       {
         path: "sso/:ssoName",
-        name: "setting.workspace.sso.detail",
+        name: SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
         meta: {
           title: (route: RouteLocationNormalized) => {
             const name = route.params.ssoName as string;
@@ -97,63 +125,63 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "sensitive-data",
-        name: "setting.workspace.sensitive-data",
+        name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
         meta: { title: () => t("settings.sidebar.sensitive-data") },
         component: () => import("@/views/SettingWorkspaceSensitiveData.vue"),
         props: true,
       },
       {
         path: "access-control",
-        name: "setting.workspace.access-control",
+        name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
         meta: { title: () => t("settings.sidebar.access-control") },
         component: () => import("@/views/SettingWorkspaceAccessControl.vue"),
         props: true,
       },
       {
         path: "risk-center",
-        name: "setting.workspace.risk-center",
+        name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
         meta: { title: () => t("custom-approval.risk.risk-center") },
         component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
       },
       {
         path: "custom-approval",
-        name: "setting.workspace.custom-approval",
+        name: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
         meta: { title: () => t("custom-approval.self") },
         component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
         props: true,
       },
       {
         path: "slow-query",
-        name: "setting.workspace.slow-query",
+        name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
         meta: { title: () => startCase(t("slow-query.self")) },
         component: () => import("@/views/SettingWorkspaceSlowQuery.vue"),
         props: true,
       },
       {
         path: "schema-template",
-        name: "setting.workspace.schema-template",
+        name: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
         meta: { title: () => startCase(t("schema-template.self")) },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
         props: true,
       },
       {
         path: "gitops",
-        name: "setting.workspace.gitops",
+        name: SETTING_ROUTE_WORKSPACE_GITOPS,
         meta: { title: () => t("settings.sidebar.gitops") },
         component: () => import("@/views/SettingWorkspaceVCS.vue"),
         props: true,
       },
       {
         path: "gitops/new",
-        name: "setting.workspace.gitops.create",
+        name: SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
         meta: { title: () => t("repository.add-git-provider") },
         component: () => import("@/views/SettingWorkspaceVCSCreate.vue"),
         props: true,
       },
       {
         path: "gitops/:vcsSlug",
-        name: "setting.workspace.gitops.detail",
+        name: SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.vcsSlug as string;
@@ -165,20 +193,20 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "mail-delivery",
-        name: "setting.workspace.mail-delivery",
+        name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
         meta: { title: () => t("settings.sidebar.mail-delivery") },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
       },
       {
         path: "subscription",
-        name: "setting.workspace.subscription",
+        name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         meta: { title: () => t("settings.sidebar.subscription") },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
         props: true,
       },
       {
         path: "sql-review",
-        name: "setting.workspace.sql-review",
+        name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
         meta: {
           title: () => t("sql-review.title"),
         },
@@ -187,7 +215,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "sql-review/new",
-        name: "setting.workspace.sql-review.create",
+        name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
         meta: {
           title: () => t("sql-review.create.breadcrumb"),
         },
@@ -196,7 +224,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "sql-review/:sqlReviewPolicySlug",
-        name: "setting.workspace.sql-review.detail",
+        name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.sqlReviewPolicySlug as string;
@@ -212,7 +240,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "audit-log",
-        name: "setting.workspace.audit-log",
+        name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
         meta: {
           title: () => t("settings.sidebar.audit-log"),
         },
@@ -221,7 +249,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "debug-log",
-        name: "setting.workspace.debug-log",
+        name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
         meta: {
           title: () => t("settings.sidebar.debug-log"),
         },
@@ -230,7 +258,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       },
       {
         path: "archive",
-        name: "setting.workspace.archive",
+        name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
         meta: { title: () => t("common.archived") },
         component: () => import("@/views/Archive.vue"),
         props: true,

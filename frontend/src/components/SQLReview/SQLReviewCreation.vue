@@ -41,6 +41,7 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -99,7 +100,6 @@ const subscriptionStore = useSubscriptionV1Store();
 const BASIC_INFO_STEP = 0;
 const CONFIGURE_RULE_STEP = 1;
 const PREVIEW_STEP = 2;
-const ROUTE_NAME = "setting.workspace.sql-review";
 
 const STEP_LIST = [
   { title: t("sql-review.create.basic-info.name") },
@@ -159,7 +159,7 @@ const onCancel = () => {
     emit("cancel");
   } else {
     router.push({
-      name: ROUTE_NAME,
+      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
     });
   }
 };
