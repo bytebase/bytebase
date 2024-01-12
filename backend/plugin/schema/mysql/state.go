@@ -553,7 +553,7 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		_, isDefaultNull := column.GetDefaultValue().(*storepb.ColumnMetadata_DefaultNull)
 		// Some types do not default to NULL, but support default expressions.
 		_, ok := expressionDefaultOnlyTypes[strings.ToUpper(column.Type)]
-		if isDefaultNull && !ok {
+		if isDefaultNull && ok {
 			hasDefault = false
 		}
 	}
