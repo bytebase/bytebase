@@ -84,7 +84,7 @@ func local_request_InstanceRoleService_GetInstanceRole_0(ctx context.Context, ma
 }
 
 var (
-	filter_InstanceRoleService_ListInstanceRoles_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 2, 0, 0}, Check: []int{0, 1, 2, 2}}
+	filter_InstanceRoleService_ListInstanceRoles_0 = &utilities.DoubleArray{Encoding: map[string]int{"parent": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
 func request_InstanceRoleService_ListInstanceRoles_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -157,11 +157,7 @@ func request_InstanceRoleService_CreateInstanceRole_0(ctx context.Context, marsh
 	var protoReq CreateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Role); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Role); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -191,11 +187,7 @@ func local_request_InstanceRoleService_CreateInstanceRole_0(ctx context.Context,
 	var protoReq CreateInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq.Role); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq.Role); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -222,7 +214,7 @@ func local_request_InstanceRoleService_CreateInstanceRole_0(ctx context.Context,
 }
 
 var (
-	filter_InstanceRoleService_UpdateInstanceRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 4, 5, 2, 0, 0, 0, 0}, Check: []int{0, 1, 1, 2, 4, 2, 2, 3}}
+	filter_InstanceRoleService_UpdateInstanceRole_0 = &utilities.DoubleArray{Encoding: map[string]int{"role": 0, "name": 1}, Base: []int{1, 2, 1, 0, 0}, Check: []int{0, 1, 2, 3, 2}}
 )
 
 func request_InstanceRoleService_UpdateInstanceRole_0(ctx context.Context, marshaler runtime.Marshaler, client InstanceRoleServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -377,11 +369,7 @@ func request_InstanceRoleService_UndeleteInstanceRole_0(ctx context.Context, mar
 	var protoReq UndeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -411,11 +399,7 @@ func local_request_InstanceRoleService_UndeleteInstanceRole_0(ctx context.Contex
 	var protoReq UndeleteInstanceRoleRequest
 	var metadata runtime.ServerMetadata
 
-	newReader, berr := utilities.IOReaderFactory(req.Body)
-	if berr != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
-	}
-	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
