@@ -434,6 +434,8 @@ export interface SchemaMetadata {
   streams: StreamMetadata[];
   /** The routines is the list of routines in a schema, currently, only used for Snowflake. */
   tasks: TaskMetadata[];
+  /** The materialized_views is the list of materialized views in a schema. */
+  materializedViews: MaterializedViewMetadata[];
 }
 
 export interface ExternalTableMetadata {
@@ -3427,7 +3429,16 @@ export const DatabaseMetadata = {
 };
 
 function createBaseSchemaMetadata(): SchemaMetadata {
-  return { name: "", tables: [], externalTables: [], views: [], functions: [], streams: [], tasks: [] };
+  return {
+    name: "",
+    tables: [],
+    externalTables: [],
+    views: [],
+    functions: [],
+    streams: [],
+    tasks: [],
+    materializedViews: [],
+  };
 }
 
 export const SchemaMetadata = {
@@ -3452,6 +3463,9 @@ export const SchemaMetadata = {
     }
     for (const v of message.tasks) {
       TaskMetadata.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    for (const v of message.materializedViews) {
+      MaterializedViewMetadata.encode(v!, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -3512,6 +3526,13 @@ export const SchemaMetadata = {
 
           message.tasks.push(TaskMetadata.decode(reader, reader.uint32()));
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.materializedViews.push(MaterializedViewMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3536,6 +3557,9 @@ export const SchemaMetadata = {
         ? object.streams.map((e: any) => StreamMetadata.fromJSON(e))
         : [],
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => TaskMetadata.fromJSON(e)) : [],
+      materializedViews: globalThis.Array.isArray(object?.materializedViews)
+        ? object.materializedViews.map((e: any) => MaterializedViewMetadata.fromJSON(e))
+        : [],
     };
   },
 
@@ -3562,6 +3586,9 @@ export const SchemaMetadata = {
     if (message.tasks?.length) {
       obj.tasks = message.tasks.map((e) => TaskMetadata.toJSON(e));
     }
+    if (message.materializedViews?.length) {
+      obj.materializedViews = message.materializedViews.map((e) => MaterializedViewMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -3577,6 +3604,7 @@ export const SchemaMetadata = {
     message.functions = object.functions?.map((e) => FunctionMetadata.fromPartial(e)) || [];
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
+    message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
     return message;
   },
 };

@@ -1562,6 +1562,13 @@ func (s *SQLService) getSensitiveSchemaInfo(ctx context.Context, instance *store
 				}
 				schemaSchema.ViewList = append(schemaSchema.ViewList, viewSchema)
 			}
+			for _, materializedView := range schema.MaterializedViews {
+				materializedViewSchema := base.ViewSchema{
+					Name:       materializedView.Name,
+					Definition: materializedView.Definition,
+				}
+				schemaSchema.ViewList = append(schemaSchema.ViewList, materializedViewSchema)
+			}
 			databaseSchema.SchemaList = append(databaseSchema.SchemaList, schemaSchema)
 		}
 		result.DatabaseList = append(result.DatabaseList, databaseSchema)
