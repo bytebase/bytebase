@@ -128,7 +128,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               overrideTitle: true,
             },
             component: () =>
-              import("@/views/project/ProjectBrancheDashboard.vue"),
+              import("@/views/project/ProjectBranchDashboard.vue"),
             props: true,
           },
           {
