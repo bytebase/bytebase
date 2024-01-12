@@ -27,7 +27,7 @@ var (
 	// |       |   `g` geometry DEFAULT NULL,                                       |
 	// |       |   `j` json DEFAULT NULL                                            |
 	// |       | ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci |
-	// +-------+--------------------------------------------------------------------+
+	// +-------+--------------------------------------------------------------------+.
 	expressionDefaultOnlyTypes = map[string]bool{
 		// BLOB & TEXT
 		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
