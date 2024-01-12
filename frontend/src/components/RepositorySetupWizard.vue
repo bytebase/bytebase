@@ -136,7 +136,7 @@ import { reactive, computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { PROJECT_V1_GITOPS } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
 import { useRepositoryV1Store, hasFeature, useProjectV1Store } from "@/store";
 import { getVCSUid } from "@/store/modules/v1/common";
 import {
@@ -373,7 +373,7 @@ const closeSetupSQLReviewModal = () => {
 const cancel = () => {
   emit("cancel");
   router.push({
-    name: PROJECT_V1_GITOPS,
+    name: PROJECT_V1_ROUTE_GITOPS,
   });
 };
 

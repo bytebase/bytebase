@@ -89,7 +89,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { databaseServiceClient } from "@/grpcweb";
-import { PROJECT_V1_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -295,7 +295,7 @@ const handleConfirm = async () => {
 
   // Go to branch detail page after created.
   router.replace({
-    name: PROJECT_V1_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCHE_DETAIL,
     params: {
       branchName: branchId.value,
     },

@@ -30,6 +30,7 @@ import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "@/components/VCS/VCSCard.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
+import { SETTING_ROUTE_WORKSPACE_GITOPS_CREATE } from "@/router/dashboard/workspaceSetting";
 import { useVCSV1Store } from "@/store";
 
 const vcsV1Store = useVCSV1Store();
@@ -47,7 +48,7 @@ const vcsList = computed(() => {
 
 const addVCSProvider = () => {
   router.push({
-    name: "setting.workspace.gitops.create",
+    name: SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
   });
 };
 </script>

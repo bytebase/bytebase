@@ -55,6 +55,7 @@
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -77,7 +78,7 @@ const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
 
 const learnMore = () => {
-  router.push({ name: "setting.workspace.subscription" });
+  router.push({ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION });
 };
 
 const trialSubscription = () => {

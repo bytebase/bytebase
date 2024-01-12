@@ -45,7 +45,7 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { PROJECT_V1_CHANGELIST_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_CHANGELIST_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useChangelistStore } from "@/store";
 import {
   Changelist_Change as Change,
@@ -125,7 +125,7 @@ const handleReorderMove = (row: number, delta: -1 | 1) => {
 };
 
 const documentTitle = computed(() => {
-  if (route.name !== PROJECT_V1_CHANGELIST_DETAIL) {
+  if (route.name !== PROJECT_V1_ROUTE_CHANGELIST_DETAIL) {
     return undefined;
   }
   return changelist.value.description;

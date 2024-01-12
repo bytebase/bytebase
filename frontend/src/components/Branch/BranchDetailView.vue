@@ -132,11 +132,11 @@ import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
 import {
-  PROJECT_V1_BRANCHES,
-  PROJECT_V1_BRANCHE_DETAIL,
-  PROJECT_V1_BRANCHE_MERGE,
-  PROJECT_V1_BRANCHE_ROLLOUT,
-  PROJECT_V1_BRANCHE_REBASE,
+  PROJECT_V1_ROUTE_BRANCHES,
+  PROJECT_V1_ROUTE_BRANCHE_DETAIL,
+  PROJECT_V1_ROUTE_BRANCHE_MERGE,
+  PROJECT_V1_ROUTE_BRANCHE_ROLLOUT,
+  PROJECT_V1_ROUTE_BRANCHE_REBASE,
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
@@ -301,7 +301,7 @@ const handleParentBranchClick = async () => {
 
   const [_, branchId] = getProjectAndBranchId(parentBranch.value.name);
   router.push({
-    name: PROJECT_V1_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCHE_DETAIL,
     params: {
       branchName: `${branchId}`,
     },
@@ -396,7 +396,7 @@ const handleSaveBranch = async () => {
 
 const handleGotoMergeBranch = () => {
   router.push({
-    name: PROJECT_V1_BRANCHE_MERGE,
+    name: PROJECT_V1_ROUTE_BRANCHE_MERGE,
     params: {
       branchName: props.cleanBranch.branchId,
     },
@@ -404,7 +404,7 @@ const handleGotoMergeBranch = () => {
 };
 const handleGotoRebaseBranch = () => {
   router.push({
-    name: PROJECT_V1_BRANCHE_REBASE,
+    name: PROJECT_V1_ROUTE_BRANCHE_REBASE,
     params: {
       branchName: props.cleanBranch.branchId,
     },
@@ -413,7 +413,7 @@ const handleGotoRebaseBranch = () => {
 
 const handleApplyBranchToDatabase = () => {
   router.push({
-    name: PROJECT_V1_BRANCHE_ROLLOUT,
+    name: PROJECT_V1_ROUTE_BRANCHE_ROLLOUT,
     params: {
       branchName: props.cleanBranch.branchId,
     },
@@ -492,7 +492,7 @@ const deleteBranch = async () => {
   const branch = props.dirtyBranch;
   await branchStore.deleteBranch(branch.name);
   router.replace({
-    name: PROJECT_V1_BRANCHES,
+    name: PROJECT_V1_ROUTE_BRANCHES,
   });
 };
 </script>

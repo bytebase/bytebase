@@ -4,30 +4,30 @@ import { t } from "@/plugins/i18n";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
 export const PROJECT_V1_ROUTE = "workspace.projectV1";
-export const PROJECT_V1_DETAIL = `${PROJECT_V1_ROUTE}.detail`;
-export const PROJECT_V1_DATABASES = `${PROJECT_V1_ROUTE}.database.dashboard`;
-export const PROJECT_V1_DATABASE_GROUPS = `${PROJECT_V1_ROUTE}.database-group.dashboard`;
-export const PROJECT_V1_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.detail`;
-export const PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.table-group.detail`;
-export const PROJECT_V1_BRANCHES = `${PROJECT_V1_ROUTE}.branch.dashboard`;
-export const PROJECT_V1_BRANCHE_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
-export const PROJECT_V1_BRANCHE_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
-export const PROJECT_V1_BRANCHE_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
-export const PROJECT_V1_BRANCHE_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
-export const PROJECT_V1_ISSUES = `${PROJECT_V1_ROUTE}.issue.dashboard`;
-export const PROJECT_V1_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE}.change-histories.dashboard`;
-export const PROJECT_V1_CHANGELISTS = `${PROJECT_V1_ROUTE}.changelist.dashboard`;
-export const PROJECT_V1_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE}.changelist.detail`;
-export const PROJECT_V1_SYNC_SCHEMA = `${PROJECT_V1_ROUTE}.sync-schema`;
-export const PROJECT_V1_SLOW_QUERIES = `${PROJECT_V1_ROUTE}.slow-queries`;
-export const PROJECT_V1_ANOMALIES = `${PROJECT_V1_ROUTE}.anomalies`;
-export const PROJECT_V1_ACTIVITIES = `${PROJECT_V1_ROUTE}.activities`;
-export const PROJECT_V1_GITOPS = `${PROJECT_V1_ROUTE}.gitops`;
-export const PROJECT_V1_WEBHOOKS = `${PROJECT_V1_ROUTE}.webhook.dashboard`;
-export const PROJECT_V1_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE}.webhook.create`;
-export const PROJECT_V1_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE}.webhook.detail`;
-export const PROJECT_V1_MEMBERS = `${PROJECT_V1_ROUTE}.members`;
-export const PROJECT_V1_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
+export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE}.detail`;
+export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE}.database.dashboard`;
+export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE}.database-group.dashboard`;
+export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.detail`;
+export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.table-group.detail`;
+export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE}.branch.dashboard`;
+export const PROJECT_V1_ROUTE_BRANCHE_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
+export const PROJECT_V1_ROUTE_BRANCHE_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
+export const PROJECT_V1_ROUTE_BRANCHE_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
+export const PROJECT_V1_ROUTE_BRANCHE_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
+export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE}.issue.dashboard`;
+export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE}.change-histories.dashboard`;
+export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE}.changelist.dashboard`;
+export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE}.changelist.detail`;
+export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE}.sync-schema`;
+export const PROJECT_V1_ROUTE_SLOW_QUERIES = `${PROJECT_V1_ROUTE}.slow-queries`;
+export const PROJECT_V1_ROUTE_ANOMALIES = `${PROJECT_V1_ROUTE}.anomalies`;
+export const PROJECT_V1_ROUTE_ACTIVITIES = `${PROJECT_V1_ROUTE}.activities`;
+export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE}.gitops`;
+export const PROJECT_V1_ROUTE_WEBHOOKS = `${PROJECT_V1_ROUTE}.webhook.dashboard`;
+export const PROJECT_V1_ROUTE_WEBHOOK_CREATE = `${PROJECT_V1_ROUTE}.webhook.create`;
+export const PROJECT_V1_ROUTE_WEBHOOK_DETAIL = `${PROJECT_V1_ROUTE}.webhook.detail`;
+export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE}.members`;
+export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -59,12 +59,12 @@ const projectV1Routes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        name: PROJECT_V1_DETAIL,
-        redirect: { name: PROJECT_V1_DATABASES },
+        name: PROJECT_V1_ROUTE_DETAIL,
+        redirect: { name: PROJECT_V1_ROUTE_DATABASES },
       },
       {
         path: "databases",
-        name: PROJECT_V1_DATABASES,
+        name: PROJECT_V1_ROUTE_DATABASES,
         meta: {
           overrideTitle: true,
         },
@@ -80,7 +80,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_DATABASE_GROUPS,
+            name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             meta: {
               overrideTitle: true,
             },
@@ -90,13 +90,13 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":databaseGroupName",
-            name: PROJECT_V1_DATABASE_GROUP_DETAIL,
+            name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
             component: () => import("@/views/DatabaseGroupDetail.vue"),
             props: true,
           },
           {
             path: ":databaseGroupName/table-groups/:schemaGroupName",
-            name: PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+            name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
             component: () => import("@/views/SchemaGroupDetail.vue"),
             props: true,
           },
@@ -111,7 +111,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_BRANCHES,
+            name: PROJECT_V1_ROUTE_BRANCHES,
             meta: {
               overrideTitle: true,
             },
@@ -121,7 +121,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName",
-            name: PROJECT_V1_BRANCHE_DETAIL,
+            name: PROJECT_V1_ROUTE_BRANCHE_DETAIL,
             meta: {
               overrideTitle: true,
             },
@@ -130,7 +130,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/rollout",
-            name: PROJECT_V1_BRANCHE_ROLLOUT,
+            name: PROJECT_V1_ROUTE_BRANCHE_ROLLOUT,
             meta: {
               overrideTitle: true,
             },
@@ -139,7 +139,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/merge",
-            name: PROJECT_V1_BRANCHE_MERGE,
+            name: PROJECT_V1_ROUTE_BRANCHE_MERGE,
             meta: {
               title: () => t("branch.merge-rebase.merge-branch"),
             },
@@ -148,7 +148,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/rebase",
-            name: PROJECT_V1_BRANCHE_REBASE,
+            name: PROJECT_V1_ROUTE_BRANCHE_REBASE,
             meta: {
               title: () => t("branch.merge-rebase.rebase-branch"),
             },
@@ -159,7 +159,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "issues",
-        name: PROJECT_V1_ISSUES,
+        name: PROJECT_V1_ROUTE_ISSUES,
         meta: {
           overrideTitle: true,
         },
@@ -168,7 +168,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "change-histories",
-        name: PROJECT_V1_CHANGE_HISTORIES,
+        name: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
         meta: {
           overrideTitle: true,
         },
@@ -185,7 +185,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_CHANGELISTS,
+            name: PROJECT_V1_ROUTE_CHANGELISTS,
             meta: {
               overrideTitle: true,
             },
@@ -195,7 +195,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":changelistName",
-            name: PROJECT_V1_CHANGELIST_DETAIL,
+            name: PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
             meta: {
               overrideTitle: true,
             },
@@ -207,7 +207,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "sync-schema",
-        name: PROJECT_V1_SYNC_SCHEMA,
+        name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         meta: {
           overrideTitle: true,
         },
@@ -216,7 +216,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "slow-queries",
-        name: PROJECT_V1_SLOW_QUERIES,
+        name: PROJECT_V1_ROUTE_SLOW_QUERIES,
         meta: {
           overrideTitle: true,
         },
@@ -226,7 +226,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "anomalies",
-        name: PROJECT_V1_ANOMALIES,
+        name: PROJECT_V1_ROUTE_ANOMALIES,
         meta: {
           overrideTitle: true,
         },
@@ -236,7 +236,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "activities",
-        name: PROJECT_V1_ACTIVITIES,
+        name: PROJECT_V1_ROUTE_ACTIVITIES,
         meta: {
           overrideTitle: true,
         },
@@ -245,7 +245,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "gitops",
-        name: PROJECT_V1_GITOPS,
+        name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           overrideTitle: true,
         },
@@ -262,7 +262,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         children: [
           {
             path: "",
-            name: PROJECT_V1_WEBHOOKS,
+            name: PROJECT_V1_ROUTE_WEBHOOKS,
             meta: {
               overrideTitle: true,
             },
@@ -272,7 +272,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: "new",
-            name: PROJECT_V1_WEBHOOK_CREATE,
+            name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
             meta: {
               title: () => t("project.webhook.create-webhook"),
             },
@@ -281,7 +281,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":projectWebhookSlug",
-            name: PROJECT_V1_WEBHOOK_DETAIL,
+            name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
             meta: {
               overrideTitle: true,
             },
@@ -292,7 +292,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "members",
-        name: PROJECT_V1_MEMBERS,
+        name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           overrideTitle: true,
         },
@@ -301,7 +301,7 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "settings",
-        name: PROJECT_V1_SETTINGS,
+        name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           overrideTitle: true,
         },
