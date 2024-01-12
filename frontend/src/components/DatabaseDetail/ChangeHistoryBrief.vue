@@ -22,7 +22,7 @@
       <div class="flex-1">
         <router-link
           :to="{
-            name: 'workspace.project.issue.detail',
+            name: PROJECT_V1_ISSUE_DETAIL,
             params: {
               projectId: extractProjectResourceName(changeHistory.issue),
               issueSlug: extractIssueUID(changeHistory.issue),
@@ -87,6 +87,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed, PropType } from "vue";
+import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { ChangeHistory } from "@/types/proto/v1/database_service";

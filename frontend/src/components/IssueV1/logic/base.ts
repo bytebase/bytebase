@@ -3,6 +3,7 @@ import { first } from "lodash-es";
 import { useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { emptyStage, emptyTask, TaskTypeListWithStatement } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
@@ -124,7 +125,7 @@ export const useBaseIssueContext = (
       : taskV1Slug(task);
 
     router.replace({
-      name: "workspace.project.issue.detail",
+      name: PROJECT_V1_ISSUE_DETAIL,
       query: {
         ...route.query,
         stage: stageParam,

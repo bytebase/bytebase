@@ -49,6 +49,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -277,6 +278,7 @@ const getItemClass = (path: string | undefined) => {
       }
       break;
     case "workspace.issue.detail":
+    case PROJECT_V1_ROUTE_ISSUE_DETAIL:
       if (path === PROJECT_V1_ROUTE_ISSUES) {
         list.push("router-link-active", "bg-link-hover");
       }

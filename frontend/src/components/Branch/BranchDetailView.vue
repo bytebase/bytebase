@@ -138,6 +138,7 @@ import {
   PROJECT_V1_ROUTE_BRANCH_MERGE,
   PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
   PROJECT_V1_ROUTE_BRANCH_REBASE,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
@@ -469,7 +470,7 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
     targetDatabaseList.map((db) => db.databaseName)
   );
   const routeInfo = {
-    name: "workspace.project.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(props.project.name),
       issueSlug: "create",

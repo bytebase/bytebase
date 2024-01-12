@@ -28,7 +28,7 @@
               >
               <router-link
                 :to="{
-                  name: 'workspace.project.issue.detail',
+                  name: PROJECT_V1_ISSUE_DETAIL,
                   params: {
                     projectId: extractProjectResourceName(changeHistory.issue),
                     issueSlug: extractIssueUID(changeHistory.issue),

@@ -112,6 +112,7 @@ import {
   AffectedTableSelect,
   ChangeHistoryTable,
 } from "@/components/ChangeHistory";
+import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
@@ -295,7 +296,7 @@ const doCreateBaseline = () => {
   state.showBaselineModal = false;
 
   router.push({
-    name: "workspace.project.issue.detail",
+    name: PROJECT_V1_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(props.database.project),
       issueSlug: "create",

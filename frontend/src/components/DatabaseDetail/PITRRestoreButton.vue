@@ -157,6 +157,7 @@ import {
   ContextMenuButtonAction,
 } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
+import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
@@ -406,7 +407,7 @@ const onConfirmV1 = async () => {
     );
 
     router.push({
-      name: "workspace.project.issue.detail",
+      name: PROJECT_V1_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(database.project),
         issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
