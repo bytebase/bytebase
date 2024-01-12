@@ -87,7 +87,6 @@ export type ResourceType =
   | "TASK_PROGRESS"
   | "TASK"
   | "ACTIVITY"
-  | "INBOX"
   | "VCS"
   | "REPOSITORY"
   | "ANOMALY"
