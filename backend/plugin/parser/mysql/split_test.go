@@ -38,6 +38,24 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []splitTestData{
 		{
+			statement: `select * from t;select "\"" where true;`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text:       `select * from t;`,
+						LastLine:   0,
+						LastColumn: 15,
+					},
+					{
+						Text:                 `select "\"" where true;`,
+						LastLine:             0,
+						FirstStatementColumn: 16,
+						LastColumn:           38,
+					},
+				},
+			},
+		},
+		{
 			statement: `-- klsjdfjasldf
 			-- klsjdflkjaskldfj
 `,
