@@ -20,7 +20,6 @@
     "workflow": "Flujo de trabajo",
     "unread": "No leído",
     "read": "Leído",
-    "inbox": "Bandeja de entrada",
     "activity": "Actividad",
     "activities": "Actividades",
     "sign-in": "Iniciar sesión",
@@ -2000,10 +1999,6 @@
     "successfully-updated-db-name-template": "Plantilla de nombre de base de datos actualizada con éxito.",
     "all": "Todos los proyectos",
     "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
-  },
-  "inbox": {
-    "mark-all-as-read": "Marcar todo como leído",
-    "view-older": "Ver más antiguos"
   },
   "gitops": {
     "setting": {

@@ -120,7 +120,6 @@
         "webhook-integration-basic-tooltip": "IM + 自定义Webhook",
         "webhook-integration-advanced": "高级",
         "webhook-integration-advanced-tooltip": "基础版功能 + IM 审批",
-        "inbox-notification": "站内信通知",
         "gitops-workflow-basic": "基础",
         "gitops-workflow-basic-tooltip": "GitOps CI/CD，SQL 审核 CI",
         "gitops-workflow-advanced": "高级",

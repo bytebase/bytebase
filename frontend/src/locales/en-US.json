@@ -20,7 +20,6 @@
     "workflow": "Workflow",
     "unread": "Unread",
     "read": "Read",
-    "inbox": "Inbox",
     "activity": "Activity",
     "activities": "Activities",
     "sign-in": "Sign in",
@@ -2001,10 +2000,6 @@
     "successfully-updated-db-name-template": "Successfully updated database name template.",
     "all": "All projects",
     "key-hint": "Short descriptive alphanumberic letters to identify this project."
-  },
-  "inbox": {
-    "mark-all-as-read": "Mark all as read",
-    "view-older": "View older"
   },
   "gitops": {
     "setting": {
