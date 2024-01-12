@@ -71,9 +71,8 @@ import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   extractUserUID,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   isDatabaseRelatedIssue,
-  isMemberOfProjectV1,
   isOwnerOfProjectV1,
 } from "@/utils";
 
@@ -156,12 +155,10 @@ const changeAssigneeUID = async (uid: string | undefined) => {
 };
 
 const filterAssignee = (user: User): boolean => {
-  return (
-    isMemberOfProjectV1(issue.value.projectEntity.iamPolicy, user) ||
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      user.userRole
-    )
+  return hasProjectPermissionV2(
+    issue.value.projectEntity,
+    user,
+    "bb.issues.get"
   );
 };
 

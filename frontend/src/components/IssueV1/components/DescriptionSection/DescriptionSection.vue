@@ -71,7 +71,7 @@ import { pushNotification, useCurrentUserV1 } from "@/store";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   isGrantRequestIssue,
 } from "@/utils";
 import { useIssueContext } from "../../logic";
@@ -117,12 +117,13 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.userRole
+    hasProjectPermissionV2(
+      issue.value.projectEntity,
+      currentUser.value,
+      "bb.issues.update"
     )
   ) {
-    // Allowed if RBAC is enabled and current is DBA or workspace owner.
+    // Allowed if current has issue update permission in the project
     return true;
   }
   return false;
