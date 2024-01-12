@@ -103,7 +103,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
-import { projectV1Slug, randomString } from "@/utils";
+import { randomString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
@@ -200,8 +200,7 @@ const create = async () => {
       }),
     });
     const url = {
-      path: `/project/${projectV1Slug(createdProject)}`,
-      hash: "",
+      path: `/${createdProject.name}`,
     };
     router.push(url);
     emit("dismiss");

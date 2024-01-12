@@ -21,6 +21,7 @@ import { ShieldAlertIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import { PROJECT_V1_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import {
   getProjectAndBranchId,
@@ -28,7 +29,6 @@ import {
 } from "@/store/modules/v1/common";
 import { useProjectBranchProtectionRules } from "@/store/modules/v1/projectProtectionRoles";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { projectV1Slug } from "@/utils";
 import { wildcardToRegex } from "../../utils";
 
 const props = defineProps<{
@@ -60,9 +60,8 @@ const isProtected = computed(() => {
 const handleBranchClick = async () => {
   const [_, branchId] = getProjectAndBranchId(props.branch.name);
   router.push({
-    name: "workspace.project.branch.detail",
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: projectV1Slug(project.value),
       branchName: `${branchId}`,
     },
   });

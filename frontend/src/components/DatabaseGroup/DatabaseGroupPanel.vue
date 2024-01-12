@@ -48,6 +48,11 @@ import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { buildCELExpr } from "@/plugins/cel/logic";
 import {
+  PROJECT_V1_DATABASE_GROUPS,
+  PROJECT_V1_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+} from "@/router/dashboard/projectV1";
+import {
   pushNotification,
   useDBGroupStore,
   useEnvironmentV1Store,
@@ -61,7 +66,7 @@ import {
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { batchConvertParsedExprToCELString, projectV1Slug } from "@/utils";
+import { batchConvertParsedExprToCELString } from "@/utils";
 import { buildDatabaseGroupExpr } from "@/utils/databaseGroup/cel";
 import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 import { ResourceType } from "./common/ExprEditor/context";
@@ -164,15 +169,10 @@ const doDelete = () => {
         const databaseGroup = props.databaseGroup as DatabaseGroup;
         await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
         if (
-          router.currentRoute.value.name ===
-          "workspace.project.database-group.detail"
+          router.currentRoute.value.name === PROJECT_V1_DATABASE_GROUP_DETAIL
         ) {
           router.replace({
-            name: "workspace.project.detail",
-            params: {
-              projectSlug: projectV1Slug(props.project),
-            },
-            hash: "#database-groups",
+            name: PROJECT_V1_DATABASE_GROUPS,
           });
         }
       } else if (props.resourceType === "SCHEMA_GROUP") {
@@ -181,16 +181,14 @@ const doDelete = () => {
         await dbGroupStore.deleteSchemaGroup(schemaGroupName);
         if (
           router.currentRoute.value.name ===
-          "workspace.project.database-group.table-group.detail"
+          PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL
         ) {
           const [_, databaseGroupName] =
             getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
               schemaGroupName
             );
           // TODO(steven): prevent `Cannot use 'in' operator to search for 'path' in undefined` error in vue-router.
-          window.location.href = `/project/${projectV1Slug(
-            props.project
-          )}/database-groups/${databaseGroupName}`;
+          window.location.href = `/${props.project.name}/database-groups/${databaseGroupName}`;
         }
       }
       emit("close");
@@ -287,9 +285,7 @@ const doConfirm = async () => {
         );
         if (dbGroup) {
           router.push(
-            `/project/${projectV1Slug(dbGroup.project)}/database-groups/${
-              dbGroup.databaseGroupName
-            }`
+            `/${dbGroup.project.name}/database-groups/${dbGroup.databaseGroupName}`
           );
         }
       } else {

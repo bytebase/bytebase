@@ -122,11 +122,11 @@ import { ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
+import { PROJECT_V1_BRANCHE_REBASE } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { projectSlugV1 } from "@/utils";
 import { MergeBranchValidationState } from "./types";
 
 type TabValue = "schema-editor" | "raw-schema-text";
@@ -170,9 +170,8 @@ const headBranchFilter = (branch: Branch) => {
 
 const rebaseLink = (headBranch: Branch, targetBranch: Branch) => {
   return {
-    name: "workspace.project.branch.rebase",
+    name: PROJECT_V1_BRANCHE_REBASE,
     params: {
-      projectSlug: projectSlugV1(props.project),
       branchName: headBranch.branchId,
     },
     query: {

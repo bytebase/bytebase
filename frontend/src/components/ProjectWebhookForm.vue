@@ -289,6 +289,10 @@ import { reactive, computed, PropType, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import {
+  PROJECT_V1_WEBHOOKS,
+  PROJECT_V1_WEBHOOK_DETAIL,
+} from "@/router/dashboard/projectV1";
+import {
   pushNotification,
   useProjectWebhookV1Store,
   useGracefulRequest,
@@ -303,7 +307,7 @@ import {
   Webhook,
   Webhook_Type,
 } from "@/types/proto/v1/project_service";
-import { projectV1Slug, projectWebhookV1Slug } from "../utils";
+import { projectWebhookV1Slug } from "../utils";
 
 interface LocalState {
   webhook: Webhook;
@@ -416,11 +420,7 @@ const toggleEvent = (type: Activity_Type, on: boolean) => {
 
 const cancel = () => {
   router.push({
-    name: "workspace.project.detail",
-    params: {
-      projectSlug: projectV1Slug(props.project),
-    },
-    hash: "#webhook",
+    name: PROJECT_V1_WEBHOOKS,
   });
 };
 
@@ -448,7 +448,7 @@ const createWebhook = () => {
     });
     if (createdWebhook) {
       router.push({
-        name: "workspace.project.hook.detail",
+        name: PROJECT_V1_WEBHOOK_DETAIL,
         params: {
           projectWebhookSlug: projectWebhookV1Slug(createdWebhook),
         },

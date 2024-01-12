@@ -15,24 +15,28 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchRebaseView from "@/components/Branch/BranchRebaseView";
+import {
+  PROJECT_V1_BRANCHE_REBASE,
+  PROJECT_V1_BRANCHE_DETAIL,
+} from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
-  projectSlug: string;
+  projectId: string;
   branchName: string;
 }>();
 
 const router = useRouter();
 
 const project = computed(() => {
-  if (props.projectSlug === "-") {
+  if (props.projectId === "-") {
     return;
   }
-  return useProjectV1Store().getProjectByUID(
-    String(idFromSlug(props.projectSlug as string))
+  return useProjectV1Store().getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 
@@ -45,9 +49,8 @@ const branchFullName = computed(() => {
 const handleUpdateHeadBranchName = (branchName: string | null) => {
   const branchId = branchName ? getProjectAndBranchId(branchName)[1] : "-";
   router.replace({
-    name: "workspace.project.branch.rebase",
+    name: PROJECT_V1_BRANCHE_REBASE,
     params: {
-      projectSlug: props.projectSlug,
       branchName: branchId,
     },
     query: router.currentRoute.value.query,
@@ -55,15 +58,10 @@ const handleUpdateHeadBranchName = (branchName: string | null) => {
   });
 };
 
-const handleRebased = (
-  rebasedBranch: Branch,
-  headBranchName: string,
-  headBranch: Branch | undefined
-) => {
+const handleRebased = (rebasedBranch: Branch) => {
   router.replace({
-    name: "workspace.project.branch.detail",
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: props.projectSlug,
       branchName: rebasedBranch.branchId,
     },
   });

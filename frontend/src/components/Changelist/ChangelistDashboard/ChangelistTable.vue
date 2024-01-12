@@ -44,7 +44,6 @@ import { Changelist } from "@/types/proto/v1/changelist_service";
 import {
   extractUserResourceName,
   getHighlightHTMLByRegExp,
-  projectV1Slug,
   extractChangelistResourceName,
 } from "@/utils";
 import { projectForChangelist } from "../ChangelistDetail/common";
@@ -79,11 +78,8 @@ const handleClickRow = (
   row: number,
   e: MouseEvent
 ) => {
-  const project = projectForChangelist(item);
   const url = router.resolve({
-    path: `/project/${projectV1Slug(
-      project
-    )}/changelists/${extractChangelistResourceName(item.name)}`,
+    path: `changelists/${extractChangelistResourceName(item.name)}`,
   }).fullPath;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");

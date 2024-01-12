@@ -157,7 +157,6 @@ import {
 import { getScrollParent } from "@/utils";
 import {
   databaseV1Slug,
-  projectV1Slug,
   isDatabaseV1Queryable,
   isPITRDatabaseV1,
   VueClass,
@@ -492,9 +491,9 @@ const clickDatabase = (
         database.name
       );
       router.push(
-        `/project/${projectV1Slug(
-          (database as ComposedDatabaseGroup).project
-        )}/database-groups/${databaseGroupName}`
+        `/${
+          (database as ComposedDatabaseGroup).project.name
+        }/database-groups/${databaseGroupName}`
       );
     }
   }

@@ -14,14 +14,11 @@ import {
   useTabStore,
   useIdentityProviderStore,
   useUserStore,
-  useProjectV1Store,
-  useProjectWebhookV1Store,
   useEnvironmentV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useDatabaseV1Store,
   useChangeHistoryStore,
-  useChangelistStore,
   usePageMode,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
@@ -41,6 +38,7 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
+import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "./dashboard/workspace";
 import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
 
@@ -84,8 +82,6 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const dbSchemaStore = useDBSchemaV1Store();
   const routerStore = useRouterStore();
-  const projectV1Store = useProjectV1Store();
-  const projectWebhookV1Store = useProjectWebhookV1Store();
 
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -246,11 +242,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (
-    to.name === "workspace.project.detailV1" ||
-    to.name === "workspace.project.database.dashboard" ||
-    to.name === "workspace.project.issue.dashboard"
-  ) {
+  if (to.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
     next();
     return;
   }
@@ -287,8 +279,6 @@ router.beforeEach((to, from, next) => {
   const routerSlug = routerStore.routeSlug(to);
   const principalEmail = routerSlug.principalEmail;
   const environmentSlug = routerSlug.environmentSlug;
-  const projectSlug = routerSlug.projectSlug;
-  const projectWebhookSlug = routerSlug.projectWebhookSlug;
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -336,99 +326,11 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (projectSlug && projectSlug !== "-") {
-    projectV1Store
-      .fetchProjectByUID(String(idFromSlug(projectSlug)))
-      .then((project) => {
-        if (projectWebhookSlug) {
-          const webhook =
-            projectWebhookV1Store.getProjectWebhookFromProjectById(
-              project,
-              idFromSlug(projectWebhookSlug)
-            );
-          if (webhook) {
-            next();
-          } else {
-            next({
-              name: "error.404",
-              replace: false,
-            });
-            throw new Error("not found");
-          }
-        } else if (to.name === "workspace.project.changelist.detail") {
-          const name = `${project.name}/changelists/${to.params.changelistName}`;
-          useChangelistStore()
-            .fetchChangelistByName(name)
-            .then((changelist) => {
-              if (changelist) {
-                next();
-              } else {
-                next({
-                  name: "error.404",
-                  replace: false,
-                });
-                return;
-              }
-            })
-            .catch((error) => {
-              next({
-                name: "error.404",
-                replace: false,
-              });
-              throw error;
-            });
-        } else if (
-          to.name === "workspace.project.branch.detail" &&
-          to.params.branchName !== "new"
-        ) {
-          next();
-          // const name = `${project.name}/branches/${to.params.branchName}`;
-          // useBranchStore()
-          //   .fetchBranchByName(name, false /* !useCache */)
-          //   .then((branch) => {
-          //     if (branch) {
-          //       next();
-          //     } else {
-          //       next({
-          //         name: "error.404",
-          //         replace: false,
-          //       });
-          //       throw new Error("not found");
-          //     }
-          //   })
-          //   .catch((error) => {
-          //     next({
-          //       name: "error.404",
-          //       replace: false,
-          //     });
-          //     throw error;
-          //   });
-        } else {
-          next();
-        }
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
   if (issueSlug) {
     // We've moved the preparation data fetch jobs into IssueDetail page
     // so just next() here.
     next();
     return;
-  }
-
-  if (to.name === "workspace.project.branch.detail") {
-    if (to.params.branchName === "new") {
-      next();
-      return;
-    }
   }
 
   if (databaseSlug) {

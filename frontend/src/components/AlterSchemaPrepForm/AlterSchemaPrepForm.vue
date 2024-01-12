@@ -17,7 +17,7 @@
         >
           <template #deployment_config>
             <router-link
-              :to="`/project/${projectV1Slug(selectedProject!)}#setting`"
+              :to="`/${selectedProject!.name}/settings`"
               class="underline hover:bg-link-hover"
               active-class=""
               exact-active-class=""
@@ -336,7 +336,6 @@ import {
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
-  projectV1Slug,
   generateIssueName,
   SearchScopeId,
   SearchParams,
