@@ -3,7 +3,6 @@ package mysql
 import (
 	"fmt"
 	"io"
-	"slices"
 	"sort"
 	"strings"
 
@@ -89,10 +88,11 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 		Name:   s.name,
 		Tables: tables,
 		// Unsupported, for tests only.
-		Views:     []*storepb.ViewMetadata{},
-		Functions: []*storepb.FunctionMetadata{},
-		Streams:   []*storepb.StreamMetadata{},
-		Tasks:     []*storepb.TaskMetadata{},
+		Views:             []*storepb.ViewMetadata{},
+		Functions:         []*storepb.FunctionMetadata{},
+		Streams:           []*storepb.StreamMetadata{},
+		Tasks:             []*storepb.TaskMetadata{},
+		MaterializedViews: []*storepb.MaterializedViewMetadata{},
 	}
 }
 
@@ -493,9 +493,7 @@ func (c *columnState) toString(buf io.StringWriter) error {
 		return err
 	}
 	if c.nullable {
-		if !slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
-			return strings.EqualFold(s, c.tp)
-		}) {
+		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; !ok {
 			if _, err := buf.WriteString(" NULL"); err != nil {
 				return err
 			}
@@ -554,9 +552,8 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 	if hasDefault {
 		_, isDefaultNull := column.GetDefaultValue().(*storepb.ColumnMetadata_DefaultNull)
 		// Some types do not default to NULL, but support default expressions.
-		if isDefaultNull && slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
-			return strings.EqualFold(s, column.Type)
-		}) {
+		_, ok := expressionDefaultOnlyTypes[strings.ToUpper(column.Type)]
+		if isDefaultNull && ok {
 			hasDefault = false
 		}
 	}

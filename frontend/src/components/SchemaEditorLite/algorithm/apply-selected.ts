@@ -9,6 +9,7 @@ import {
   TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { filterColumnMetadata, filterTableMetadata } from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { RolloutObject } from "../types";
@@ -97,7 +98,9 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
           const sourceColumn = sourceColumnMap.get(key);
           if (sourceColumn) {
             // collect the original column
-            pickedColumns.push(cloneDeep(sourceColumn.column));
+            pickedColumns.push(
+              filterColumnMetadata(cloneDeep(sourceColumn.column))
+            );
             // together with its original columnConfig
             const columnConfig = sourceColumnConfigMap.get(key)?.columnConfig;
             if (columnConfig) {
@@ -151,7 +154,7 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
           const sourceTable = sourceTableMap.get(key);
           if (sourceTable) {
             // Collect the original table
-            tables.push(cloneDeep(sourceTable.table));
+            tables.push(filterTableMetadata(cloneDeep(sourceTable.table)));
             // Together with its tableConfig
             const sourceTableConfig =
               sourceTableConfigMap.get(key)?.tableConfig;

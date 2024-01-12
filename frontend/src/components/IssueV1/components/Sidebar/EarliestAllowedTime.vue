@@ -76,7 +76,11 @@ import {
   Task_Status,
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractUserResourceName,
+  hasProjectPermissionV2,
+  isDatabaseRelatedIssue,
+} from "@/utils";
 
 dayjs.extend(isSameOrAfter);
 
@@ -88,6 +92,9 @@ const isUpdating = ref(false);
 const showFeatureModal = ref(false);
 
 const shouldShowEarliestAllowedTime = computed(() => {
+  if (!isDatabaseRelatedIssue(issue.value)) {
+    return false;
+  }
   if (isTenantMode.value) {
     return false;
   }
