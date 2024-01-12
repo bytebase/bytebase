@@ -3424,6 +3424,8 @@
     },
     "index": {
       "drop-index-confirm": "¿Índice de caída?"
-    }
+    },
+    "force-delete": "Forzar eliminación",
+    "deleting-parent-branch": "Eliminando una rama principal."
   }
 }
