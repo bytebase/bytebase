@@ -1,4 +1,4 @@
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import {
   ComposedIssue,
   IssueStatusTransitionType,
@@ -11,12 +11,11 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   StageStatusTransition,
   TaskStatusTransition,
-  hasWorkspacePermissionV1,
-  isOwnerOfProjectV1,
   isDatabaseRelatedIssue,
   flattenTaskV1List,
   isGrantRequestIssue,
   activeTaskInRollout,
+  hasProjectPermissionV2,
 } from "@/utils";
 import { extractReviewContext } from "./review";
 
@@ -103,24 +102,12 @@ const allowUserToApplyIssueStatusTransition = (
   issue: ComposedIssue,
   user: User
 ) => {
-  // Workspace level high-privileged user (DBA/OWNER) are always allowed.
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      user.userRole
-    )
-  ) {
-    return true;
-  }
-
-  // Project owners are also allowed
-  const projectV1 = useProjectV1Store().getProjectByName(issue.project);
-  if (isOwnerOfProjectV1(projectV1.iamPolicy, user)) {
+  // Allowed if the user has issues.update permission in the project
+  if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
     return true;
   }
 
   // The creator and the assignee can apply issue status transition
-
   if (user.name === issue.creatorEntity.name) {
     return true;
   }

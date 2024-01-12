@@ -26,7 +26,7 @@ import {
   extractUserResourceName,
   flattenTaskV1List,
   getSheetStatement,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   semverCompare,
 } from "@/utils";
 
@@ -83,9 +83,10 @@ export const provideIssueGhostContext = () => {
 
     if (extractUserResourceName(issue.value.creator) !== me.value.email) {
       if (
-        !hasWorkspacePermissionV1(
-          "bb.permission.workspace.manage-issue",
-          me.value.userRole
+        !hasProjectPermissionV2(
+          issue.value.projectEntity,
+          me.value,
+          "bb.issues.update"
         )
       ) {
         return [t("issue.error.you-don-have-privilege-to-edit-this-issue")];
