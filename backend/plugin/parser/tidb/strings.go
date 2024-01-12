@@ -1,8 +1,6 @@
 package tidb
 
 import (
-	"bufio"
-	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -13,12 +11,16 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
+const (
+	PrimarySymbol = "PRIMARY"
+)
+
 type StringsManipulator struct {
 	s      string
 	l      *parser.TiDBLexer
 	stream antlr.TokenStream
 	p      *parser.TiDBParser
-	tree   antlr.Tree
+	tree   parser.ISingleCreateTableContext
 }
 
 func NewStringsManipulator(s string) *StringsManipulator {
@@ -37,13 +39,19 @@ type StringsManipulatorActionType int
 const (
 	StringsManipulatorActionTypeNone StringsManipulatorActionType = iota
 	StringsManipulatorActionTypeDropTable
+	StringsManipulatorActionTypeAddTable
 	StringsManipulatorActionTypeDropColumn
+	StringsManipulatorActionTypeAddColumn
 	StringsManipulatorActionTypeModifyColumnType
 	StringsManipulatorActionTypeDropColumnOption
 	StringsManipulatorActionTypeAddColumnOption
 	StringsManipulatorActionTypeModifyColumnOption
 	StringsManipulatorActionTypeDropTableConstraint
 	StringsManipulatorActionTypeModifyTableConstraint
+	StringsManipulatorActionTypeAddTableConstraint
+	StringsManipulatorActionTypeDropTableOption
+	StringsManipulatorActionTypeModifyTableOption
+	StringsManipulatorActionTypeAddTableOption
 )
 
 type StringsManipulatorAction interface {
@@ -79,6 +87,28 @@ func NewDropTableAction(tableName string) *StringsManipulatorActionDropTable {
 			Type: StringsManipulatorActionTypeDropTable,
 		},
 		Table: tableName,
+	}
+}
+
+type StringsManipulatorActionAddTable struct {
+	StringsManipulatorActionBase
+	TableDefinition string
+}
+
+func (*StringsManipulatorActionAddTable) GetTopLevelNaming() string {
+	return ""
+}
+
+func (*StringsManipulatorActionAddTable) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddTableAction(tableDefinition string) *StringsManipulatorActionAddTable {
+	return &StringsManipulatorActionAddTable{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddTable,
+		},
+		TableDefinition: tableDefinition,
 	}
 }
 
@@ -119,6 +149,30 @@ func (s *StringsManipulatorActionModifyColumnType) GetTopLevelNaming() string {
 
 func (s *StringsManipulatorActionModifyColumnType) GetSecondLevelNaming() string {
 	return s.Column
+}
+
+type StringsManipulatorActionAddColumn struct {
+	StringsManipulatorActionBase
+	Table            string
+	ColumnDefinition string
+}
+
+func (s *StringsManipulatorActionAddColumn) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddColumn) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddColumnAction(tableName string, columnDefinition string) *StringsManipulatorActionAddColumn {
+	return &StringsManipulatorActionAddColumn{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddColumn,
+		},
+		Table:            tableName,
+		ColumnDefinition: columnDefinition,
+	}
 }
 
 func NewModifyColumnTypeAction(tableName string, columnName string, columnType string) *StringsManipulatorActionModifyColumnType {
@@ -190,7 +244,6 @@ type StringsManipulatorActionAddColumnOption struct {
 	StringsManipulatorActionBase
 	Table           string
 	Column          string
-	OptionType      tidbast.ColumnOptionType
 	NewOptionDefine string
 }
 
@@ -202,14 +255,13 @@ func (s *StringsManipulatorActionAddColumnOption) GetSecondLevelNaming() string 
 	return s.Column
 }
 
-func NewAddColumnOptionAction(tableName string, columnName string, optionType tidbast.ColumnOptionType, newOptionDefine string) *StringsManipulatorActionAddColumnOption {
+func NewAddColumnOptionAction(tableName string, columnName string, newOptionDefine string) *StringsManipulatorActionAddColumnOption {
 	return &StringsManipulatorActionAddColumnOption{
 		StringsManipulatorActionBase: StringsManipulatorActionBase{
 			Type: StringsManipulatorActionTypeAddColumnOption,
 		},
 		Table:           tableName,
 		Column:          columnName,
-		OptionType:      optionType,
 		NewOptionDefine: newOptionDefine,
 	}
 }
@@ -267,9 +319,105 @@ func NewModifyTableConstraintAction(tableName string, oldConstraint tidbast.Cons
 	}
 }
 
-var (
-	regexpColumn = regexp.MustCompile("^  `([^`]+)`")
-)
+type StringsManipulatorActionAddTableConstraint struct {
+	StringsManipulatorActionBase
+	Table               string
+	Type                tidbast.ConstraintType
+	NewConstraintDefine string
+}
+
+func (s *StringsManipulatorActionAddTableConstraint) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddTableConstraint) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddTableConstraintAction(tableName string, constraintType tidbast.ConstraintType, newConstraintDefine string) *StringsManipulatorActionAddTableConstraint {
+	return &StringsManipulatorActionAddTableConstraint{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddTableConstraint,
+		},
+		Table:               tableName,
+		Type:                constraintType,
+		NewConstraintDefine: newConstraintDefine,
+	}
+}
+
+type StringsManipulatorActionDropTableOption struct {
+	StringsManipulatorActionBase
+	Table     string
+	OldOption tidbast.TableOptionType
+}
+
+func (s *StringsManipulatorActionDropTableOption) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionDropTableOption) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewDropTableOptionAction(tableName string, oldOption tidbast.TableOptionType) *StringsManipulatorActionDropTableOption {
+	return &StringsManipulatorActionDropTableOption{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeDropTableOption,
+		},
+		Table:     tableName,
+		OldOption: oldOption,
+	}
+}
+
+type StringsManipulatorActionModifyTableOption struct {
+	StringsManipulatorActionBase
+	Table          string
+	OldOption      tidbast.TableOptionType
+	NewOptionValue string
+}
+
+func (s *StringsManipulatorActionModifyTableOption) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionModifyTableOption) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewModifyTableOptionAction(tableName string, oldOption tidbast.TableOptionType, newOptionValue string) *StringsManipulatorActionModifyTableOption {
+	return &StringsManipulatorActionModifyTableOption{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeModifyTableOption,
+		},
+		Table:          tableName,
+		OldOption:      oldOption,
+		NewOptionValue: newOptionValue,
+	}
+}
+
+type StringsManipulatorActionAddTableOption struct {
+	StringsManipulatorActionBase
+	Table          string
+	NewOptionValue string
+}
+
+func (s *StringsManipulatorActionAddTableOption) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddTableOption) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddTableOptionAction(tableName string, newOptionValue string) *StringsManipulatorActionAddTableOption {
+	return &StringsManipulatorActionAddTableOption{
+		StringsManipulatorActionBase: StringsManipulatorActionBase{
+			Type: StringsManipulatorActionTypeAddTableOption,
+		},
+		Table:          tableName,
+		NewOptionValue: newOptionValue,
+	}
+}
 
 func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (string, error) {
 	tableActions := make(map[string][]StringsManipulatorAction)
@@ -293,7 +441,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			results = append(results, stmt.Text)
 			continue
 		}
-		isCreateTable, tableName := extractTableNameForCreateTable(stmt.Text)
+		isCreateTable, tableName := s.extractTableNameForCreateTable(stmt.Text)
 		if !isCreateTable {
 			results = append(results, stmt.Text)
 			continue
@@ -304,104 +452,331 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 			continue
 		}
 
-		var tableDefinition strings.Builder
-		var tableActions []StringsManipulatorAction
+		hasDropTable := false
 		actionsMap := make(map[string][]StringsManipulatorAction)
 		for _, action := range actions {
 			// do copy
 			action := action
 			secondName := action.GetSecondLevelNaming()
-			if secondName == "" {
-				tableActions = append(tableActions, action)
-			} else {
-				actionsMap[secondName] = append(actionsMap[secondName], action)
+			actionsMap[secondName] = append(actionsMap[secondName], action)
+			if action.GetType() == StringsManipulatorActionTypeDropTable {
+				hasDropTable = true
 			}
 		}
 
-		hasDropTable := false
-		for _, action := range tableActions {
-			if _, ok := action.(*StringsManipulatorActionDropTable); ok {
-				hasDropTable = true
-				continue
-			}
-		}
 		if hasDropTable {
 			continue
 		}
 
-		scanner := bufio.NewScanner(strings.NewReader(stmt.Text))
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			columnMatch := regexpColumn.FindStringSubmatch(line)
-			if len(columnMatch) > 1 {
-				// is column definition
-				columnName := columnMatch[1]
-				actions, ok := actionsMap[columnName]
-				if !ok || len(actions) == 0 {
-					if _, err := tableDefinition.WriteString(line); err != nil {
-						return "", errors.Wrap(err, "failed to write string")
-					}
-					continue
-				}
-
-				s.Load(line)
-				if err := s.ParseColumnDef(); err != nil {
-					return "", errors.Wrapf(err, "failed to parse column def: %s", line)
-				}
-
-				columnActionMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
-				for _, action := range actions {
-					columnActionMap[action.GetType()] = append(columnActionMap[action.GetType()], action)
-				}
-				result, err := s.RewriteColumnDef(columnActionMap)
-				if err != nil {
-					return "", errors.Wrapf(err, "failed to rewrite column def: %s", line)
-				}
-				if len(result) > 0 {
-					results = append(results, result)
-				}
-				continue
-			}
-
-			results = append(results, line)
+		result, err := s.RewriteCreateTable(actionsMap)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to rewrite create table: %s", stmt.Text)
 		}
-		if err := scanner.Err(); err != nil {
-			return "", errors.Wrap(err, "failed to scan create table statement")
+		if len(result) > 0 {
+			results = append(results, result)
+		}
+	}
+
+	addTableActions := tableActions[""]
+	for _, action := range addTableActions {
+		if action.GetType() == StringsManipulatorActionTypeAddTable {
+			results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
 		}
 	}
 
 	return strings.Join(results, "\n"), nil
 }
 
-func (s *StringsManipulator) RewriteColumnDef(columnActionMap map[StringsManipulatorActionType][]StringsManipulatorAction) (string, error) {
-	if columnActionMap == nil {
-		return s.stream.GetAllText(), nil
-	}
-	if dropTable, exists := columnActionMap[StringsManipulatorActionTypeDropColumn]; exists && len(dropTable) > 0 {
-		return "", nil
-	}
+func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]StringsManipulatorAction) (string, error) {
 	listener := &rewriter{
-		rewriter: antlr.NewTokenStreamRewriter(s.stream),
-		actions:  columnActionMap,
+		actions: actionsMap,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, s.tree)
 	if listener.err != nil {
-		return "", errors.Wrap(listener.err, "failed to rewrite column def for column")
+		return "", errors.Wrap(listener.err, "failed to rewrite create table")
 	}
-	return listener.rewriter.GetTextDefault(), nil
+	return listener.generateStatement()
 }
 
 type rewriter struct {
 	*parser.BaseTiDBParserListener
 
-	rewriter *antlr.TokenStreamRewriter
-	actions  map[StringsManipulatorActionType][]StringsManipulatorAction
-	err      error
+	actions map[string][]StringsManipulatorAction
+	err     error
+
+	prefixString     string
+	columnDefines    []string
+	tableConstraints []string
+	suffixString     string
+
+	closeParIndex int
+}
+
+func (r *rewriter) generateStatement() (string, error) {
+	buf := strings.Builder{}
+	if _, err := buf.WriteString(r.prefixString); err != nil {
+		return "", errors.Wrap(err, "failed to write string")
+	}
+	if len(r.columnDefines) > 0 {
+		if _, err := buf.WriteString("\n  "); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+		if _, err := buf.WriteString(strings.Join(r.columnDefines, ",\n  ")); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+	}
+	if len(r.tableConstraints) > 0 {
+		if len(r.columnDefines) > 0 {
+			if _, err := buf.WriteString(",\n  "); err != nil {
+				return "", errors.Wrap(err, "failed to write string")
+			}
+		}
+		if _, err := buf.WriteString(strings.Join(r.tableConstraints, ",\n  ")); err != nil {
+			return "", errors.Wrap(err, "failed to write string")
+		}
+	}
+	if err := buf.WriteByte('\n'); err != nil {
+		return "", errors.Wrap(err, "failed to write byte")
+	}
+	if _, err := buf.WriteString(r.suffixString); err != nil {
+		return "", errors.Wrap(err, "failed to write string")
+	}
+	if err := buf.WriteByte('\n'); err != nil {
+		return "", errors.Wrap(err, "failed to write byte")
+	}
+	return buf.String(), nil
+}
+
+func (r *rewriter) EnterCreateTable(ctx *parser.CreateTableContext) {
+	if r.err != nil {
+		return
+	}
+
+	if ctx.OPEN_PAR_SYMBOL() == nil {
+		r.err = errors.New("invalid create table statement: no open parenthesis")
+		return
+	}
+	if ctx.CLOSE_PAR_SYMBOL() == nil {
+		r.err = errors.New("invalid create table statement: no close parenthesis")
+		return
+	}
+	r.prefixString = ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			0, // We need to include the non-default channel tokens
+			ctx.OPEN_PAR_SYMBOL().GetSourceInterval().Stop,
+		),
+	)
+	r.suffixString = ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			ctx.CLOSE_PAR_SYMBOL().GetSourceInterval().Start,
+			ctx.GetParser().GetTokenStream().Size()-1, // We need to include the non-default channel tokens
+		),
+	)
+	r.closeParIndex = ctx.CLOSE_PAR_SYMBOL().GetSourceInterval().Start
+}
+
+func (r *rewriter) ExitCreateTable(ctx *parser.CreateTableContext) {
+	if r.err != nil {
+		return
+	}
+	actions, exists := r.actions[""]
+	if exists && len(actions) > 0 {
+		for _, action := range actions {
+			switch action := action.(type) {
+			case *StringsManipulatorActionAddColumn:
+				r.columnDefines = append(r.columnDefines, action.ColumnDefinition)
+			case *StringsManipulatorActionAddTableConstraint:
+				r.tableConstraints = append(r.tableConstraints, action.NewConstraintDefine)
+			case *StringsManipulatorActionAddTableOption:
+				if ctx.CreateTableOptions() != nil {
+					r.suffixString = strings.Join([]string{
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: r.closeParIndex,
+							Stop:  ctx.CreateTableOptions().GetStop().GetTokenIndex(),
+						}),
+						" ",
+						action.NewOptionValue,
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: ctx.CreateTableOptions().GetStop().GetTokenIndex() + 1,
+							Stop:  ctx.GetParser().GetTokenStream().Size() - 1,
+						}),
+					}, "")
+				} else {
+					r.suffixString = strings.Join([]string{
+						") ",
+						action.NewOptionValue,
+						" ",
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: r.closeParIndex + 1,
+							Stop:  ctx.GetParser().GetTokenStream().Size() - 1,
+						}),
+					}, "")
+				}
+			}
+		}
+	}
+}
+
+func getIndexUntilNewLine(start int, stream antlr.TokenStream) int {
+	for i := start; i < stream.Size(); i++ {
+		token := stream.Get(i)
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			return i - 1
+		}
+		switch token.GetTokenType() {
+		case parser.TiDBLexerWHITESPACE:
+			if token.GetText() == "\n" {
+				return i - 1
+			}
+		case antlr.TokenEOF:
+			return i - 1
+		}
+	}
+	return stream.Size() - 1
+}
+
+func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext) {
+	if r.err != nil {
+		return
+	}
+
+	secondName := extractTableConstraintName(ctx)
+	if secondName == "" {
+		r.err = errors.New("invalid table constraint name")
+		return
+	}
+
+	actions, exists := r.actions[secondName]
+	if !exists {
+		// We need to remain the original constraint definition with comments.
+		stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
+		r.tableConstraints = append(r.tableConstraints, ctx.GetParser().GetTokenStream().GetTextFromInterval(
+			antlr.NewInterval(
+				ctx.GetStart().GetTokenIndex(),
+				stop,
+			),
+		))
+		return
+	}
+	// column name and constraint name are in the different namespace for tidb
+	for _, action := range actions {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropTableConstraint:
+			return
+		case *StringsManipulatorActionModifyTableConstraint:
+			r.tableConstraints = append(r.tableConstraints, action.NewConstraintDefine)
+		}
+	}
+}
+
+func extractTableConstraintName(ctx *parser.TableConstraintDefContext) string {
+	if ctx.PRIMARY_SYMBOL() != nil {
+		return PrimarySymbol
+	}
+	if ctx.ConstraintName() != nil {
+		return NormalizeConstraintName(ctx.ConstraintName())
+	}
+	if ctx.IndexName() != nil {
+		return NormalizeIndexName(ctx.IndexName())
+	}
+	if ctx.IndexNameAndType() != nil {
+		return NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	}
+	return ""
+}
+
+func (r *rewriter) EnterCreateTableOption(ctx *parser.CreateTableOptionContext) {
+	if r.err != nil {
+		return
+	}
+
+	if ctx.GetOption() == nil {
+		return
+	}
+	switch ctx.GetOption().GetTokenType() {
+	case parser.TiDBParserCOMMENT_SYMBOL:
+		for _, action := range r.actions[""] {
+			switch action := action.(type) {
+			case *StringsManipulatorActionDropTableOption:
+				if action.OldOption == tidbast.TableOptionComment {
+					r.suffixString = strings.Join([]string{
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: r.closeParIndex,
+							Stop:  ctx.GetStart().GetTokenIndex() - 1,
+						}),
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: ctx.GetStop().GetTokenIndex() + 1,
+							Stop:  ctx.GetParser().GetTokenStream().Size() - 1,
+						}),
+					}, "")
+				}
+				return
+			case *StringsManipulatorActionModifyTableOption:
+				if action.OldOption == tidbast.TableOptionComment {
+					r.suffixString = strings.Join([]string{
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: r.closeParIndex,
+							Stop:  ctx.GetStart().GetTokenIndex() - 1,
+						}),
+						action.NewOptionValue,
+						ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+							Start: ctx.GetStop().GetTokenIndex() + 1,
+							Stop:  ctx.GetParser().GetTokenStream().Size() - 1,
+						}),
+					}, "")
+					return
+				}
+			}
+		}
+	default:
+		// We only support comment option for now
+		return
+	}
 }
 
 func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
-	if modifyType, exists := r.actions[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
+	if r.err != nil {
+		return
+	}
+
+	_, _, columnName := NormalizeTiDBColumnName(ctx.ColumnName())
+	if columnName == "" {
+		r.err = errors.New("invalid column name")
+		return
+	}
+
+	actions, exists := r.actions[columnName]
+	if !exists {
+		// We need to remain the original column definition with comments.
+		stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
+		r.columnDefines = append(r.columnDefines, ctx.GetParser().GetTokenStream().GetTextFromInterval(
+			antlr.NewInterval(
+				ctx.GetStart().GetTokenIndex(),
+				stop,
+			),
+		))
+		return
+	}
+	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
+	for _, action := range actions {
+		if action.GetType() == StringsManipulatorActionTypeDropColumn {
+			// drop column action is special, we need to handle it first
+			return
+		}
+		actionsMap[action.GetType()] = append(actionsMap[action.GetType()], action)
+	}
+
+	buf := strings.Builder{}
+	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.ColumnName())); err != nil {
+		r.err = errors.Wrap(err, "failed to write string")
+		return
+	}
+	if err := buf.WriteByte(' '); err != nil {
+		r.err = errors.Wrap(err, "failed to write byte")
+		return
+	}
+
+	if modifyType, exists := actionsMap[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
 		if len(modifyType) > 1 {
 			r.err = errors.New("multiple modify column type actions")
 			return
@@ -411,11 +786,19 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 			r.err = errors.New("invalid modify column type action")
 			return
 		}
-		r.rewriter.ReplaceTokenDefault(ctx.DataType().GetStart(), ctx.DataType().GetStop(), modifyType.Type)
+		if _, err := buf.WriteString(modifyType.Type); err != nil {
+			r.err = errors.Wrap(err, "failed to write string")
+			return
+		}
+	} else {
+		if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.DataType())); err != nil {
+			r.err = errors.Wrap(err, "failed to write string")
+			return
+		}
 	}
 
 	modifyOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionModifyColumnOption)
-	for _, action := range r.actions[StringsManipulatorActionTypeModifyColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeModifyColumnOption] {
 		action, ok := action.(*StringsManipulatorActionModifyColumnOption)
 		if !ok {
 			r.err = errors.New("invalid modify column option action")
@@ -424,7 +807,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		modifyOptionMap[action.OldOption] = action
 	}
 	dropOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionDropColumnOption)
-	for _, action := range r.actions[StringsManipulatorActionTypeDropColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeDropColumnOption] {
 		action, ok := action.(*StringsManipulatorActionDropColumnOption)
 		if !ok {
 			r.err = errors.New("invalid drop column option action")
@@ -436,31 +819,44 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		for _, option := range ctx.ColumnOptionList().AllColumnOption() {
 			optionType := convertColumnOptionType(option)
 			if _, exists := dropOptionMap[optionType]; exists {
-				r.rewriter.DeleteTokenDefault(option.GetStart(), option.GetStop())
+				// Drop column option
 				continue
 			}
+			if err := buf.WriteByte(' '); err != nil {
+				r.err = errors.Wrap(err, "failed to write byte")
+				return
+			}
+			// Modify column option
 			if action, exists := modifyOptionMap[optionType]; exists {
-				r.rewriter.ReplaceTokenDefault(option.GetStart(), option.GetStop(), action.NewOptionDefine)
+				if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+					r.err = errors.Wrap(err, "failed to write string")
+					return
+				}
+				continue
+			}
+			// Original column option
+			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+				r.err = errors.Wrap(err, "failed to write string")
+				return
 			}
 		}
 	}
-	newOptionBuf := strings.Builder{}
-	for _, action := range r.actions[StringsManipulatorActionTypeAddColumnOption] {
+	for _, action := range actionsMap[StringsManipulatorActionTypeAddColumnOption] {
 		action, ok := action.(*StringsManipulatorActionAddColumnOption)
 		if !ok {
 			r.err = errors.New("invalid add column option action")
 			return
 		}
-		if _, err := newOptionBuf.WriteString(" "); err != nil {
+		if _, err := buf.WriteString(" "); err != nil {
 			r.err = errors.Wrap(err, "failed to write string")
 			return
 		}
-		if _, err := newOptionBuf.WriteString(action.NewOptionDefine); err != nil {
+		if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
 			r.err = errors.Wrap(err, "failed to write string")
 			return
 		}
 	}
-	r.rewriter.InsertAfterDefault(ctx.GetStop().GetTokenIndex(), newOptionBuf.String())
+	r.columnDefines = append(r.columnDefines, buf.String())
 }
 
 func convertColumnOptionType(ctx parser.IColumnOptionContext) tidbast.ColumnOptionType {
@@ -510,9 +906,8 @@ func (s *StringsManipulator) Load(text string) {
 	s.p.SetInputStream(s.stream)
 }
 
-func (s *StringsManipulator) ParseColumnDef() error {
+func (s *StringsManipulator) ParseCreateTable() error {
 	lexerErrorListener := &base.ParseErrorListener{}
-	s.p.SetErrorHandler(antlr.NewBailErrorStrategy())
 	s.l.RemoveErrorListeners()
 	s.l.AddErrorListener(lexerErrorListener)
 
@@ -522,7 +917,7 @@ func (s *StringsManipulator) ParseColumnDef() error {
 
 	s.p.BuildParseTrees = true
 
-	s.tree = s.p.SingleColumnDef()
+	s.tree = s.p.SingleCreateTable()
 
 	if lexerErrorListener.Err != nil {
 		return lexerErrorListener.Err
@@ -535,14 +930,17 @@ func (s *StringsManipulator) ParseColumnDef() error {
 	return nil
 }
 
-var (
-	regexpPattern = regexp.MustCompile("(?m)^-- Table structure for `([^`]+)`")
-)
-
-func extractTableNameForCreateTable(s string) (bool, string) {
-	matches := regexpPattern.FindStringSubmatch(s)
-	if len(matches) > 1 {
-		return true, matches[1]
+func (s *StringsManipulator) extractTableNameForCreateTable(text string) (bool, string) {
+	s.Load(text)
+	if err := s.ParseCreateTable(); err != nil {
+		return false, ""
 	}
-	return false, ""
+	if s.tree == nil || s.tree.CreateTable() == nil || s.tree.CreateTable().TableName() == nil {
+		return false, ""
+	}
+	_, tableName := NormalizeTiDBTableName(s.tree.CreateTable().TableName())
+	if tableName == "" {
+		return false, ""
+	}
+	return true, tableName
 }

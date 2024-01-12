@@ -7,12 +7,9 @@ import { computed } from "vue";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 
-const props = defineProps({
-  projectId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+}>();
 
 const projectV1Store = useProjectV1Store();
 

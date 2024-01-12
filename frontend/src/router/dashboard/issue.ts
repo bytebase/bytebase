@@ -1,5 +1,5 @@
 import { RouteRecordRaw } from "vue-router";
-import ProjectSidebar from "@/components/Project/ProjectSidebar.vue";
+import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
@@ -24,7 +24,7 @@ const issueRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/IssueDetailV1.vue"),
-      leftSidebar: ProjectSidebar,
+      leftSidebar: ProjectSidebarV1,
     },
     props: { content: true, leftSidebar: true },
   },

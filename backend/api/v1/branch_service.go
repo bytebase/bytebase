@@ -615,6 +615,20 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 		return nil, status.Errorf(codes.NotFound, "branch %q not found", branchID)
 	}
 
+	if !request.Force {
+		childBranches, err := s.store.ListBranches(ctx, &store.FindBranchMessage{
+			ProjectID:              &project.ResourceID,
+			LoadFull:               false,
+			ParentBranchResourceID: &request.Name,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list child branches, error %v", err)
+		}
+		if len(childBranches) > 0 {
+			return nil, status.Errorf(codes.FailedPrecondition, "branch %q has child branches, please delete them first", branchID)
+		}
+	}
+
 	if err := s.store.DeleteBranch(ctx, project.ResourceID, branch.ResourceID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete branch, error %v", err)
 	}

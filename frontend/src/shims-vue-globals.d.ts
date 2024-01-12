@@ -11,7 +11,6 @@ import type {
   instanceName,
   instanceSlug,
   projectName,
-  projectSlug,
   sizeToFit,
   urlfy,
 } from "./utils";
@@ -33,7 +32,6 @@ declare module "vue" {
     environmentName: typeof environmentName;
     environmentSlug: typeof environmentSlug;
     projectName: typeof projectName;
-    projectSlug: typeof projectSlug;
     instanceName: typeof instanceName;
     instanceSlug: typeof instanceSlug;
     databaseSlug: typeof databaseSlug;

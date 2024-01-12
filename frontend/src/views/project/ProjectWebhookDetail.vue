@@ -4,25 +4,26 @@
       <div class="flex flex-row space-x-2 items-center">
         <!-- This awkward code is author couldn't figure out proper way to use dynamic src under vite
                    https://github.com/vitejs/vite/issues/1265 -->
+        <!-- TODO(ed): extract the code -->
         <template v-if="projectWebhook.type === Webhook_Type.TYPE_SLACK">
-          <img class="h-6 w-6" src="../assets/slack-logo.png" alt="" />
+          <img class="h-6 w-6" src="../../assets/slack-logo.png" alt="" />
         </template>
         <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_DISCORD">
-          <img class="h-6 w-6" src="../assets/discord-logo.svg" />
+          <img class="h-6 w-6" src="../../assets/discord-logo.svg" />
         </template>
         <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_TEAMS">
-          <img class="h-6 w-6" src="../assets/teams-logo.svg" />
+          <img class="h-6 w-6" src="../../assets/teams-logo.svg" />
         </template>
         <template
           v-else-if="projectWebhook.type === Webhook_Type.TYPE_DINGTALK"
         >
-          <img class="h-6 w-6" src="../assets/dingtalk-logo.png" />
+          <img class="h-6 w-6" src="../../assets/dingtalk-logo.png" />
         </template>
         <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_FEISHU">
-          <img class="h-6 w-6" src="../assets/feishu-logo.webp" />
+          <img class="h-6 w-6" src="../../assets/feishu-logo.webp" />
         </template>
         <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_WECOM">
-          <img class="h-6 w-6" src="../assets/wecom-logo.png" />
+          <img class="h-6 w-6" src="../../assets/wecom-logo.png" />
         </template>
         <template v-else-if="projectWebhook.type === Webhook_Type.TYPE_CUSTOM">
           <heroicons-outline:puzzle class="w-6 h-6" />
@@ -44,32 +45,26 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProjectWebhook } from "@/types";
 import { Webhook_Type } from "@/types/proto/v1/project_service";
-import ProjectWebhookForm from "../components/ProjectWebhookForm.vue";
-import { idFromSlug } from "../utils";
+import { idFromSlug } from "@/utils";
 
-const props = defineProps({
-  projectSlug: {
-    required: true,
-    type: String,
-  },
-  projectWebhookSlug: {
-    required: true,
-    type: String,
-  },
-  allowEdit: {
-    required: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  projectWebhookSlug: string;
+  allowEdit: boolean;
+}>();
 
 const projectV1Store = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
 
 const project = computed(() => {
-  return projectV1Store.getProjectByUID(String(idFromSlug(props.projectSlug)));
+  return projectV1Store.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 
 const projectWebhook = computed(() => {

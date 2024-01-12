@@ -66,8 +66,12 @@ func convertActionsForTest(actions []testAction) []StringsManipulatorAction {
 		switch action.Type {
 		case "dropTable":
 			result = append(result, NewDropTableAction(action.Arguments[0]))
+		case "addTable":
+			result = append(result, NewAddTableAction(action.Arguments[0]))
 		case "dropColumn":
 			result = append(result, NewDropColumnAction(action.Arguments[0], action.Arguments[1]))
+		case "addColumn":
+			result = append(result, NewAddColumnAction(action.Arguments[0], action.Arguments[1]))
 		case "modifyColumnType":
 			result = append(result, NewModifyColumnTypeAction(action.Arguments[0], action.Arguments[1], action.Arguments[2]))
 		case "dropColumnOption":
@@ -75,13 +79,55 @@ func convertActionsForTest(actions []testAction) []StringsManipulatorAction {
 		case "modifyColumnOption":
 			result = append(result, NewModifyColumnOptionAction(action.Arguments[0], action.Arguments[1], convertColumnOptionTypeForTest(action.Arguments[2]), action.Arguments[3]))
 		case "addColumnOption":
-			result = append(result, NewAddColumnOptionAction(action.Arguments[0], action.Arguments[1], convertColumnOptionTypeForTest(action.Arguments[2]), action.Arguments[3]))
+			result = append(result, NewAddColumnOptionAction(action.Arguments[0], action.Arguments[1], action.Arguments[2]))
 		case "dropTableConstraint":
 			result = append(result, NewDropTableConstraintAction(action.Arguments[0], action.Arguments[1]))
+		case "modifyTableConstraint":
+			result = append(result, NewModifyTableConstraintAction(action.Arguments[0], convertConstraintTypeForTest(action.Arguments[1]), action.Arguments[2], action.Arguments[3]))
+		case "addTableConstraint":
+			result = append(result, NewAddTableConstraintAction(action.Arguments[0], convertConstraintTypeForTest(action.Arguments[1]), action.Arguments[2]))
+		case "dropTableOption":
+			result = append(result, NewDropTableOptionAction(action.Arguments[0], convertTableOptionForTest(action.Arguments[1])))
+		case "modifyTableOption":
+			result = append(result, NewModifyTableOptionAction(action.Arguments[0], convertTableOptionForTest(action.Arguments[1]), action.Arguments[2]))
+		case "addTableOption":
+			result = append(result, NewAddTableOptionAction(action.Arguments[0], action.Arguments[1]))
 		}
 	}
 
 	return result
+}
+
+func convertTableOptionForTest(s string) tidbast.TableOptionType {
+	switch s {
+	case "comment":
+		return tidbast.TableOptionComment
+	default:
+		return tidbast.TableOptionNone
+	}
+}
+
+func convertConstraintTypeForTest(s string) tidbast.ConstraintType {
+	switch s {
+	case "primaryKey":
+		return tidbast.ConstraintPrimaryKey
+	case "key":
+		return tidbast.ConstraintKey
+	case "index":
+		return tidbast.ConstraintIndex
+	case "uniqKey":
+		return tidbast.ConstraintUniqKey
+	case "uniqIndex":
+	case "foreignKey":
+		return tidbast.ConstraintForeignKey
+	case "unique":
+		return tidbast.ConstraintUniq
+	case "check":
+		return tidbast.ConstraintCheck
+	case "fulltext":
+		return tidbast.ConstraintFulltext
+	}
+	return tidbast.ConstraintNoConstraint
 }
 
 func convertColumnOptionTypeForTest(s string) tidbast.ColumnOptionType {

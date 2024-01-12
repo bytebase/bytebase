@@ -305,31 +305,6 @@
   
     - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
-- [v1/logging_service.proto](#v1_logging_service-proto)
-    - [ExportLogsRequest](#bytebase-v1-ExportLogsRequest)
-    - [ExportLogsResponse](#bytebase-v1-ExportLogsResponse)
-    - [GetLogRequest](#bytebase-v1-GetLogRequest)
-    - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
-    - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
-    - [LogEntity](#bytebase-v1-LogEntity)
-  
-    - [LogEntity.Action](#bytebase-v1-LogEntity-Action)
-    - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
-  
-    - [LoggingService](#bytebase-v1-LoggingService)
-  
-- [v1/inbox_service.proto](#v1_inbox_service-proto)
-    - [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest)
-    - [InboxMessage](#bytebase-v1-InboxMessage)
-    - [InboxSummary](#bytebase-v1-InboxSummary)
-    - [ListInboxRequest](#bytebase-v1-ListInboxRequest)
-    - [ListInboxResponse](#bytebase-v1-ListInboxResponse)
-    - [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest)
-  
-    - [InboxMessage.Status](#bytebase-v1-InboxMessage-Status)
-  
-    - [InboxService](#bytebase-v1-InboxService)
-  
 - [v1/instance_role_service.proto](#v1_instance_role_service-proto)
     - [CreateInstanceRoleRequest](#bytebase-v1-CreateInstanceRoleRequest)
     - [DeleteInstanceRoleRequest](#bytebase-v1-DeleteInstanceRoleRequest)
@@ -372,6 +347,19 @@
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
     - [IssueService](#bytebase-v1-IssueService)
+  
+- [v1/logging_service.proto](#v1_logging_service-proto)
+    - [ExportLogsRequest](#bytebase-v1-ExportLogsRequest)
+    - [ExportLogsResponse](#bytebase-v1-ExportLogsResponse)
+    - [GetLogRequest](#bytebase-v1-GetLogRequest)
+    - [ListLogsRequest](#bytebase-v1-ListLogsRequest)
+    - [ListLogsResponse](#bytebase-v1-ListLogsResponse)
+    - [LogEntity](#bytebase-v1-LogEntity)
+  
+    - [LogEntity.Action](#bytebase-v1-LogEntity-Action)
+    - [LogEntity.Level](#bytebase-v1-LogEntity-Level)
+  
+    - [LoggingService](#bytebase-v1-LoggingService)
   
 - [v1/project_service.proto](#v1_project_service-proto)
     - [Activity](#bytebase-v1-Activity)
@@ -3815,6 +3803,7 @@ The type of the backup.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the branch to delete. Format: projects/{project}/branches/{branch} |
+| force | [bool](#bool) |  | By default, server will return `FAILED_PRECONDITION` error if delete the branch that is parent of other branches. If true, server will delete the branch forcely but will not delete its children branches. |
 
 
 
@@ -5190,328 +5179,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 
 
-<a name="v1_logging_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/logging_service.proto
-
-
-
-<a name="bytebase-v1-ExportLogsRequest"></a>
-
-### ExportLogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | Consistent with filter and order by in ListLogs. filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
-
-
-
-
-
-
-<a name="bytebase-v1-ExportLogsResponse"></a>
-
-### ExportLogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| content | [bytes](#bytes) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-GetLogRequest"></a>
-
-### GetLogRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the log to retrieve. Format: logs/{uid} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListLogsRequest"></a>
-
-### ListLogsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
-| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| page_size | [int32](#int32) |  | Not used. The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListLogs` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListLogsResponse"></a>
-
-### ListLogsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| log_entities | [LogEntity](#bytebase-v1-LogEntity) | repeated | The list of log entities. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
-
-
-
-
-
-
-<a name="bytebase-v1-LogEntity"></a>
-
-### LogEntity
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the log. Format: logs/{uid} |
-| creator | [string](#string) |  | The creator of the log entity. Format: users/{email} |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| action | [LogEntity.Action](#bytebase-v1-LogEntity-Action) |  |  |
-| level | [LogEntity.Level](#bytebase-v1-LogEntity-Level) |  |  |
-| resource | [string](#string) |  | The name of the resource associated with this log entity. For example, the resource user associated with log entity type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue uid} For ACTION_PIPELINE_*: pipelines/{pipeline uid} For ACTION_PROJECT_*: projects/{project resource id} For ACTION_DATABASE_*: instances/{instance resource id} |
-| payload | [string](#string) |  | The payload of the log entity. TODO: use oneof |
-| comment | [string](#string) |  |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-LogEntity-Action"></a>
-
-### LogEntity.Action
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ACTION_UNSPECIFIED | 0 | In worksapce resource only. |
-| ACTION_MEMBER_CREATE | 1 | Member related activity types. Enum value 1 - 20
-
-ACTION_MEMBER_CREATE is the type for creating a new member. |
-| ACTION_MEMBER_ROLE_UPDATE | 2 | ACTION_MEMBER_ROLE_UPDATE is the type for updating a member&#39;s role. |
-| ACTION_MEMBER_ACTIVATE | 3 | ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. |
-| ACTION_MEMBER_DEACTIVE | 4 | ACTION_MEMBER_DEACTIVE is the type for deactiving members. |
-| ACTION_ISSUE_CREATE | 21 | Issue related activity types. Enum value 21 - 40
-
-ACTION_ISSUE_CREATE is the type for creating a new issue. |
-| ACTION_ISSUE_COMMENT_CREATE | 22 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
-| ACTION_ISSUE_FIELD_UPDATE | 23 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
-| ACTION_ISSUE_STATUS_UPDATE | 24 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
-| ACTION_ISSUE_APPROVAL_NOTIFY | 25 | ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
-| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 31 | ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
-| ACTION_PIPELINE_TASK_STATUS_UPDATE | 32 | ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
-| ACTION_PIPELINE_TASK_FILE_COMMIT | 33 | ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
-| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
-| ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
-| ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE | 36 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
-| ACTION_PIPELINE_TASK_PRIOR_BACKUP | 37 | ACTION_PIPELINE_TASK_PRIOR_BACKUP represents the pipeline task prior backup activity. |
-| ACTION_PROJECT_REPOSITORY_PUSH | 41 | Project related activity types. Enum value 41 - 60
-
-ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
-| ACTION_PROJECT_MEMBER_CREATE | 42 | ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. |
-| ACTION_PROJECT_MEMBER_DELETE | 43 | ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. |
-| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 44 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
-| ACTION_PROJECT_DATABASE_TRANSFER | 45 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
-| ACTION_DATABASE_SQL_EDITOR_QUERY | 61 | Database related activity types. Enum value 61 - 80
-
-ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
-| ACTION_DATABASE_SQL_EXPORT | 62 | ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL. |
-
-
-
-<a name="bytebase-v1-LogEntity-Level"></a>
-
-### LogEntity.Level
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| LEVEL_UNSPECIFIED | 0 |  |
-| LEVEL_INFO | 1 | LEVEL_INFO is the type for information. |
-| LEVEL_WARNING | 2 | LEVEL_WARNING is the type for warning. |
-| LEVEL_ERROR | 3 | LEVEL_ERROR is the type for error. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-LoggingService"></a>
-
-### LoggingService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
-| GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
-| ExportLogs | [ExportLogsRequest](#bytebase-v1-ExportLogsRequest) | [ExportLogsResponse](#bytebase-v1-ExportLogsResponse) |  |
-
- 
-
-
-
-<a name="v1_inbox_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/inbox_service.proto
-
-
-
-<a name="bytebase-v1-GetInboxSummaryRequest"></a>
-
-### GetInboxSummaryRequest
-
-
-
-
-
-
-
-<a name="bytebase-v1-InboxMessage"></a>
-
-### InboxMessage
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The message name in inbox/{uid} format. |
-| activity_uid | [string](#string) |  |  |
-| status | [InboxMessage.Status](#bytebase-v1-InboxMessage-Status) |  |  |
-| activity | [LogEntity](#bytebase-v1-LogEntity) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-InboxSummary"></a>
-
-### InboxSummary
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| unread | [int32](#int32) |  |  |
-| unread_error | [int32](#int32) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInboxRequest"></a>
-
-### ListInboxRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| filter | [string](#string) |  | filter is the filter to apply on the list inbox request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - &#34;create_time&#34; with &#34;&gt;=&#34; operator, example: - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; |
-| page_size | [int32](#int32) |  | Not used. The maximum number of inbox to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInbox` call. Provide this to retrieve the subsequent page. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListInboxResponse"></a>
-
-### ListInboxResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| inbox_messages | [InboxMessage](#bytebase-v1-InboxMessage) | repeated | The list of inbox messages. |
-| next_page_token | [string](#string) |  | A token to retrieve next page of inbox. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateInboxRequest"></a>
-
-### UpdateInboxRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| inbox_message | [InboxMessage](#bytebase-v1-InboxMessage) |  | The inbox message to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-InboxMessage-Status"></a>
-
-### InboxMessage.Status
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| STATUS_UNREAD | 1 |  |
-| STATUS_READ | 2 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-InboxService"></a>
-
-### InboxService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| ListInbox | [ListInboxRequest](#bytebase-v1-ListInboxRequest) | [ListInboxResponse](#bytebase-v1-ListInboxResponse) |  |
-| GetInboxSummary | [GetInboxSummaryRequest](#bytebase-v1-GetInboxSummaryRequest) | [InboxSummary](#bytebase-v1-InboxSummary) |  |
-| UpdateInbox | [UpdateInboxRequest](#bytebase-v1-UpdateInboxRequest) | [InboxMessage](#bytebase-v1-InboxMessage) |  |
-
- 
-
-
-
 <a name="v1_instance_role_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -6148,6 +5815,194 @@ ANY means approving any node will proceed.
 | ApproveIssue | [ApproveIssueRequest](#bytebase-v1-ApproveIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) |  |
+
+ 
+
+
+
+<a name="v1_logging_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/logging_service.proto
+
+
+
+<a name="bytebase-v1-ExportLogsRequest"></a>
+
+### ExportLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | Consistent with filter and order by in ListLogs. filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+
+
+
+
+
+
+<a name="bytebase-v1-ExportLogsResponse"></a>
+
+### ExportLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-GetLogRequest"></a>
+
+### GetLogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log to retrieve. Format: logs/{uid} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListLogsRequest"></a>
+
+### ListLogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | filter is the filter to apply on the list logs request, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - creator, example: - creator = &#34;users/{email}&#34; - resource, example: - resource = &#34;projects/{project resource id}&#34; - level, example: - level = &#34;INFO&#34; - level = &#34;ERROR | WARN&#34; - action, example: - action = &#34;ACTION_MEMBER_CREATE&#34; | &#34;ACTION_ISSUE_CREATE&#34; - create_time, example: - create_time &lt;= &#34;2022-01-01T12:00:00.000Z&#34; - create_time &gt;= &#34;2022-01-01T12:00:00.000Z&#34; For example: List the logs of type &#39;ACTION_ISSUE_COMMENT_CREATE&#39; in issue/123: &#39;action=&#34;ACTION_ISSUE_COMMENT_CREATE&#34;, resource=&#34;issue/123&#34;&#39; |
+| order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
+| page_size | [int32](#int32) |  | Not used. The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListLogs` call. Provide this to retrieve the subsequent page. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListLogsResponse"></a>
+
+### ListLogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| log_entities | [LogEntity](#bytebase-v1-LogEntity) | repeated | The list of log entities. |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to `ListLogs` method to retrieve the next page of log entities. |
+
+
+
+
+
+
+<a name="bytebase-v1-LogEntity"></a>
+
+### LogEntity
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the log. Format: logs/{uid} |
+| creator | [string](#string) |  | The creator of the log entity. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| action | [LogEntity.Action](#bytebase-v1-LogEntity-Action) |  |  |
+| level | [LogEntity.Level](#bytebase-v1-LogEntity-Level) |  |  |
+| resource | [string](#string) |  | The name of the resource associated with this log entity. For example, the resource user associated with log entity type of &#34;ACTION_MEMBER_CREATE&#34;. Format: For ACTION_MEMBER_*: users/{email} For ACTION_ISSUE_*: issues/{issue uid} For ACTION_PIPELINE_*: pipelines/{pipeline uid} For ACTION_PROJECT_*: projects/{project resource id} For ACTION_DATABASE_*: instances/{instance resource id} |
+| payload | [string](#string) |  | The payload of the log entity. TODO: use oneof |
+| comment | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-LogEntity-Action"></a>
+
+### LogEntity.Action
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ACTION_UNSPECIFIED | 0 | In worksapce resource only. |
+| ACTION_MEMBER_CREATE | 1 | Member related activity types. Enum value 1 - 20
+
+ACTION_MEMBER_CREATE is the type for creating a new member. |
+| ACTION_MEMBER_ROLE_UPDATE | 2 | ACTION_MEMBER_ROLE_UPDATE is the type for updating a member&#39;s role. |
+| ACTION_MEMBER_ACTIVATE | 3 | ACTION_MEMBER_ACTIVATE_UPDATE is the type for activating members. |
+| ACTION_MEMBER_DEACTIVE | 4 | ACTION_MEMBER_DEACTIVE is the type for deactiving members. |
+| ACTION_ISSUE_CREATE | 21 | Issue related activity types. Enum value 21 - 40
+
+ACTION_ISSUE_CREATE is the type for creating a new issue. |
+| ACTION_ISSUE_COMMENT_CREATE | 22 | ACTION_ISSUE_COMMENT_CREATE is the type for creating a new comment on an issue. |
+| ACTION_ISSUE_FIELD_UPDATE | 23 | ACTION_ISSUE_FIELD_UPDATE is the type for updating an issue&#39;s field. |
+| ACTION_ISSUE_STATUS_UPDATE | 24 | ACTION_ISSUE_STATUS_UPDATE is the type for updating an issue&#39;s status. |
+| ACTION_ISSUE_APPROVAL_NOTIFY | 25 | ACTION_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
+| ACTION_PIPELINE_STAGE_STATUS_UPDATE | 31 | ACTION_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
+| ACTION_PIPELINE_TASK_STATUS_UPDATE | 32 | ACTION_PIPELINE_TASK_STATUS_UPDATE represents the pipeline task status change, including PENDING, PENDING_APPROVAL, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| ACTION_PIPELINE_TASK_FILE_COMMIT | 33 | ACTION_PIPELINE_TASK_FILE_COMMIT represents the VCS trigger to commit a file to update the task statement. |
+| ACTION_PIPELINE_TASK_STATEMENT_UPDATE | 34 | ACTION_PIPELINE_TASK_STATEMENT_UPDATE represents the manual update of the task statement. |
+| ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE | 35 | ACTION_PIPELINE_TASK_EARLIEST_ALLOWED_TIME_UPDATE represents the manual update of the task earliest allowed time. |
+| ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE | 36 | ACTION_PIPELINE_TASK_RUN_STATUS_UPDATE represents the pipeline task run status change, including PENDING, RUNNING, SUCCESS, FAILURE, CANCELED for now. |
+| ACTION_PIPELINE_TASK_PRIOR_BACKUP | 37 | ACTION_PIPELINE_TASK_PRIOR_BACKUP represents the pipeline task prior backup activity. |
+| ACTION_PROJECT_REPOSITORY_PUSH | 41 | Project related activity types. Enum value 41 - 60
+
+ACTION_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the project repository. |
+| ACTION_PROJECT_MEMBER_CREATE | 42 | ACTION_PROJECT_MEMBER_CREATE represents adding a member to the project. |
+| ACTION_PROJECT_MEMBER_DELETE | 43 | ACTION_PROJECT_MEMBER_DELETE represents removing a member from the project. |
+| ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE | 44 | ACTION_PROJECT_DATABASE_RECOVERY_PITR_DONE is the type for database PITR recovery done. |
+| ACTION_PROJECT_DATABASE_TRANSFER | 45 | ACTION_PROJECT_DATABASE_TRANSFER represents transfering the database from one project to another. |
+| ACTION_DATABASE_SQL_EDITOR_QUERY | 61 | Database related activity types. Enum value 61 - 80
+
+ACTION_DATABASE_SQL_EDITOR_QUERY is the type for SQL editor query. |
+| ACTION_DATABASE_SQL_EXPORT | 62 | ACTION_DATABASE_SQL_EXPORT is the type for exporting SQL. |
+
+
+
+<a name="bytebase-v1-LogEntity-Level"></a>
+
+### LogEntity.Level
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LEVEL_UNSPECIFIED | 0 |  |
+| LEVEL_INFO | 1 | LEVEL_INFO is the type for information. |
+| LEVEL_WARNING | 2 | LEVEL_WARNING is the type for warning. |
+| LEVEL_ERROR | 3 | LEVEL_ERROR is the type for error. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-LoggingService"></a>
+
+### LoggingService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| ListLogs | [ListLogsRequest](#bytebase-v1-ListLogsRequest) | [ListLogsResponse](#bytebase-v1-ListLogsResponse) |  |
+| GetLog | [GetLogRequest](#bytebase-v1-GetLogRequest) | [LogEntity](#bytebase-v1-LogEntity) |  |
+| ExportLogs | [ExportLogsRequest](#bytebase-v1-ExportLogsRequest) | [ExportLogsResponse](#bytebase-v1-ExportLogsResponse) |  |
 
  
 

@@ -4,7 +4,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1, useProjectV1ListByCurrentUser } from "@/store";
 import { DEFAULT_PROJECT_ID } from "@/types";
-import { isMemberOfProjectV1, projectV1Slug } from "@/utils";
+import { isMemberOfProjectV1 } from "@/utils";
 
 export const useProjectActions = () => {
   const { t } = useI18n();
@@ -39,7 +39,7 @@ export const useProjectActions = () => {
           tags: [project.key],
         },
         perform: () => {
-          router.push({ path: `/project/${projectV1Slug(project)}#overview` });
+          router.push({ path: `/${project.name}` });
         },
       })
     );

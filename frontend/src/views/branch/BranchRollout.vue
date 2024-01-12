@@ -18,11 +18,11 @@ import { useRouter } from "vue-router";
 import BranchRolloutView from "@/components/Branch/BranchRolloutView";
 import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { idFromSlug } from "@/utils";
 
 const props = defineProps<{
-  projectSlug: string;
+  projectId: string;
   branchName: string;
 }>();
 
@@ -34,17 +34,17 @@ const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 
 const project = computed(() => {
-  if (props.projectSlug === "-") {
+  if (props.projectId === "-") {
     return;
   }
-  return projectStore.getProjectByUID(
-    String(idFromSlug(props.projectSlug as string))
+  return projectStore.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 const branch = ref<Branch>();
 
 watch(
-  [() => props.projectSlug, () => props.branchName],
+  [() => props.projectId, () => props.branchName],
   async () => {
     // Prepare branch name from route params.
     const branchId = props.branchName;

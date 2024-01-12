@@ -28,7 +28,6 @@ import { BBGridColumn } from "@/bbkit";
 import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
 import { ComposedSchemaGroup } from "@/types";
 import { SchemaGroup } from "@/types/proto/v1/project_service";
-import { projectV1Slug } from "@/utils";
 
 defineProps<{
   schemaGroupList: SchemaGroup[];
@@ -57,9 +56,7 @@ const clickSchemaGroup = (schemaGroup: ComposedSchemaGroup) => {
   const [_, databaseGroupName, schemaGroupName] =
     getProjectNameAndDatabaseGroupNameAndSchemaGroupName(schemaGroup.name);
   router.push(
-    `/project/${projectV1Slug(
-      schemaGroup.databaseGroup.project
-    )}/database-groups/${databaseGroupName}/table-groups/${schemaGroupName}`
+    `/${schemaGroup.databaseGroup.project.name}/database-groups/${databaseGroupName}/table-groups/${schemaGroupName}`
   );
 };
 </script>

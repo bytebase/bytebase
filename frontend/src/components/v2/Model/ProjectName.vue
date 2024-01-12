@@ -12,7 +12,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import type { Project } from "@/types";
-import { projectName, projectSlug } from "@/utils";
+import { projectName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -29,7 +29,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/project/${projectSlug(props.project)}`,
+      to: `/${props.project.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

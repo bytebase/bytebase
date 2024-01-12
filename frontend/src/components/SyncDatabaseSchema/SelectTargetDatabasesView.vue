@@ -14,7 +14,7 @@
             <span>{{ $t("common.project") }} - </span>
             <a
               class="normal-link inline-flex items-center"
-              :href="`/project/${projectV1Slug(project)}`"
+              :href="`/${project.name}`"
               >{{ project.title }}</a
             >
           </div>
@@ -56,7 +56,7 @@
           <span>{{ $t("common.project") }} - </span>
           <a
             class="normal-link inline-flex items-center"
-            :href="`/project/${projectV1Slug(project)}`"
+            :href="`/${project.name}`"
             >{{ project.title }}</a
           >
         </div>
@@ -243,12 +243,7 @@ import {
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import {
-  changeHistoryLink,
-  databaseV1Slug,
-  projectV1Slug,
-  toClipboard,
-} from "@/utils";
+import { changeHistoryLink, databaseV1Slug, toClipboard } from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
