@@ -43,6 +43,7 @@
     - [FunctionMetadata](#bytebase-store-FunctionMetadata)
     - [IndexMetadata](#bytebase-store-IndexMetadata)
     - [InstanceRoleMetadata](#bytebase-store-InstanceRoleMetadata)
+    - [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata)
     - [SchemaConfig](#bytebase-store-SchemaConfig)
     - [SchemaMetadata](#bytebase-store-SchemaMetadata)
     - [SecretItem](#bytebase-store-SecretItem)
@@ -809,6 +810,24 @@ InstanceRoleMetadata is the message for instance role.
 
 
 
+<a name="bytebase-store-MaterializedViewMetadata"></a>
+
+### MaterializedViewMetadata
+MaterializedViewMetadata is the metadata for materialized views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a view. |
+| definition | [string](#string) |  | The definition is the definition of a view. |
+| comment | [string](#string) |  | The comment is the comment of a view. |
+| dependent_columns | [DependentColumn](#bytebase-store-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a view. |
+
+
+
+
+
+
 <a name="bytebase-store-SchemaConfig"></a>
 
 ### SchemaConfig
@@ -841,6 +860,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | functions | [FunctionMetadata](#bytebase-store-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-store-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-store-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
+| materialized_views | [MaterializedViewMetadata](#bytebase-store-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
 
 
 
