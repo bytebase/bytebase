@@ -13,31 +13,15 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
 
   for (let i = 0; i < issue.releasers.length; i++) {
     const releaserRole = issue.releasers[i];
-    if (releaserRole === IssueReleaserRoleType.WORKSPACE_ADMIN) {
+    if (releaserRole.startsWith("roles/")) {
       users.push(
-        ...workspaceMembers.filter((user) => user.userRole === UserRole.OWNER)
+        ...workspaceMembers.filter((user) => user.roles.includes(releaserRole))
       );
-    }
-    if (releaserRole === IssueReleaserRoleType.WORKSPACE_DBA) {
       users.push(
-        ...workspaceMembers.filter((user) => user.userRole === UserRole.DBA)
+        ...projectMembers
+          .filter((user) => user.roleList.includes(releaserRole))
+          .map((user) => user.user)
       );
-    }
-    if (releaserRole === IssueReleaserRoleType.PROJECT_OWNER) {
-      const owners = projectMembers
-        .filter((member) =>
-          member.roleList.includes(PresetRoleType.PROJECT_OWNER)
-        )
-        .map((member) => member.user);
-      users.push(...owners);
-    }
-    if (releaserRole === IssueReleaserRoleType.PROJECT_RELEASER) {
-      const releasers = projectMembers
-        .filter((member) =>
-          member.roleList.includes(PresetRoleType.PROJECT_RELEASER)
-        )
-        .map((member) => member.user);
-      users.push(...releasers);
     }
     if (releaserRole.startsWith("users/")) {
       const email = extractUserResourceName(releaserRole);
