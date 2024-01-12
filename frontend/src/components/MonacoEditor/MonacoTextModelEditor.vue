@@ -7,7 +7,7 @@
       <BBSpin />
     </div>
     <div
-      v-if="ready && !content && placeholder"
+      v-if="ready && !contentRef && placeholder"
       class="absolute pointer-events-none font-mono text-control-placeholder"
       style="
         font-family: 'Droid Sans Mono', monospace;
@@ -31,7 +31,6 @@ import {
   onBeforeUnmount,
   watch,
   watchEffect,
-  computed,
 } from "vue";
 import { useLegacyAutoComplete } from "@/plugins/sql-lsp/client";
 import type { SQLDialect } from "@/types";
@@ -98,6 +97,7 @@ const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorRef = shallowRef<IStandaloneCodeEditor>();
 const ready = ref(false);
+const contentRef = ref("");
 
 onMounted(async () => {
   const container = containerRef.value;
@@ -151,8 +151,10 @@ onMounted(async () => {
       editor.focus();
     }
 
+    contentRef.value = content.value;
     watch(content, () => {
       emit("update:content", content.value);
+      contentRef.value = content.value;
     });
     watchEffect(() => {
       emit("select-content", selectedContent.value);
@@ -160,10 +162,6 @@ onMounted(async () => {
   } catch (ex) {
     console.error("[MonacoEditor] initialize failed", ex);
   }
-});
-
-const content = computed(() => {
-  return props.model?.getValue();
 });
 
 onBeforeUnmount(() => {
