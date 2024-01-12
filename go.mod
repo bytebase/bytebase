@@ -15,11 +15,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.23.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.7
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20231208095055-182de2379272
+	github.com/bytebase/mysql-parser v0.0.0-20240112100339-e0b6f27b07cf
 	github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
-	github.com/bytebase/tidb-parser v0.0.0-20240110090403-89a0e2f8ecc1
+	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/epiclabs-io/diff3 v0.0.0-20181217103619-05282cece609
