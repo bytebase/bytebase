@@ -331,10 +331,11 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 		Name:   s.name,
 		Tables: tables,
 		// Unsupported, for tests only.
-		Views:     []*storepb.ViewMetadata{},
-		Functions: []*storepb.FunctionMetadata{},
-		Streams:   []*storepb.StreamMetadata{},
-		Tasks:     []*storepb.TaskMetadata{},
+		Views:             []*storepb.ViewMetadata{},
+		Functions:         []*storepb.FunctionMetadata{},
+		Streams:           []*storepb.StreamMetadata{},
+		Tasks:             []*storepb.TaskMetadata{},
+		MaterializedViews: []*storepb.MaterializedViewMetadata{},
 	}
 }
 

@@ -810,8 +810,9 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 	table := schema.GetTable(tableName)
 	view := schema.GetView(tableName)
+	materializedView := schema.GetMaterializedView(tableName)
 	foreignTable := schema.GetExternalTable(tableName)
-	if table == nil && view == nil && foreignTable == nil {
+	if table == nil && view == nil && foreignTable == nil && materializedView == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &q.connectedDB,
 			Schema:   &schemaName,
@@ -849,6 +850,17 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 
 	if view != nil && view.Definition != "" {
 		columns, err := q.getColumnsForView(view.Definition)
+		if err != nil {
+			return nil, err
+		}
+		return &base.PseudoTable{
+			Name:    tableName,
+			Columns: columns,
+		}, nil
+	}
+
+	if materializedView != nil && materializedView.Definition != "" {
+		columns, err := q.getColumnsForMaterializedView(materializedView.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1113,7 +1125,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 			if schema == nil {
 				return nil, nil
 			}
-			if schema.GetTable(resource.Table) == nil && schema.GetView(resource.Table) == nil {
+			if schema.GetTable(resource.Table) == nil && schema.GetView(resource.Table) == nil && schema.GetMaterializedView(resource.Table) == nil && schema.GetExternalTable(resource.Table) == nil {
 				return nil, nil
 			}
 		}
@@ -1184,6 +1196,15 @@ func isSystemResource(resource base.ColumnResource) string {
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
+	if err != nil {
+		return nil, err
+	}
+	return span.Results, nil
+}
+
+func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
 	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
