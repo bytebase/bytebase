@@ -102,6 +102,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	materializedViewMap, err := getMaterializedViews(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get materialized views from database %q", driver.databaseName)
+	}
 	functionMap, err := getFunctions(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
@@ -120,6 +124,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		var tables []*storepb.TableMetadata
 		var externalTables []*storepb.ExternalTableMetadata
 		var views []*storepb.ViewMetadata
+		var materializedViews []*storepb.MaterializedViewMetadata
 		var functions []*storepb.FunctionMetadata
 		var exists bool
 		if tables, exists = tableMap[schemaName]; !exists {
@@ -136,15 +141,19 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if views, exists = viewMap[schemaName]; !exists {
 			views = []*storepb.ViewMetadata{}
 		}
+		if materializedViews, exists = materializedViewMap[schemaName]; !exists {
+			materializedViews = []*storepb.MaterializedViewMetadata{}
+		}
 		if functions, exists = functionMap[schemaName]; !exists {
 			functions = []*storepb.FunctionMetadata{}
 		}
 		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-			Name:           schemaName,
-			Tables:         tables,
-			ExternalTables: externalTables,
-			Views:          views,
-			Functions:      functions,
+			Name:              schemaName,
+			Tables:            tables,
+			ExternalTables:    externalTables,
+			Views:             views,
+			Functions:         functions,
+			MaterializedViews: materializedViews,
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -573,6 +582,58 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	}
 
 	return columnsMap, nil
+}
+
+var listMaterializedViewQuery = `
+SELECT schemaname, matviewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass) FROM pg_catalog.pg_matviews` + fmt.Sprintf(`
+WHERE schemaname NOT IN (%s);`, pgparser.SystemSchemaWhereClause)
+
+func getMaterializedViews(txn *sql.Tx) (map[string][]*storepb.MaterializedViewMetadata, error) {
+	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
+
+	rows, err := txn.Query(listMaterializedViewQuery)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		matview := &storepb.MaterializedViewMetadata{}
+		var schemaName string
+		var def, comment sql.NullString
+		if err := rows.Scan(&schemaName, &matview.Name, &def, &comment); err != nil {
+			return nil, err
+		}
+		// Skip system views.
+		if pgparser.IsSystemView(matview.Name) {
+			continue
+		}
+
+		// Return error on NULL view definition.
+		if !def.Valid {
+			return nil, errors.Errorf("schema %q materialized view %q has empty definition; please check whether proper privileges have been granted to Bytebase", schemaName, matview.Name)
+		}
+		matview.Definition = def.String
+		if comment.Valid {
+			matview.Comment = comment.String
+		}
+
+		matviewMap[schemaName] = append(matviewMap[schemaName], matview)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	for schemaName, list := range matviewMap {
+		for _, matview := range list {
+			dependencies, err := getViewDependencies(txn, schemaName, matview.Name)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get materialized view %q dependencies", matview.Name)
+			}
+			matview.DependentColumns = dependencies
+		}
+	}
+
+	return matviewMap, nil
 }
 
 var listViewQuery = `
