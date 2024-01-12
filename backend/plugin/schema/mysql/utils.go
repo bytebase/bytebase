@@ -18,22 +18,23 @@ var (
 	// https://dev.mysql.com/doc/refman/8.0/en/data-type-defaults.html
 	// expressionDefaultOnlyTypes is a list of types that only accept expression as default
 	// value.
-	expressionDefaultOnlyTypes = []string{
+	expressionDefaultOnlyTypes = map[string]bool{
 		// BLOB & TEXT
 		// https://dev.mysql.com/doc/refman/8.0/en/blob.html
-		"TINYBLOB",
-		"BLOB",
-		"MEIDUMBLOB",
-		"LONGBLOB",
-		"TINYTEXT",
-		"TEXT",
-		"MEDIUMTEXT",
-		"LONGTEXT",
-		// GEOMETRY
-		"GEOMETRY",
-		// JSON
-		// https://dev.mysql.com/doc/refman/8.0/en/json.html
-		"JSON",
+		"TINYBLOB":   true,
+		"BLOB":       true,
+		"MEIDUMBLOB": true,
+		"LONGBLOB":   true,
+		"TINYTEXT":   true,
+		"TEXT":       true,
+		"MEDIUMTEXT": true,
+		"LONGTEXT":   true,
+
+		// // GEOMETRY
+		// "GEOMETRY": true,
+		// // JSON
+		// // https://dev.mysql.com/doc/refman/8.0/en/json.html
+		// "JSON": true,
 	}
 )
 
