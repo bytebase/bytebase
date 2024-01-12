@@ -58,6 +58,7 @@
 <script lang="ts" setup>
 import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
+import { PROJECT_V1_WEBHOOK_DETAIL } from "@/router/dashboard/projectV1";
 import { projectWebhookV1ActivityItemList } from "@/types";
 import {
   Webhook,
@@ -76,7 +77,7 @@ const router = useRouter();
 
 const viewProjectWebhook = () => {
   router.push({
-    name: "workspace.project.hook.detail",
+    name: PROJECT_V1_WEBHOOK_DETAIL,
     params: {
       projectWebhookSlug: projectWebhookV1Slug(props.projectWebhook),
     },

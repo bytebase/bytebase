@@ -166,7 +166,6 @@ const handleClickRow = (item: ChangeHistory) => {
 };
 
 const tryClickCheckbox = (e: MouseEvent) => {
-  console.log(e);
   const div = e.target as HTMLElement;
   const checkbox = div.querySelector(".n-checkbox");
   if (!checkbox) return;

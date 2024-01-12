@@ -76,9 +76,7 @@ export default {
       return isValidEmail(state.email);
     });
 
-    const tryReset = () => {
-      console.log("Reset Email", state.email);
-    };
+    const tryReset = () => {};
 
     return { state, allowReset, tryReset };
   },

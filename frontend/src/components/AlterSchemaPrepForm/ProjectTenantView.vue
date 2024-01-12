@@ -11,8 +11,7 @@
           <template #go>
             <router-link
               :to="{
-                path: `/project/${projectV1Slug(project)}`,
-                hash: '#deployment-config',
+                path: `/${project.name}/settings`,
               }"
               active-class=""
               exact-active-class=""
@@ -57,7 +56,6 @@ import { useDeploymentConfigV1ByProject } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { Project } from "@/types/proto/v1/project_service";
-import { projectV1Slug } from "@/utils";
 import { DeployDatabaseTable } from "../TenantDatabaseTable";
 
 const props = defineProps<{

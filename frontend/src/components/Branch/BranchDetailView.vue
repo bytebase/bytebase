@@ -131,13 +131,19 @@ import { useRouter } from "vue-router";
 import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { validateDatabaseMetadata } from "@/components/SchemaEditorV1/utils";
 import TargetDatabasesSelectPanel from "@/components/SyncDatabaseSchema/TargetDatabasesSelectPanel.vue";
+import {
+  PROJECT_V1_BRANCHES,
+  PROJECT_V1_BRANCHE_DETAIL,
+  PROJECT_V1_BRANCHE_MERGE,
+  PROJECT_V1_BRANCHE_ROLLOUT,
+  PROJECT_V1_BRANCHE_REBASE,
+} from "@/router/dashboard/projectV1";
 import { pushNotification, useDatabaseV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { projectV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
@@ -295,9 +301,8 @@ const handleParentBranchClick = async () => {
 
   const [_, branchId] = getProjectAndBranchId(parentBranch.value.name);
   router.push({
-    name: "workspace.project.branch.detail",
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: projectV1Slug(props.project),
       branchName: `${branchId}`,
     },
   });
@@ -391,18 +396,16 @@ const handleSaveBranch = async () => {
 
 const handleGotoMergeBranch = () => {
   router.push({
-    name: "workspace.project.branch.merge",
+    name: PROJECT_V1_BRANCHE_MERGE,
     params: {
-      projectSlug: projectV1Slug(props.project),
       branchName: props.cleanBranch.branchId,
     },
   });
 };
 const handleGotoRebaseBranch = () => {
   router.push({
-    name: "workspace.project.branch.rebase",
+    name: PROJECT_V1_BRANCHE_REBASE,
     params: {
-      projectSlug: projectV1Slug(props.project),
       branchName: props.cleanBranch.branchId,
     },
   });
@@ -410,9 +413,8 @@ const handleGotoRebaseBranch = () => {
 
 const handleApplyBranchToDatabase = () => {
   router.push({
-    name: "workspace.project.branch.rollout",
+    name: PROJECT_V1_BRANCHE_ROLLOUT,
     params: {
-      projectSlug: projectV1Slug(props.project),
       branchName: props.cleanBranch.branchId,
     },
   });
@@ -490,11 +492,7 @@ const deleteBranch = async () => {
   const branch = props.dirtyBranch;
   await branchStore.deleteBranch(branch.name);
   router.replace({
-    name: "workspace.project.detail",
-    hash: "#branches",
-    params: {
-      projectSlug: projectV1Slug(props.project),
-    },
+    name: PROJECT_V1_BRANCHES,
   });
 };
 </script>

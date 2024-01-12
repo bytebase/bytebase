@@ -103,7 +103,7 @@ import {
 import { ResourceId, UNKNOWN_ID, ValidatedMessage } from "@/types";
 import { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
-import { projectV1Slug, extractChangelistResourceName } from "@/utils";
+import { extractChangelistResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { useChangelistDashboardContext } from "./context";
 
@@ -195,9 +195,9 @@ const doCreate = async () => {
     });
 
     router.push(
-      `/project/${projectV1Slug(
-        project
-      )}/changelists/${extractChangelistResourceName(created.name)}`
+      `/${project.name}/changelists/${extractChangelistResourceName(
+        created.name
+      )}`
     );
     events.emit("refresh");
   } finally {

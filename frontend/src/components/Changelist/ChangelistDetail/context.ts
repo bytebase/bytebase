@@ -1,18 +1,26 @@
 import Emittery from "emittery";
-import { InjectionKey, Ref, computed, inject, provide, ref } from "vue";
+import {
+  InjectionKey,
+  Ref,
+  computed,
+  inject,
+  provide,
+  ref,
+  watchEffect,
+} from "vue";
 import { useRoute } from "vue-router";
 import {
   useChangelistStore,
   useCurrentUserV1,
   useProjectV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ComposedProject, unknownChangelist, unknownProject } from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
 import {
-  idFromSlug,
   extractUserResourceName,
   hasWorkspacePermissionV1,
   isOwnerOfProjectV1,
@@ -50,19 +58,22 @@ export const provideChangelistDetailContext = () => {
   const projectV1Store = useProjectV1Store();
 
   const project = computed(() => {
-    const projectSlug = route.params.projectSlug as string;
-    if (!projectSlug) {
+    const projectId = route.params.projectId as string;
+    if (!projectId) {
       return unknownProject();
     }
-    const proj = projectV1Store.getProjectByUID(
-      String(idFromSlug(projectSlug))
-    );
-    return proj;
+
+    return projectV1Store.getProjectByName(`${projectNamePrefix}${projectId}`);
   });
 
   const name = computed(() => {
     return `${project.value.name}/changelists/${route.params.changelistName}`;
   });
+
+  watchEffect(async () => {
+    await useChangelistStore().fetchChangelistByName(name.value);
+  });
+
   const changelist = computed(() => {
     return (
       useChangelistStore().getChangelistByName(name.value) ??

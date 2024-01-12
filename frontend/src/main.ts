@@ -38,7 +38,6 @@ import {
   isDev,
   isRelease,
   projectName,
-  projectSlug,
   sizeToFit,
   urlfy,
 } from "./utils";
@@ -151,7 +150,6 @@ app.config.globalProperties.isEmpty = isEmpty;
 app.config.globalProperties.environmentName = environmentName;
 app.config.globalProperties.environmentSlug = environmentSlug;
 app.config.globalProperties.projectName = projectName;
-app.config.globalProperties.projectSlug = projectSlug;
 app.config.globalProperties.instanceName = instanceName;
 app.config.globalProperties.instanceSlug = instanceSlug;
 app.config.globalProperties.databaseSlug = databaseSlug;
