@@ -3,7 +3,6 @@ package mysql
 import (
 	"fmt"
 	"io"
-	"slices"
 	"sort"
 	"strings"
 
@@ -746,9 +745,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					return
 				}
 				if column.nullable {
-					if !slices.ContainsFunc(expressionDefaultOnlyTypes, func(s string) bool {
-						return strings.EqualFold(s, column.tp)
-					}) {
+					if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(column.tp)]; !ok {
 						if _, err := g.columnDefine.WriteString(" NULL"); err != nil {
 							g.err = err
 							return
