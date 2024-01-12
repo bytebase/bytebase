@@ -39,6 +39,8 @@ type FindBranchMessage struct {
 	ResourceID *string
 	UID        *int
 	LoadFull   bool
+
+	ParentBranchResourceID *string
 }
 
 // UpdateBranchMessage is the message to update a branch.
@@ -85,6 +87,9 @@ func (s *Store) ListBranches(ctx context.Context, find *FindBranchMessage) ([]*B
 	}
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("branch.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ParentBranchResourceID; v != nil {
+		where, args = append(where, fmt.Sprintf("branch.config->>'sourceBranch' = $%d", len(args)+1)), append(args, *v)
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
