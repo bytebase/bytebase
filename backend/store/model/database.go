@@ -238,9 +238,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 	}
 	for _, schema := range metadata.Schemas {
 		schemaMetadata := &SchemaMetadata{
-			internalTables:        make(map[string]*TableMetadata),
-			internalExternalTable: make(map[string]*ExternalTableMetadata),
-			internalViews:         make(map[string]*ViewMetadata),
+			internalTables:           make(map[string]*TableMetadata),
+			internalExternalTable:    make(map[string]*ExternalTableMetadata),
+			internalViews:            make(map[string]*ViewMetadata),
+			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -261,6 +262,11 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		for _, view := range schema.Views {
 			schemaMetadata.internalViews[view.Name] = &ViewMetadata{
 				Definition: view.Definition,
+			}
+		}
+		for _, materializedView := range schema.MaterializedViews {
+			schemaMetadata.internalMaterializedView[materializedView.Name] = &MaterializedViewMetadata{
+				Definition: materializedView.Definition,
 			}
 		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
@@ -284,9 +290,10 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 
 // SchemaMetadata is the metadata for a schema.
 type SchemaMetadata struct {
-	internalTables        map[string]*TableMetadata
-	internalExternalTable map[string]*ExternalTableMetadata
-	internalViews         map[string]*ViewMetadata
+	internalTables           map[string]*TableMetadata
+	internalExternalTable    map[string]*ExternalTableMetadata
+	internalViews            map[string]*ViewMetadata
+	internalMaterializedView map[string]*MaterializedViewMetadata
 }
 
 // GetTable gets the schema by name.
@@ -297,6 +304,11 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 // GetView gets the view by name.
 func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
 	return s.internalViews[name]
+}
+
+// GetMaterializedView gets the materialized view by name.
+func (s *SchemaMetadata) GetMaterializedView(name string) *MaterializedViewMetadata {
+	return s.internalMaterializedView[name]
 }
 
 // GetExternalTable gets the external table by name.
@@ -429,5 +441,9 @@ func (t *ExternalTableMetadata) GetColumns() []*storepb.ColumnMetadata {
 
 // ViewMetadata is the metadata for a view.
 type ViewMetadata struct {
+	Definition string
+}
+
+type MaterializedViewMetadata struct {
 	Definition string
 }
