@@ -16,10 +16,12 @@
           class="whitespace-pre-line"
         >
           <template #link>
-            <LearnMoreLink
-              url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console"
-              color="light"
-            />
+            <HideInStandaloneMode>
+              <LearnMoreLink
+                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console"
+                color="light"
+              />
+            </HideInStandaloneMode>
           </template>
         </i18n-t>
       </template>
