@@ -1,6 +1,8 @@
 import { ComposedDatabase, Database } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 
+export * from "./filter";
+
 // Only allow using Schema Editor with MySQL.
 export const allowUsingSchemaEditor = (databaseList: Database[]): boolean => {
   return databaseList.every((db) => {

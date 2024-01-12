@@ -1,15 +1,23 @@
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEqual, pick } from "lodash-es";
 import { ComposedDatabase } from "@/types";
 import {
   ColumnConfig,
   ColumnMetadata,
   DatabaseMetadata,
+  ForeignKeyMetadata,
+  IndexMetadata,
   SchemaConfig,
   SchemaMetadata,
   TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { TinyTimer } from "@/utils";
+import {
+  ComparableColumnFields,
+  ComparableForeignKeyFields,
+  ComparableIndexFields,
+  ComparableTableFields,
+} from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { keyForResourceName } from "../context/common";
 
@@ -174,10 +182,15 @@ export class DiffMerge {
           { ...target, table: targetTable }
         );
         if (
-          !isEqual(sourceTable.classification, targetTable.classification) ||
-          !isEqual(sourceTable.userComment, targetTable.userComment) ||
-          !isEqual(sourceTable.foreignKeys, targetTable.foreignKeys) ||
-          !isEqual(sourceTable.indexes, targetTable.indexes)
+          !isEqual(
+            pick(sourceTable, ComparableTableFields),
+            pick(targetTable, ComparableTableFields)
+          ) ||
+          !this.isEqualForeignKeys(
+            sourceTable.foreignKeys,
+            targetTable.foreignKeys
+          ) ||
+          !this.isEqualIndexes(sourceTable.indexes, targetTable.indexes)
         ) {
           // Index and foreignKey changes are considered as table updating by now
           // for simplification
@@ -209,6 +222,54 @@ export class DiffMerge {
     }
     targetSchema.tables = mergedTables;
     this.timer.end("mergeTables", sourceTables.length + targetTables.length);
+  }
+  isEqualForeignKeys(
+    sourceForeignKeys: ForeignKeyMetadata[],
+    targetForeignKeys: ForeignKeyMetadata[]
+  ) {
+    if (sourceForeignKeys.length !== targetForeignKeys.length) {
+      return false;
+    }
+    for (let i = 0; i < sourceForeignKeys.length; i++) {
+      const sourceForeignKey = sourceForeignKeys[i];
+      const targetForeignKey = targetForeignKeys[i];
+      if (
+        !isEqual(
+          pick(sourceForeignKey, ComparableForeignKeyFields),
+          pick(targetForeignKey, ComparableForeignKeyFields)
+        )
+      ) {
+        console.log(
+          pick(sourceForeignKey, ComparableForeignKeyFields),
+          pick(targetForeignKey, ComparableForeignKeyFields)
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+  isEqualIndexes(
+    sourceIndexes: IndexMetadata[],
+    targetIndexes: IndexMetadata[]
+  ) {
+    if (sourceIndexes.length !== targetIndexes.length) {
+      return false;
+    }
+    for (let i = 0; i < sourceIndexes.length; i++) {
+      const sourceIndex = sourceIndexes[i];
+      const targetIndex = targetIndexes[i];
+      if (
+        !isEqual(
+          pick(sourceIndex, ComparableIndexFields),
+          pick(targetIndex, ComparableIndexFields)
+        )
+      ) {
+        console.log(JSON.stringify(pick(sourceIndex, ComparableIndexFields)));
+        console.log(JSON.stringify(pick(targetIndex, ComparableIndexFields)));
+        return false;
+      }
+    }
+    return true;
   }
   mergeColumns(source: RichTableMetadata, target: RichTableMetadata) {
     const { context, database, sourceColumnMap, targetColumnMap } = this;
@@ -285,7 +346,14 @@ export class DiffMerge {
     } = target;
     this.timer.begin("diffColumn");
 
-    if (!isEqual(sourceColumn, targetColumn)) {
+    if (
+      !isEqual(
+        pick(sourceColumn, ComparableColumnFields),
+        pick(targetColumn, ComparableColumnFields)
+      )
+    ) {
+      console.log(JSON.stringify(pick(sourceColumn, ComparableColumnFields)));
+      console.log(JSON.stringify(pick(targetColumn, ComparableColumnFields)));
       const key = keyForResourceName(
         this.database.name,
         targetSchema.name,
