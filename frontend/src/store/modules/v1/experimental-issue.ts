@@ -96,7 +96,6 @@ export const experimentalFetchIssueByUID = async (
   if (uid === String(EMPTY_ID)) return emptyIssue();
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
 
-  console.log("getIssue", `projects/${project}/issues/${uid}`);
   const rawIssue = await issueServiceClient.getIssue({
     name: `projects/${project}/issues/${uid}`,
   });
