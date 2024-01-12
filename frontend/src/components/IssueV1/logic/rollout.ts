@@ -13,7 +13,7 @@ import {
   extractDeploymentConfigName,
   extractUserResourceName,
   flattenTaskV1List,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
 } from "@/utils";
 import { planCheckRunSummaryForTask, specForTask } from ".";
 
@@ -88,16 +88,13 @@ export const allowUserToEditStatementForTask = (
 
   // if not creating, we are allowed to edit sql statement only when:
   // - user is the creator
-  // - OR user is Workspace DBA or Owner
+  // - OR user has issues.update permission in the project
 
   denyReasons.push(...isTaskEditable(issue, task));
 
   if (extractUserResourceName(issue.creator) !== user.email) {
     if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-issue",
-        user.userRole
-      )
+      !hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")
     ) {
       denyReasons.push("You don't have the privilege to edit this issue");
     }

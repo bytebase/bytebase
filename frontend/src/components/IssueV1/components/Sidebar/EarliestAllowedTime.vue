@@ -78,7 +78,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   isDatabaseRelatedIssue,
 } from "@/utils";
 
@@ -127,22 +127,24 @@ const disallowEditReasons = computed(() => {
   }
 
   let allow = false;
-  // Super users are always allowed change the rollout time.
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.userRole
-    )
-  ) {
-    allow = true;
-  }
   // Issue creator is allowed to change the rollout time.
-  if (extractUserResourceName(issue.value.creator) == currentUser.value.email) {
+  if (
+    extractUserResourceName(issue.value.creator) === currentUser.value.email
+  ) {
     allow = true;
   }
   // Issue assignee is allowed to change the rollout time.
   if (
-    extractUserResourceName(issue.value.assignee) == currentUser.value.email
+    extractUserResourceName(issue.value.assignee) === currentUser.value.email
+  ) {
+    allow = true;
+  }
+  if (
+    hasProjectPermissionV2(
+      issue.value.projectEntity,
+      currentUser.value,
+      "bb.issues.update"
+    )
   ) {
     allow = true;
   }

@@ -4,7 +4,7 @@ import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -134,13 +134,8 @@ export const allowUserToApplyTaskRolloutAction = (
     return true;
   }
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      user.userRole
-    )
-  ) {
-    // Super users are always allowed to rollout issues.
+  if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
+    // Owners are always allowed to rollout issues.
     return true;
   }
 

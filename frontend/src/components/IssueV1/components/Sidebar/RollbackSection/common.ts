@@ -20,8 +20,7 @@ import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   flattenTaskV1List,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   semverCompare,
 } from "@/utils";
 
@@ -100,25 +99,10 @@ export const useRollbackContext = () => {
       return true;
     }
 
-    if (
-      hasPermissionInProjectV1(
-        project.value.iamPolicy,
-        user,
-        "bb.permission.project.admin-database"
-      )
-    ) {
+    if (hasProjectPermissionV2(project.value, user, "bb.issues.update")) {
       return true;
     }
 
-    if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-issue",
-        user.userRole
-      )
-    ) {
-      // Allowed to DBAs and workspace owners
-      return true;
-    }
     return false;
   });
 
