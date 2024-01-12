@@ -33,6 +33,8 @@ import {
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
+  AUTH_OAUTH_CALLBACK_MODULE,
+  AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_FORGOT_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
@@ -108,7 +110,10 @@ router.beforeEach((to, from, next) => {
   // - Login via OAuth / OIDC
   // - Setup VCS provider
   // - Setup GitOps workflow in a project
-  if (to.name === "oauth-callback" || to.name === "oidc-callback") {
+  if (
+    to.name === AUTH_OAUTH_CALLBACK_MODULE ||
+    to.name === AUTH_OIDC_CALLBACK_MODULE
+  ) {
     next();
     return;
   }
