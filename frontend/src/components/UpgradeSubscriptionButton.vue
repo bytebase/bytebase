@@ -20,6 +20,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 
@@ -56,7 +57,7 @@ const onClick = () => {
       window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
     }
   } else {
-    router.push({ name: "setting.workspace.subscription" });
+    router.push({ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION });
   }
 };
 </script>

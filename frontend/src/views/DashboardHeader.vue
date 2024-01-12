@@ -88,6 +88,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
+import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
@@ -138,7 +139,7 @@ const kbarActions = computed(() => {
       name: "Settings",
       section: t("kbar.navigation"),
       keywords: "navigation",
-      perform: () => router.push({ name: "setting.workspace.member" }),
+      perform: () => router.push({ name: SETTING_ROUTE_WORKSPACE_MEMBER }),
     }),
   ];
 });

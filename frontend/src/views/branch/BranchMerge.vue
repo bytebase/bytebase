@@ -16,8 +16,8 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchMergeView from "@/components/Branch/BranchMergeView";
 import {
-  PROJECT_V1_BRANCHE_MERGE,
-  PROJECT_V1_BRANCHE_DETAIL,
+  PROJECT_V1_ROUTE_BRANCH_MERGE,
+  PROJECT_V1_ROUTE_BRANCH_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
@@ -49,7 +49,7 @@ const branchFullName = computed(() => {
 const handleUpdateHeadBranchName = (branchName: string | null) => {
   const branchId = branchName ? getProjectAndBranchId(branchName)[1] : "-";
   router.replace({
-    name: PROJECT_V1_BRANCHE_MERGE,
+    name: PROJECT_V1_ROUTE_BRANCH_MERGE,
     params: {
       branchName: branchId,
     },
@@ -64,7 +64,7 @@ const handleMerged = (
   headBranch: Branch | undefined
 ) => {
   router.replace({
-    name: PROJECT_V1_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
     params: {
       branchName: mergedBranch.branchId,
     },

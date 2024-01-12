@@ -49,6 +49,10 @@ import { useRouter } from "vue-router";
 import BBModal from "@/bbkit/BBModal.vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
+import {
+  ENVIRONMENT_ROUTE_DASHBOARD,
+  ENVIRONMENT_ROUTE_DETAIL,
+} from "@/router/dashboard/environment";
 import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
 import {
   useEnvironmentV1Store,
@@ -186,7 +190,12 @@ const doArchive = (environment: Environment) => {
     emit("archive", environment);
     environment.state = State.DELETED;
     assignEnvironment(environment);
-    router.replace(`/environment/${environmentV1Slug(environment)}`);
+    router.replace({
+      name: ENVIRONMENT_ROUTE_DETAIL,
+      params: {
+        environmentSlug: environmentV1Slug(environment),
+      },
+    });
   });
 };
 
@@ -195,7 +204,10 @@ const doRestore = (environment: Environment) => {
     .undeleteEnvironment(environment.name)
     .then((environment) => {
       assignEnvironment(environment);
-      router.replace(`/environment#${environment.uid}`);
+      router.replace({
+        name: ENVIRONMENT_ROUTE_DASHBOARD,
+        hash: `#${environment.uid}`,
+      });
     });
 };
 

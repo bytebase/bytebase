@@ -36,7 +36,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import {
-  PROJECT_V1_DETAIL,
+  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE,
 } from "@/router/dashboard/projectV1";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -81,7 +81,7 @@ const clickProject = function (
   row: number,
   e: MouseEvent
 ) {
-  let routeName = PROJECT_V1_DETAIL;
+  let routeName = PROJECT_V1_ROUTE_DETAIL;
   if (router.currentRoute.value.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
     routeName = router.currentRoute.value.name?.toString();
   }

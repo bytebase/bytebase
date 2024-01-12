@@ -32,8 +32,8 @@ import { useRoute } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
-  PROJECT_V1_DATABASES,
-  PROJECT_V1_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
 import {
   useProjectV1Store,
@@ -232,8 +232,8 @@ const quickActionMapByRole = computed(() => {
 
 const isDatabaseHash = computed(() => {
   return (
-    route.name === PROJECT_V1_DATABASES ||
-    route.name === PROJECT_V1_DATABASE_GROUPS
+    route.name === PROJECT_V1_ROUTE_DATABASES ||
+    route.name === PROJECT_V1_ROUTE_DATABASE_GROUPS
   );
 });
 
@@ -241,7 +241,7 @@ const quickActionList = computed(() => {
   if (!isDatabaseHash.value) {
     return [];
   }
-  if (route.name === PROJECT_V1_DATABASE_GROUPS) {
+  if (route.name === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
     return quickActionForDatabaseGroup.value;
   }
   return getQuickActionList(quickActionMapByRole.value);

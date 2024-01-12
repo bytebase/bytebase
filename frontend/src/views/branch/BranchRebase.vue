@@ -16,8 +16,8 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchRebaseView from "@/components/Branch/BranchRebaseView";
 import {
-  PROJECT_V1_BRANCHE_REBASE,
-  PROJECT_V1_BRANCHE_DETAIL,
+  PROJECT_V1_ROUTE_BRANCH_REBASE,
+  PROJECT_V1_ROUTE_BRANCH_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useProjectV1Store } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
@@ -49,7 +49,7 @@ const branchFullName = computed(() => {
 const handleUpdateHeadBranchName = (branchName: string | null) => {
   const branchId = branchName ? getProjectAndBranchId(branchName)[1] : "-";
   router.replace({
-    name: PROJECT_V1_BRANCHE_REBASE,
+    name: PROJECT_V1_ROUTE_BRANCH_REBASE,
     params: {
       branchName: branchId,
     },
@@ -60,7 +60,7 @@ const handleUpdateHeadBranchName = (branchName: string | null) => {
 
 const handleRebased = (rebasedBranch: Branch) => {
   router.replace({
-    name: PROJECT_V1_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
     params: {
       branchName: rebasedBranch.branchId,
     },

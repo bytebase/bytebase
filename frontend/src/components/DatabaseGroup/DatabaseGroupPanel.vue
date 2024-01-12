@@ -48,9 +48,9 @@ import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { buildCELExpr } from "@/plugins/cel/logic";
 import {
-  PROJECT_V1_DATABASE_GROUPS,
-  PROJECT_V1_DATABASE_GROUP_DETAIL,
-  PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -169,10 +169,11 @@ const doDelete = () => {
         const databaseGroup = props.databaseGroup as DatabaseGroup;
         await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
         if (
-          router.currentRoute.value.name === PROJECT_V1_DATABASE_GROUP_DETAIL
+          router.currentRoute.value.name ===
+          PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
         ) {
           router.replace({
-            name: PROJECT_V1_DATABASE_GROUPS,
+            name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
           });
         }
       } else if (props.resourceType === "SCHEMA_GROUP") {
@@ -181,7 +182,7 @@ const doDelete = () => {
         await dbGroupStore.deleteSchemaGroup(schemaGroupName);
         if (
           router.currentRoute.value.name ===
-          PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL
+          PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL
         ) {
           const [_, databaseGroupName] =
             getProjectNameAndDatabaseGroupNameAndSchemaGroupName(

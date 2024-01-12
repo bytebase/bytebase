@@ -378,6 +378,18 @@ export interface DependentColumn {
   column: string;
 }
 
+/** MaterializedViewMetadata is the metadata for materialized views. */
+export interface MaterializedViewMetadata {
+  /** The name is the name of a view. */
+  name: string;
+  /** The definition is the definition of a view. */
+  definition: string;
+  /** The comment is the comment of a view. */
+  comment: string;
+  /** The dependent_columns is the list of dependent columns of a view. */
+  dependentColumns: DependentColumn[];
+}
+
 /** FunctionMetadata is the metadata for functions. */
 export interface FunctionMetadata {
   /** The name is the name of a view. */
@@ -2293,6 +2305,112 @@ export const DependentColumn = {
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
     message.column = object.column ?? "";
+    return message;
+  },
+};
+
+function createBaseMaterializedViewMetadata(): MaterializedViewMetadata {
+  return { name: "", definition: "", comment: "", dependentColumns: [] };
+}
+
+export const MaterializedViewMetadata = {
+  encode(message: MaterializedViewMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    if (message.comment !== "") {
+      writer.uint32(26).string(message.comment);
+    }
+    for (const v of message.dependentColumns) {
+      DependentColumn.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaterializedViewMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaterializedViewMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.comment = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaterializedViewMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
+      dependentColumns: globalThis.Array.isArray(object?.dependentColumns)
+        ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: MaterializedViewMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    if (message.comment !== "") {
+      obj.comment = message.comment;
+    }
+    if (message.dependentColumns?.length) {
+      obj.dependentColumns = message.dependentColumns.map((e) => DependentColumn.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaterializedViewMetadata>): MaterializedViewMetadata {
+    return MaterializedViewMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MaterializedViewMetadata>): MaterializedViewMetadata {
+    const message = createBaseMaterializedViewMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    message.comment = object.comment ?? "";
+    message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
     return message;
   },
 };

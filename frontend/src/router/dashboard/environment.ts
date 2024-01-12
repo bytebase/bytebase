@@ -5,10 +5,13 @@ import { QuickActionType } from "@/types";
 import { idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
+export const ENVIRONMENT_ROUTE_DASHBOARD = "workspace.environment";
+export const ENVIRONMENT_ROUTE_DETAIL = `${ENVIRONMENT_ROUTE_DASHBOARD}.detail`;
+
 const environmentRoutes: RouteRecordRaw[] = [
   {
     path: "environment",
-    name: "workspace.environment",
+    name: ENVIRONMENT_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
       quickActionListByRole: () => {
@@ -31,7 +34,7 @@ const environmentRoutes: RouteRecordRaw[] = [
   },
   {
     path: "environment/:environmentSlug",
-    name: "workspace.environment.detail",
+    name: ENVIRONMENT_ROUTE_DETAIL,
     meta: {
       title: (route: RouteLocationNormalized) => {
         const slug = route.params.environmentSlug as string;

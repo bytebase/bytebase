@@ -3,6 +3,7 @@
     :key="'setting'"
     :item-list="(settingSidebarItemList as SidebarItem[])"
     :get-item-class="getItemClass"
+    @select="onSelect"
   />
 </template>
 
@@ -16,44 +17,92 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
+import {
+  SETTING_ROUTE_PROFILE,
+  SETTING_ROUTE_PROFILE_TWO_FACTOR,
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+  SETTING_ROUTE_WORKSPACE_MEMBER,
+  SETTING_ROUTE_WORKSPACE_ROLE,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+  SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
+  SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
+  SETTING_ROUTE_WORKSPACE_RISK_CENTER,
+  SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
+  SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
+  SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
+  SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
+  SETTING_ROUTE_WORKSPACE_GITOPS,
+  SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
+  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SSO,
+  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
+  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+  SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
+  SETTING_ROUTE_WORKSPACE_ARCHIVE,
+} from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
 import { hasSettingPagePermission } from "../utils";
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 
 const getItemClass = (path: string | undefined) => {
   const list = [];
+  if (route.name === path) {
+    list.push("router-link-active", "bg-link-hover");
+    return list;
+  }
+
   switch (route.name) {
-    case "setting.workspace.sso.detail":
-    case "setting.workspace.sso.create":
-      if (path === "/setting/sso") {
+    case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
+    case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
+      if (path === SETTING_ROUTE_WORKSPACE_SSO) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case "workspace.profile":
-      if (path === "/setting/member") {
+    case SETTING_ROUTE_PROFILE:
+    case SETTING_ROUTE_PROFILE_TWO_FACTOR:
+      if (path === SETTING_ROUTE_WORKSPACE_MEMBER) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case "setting.workspace.sql-review.create":
-    case "setting.workspace.sql-review.detail":
-      if (path === "/setting/sql-review") {
+    case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE:
+    case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL:
+      if (path === SETTING_ROUTE_WORKSPACE_SQL_REVIEW) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case "setting.workspace.gitop":
-    case "setting.workspace.gitops.create":
-    case "setting.workspace.gitops.detail":
-      if (path === "/setting/gitops") {
+    case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
+    case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
+      if (path === SETTING_ROUTE_WORKSPACE_GITOPS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
   }
   return list;
+};
+
+const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
+  if (!path) {
+    return;
+  }
+  const route = router.resolve({
+    name: path,
+  });
+
+  if (e?.ctrlKey || e?.metaKey) {
+    window.open(route.fullPath, "_blank");
+  } else {
+    router.replace(route);
+  }
 };
 
 const settingSidebarItemList = computed((): SidebarItem[] => {
@@ -65,8 +114,8 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.profile"),
-          path: "/setting/profile",
-          type: "route",
+          path: SETTING_ROUTE_PROFILE,
+          type: "div",
         },
       ],
     },
@@ -77,36 +126,36 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.general"),
-          path: "/setting/general",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_GENERAL,
+          type: "div",
         },
         {
           title: t("settings.sidebar.members"),
-          path: "/setting/member",
+          path: SETTING_ROUTE_WORKSPACE_MEMBER,
           hide: !hasSettingPagePermission(
-            "setting.workspace.member",
+            SETTING_ROUTE_WORKSPACE_MEMBER,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
         {
           title: t("settings.sidebar.custom-roles"),
-          path: "/setting/role",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_ROLE,
+          type: "div",
         },
         {
           title: t("settings.sidebar.subscription"),
-          path: "/setting/subscription",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+          type: "div",
         },
         {
           title: t("settings.sidebar.debug-log"),
-          path: "/setting/debug-log",
+          path: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
           hide: !hasSettingPagePermission(
-            "setting.workspace.debug-log",
+            SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
       ],
     },
@@ -117,55 +166,55 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("sql-review.title"),
-          path: "/setting/sql-review",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+          type: "div",
         },
         {
           title: t("slow-query.self"),
-          path: "/setting/slow-query",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
+          type: "div",
         },
         {
           title: t("schema-template.self"),
-          path: "/setting/schema-template",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
+          type: "div",
         },
         {
           title: t("custom-approval.risk.risk-center"),
-          path: "/setting/risk-center",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
+          type: "div",
         },
         {
           title: t("custom-approval.self"),
-          path: "/setting/custom-approval",
-          type: "route",
+          path: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
+          type: "div",
         },
         {
           title: t("settings.sidebar.sensitive-data"),
-          path: "/setting/sensitive-data",
+          path: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
           hide: !hasSettingPagePermission(
-            "setting.workspace.sensitive-data",
+            SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
         {
           title: t("settings.sidebar.access-control"),
-          path: "/setting/access-control",
+          path: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
           hide: !hasSettingPagePermission(
-            "setting.workspace.access-control",
+            SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
         {
           title: t("settings.sidebar.audit-log"),
-          path: "/setting/audit-log",
+          path: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
           hide: !hasSettingPagePermission(
-            "setting.workspace.audit-log",
+            SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
       ],
     },
@@ -176,38 +225,38 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.gitops"),
-          path: "/setting/gitops",
+          path: SETTING_ROUTE_WORKSPACE_GITOPS,
           hide: !hasSettingPagePermission(
-            "setting.workspace.gitops",
+            SETTING_ROUTE_WORKSPACE_GITOPS,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
         {
           title: t("settings.sidebar.sso"),
-          path: "/setting/sso",
+          path: SETTING_ROUTE_WORKSPACE_SSO,
           hide: !hasSettingPagePermission(
-            "setting.workspace.sso",
+            SETTING_ROUTE_WORKSPACE_SSO,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
         {
           title: t("settings.sidebar.mail-delivery"),
-          path: "/setting/mail-delivery",
+          path: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
           hide: !hasSettingPagePermission(
-            "setting.workspace.mail-delivery",
+            SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
             currentUserV1.value.userRole
           ),
-          type: "route",
+          type: "div",
         },
       ],
     },
     {
       title: t("common.archived"),
       icon: h(Archive),
-      path: "/setting/archive",
-      type: "route",
+      path: SETTING_ROUTE_WORKSPACE_ARCHIVE,
+      type: "div",
     },
   ];
 });
