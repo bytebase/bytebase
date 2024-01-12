@@ -239,10 +239,6 @@ export class DiffMerge {
           pick(targetForeignKey, ComparableForeignKeyFields)
         )
       ) {
-        console.log(
-          pick(sourceForeignKey, ComparableForeignKeyFields),
-          pick(targetForeignKey, ComparableForeignKeyFields)
-        );
         return false;
       }
     }
@@ -264,8 +260,6 @@ export class DiffMerge {
           pick(targetIndex, ComparableIndexFields)
         )
       ) {
-        console.log(JSON.stringify(pick(sourceIndex, ComparableIndexFields)));
-        console.log(JSON.stringify(pick(targetIndex, ComparableIndexFields)));
         return false;
       }
     }
@@ -352,8 +346,6 @@ export class DiffMerge {
         pick(targetColumn, ComparableColumnFields)
       )
     ) {
-      console.log(JSON.stringify(pick(sourceColumn, ComparableColumnFields)));
-      console.log(JSON.stringify(pick(targetColumn, ComparableColumnFields)));
       const key = keyForResourceName(
         this.database.name,
         targetSchema.name,
