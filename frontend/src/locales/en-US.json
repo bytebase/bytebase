@@ -3426,6 +3426,8 @@
     },
     "index": {
       "drop-index-confirm": "Drop index?"
-    }
+    },
+    "force-delete": "Force delete",
+    "deleting-parent-branch": "Deleting a parent branch."
   }
 }

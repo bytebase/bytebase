@@ -102,11 +102,16 @@ export const useBranchStore = defineStore("schema_design", () => {
     return branchMapByName.get(name);
   };
 
-  const deleteBranch = async (name: string) => {
-    await branchServiceClient.deleteBranch({
-      name,
-      force: true,
-    });
+  const deleteBranch = async (name: string, force = false) => {
+    await branchServiceClient.deleteBranch(
+      {
+        name,
+        force,
+      },
+      {
+        silent: true,
+      }
+    );
     branchMapByName.delete(name);
   };
 
