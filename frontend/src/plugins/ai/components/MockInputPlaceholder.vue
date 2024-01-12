@@ -36,12 +36,16 @@
 <script lang="ts" setup>
 import { NInput, NInputGroup, NButton, NTooltip } from "naive-ui";
 import { useRouter } from "vue-router";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { DISMISS_PLACEHOLDER } from "./state";
 
 const router = useRouter();
 
 const handleClick = () => {
-  router.push({ name: "setting.workspace.general", hash: "#ai-augmentation" });
+  router.push({
+    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+    hash: "#ai-augmentation",
+  });
 };
 
 const handleDismiss = () => {

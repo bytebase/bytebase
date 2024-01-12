@@ -1,6 +1,20 @@
 import { kebabCase } from "lodash-es";
 import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
+import {
+  SETTING_ROUTE_WORKSPACE_MEMBER,
+  SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
+  SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
+  SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
+  SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
+  SETTING_ROUTE_WORKSPACE_GITOPS,
+  SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
+  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SSO,
+  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
+  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+  SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
+} from "@/router/dashboard/workspaceSetting";
 import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
 import { MaybeRef, RoleType, PresetRoleType } from "@/types";
 import { UserRole } from "@/types/proto/v1/auth_service";
@@ -218,46 +232,46 @@ export const hasSettingPagePermission = (
   role: UserRole
 ): boolean => {
   switch (routeName) {
-    case "setting.workspace.member":
+    case SETTING_ROUTE_WORKSPACE_MEMBER:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-member",
         role
       );
-    case "setting.workspace.sensitive-data":
+    case SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-sensitive-data",
         role
       );
-    case "setting.workspace.access-control":
+    case SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-access-control",
         role
       );
-    case "setting.workspace.sso":
-    case "setting.workspace.sso.create":
-    case "setting.workspace.sso.detail":
+    case SETTING_ROUTE_WORKSPACE_SSO:
+    case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
+    case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-sso",
         role
       );
-    case "setting.workspace.gitops":
-    case "setting.workspace.gitops.create":
-    case "setting.workspace.gitops.detail":
+    case SETTING_ROUTE_WORKSPACE_GITOPS:
+    case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
+    case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-vcs-provider",
         role
       );
-    case "setting.workspace.debug-log":
+    case SETTING_ROUTE_WORKSPACE_DEBUG_LOG:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.debug-log",
         role
       );
-    case "setting.workspace.audit-log":
+    case SETTING_ROUTE_WORKSPACE_AUDIT_LOG:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.audit-log",
         role
       );
-    case "setting.workspace.mail-delivery":
+    case SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY:
       return hasWorkspacePermissionV1(
         "bb.permission.workspace.manage-mail-delivery",
         role

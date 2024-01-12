@@ -3,6 +3,7 @@
     :key="'project'"
     :item-list="projectSidebarItemList"
     :get-item-class="getItemClass"
+    @select="onSelect"
   />
 </template>
 
@@ -24,15 +25,29 @@ import { useI18n } from "vue-i18n";
 import { useRouter, useRoute } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import {
-  PROJECT_V1_WEBHOOK_CREATE,
-  PROJECT_V1_WEBHOOK_DETAIL,
-  PROJECT_V1_BRANCHE_DETAIL,
-  PROJECT_V1_BRANCHE_ROLLOUT,
-  PROJECT_V1_BRANCHE_MERGE,
-  PROJECT_V1_BRANCHE_REBASE,
-  PROJECT_V1_CHANGELIST_DETAIL,
-  PROJECT_V1_DATABASE_GROUP_DETAIL,
-  PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_ISSUES,
+  PROJECT_V1_ROUTE_CHANGE_HISTORIES,
+  PROJECT_V1_ROUTE_SYNC_SCHEMA,
+  PROJECT_V1_ROUTE_SLOW_QUERIES,
+  PROJECT_V1_ROUTE_ANOMALIES,
+  PROJECT_V1_ROUTE_ACTIVITIES,
+  PROJECT_V1_ROUTE_GITOPS,
+  PROJECT_V1_ROUTE_MEMBERS,
+  PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_WEBHOOKS,
+  PROJECT_V1_ROUTE_WEBHOOK_CREATE,
+  PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+  PROJECT_V1_ROUTE_BRANCHES,
+  PROJECT_V1_ROUTE_BRANCH_DETAIL,
+  PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
+  PROJECT_V1_ROUTE_BRANCH_MERGE,
+  PROJECT_V1_ROUTE_BRANCH_REBASE,
+  PROJECT_V1_ROUTE_CHANGELISTS,
+  PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -42,12 +57,13 @@ import { useCurrentProject } from "./useCurrentProject";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
-  type: "div" | "route";
+  type: "div";
+  path?: string;
   children?: {
     title: string;
     path: string;
     hide?: boolean;
-    type: "route";
+    type: "div";
   }[];
 }
 
@@ -83,9 +99,7 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
-// TODO(ed): use route name instead of fullpath
 const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
-  const projectPath = `/${project.value.name}`;
   return [
     {
       title: t("common.database"),
@@ -94,53 +108,53 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.databases"),
-          path: `${projectPath}/databases`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_DATABASES,
+          type: "div",
         },
         {
           title: t("common.groups"),
-          path: `${projectPath}/database-groups`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+          type: "div",
           hide:
             !isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.change-history"),
-          path: `${projectPath}/change-histories`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
+          type: "div",
           hide:
             isTenantProject.value ||
             !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: startCase(t("slow-query.slow-queries")),
-          path: `${projectPath}/slow-queries`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_SLOW_QUERIES,
+          type: "div",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
         {
           title: t("common.anomalies"),
-          path: `${projectPath}/anomalies`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_ANOMALIES,
+          type: "div",
           hide: !currentUserIamPolicy.isMemberOfProject(project.value.name),
         },
       ],
     },
     {
       title: t("common.issues"),
-      path: `${projectPath}/issues`,
+      path: PROJECT_V1_ROUTE_ISSUES,
       icon: h(CircleDot),
-      type: "route",
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("common.branches"),
-      path: `${projectPath}/branches`,
+      path: PROJECT_V1_ROUTE_BRANCHES,
       icon: h(GitBranch),
-      type: "route",
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -149,18 +163,18 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
     {
       title: t("changelist.changelists"),
-      path: `${projectPath}/changelists`,
+      path: PROJECT_V1_ROUTE_CHANGELISTS,
       icon: h(PencilRuler),
-      type: "route",
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
     },
     {
       title: t("database.sync-schema.title"),
-      path: `${projectPath}/sync-schema`,
+      path: PROJECT_V1_ROUTE_SYNC_SCHEMA,
       icon: h(RefreshCcw),
-      type: "route",
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.allowToChangeDatabaseOfProject(
@@ -177,13 +191,13 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.gitops"),
-          path: `${projectPath}/gitops`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_GITOPS,
+          type: "div",
         },
         {
           title: t("common.webhooks"),
-          path: `${projectPath}/webhooks`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_WEBHOOKS,
+          type: "div",
         },
       ],
     },
@@ -197,21 +211,21 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       children: [
         {
           title: t("common.members"),
-          path: `${projectPath}/members`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_MEMBERS,
+          type: "div",
         },
         {
           title: t("common.activities"),
-          path: `${projectPath}/activities`,
-          type: "route",
+          path: PROJECT_V1_ROUTE_ACTIVITIES,
+          type: "div",
         },
       ],
     },
     {
       title: t("common.setting"),
       icon: h(Settings),
-      path: `${projectPath}/settings`,
-      type: "route",
+      path: PROJECT_V1_ROUTE_SETTINGS,
+      type: "div",
       hide:
         isDefaultProject.value ||
         !currentUserIamPolicy.isMemberOfProject(project.value.name),
@@ -220,47 +234,50 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
 });
 
 const getItemClass = (path: string | undefined) => {
-  const projectPath = `/${project.value.name}`;
-
   const list = ["outline-item"];
+  if (route.name === path) {
+    list.push("router-link-active", "bg-link-hover");
+    return list;
+  }
+
   switch (route.name) {
-    case PROJECT_V1_WEBHOOK_CREATE:
-    case PROJECT_V1_WEBHOOK_DETAIL:
-      if (path === `${projectPath}/webhooks`) {
+    case PROJECT_V1_ROUTE_WEBHOOK_CREATE:
+    case PROJECT_V1_ROUTE_WEBHOOK_DETAIL:
+      if (path === PROJECT_V1_ROUTE_WEBHOOKS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case PROJECT_V1_BRANCHE_DETAIL:
-    case PROJECT_V1_BRANCHE_ROLLOUT:
-    case PROJECT_V1_BRANCHE_MERGE:
-    case PROJECT_V1_BRANCHE_REBASE:
-      if (path === `${projectPath}/branches`) {
+    case PROJECT_V1_ROUTE_BRANCH_DETAIL:
+    case PROJECT_V1_ROUTE_BRANCH_ROLLOUT:
+    case PROJECT_V1_ROUTE_BRANCH_MERGE:
+    case PROJECT_V1_ROUTE_BRANCH_REBASE:
+      if (path === PROJECT_V1_ROUTE_BRANCHES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case PROJECT_V1_CHANGELIST_DETAIL:
-      if (path === `${projectPath}/changelists`) {
+    case PROJECT_V1_ROUTE_CHANGELIST_DETAIL:
+      if (path === PROJECT_V1_ROUTE_CHANGELISTS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case PROJECT_V1_DATABASE_GROUP_DETAIL:
-    case PROJECT_V1_DATABASE_GROUP_TABLE_GROUP_DETAIL:
-      if (path === `${projectPath}/database-groups`) {
+    case PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL:
+    case PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL:
+      if (path === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.issue.detail":
-      if (path === `${projectPath}/issues`) {
+      if (path === PROJECT_V1_ROUTE_ISSUES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.database.history.detail":
-      if (path === `${projectPath}/change-histories`) {
+      if (path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.database.detail":
-      if (path === `${projectPath}/databases`) {
+      if (path === PROJECT_V1_ROUTE_DATABASES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -268,13 +285,19 @@ const getItemClass = (path: string | undefined) => {
   return list;
 };
 
-const onSelect = (path: string) => {
+const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
   if (!path) {
     return;
   }
-  router.replace({
-    path,
+  const route = router.resolve({
+    name: path,
   });
+
+  if (e?.ctrlKey || e?.metaKey) {
+    window.open(route.fullPath, "_blank");
+  } else {
+    router.replace(route);
+  }
 };
 
 const flattenNavigationItems = computed(() => {
@@ -307,7 +330,7 @@ const navigationKbarActions = computed(() => {
       name: item.title,
       section: t("kbar.navigation"),
       keywords: [item.title.toLowerCase(), item.path].join(" "),
-      perform: () => onSelect(item.path),
+      perform: () => onSelect(item.path, undefined),
     })
   );
   return actions;

@@ -29,7 +29,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
-import { PROJECT_V1_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { extractUserEmail, useCurrentUserV1, useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -74,7 +74,7 @@ const handleUpdateBranchId = (id: string) => {
   branch.value.clean.branchId = id;
   branch.value.dirty.branchId = id;
   router.replace({
-    name: PROJECT_V1_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
     params: {
       branchName: id,
     },

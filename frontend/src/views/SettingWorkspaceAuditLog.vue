@@ -95,6 +95,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBDialog } from "@/bbkit";
 import { ExportOption } from "@/components/DataExportButton.vue";
+import { SETTING_ROUTE_WORKSPACE_AUDIT_LOG } from "@/router/dashboard/workspaceSetting";
 import { featureToRef, useUserStore, useActivityV1Store } from "@/store";
 import {
   AuditActivityTypeList,
@@ -137,7 +138,7 @@ watch(
   () => state.userUid,
   (uid) => {
     router.replace({
-      name: "setting.workspace.audit-log",
+      name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
       query: {
         ...route.query,
         user: parseInt(uid, 10) > 0 ? uid : undefined,
@@ -150,7 +151,7 @@ watch(
   () => state.selectedAuditTypeList,
   (list) => {
     router.replace({
-      name: "setting.workspace.audit-log",
+      name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
       query: {
         ...route.query,
         type: list.join(","),
@@ -212,7 +213,7 @@ const handleViewDetail = (log: LogEntity) => {
 
 const confirmDatePicker = (value: [number, number]) => {
   router.replace({
-    name: "setting.workspace.audit-log",
+    name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
     query: {
       ...route.query,
       createdTsAfter: value[0],
@@ -223,7 +224,7 @@ const confirmDatePicker = (value: [number, number]) => {
 
 const clearDatePicker = () => {
   router.replace({
-    name: "setting.workspace.audit-log",
+    name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
     query: {
       ...route.query,
       createdTsAfter: 0,

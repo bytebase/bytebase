@@ -246,6 +246,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
+import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
   pushNotification,
@@ -431,7 +432,7 @@ const enable2FA = () => {
     state.showFeatureModal = true;
     return;
   }
-  router.push({ name: "setting.profile.two-factor" });
+  router.push({ name: SETTING_ROUTE_PROFILE_TWO_FACTOR });
 };
 
 const disable2FA = () => {

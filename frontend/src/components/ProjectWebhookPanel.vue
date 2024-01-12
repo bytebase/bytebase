@@ -34,7 +34,7 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { useRouter } from "vue-router";
-import { PROJECT_V1_WEBHOOK_CREATE } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_WEBHOOK_CREATE } from "@/router/dashboard/projectV1";
 import { Project } from "@/types/proto/v1/project_service";
 import ProjectWebhookCard from "./ProjectWebhookCard.vue";
 
@@ -56,7 +56,7 @@ const projectWebhookList = computed(() => {
 
 const addProjectWebhook = () => {
   router.push({
-    name: PROJECT_V1_WEBHOOK_CREATE,
+    name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   });
 };
 </script>

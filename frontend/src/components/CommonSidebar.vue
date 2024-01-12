@@ -14,13 +14,13 @@
         <div
           v-else-if="item.type === 'div'"
           :class="[parentRouteClass, getItemClass(item.path)]"
-          @click="onClick(i)"
+          @click="onClick(item, `${i}`, $event)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
           <div v-if="item.children.length > 0" class="ml-auto text-gray-500">
             <ChevronRight
-              v-if="!state.expandedSidebar.has(i)"
+              v-if="!state.expandedSidebar.has(`${i}`)"
               class="w-4 h-4"
             />
             <ChevronDown v-else class="w-4 h-4" />
@@ -30,7 +30,7 @@
           v-if="item.type === 'link'"
           :class="[parentRouteClass, getItemClass(item.path)]"
           :href="item.path"
-          @click="$emit('select', item.path)"
+          @click="$emit('select', item.path, $event)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
           {{ item.title }}
@@ -40,7 +40,7 @@
           class="border-t border-gray-300 my-2.5 mr-4 ml-2"
         />
         <div
-          v-if="item.children.length > 0 && state.expandedSidebar.has(i)"
+          v-if="item.children.length > 0 && state.expandedSidebar.has(`${i}`)"
           class="space-y-1 mt-1"
         >
           <template v-for="(child, j) in item.children" :key="`${i}-${j}`">
@@ -48,17 +48,24 @@
               v-if="child.type === 'link'"
               :class="[childRouteClass, getItemClass(child.path)]"
               :href="child.path"
-              @click="$emit('select', child.path)"
+              @click="$emit('select', child.path, $event)"
             >
               {{ child.title }}
             </a>
             <router-link
-              v-else-if="child.type === 'route'"
+              v-else-if="child.type === 'route' && child.path"
               :to="child.path"
               :class="[childRouteClass, getItemClass(child.path)]"
             >
               {{ child.title }}
             </router-link>
+            <div
+              v-else-if="child.type === 'div'"
+              :class="[childRouteClass, getItemClass(child.path)]"
+              @click="onClick(child, `${i}-${j}`, $event)"
+            >
+              {{ child.title }}
+            </div>
           </template>
         </div>
       </div>
@@ -76,16 +83,11 @@ export interface SidebarItem {
   icon?: VNode;
   hide?: boolean;
   type: "route" | "div" | "divider" | "link";
-  children?: {
-    title: string;
-    path: string;
-    hide?: boolean;
-    type: "route" | "link" | "divider";
-  }[];
+  children?: SidebarItem[];
 }
 
 interface LocalState {
-  expandedSidebar: Set<number>;
+  expandedSidebar: Set<string>;
 }
 
 const props = withDefaults(
@@ -101,7 +103,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "select", path: string | undefined): void;
+  (event: "select", path: string | undefined, e: MouseEvent): void;
 }>();
 
 const state = reactive<LocalState>({
@@ -134,20 +136,19 @@ onMounted(() => {
   state.expandedSidebar.clear();
   for (let i = 0; i < filteredSidebarList.value.length; i++) {
     if (filteredSidebarList.value[i].children.length > 0) {
-      state.expandedSidebar.add(i);
+      state.expandedSidebar.add(`${i}`);
     }
   }
 });
 
-const onClick = (index: number) => {
-  const sidebar = filteredSidebarList.value[index];
+const onClick = (sidebar: SidebarItem, key: string, e: MouseEvent) => {
   if (sidebar.path) {
-    return emit("select", sidebar.path);
+    return emit("select", sidebar.path, e);
   }
-  if (state.expandedSidebar.has(index)) {
-    state.expandedSidebar.delete(index);
+  if (state.expandedSidebar.has(key)) {
+    state.expandedSidebar.delete(key);
   } else {
-    state.expandedSidebar.add(index);
+    state.expandedSidebar.add(key);
   }
 };
 </script>

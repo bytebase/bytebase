@@ -22,6 +22,8 @@
 import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { PROJECT_V1_ROUTE_GITOPS } from "@/router/dashboard/projectV1";
+import { getProjectName } from "@/store/modules/v1/common";
 import { ComposedRepository } from "@/types";
 import { projectV1Name } from "../utils";
 
@@ -46,6 +48,11 @@ const columnList = computed(() => [
 
 const clickRepository = function (_: number, row: number) {
   const repository = props.repositoryList[row];
-  router.push(`/${repository.project.name}/gitops`);
+  router.push({
+    name: PROJECT_V1_ROUTE_GITOPS,
+    params: {
+      projectId: getProjectName(repository.project.name),
+    },
+  });
 };
 </script>
