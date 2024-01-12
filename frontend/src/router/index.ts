@@ -234,7 +234,6 @@ router.beforeEach((to, from, next) => {
     to.name === "error.404" ||
     to.name === "error.500" ||
     to.name === WORKSPACE_HOME_MODULE ||
-    to.name === "workspace.inbox" ||
     to.name === "workspace.slow-query" ||
     to.name === "workspace.sync-schema" ||
     to.name === "workspace.export-center" ||

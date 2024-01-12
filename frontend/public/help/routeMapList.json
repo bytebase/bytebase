@@ -32,10 +32,6 @@
     "helpName": ""
   },
   {
-    "routeName": "workspace.inbox",
-    "helpName": ""
-  },
-  {
     "routeName": "workspace.anomaly-center",
     "helpName": ""
   },

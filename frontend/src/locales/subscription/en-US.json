@@ -120,7 +120,6 @@
         "webhook-integration-basic-tooltip": "IM + Custom Webhook",
         "webhook-integration-advanced": "Advanced",
         "webhook-integration-advanced-tooltip": "Basic + IM Approval",
-        "inbox-notification": "Inbox notification",
         "gitops-workflow-basic": "Basic",
         "gitops-workflow-basic-tooltip": "GitOps CI/CD, SQL Review CI",
         "gitops-workflow-advanced": "Advanced",
