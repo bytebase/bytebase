@@ -7,6 +7,7 @@ import {
   DatabaseMetadata,
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
+import { filterDatabaseMetadata } from "@/utils";
 
 /**
  * Create a "virtual" branch to show the diff between a branch's head and a database's head
@@ -40,7 +41,7 @@ export const useVirtualBranch = (
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
     if (signal.aborted) return;
-    databaseHeadMetadata.value = metadata;
+    databaseHeadMetadata.value = filterDatabaseMetadata(metadata);
     state.isLoadingDatabaseMetadata = false;
   };
 
