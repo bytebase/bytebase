@@ -169,6 +169,7 @@
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
+    - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
@@ -3170,6 +3171,24 @@ ListSlowQueriesResponse is the response of listing slow query.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | slow_query_logs | [SlowQueryLog](#bytebase-v1-SlowQueryLog) | repeated | The slow query logs. |
+
+
+
+
+
+
+<a name="bytebase-v1-MaterializedViewMetadata"></a>
+
+### MaterializedViewMetadata
+MaterializedViewMetadata is the metadata for materialized views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a materialized view. |
+| definition | [string](#string) |  | The definition is the definition of a materialized view. |
+| comment | [string](#string) |  | The comment is the comment of a materialized view. |
+| dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a materialized view. |
 
 
 
