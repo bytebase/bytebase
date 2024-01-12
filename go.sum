@@ -150,8 +150,8 @@ github.com/bytebase/gh-ost2 v0.0.0-20240105023521-266224952c72 h1:6cSsGXPhm4/N4x
 github.com/bytebase/gh-ost2 v0.0.0-20240105023521-266224952c72/go.mod h1:VRPqaDM7UYxJbcCtQkjBcNkxW17p6LJJdkM/nYwQhqg=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP9GfJiuhO8KkYcHmePvy5BfiYxwNk=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2/go.mod h1:wjDx6Xm9q7dFtHJvIlrI99JytznLw5wQ4R+9mNXJwGI=
-github.com/bytebase/mysql-parser v0.0.0-20231208095055-182de2379272 h1:nBidUCDZS6hEIW90zGs4C6skFGqgxDchAgqTTGh6EQM=
-github.com/bytebase/mysql-parser v0.0.0-20231208095055-182de2379272/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
+github.com/bytebase/mysql-parser v0.0.0-20240112100339-e0b6f27b07cf h1:ZZbr1xKiqlGbWtOzCbJVIoQ+ZU+ohrSirYgVYZDcqhE=
+github.com/bytebase/mysql-parser v0.0.0-20240112100339-e0b6f27b07cf/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5 h1:3Ihj6fsBY7rAKzOO2nxJocq9uOxARAwoalhC84ntjec=
 github.com/bytebase/pg_query_go/v4 v4.0.0-20230802100607-2f34e68d96f5/go.mod h1:aEkDNOXNM5j0YGzaAapwJ7LB3dLNj+bvbWcLv1hOVqA=
 github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a h1:2t4nAguPYBm7HWz8TA+HM6FWCdldfk7nmjTiksP2ZuE=
@@ -160,8 +160,8 @@ github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f h1:mwn1
 github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f/go.mod h1:Jft7oabwuwD+t5BYiUfTjcNVaihZ8F5KT8TsROG0EaE=
 github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9 h1:XLSpYgrzleY2HFnCSDnYMbqOoZ3QrAdwXs7rca39Fjc=
 github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9/go.mod h1:gJ1aclz1e9xLArQTbCpDjL+A79Jt3Ro9+/QEw8A6vMM=
-github.com/bytebase/tidb-parser v0.0.0-20240110090403-89a0e2f8ecc1 h1:8/j7vTLm/U91mDEL5cZLSjRH3B/+k8pync+UTcIOjJU=
-github.com/bytebase/tidb-parser v0.0.0-20240110090403-89a0e2f8ecc1/go.mod h1:BSk1Mj9xMMEQXvfeQeuDPyaNFsdKLeyJF4DIFV3RLeM=
+github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd h1:ZpVlIeCJU3dclMe/ZYObOnMMSiKqZmhWrunfhMLwEFY=
+github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd/go.mod h1:BSk1Mj9xMMEQXvfeQeuDPyaNFsdKLeyJF4DIFV3RLeM=
 github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940 h1:EgmWx2TWEnHySUhiRrwmihFOcRIMfPGQLUtzmoblaTs=
 github.com/bytebase/tidb2 v0.0.0-20231129002249-5bbb6bb83940/go.mod h1:JNOIGqHyjLs7vMlnzvnpfTqh4qAE1xsMILj7onmuqOM=
 github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940 h1:PZ22FTyHYk/qJKUTDk3kwOBktS7QFc20ocgmZP/ZmwM=
