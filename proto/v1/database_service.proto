@@ -599,6 +599,21 @@ message DependentColumn {
   string column = 3;
 }
 
+// MaterializedViewMetadata is the metadata for materialized views.
+message MaterializedViewMetadata {
+  // The name is the name of a materialized view.
+  string name = 1;
+
+  // The definition is the definition of a materialized view.
+  string definition = 2;
+
+  // The comment is the comment of a materialized view.
+  string comment = 3;
+
+  // The dependent_columns is the list of dependent columns of a materialized view.
+  repeated DependentColumn dependent_columns = 4;
+}
+
 // FunctionMetadata is the metadata for functions.
 message FunctionMetadata {
   // The name is the name of a view.
