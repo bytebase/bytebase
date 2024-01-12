@@ -15,7 +15,7 @@
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { Project } from "@/types/proto/v1/project_service";
-import { projectV1Name, projectV1Slug } from "@/utils";
+import { projectV1Name } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -36,7 +36,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/project/${projectV1Slug(props.project)}${props.hash}`,
+      to: `/${props.project.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

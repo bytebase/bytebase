@@ -114,7 +114,7 @@ const state = reactive<LocalState>({
 const params = computed(() => {
   const route = router.currentRoute.value;
   return {
-    projectSlug: route.params.projectSlug as string,
+    projectId: route.params.projectId as string,
     issueSlug: route.params.issueSlug as string,
     databaseSlug: route.params.databaseSlug as string,
     changeHistorySlug: route.params.changeHistorySlug as string,

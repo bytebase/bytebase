@@ -145,9 +145,9 @@ import {
   useSubscriptionV1Store,
 } from "@/store";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { idFromSlug } from "@/utils";
 
 interface LocalState {
   isLoaded: boolean;
@@ -161,16 +161,10 @@ interface EditDatabaseGroupState {
   parentDatabaseGroup?: ComposedDatabaseGroup;
 }
 
-const props = defineProps({
-  projectSlug: {
-    required: true,
-    type: String,
-  },
-  databaseGroupName: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  databaseGroupName: string;
+}>();
 
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -189,7 +183,9 @@ const issueType = ref<
   | undefined
 >();
 const project = computed(() => {
-  return projectStore.getProjectByUID(String(idFromSlug(props.projectSlug)));
+  return projectStore.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 const databaseGroupResourceName = computed(() => {
   return `${project.value.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;

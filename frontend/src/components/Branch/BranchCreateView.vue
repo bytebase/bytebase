@@ -89,6 +89,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import { databaseServiceClient } from "@/grpcweb";
+import { PROJECT_V1_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -98,7 +99,6 @@ import { useBranchStore } from "@/store/modules/branch";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { projectV1Slug } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
@@ -164,7 +164,6 @@ const prepareBranchFromParentBranch = async (parent: string) => {
 };
 const prepareBranchFromDatabaseHead = async (uid: string) => {
   const tag = `prepareBranchFromDatabaseHead(${uid})`;
-  console.log(tag);
   console.time(tag);
 
   console.time("--fetch metadata");
@@ -296,9 +295,8 @@ const handleConfirm = async () => {
 
   // Go to branch detail page after created.
   router.replace({
-    name: "workspace.project.branch.detail",
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: projectV1Slug(project.value),
       branchName: branchId.value,
     },
   });

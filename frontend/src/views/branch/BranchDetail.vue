@@ -29,13 +29,15 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
+import { PROJECT_V1_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
 import { extractUserEmail, useCurrentUserV1, useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { idFromSlug, isOwnerOfProjectV1 } from "@/utils";
+import { isOwnerOfProjectV1 } from "@/utils";
 
 const props = defineProps<{
-  projectSlug: string;
+  projectId: string;
   branchName: string;
 }>();
 
@@ -51,11 +53,11 @@ const detailViewKey = ref(uniqueId());
 const isCreating = computed(() => props.branchName === "new");
 const branch = ref<{ clean: Branch; dirty: Branch }>();
 const project = computed(() => {
-  if (props.projectSlug === "-") {
+  if (props.projectId === "-") {
     return;
   }
-  return projectStore.getProjectByUID(
-    String(idFromSlug(props.projectSlug as string))
+  return projectStore.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
   );
 });
 const allowEdit = computed(() => {
@@ -72,15 +74,15 @@ const handleUpdateBranchId = (id: string) => {
   branch.value.clean.branchId = id;
   branch.value.dirty.branchId = id;
   router.replace({
+    name: PROJECT_V1_BRANCHE_DETAIL,
     params: {
-      projectSlug: props.projectSlug,
       branchName: id,
     },
   });
 };
 
 watch(
-  [() => props.projectSlug, () => props.branchName],
+  [() => props.projectId, () => props.branchName],
   async () => {
     if (isCreating.value) {
       return;

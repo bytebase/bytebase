@@ -1,5 +1,4 @@
 import { orderBy, uniq } from "lodash-es";
-import slug from "slug";
 import { extractUserEmail, useUserStore } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
@@ -16,10 +15,6 @@ import {
   hasProjectPermission,
   ProjectPermissionType,
 } from "../role";
-
-export function projectV1Slug(project: Project): string {
-  return [slug(project.title), project.uid].join("-");
-}
 
 export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;

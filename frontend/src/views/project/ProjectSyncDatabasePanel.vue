@@ -1,9 +1,10 @@
 <template>
-  <ProjectIssuesPanel :project="project" />
+  <SyncDatabaseSchema :key="project.name" :project="project" />
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { computed } from "vue";
+import SyncDatabaseSchema from "@/components/SyncDatabaseSchema/index.vue";
 import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 

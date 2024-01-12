@@ -23,7 +23,7 @@ import { computed, PropType } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ComposedRepository } from "@/types";
-import { projectSlugV1, projectV1Name } from "../utils";
+import { projectV1Name } from "../utils";
 
 const props = defineProps({
   repositoryList: {
@@ -46,6 +46,6 @@ const columnList = computed(() => [
 
 const clickRepository = function (_: number, row: number) {
   const repository = props.repositoryList[row];
-  router.push(`/project/${projectSlugV1(repository.project)}#gitops`);
+  router.push(`/${repository.project.name}/gitops`);
 };
 </script>
