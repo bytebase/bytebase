@@ -122,7 +122,7 @@ import { ref, watch } from "vue";
 import { DiffEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { PROJECT_V1_ROUTE_BRANCHE_REBASE } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_BRANCH_REBASE } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
@@ -170,7 +170,7 @@ const headBranchFilter = (branch: Branch) => {
 
 const rebaseLink = (headBranch: Branch, targetBranch: Branch) => {
   return {
-    name: PROJECT_V1_ROUTE_BRANCHE_REBASE,
+    name: PROJECT_V1_ROUTE_BRANCH_REBASE,
     params: {
       branchName: headBranch.branchId,
     },

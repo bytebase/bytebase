@@ -41,7 +41,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import BranchDataTable from "@/components/Branch/BranchDataTable/index.vue";
-import { PROJECT_V1_ROUTE_BRANCHE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { useBranchListByProject } from "@/store/modules/branch";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -104,7 +104,7 @@ const activeBranches = computed(() => {
 
 const handleCreateBranch = () => {
   router.push({
-    name: PROJECT_V1_ROUTE_BRANCHE_DETAIL,
+    name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
     params: {
       branchName: "new",
     },

@@ -10,10 +10,10 @@ export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE}.database-gr
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.table-group.detail`;
 export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE}.branch.dashboard`;
-export const PROJECT_V1_ROUTE_BRANCHE_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
-export const PROJECT_V1_ROUTE_BRANCHE_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
-export const PROJECT_V1_ROUTE_BRANCHE_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
-export const PROJECT_V1_ROUTE_BRANCHE_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
+export const PROJECT_V1_ROUTE_BRANCH_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
+export const PROJECT_V1_ROUTE_BRANCH_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
+export const PROJECT_V1_ROUTE_BRANCH_MERGE = `${PROJECT_V1_ROUTE}.branch.merge`;
+export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE}.branch.rebase`;
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE}.issue.dashboard`;
 export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE}.change-histories.dashboard`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE}.changelist.dashboard`;
@@ -121,7 +121,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName",
-            name: PROJECT_V1_ROUTE_BRANCHE_DETAIL,
+            name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
             meta: {
               overrideTitle: true,
             },
@@ -130,7 +130,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/rollout",
-            name: PROJECT_V1_ROUTE_BRANCHE_ROLLOUT,
+            name: PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
             meta: {
               overrideTitle: true,
             },
@@ -139,7 +139,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/merge",
-            name: PROJECT_V1_ROUTE_BRANCHE_MERGE,
+            name: PROJECT_V1_ROUTE_BRANCH_MERGE,
             meta: {
               title: () => t("branch.merge-rebase.merge-branch"),
             },
@@ -148,7 +148,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           },
           {
             path: ":branchName/rebase",
-            name: PROJECT_V1_ROUTE_BRANCHE_REBASE,
+            name: PROJECT_V1_ROUTE_BRANCH_REBASE,
             meta: {
               title: () => t("branch.merge-rebase.rebase-branch"),
             },
