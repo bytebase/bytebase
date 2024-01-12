@@ -3419,6 +3419,8 @@
     },
     "index": {
       "drop-index-confirm": "删除索引？"
-    }
+    },
+    "force-delete": "强制删除",
+    "deleting-parent-branch": "将要删除一个父分支。"
   }
 }
