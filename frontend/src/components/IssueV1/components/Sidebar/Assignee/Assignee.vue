@@ -66,15 +66,13 @@ import {
   UNKNOWN_ID,
   unknownUser,
 } from "@/types";
-import { User, UserRole } from "@/types/proto/v1/auth_service";
+import { User } from "@/types/proto/v1/auth_service";
 import { Issue } from "@/types/proto/v1/issue_service";
 import {
   extractUserResourceName,
   extractUserUID,
   hasProjectPermissionV2,
   isDatabaseRelatedIssue,
-  isMemberOfProjectV1,
-  isOwnerOfProjectV1,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -193,10 +191,7 @@ const mapUserOptions = (users: User[]) => {
   // - current assignee
   // - approvers of current step (CI phase only)
   // - releasers of current stage (CD phase only)
-  // - project owners
-  // - other non-member assignee candidates
-  //   - workspace owners
-  //   - workspace DBAs
+  // - project or workspace owners
   if (assigneeEmail.value) {
     const assignee = userStore.getUserByEmail(assigneeEmail.value);
     if (assignee) {
@@ -235,8 +230,8 @@ const mapUserOptions = (users: User[]) => {
       releasers
     );
   }
-  const projectOwners = users.filter((user) =>
-    isOwnerOfProjectV1(project.iamPolicy, user)
+  const owners = users.filter((user) =>
+    hasProjectPermissionV2(project, user, "bb.issues.update")
   );
   addGroup(
     {
@@ -244,33 +239,7 @@ const mapUserOptions = (users: User[]) => {
       label: t("issue.assignee.project-owners"),
       key: "project-owners",
     },
-    projectOwners
-  );
-
-  // Add non-project members (workspace admins and DBAs)
-  const workspaceOwners = users.filter(
-    (user) => user.userRole === UserRole.OWNER
-  );
-  addGroup(
-    {
-      type: "group",
-      label: t("issue.assignee.workspace-admins"),
-      key: "workspace-admins",
-    },
-    workspaceOwners
-  );
-  const workspaceDBAs = users.filter(
-    (user) =>
-      !isMemberOfProjectV1(project.iamPolicy, user) &&
-      user.userRole === UserRole.DBA
-  );
-  addGroup(
-    {
-      type: "group",
-      label: t("issue.assignee.workspace-dbas"),
-      key: "workspace-dbas",
-    },
-    workspaceDBAs
+    owners
   );
 
   return groups;
