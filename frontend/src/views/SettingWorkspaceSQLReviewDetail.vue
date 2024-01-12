@@ -136,8 +136,15 @@ import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
+import {
+  payloadValueListToComponentList,
+  SQLRuleFilter,
+  useSQLRuleFilter,
+  SQLRuleTable,
+} from "@/components/SQLReview/components";
 import { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
 import { EnvironmentV1Name } from "@/components/v2";
+import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -158,12 +165,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
-import {
-  payloadValueListToComponentList,
-  SQLRuleFilter,
-  useSQLRuleFilter,
-  SQLRuleTable,
-} from "../components/SQLReview/components";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -188,7 +189,6 @@ const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const ROUTE_NAME = "setting.workspace.sql-review";
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
@@ -384,7 +384,7 @@ const onRemove = () => {
     });
   });
   router.replace({
-    name: ROUTE_NAME,
+    name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
   });
 };
 </script>

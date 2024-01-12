@@ -54,6 +54,7 @@ import { NButton } from "naive-ui";
 import { computed, shallowRef, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { SETTING_ROUTE_WORKSPACE_SLOW_QUERY } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -232,7 +233,7 @@ const syncNow = async () => {
 
 const goConfig = () => {
   router.push({
-    name: "setting.workspace.slow-query",
+    name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
   });
 };
 

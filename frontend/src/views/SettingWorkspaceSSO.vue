@@ -82,6 +82,10 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
+import {
+  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
+  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+} from "@/router/dashboard/workspaceSetting";
 import { featureToRef } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -116,7 +120,7 @@ const handleCreateSSO = () => {
     return;
   }
   router.push({
-    name: "setting.workspace.sso.create",
+    name: SETTING_ROUTE_WORKSPACE_SSO_CREATE,
   });
 };
 
@@ -126,7 +130,7 @@ const handleViewSSO = (identityProvider: IdentityProvider) => {
     return;
   }
   router.push({
-    name: "setting.workspace.sso.detail",
+    name: SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
     params: {
       ssoName: identityProvider.name,
     },

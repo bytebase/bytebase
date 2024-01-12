@@ -8,10 +8,13 @@ import { QuickActionType } from "@/types";
 import { idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
+export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
+export const DATABASE_ROUTE_DETAIL = `${DATABASE_ROUTE_DASHBOARD}.detail`;
+
 const databaseRoutes: RouteRecordRaw[] = [
   {
     path: "db",
-    name: "workspace.database",
+    name: DATABASE_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.databases"),
       quickActionListByRole: () => {
@@ -51,7 +54,7 @@ const databaseRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        name: "workspace.database.detail",
+        name: DATABASE_ROUTE_DETAIL,
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.databaseSlug as string;

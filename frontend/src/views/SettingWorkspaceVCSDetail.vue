@@ -155,6 +155,7 @@ import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { vcsListByUIType } from "@/components/VCS/utils";
+import { SETTING_ROUTE_WORKSPACE_GITOPS } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
@@ -373,7 +374,7 @@ const doUpdate = () => {
 
 const cancel = () => {
   router.push({
-    name: "setting.workspace.gitops",
+    name: SETTING_ROUTE_WORKSPACE_GITOPS,
   });
 };
 
@@ -389,7 +390,7 @@ const deleteVCS = () => {
       title: `Successfully deleted '${title}'`,
     });
     router.push({
-      name: "setting.workspace.gitops",
+      name: SETTING_ROUTE_WORKSPACE_GITOPS,
     });
   });
 };

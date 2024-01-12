@@ -75,6 +75,7 @@ import { reactive } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
 import { FeatureType, planTypeToString } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -125,7 +126,7 @@ const currentPlan = computed(() => {
 
 const gotoSubscriptionPage = () => {
   state.showModal = false;
-  return router.push({ name: "setting.workspace.subscription" });
+  return router.push({ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION });
 };
 </script>
 

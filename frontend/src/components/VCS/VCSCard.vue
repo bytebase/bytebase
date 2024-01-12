@@ -39,6 +39,7 @@
 <script lang="ts" setup>
 import { PropType } from "vue";
 import { useRouter } from "vue-router";
+import { SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL } from "@/router/dashboard/workspaceSetting";
 import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
 import { vcsSlugV1 } from "@/utils";
 
@@ -53,7 +54,7 @@ const router = useRouter();
 
 const editVCS = () => {
   router.push({
-    name: "setting.workspace.gitops.detail",
+    name: SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
     params: {
       vcsSlug: vcsSlugV1(props.vcs),
     },
