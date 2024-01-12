@@ -47,11 +47,13 @@
 
             <div v-if="!config?.rollbackSheet" class="whitespace-pre-line">
               {{ $t("task.rollback.empty-rollback-statement") }}
-              <LearnMoreLink
-                url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console#why-i-get-the-rollback-sheet-is-empty"
-                color="light"
-                class="ml-1"
-              />
+              <HideInStandaloneMode>
+                <LearnMoreLink
+                  url="https://www.bytebase.com/docs/change-database/rollback-data-changes?source=console#why-i-get-the-rollback-sheet-is-empty"
+                  color="light"
+                  class="ml-1"
+                />
+              </HideInStandaloneMode>
             </div>
           </NTooltip>
         </template>

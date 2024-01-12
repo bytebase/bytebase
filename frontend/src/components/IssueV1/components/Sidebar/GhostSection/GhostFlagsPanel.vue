@@ -38,11 +38,12 @@
 
           <p class="font-medium text-control">
             {{ $t("task.online-migration.gho\st-parameters") }}
-
-            <LearnMoreLink
-              class="text-sm ml-1"
-              url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
-            />
+            <HideInStandaloneMode>
+              <LearnMoreLink
+                class="text-sm ml-1"
+                url="https://github.com/github/gh-ost/blob/master/doc/command-line-flags.md"
+              />
+            </HideInStandaloneMode>
           </p>
           <FlagsForm v-model:flags="flags" :readonly="readonly" />
         </div>
