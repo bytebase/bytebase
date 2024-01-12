@@ -8,7 +8,7 @@ import {
   GetChangeHistoryRequest,
   ListChangeHistoriesRequest,
 } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName, getStatementSize } from "@/utils";
 
 export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   const changeHistoryMapByName = reactive(new Map<string, ChangeHistory>());
@@ -65,8 +65,12 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     const changeHistory = changeHistoryMapByName.get(name);
     if (changeHistory) {
       if (
-        changeHistory.statement.length ===
-          changeHistory.statementSize.toNumber() ||
+        (getStatementSize(changeHistory.statement).eq(
+          changeHistory.statementSize
+        ) &&
+          getStatementSize(changeHistory.schema).eq(
+            changeHistory.schemaSize
+          )) ||
         view === ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
       ) {
         return changeHistory;
