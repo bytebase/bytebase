@@ -1,18 +1,14 @@
 <template>
-  <div class="w-full pt-6 space-y-6">
-    <div v-if="state.ready && state.deployment" class="space-y-4">
-      <div class="text-lg font-medium leading-7 text-main">
-        {{ $t("deployment-config.preview-deployment-pipeline") }}
-      </div>
-      <DeploymentMatrix
-        class="w-full !px-0 overflow-x-auto"
-        :project="project"
-        :deployment="state.deployment"
-        :database-list="databaseList"
-        :environment-list="environmentList"
-        show-search-box
-      />
-    </div>
+  <div class="w-full space-y-6">
+    <DeploymentMatrix
+      v-if="state.ready && state.deployment"
+      class="w-full !px-0 overflow-x-auto"
+      :project="project"
+      :deployment="state.deployment"
+      :database-list="databaseList"
+      :environment-list="environmentList"
+      show-search-box
+    />
 
     <div class="space-y-4">
       <div class="text-lg font-medium leading-7 text-main">
