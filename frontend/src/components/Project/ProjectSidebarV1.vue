@@ -48,6 +48,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -115,6 +116,14 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
         {
           title: t("common.groups"),
           path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+          type: "div",
+          hide:
+            !isTenantProject.value ||
+            !currentUserIamPolicy.isMemberOfProject(project.value.name),
+        },
+        {
+          title: t("common.deployment-config"),
+          path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
           type: "div",
           hide:
             !isTenantProject.value ||
