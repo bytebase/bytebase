@@ -9,6 +9,7 @@ export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE}.database.dashboar
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE}.database-group.dashboard`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE}.database-group.table-group.detail`;
+export const PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG = `${PROJECT_V1_ROUTE}.deployment-config`;
 export const PROJECT_V1_ROUTE_BRANCHES = `${PROJECT_V1_ROUTE}.branch.dashboard`;
 export const PROJECT_V1_ROUTE_BRANCH_DETAIL = `${PROJECT_V1_ROUTE}.branch.detail`;
 export const PROJECT_V1_ROUTE_BRANCH_ROLLOUT = `${PROJECT_V1_ROUTE}.branch.rollout`;
@@ -101,6 +102,16 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
+      },
+      {
+        path: "deployment-config",
+        name: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
+        meta: {
+          overrideTitle: true,
+        },
+        component: () =>
+          import("@/views/project/ProjectDeploymentConfigPanel.vue"),
+        props: true,
       },
       {
         path: "branches",

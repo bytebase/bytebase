@@ -34,6 +34,7 @@ import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
 } from "@/router/dashboard/projectV1";
 import {
   useProjectV1Store,
@@ -165,17 +166,43 @@ onMounted(async () => {
     });
 });
 
-const quickActionForDatabaseGroup = computed((): QuickActionType[] => {
-  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-    return [];
+const quickActionForDatabaseGroup = computed(
+  (): Map<RoleType, QuickActionType[]> => {
+    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+      return new Map();
+    }
+
+    const list: QuickActionType[] = [
+      "quickaction.bb.database.schema.update",
+      "quickaction.bb.database.data.update",
+      "quickaction.bb.group.database-group.create",
+      "quickaction.bb.group.table-group.create",
+    ];
+    return new Map([
+      ["OWNER", [...list]],
+      ["DBA", [...list]],
+      ["DEVELOPER", list],
+    ]);
   }
-  return [
-    "quickaction.bb.database.schema.update",
-    "quickaction.bb.database.data.update",
-    "quickaction.bb.group.database-group.create",
-    "quickaction.bb.group.table-group.create",
-  ];
-});
+);
+
+const quickActionForDeploymentConfig = computed(
+  (): Map<RoleType, QuickActionType[]> => {
+    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+      return new Map();
+    }
+
+    const list: QuickActionType[] = [
+      "quickaction.bb.database.schema.update",
+      "quickaction.bb.database.data.update",
+    ];
+    return new Map([
+      ["OWNER", [...list]],
+      ["DBA", [...list]],
+      ["DEVELOPER", list],
+    ]);
+  }
+);
 
 const quickActionMapByRole = computed(() => {
   if (project.value.state === State.ACTIVE) {
@@ -230,21 +257,17 @@ const quickActionMapByRole = computed(() => {
   return new Map<RoleType, QuickActionType[]>();
 });
 
-const isDatabaseHash = computed(() => {
-  return (
-    route.name === PROJECT_V1_ROUTE_DATABASES ||
-    route.name === PROJECT_V1_ROUTE_DATABASE_GROUPS
-  );
-});
-
+// TODO(ed): permission update
 const quickActionList = computed(() => {
-  if (!isDatabaseHash.value) {
-    return [];
+  switch (route.name) {
+    case PROJECT_V1_ROUTE_DATABASES:
+      return getQuickActionList(quickActionMapByRole.value);
+    case PROJECT_V1_ROUTE_DATABASE_GROUPS:
+      return getQuickActionList(quickActionForDatabaseGroup.value);
+    case PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG:
+      return getQuickActionList(quickActionForDeploymentConfig.value);
   }
-  if (route.name === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
-    return quickActionForDatabaseGroup.value;
-  }
-  return getQuickActionList(quickActionMapByRole.value);
+  return [];
 });
 
 const showQuickActionPanel = computed(() => {
