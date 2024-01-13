@@ -90,7 +90,7 @@
       </div>
     </div>
 
-    <div class="w-full flex-1 flex flex-col">
+    <div class="w-full flex-1 flex flex-col overflow-hidden">
       <SchemaDesignEditorLite
         ref="schemaDesignerRef"
         :project="project"
@@ -104,7 +104,7 @@
         :style="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
         :require-confirm="true"
-        @confirm="deleteBranch"
+        @confirm="deleteBranch(false)"
       />
     </div>
   </div>
@@ -124,7 +124,8 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
-import { NButton, NDivider, NInput } from "naive-ui";
+import { NButton, NDivider, NInput, useDialog } from "naive-ui";
+import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -144,6 +145,8 @@ import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { defer } from "@/utils";
+import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
@@ -185,6 +188,7 @@ const state = reactive<LocalState>({
   savingStatus: "",
   applyingToDatabaseStatus: false,
 });
+const $dialog = useDialog();
 const selectTargetDatabasesContext = ref<{
   show: boolean;
 }>({
@@ -488,11 +492,38 @@ const generateIssueName = (databaseNameList: string[]) => {
   return issueNameParts.join(" ");
 };
 
-const deleteBranch = async () => {
-  const branch = props.dirtyBranch;
-  await branchStore.deleteBranch(branch.name);
-  router.replace({
-    name: PROJECT_V1_ROUTE_BRANCHES,
+const confirmForceDeleteBranch = () => {
+  const d = defer<boolean>();
+  $dialog.warning({
+    title: t("common.warning"),
+    content: t("branch.deleting-parent-branch"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("branch.force-delete"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
   });
+  return d.promise;
+};
+
+const deleteBranch = async (force: boolean) => {
+  const branch = props.dirtyBranch;
+  try {
+    await branchStore.deleteBranch(branch.name, force);
+    router.replace({
+      name: PROJECT_V1_ROUTE_BRANCHES,
+    });
+  } catch (ex) {
+    if (getErrorCode(ex) === Status.FAILED_PRECONDITION) {
+      const confirmed = await confirmForceDeleteBranch();
+      if (confirmed) {
+        deleteBranch(true);
+      }
+    }
+  }
 };
 </script>

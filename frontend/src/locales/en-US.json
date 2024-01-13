@@ -20,7 +20,6 @@
     "workflow": "Workflow",
     "unread": "Unread",
     "read": "Read",
-    "inbox": "Inbox",
     "activity": "Activity",
     "activities": "Activities",
     "sign-in": "Sign in",
@@ -2002,10 +2001,6 @@
     "all": "All projects",
     "key-hint": "Short descriptive alphanumberic letters to identify this project."
   },
-  "inbox": {
-    "mark-all-as-read": "Mark all as read",
-    "view-older": "View older"
-  },
   "gitops": {
     "setting": {
       "description": "Bytebase supports GitOps workflow where database migration scripts are stored in the version control system (VCS), and newly created migration scripts will automatically trigger the corresponding database change. Bytebase admins manage all the applicable VCSs here, so that project owners can link the projects with their Git repositories from these VCSs.",
@@ -3426,6 +3421,8 @@
     },
     "index": {
       "drop-index-confirm": "Drop index?"
-    }
+    },
+    "force-delete": "Force delete",
+    "deleting-parent-branch": "Deleting a parent branch."
   }
 }

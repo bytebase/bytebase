@@ -27,11 +27,7 @@ import {
 } from "@/components/IssueV1/logic";
 import { rolloutServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
-import {
-  extractUserResourceName,
-  hasWorkspacePermissionV1,
-  isOwnerOfProjectV1,
-} from "@/utils";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import PlanCheckBar from "./PlanCheckBar";
 
 const currentUser = useCurrentUserV1();
@@ -52,8 +48,7 @@ const allowRunChecks = computed(() => {
   // Allowing below users to run plan checks
   // - the creator of the issue
   // - the assignee of the issue
-  // - project owners
-  // - workspace DBAs/owners
+  // - ones who have bb.issues.update permission in the project
   const me = currentUser.value;
   if (extractUserResourceName(issue.value.creator) === me.email) {
     return true;
@@ -61,14 +56,8 @@ const allowRunChecks = computed(() => {
   if (extractUserResourceName(issue.value.assignee) === me.email) {
     return true;
   }
-  if (isOwnerOfProjectV1(issue.value.projectEntity.iamPolicy, me)) {
-    return true;
-  }
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      me.userRole
-    )
+    hasProjectPermissionV2(issue.value.projectEntity, me, "bb.issues.update")
   ) {
     return true;
   }

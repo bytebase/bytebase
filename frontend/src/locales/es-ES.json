@@ -20,7 +20,6 @@
     "workflow": "Flujo de trabajo",
     "unread": "No leído",
     "read": "Leído",
-    "inbox": "Bandeja de entrada",
     "activity": "Actividad",
     "activities": "Actividades",
     "sign-in": "Iniciar sesión",
@@ -2001,10 +2000,6 @@
     "all": "Todos los proyectos",
     "key-hint": "Letras alfanuméricas descriptivas cortas para identificar este proyecto.."
   },
-  "inbox": {
-    "mark-all-as-read": "Marcar todo como leído",
-    "view-older": "Ver más antiguos"
-  },
   "gitops": {
     "setting": {
       "description": "Bytebase admite el flujo de trabajo de GitOps, donde los scripts de migración de la base de datos se almacenan en el sistema de control de versiones (VCS) y los scripts de migración recién creados activarán automáticamente el cambio de base de datos correspondiente. Los administrador de Bytebase administran todos los VCS aplicables aquí para que los propietarios de proyectos puedan vincular los proyectos con sus repositorios de Git desde estos VCS.",
@@ -3424,6 +3419,8 @@
     },
     "index": {
       "drop-index-confirm": "¿Índice de caída?"
-    }
+    },
+    "force-delete": "Forzar eliminación",
+    "deleting-parent-branch": "Eliminando una rama principal."
   }
 }

@@ -31,11 +31,12 @@ import {
   useIssueContext,
 } from "@/components/IssueV1";
 import { useCurrentUserV1, usePageMode } from "@/store";
+import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName, hasWorkspacePermissionV1 } from "@/utils";
+import { extractUserResourceName } from "@/utils";
 import { customTheme } from "@/utils/customTheme";
 import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
@@ -99,10 +100,8 @@ const issueStatusActionList = computed(() => {
 });
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
   if (
-    !hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUser.value.userRole
-    )
+    currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
+    currentUser.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
   ) {
     // Only for workspace Owners and DBAs.
     return [];

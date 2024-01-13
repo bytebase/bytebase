@@ -360,6 +360,27 @@ func convertV1DatabaseMetadata(metadata *v1pb.DatabaseMetadata) (*storepb.Databa
 
 			s.Views = append(s.Views, storeView)
 		}
+		for _, materializedView := range schema.GetMaterializedViews() {
+			if materializedView == nil {
+				continue
+			}
+			storeMaterializedView := &storepb.MaterializedViewMetadata{
+				Name: materializedView.GetName(),
+			}
+			var dependentColumnList []*storepb.DependentColumn
+			for _, dependentColumn := range materializedView.GetDependentColumns() {
+				dependentColumnList = append(dependentColumnList, &storepb.DependentColumn{
+					Schema: dependentColumn.GetSchema(),
+					Table:  dependentColumn.GetTable(),
+					Column: dependentColumn.GetColumn(),
+				})
+			}
+			storeMaterializedView.Definition = materializedView.GetDefinition()
+			storeMaterializedView.Comment = materializedView.GetComment()
+			storeMaterializedView.DependentColumns = dependentColumnList
+
+			s.MaterializedViews = append(s.MaterializedViews, storeMaterializedView)
+		}
 		for _, function := range schema.Functions {
 			if function == nil {
 				continue

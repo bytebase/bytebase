@@ -22,7 +22,6 @@
     "activities": "活动",
     "unread": "未读",
     "read": "已读",
-    "inbox": "通知",
     "sign-in": "登录",
     "sign-up": "注册",
     "email": "邮箱",
@@ -1997,10 +1996,6 @@
     "all": "所有项目",
     "key-hint": "简短且有辨识度的字母数字组合用于识别该项目。"
   },
-  "inbox": {
-    "mark-all-as-read": "全部标记为已读",
-    "view-older": "查看更早"
-  },
   "gitops": {
     "setting": {
       "description": "Bytebase 支持 GitOps 工作流。该工作流下，数据库变更脚本存储在版本控制系统上 (VCS)，新创建的变更脚本会自动触发对应的数据库变更。Bytebase 管理员先在此配置 VCS，在这之后，项目的所有者就可以从所配置的 VCS 中选取他们的 Git 仓库。",
@@ -3419,6 +3414,8 @@
     },
     "index": {
       "drop-index-confirm": "删除索引？"
-    }
+    },
+    "force-delete": "强制删除",
+    "deleting-parent-branch": "将要删除一个父分支。"
   }
 }

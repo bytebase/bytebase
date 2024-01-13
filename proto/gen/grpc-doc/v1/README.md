@@ -169,6 +169,7 @@
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
+    - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [SearchDatabasesRequest](#bytebase-v1-SearchDatabasesRequest)
@@ -3176,6 +3177,24 @@ ListSlowQueriesResponse is the response of listing slow query.
 
 
 
+<a name="bytebase-v1-MaterializedViewMetadata"></a>
+
+### MaterializedViewMetadata
+MaterializedViewMetadata is the metadata for materialized views.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a materialized view. |
+| definition | [string](#string) |  | The definition is the definition of a materialized view. |
+| comment | [string](#string) |  | The comment is the comment of a materialized view. |
+| dependent_columns | [DependentColumn](#bytebase-v1-DependentColumn) | repeated | The dependent_columns is the list of dependent columns of a materialized view. |
+
+
+
+
+
+
 <a name="bytebase-v1-SchemaConfig"></a>
 
 ### SchemaConfig
@@ -3208,6 +3227,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | functions | [FunctionMetadata](#bytebase-v1-FunctionMetadata) | repeated | The functions is the list of functions in a schema. |
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-v1-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
+| materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
 
 
 
