@@ -50,6 +50,7 @@ import {
   PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserIamPolicy } from "@/store";
+import { getProjectName } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
@@ -291,6 +292,9 @@ const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
   }
   const route = router.resolve({
     name: path,
+    params: {
+      projectId: getProjectName(project.value.name),
+    },
   });
 
   if (e?.ctrlKey || e?.metaKey) {
