@@ -152,7 +152,9 @@ const getUserListFromWorkspace = () => {
         // Need not to filter by workspace role
         return true;
       }
-      return user.roles.some(role=>props.allowedWorkspaceRoleList.includes(role)
+      return user.roles.some((role) =>
+        props.allowedWorkspaceRoleList.includes(role)
+      );
     });
 };
 
