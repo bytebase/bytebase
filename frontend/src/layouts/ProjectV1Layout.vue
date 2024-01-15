@@ -29,7 +29,6 @@
 
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
-import { pull } from "lodash-es";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
@@ -44,26 +43,21 @@ import {
   useProjectV1Store,
   useCurrentUserV1,
   useActivityV1Store,
-  hasFeature,
   usePageMode,
   pushNotification,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
+  ProjectPermission,
   DEFAULT_PROJECT_V1_NAME,
   QuickActionType,
-  RoleType,
   activityName,
+  QuickActionProjectPermissionMap,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import {
-  isOwnerOfProjectV1,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-  getQuickActionList,
-} from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps({
   projectId: {
@@ -95,23 +89,15 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
+    hasProjectPermissionV2(
+      project.value,
+      currentUserV1.value,
+      "bb.projects.update"
     )
   ) {
     return true;
   }
 
-  if (
-    hasPermissionInProjectV1(
-      project.value.iamPolicy,
-      currentUserV1.value,
-      "bb.permission.project.manage-general"
-    )
-  ) {
-    return true;
-  }
   return false;
 });
 
@@ -128,14 +114,15 @@ onMounted(async () => {
   );
 
   if (
-    !hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUserV1.value.userRole
-    ) &&
-    !hasPermissionInProjectV1(
-      project.value.iamPolicy,
+    !hasProjectPermissionV2(
+      project.value,
       currentUserV1.value,
-      "bb.permission.project.change-database"
+      "bb.issues.get"
+    ) &&
+    !hasProjectPermissionV2(
+      project.value,
+      currentUserV1.value,
+      "bb.databases.update"
     )
   ) {
     return;
@@ -170,106 +157,87 @@ onMounted(async () => {
     });
 });
 
-const quickActionForDatabaseGroup = computed(
-  (): Map<RoleType, QuickActionType[]> => {
-    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-      return new Map();
+// Only show the following actions if users don't have required permissions.
+const quickActionWithoutPermission: Map<QuickActionType, ProjectPermission> =
+  new Map([
+    ["quickaction.bb.issue.grant.request.querier", "bb.databases.query"],
+    ["quickaction.bb.issue.grant.request.exporter", "bb.databases.export"],
+  ]);
+
+const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
+  return list.filter((action) => {
+    if (!QuickActionProjectPermissionMap.has(action)) {
+      return false;
     }
-
-    const list: QuickActionType[] = [
-      "quickaction.bb.database.schema.update",
-      "quickaction.bb.database.data.update",
-      "quickaction.bb.group.database-group.create",
-      "quickaction.bb.group.table-group.create",
-    ];
-    return new Map([
-      ["OWNER", [...list]],
-      ["DBA", [...list]],
-      ["DEVELOPER", list],
-    ]);
-  }
-);
-
-const quickActionForDeploymentConfig = computed(
-  (): Map<RoleType, QuickActionType[]> => {
-    if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-      return new Map();
-    }
-
-    const list: QuickActionType[] = [
-      "quickaction.bb.database.schema.update",
-      "quickaction.bb.database.data.update",
-    ];
-    return new Map([
-      ["OWNER", [...list]],
-      ["DBA", [...list]],
-      ["DEVELOPER", list],
-    ]);
-  }
-);
-
-const quickActionMapByRole = computed(() => {
-  if (project.value.state === State.ACTIVE) {
-    const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
-      "quickaction.bb.database.create",
-      "quickaction.bb.project.database.transfer",
-    ];
-    const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [];
-
-    const currentUserV1 = useCurrentUserV1();
-    if (
-      project.value.name !== DEFAULT_PROJECT_V1_NAME &&
-      hasPermissionInProjectV1(
-        project.value.iamPolicy,
-        currentUserV1.value,
-        "bb.permission.project.change-database"
+    const hasPermission = QuickActionProjectPermissionMap.get(action)?.every(
+      (permission) =>
+        hasProjectPermissionV2(project.value, currentUserV1.value, permission)
+    );
+    if (quickActionWithoutPermission.has(action)) {
+      if (
+        hasProjectPermissionV2(
+          project.value,
+          currentUserV1.value,
+          quickActionWithoutPermission.get(action)!
+        )
       )
-    ) {
-      // Default project (Unassigned databases) are not allowed
-      // to be changed.
-      DEVELOPER_QUICK_ACTION_LIST.push("quickaction.bb.database.create");
+        return false;
     }
-    if (
-      hasPermissionInProjectV1(
-        project.value.iamPolicy,
-        currentUserV1.value,
-        "bb.permission.project.transfer-database"
-      )
-    ) {
-      DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.project.database.transfer"
-      );
-    }
-    if (!isOwnerOfProjectV1(project.value.iamPolicy, currentUserV1.value)) {
-      DEVELOPER_QUICK_ACTION_LIST.push(
-        "quickaction.bb.issue.grant.request.querier",
-        "quickaction.bb.issue.grant.request.exporter"
-      );
-    }
+    return hasPermission;
+  });
+};
 
-    if (hasFeature("bb.feature.dba-workflow")) {
-      pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
-    }
-
-    return new Map([
-      ["OWNER", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
-      ["DBA", [...DBA_AND_OWNER_QUICK_ACTION_LIST]],
-      ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
-    ]) as Map<RoleType, QuickActionType[]>;
+const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
+  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+    return [];
+  }
+  if (project.value.state !== State.ACTIVE) {
+    return [];
   }
 
-  return new Map<RoleType, QuickActionType[]>();
+  return [
+    "quickaction.bb.database.schema.update",
+    "quickaction.bb.database.data.update",
+    "quickaction.bb.group.database-group.create",
+    "quickaction.bb.group.table-group.create",
+  ];
 });
 
-// TODO(ed): permission update
+const quickActionListForDeploymentConfig = computed((): QuickActionType[] => {
+  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+    return [];
+  }
+  if (project.value.state !== State.ACTIVE) {
+    return [];
+  }
+
+  return [
+    "quickaction.bb.database.schema.update",
+    "quickaction.bb.database.data.update",
+  ];
+});
+
+const quickActionListForDatabase = computed((): QuickActionType[] => {
+  if (project.value.state !== State.ACTIVE) {
+    return [];
+  }
+
+  return [
+    "quickaction.bb.database.create",
+    "quickaction.bb.project.database.transfer",
+    "quickaction.bb.issue.grant.request.querier",
+    "quickaction.bb.issue.grant.request.exporter",
+  ];
+});
+
 const quickActionList = computed(() => {
   switch (route.name) {
     case PROJECT_V1_ROUTE_DATABASES:
-      return getQuickActionList(quickActionMapByRole.value);
+      return getQuickActionList(quickActionListForDatabase.value);
     case PROJECT_V1_ROUTE_DATABASE_GROUPS:
-      return getQuickActionList(quickActionForDatabaseGroup.value);
+      return getQuickActionList(quickActionListForDatabaseGroup.value);
     case PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG:
-      return getQuickActionList(quickActionForDeploymentConfig.value);
+      return getQuickActionList(quickActionListForDeploymentConfig.value);
   }
   return [];
 });
