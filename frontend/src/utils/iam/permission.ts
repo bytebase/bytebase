@@ -5,6 +5,7 @@ import {
   WorkspacePermission,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
+import { roleListInProjectV1 } from "../v1/project";
 
 export const hasWorkspacePermissionV2 = (
   user: User,
@@ -33,13 +34,7 @@ export const hasProjectPermissionV2 = (
   }
 
   // Check project-level permissions.
-  const projectIAMPolicy = project.iamPolicy;
-  const roles = [];
-  for (const binding of projectIAMPolicy.bindings) {
-    if (binding.members.includes(`user:${user.email}`)) {
-      roles.push(binding.role);
-    }
-  }
+  const roles = roleListInProjectV1(project.iamPolicy, user);
   const permissions = roles
     .map((role) => roleStore.getRoleByName(role))
     .flatMap((role) => (role ? role.permissions : []));

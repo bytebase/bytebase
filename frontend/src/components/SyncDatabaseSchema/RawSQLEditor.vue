@@ -93,7 +93,12 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { engineNameV1, extractSheetUID, getStatementSize } from "@/utils";
+import {
+  engineNameV1,
+  extractSheetUID,
+  getStatementSize,
+  getSheetStatement,
+} from "@/utils";
 import { RawSQLState } from "./types";
 
 const MAX_UPLOAD_FILE_SIZE_MB = 1;
@@ -147,7 +152,9 @@ const isSheetOversized = computed(() => {
   if (!sheet.value) {
     return false;
   }
-  return getStatementSize(sheet.value.content).lt(sheet.value.contentSize);
+  return getStatementSize(getSheetStatement(sheet.value)).lt(
+    sheet.value.contentSize
+  );
 });
 
 onMounted(async () => {
