@@ -40,6 +40,7 @@
             "
             :content="item.activity.comment"
             :issue-list="issueList"
+            :project="issue.projectEntity"
             @change="(val: string) => state.editComment = val"
             @submit="doUpdateComment"
             @cancel="cancelEditComment"
@@ -87,6 +88,7 @@
             mode="editor"
             :content="state.newComment"
             :issue-list="issueList"
+            :project="issue.projectEntity"
             @change="(val: string) => state.newComment = val"
             @submit="doCreateComment(state.newComment)"
           />
