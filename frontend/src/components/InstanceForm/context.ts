@@ -10,7 +10,7 @@ import {
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import {
   BasicInfo,
   DataSourceEditState,
@@ -50,10 +50,7 @@ export const provideInstanceFormContext = (
 
     return (
       instance.value?.state === State.ACTIVE &&
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        me.value.userRole
-      )
+      hasWorkspacePermissionV2(me.value, "bb.instances.update")
     );
   });
   const basicInfo = ref(extractBasicInfo(instance.value));

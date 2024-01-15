@@ -112,7 +112,7 @@ import {
   PresetRoleType,
   filterUserListByKeyword,
 } from "../types";
-import { hasWorkspacePermissionV1 } from "../utils";
+import { hasWorkspacePermissionV2 } from "../utils";
 
 type LocalState = {
   activeUserFilterText: string;
@@ -189,10 +189,7 @@ const inactiveUserList = computed(() => {
 const showUpgradeInfo = computed(() => {
   return (
     !hasRBACFeature.value &&
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-general",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
   );
 });
 

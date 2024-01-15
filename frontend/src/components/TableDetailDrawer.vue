@@ -213,14 +213,14 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
-import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
@@ -263,13 +263,11 @@ const instanceEngine = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (
-    database.value.project === EMPTY_PROJECT_NAME ||
-    database.value.project === DEFAULT_PROJECT_V1_NAME
-  ) {
-    return hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-database",
-      currentUserV1.value.userRole
+  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
+    return hasProjectPermissionV2(
+      defaultProject,
+      currentUserV1.value,
+      "bb.databases.query"
     );
   }
   return isDatabaseV1Queryable(database.value, currentUserV1.value);

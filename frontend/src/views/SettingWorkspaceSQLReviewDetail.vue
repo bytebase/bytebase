@@ -164,7 +164,7 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { idFromSlug, hasWorkspacePermissionV1 } from "@/utils";
+import { idFromSlug, hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps({
   sqlReviewPolicySlug: {
@@ -203,10 +203,7 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sql-review-policy",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const reviewPolicy = computed((): SQLReviewPolicy => {

@@ -39,7 +39,7 @@ import {
 } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   composedSlowQueryPolicyList: ComposedSlowQueryPolicy[];
@@ -67,9 +67,6 @@ const COLUMNS = computed((): BBGridColumn[] => {
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-slow-query",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 </script>

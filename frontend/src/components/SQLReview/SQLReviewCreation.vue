@@ -60,7 +60,7 @@ import {
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewConfig from "./SQLReviewConfig.vue";
 import SQLReviewInfo from "./SQLReviewInfo.vue";
 import { rulesToTemplate } from "./components";
@@ -200,12 +200,7 @@ const changeStepIndex = (nextIndex: number) => {
 };
 
 const tryFinishSetup = () => {
-  if (
-    !hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-sql-review-policy",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (!hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

@@ -151,7 +151,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { databaseV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import { databaseV1Slug, hasWorkspacePermissionV2 } from "@/utils";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import SensitiveColumnDrawer from "./SensitiveColumnDrawer.vue";
@@ -201,10 +201,7 @@ const policyList = usePolicyListByResourceTypeAndPolicyType({
 
 const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const updateList = async () => {

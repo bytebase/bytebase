@@ -37,7 +37,7 @@ import { reactive, PropType, computed } from "vue";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import { FeatureType } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -78,9 +78,6 @@ const instanceMissingLicense = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
 });
 </script>

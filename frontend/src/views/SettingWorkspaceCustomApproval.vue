@@ -38,7 +38,7 @@ import {
   useCurrentUserV1,
   useRiskStore,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   ready: boolean;
@@ -54,10 +54,7 @@ const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
 const currentUserV1 = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-custom-approval",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 
 provideCustomApprovalContext({

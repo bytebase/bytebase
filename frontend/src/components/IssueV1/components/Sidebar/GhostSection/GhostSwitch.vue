@@ -43,7 +43,7 @@ import {
   MIN_GHOST_SUPPORT_MYSQL_VERSION,
   engineNameV1,
   flattenTaskV1List,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import { allowGhostForTask, useIssueGhostContext } from "./common";
 
@@ -64,10 +64,7 @@ const checked = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    me.value.userRole
-  );
+  return hasWorkspacePermissionV2(me.value, "bb.settings.set");
 });
 
 const allowGhostForEveryDatabase = computed(() => {

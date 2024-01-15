@@ -18,7 +18,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentNameListFromExpr,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
   isDeveloperOfProjectV1,
   isMemberOfProjectV1,
   isOwnerOfProjectV1,
@@ -160,9 +160,9 @@ export const useCurrentUserIamPolicy = () => {
   });
 
   // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
-  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-access-control",
-    currentUser.value.userRole
+  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.projects.list"
   );
 
   const isMemberOfProject = (projectName: string) => {

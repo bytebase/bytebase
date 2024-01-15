@@ -22,11 +22,7 @@ import {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
 } from "@/types/proto/v1/database_service";
-import {
-  extractDatabaseResourceName,
-  hasWorkspacePermissionV1,
-  isMemberOfProjectV1,
-} from "@/utils";
+import { extractDatabaseResourceName, isMemberOfProjectV1 } from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
@@ -83,12 +79,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     });
   };
   const databaseListByUser = (user: User) => {
-    const canManageDatabase = hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-database",
-      user.userRole
-    );
     return databaseList.value.filter((db) => {
-      if (canManageDatabase) return true;
       if (isMemberOfProjectV1(db.projectEntity.iamPolicy, user)) return true;
       return false;
     });

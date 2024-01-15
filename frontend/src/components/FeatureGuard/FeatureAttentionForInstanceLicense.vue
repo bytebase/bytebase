@@ -33,7 +33,7 @@ import {
 } from "@/store";
 import { FeatureType, instanceLimitFeature } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -59,10 +59,7 @@ const onClick = () => {
 };
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
 });
 
 const existInstanceWithoutLicense = computed(() => {
