@@ -198,6 +198,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
 			}
 			userMessage.Role = userRole
+			userMessage.Roles = append(userMessage.Roles, userRole)
 			for _, r := range request.User.GetRoles() {
 				role, err := common.GetRoleID(r)
 				if err != nil {
