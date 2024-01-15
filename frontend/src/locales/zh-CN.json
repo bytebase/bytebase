@@ -1101,7 +1101,7 @@
     "approval-flow": {
       "self": "审批流",
       "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。",
-      "pre-issue-created-tips": "在工单创建之后，Bytebase 会根据工单的类型和风险等级自动匹配对应的自定义审批流。"
+      "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批流。"
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
