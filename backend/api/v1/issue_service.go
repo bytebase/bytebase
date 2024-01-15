@@ -138,61 +138,19 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
-func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesRequest) (*v1pb.ListIssuesResponse, error) {
-	if request.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
-	}
-
-	requestProjectID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	projectIDs, err := func() (*[]string, error) {
-		if s.profile.DevelopmentIAM {
-			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
-		}
-		return getProjectIDsFilter(ctx, s.store, requestProjectID)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
-	}
-
-	limit := int(request.PageSize)
-	offset := 0
-	if request.PageToken != "" {
-		var pageToken storepb.PageToken
-		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
-		}
-		offset = int(pageToken.Offset)
-	}
-	if limit == 0 {
-		limit = 10
-	}
-	if limit > 1000 {
-		limit = 1000
-	}
-	limitPlusOne := limit + 1
-
+func (s *IssueService) getIssueFind(ctx context.Context, projectIDs *[]string, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
 		ProjectIDs: projectIDs,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		Limit:      limit,
+		Offset:     offset,
 	}
-	if requestProjectID != "-" {
-		issueFind.ProjectID = &requestProjectID
+	if projectID != "" {
+		issueFind.ProjectID = &projectID
 	}
-	if request.Query != "" {
-		issueFind.Query = &request.Query
+	if query != "" {
+		issueFind.Query = &query
 	}
-
-	filters, err := parseFilter(request.Filter)
+	filters, err := parseFilter(filter)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -305,6 +263,56 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 			}
 			issueFind.DatabaseUID = &database.UID
 		}
+	}
+
+	return issueFind, nil
+}
+
+func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesRequest) (*v1pb.ListIssuesResponse, error) {
+	if request.PageSize < 0 {
+		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+	}
+
+	requestProjectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	projectIDs, err := func() (*[]string, error) {
+		if s.profile.DevelopmentIAM {
+			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
+		}
+		return getProjectIDsFilter(ctx, s.store, requestProjectID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
+	}
+
+	limit := int(request.PageSize)
+	offset := 0
+	if request.PageToken != "" {
+		var pageToken storepb.PageToken
+		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		}
+		offset = int(pageToken.Offset)
+	}
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 1000 {
+		limit = 1000
+	}
+	limitPlusOne := limit + 1
+
+	issueFind, err := s.getIssueFind(ctx, projectIDs, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	if err != nil {
+		return nil, err
 	}
 
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
