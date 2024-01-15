@@ -1,10 +1,8 @@
-import { pull } from "lodash-es";
 import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import { t } from "@/plugins/i18n";
-import { hasFeature, useDatabaseV1Store } from "@/store";
-import { QuickActionType } from "@/types";
+import { useDatabaseV1Store } from "@/store";
 import { idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
@@ -17,25 +15,8 @@ const databaseRoutes: RouteRecordRaw[] = [
     name: DATABASE_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.databases"),
-      quickActionListByRole: () => {
-        const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
-          "quickaction.bb.database.create",
-        ];
-        const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
-          "quickaction.bb.database.create",
-          "quickaction.bb.issue.grant.request.querier",
-          "quickaction.bb.issue.grant.request.exporter",
-        ];
-
-        if (hasFeature("bb.feature.dba-workflow")) {
-          pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
-        }
-
-        return new Map([
-          ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
-        ]);
+      getQuickActionList: () => {
+        return ["quickaction.bb.database.create"];
       },
     },
     components: {
