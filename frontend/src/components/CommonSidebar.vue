@@ -75,7 +75,7 @@
 
 <script setup lang="ts">
 import { ChevronDown, ChevronRight } from "lucide-vue-next";
-import { computed, VNode, reactive, onMounted } from "vue";
+import { computed, VNode, reactive, onMounted, watch } from "vue";
 
 export interface SidebarItem {
   title?: string;
@@ -132,14 +132,18 @@ const filteredSidebarList = computed(() => {
     });
 });
 
-onMounted(() => {
-  state.expandedSidebar.clear();
-  for (let i = 0; i < filteredSidebarList.value.length; i++) {
-    if (filteredSidebarList.value[i].children.length > 0) {
-      state.expandedSidebar.add(`${i}`);
+watch(
+  () => filteredSidebarList.value,
+  () => {
+    state.expandedSidebar.clear();
+    for (let i = 0; i < filteredSidebarList.value.length; i++) {
+      if (filteredSidebarList.value[i].children.length > 0) {
+        state.expandedSidebar.add(`${i}`);
+      }
     }
-  }
-});
+  },
+  { immediate: true }
+);
 
 const onClick = (sidebar: SidebarItem, key: string, e: MouseEvent) => {
   if (sidebar.path) {
