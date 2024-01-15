@@ -85,14 +85,14 @@ const isDefaultProject = computed((): boolean => {
 
 const currentUser = useCurrentUserV1();
 
-const requiredPermission = computed(() => {
+const requiredPermissions = computed(() => {
   const getPermissionListFunc =
     router.currentRoute.value.meta.requiredProjectPermissionList;
   return getPermissionListFunc ? getPermissionListFunc() : [];
 });
 
 const hasPermission = computed(() => {
-  return requiredPermission.value.every((permission) =>
+  return requiredPermissions.value.every((permission) =>
     hasProjectPermissionV2(project.value, currentUser.value, permission)
   );
 });

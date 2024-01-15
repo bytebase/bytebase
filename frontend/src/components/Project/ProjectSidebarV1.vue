@@ -22,9 +22,9 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
-import {
+import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
   PROJECT_V1_ROUTE_CHANGE_HISTORIES,
@@ -52,7 +52,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_V1_NAME, ProjectPermission } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
@@ -63,7 +63,6 @@ interface ProjectSidebarItem extends SidebarItem {
   type: "div";
   path?: string;
   hide?: boolean;
-  permissions?: ProjectPermission[];
   children?: ProjectSidebarItem[];
 }
 
@@ -98,20 +97,33 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
+const flattenProjectV1Routes = computed(() => {
+  return projectV1Routes.reduce((list, projectV1Route) => {
+    if (!projectV1Route.children || projectV1Route.children.length === 0) {
+      list.push(projectV1Route);
+    } else {
+      list.push(...projectV1Route.children);
+    }
+    return list;
+  }, [] as RouteRecordRaw[]);
+});
+
 const filterprojectSidebarByPermissions = (
   sidebarList: ProjectSidebarItem[]
 ): ProjectSidebarItem[] => {
   return sidebarList
     .filter((item) => {
-      return (
-        hasProjectPermissionV2(
-          project.value,
-          currentUser.value,
-          "bb.projects.get"
-        ) &&
-        (item.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(project.value, currentUser.value, permission)
-        )
+      const routeConfig = flattenProjectV1Routes.value.find(
+        (projectV1Route) => projectV1Route.name === item.path
+      );
+      const getPermissionListFunc =
+        routeConfig?.meta?.requiredProjectPermissionList;
+      const requiredPermissions = getPermissionListFunc
+        ? getPermissionListFunc()
+        : [];
+
+      return requiredPermissions.every((permission) =>
+        hasProjectPermissionV2(project.value, currentUser.value, permission)
       );
     })
     .map((item) => ({
@@ -131,7 +143,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           title: t("common.databases"),
           path: PROJECT_V1_ROUTE_DATABASES,
           type: "div",
-          permissions: ["bb.databases.list"],
         },
         {
           title: t("common.groups"),
@@ -150,13 +161,11 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           path: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
           type: "div",
           hide: isTenantProject.value,
-          permissions: ["bb.changeHistories.list"],
         },
         {
           title: startCase(t("slow-query.slow-queries")),
           path: PROJECT_V1_ROUTE_SLOW_QUERIES,
           type: "div",
-          permissions: ["bb.slowQueries.list"],
         },
         {
           title: t("common.anomalies"),
@@ -171,7 +180,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(CircleDot),
       type: "div",
       hide: isDefaultProject.value,
-      permissions: ["bb.issues.list"],
     },
     {
       title: t("common.branches"),
@@ -179,7 +187,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(GitBranch),
       type: "div",
       hide: isDefaultProject.value,
-      permissions: ["bb.branches.list"],
     },
     {
       title: t("changelist.changelists"),
@@ -187,7 +194,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(PencilRuler),
       type: "div",
       hide: isDefaultProject.value,
-      permissions: ["bb.changelists.list"],
     },
     {
       title: t("database.sync-schema.title"),
@@ -195,7 +201,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(RefreshCcw),
       type: "div",
       hide: isDefaultProject.value,
-      permissions: ["bb.databases.sync"],
     },
     {
       title: t("settings.sidebar.integration"),
@@ -225,7 +230,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           title: t("common.members"),
           path: PROJECT_V1_ROUTE_MEMBERS,
           type: "div",
-          permissions: ["bb.projects.getIamPolicy"],
         },
         {
           title: t("common.activities"),
