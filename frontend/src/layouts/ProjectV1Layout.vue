@@ -44,6 +44,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
+  ProjectPermission,
   DEFAULT_PROJECT_V1_NAME,
   QuickActionType,
   activityName,
@@ -153,10 +154,11 @@ onMounted(async () => {
 });
 
 // Only show the following actions if users don't have required permissions.
-const quickActionListWithoutPermission: QuickActionType[] = [
-  "quickaction.bb.issue.grant.request.querier",
-  "quickaction.bb.issue.grant.request.exporter",
-];
+const quickActionWithoutPermission: Map<QuickActionType, ProjectPermission> =
+  new Map([
+    ["quickaction.bb.issue.grant.request.querier", "bb.databases.query"],
+    ["quickaction.bb.issue.grant.request.exporter", "bb.databases.export"],
+  ]);
 
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
   return list.filter((action) => {
@@ -167,8 +169,15 @@ const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
       (permission) =>
         hasProjectPermissionV2(project.value, currentUserV1.value, permission)
     );
-    if (quickActionListWithoutPermission.includes(action)) {
-      return !hasPermission;
+    if (quickActionWithoutPermission.has(action)) {
+      if (
+        hasProjectPermissionV2(
+          project.value,
+          currentUserV1.value,
+          quickActionWithoutPermission.get(action)!
+        )
+      )
+        return false;
     }
     return hasPermission;
   });

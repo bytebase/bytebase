@@ -57,6 +57,6 @@ export const QuickActionProjectPermissionMap: Map<
   ["quickaction.bb.database.data.update", ["bb.issues.create"]],
   ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
   ["quickaction.bb.group.table-group.create", ["bb.projects.update"]],
-  ["quickaction.bb.issue.grant.request.querier", ["bb.databases.query"]],
-  ["quickaction.bb.issue.grant.request.exporter", ["bb.databases.export"]],
+  ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
+  ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
 ]);
