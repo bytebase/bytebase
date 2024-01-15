@@ -73,9 +73,13 @@
             {{ $t("settings.profile.role") }}
           </dt>
           <dd class="mt-1 text-sm text-main">
-            <router-link :to="'/setting/member'" class="normal-link capitalize">
-              {{ roleNameV1(user.userRole) }}
-            </router-link>
+            <div
+              class="flex flex-row justify-start items-start flex-wrap gap-2"
+            >
+              <NTag v-for="role in user.roles" :key="role">
+                {{ displayRoleTitle(role) }}
+              </NTag>
+            </div>
             <router-link
               v-if="!hasRBACFeature"
               :to="'/setting/subscription'"
@@ -261,7 +265,7 @@ import {
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { unknownUser } from "../types";
-import { hasWorkspacePermissionV1, roleNameV1 } from "../utils";
+import { displayRoleTitle, hasWorkspacePermissionV2 } from "../utils";
 
 interface LocalState {
   editing: boolean;
@@ -336,10 +340,7 @@ const user = computed(() => {
 const showMFAConfig = computed(() => {
   return (
     user.value.name === currentUserV1.value.name ||
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-member",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
   );
 });
 
@@ -355,10 +356,7 @@ const passwordMismatch = computed(() => {
 const allowEdit = computed(() => {
   return (
     currentUserV1.value.name === user.value.name ||
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-member",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
   );
 });
 
@@ -438,10 +436,7 @@ const enable2FA = () => {
 const disable2FA = () => {
   if (
     actuatorStore.serverInfo?.require2fa &&
-    !hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-member",
-      currentUserV1.value.userRole
-    )
+    !hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
   ) {
     pushNotification({
       module: "bytebase",

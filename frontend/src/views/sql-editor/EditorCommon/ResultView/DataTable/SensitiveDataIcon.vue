@@ -20,16 +20,13 @@ import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const user = useCurrentUserV1();
 const router = useRouter();
 
 const clickable = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    user.value.userRole
-  );
+  return hasWorkspacePermissionV2(user.value, "bb.policies.update");
 });
 
 const handleClick = () => {

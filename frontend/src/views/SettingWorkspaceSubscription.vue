@@ -160,7 +160,7 @@ import {
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
@@ -260,9 +260,6 @@ const inquireEnterprise = () => {
 };
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 </script>

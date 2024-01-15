@@ -23,7 +23,7 @@ import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   user: User;
@@ -36,10 +36,7 @@ defineEmits<{
 const currentUserV1 = useCurrentUserV1();
 
 const allowEdit = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-member",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const allowUpdateUser = (user: User) => {

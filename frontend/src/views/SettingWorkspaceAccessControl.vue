@@ -108,7 +108,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface EnvironmentPolicy {
   environment: Environment;
@@ -143,10 +143,7 @@ const state = reactive<LocalState>({
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-access-control",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const COLUMN_LIST = computed((): BBTableColumn[] => [

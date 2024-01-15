@@ -31,7 +31,7 @@ import {
   ENTERPRISE_INQUIRE_LINK,
 } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -69,9 +69,9 @@ const state = reactive<LocalState>({
   showQRCodeModal: false,
 });
 
-const hasPermission = hasWorkspacePermissionV1(
-  "bb.permission.workspace.manage-subscription",
-  useCurrentUserV1().value.userRole
+const hasPermission = hasWorkspacePermissionV2(
+  useCurrentUserV1().value,
+  "bb.settings.set"
 );
 
 const hasFeature = computed(() => {

@@ -83,6 +83,7 @@ func permissionExist(p Permission) bool {
 		PermissionInstancesSync,
 		PermissionInstancesUndelete,
 		PermissionInstancesUpdate,
+		PermissionInstancesAdminExecute,
 		PermissionIssueCommentsCreate,
 		PermissionIssueCommentsUpdate,
 		PermissionIssuesCreate,

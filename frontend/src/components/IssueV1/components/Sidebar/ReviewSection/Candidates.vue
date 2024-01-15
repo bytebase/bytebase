@@ -14,10 +14,7 @@
         class="flex items-center py-1 gap-x-1"
         :class="[user.name === currentUser.name && 'font-bold']"
       >
-        <PrincipalAvatar
-          :principal="convertUserToPrincipal(user)"
-          size="SMALL"
-        />
+        <PrincipalAvatar :user="user" size="SMALL" />
         <span class="whitespace-nowrap">{{ user.title }}</span>
         <span
           v-if="currentUser.name === user.name"
@@ -33,7 +30,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import PrincipalAvatar from "@/components/PrincipalAvatar.vue";
-import { convertUserToPrincipal, useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { WrappedReviewStep } from "@/types";
 
 const props = defineProps<{

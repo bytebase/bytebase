@@ -140,8 +140,12 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { ComposedInstance } from "@/types";
-import { instanceV1Slug, instanceV1Name, hostPortOfInstanceV1 } from "@/utils";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import {
+  instanceV1Slug,
+  instanceV1Name,
+  hostPortOfInstanceV1,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -200,10 +204,7 @@ const columnList = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
 });
 
 watchEffect(() => {

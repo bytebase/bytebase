@@ -143,8 +143,7 @@ import { Binding } from "@/types/proto/v1/iam_policy";
 import {
   displayRoleTitle,
   extractUserUID,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
 } from "@/utils";
 import {
   convertFromCELString,
@@ -194,19 +193,10 @@ const panelTitle = computed(() => {
 
 const allowAdmin = computed(() => {
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    hasPermissionInProjectV1(
-      iamPolicy.value,
+    hasProjectPermissionV2(
+      props.project,
       currentUserV1.value,
-      "bb.permission.project.manage-member"
+      "bb.projects.setIamPolicy"
     )
   ) {
     return true;
