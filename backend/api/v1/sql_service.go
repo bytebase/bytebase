@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -29,7 +30,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -63,6 +66,8 @@ type SQLService struct {
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
 	licenseService  enterprise.LicenseService
+	profile         *config.Profile
+	iamManager      *iam.Manager
 }
 
 // NewSQLService creates a SQLService.
@@ -72,6 +77,8 @@ func NewSQLService(
 	dbFactory *dbfactory.DBFactory,
 	activityManager *activity.Manager,
 	licenseService enterprise.LicenseService,
+	profile *config.Profile,
+	iamManager *iam.Manager,
 ) *SQLService {
 	return &SQLService{
 		store:           store,
@@ -79,6 +86,8 @@ func NewSQLService(
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
 		licenseService:  licenseService,
+		profile:         profile,
+		iamManager:      iamManager,
 	}
 }
 
@@ -1139,7 +1148,29 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		dataShare = maybeDatabase.DataShare
 	}
 
-	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+	if s.profile.DevelopmentIAM {
+		if isAdmin {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
+			if err != nil {
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
+			}
+			if !ok {
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
+			}
+
+			// Check if the environment is open for query privileges.
+			result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+			if err != nil {
+				return nil, nil, nil, advisor.Success, nil, nil, err
+			}
+			if !result {
+				// Check if the user has permission to execute the query.
+				if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
+					return nil, nil, nil, advisor.Success, nil, nil, err
+				}
+			}
+		}
+	} else if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the caller is admin for exporting with admin mode.
 		if isAdmin && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
 			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
@@ -2281,8 +2312,10 @@ func (s *SQLService) checkQueryRights(
 	isExport bool,
 ) error {
 	// Owner and DBA have all rights.
-	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
-		return nil
+	if !s.profile.DevelopmentIAM {
+		if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
+			return nil
+		}
 	}
 
 	// TODO(d): use a Redshift extraction for shared database.
@@ -2362,7 +2395,7 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+		ok, err := s.hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -2374,7 +2407,52 @@ func (s *SQLService) checkQueryRights(
 	return nil
 }
 
-func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+	if s.profile.DevelopmentIAM {
+		return func() (bool, error) {
+			wantPermission := iam.PermissionDatabasesQuery
+			if isExport {
+				wantPermission = iam.PermissionDatabasesExport
+			}
+
+			for _, binding := range projectPolicy.Bindings {
+				role := common.FormatRole(binding.Role.String())
+				permissions := s.iamManager.GetPermissions(role)
+				if slices.Index(permissions, wantPermission) == -1 {
+					continue
+				}
+				hasUser := false
+				for _, member := range binding.Members {
+					if member.ID == principalID || member.Email == api.AllUsers {
+						hasUser = true
+						break
+					}
+				}
+				if !hasUser {
+					continue
+				}
+
+				switch binding.Role {
+				// We need to evaluate CEL expressions for ProjectQuerier & ProjectExporter.
+				case api.ProjectQuerier, api.ProjectExporter:
+					ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
+					if err != nil {
+						slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
+						continue
+					}
+					if ok {
+						return true, nil
+					}
+
+				// TODO(p0ny): eval CEL.
+				default:
+					return true, nil
+				}
+			}
+			return false, nil
+		}()
+	}
+
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
@@ -2529,26 +2607,14 @@ func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance 
 	return project, databaseMessage, nil
 }
 
-func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
-	principalPtr := ctx.Value(common.PrincipalIDContextKey)
-	if principalPtr == nil {
-		return nil, nil
-	}
-	principalID, ok := principalPtr.(int)
+func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
+		return nil, status.Errorf(codes.PermissionDenied, "the user has been deactivated.")
 	}
-
 	return user, nil
 }
 
