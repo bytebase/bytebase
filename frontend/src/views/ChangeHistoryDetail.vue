@@ -28,7 +28,7 @@
               >
               <router-link
                 :to="{
-                  name: PROJECT_V1_ISSUE_DETAIL,
+                  name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
                   params: {
                     projectId: extractProjectResourceName(changeHistory.issue),
                     issueSlug: extractIssueUID(changeHistory.issue),
@@ -333,7 +333,7 @@ import { computed, reactive, watch, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useChangeHistoryStore,

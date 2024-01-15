@@ -94,7 +94,7 @@ import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -306,7 +306,7 @@ const generateMultiDb = async (
   };
   const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
   router.push({
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),
       issueSlug: "create",

@@ -10,7 +10,7 @@
         <router-link
           v-if="changeHistory"
           :to="{
-            name: PROJECT_V1_ISSUE_DETAIL,
+            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
             params: {
               projectId: extractProjectResourceName(changeHistory.issue),
               issueSlug: extractIssueUID(changeHistory.issue),
@@ -46,7 +46,7 @@
 import { asyncComputed } from "@vueuse/core";
 import { File, GitBranch, History } from "lucide-vue-next";
 import { computed } from "vue";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useBranchStore } from "@/store";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
 import {

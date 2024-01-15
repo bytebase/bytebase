@@ -65,7 +65,7 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
@@ -243,7 +243,7 @@ const tryFinishSetup = async () => {
   );
 
   const routeInfo = {
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),
       issueSlug: "create",

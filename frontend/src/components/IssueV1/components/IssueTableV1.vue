@@ -153,7 +153,7 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
@@ -337,7 +337,7 @@ const clickIssue = (
     uid: issue.uid,
   });
   const route = router.resolve({
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(issue.project),
       issueSlug: issueSlug(issue.title, issue.uid),

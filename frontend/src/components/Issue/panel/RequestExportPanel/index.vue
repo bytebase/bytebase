@@ -150,7 +150,7 @@ import {
   Drawer,
 } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -381,7 +381,7 @@ const doCreateIssue = async () => {
 
   if (props.redirectToIssuePage) {
     const route = router.resolve({
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.name),
         issueSlug: issueSlug(createdIssue.title, createdIssue.uid),

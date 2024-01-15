@@ -314,7 +314,7 @@ import {
 import { computed, reactive, PropType, ref, watch } from "vue";
 import { watchEffect } from "vue";
 import { useRouter } from "vue-router";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   hasFeature,
   useCurrentUserV1,
@@ -641,7 +641,7 @@ const generateMultiDb = async () => {
     databaseList: flattenSelectedDatabaseUidList.value.join(","),
   };
   router.push({
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(project.name),
       issueSlug: "create",
@@ -791,7 +791,7 @@ const generateTenant = async () => {
   emit("dismiss");
 
   router.push({
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(selectedProject.value.name),
       issueSlug: "create",

@@ -70,7 +70,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -124,7 +124,7 @@ const gotoCreateIssue = () => {
   const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
 
   router.push({
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(database.project),
       issueSlug: "create",

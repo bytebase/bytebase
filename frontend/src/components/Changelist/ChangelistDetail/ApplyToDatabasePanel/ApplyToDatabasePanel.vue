@@ -87,7 +87,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ProjectStandardView from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
 import { ErrorTipsButton, SearchBox } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
   useEnvironmentV1List,
@@ -220,7 +220,7 @@ const handleClickNext = async () => {
     };
 
     router.push({
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.value.name),
         issueSlug: "create",

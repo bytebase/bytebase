@@ -147,7 +147,7 @@ import { useRouter } from "vue-router";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useActuatorV1Store,
   useDatabaseV1Store,
@@ -248,7 +248,7 @@ useEmitteryEventListener(
         sql: exampleSQL.join(" "),
       };
       const route = router.resolve({
-        name: PROJECT_V1_ISSUE_DETAIL,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(database.project),
           issueSlug: "create",

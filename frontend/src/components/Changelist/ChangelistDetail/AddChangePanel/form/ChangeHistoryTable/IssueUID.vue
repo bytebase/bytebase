@@ -2,7 +2,7 @@
   <router-link
     v-if="project && issueUID"
     :to="{
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: project,
         issueSlug: issueUID,
@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
 import { extractIssueUID, extractProjectResourceName } from "@/utils";
 

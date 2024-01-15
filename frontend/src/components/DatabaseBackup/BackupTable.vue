@@ -156,7 +156,7 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
@@ -370,7 +370,7 @@ const doRestoreInPlaceV1 = async () => {
     );
 
     router.push({
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(database.project),
         issueSlug: issueSlug(createdIssue.title, createdIssue.uid),

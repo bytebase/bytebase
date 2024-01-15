@@ -177,7 +177,7 @@ import {
   InstanceSelect,
   InstanceV1EngineIcon,
 } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   hasFeature,
@@ -446,7 +446,7 @@ const createV1 = async () => {
       planCreate
     );
     router.push({
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(project.value.name),
         issueSlug: issueSlug(createdIssue.title, createdIssue.uid),

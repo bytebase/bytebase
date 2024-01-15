@@ -44,7 +44,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
@@ -122,7 +122,7 @@ const doCreateIssue = async () => {
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
       router.push({
-        name: PROJECT_V1_ISSUE_DETAIL,
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(composedIssue.project),
           issueSlug: issueSlug(composedIssue.title, composedIssue.uid),

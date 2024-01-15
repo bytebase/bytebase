@@ -21,7 +21,7 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
 import { stageForTask } from "@/components/IssueV1/logic";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { ComposedIssue } from "@/types";
 import { Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -51,7 +51,7 @@ const link = computed(() => {
   }
 
   return {
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(issue.project),
       issueSlug: issue.uid,

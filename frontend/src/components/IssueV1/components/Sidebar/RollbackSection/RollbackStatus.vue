@@ -27,7 +27,7 @@
         -->
           <router-link
             :to="{
-              name: PROJECT_V1_ISSUE_DETAIL,
+              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
               params: {
                 projectId: extractProjectResourceName(issue.project),
                 issueSlug: taskRollbackBy.rollbackByIssueId,
@@ -80,7 +80,7 @@ import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useActivityV1Store, useSheetV1Store } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
@@ -176,7 +176,7 @@ const tryRollbackTask = async () => {
     ].join("\n");
 
     router.push({
-      name: PROJECT_V1_ISSUE_DETAIL,
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
         projectId: extractProjectResourceName(issue.value.project),
         issueSlug: "create",

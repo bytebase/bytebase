@@ -80,7 +80,7 @@
           <!--Short circuit the click event to prevent propagating to row click-->
           <router-link
             :to="{
-              name: PROJECT_V1_ISSUE_DETAIL,
+              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
               params: {
                 projectId: extractProjectResourceName(history.issue),
                 issueSlug: extractIssueUID(history.issue),
@@ -130,7 +130,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import TextOverflowPopover from "@/components/misc/TextOverflowPopover.vue";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { AffectedTable } from "@/types/changeHistory";

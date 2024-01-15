@@ -132,7 +132,7 @@ import SchemaEditorLite, {
 } from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
-import { PROJECT_V1_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -360,7 +360,7 @@ const handlePreviewIssue = async () => {
     name: generateIssueName(db.databaseName),
   };
   const routeInfo = {
-    name: PROJECT_V1_ISSUE_DETAIL,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       project: extractProjectResourceName(props.project.name),
       issueSlug: "create",
