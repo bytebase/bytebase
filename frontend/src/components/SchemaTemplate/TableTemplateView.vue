@@ -44,7 +44,6 @@
 import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import NoData from "@/components/misc/NoData.vue";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_TableTemplate } from "@/types/proto/v1/setting_service";
 import TableTemplateTable from "./TableTemplateTable.vue";

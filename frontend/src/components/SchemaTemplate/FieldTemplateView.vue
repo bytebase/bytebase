@@ -46,7 +46,6 @@ import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { Engine } from "@/types/proto/v1/common";
 import { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
-import NoData from "../misc/NoData.vue";
 import FieldTemplateTable from "./FieldTemplateTable.vue";
 
 interface LocalState {
