@@ -283,7 +283,7 @@ func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*stor
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if isOwnerOrDBA(user.Role) {
+	if !s.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
 		return databases, nil
 	}
 	if s.profile.DevelopmentIAM {
@@ -1901,20 +1901,20 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		canAccessDBs = databases
 	case api.WorkspaceMember:
 		for _, database := range databases {
-			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
-			}
-			if isProjectOwnerOrDeveloper(user.ID, policy) {
-				canAccessDBs = append(canAccessDBs, database)
-			}
-
 			if s.profile.DevelopmentIAM {
 				ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
 				}
 				if ok {
+					canAccessDBs = append(canAccessDBs, database)
+				}
+			} else {
+				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
+				}
+				if isProjectOwnerOrDeveloper(user.ID, policy) {
 					canAccessDBs = append(canAccessDBs, database)
 				}
 			}
