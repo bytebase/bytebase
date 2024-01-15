@@ -23,12 +23,7 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import {
-  hasWorkspacePermissionV2,
-  idFromSlug,
-  sheetNameFromSlug,
-  uidFromSlug,
-} from "@/utils";
+import { idFromSlug, sheetNameFromSlug, uidFromSlug } from "@/utils";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -42,7 +37,6 @@ import dashboardRoutes from "./dashboard";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "./dashboard/workspace";
 import {
-  SETTING_ROUTE_WORKSPACE,
   SETTING_ROUTE,
   SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
   SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
@@ -194,30 +188,6 @@ router.beforeEach((to, from, next) => {
       next({
         path: `/sql-editor/sheet/project-sample-101`,
         replace: true,
-      });
-      return;
-    }
-  }
-
-  if (to.name?.toString().startsWith(SETTING_ROUTE_WORKSPACE)) {
-    const hasPermission = hasWorkspacePermissionV2(
-      currentUserV1.value,
-      "bb.settings.list"
-    );
-    if (!hasPermission) {
-      next({
-        name: "error.403",
-        replace: false,
-      });
-      return;
-    }
-  }
-
-  if (to.name === "workspace.instance") {
-    if (!hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
-      next({
-        name: "error.403",
-        replace: false,
       });
       return;
     }
