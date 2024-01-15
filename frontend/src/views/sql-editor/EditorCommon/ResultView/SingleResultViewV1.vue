@@ -176,7 +176,7 @@ import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   createExplainToken,
   extractSQLRowValue,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
 import { customTheme } from "@/utils/customTheme";
@@ -255,12 +255,7 @@ const allowToExportData = computed(() => {
     return true;
   }
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-access-control",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
     return true;
   }
 

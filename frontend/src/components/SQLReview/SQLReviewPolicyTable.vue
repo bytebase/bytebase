@@ -148,7 +148,7 @@ import {
 } from "@/store";
 import { SQLReviewPolicy } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { hasWorkspacePermissionV1, sqlReviewPolicySlug } from "@/utils";
+import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
@@ -190,10 +190,7 @@ const columnList = computed((): BBGridColumn[] => {
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sql-review-policy",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const environmentList = useEnvironmentV1List();

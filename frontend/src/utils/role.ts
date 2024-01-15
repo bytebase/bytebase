@@ -1,22 +1,7 @@
 import { kebabCase } from "lodash-es";
-import { computed, unref } from "vue";
 import { t } from "@/plugins/i18n";
-import {
-  SETTING_ROUTE_WORKSPACE_MEMBER,
-  SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-  SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-  SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-  SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-  SETTING_ROUTE_WORKSPACE_GITOPS,
-  SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
-  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SSO,
-  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
-  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
-  SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
-} from "@/router/dashboard/workspaceSetting";
-import { hasFeature, useCurrentUserV1, useRoleStore } from "@/store";
-import { MaybeRef, RoleType, PresetRoleType } from "@/types";
+import { hasFeature, useRoleStore } from "@/store";
+import { RoleType, PresetRoleType } from "@/types";
 import { UserRole } from "@/types/proto/v1/auth_service";
 
 export type WorkspacePermissionType =
@@ -79,34 +64,6 @@ export const WORKSPACE_PERMISSION_MATRIX: Map<
   ["bb.permission.workspace.manage-database-secrets", [false, true, true]],
   ["bb.permission.workspace.manage-announcement", [false, true, true]],
 ]);
-
-// Returns true if RBAC is not enabled or the particular role has the particular permission.
-export function hasWorkspacePermissionV1(
-  permission: WorkspacePermissionType,
-  role: UserRole
-): boolean {
-  if (!hasFeature("bb.feature.rbac")) {
-    return true;
-  }
-  switch (role) {
-    case UserRole.DEVELOPER:
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![0];
-    case UserRole.DBA:
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![1];
-    case UserRole.OWNER:
-      return WORKSPACE_PERMISSION_MATRIX.get(permission)![2];
-  }
-  return false;
-}
-
-export const useWorkspacePermissionV1 = (
-  permission: MaybeRef<WorkspacePermissionType>
-) => {
-  const user = useCurrentUserV1();
-  return computed(() => {
-    return hasWorkspacePermissionV1(unref(permission), user.value.userRole);
-  });
-};
 
 export type ProjectPermissionType =
   | "bb.permission.project.manage-general"
@@ -225,57 +182,4 @@ export const displayRoleDescription = (role: string): string => {
   const item = useRoleStore().roleList.find((r) => r.name === role);
   // Fallback to extracted resource name otherwise
   return item?.description || extractRoleResourceName(role);
-};
-
-export const hasSettingPagePermission = (
-  routeName: string,
-  role: UserRole
-): boolean => {
-  switch (routeName) {
-    case SETTING_ROUTE_WORKSPACE_MEMBER:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-member",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-sensitive-data",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-access-control",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_SSO:
-    case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
-    case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-sso",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_GITOPS:
-    case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
-    case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-vcs-provider",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_DEBUG_LOG:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.debug-log",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_AUDIT_LOG:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.audit-log",
-        role
-      );
-    case SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY:
-      return hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-mail-delivery",
-        role
-      );
-  }
-  return true;
 };

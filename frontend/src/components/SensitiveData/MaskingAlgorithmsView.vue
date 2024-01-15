@@ -31,7 +31,7 @@ import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { MaskingAlgorithmSetting_Algorithm as Algorithm } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import MaskingAlgorithmsCreateDrawer from "./components/MaskingAlgorithmsCreateDrawer.vue";
 import MaskingAlgorithmsTable from "./components/MaskingAlgorithmsTable.vue";
 
@@ -49,10 +49,7 @@ const state = reactive<LocalState>({
 
 const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

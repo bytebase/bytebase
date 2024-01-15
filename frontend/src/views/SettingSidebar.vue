@@ -21,7 +21,6 @@ import { useRoute, useRouter } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import {
   SETTING_ROUTE_PROFILE,
-  SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_MEMBER,
   SETTING_ROUTE_WORKSPACE_ROLE,
@@ -47,12 +46,16 @@ import {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
 } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
-import { hasSettingPagePermission } from "../utils";
+import { hasWorkspacePermissionV2 } from "../utils";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+
+const hasSettingListPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.list");
+});
 
 const getItemClass = (path: string | undefined) => {
   const list = [];
@@ -65,12 +68,6 @@ const getItemClass = (path: string | undefined) => {
     case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
     case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
       if (path === SETTING_ROUTE_WORKSPACE_SSO) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case SETTING_ROUTE_PROFILE:
-    case SETTING_ROUTE_PROFILE_TWO_FACTOR:
-      if (path === SETTING_ROUTE_WORKSPACE_MEMBER) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -132,10 +129,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.members"),
           path: SETTING_ROUTE_WORKSPACE_MEMBER,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_MEMBER,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
         {
@@ -151,10 +145,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.debug-log"),
           path: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
       ],
@@ -192,28 +183,19 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.sensitive-data"),
           path: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
         {
           title: t("settings.sidebar.access-control"),
           path: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
         {
           title: t("settings.sidebar.audit-log"),
           path: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
       ],
@@ -226,28 +208,19 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.gitops"),
           path: SETTING_ROUTE_WORKSPACE_GITOPS,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_GITOPS,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
         {
           title: t("settings.sidebar.sso"),
           path: SETTING_ROUTE_WORKSPACE_SSO,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_SSO,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
         {
           title: t("settings.sidebar.mail-delivery"),
           path: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
-          hide: !hasSettingPagePermission(
-            SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
-            currentUserV1.value.userRole
-          ),
+          hide: !hasSettingListPermission.value,
           type: "div",
         },
       ],

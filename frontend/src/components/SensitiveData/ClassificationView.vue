@@ -65,7 +65,7 @@ import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const uploader = ref<HTMLInputElement | null>(null);
 
@@ -122,10 +122,7 @@ const upsertSetting = async () => {
 };
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

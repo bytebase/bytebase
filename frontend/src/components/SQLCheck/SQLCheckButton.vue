@@ -64,11 +64,11 @@ import { computed, onUnmounted, ref } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
-import { usePolicyByParentAndType } from "@/store";
+import { useCurrentUserV1, usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
-import { Defer, VueStyle, defer, useWorkspacePermissionV1 } from "@/utils";
+import { Defer, VueStyle, defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
 import { useSQLCheckContext } from "./context";
@@ -87,6 +87,7 @@ const props = withDefaults(
 );
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
 const SKIP_CHECK_THRESHOLD = 512 * 1024;
 const isRunning = ref(false);
@@ -101,9 +102,9 @@ const reviewPolicy = usePolicyByParentAndType(
   }))
 );
 
-const hasManageSQLReviewPolicyPermission = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-sql-review-policy"
-);
+const hasManageSQLReviewPolicyPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+});
 
 const noReviewPolicyTips = computed(() => {
   if (!reviewPolicy.value?.sqlReviewPolicy) {

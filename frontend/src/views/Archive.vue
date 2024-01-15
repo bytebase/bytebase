@@ -52,7 +52,6 @@ import { State } from "@/types/proto/v1/common";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 import {
   filterProjectV1ListByKeyword,
-  hasWorkspacePermissionV1,
   hasWorkspacePermissionV2,
 } from "@/utils";
 
@@ -74,12 +73,7 @@ const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1ListByCurrentUser(true /* showDeleted */);
 
 const prepareList = () => {
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
     instanceStore.fetchInstanceList(true /* showDeleted */);
 
     useEnvironmentV1Store().fetchEnvironments(true);
@@ -107,12 +101,7 @@ const deletedSSOList = computed(() => {
 const tabItemList = computed(() => {
   const list = [{ value: "PROJECT", label: t("common.project") }];
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.undelete")) {
     list.push({ value: "INSTANCE", label: t("common.instance") });
   }
 
@@ -123,9 +112,9 @@ const tabItemList = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-sso",
-      currentUserV1.value.userRole
+    hasWorkspacePermissionV2(
+      currentUserV1.value,
+      "bb.identityProviders.undelete"
     )
   ) {
     list.push({ value: "SSO", label: t("settings.sidebar.sso") });

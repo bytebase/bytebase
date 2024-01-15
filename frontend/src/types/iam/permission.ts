@@ -23,6 +23,7 @@ export type WorkspacePermission =
   | "bb.instanceRoles.list"
   | "bb.instanceRoles.undelete"
   | "bb.instanceRoles.update"
+  | "bb.instances.adminExecute"
   | "bb.instances.create"
   | "bb.instances.delete"
   | "bb.instances.get"

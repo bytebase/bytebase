@@ -104,17 +104,19 @@ import {
   pushNotification,
   usePageMode,
 } from "@/store";
-import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
+import {
+  ComposedDatabase,
+  DEFAULT_PROJECT_V1_NAME,
+  ProjectPermission,
+} from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
 import {
-  hasWorkspacePermissionV1,
-  hasPermissionInProjectV1,
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
   allowUsingSchemaEditorV1,
   generateIssueName,
+  hasProjectPermissionV2,
 } from "@/utils";
-import { ProjectPermissionType } from "@/utils/role";
 
 interface DatabaseAction {
   icon: VNode;
@@ -199,7 +201,7 @@ const selectedProjectUid = computed(() => {
 
 const canEditDatabase = (
   db: ComposedDatabase,
-  requiredProjectPermission: ProjectPermissionType
+  requiredProjectPermission: ProjectPermission
 ): boolean => {
   if (isArchivedDatabaseV1(db)) {
     return false;
@@ -209,17 +211,8 @@ const canEditDatabase = (
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    hasPermissionInProjectV1(
-      db.projectEntity.iamPolicy,
+    hasProjectPermissionV2(
+      db.projectEntity,
       currentUserV1.value,
       requiredProjectPermission
     )
@@ -238,35 +231,27 @@ const databaseSupportAlterSchema = computed(() => {
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
-    return canEditDatabase(db, "bb.permission.project.change-database");
+    return canEditDatabase(db, "bb.issues.create");
   });
 });
 
 const allowChangeData = computed(() => {
-  return props.databases.every((db) =>
-    canEditDatabase(db, "bb.permission.project.change-database")
-  );
+  return props.databases.every((db) => canEditDatabase(db, "bb.issues.create"));
 });
 
 const allowTransferProject = computed(() => {
   return props.databases.every((db) =>
-    canEditDatabase(db, "bb.permission.project.transfer-database")
+    canEditDatabase(db, "bb.projects.update")
   );
 });
 
 const allowEditLabels = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
-    return (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-label",
-        currentUserV1.value.userRole
-      ) ||
-      hasPermissionInProjectV1(
-        project.iamPolicy,
-        currentUserV1.value,
-        "bb.permission.project.manage-general"
-      )
+    return hasProjectPermissionV2(
+      project,
+      currentUserV1.value,
+      "bb.databases.update"
     );
   });
 });

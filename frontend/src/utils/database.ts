@@ -3,7 +3,7 @@ import { User } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import type { Database, DataSourceType, Environment } from "../types";
-import { hasWorkspacePermissionV1 } from "./role";
+import { hasWorkspacePermissionV2 } from "./iam";
 import { isDev, semverCompare } from "./util";
 
 export function allowDatabaseAccess(
@@ -25,12 +25,7 @@ export function allowDatabaseAccess(
     return false;
   }
 
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      user.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(user, "bb.instances.update")) {
     return true;
   }
 

@@ -10,6 +10,7 @@ import {
   Workflow,
 } from "../proto/v1/project_service";
 
+export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
 export const UNKNOWN_PROJECT_NAME = `projects/${UNKNOWN_ID}`;
 export const DEFAULT_PROJECT_V1_NAME = "projects/default";
@@ -43,4 +44,11 @@ export const unknownProject = (): ComposedProject => {
     uid: String(UNKNOWN_ID),
     title: "<<Unknown project>>",
   };
+};
+
+export const defaultProject = {
+  ...unknownProject(),
+  name: DEFAULT_PROJECT_V1_NAME,
+  uid: String(DEFAULT_PROJECT_UID),
+  title: "Default project",
 };

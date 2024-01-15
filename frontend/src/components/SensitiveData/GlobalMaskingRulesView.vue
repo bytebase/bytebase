@@ -123,7 +123,7 @@ import {
   PolicyResourceType,
   MaskingRulePolicy_MaskingRule,
 } from "@/types/proto/v1/org_policy_service";
-import { arraySwap, hasWorkspacePermissionV1 } from "@/utils";
+import { arraySwap, hasWorkspacePermissionV2 } from "@/utils";
 import { MiniActionButton } from "../v2";
 import MaskingRuleConfig from "./components/MaskingRuleConfig.vue";
 import {
@@ -156,10 +156,7 @@ const state = reactive<LocalState>({
 const policyStore = usePolicyV1Store();
 const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

@@ -4,12 +4,7 @@ import {
   getProjectAndSheetId,
 } from "@/store/modules/v1/common";
 import { Sheet, Sheet_Visibility } from "@/types/proto/v1/sheet_service";
-import {
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-  isMemberOfProjectV1,
-  getStatementSize,
-} from "@/utils";
+import { getStatementSize, hasProjectPermissionV2 } from "@/utils";
 
 export const extractSheetUID = (name: string) => {
   const pattern = /(?:^|\/)sheets\/([^/]+)(?:$|\/)/;
@@ -38,21 +33,16 @@ export const isSheetReadableV1 = (sheet: Sheet) => {
     return false;
   }
   if (visibility === Sheet_Visibility.VISIBILITY_PROJECT) {
-    if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        currentUserV1.value.userRole
-      )
-    ) {
-      return true;
-    }
-
     const [projectId, _] = getProjectAndSheetId(sheet.name);
-
     const projectV1 = useProjectV1Store().getProjectByName(
       `projects/${projectId}`
     );
-    return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
+
+    return hasProjectPermissionV2(
+      projectV1,
+      currentUserV1.value,
+      "bb.projects.get"
+    );
   }
   // visibility === "PUBLIC"
   return true;
@@ -75,27 +65,16 @@ export const isSheetWritableV1 = (sheet: Sheet) => {
     return false;
   }
   if (visibility === Sheet_Visibility.VISIBILITY_PROJECT) {
-    if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-project",
-        currentUserV1.value.userRole
-      )
-    ) {
-      return true;
-    }
-
     const [projectId, _] = getProjectAndSheetId(sheet.name);
     const projectV1 = useProjectV1Store().getProjectByName(
       `projects/${projectId}`
     );
-    const isCurrentUserProjectOwner = () => {
-      return hasPermissionInProjectV1(
-        projectV1.iamPolicy,
-        currentUserV1.value,
-        "bb.permission.project.manage-sheet"
-      );
-    };
-    return isCurrentUserProjectOwner();
+
+    return hasProjectPermissionV2(
+      projectV1,
+      currentUserV1.value,
+      "bb.projects.get"
+    );
   }
   // visibility === "PUBLIC"
   return false;

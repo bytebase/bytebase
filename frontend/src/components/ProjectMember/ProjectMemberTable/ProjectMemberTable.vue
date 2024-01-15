@@ -145,18 +145,14 @@ import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import { featureToRef, useCurrentUserV1, useProjectIamPolicy } from "@/store";
+import { featureToRef, useCurrentUserV1 } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
   ComposedProject,
   ProjectLevelRoles,
 } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import {
-  hasWorkspacePermissionV1,
-  displayRoleTitle,
-  hasPermissionInProjectV1,
-} from "@/utils";
+import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
 import {
   getExpiredTimeString,
   isExpired,
@@ -181,9 +177,6 @@ const hasRBACFeature = featureToRef("bb.feature.rbac");
 const currentUserV1 = useCurrentUserV1();
 const editingMember = ref<ComposedProjectMember | null>(null);
 const editingBinding = ref<Binding | null>(null);
-
-const projectResourceName = computed(() => props.project.name);
-const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const columnList = computed(() => {
   const ACCOUNT: BBGridColumn = {
@@ -221,19 +214,10 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    hasPermissionInProjectV1(
-      iamPolicy.value,
+    hasProjectPermissionV2(
+      props.project,
       currentUserV1.value,
-      "bb.permission.project.manage-member"
+      "bb.projects.setIamPolicy"
     )
   ) {
     return true;

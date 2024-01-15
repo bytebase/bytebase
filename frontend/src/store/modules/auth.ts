@@ -11,7 +11,7 @@ import {
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
-import { convertUserToPrincipal, useUserStore } from ".";
+import { useUserStore } from ".";
 
 interface AuthState {
   currentUser: User;
@@ -105,14 +105,6 @@ export const useAuthStore = defineStore("auth_v1", {
     },
   },
 });
-
-export const useCurrentUser = () => {
-  const authStore = useAuthStore();
-
-  return computed(() => {
-    return convertUserToPrincipal(authStore.currentUser);
-  });
-};
 
 export const useCurrentUserV1 = () => {
   const authStore = useAuthStore();

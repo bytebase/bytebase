@@ -89,8 +89,8 @@ import {
 } from "../types";
 import {
   filterDatabaseV1ByKeyword,
+  hasProjectPermissionV2,
   sortDatabaseV1List,
-  useWorkspacePermissionV1,
 } from "../utils";
 
 interface LocalState {
@@ -125,9 +125,13 @@ const state = reactive<LocalState>({
   loading: false,
   selectedDatabaseUidList: [],
 });
-const hasWorkspaceManageDatabasePermission = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-database"
-);
+const hasWorkspaceManageDatabasePermission = computed(() => {
+  return hasProjectPermissionV2(
+    project.value,
+    currentUserV1.value,
+    "bb.projects.update"
+  );
+});
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {

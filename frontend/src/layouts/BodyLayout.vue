@@ -238,7 +238,7 @@ import {
 } from "@/store";
 import { QuickActionType, QuickActionPermissionMap } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1, hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import Quickstart from "../components/Quickstart.vue";
@@ -261,9 +261,9 @@ const state = reactive<LocalState>({
 
 const currentUserV1 = useCurrentUserV1();
 
-const hasPermission = hasWorkspacePermissionV1(
-  "bb.permission.workspace.manage-subscription",
-  currentUserV1.value.userRole
+const hasPermission = hasWorkspacePermissionV2(
+  currentUserV1.value,
+  "bb.settings.set"
 );
 
 const { pageMode, isDemo } = storeToRefs(actuatorStore);

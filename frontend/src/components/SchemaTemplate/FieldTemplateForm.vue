@@ -242,7 +242,11 @@ import {
   InstanceEngineRadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import { useSettingV1Store, useNotificationStore } from "@/store";
+import {
+  useSettingV1Store,
+  useNotificationStore,
+  useCurrentUserV1,
+} from "@/store";
 import {
   ColumnConfig,
   ColumnMetadata,
@@ -253,9 +257,9 @@ import {
 } from "@/types/proto/v1/setting_service";
 import {
   getDataTypeSuggestionList,
-  useWorkspacePermissionV1,
   convertKVListToLabels,
   convertLabelsToKVList,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../SchemaEditorV1/Modals/ColumnDefaultValueExpressionModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
@@ -292,10 +296,11 @@ const state = reactive<LocalState>({
   kvList: [],
 });
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
-    useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
+    hasWorkspacePermissionV2(currentUser.value, "bb.settings.set") &&
     !props.readonly
   );
 });
