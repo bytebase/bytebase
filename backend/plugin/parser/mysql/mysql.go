@@ -36,7 +36,7 @@ func ParseMySQL(statement string) ([]*ParseResult, error) {
 	return list, err
 }
 
-// DealWithDelimiter deals with delimiter in the given SQL statement.
+// DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
 func DealWithDelimiter(statement string) (string, error) {
 	has, list, err := hasDelimiter(statement)
 	if err != nil {
