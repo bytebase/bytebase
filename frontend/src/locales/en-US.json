@@ -270,7 +270,8 @@
     "force-verb": "Force {verb}",
     "nothing-changed": "Nothing changed",
     "untitled": "Untitled",
-    "nickname": "Nickname"
+    "nickname": "Nickname",
+    "missing-permission": "Missing required permissions"
   },
   "error-page": {
     "go-back-home": "Go back home"

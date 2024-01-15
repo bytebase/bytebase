@@ -18,7 +18,11 @@ import { intersection } from "lodash-es";
 import { NSelect, SelectOption } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  useProjectV1ListByCurrentUser,
+} from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -43,7 +47,6 @@ const props = withDefaults(
     includeAll?: boolean;
     includeDefaultProject?: boolean;
     includeArchived?: boolean;
-    filterByCurrentUser?: boolean;
     filter?: (project: Project, index: number) => boolean;
   }>(),
   {
@@ -58,7 +61,6 @@ const props = withDefaults(
     includeAll: false,
     includeDefaultProject: false,
     includeArchived: false,
-    filterByCurrentUser: true,
     filter: () => true,
   }
 );
@@ -79,27 +81,18 @@ const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list")
 );
 
-const rawProjectList = computed(() => {
-  let list = props.filterByCurrentUser
-    ? projectV1Store.getProjectListByUser(
-        currentUserV1.value,
-        true /* showDeleted */
-      )
-    : projectV1Store.getProjectList(true /* showDeleted */);
-  // Filter the default project
-  list = list.filter((project) => {
-    return project.uid !== String(DEFAULT_PROJECT_ID);
-  });
-  // Filter by project tenant mode
-  list = list.filter((project) => {
-    return props.allowedProjectTenantModeList.includes(project.tenantMode);
-  });
-  // Filter by project workflow type
-  list = list.filter((project) => {
-    return props.allowedProjectWorkflowTypeList.includes(project.workflow);
-  });
+const { projectList } = useProjectV1ListByCurrentUser();
 
-  return list;
+const rawProjectList = computed(() => {
+  return projectList.value.filter((project) => {
+    if (project.uid === String(DEFAULT_PROJECT_ID)) {
+      return props.includeDefaultProject;
+    }
+    return (
+      props.allowedProjectTenantModeList.includes(project.tenantMode) &&
+      props.allowedProjectWorkflowTypeList.includes(project.workflow)
+    );
+  });
 });
 
 const isOrphanValue = computed(() => {
@@ -126,10 +119,6 @@ const combinedProjectList = computed(() => {
       const roles = roleListInProjectV1(project.iamPolicy, currentUserV1.value);
       return intersection(props.allowedProjectRoleList, roles).length > 0;
     });
-  }
-
-  if (props.includeDefaultProject) {
-    list.unshift(projectV1Store.getProjectByUID(String(DEFAULT_PROJECT_ID)));
   }
 
   if (props.filter) {
