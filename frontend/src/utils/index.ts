@@ -30,7 +30,6 @@ export * from "./workspaceApprovalSetting";
 export * from "./projectIamPolicy";
 export * from "./slowQuery";
 export * from "./resource-composer";
-export * from "./quickAction";
 export * from "./TinyTimer";
 export * from "./sheet";
 

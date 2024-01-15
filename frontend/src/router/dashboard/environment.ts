@@ -1,7 +1,6 @@
 import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { useEnvironmentV1Store } from "@/store";
-import { QuickActionType } from "@/types";
 import { idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
@@ -14,16 +13,11 @@ const environmentRoutes: RouteRecordRaw[] = [
     name: ENVIRONMENT_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
-      quickActionListByRole: () => {
-        const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+      getQuickActionList: () => {
+        return [
           "quickaction.bb.environment.create",
           "quickaction.bb.environment.reorder",
         ];
-        return new Map([
-          ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DEVELOPER", []],
-        ]);
       },
     },
     components: {
