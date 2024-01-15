@@ -270,7 +270,8 @@
     "force-verb": "forzar {verbo}",
     "nothing-changed": "nada ha cambiado",
     "untitled": "Intitulado",
-    "nickname": "Apodo"
+    "nickname": "Apodo",
+    "missing-permission": "Faltan permisos requeridos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

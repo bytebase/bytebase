@@ -98,12 +98,18 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { hasFeature, pushNotification, useUIStateStore } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  useUIStateStore,
+  useCurrentUserV1,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import { ResourceId, ValidatedMessage, emptyProject } from "@/types";
 import { Project, TenantMode } from "@/types/proto/v1/project_service";
 import { randomString } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 
 interface LocalState {
@@ -167,6 +173,11 @@ const validateResourceId = async (
 const allowCreate = computed(() => {
   if (isEmpty(state.project.title)) return false;
   if (!resourceIdField.value?.isValidated) return false;
+  if (
+    !hasWorkspacePermissionV2(useCurrentUserV1().value, "bb.projects.create")
+  ) {
+    return false;
+  }
   return true;
 });
 

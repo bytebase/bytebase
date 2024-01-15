@@ -163,6 +163,7 @@ roles:
       - bb.rollouts.get
       - bb.rollouts.preview
       - bb.taskRuns.list
+      - bb.slowQueries.list
   - name: roles/projectDeveloper
     permissions:
       - bb.branches.create
@@ -192,6 +193,7 @@ roles:
       - bb.rollouts.get
       - bb.rollouts.preview
       - bb.taskRuns.list
+      - bb.slowQueries.list
   - name: roles/projectQuerier
     permissions:
       - bb.databases.get

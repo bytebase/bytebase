@@ -78,7 +78,7 @@
 <script lang="ts" setup>
 import { cloneDeep, isEmpty } from "lodash-es";
 import { NTooltip } from "naive-ui";
-import { computed, PropType, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
@@ -93,16 +93,10 @@ interface LocalState {
   requiredFeature: FeatureType | undefined;
 }
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  project: Project;
+  allowEdit: boolean;
+}>();
 
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();

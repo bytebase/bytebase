@@ -19,7 +19,12 @@
       :quick-action-list="quickActionList"
       class="mb-4"
     />
-    <router-view :project-id="projectId" :allow-edit="allowEdit" />
+    <router-view
+      v-if="hasPermission"
+      :project-id="projectId"
+      :allow-edit="allowEdit"
+    />
+    <NoPermissionPlaceholder v-else />
   </div>
 </template>
 
@@ -27,9 +32,10 @@
 import { useLocalStorage } from "@vueuse/core";
 import { computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
@@ -55,14 +61,12 @@ import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
-const props = defineProps({
-  projectId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+}>();
 
 const route = useRoute();
+const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const activityV1Store = useActivityV1Store();
@@ -77,6 +81,20 @@ const project = computed(() => {
 
 const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_V1_NAME;
+});
+
+const currentUser = useCurrentUserV1();
+
+const requiredPermissions = computed(() => {
+  const getPermissionListFunc =
+    router.currentRoute.value.meta.requiredProjectPermissionList;
+  return getPermissionListFunc ? getPermissionListFunc() : [];
+});
+
+const hasPermission = computed(() => {
+  return requiredPermissions.value.every((permission) =>
+    hasProjectPermissionV2(project.value, currentUser.value, permission)
+  );
 });
 
 const allowEdit = computed(() => {

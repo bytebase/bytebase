@@ -89,7 +89,11 @@ import { NButton, NCheckbox, NInput, NDivider, NSelect, NTag } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useRoleStore, useBranchListByProject } from "@/store";
+import {
+  useRoleStore,
+  useCurrentUserV1,
+  useBranchListByProject,
+} from "@/store";
 import {
   getProjectAndBranchId,
   projectNamePrefix,
@@ -105,6 +109,7 @@ import {
   ProtectionRule_Target,
 } from "@/types/proto/v1/project_service";
 import { displayRoleTitle } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import { wildcardToRegex } from "../Branch/utils";
 
 const props = defineProps<{
@@ -162,7 +167,14 @@ const isCreating = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  return state.protectionRule.nameFilter !== "";
+  if (!state.protectionRule.nameFilter) {
+    return false;
+  }
+  return hasProjectPermissionV2(
+    props.project,
+    useCurrentUserV1().value,
+    "bb.projects.update"
+  );
 });
 
 const roleList = computed(() => {

@@ -64,6 +64,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_DATABASES,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.databases.list",
+          ],
         },
         component: () => import("@/views/project/ProjectDatabaseDashboard.vue"),
         props: true,
@@ -72,6 +76,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "database-groups",
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         props: true,
         children: [
@@ -104,6 +109,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
           import("@/views/project/ProjectDeploymentConfigPanel.vue"),
@@ -121,6 +127,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_BRANCHES,
             meta: {
               overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.branches.list",
+              ],
             },
             component: () =>
               import("@/views/project/ProjectBrancheDashboard.vue"),
@@ -131,6 +141,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
             meta: {
               overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.branches.get",
+              ],
             },
             component: () => import("@/views/branch/BranchDetail.vue"),
             props: true,
@@ -140,6 +154,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
             meta: {
               overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.branches.update",
+              ],
             },
             component: () => import("@/views/branch/BranchRollout.vue"),
             props: true,
@@ -149,6 +167,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_BRANCH_MERGE,
             meta: {
               title: () => t("branch.merge-rebase.merge-branch"),
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.branches.update",
+              ],
             },
             component: () => import("@/views/branch/BranchMerge.vue"),
             props: true,
@@ -158,6 +180,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_BRANCH_REBASE,
             meta: {
               title: () => t("branch.merge-rebase.rebase-branch"),
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.branches.update",
+              ],
             },
             component: () => import("@/views/branch/BranchRebase.vue"),
             props: true,
@@ -169,6 +195,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ISSUES,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.issues.list",
+          ],
         },
         component: () => import("@/views/project/ProjectIssueDashboard.vue"),
         props: true,
@@ -178,6 +208,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.changeHistories.list",
+          ],
         },
         component: () =>
           import("@/views/project/ProjectChangeHistoryDashboard.vue"),
@@ -195,6 +229,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_CHANGELISTS,
             meta: {
               overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.changelists.list",
+              ],
             },
             component: () =>
               import("@/views/project/ProjectChangelistDashboard.vue"),
@@ -205,6 +243,10 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_CHANGELIST_DETAIL,
             meta: {
               overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.changelists.get",
+              ],
             },
             component: () =>
               import("@/components/Changelist/ChangelistDetail/"),
@@ -217,6 +259,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.databases.sync",
+          ],
         },
         component: () => import("@/views/project/ProjectSyncDatabasePanel.vue"),
         props: true,
@@ -226,6 +272,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SLOW_QUERIES,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.slowQueries.list",
+          ],
         },
         component: () =>
           import("@/views/project/ProjectSlowQueryDashboard.vue"),
@@ -236,6 +286,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ANOMALIES,
         meta: {
           overrideTitle: true,
+          // TODO(ed): permission check
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
           import("@/views/project/ProjectAnomalyCenterDashboard.vue"),
@@ -246,6 +298,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ACTIVITIES,
         meta: {
           overrideTitle: true,
+          // TODO(ed): permission check
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectActivityDashboard.vue"),
         props: true,
@@ -255,6 +309,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           overrideTitle: true,
+          // TODO(ed): permission check
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
           import("@/views/project/ProjectVersionControlPanel.vue"),
@@ -264,6 +320,8 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "webhooks",
         meta: {
           overrideTitle: true,
+          // TODO(ed): permission check
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         props: true,
         children: [
@@ -282,6 +340,7 @@ const projectV1Routes: RouteRecordRaw[] = [
             name: PROJECT_V1_ROUTE_WEBHOOK_CREATE,
             meta: {
               title: () => t("project.webhook.create-webhook"),
+              requiredProjectPermissionList: () => ["bb.projects.update"],
             },
             component: () => import("@/views/project/ProjectWebhookCreate.vue"),
             props: true,
@@ -302,6 +361,11 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           overrideTitle: true,
+          // TODO(ed): permission check
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.projects.getIamPolicy",
+          ],
         },
         component: () => import("@/views/project/ProjectMemberDashboard.vue"),
         props: true,
@@ -311,6 +375,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_SETTINGS,
         meta: {
           overrideTitle: true,
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
