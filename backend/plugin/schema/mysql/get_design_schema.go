@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -59,8 +60,8 @@ func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) 
 		return "", err
 	}
 
-	result := listener.result.String()
-	if !strings.HasSuffix(result, "\n") {
+	s := listener.result.String()
+	if !strings.HasSuffix(s, "\n") {
 		// The last statement of the result is SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 		// We should append a 0xa to the end of the result to avoid the extra newline diff.
 		// TODO(rebelice/zp): find a more elegant way to do this.
@@ -68,7 +69,14 @@ func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) 
 			return "", err
 		}
 	}
-	return listener.result.String(), nil
+
+	s = listener.result.String()
+	result, err := mysqlparser.RestoreDelimiter(s)
+	if err != nil {
+		slog.Warn("Failed to restore delimiter", slog.String("result", s), slog.String("error", err.Error()))
+		return s, nil
+	}
+	return result, nil
 }
 
 type mysqlDesignSchemaGenerator struct {
