@@ -213,7 +213,7 @@ import {
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import MaskingLevelDropdown from "./components/MaskingLevelDropdown.vue";
@@ -274,10 +274,7 @@ const policy = usePolicyByParentAndType(
 );
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;

@@ -42,7 +42,7 @@ import {
   useCurrentUserV1,
 } from "@/store";
 import { ComposedInstance } from "@/types";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {
   icon: VNode;
@@ -69,10 +69,7 @@ const instanceStore = useInstanceV1Store();
 const currentUserV1 = useCurrentUserV1();
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-subscription",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
 });
 
 const actions = computed((): Action[] => {

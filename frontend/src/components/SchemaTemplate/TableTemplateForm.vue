@@ -185,7 +185,11 @@ import {
   DrawerContent,
   InstanceEngineRadioGrid,
 } from "@/components/v2";
-import { useSettingV1Store, useNotificationStore } from "@/store";
+import {
+  useSettingV1Store,
+  useNotificationStore,
+  useCurrentUserV1,
+} from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import {
@@ -201,8 +205,8 @@ import {
 } from "@/types/v1/schemaEditor";
 import {
   arraySwap,
+  hasWorkspacePermissionV2,
   instanceV1AllowsReorderColumns,
-  useWorkspacePermissionV1,
 } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";
@@ -237,10 +241,11 @@ const state = reactive<LocalState>({
   showFieldTemplateDrawer: false,
 });
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const settingStore = useSettingV1Store();
 const allowEdit = computed(() => {
   return (
-    useWorkspacePermissionV1("bb.permission.workspace.manage-general").value &&
+    hasWorkspacePermissionV2(currentUser.value, "bb.settings.set") &&
     !props.readonly
   );
 });

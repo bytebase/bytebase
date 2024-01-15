@@ -84,10 +84,9 @@ import {
 import { State } from "@/types/proto/v1/common";
 import {
   idFromSlug,
-  hasWorkspacePermissionV1,
   instanceV1HasCreateDatabase,
-  isMemberOfProjectV1,
   instanceV1Name,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 interface LocalState {
@@ -132,23 +131,7 @@ watchEffect(() => {
 });
 
 const databaseV1List = computed(() => {
-  const list = databaseStore.databaseListByInstance(instance.value.name);
-
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return list;
-  }
-
-  // In edge case when the user is no longer an Owner or DBA, we only want to display the database
-  // belonging to the project which the user is a member of. The returned list above may contain
-  // databases not meeting this criteria and we need to filter out them.
-  return list.filter((db) => {
-    return isMemberOfProjectV1(db.projectEntity.iamPolicy, currentUserV1.value);
-  });
+  return databaseStore.databaseListByInstance(instance.value.name);
 });
 
 const instanceRoleList = computed(() => {
@@ -158,10 +141,7 @@ const instanceRoleList = computed(() => {
 const allowEdit = computed(() => {
   return (
     instance.value.state === State.ACTIVE &&
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update")
   );
 });
 

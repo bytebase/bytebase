@@ -30,7 +30,7 @@ import { useRouter } from "vue-router";
 import { useCurrentUserV1, useTabStore } from "@/store";
 import { ComposedInstance, TabMode, UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV1, instanceV1Slug } from "@/utils";
+import { hasWorkspacePermissionV2, instanceV1Slug } from "@/utils";
 
 const props = defineProps<{
   instance: ComposedInstance;
@@ -45,10 +45,7 @@ const isAdminMode = computed(() => {
 });
 
 const allowManageInstance = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    me.value.userRole
-  );
+  return hasWorkspacePermissionV2(me.value, "bb.instanceRoles.update");
 });
 
 const hasReadonlyDataSource = computed(() => {

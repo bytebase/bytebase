@@ -127,7 +127,7 @@ import {
 } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   showInstanceAssignmentDrawer: boolean;
@@ -161,9 +161,9 @@ const router = useRouter();
 const { locale } = useLanguage();
 
 const subscriptionStore = useSubscriptionV1Store();
-const hasPermission = hasWorkspacePermissionV1(
-  "bb.permission.workspace.manage-subscription",
-  useCurrentUserV1().value.userRole
+const hasPermission = hasWorkspacePermissionV2(
+  useCurrentUserV1().value,
+  "bb.settings.set"
 );
 
 const instanceMissingLicense = computed(() => {

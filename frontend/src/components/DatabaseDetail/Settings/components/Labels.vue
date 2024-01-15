@@ -57,8 +57,7 @@ import { Database } from "@/types/proto/v1/database_service";
 import {
   convertKVListToLabels,
   convertLabelsToKVList,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
+  hasProjectPermissionV2,
 } from "@/utils";
 
 type LocalState = {
@@ -82,17 +81,7 @@ const state = reactive<LocalState>({
 
 const allowAdmin = computed(() => {
   const project = props.database.projectEntity;
-  return (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-label",
-      me.value.userRole
-    ) ||
-    hasPermissionInProjectV1(
-      project.iamPolicy,
-      me.value,
-      "bb.permission.project.manage-general"
-    )
-  );
+  return hasProjectPermissionV2(project, me.value, "bb.databases.update");
 });
 
 const convert = () => {

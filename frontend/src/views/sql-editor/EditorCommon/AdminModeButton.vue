@@ -18,7 +18,7 @@ import { useCurrentUserV1, useTabStore, useWebTerminalV1Store } from "@/store";
 import { TabMode } from "@/types";
 import {
   getSuggestedTabNameFromConnection,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 const emit = defineEmits<{
@@ -35,10 +35,7 @@ const props = defineProps({
 const currentUserV1 = useCurrentUserV1();
 
 const allowAdmin = computed(() =>
-  hasWorkspacePermissionV1(
-    "bb.permission.workspace.admin-sql-editor",
-    currentUserV1.value.userRole
-  )
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.adminExecute")
 );
 
 const tabStore = useTabStore();

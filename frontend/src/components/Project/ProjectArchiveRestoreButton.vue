@@ -44,7 +44,7 @@ import { restartAppRoot } from "@/AppRootContext";
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -57,19 +57,17 @@ const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.delete") ||
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.undelete")
   ) {
     return true;
   }
 
   if (
-    hasPermissionInProjectV1(
-      props.project.iamPolicy,
+    hasProjectPermissionV2(
+      props.project,
       currentUserV1.value,
-      "bb.permission.project.manage-general"
+      "bb.projects.update"
     )
   ) {
     return true;

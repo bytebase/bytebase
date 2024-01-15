@@ -46,9 +46,9 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
-import { featureToRef, useRoleStore } from "@/store";
+import { featureToRef, useCurrentUserV1, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
-import { useWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { RoleDataTable, RolePanel } from "./components";
 import { provideCustomRoleSettingContext } from "./context";
 
@@ -75,12 +75,13 @@ const state = reactive<LocalState>({
   },
 });
 
+const currentUser = useCurrentUserV1();
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 
-const allowAdmin = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-general"
-);
+const allowAdmin = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.update");
+});
 
 const filteredRoleList = computed(() => {
   const keyword = state.filter.keyword.trim().toLowerCase();

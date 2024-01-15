@@ -40,7 +40,7 @@ import {
   unknownUser,
   PresetRoleType,
 } from "@/types";
-import { User, UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID, memberListInProjectV1 } from "@/utils";
 
@@ -61,7 +61,7 @@ const props = withDefaults(
     includeSystemBot?: boolean;
     includeServiceAccount?: boolean;
     includeArchived?: boolean;
-    allowedWorkspaceRoleList?: UserRole[];
+    allowedWorkspaceRoleList?: string[];
     allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
@@ -79,9 +79,9 @@ const props = withDefaults(
     includeServiceAccount: false,
     includeArchived: false,
     allowedWorkspaceRoleList: () => [
-      UserRole.OWNER,
-      UserRole.DBA,
-      UserRole.DEVELOPER,
+      PresetRoleType.WORKSPACE_ADMIN,
+      PresetRoleType.WORKSPACE_DBA,
+      PresetRoleType.WORKSPACE_MEMBER,
     ],
     allowedProjectMemberRoleList: () => [
       PresetRoleType.PROJECT_OWNER,
@@ -152,7 +152,9 @@ const getUserListFromWorkspace = () => {
         // Need not to filter by workspace role
         return true;
       }
-      return props.allowedWorkspaceRoleList.includes(user.userRole);
+      return user.roles.some((role) =>
+        props.allowedWorkspaceRoleList.includes(role)
+      );
     });
 };
 

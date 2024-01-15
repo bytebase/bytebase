@@ -138,13 +138,13 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { DEFAULT_PROJECT_V1_NAME, EMPTY_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   ExternalTableMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { hasWorkspacePermissionV1, isDatabaseV1Queryable } from "@/utils";
+import { hasProjectPermissionV2, isDatabaseV1Queryable } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 
@@ -181,13 +181,11 @@ const instanceEngine = computed(() => {
 });
 
 const allowQuery = computed(() => {
-  if (
-    database.value.project === EMPTY_PROJECT_NAME ||
-    database.value.project === DEFAULT_PROJECT_V1_NAME
-  ) {
-    return hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-database",
-      currentUserV1.value.userRole
+  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
+    return hasProjectPermissionV2(
+      defaultProject,
+      currentUserV1.value,
+      "bb.databases.query"
     );
   }
   return isDatabaseV1Queryable(database.value, currentUserV1.value);

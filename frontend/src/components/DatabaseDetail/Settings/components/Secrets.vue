@@ -208,7 +208,7 @@ import {
 import { useGracefulRequest } from "@/store/modules/utils";
 import { type ComposedDatabase } from "@/types";
 import { Secret } from "@/types/proto/v1/database_service";
-import { hasPermissionInProjectV1, hasWorkspacePermissionV1 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 export type Detail = {
   secret: Secret;
@@ -256,16 +256,10 @@ const COLUMNS = computed(() => {
 
 const allowAdmin = computed(() => {
   const project = props.database.projectEntity;
-  return (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-database-secrets",
-      currentUserV1.value.userRole
-    ) ||
-    hasPermissionInProjectV1(
-      project.iamPolicy,
-      currentUserV1.value,
-      "bb.permission.project.manage-database-secrets"
-    )
+  return hasProjectPermissionV2(
+    project,
+    currentUserV1.value,
+    "bb.databaseSecrets.update"
   );
 });
 
