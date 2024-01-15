@@ -24,15 +24,13 @@
       </div>
     </div>
     <NoDataPlaceholder v-if="identityProviderList.length === 0">
-      <div>
-        <NButton type="primary" @click="handleCreateSSO">
-          {{ $t("settings.sso.create") }}
-          <FeatureBadge
-            :feature="'bb.feature.sso'"
-            custom-class="ml-2 !text-white"
-          />
-        </NButton>
-      </div>
+      <NButton type="primary" @click="handleCreateSSO">
+        {{ $t("settings.sso.create") }}
+        <FeatureBadge
+          :feature="'bb.feature.sso'"
+          custom-class="ml-2 !text-white"
+        />
+      </NButton>
     </NoDataPlaceholder>
     <template v-else>
       <div class="w-full flex flex-col justify-start items-start space-y-4">
