@@ -29,7 +29,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/masker"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -63,6 +65,8 @@ type SQLService struct {
 	dbFactory       *dbfactory.DBFactory
 	activityManager *activity.Manager
 	licenseService  enterprise.LicenseService
+	profile         *config.Profile
+	iamManager      *iam.Manager
 }
 
 // NewSQLService creates a SQLService.
@@ -72,6 +76,8 @@ func NewSQLService(
 	dbFactory *dbfactory.DBFactory,
 	activityManager *activity.Manager,
 	licenseService enterprise.LicenseService,
+	profile *config.Profile,
+	iamManager *iam.Manager,
 ) *SQLService {
 	return &SQLService{
 		store:           store,
@@ -79,6 +85,8 @@ func NewSQLService(
 		dbFactory:       dbFactory,
 		activityManager: activityManager,
 		licenseService:  licenseService,
+		profile:         profile,
+		iamManager:      iamManager,
 	}
 }
 
@@ -1139,7 +1147,29 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		dataShare = maybeDatabase.DataShare
 	}
 
-	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+	if s.profile.DevelopmentIAM {
+		if isAdmin {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
+			if err != nil {
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
+			}
+			if !ok {
+				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
+			}
+
+			// Check if the environment is open for query privileges.
+			result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+			if err != nil {
+				return nil, nil, nil, advisor.Success, nil, nil, err
+			}
+			if !result {
+				// Check if the user has permission to execute the query.
+				if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
+					return nil, nil, nil, advisor.Success, nil, nil, err
+				}
+			}
+		}
+	} else if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
 		// Check if the caller is admin for exporting with admin mode.
 		if isAdmin && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
 			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
