@@ -67,6 +67,77 @@ func DealWithDelimiter(statement string) (string, error) {
 	return statement, nil
 }
 
+// RestoreDelimiter trys to restore the delimiter statement which commentted by DealWithDelimiter, assumes the delimiter comment takes up a single line
+// and follows the syntax `-- DELIMITER ?`, otherwise returns an error.
+func RestoreDelimiter(statement string) (string, error) {
+	delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
+	lines := strings.Split(statement, "\n")
+	var result strings.Builder
+	var buf strings.Builder
+	previousDelimiter := ";"
+
+	flushBuf := func(delimiter string) error {
+		bufStmt := buf.String()
+		t := tokenizer.NewTokenizer(bufStmt)
+		list, err := t.SplitTiDBMultiSQL()
+		if err != nil {
+			return errors.Errorf("failed to split multi sql %q: %v", bufStmt, err)
+		}
+		for _, sql := range list {
+			if IsDelimiter(sql.Text) {
+				return errors.Errorf("delimiter statement %q miexed with delimiter comments lap, previous delimiter %q", sql.Text, delimiter)
+			}
+			if _, err := result.WriteString(fmt.Sprintf("%s%s\n", strings.TrimSuffix(sql.Text, ";"), previousDelimiter)); err != nil {
+				return errors.Wrapf(err, "failed to write string %q into builder", sql.Text)
+			}
+		}
+		buf.Reset()
+		return nil
+	}
+
+	for i, line := range lines {
+		matchList := delimiterRegexp.FindStringSubmatch(line)
+		if matchList == nil {
+			target := &result
+			if previousDelimiter != ";" {
+				target = &buf
+			}
+			// Like strings.Join.
+			s := line
+			if i != len(lines)-1 {
+				s = fmt.Sprintf("%s\n", line)
+			}
+			if _, err := target.WriteString(s); err != nil {
+				return "", errors.Wrapf(err, "failed to write string %q into builder", line)
+			}
+			continue
+		}
+		if len(matchList) != 2 {
+			return "", errors.Errorf("invalid delimiter comment %q", line)
+		}
+
+		// If meet delimiter again, we should convert the delimiter in buf to previous delimiter.
+		if previousDelimiter != ";" {
+			if err := flushBuf(previousDelimiter); err != nil {
+				return "", err
+			}
+		}
+
+		if _, err := result.WriteString(fmt.Sprintf("DELIMITER %s\n", matchList[1])); err != nil {
+			return "", errors.Wrapf(err, "failed to write string %q into builder", line)
+		}
+		previousDelimiter = matchList[1]
+	}
+
+	if previousDelimiter != ";" {
+		if err := flushBuf(previousDelimiter); err != nil {
+			return "", err
+		}
+	}
+
+	return result.String(), nil
+}
+
 func parseSingleStatement(statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	input := antlr.NewInputStream(statement)
 	lexer := parser.NewMySQLLexer(input)
