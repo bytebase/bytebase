@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
+	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -241,6 +242,90 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				} else {
 					g.actions = append(g.actions, tidbparser.NewDropTableConstraintAction(tableName, "PRIMARY"))
 				}
+			case tidbast.ConstraintKey, tidbast.ConstraintIndex:
+				indexName := constraint.Name
+				if indexName == "" {
+					g.err = errors.New("empty index name")
+					return in, true
+				}
+				if g.currentTable.indexes[indexName] != nil {
+					index := g.currentTable.indexes[indexName]
+
+					var columns []string
+					for _, key := range constraint.Keys {
+						var keyString string
+						var err error
+						if key.Column == nil {
+							keyString = key.Column.Name.String()
+							if key.Length > 0 {
+								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
+							}
+						} else {
+							keyString, err = tidbRestoreNode(key, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
+							if err != nil {
+								g.err = err
+								return in, true
+							}
+						}
+						columns = append(columns, keyString)
+					}
+
+					if equalKeys(columns, index.keys) && !index.unique && !index.primary {
+						delete(g.currentTable.indexes, indexName)
+						continue
+					}
+					buf := strings.Builder{}
+					if err := index.toString(&buf); err != nil {
+						g.err = err
+						return in, true
+					}
+					g.actions = append(g.actions, tidbparser.NewModifyTableConstraintAction(tableName, constraint.Tp, indexName, buf.String()))
+					delete(g.currentTable.indexes, indexName)
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropTableConstraintAction(tableName, indexName))
+				}
+			case tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex, tidbast.ConstraintUniq:
+				indexName := constraint.Name
+				if indexName == "" {
+					g.err = errors.New("empty index name")
+					return in, true
+				}
+				if g.currentTable.indexes[indexName] != nil {
+					index := g.currentTable.indexes[indexName]
+
+					var columns []string
+					for _, key := range constraint.Keys {
+						var keyString string
+						var err error
+						if key.Column == nil {
+							keyString = key.Column.Name.String()
+							if key.Length > 0 {
+								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
+							}
+						} else {
+							keyString, err = tidbRestoreNode(key, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
+							if err != nil {
+								g.err = err
+								return in, true
+							}
+						}
+						columns = append(columns, keyString)
+					}
+
+					if equalKeys(columns, index.keys) && index.unique && !index.primary {
+						delete(g.currentTable.indexes, indexName)
+						continue
+					}
+					buf := strings.Builder{}
+					if err := index.toString(&buf); err != nil {
+						g.err = err
+						return in, true
+					}
+					g.actions = append(g.actions, tidbparser.NewModifyTableConstraintAction(tableName, constraint.Tp, indexName, buf.String()))
+					delete(g.currentTable.indexes, indexName)
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropTableConstraintAction(tableName, indexName))
+				}
 			case tidbast.ConstraintForeignKey:
 				fkName := constraint.Name
 				if fkName == "" {
@@ -310,6 +395,27 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 				return in, true
 			}
 			g.actions = append(g.actions, tidbparser.NewAddTableConstraintAction(node.Table.Name.String(), tidbast.ConstraintPrimaryKey, buf.String()))
+			delete(g.currentTable.indexes, "PRIMARY")
+		}
+
+		// Index definition.
+		var indexes []*indexState
+		for _, index := range g.currentTable.indexes {
+			indexes = append(indexes, index)
+		}
+		sort.Slice(indexes, func(i, j int) bool {
+			return indexes[i].id < indexes[j].id
+		})
+		for _, index := range indexes {
+			buf := strings.Builder{}
+			if err := index.toString(&buf); err != nil {
+				return in, true
+			}
+			if index.unique {
+				g.actions = append(g.actions, tidbparser.NewAddTableConstraintAction(node.Table.Name.String(), tidbast.ConstraintUniqKey, buf.String()))
+			} else {
+				g.actions = append(g.actions, tidbparser.NewAddTableConstraintAction(node.Table.Name.String(), tidbast.ConstraintKey, buf.String()))
+			}
 		}
 
 		// Foreign key definition.
