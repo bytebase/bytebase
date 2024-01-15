@@ -1,10 +1,6 @@
 <template>
   <div v-if="templateList.length === 0" class="bg-white rounded-lg">
-    <div
-      class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex justify-center items-center"
-    >
-      <NoData />
-    </div>
+    <NoDataPlaceholder />
   </div>
   <div v-else class="flex">
     <div
