@@ -267,6 +267,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 								return in, true
 							}
 						}
+						columns = append(columns, keyString)
 					}
 
 					if equalKeys(columns, index.keys) && !index.unique && !index.primary {
@@ -308,6 +309,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 								return in, true
 							}
 						}
+						columns = append(columns, keyString)
 					}
 
 					if equalKeys(columns, index.keys) && index.unique && !index.primary {
