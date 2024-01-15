@@ -2530,25 +2530,13 @@ func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance 
 }
 
 func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
-	principalPtr := ctx.Value(common.PrincipalIDContextKey)
-	if principalPtr == nil {
-		return nil, nil
-	}
-	principalID, ok := principalPtr.(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, "failed to get member for user %v in processing authorize request.", principalID)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.PermissionDenied, "member not found for user %v in processing authorize request.", principalID)
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	if user.MemberDeleted {
-		return nil, status.Errorf(codes.PermissionDenied, "the user %v has been deactivated by the admin.", principalID)
+		return nil, status.Errorf(codes.PermissionDenied, "the user has been deactivated.")
 	}
-
 	return user, nil
 }
 
