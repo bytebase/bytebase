@@ -22,6 +22,7 @@ const (
 	IssueService_GetIssue_FullMethodName                = "/bytebase.v1.IssueService/GetIssue"
 	IssueService_CreateIssue_FullMethodName             = "/bytebase.v1.IssueService/CreateIssue"
 	IssueService_ListIssues_FullMethodName              = "/bytebase.v1.IssueService/ListIssues"
+	IssueService_SearchIssues_FullMethodName            = "/bytebase.v1.IssueService/SearchIssues"
 	IssueService_UpdateIssue_FullMethodName             = "/bytebase.v1.IssueService/UpdateIssue"
 	IssueService_CreateIssueComment_FullMethodName      = "/bytebase.v1.IssueService/CreateIssueComment"
 	IssueService_UpdateIssueComment_FullMethodName      = "/bytebase.v1.IssueService/UpdateIssueComment"
@@ -38,6 +39,8 @@ type IssueServiceClient interface {
 	GetIssue(ctx context.Context, in *GetIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 	CreateIssue(ctx context.Context, in *CreateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 	ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error)
+	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+	SearchIssues(ctx context.Context, in *SearchIssuesRequest, opts ...grpc.CallOption) (*SearchIssuesResponse, error)
 	UpdateIssue(ctx context.Context, in *UpdateIssueRequest, opts ...grpc.CallOption) (*Issue, error)
 	CreateIssueComment(ctx context.Context, in *CreateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
 	UpdateIssueComment(ctx context.Context, in *UpdateIssueCommentRequest, opts ...grpc.CallOption) (*IssueComment, error)
@@ -76,6 +79,15 @@ func (c *issueServiceClient) CreateIssue(ctx context.Context, in *CreateIssueReq
 func (c *issueServiceClient) ListIssues(ctx context.Context, in *ListIssuesRequest, opts ...grpc.CallOption) (*ListIssuesResponse, error) {
 	out := new(ListIssuesResponse)
 	err := c.cc.Invoke(ctx, IssueService_ListIssues_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *issueServiceClient) SearchIssues(ctx context.Context, in *SearchIssuesRequest, opts ...grpc.CallOption) (*SearchIssuesResponse, error) {
+	out := new(SearchIssuesResponse)
+	err := c.cc.Invoke(ctx, IssueService_SearchIssues_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,6 +164,8 @@ type IssueServiceServer interface {
 	GetIssue(context.Context, *GetIssueRequest) (*Issue, error)
 	CreateIssue(context.Context, *CreateIssueRequest) (*Issue, error)
 	ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error)
+	// Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
+	SearchIssues(context.Context, *SearchIssuesRequest) (*SearchIssuesResponse, error)
 	UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error)
 	CreateIssueComment(context.Context, *CreateIssueCommentRequest) (*IssueComment, error)
 	UpdateIssueComment(context.Context, *UpdateIssueCommentRequest) (*IssueComment, error)
@@ -174,6 +188,9 @@ func (UnimplementedIssueServiceServer) CreateIssue(context.Context, *CreateIssue
 }
 func (UnimplementedIssueServiceServer) ListIssues(context.Context, *ListIssuesRequest) (*ListIssuesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListIssues not implemented")
+}
+func (UnimplementedIssueServiceServer) SearchIssues(context.Context, *SearchIssuesRequest) (*SearchIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SearchIssues not implemented")
 }
 func (UnimplementedIssueServiceServer) UpdateIssue(context.Context, *UpdateIssueRequest) (*Issue, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateIssue not implemented")
@@ -259,6 +276,24 @@ func _IssueService_ListIssues_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IssueServiceServer).ListIssues(ctx, req.(*ListIssuesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IssueService_SearchIssues_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchIssuesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IssueServiceServer).SearchIssues(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IssueService_SearchIssues_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IssueServiceServer).SearchIssues(ctx, req.(*SearchIssuesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -407,6 +442,10 @@ var IssueService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListIssues",
 			Handler:    _IssueService_ListIssues_Handler,
+		},
+		{
+			MethodName: "SearchIssues",
+			Handler:    _IssueService_SearchIssues_Handler,
 		},
 		{
 			MethodName: "UpdateIssue",
