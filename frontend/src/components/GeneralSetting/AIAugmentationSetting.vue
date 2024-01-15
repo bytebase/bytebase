@@ -105,7 +105,7 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   openAIKey: string;
@@ -137,10 +137,7 @@ watchEffect(() => {
 });
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-general",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 
 const allowSave = computed((): boolean => {

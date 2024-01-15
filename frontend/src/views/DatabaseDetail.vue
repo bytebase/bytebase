@@ -264,16 +264,15 @@ import { State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   idFromSlug,
-  hasWorkspacePermissionV1,
   isPITRDatabaseV1,
   isArchivedDatabaseV1,
   instanceV1HasBackupRestore,
   instanceV1SupportSlowQuery,
-  hasPermissionInProjectV1,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
   extractProjectResourceName,
+  hasProjectPermissionV2,
 } from "@/utils";
 
 const databaseHashList = [
@@ -386,19 +385,10 @@ const allowTransferProject = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    hasPermissionInProjectV1(
-      project.value.iamPolicy,
+    hasProjectPermissionV2(
+      database.value.projectEntity,
       currentUserV1.value,
-      "bb.permission.project.transfer-database"
+      "bb.projects.update"
     )
   ) {
     return true;
@@ -420,23 +410,15 @@ const allowAdmin = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
+    hasProjectPermissionV2(
+      database.value.projectEntity,
+      currentUserV1.value,
+      "bb.databases.update"
     )
   ) {
     return true;
   }
 
-  if (
-    hasPermissionInProjectV1(
-      project.value.iamPolicy,
-      currentUserV1.value,
-      "bb.permission.project.admin-database"
-    )
-  ) {
-    return true;
-  }
   return false;
 });
 
@@ -452,23 +434,15 @@ const allowEdit = computed(() => {
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      currentUserV1.value.userRole
+    hasProjectPermissionV2(
+      database.value.projectEntity,
+      currentUserV1.value,
+      "bb.databases.update"
     )
   ) {
     return true;
   }
 
-  if (
-    hasPermissionInProjectV1(
-      project.value.iamPolicy,
-      currentUserV1.value,
-      "bb.permission.project.change-database"
-    )
-  ) {
-    return true;
-  }
   return false;
 });
 

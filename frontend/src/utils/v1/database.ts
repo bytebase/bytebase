@@ -17,7 +17,7 @@ import {
   PolicyType,
   policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1 } from "../role";
+import { hasProjectPermissionV2 } from "../iam";
 import { isDev, semverCompare } from "../util";
 import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
 
@@ -91,13 +91,8 @@ export const isDatabaseV1Alterable = (
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-access-control",
-      user.userRole
-    )
+    hasProjectPermissionV2(database.projectEntity, user, "bb.issues.create")
   ) {
-    // The current user has the super privilege to access all databases.
-    // AKA. Owners and DBAs
     return true;
   }
 
@@ -124,13 +119,8 @@ export const isDatabaseV1Queryable = (
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-access-control",
-      user.userRole
-    )
+    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
   ) {
-    // The current user has the super privilege to access all databases.
-    // AKA. Owners and DBAs
     return true;
   }
 
@@ -201,10 +191,7 @@ export const isTableQueryable = (
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-access-control",
-      user.userRole
-    )
+    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
   ) {
     // The current user has the super privilege to access all databases.
     // AKA. Owners and DBAs
@@ -317,10 +304,7 @@ export function allowDatabaseV1Access(
   }
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-instance",
-      user.userRole
-    )
+    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.get")
   ) {
     return true;
   }

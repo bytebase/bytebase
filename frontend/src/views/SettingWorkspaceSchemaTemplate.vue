@@ -33,9 +33,10 @@
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { featureToRef } from "@/store";
-import { useWorkspacePermissionV1 } from "@/utils";
+import { featureToRef, useCurrentUserV1 } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
@@ -49,11 +50,12 @@ const router = useRouter();
 const state = reactive<LocalState>({
   selectedTab: "FIELD_TEMPLATE",
 });
+const currentUser = useCurrentUserV1();
 
 const hasFeature = featureToRef("bb.feature.schema-template");
-const hasPermission = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-general"
-);
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+});
 
 watch(
   () => route.hash,

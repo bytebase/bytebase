@@ -5,13 +5,14 @@ type Permission string
 const (
 	// Workspace-level permissions.
 	// Instance service.
-	PermissionInstancesList     Permission = "bb.instances.list"
-	PermissionInstancesGet      Permission = "bb.instances.get"
-	PermissionInstancesCreate   Permission = "bb.instances.create"
-	PermissionInstancesUpdate   Permission = "bb.instances.update"
-	PermissionInstancesDelete   Permission = "bb.instances.delete"
-	PermissionInstancesUndelete Permission = "bb.instances.undelete"
-	PermissionInstancesSync     Permission = "bb.instances.sync"
+	PermissionInstancesList         Permission = "bb.instances.list"
+	PermissionInstancesGet          Permission = "bb.instances.get"
+	PermissionInstancesCreate       Permission = "bb.instances.create"
+	PermissionInstancesUpdate       Permission = "bb.instances.update"
+	PermissionInstancesDelete       Permission = "bb.instances.delete"
+	PermissionInstancesUndelete     Permission = "bb.instances.undelete"
+	PermissionInstancesSync         Permission = "bb.instances.sync"
+	PermissionInstancesAdminExecute Permission = "bb.instances.adminExecute"
 	// Instance role service.
 	PermissionInstanceRolesList     Permission = "bb.instanceRoles.list"
 	PermissionInstanceRolesGet      Permission = "bb.instanceRoles.get"

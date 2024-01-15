@@ -68,8 +68,8 @@ import {
   SearchScope,
   SearchParams,
   SearchScopeId,
-  hasWorkspacePermissionV1,
   extractInstanceResourceName,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import DetailPanel from "./DetailPanel.vue";
 import LogFilter from "./LogFilter.vue";
@@ -165,10 +165,7 @@ const params = computed(() => {
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-slow-query",
-    currentUser.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 
 const { list: slowQueryPolicyList } = useSlowQueryPolicyList();

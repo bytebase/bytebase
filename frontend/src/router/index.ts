@@ -24,8 +24,7 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
-  hasSettingPagePermission,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
   idFromSlug,
   sheetNameFromSlug,
   uidFromSlug,
@@ -201,9 +200,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name?.toString().startsWith(SETTING_ROUTE_WORKSPACE)) {
-    const hasPermission = hasSettingPagePermission(
-      to.name.toString(),
-      currentUserV1.value.userRole
+    const hasPermission = hasWorkspacePermissionV2(
+      currentUserV1.value,
+      "bb.settings.list"
     );
     if (!hasPermission) {
       next({
@@ -215,12 +214,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.name === "workspace.instance") {
-    if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-instance",
-        currentUserV1.value.userRole
-      )
-    ) {
+    if (!hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
       next({
         name: "error.403",
         replace: false,

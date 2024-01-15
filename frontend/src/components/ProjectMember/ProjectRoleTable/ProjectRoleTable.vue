@@ -89,11 +89,7 @@ import {
 import { ComposedProject, PresetRoleType, ProjectLevelRoles } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import {
-  hasWorkspacePermissionV1,
-  hasPermissionInProjectV1,
-  displayRoleTitle,
-} from "@/utils";
+import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import { getExpiredTimeString, isExpired, getExpiredDateTime } from "./utils";
@@ -201,19 +197,10 @@ const roleGroup = computed(() => {
 
 const allowAdmin = computed(() => {
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    hasPermissionInProjectV1(
-      iamPolicy.value,
+    hasProjectPermissionV2(
+      props.project,
       currentUserV1.value,
-      "bb.permission.project.manage-member"
+      "bb.projects.setIamPolicy"
     )
   ) {
     return true;

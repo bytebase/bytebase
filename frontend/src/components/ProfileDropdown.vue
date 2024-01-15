@@ -29,7 +29,7 @@ import {
   useUIStateStore,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1, isDev } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
 
@@ -47,10 +47,7 @@ const showDropdown = ref(false);
 // For now, debug mode is a global setting and will affect all users.
 // So we only allow DBA and Owner to toggle it.
 const allowToggleDebug = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.debug",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const { currentPlan } = storeToRefs(subscriptionStore);
 

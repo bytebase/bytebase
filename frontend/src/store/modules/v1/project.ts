@@ -15,7 +15,7 @@ import {
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { useActuatorV1Store } from "./actuator";
 import { projectNamePrefix } from "./common";
@@ -58,10 +58,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     );
   };
   const getProjectListByUser = (user: User, showDeleted = false) => {
-    const canManageProject = hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      user.userRole
-    );
+    const canManageProject = hasWorkspacePermissionV2(user, "bb.projects.list");
     const projectList = getProjectList(showDeleted);
     if (canManageProject) {
       return projectList;

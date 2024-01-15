@@ -141,7 +141,7 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
@@ -160,10 +160,7 @@ const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-general",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const watermarkEnabled = computed((): boolean => {
   return (
