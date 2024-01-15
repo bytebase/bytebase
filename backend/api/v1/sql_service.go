@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -2311,8 +2312,10 @@ func (s *SQLService) checkQueryRights(
 	isExport bool,
 ) error {
 	// Owner and DBA have all rights.
-	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
-		return nil
+	if !s.profile.DevelopmentIAM {
+		if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
+			return nil
+		}
 	}
 
 	// TODO(d): use a Redshift extraction for shared database.
@@ -2392,7 +2395,7 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		ok, err := hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+		ok, err := s.hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -2404,7 +2407,52 @@ func (s *SQLService) checkQueryRights(
 	return nil
 }
 
-func hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+	if s.profile.DevelopmentIAM {
+		return func() (bool, error) {
+			wantPermission := iam.PermissionDatabasesQuery
+			if isExport {
+				wantPermission = iam.PermissionDatabasesExport
+			}
+
+			for _, binding := range projectPolicy.Bindings {
+				role := common.FormatRole(binding.Role.String())
+				permissions := s.iamManager.GetPermissions(role)
+				if slices.Index(permissions, wantPermission) == -1 {
+					continue
+				}
+				hasUser := false
+				for _, member := range binding.Members {
+					if member.ID == principalID || member.Email == api.AllUsers {
+						hasUser = true
+						break
+					}
+				}
+				if !hasUser {
+					continue
+				}
+
+				switch binding.Role {
+				// We need to evaluate CEL expressions for ProjectQuerier & ProjectExporter.
+				case api.ProjectQuerier, api.ProjectExporter:
+					ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
+					if err != nil {
+						slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
+						continue
+					}
+					if ok {
+						return true, nil
+					}
+
+				// TODO(p0ny): eval CEL.
+				default:
+					return true, nil
+				}
+			}
+			return false, nil
+		}()
+	}
+
 	// TODO(rebelice): implement table-level query permission check and refactor this function.
 	// Project IAM policy evaluation.
 	pass := false
