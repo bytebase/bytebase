@@ -144,7 +144,7 @@ func (s *IssueService) getIssueFind(ctx context.Context, projectIDs *[]string, p
 		Limit:      limit,
 		Offset:     offset,
 	}
-	if projectID != "" {
+	if projectID != "-" {
 		issueFind.ProjectID = &projectID
 	}
 	if query != "" {
