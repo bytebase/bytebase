@@ -37,7 +37,7 @@ func TestSplitTiDBMultiSQL(t *testing.T) {
 	a.NoError(err)
 
 	for idx, tc := range testCases {
-		tokenizer := NewTokenizer(tc.Statement)
+		tokenizer := NewTokenizer(tc.Statement, KeepEmptyBlocks())
 		list, err := tokenizer.SplitTiDBMultiSQL()
 		a.NoError(err)
 

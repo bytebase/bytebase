@@ -24,6 +24,41 @@ var (
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
+type TokenizerOption func(*Tokenizer)
+
+// KeepEmptyBlocks is used to keep empty lines between the blocks.
+// Currently, it is only available for SplitTiDBMultiSQL.
+// The following example shows how it affects the result:
+//
+//	CREATE TABLE t1 (
+//	  a int
+//	);
+//
+//
+//	CREATE TABLE t2 (
+//	  a int
+//	);
+//
+// If we set KeepEmptyBlocks, the result will be:
+// [
+//
+//	"CREATE TABLE t1 (
+//	  a int
+//	);",
+//	"\n",
+//	"CREATE TABLE t2 (
+//	  a int
+//	);"
+//
+// ]
+// Note, the sum of the empty lines in that block will be 1(2-1) instead of 2, the reason is
+// that do not break the current caller.
+func KeepEmptyBlocks() TokenizerOption {
+	return func(t *Tokenizer) {
+		t.keepEmptyBlocks = true
+	}
+}
+
 type Tokenizer struct {
 	buffer         []rune
 	cursor         uint
@@ -35,11 +70,15 @@ type Tokenizer struct {
 	reader  *bufio.Reader
 	f       func(string) error
 	readErr error
+
+	// Options.
+	// keepEmptyBlocks is used to keep empty lines between the blocks.
+	keepEmptyBlocks bool
 }
 
 // NewTokenizer creates a new tokenizer.
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
-func NewTokenizer(statement string) *Tokenizer {
+func NewTokenizer(statement string, options ...TokenizerOption) *Tokenizer {
 	t := &Tokenizer{
 		buffer: []rune(statement),
 		cursor: 0,
@@ -48,6 +87,11 @@ func NewTokenizer(statement string) *Tokenizer {
 	t.len = uint(len(t.buffer))
 	// append an additional eofRune.
 	t.buffer = append(t.buffer, eofRune)
+
+	for _, option := range options {
+		option(t)
+	}
+
 	return t
 }
 
@@ -400,6 +444,25 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 				if err := t.processStreaming(s); err != nil {
 					return nil, err
 				}
+			}
+
+			if t.keepEmptyBlocks {
+				newRes := make([]base.SingleSQL, 0, len(res))
+				baseline := 0
+				for _, sql := range res {
+					lines := strings.Split(sql.Text, "\n")
+					if lap := sql.LastLine - len(lines) - baseline; lap > 0 {
+						newRes = append(newRes, base.SingleSQL{
+							Text:     strings.Repeat("\n", lap),
+							BaseLine: baseline,
+							LastLine: baseline + lap,
+							Empty:    true,
+						})
+					}
+					newRes = append(newRes, sql)
+					baseline = sql.LastLine
+				}
+				return newRes, t.readErr
 			}
 			return res, t.readErr
 		case t.equalWordCaseInsensitive(delimiter):

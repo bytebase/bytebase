@@ -1,11 +1,21 @@
 - description: empty statement
-  statement: '  '
+  statement: "  "
   expected: []
 - description: multi-newline
   statement: |-
     CREATE TABLE `u` (
       `b` blob NOT NULL,
     );
+
+
+
+    /*
+
+
+
+    */
+
+
 
     --
     -- Table structure for `t`
@@ -24,7 +34,25 @@
       lastline: 3
       lastcolumn: 0
       empty: false
+    - text: |4+
+
+
+
+      baseline: 3
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 6
+      lastcolumn: 0
+      empty: true
     - text: |-
+        /*
+
+
+
+        */
+
+
+
         --
         -- Table structure for `t`
         --
@@ -34,6 +62,6 @@
       baseline: 0
       firststatementline: 0
       firststatementcolumn: 0
-      lastline: 10
+      lastline: 20
       lastcolumn: 0
       empty: false
