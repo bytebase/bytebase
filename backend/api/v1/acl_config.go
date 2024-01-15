@@ -86,6 +86,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.EnvironmentService_ListEnvironments_FullMethodName:    iam.PermissionEnvironmentsList,
 	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: iam.PermissionEnvironmentsUpdate,
 	v1pb.IssueService_CreateIssue_FullMethodName:               iam.PermissionIssuesCreate,
+	v1pb.IssueService_SearchIssues_FullMethodName:              "", // handled in the method.
 	v1pb.IssueService_ListIssues_FullMethodName:                iam.PermissionIssuesList,
 	v1pb.IssueService_GetIssue_FullMethodName:                  iam.PermissionIssuesGet,
 	v1pb.IssueService_UpdateIssue_FullMethodName:               iam.PermissionIssuesUpdate,
