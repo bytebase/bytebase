@@ -429,11 +429,11 @@ func (i *indexState) toString(buf *strings.Builder) error {
 		}
 	} else {
 		if i.unique {
-			if _, err := buf.WriteString("UNIQUE INDEX "); err != nil {
+			if _, err := buf.WriteString("UNIQUE KEY "); err != nil {
 				return err
 			}
 		} else {
-			if _, err := buf.WriteString("INDEX "); err != nil {
+			if _, err := buf.WriteString("KEY "); err != nil {
 				return err
 			}
 		}

@@ -2,7 +2,9 @@
     CREATE TABLE `t` (
       `a` int,
       PRIMARY KEY (`a`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`),
+      UNIQUE KEY `uk_a` (`a`),
+      KEY `idx_a` (`a`)
     ) COMMENT 'hello';
     CREATE TABLE `t3` (
       `a` int
@@ -15,7 +17,8 @@
       `f` int comment 'this is comment',
       `g` blob,
       PRIMARY KEY (`a`, `c`, `d`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
+      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`),
+      UNIQUE KEY `uk_a` (`a`)
     );
     CREATE TABLE `users` (
       `id` int(11) NOT NULL COMMENT 'ID',
@@ -150,6 +153,15 @@
                   "unique":  true,
                   "primary":  true,
                   "visible":  true
+                },
+                {
+                  "name":  "uk_a",
+                  "expressions":  [
+                    "b"
+                  ],
+                  "unique":  true,
+                  "primary":  false,
+                  "visible":  true
                 }
               ],
               "foreignKeys":  [
@@ -184,6 +196,15 @@
                   "unique": true,
                   "primary": true,
                   "visible": true
+                },
+                {
+                  "name": "udx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "unique": true,
+                  "primary": false,
+                  "visible": true
                 }
               ]
             },
@@ -205,6 +226,15 @@
                   ],
                   "unique": true,
                   "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_a",
+                  "expressions": [
+                    "a"
+                  ],
+                  "unique": false,
+                  "primary": false,
                   "visible": true
                 }
               ]
@@ -264,7 +294,8 @@
       `g` blob,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`),
-      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`),
+      UNIQUE KEY `uk_a` (`b`)
     );
 
     CREATE TABLE `users` (
@@ -283,7 +314,8 @@
 
     create table t5(
       a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */,
-      primary key (a)
+      primary key (a),
+      UNIQUE KEY `udx_a` (`a`)
     );
 
     --
@@ -291,7 +323,8 @@
     --
     CREATE TABLE `t6` (
       `a` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6) */,
-      PRIMARY KEY (`a`)
+      PRIMARY KEY (`a`),
+      KEY `idx_a` (`a`)
     );
 
     --
