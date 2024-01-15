@@ -16,6 +16,7 @@ const issueRoutes: RouteRecordRaw[] = [
     },
     props: { content: true, leftSidebar: true },
   },
+  // legacy issue detail route have to be kept for a long time.
   {
     path: "issue/:issueSlug",
     name: "workspace.issue.detail",
