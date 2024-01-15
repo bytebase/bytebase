@@ -54,7 +54,7 @@ const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 
 const hasSettingListPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.list");
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 
 const getItemClass = (path: string | undefined) => {
