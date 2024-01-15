@@ -12,11 +12,8 @@ const instanceRoutes: RouteRecordRaw[] = [
     name: "workspace.instance",
     meta: {
       title: () => t("common.instances"),
-      quickActionListByRole: () => {
-        return new Map([
-          ["OWNER", ["quickaction.bb.instance.create"]],
-          ["DBA", ["quickaction.bb.instance.create"]],
-        ]);
+      getQuickActionList: () => {
+        return ["quickaction.bb.instance.create"];
       },
     },
     components: {
