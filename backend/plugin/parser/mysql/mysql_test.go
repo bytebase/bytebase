@@ -143,3 +143,152 @@ func TestMySQLParser(t *testing.T) {
 		}
 	}
 }
+
+func TestRestoreDelimiter(t *testing.T) {
+	testCases := []struct {
+		input string
+		want  string
+	}{
+		{
+			// No delimiter
+			input: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+`,
+			want: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+`,
+		},
+
+		{
+			// One delimiter
+			input: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+`,
+			want: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;;
+`,
+		},
+
+		{
+			// Multiple delimiters.
+			input: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ??
+CREATE FUNCTION hello3(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ;
+DROP FUNCTION hello3;
+`,
+			want: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+DELIMITER ;;
+CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;;
+CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ;;
+DELIMITER ??
+CREATE FUNCTION hello3(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+    DETERMINISTIC
+RETURN CONCAT('Hello, ',s,'!') ??
+DELIMITER ;
+DROP FUNCTION hello3;
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		got, err := RestoreDelimiter(tc.input)
+		require.NoError(t, err)
+		require.Equal(t, tc.want, got)
+	}
+}
