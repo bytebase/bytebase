@@ -10,32 +10,11 @@ import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { Project } from "@/types/proto/v1/project_service";
-import {
-  extractRoleResourceName,
-  hasProjectPermission,
-  ProjectPermissionType,
-} from "../role";
 
 export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
-};
-
-export const hasPermissionInProjectV1 = (
-  policy: IamPolicy,
-  user: User,
-  permission: ProjectPermissionType
-) => {
-  return policy.bindings.some((binding) => {
-    if (binding.members.includes(`user:${user.email}`)) {
-      return hasProjectPermission(
-        permission,
-        extractRoleResourceName(binding.role)
-      );
-    }
-    return false;
-  });
 };
 
 export const roleListInProjectV1 = (iamPolicy: IamPolicy, user: User) => {
