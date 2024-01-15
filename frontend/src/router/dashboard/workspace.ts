@@ -1,8 +1,8 @@
-import { pull, startCase } from "lodash-es";
+import { startCase } from "lodash-es";
 import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import { hasFeature, useUserStore } from "@/store";
-import { QuickActionType, unknownUser } from "@/types";
+import { useUserStore } from "@/store";
+import { unknownUser } from "@/types";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import SettingSidebar from "@/views/SettingSidebar.vue";
@@ -14,27 +14,15 @@ const workspaceRoutes: RouteRecordRaw[] = [
     path: "",
     name: WORKSPACE_HOME_MODULE,
     meta: {
-      quickActionListByRole: () => {
-        const DBA_AND_OWNER_QUICK_ACTION_LIST: QuickActionType[] = [
+      getQuickActionList: () => {
+        return [
           "quickaction.bb.database.schema.update",
           "quickaction.bb.database.data.update",
           "quickaction.bb.database.create",
           "quickaction.bb.instance.create",
-        ];
-        const DEVELOPER_QUICK_ACTION_LIST: QuickActionType[] = [
-          "quickaction.bb.database.schema.update",
-          "quickaction.bb.database.data.update",
           "quickaction.bb.issue.grant.request.querier",
           "quickaction.bb.issue.grant.request.exporter",
         ];
-        if (hasFeature("bb.feature.dba-workflow")) {
-          pull(DEVELOPER_QUICK_ACTION_LIST, "quickaction.bb.database.create");
-        }
-        return new Map([
-          ["OWNER", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DBA", DBA_AND_OWNER_QUICK_ACTION_LIST],
-          ["DEVELOPER", DEVELOPER_QUICK_ACTION_LIST],
-        ]);
       },
     },
     components: {

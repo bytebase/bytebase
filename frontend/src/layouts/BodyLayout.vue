@@ -236,10 +236,9 @@ import {
   useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
-import { QuickActionType, RoleType } from "@/types";
+import { QuickActionType, QuickActionPermissionMap } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
-import { getQuickActionList } from "@/utils";
+import { hasWorkspacePermissionV1, hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
 import Quickstart from "../components/Quickstart.vue";
@@ -260,9 +259,11 @@ const state = reactive<LocalState>({
   showReleaseModal: false,
 });
 
+const currentUserV1 = useCurrentUserV1();
+
 const hasPermission = hasWorkspacePermissionV1(
   "bb.permission.workspace.manage-subscription",
-  useCurrentUserV1().value.userRole
+  currentUserV1.value.userRole
 );
 
 const { pageMode, isDemo } = storeToRefs(actuatorStore);
@@ -275,12 +276,22 @@ const canUpgrade = computed(() => {
   return actuatorStore.hasNewRelease;
 });
 
+const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
+  return list.filter((action) => {
+    if (!QuickActionPermissionMap.has(action)) {
+      return false;
+    }
+    return QuickActionPermissionMap.get(action)?.every((permission) =>
+      hasWorkspacePermissionV2(currentUserV1.value, permission)
+    );
+  });
+};
+
 const quickActionList = computed(() => {
-  const quickActionListFunc =
-    router.currentRoute.value.meta.quickActionListByRole;
+  const quickActionListFunc = router.currentRoute.value.meta.getQuickActionList;
   const listByRole = quickActionListFunc
     ? quickActionListFunc(router.currentRoute.value)
-    : new Map<RoleType, QuickActionType[]>();
+    : [];
 
   return getQuickActionList(listByRole);
 });

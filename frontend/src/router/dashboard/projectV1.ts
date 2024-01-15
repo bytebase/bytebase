@@ -36,12 +36,8 @@ const projectV1Routes: RouteRecordRaw[] = [
     name: "workspace.project",
     meta: {
       title: () => t("common.projects"),
-      quickActionListByRole: () => {
-        return new Map([
-          ["OWNER", ["quickaction.bb.project.create"]],
-          ["DBA", ["quickaction.bb.project.create"]],
-          ["DEVELOPER", ["quickaction.bb.project.create"]],
-        ]);
+      getQuickActionList: () => {
+        return ["quickaction.bb.project.create"];
       },
     },
     components: {
