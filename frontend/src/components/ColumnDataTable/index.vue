@@ -25,7 +25,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import LabelsCell from "./LabelsCell.vue";
 import MaskingLevelCell from "./MaskingLevelCell.vue";
 import SemanticTypeCell from "./SemanticTypeCell.vue";
@@ -120,12 +120,7 @@ const showCollationColumn = computed(() => {
 });
 
 const hasSensitiveDataPermission = computed(() => {
-  if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-sensitive-data",
-      currentUserV1.value.userRole
-    )
-  ) {
+  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
     // True if the currentUser has workspace level sensitive data
     // R+W privileges. AKA DBA or Workspace owner
     return true;

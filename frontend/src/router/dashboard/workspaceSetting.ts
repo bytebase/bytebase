@@ -52,11 +52,10 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
     },
     children: [
       {
-        path: "",
+        path: "profile",
         name: SETTING_ROUTE_PROFILE,
         meta: { title: () => t("settings.sidebar.profile") },
         component: () => import("@/views/ProfileDashboard.vue"),
-        alias: "profile",
         props: true,
       },
       {

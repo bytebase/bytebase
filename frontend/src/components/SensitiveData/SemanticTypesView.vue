@@ -47,7 +47,7 @@ import {
   useSettingV1Store,
 } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import SemanticTemplateDrawer from "./components/SemanticTemplateDrawer.vue";
 import SemanticTypesTable, {
   SemanticItem,
@@ -69,10 +69,7 @@ const state = reactive<LocalState>({
 const settingStore = useSettingV1Store();
 const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sensitive-data",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

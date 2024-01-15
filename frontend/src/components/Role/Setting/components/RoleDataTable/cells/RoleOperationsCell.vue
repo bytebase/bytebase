@@ -15,9 +15,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useRoleStore } from "@/store";
+import { computed } from "vue";
+import { useCurrentUserV1, useRoleStore } from "@/store";
 import { Role } from "@/types/proto/v1/role_service";
-import { isCustomRole, useWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
 
 const props = defineProps<{
@@ -30,10 +31,11 @@ defineEmits<{
 
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
+const currentUser = useCurrentUserV1();
 
-const allowAdmin = useWorkspacePermissionV1(
-  "bb.permission.workspace.manage-general"
-);
+const allowAdmin = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.update");
+});
 
 const deleteRole = async () => {
   if (!hasCustomRoleFeature.value) {

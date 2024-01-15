@@ -4,24 +4,17 @@ import { authServiceClient } from "@/grpcweb";
 import {
   ALL_USERS_USER_ID,
   ALL_USERS_USER_EMAIL,
-  Principal,
   PrincipalType,
-  RoleType,
   allUsersUser,
 } from "@/types";
 import {
   UpdateUserRequest,
   User,
-  userRoleToJSON,
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserUID } from "@/utils";
-import {
-  getUserId,
-  userNamePrefix,
-  getUserEmailFromIdentifier,
-} from "./v1/common";
+import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 
 interface UserState {
   userMapByName: Map<string, User>;
@@ -162,12 +155,6 @@ export const getUpdateMaskFromUsers = (
   if (!isUndefined(update.password) && update.password !== "") {
     updateMask.push("password");
   }
-  if (
-    !isUndefined(update.userRole) &&
-    !isEqual(origin.userRole, update.userRole)
-  ) {
-    updateMask.push("role");
-  }
   if (!isUndefined(update.roles) && !isEqual(origin.roles, update.roles)) {
     updateMask.push("roles");
   }
@@ -184,18 +171,4 @@ export const convertUserTypeToPrincipalType = (
   } else {
     return "END_USER";
   }
-};
-
-export const convertUserToPrincipal = (user: User): Principal => {
-  const userRole = userRoleToJSON(user.userRole) as RoleType;
-  const userType = convertUserTypeToPrincipalType(user.userType);
-
-  return {
-    id: getUserId(user.name),
-    name: user.title,
-    email: user.email,
-    role: userRole,
-    type: userType,
-    serviceKey: user.password,
-  };
 };

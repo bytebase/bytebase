@@ -26,7 +26,7 @@ import {
   TenantMode,
   Workflow,
 } from "@/types/proto/v1/project_service";
-import { hasWorkspacePermissionV1, roleListInProjectV1 } from "@/utils";
+import { hasWorkspacePermissionV2, roleListInProjectV1 } from "@/utils";
 
 interface ProjectSelectOption extends SelectOption {
   value: string;
@@ -76,10 +76,7 @@ const prepare = () => {
 };
 
 const hasWorkspaceManageProjectPermission = computed(() =>
-  hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-project",
-    currentUserV1.value.userRole
-  )
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list")
 );
 
 const rawProjectList = computed(() => {

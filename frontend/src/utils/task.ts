@@ -1,5 +1,9 @@
 import { groupBy, maxBy } from "lodash-es";
-import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useProjectV1Store,
+} from "@/store";
 import {
   Issue,
   Task,
@@ -17,8 +21,8 @@ import {
   TaskType,
   unknownDatabase,
 } from "@/types";
+import { hasProjectPermissionV2 } from "./iam";
 import { activeTask } from "./pipeline";
-import { hasWorkspacePermissionV1 } from "./role";
 import { issueSlug, stageSlug, taskSlug } from "./slug";
 import { extractUserUID } from "./v1";
 
@@ -231,11 +235,15 @@ export const canSkipTask = (
   }
 
   const currentUserV1 = useCurrentUserV1();
+  const composedProject = useProjectV1Store().getProjectByName(
+    issue.project.name
+  );
 
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-issue",
-      currentUserV1.value.userRole
+    hasProjectPermissionV2(
+      composedProject,
+      currentUserV1.value,
+      "bb.issues.update"
     )
   ) {
     return true;

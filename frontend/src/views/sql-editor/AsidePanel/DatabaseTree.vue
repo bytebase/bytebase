@@ -93,7 +93,7 @@ import {
   findAncestor,
   formatEngineV1,
   getSuggestedTabNameFromConnection,
-  hasWorkspacePermissionV1,
+  hasWorkspacePermissionV2,
   instanceV1AllowsCrossDatabaseQuery,
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
@@ -249,10 +249,7 @@ const selectedKeys = computed(() => {
 });
 
 const allowAdmin = computed(() =>
-  hasWorkspacePermissionV1(
-    "bb.permission.workspace.admin-sql-editor",
-    me.value.userRole
-  )
+  hasWorkspacePermissionV2(me.value, "bb.instances.adminExecute")
 );
 
 const setConnection = (

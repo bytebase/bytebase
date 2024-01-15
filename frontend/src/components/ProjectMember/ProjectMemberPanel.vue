@@ -131,11 +131,7 @@ import {
   PresetRoleType,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
-  extractUserUID,
-  hasPermissionInProjectV1,
-  hasWorkspacePermissionV1,
-} from "@/utils";
+import { extractUserUID, hasProjectPermissionV2 } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberTable, {
@@ -183,23 +179,15 @@ const allowAdmin = computed(() => {
 
   // Allow workspace roles having manage project permission here in case project owners are not available.
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-project",
-      currentUserV1.value.userRole
+    hasProjectPermissionV2(
+      props.project,
+      currentUserV1.value,
+      "bb.projects.setIamPolicy"
     )
   ) {
     return true;
   }
 
-  if (
-    hasPermissionInProjectV1(
-      iamPolicy.value,
-      currentUserV1.value,
-      "bb.permission.project.manage-member"
-    )
-  ) {
-    return true;
-  }
   return false;
 });
 

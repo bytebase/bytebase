@@ -93,7 +93,7 @@ import {
 import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { QueryResult } from "@/types/proto/v1/sql_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
@@ -179,14 +179,12 @@ const tabName = (result: QueryResult, index: number) => {
 
 const disallowCopyingData = computed(() => {
   if (
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.admin-sql-editor",
-      currentUser.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUser.value, "bb.instances.adminExecute")
   ) {
     // `disableCopyDataPolicy` is only applicable to workspace developers.
     return false;
   }
+
   const instance = useInstanceV1Store().getInstanceByUID(
     connection.value.instanceId
   );

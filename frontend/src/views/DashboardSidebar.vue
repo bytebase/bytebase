@@ -30,7 +30,7 @@ import {
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
 } from "@/store";
-import { hasWorkspacePermissionV1 } from "../utils";
+import { hasWorkspacePermissionV2 } from "../utils";
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
@@ -49,10 +49,7 @@ const shouldShowSyncSchemaEntry = computed(() => {
 });
 
 const shouldShowInstanceEntry = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list");
 });
 
 const getItemClass = (path: string | undefined): string[] => {

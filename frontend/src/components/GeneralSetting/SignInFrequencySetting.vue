@@ -54,7 +54,7 @@ import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureType, defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
@@ -91,10 +91,7 @@ const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
 const allowEdit = computed((): boolean => {
   return (
     hasSecureTokenFeature.value &&
-    hasWorkspacePermissionV1(
-      "bb.permission.workspace.manage-general",
-      currentUserV1.value.userRole
-    )
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
   );
 });
 

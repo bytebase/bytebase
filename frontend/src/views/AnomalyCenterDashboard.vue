@@ -10,14 +10,11 @@ import AnomalyCenterDashboard, {
   AnomalyTabId,
 } from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import { useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const currentUserV1 = useCurrentUserV1();
 const selectedTab = computed((): AnomalyTabId => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
-  )
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update")
     ? "instance"
     : "database";
 });

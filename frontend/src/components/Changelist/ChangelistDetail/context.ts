@@ -20,11 +20,7 @@ import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
-import {
-  extractUserResourceName,
-  hasWorkspacePermissionV1,
-  isOwnerOfProjectV1,
-} from "@/utils";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export type ChangelistDetailEvents = Emittery<{
   "reorder-cancel": undefined;
@@ -83,16 +79,8 @@ export const provideChangelistDetailContext = () => {
 
   const allowEdit = computed(() => {
     if (
-      hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-issue",
-        me.value.userRole
-      )
+      hasProjectPermissionV2(project.value, me.value, "bb.changelists.update")
     ) {
-      // Allow workspace high-privileged user to edit all changelists.
-      return true;
-    }
-    if (isOwnerOfProjectV1(project.value.iamPolicy, me.value)) {
-      // Allow project owners to edit all changelists in the project.
       return true;
     }
     if (extractUserResourceName(changelist.value.creator) === me.value.email) {

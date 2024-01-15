@@ -35,9 +35,9 @@ import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
-  UNKNOWN_PROJECT_NAME,
+  defaultProject,
 } from "@/types";
-import { VueClass, connectionV1Slug, hasWorkspacePermissionV1 } from "@/utils";
+import { VueClass, connectionV1Slug, hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   showRequestQueryPanel: boolean;
@@ -93,14 +93,12 @@ const gotoSQLEditor = () => {
   }
 
   const database = props.database as ComposedDatabase;
-  if (
-    database.project === DEFAULT_PROJECT_V1_NAME ||
-    database.project === UNKNOWN_PROJECT_NAME
-  ) {
+  if (database.project === DEFAULT_PROJECT_V1_NAME) {
     if (
-      !hasWorkspacePermissionV1(
-        "bb.permission.workspace.manage-database",
-        currentUserV1.value.userRole
+      !hasProjectPermissionV2(
+        defaultProject,
+        currentUserV1.value,
+        "bb.databases.query"
       )
     ) {
       // For unassigned databases, only high-privileged users

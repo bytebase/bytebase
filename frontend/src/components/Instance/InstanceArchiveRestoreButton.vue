@@ -61,7 +61,7 @@ import {
 } from "@/store";
 import { ComposedInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -83,9 +83,9 @@ const subscriptionStore = useSubscriptionV1Store();
 const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-instance",
-    currentUserV1.value.userRole
+  return (
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.delete") ||
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.undelete")
   );
 });
 

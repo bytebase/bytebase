@@ -273,7 +273,6 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
-  hasWorkspacePermissionV1,
   hasWorkspacePermissionV2,
   sqlReviewPolicySlug,
 } from "@/utils";
@@ -480,10 +479,7 @@ const allowCreate = computed(() => {
 });
 
 const allowEditSQLReviewPolicy = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-sql-review-policy",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const valueChanged = (

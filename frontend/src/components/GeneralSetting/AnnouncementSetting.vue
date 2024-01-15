@@ -125,7 +125,7 @@ import {
   Announcement,
   Announcement_AlertLevel,
 } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV1 } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   announcement: Announcement;
@@ -158,10 +158,7 @@ watchEffect(() => {
 });
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-announcement",
-    currentUserV1.value.userRole
-  );
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
 });
 
 const allowSave = computed((): boolean => {

@@ -9,7 +9,7 @@ import {
   IssueFilter,
   PresetRoleType,
 } from "@/types";
-import { UserRole, UserType } from "@/types/proto/v1/auth_service";
+import { UserType } from "@/types/proto/v1/auth_service";
 import {
   issueStatusToJSON,
   ApprovalStep,
@@ -188,13 +188,13 @@ export const candidatesOfApprovalStepV1 = (
           .map((member) => member.user);
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
-        return workspaceMemberList.filter(
-          (member) => member.userRole === UserRole.DBA
+        return workspaceMemberList.filter((member) =>
+          member.roles.includes(PresetRoleType.WORKSPACE_DBA)
         );
       }
       if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
-        return workspaceMemberList.filter(
-          (member) => member.userRole === UserRole.OWNER
+        return workspaceMemberList.filter((member) =>
+          member.roles.includes(PresetRoleType.WORKSPACE_ADMIN)
         );
       }
       return [];

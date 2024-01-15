@@ -8,9 +8,6 @@
       <span class="text-main font-medium truncate text-ellipsis">
         {{ currentUserV1.title }}
       </span>
-      <span class="text-control">
-        {{ roleNameV1(currentUserV1.userRole) }}
-      </span>
     </p>
     <p class="text-sm text-control truncate text-ellipsis">
       {{ currentUserV1.email }}
@@ -20,7 +17,6 @@
 
 <script setup lang="ts">
 import { useCurrentUserV1 } from "@/store";
-import { roleNameV1 } from "@/utils";
 
 const currentUserV1 = useCurrentUserV1();
 </script>

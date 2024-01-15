@@ -38,8 +38,8 @@ export default { name: "RepositoryVCSProviderPanel" };
 <script setup lang="ts">
 import { reactive, computed, watchEffect, onUnmounted, onMounted } from "vue";
 import isEmpty from "lodash-es/isEmpty";
-import { OAuthWindowEventPayload, openWindowForOAuth } from "../types";
-import { hasWorkspacePermissionV1 } from "../utils";
+import { OAuthWindowEventPayload, openWindowForOAuth } from "@/types";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
   ExternalVersionControl,
@@ -93,9 +93,9 @@ const eventListener = (event: Event) => {
 };
 
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermissionV1(
-    "bb.permission.workspace.manage-vcs-provider",
-    currentUserV1.value.userRole
+  return hasWorkspacePermissionV2(
+    currentUserV1.value,
+    "bb.externalVersionControls.list"
   );
 });
 
