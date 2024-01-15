@@ -18,7 +18,6 @@
           <ProjectSelect
             class="!w-60 shrink-0"
             :project="state.projectId"
-            :filter-by-current-user="true"
             :allowed-project-role-list="[
               PresetRoleType.PROJECT_OWNER,
               PresetRoleType.PROJECT_DEVELOPER,

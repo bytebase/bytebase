@@ -59,8 +59,8 @@
       >
         <BBSpin />
       </div>
-
       <PagedIssueTableV1
+        v-else
         :key="keyForTab(tab)"
         v-model:loading="state.loading"
         v-model:loading-more="state.loadingMore"
@@ -87,13 +87,13 @@ import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
-import { reactive, PropType, computed, watch } from "vue";
+import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
-import { Project } from "@/types/proto/v1/project_service";
+import { ComposedProject } from "@/types";
 import {
   SearchParams,
   SearchScope,
@@ -120,12 +120,9 @@ interface LocalState {
   loadingMore: boolean;
 }
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-});
+const props = defineProps<{
+  project: ComposedProject;
+}>();
 
 const { t } = useI18n();
 const route = useRoute();
