@@ -882,6 +882,7 @@ func (t *Tokenizer) truncate(pos uint) {
 	t.cursor -= pos
 }
 
+// char returns the rune after the cursor, if out of range, return eofRune.
 func (t *Tokenizer) char(after uint) rune {
 	for t.cursor+after >= t.len && t.reader != nil {
 		t.scan()
@@ -902,6 +903,7 @@ func (t *Tokenizer) preChar(before uint) rune {
 	return t.buffer[t.cursor-before]
 }
 
+// skip skips the cursor to the cursor + step, if out of range, skip will be set to len.
 func (t *Tokenizer) skip(step uint) {
 	t.cursor += step
 	for t.cursor > t.len && t.reader != nil {
@@ -912,9 +914,10 @@ func (t *Tokenizer) skip(step uint) {
 	}
 }
 
+// skipBlank skips the cursor to the first non-blank rune.
 func (t *Tokenizer) skipBlank() {
 	r := t.char(0)
-	for r == ' ' || r == '\n' || r == '\r' || r == '\t' {
+	for unicode.IsSpace(r) {
 		t.skip(1)
 		if r == '\n' {
 			t.line++
@@ -923,9 +926,10 @@ func (t *Tokenizer) skipBlank() {
 	}
 }
 
+// skipToBlank skips the cursor to the first blank rune.
 func (t *Tokenizer) skipToBlank() {
 	r := t.char(0)
-	for r != ' ' && r != '\n' && r != '\r' && r != '\t' && r != eofRune {
+	for r != eofRune && !unicode.IsSpace(r) {
 		t.skip(1)
 		r = t.char(0)
 	}
