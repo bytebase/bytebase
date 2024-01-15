@@ -59,7 +59,6 @@
       >
         <BBSpin />
       </div>
-      <NoDataPlaceholder v-if="!hasPermission" />
       <PagedIssueTableV1
         v-else
         :key="keyForTab(tab)"
@@ -94,7 +93,6 @@ import { useRoute, useRouter } from "vue-router";
 import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { TabFilterItem } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
 import { ComposedProject } from "@/types";
 import {
   SearchParams,
@@ -108,7 +106,6 @@ import {
   getValueFromSearchParams,
   upsertScope,
 } from "@/utils";
-import { hasProjectPermissionV2 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 
 const TABS = ["WAITING_APPROVAL", "WAITING_ROLLOUT", "ALL", ""] as const;
@@ -161,14 +158,6 @@ const storedTab = useLocalStorage<TabValue>(
     },
   }
 );
-
-const hasPermission = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    useCurrentUserV1().value,
-    "bb.issues.list"
-  );
-});
 
 const keyForTab = (tab: TabValue) => {
   if (tab === "WAITING_APPROVAL") return "project-issues-waiting-approval";
