@@ -2607,7 +2607,7 @@ func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance 
 	return project, databaseMessage, nil
 }
 
-func (s *SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
+func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
