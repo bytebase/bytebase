@@ -133,10 +133,12 @@ roles:
       - bb.databaseSecrets.list
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
+      - bb.databases.export
       - bb.databases.get
       - bb.databases.getBackupSetting
       - bb.databases.getSchema
       - bb.databases.list
+      - bb.databases.query
       - bb.databases.sync
       - bb.databases.update
       - bb.databases.updateBackupSetting
