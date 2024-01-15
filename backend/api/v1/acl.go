@@ -111,6 +111,10 @@ func (s overrideStream) Context() context.Context {
 }
 
 func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod string, request any, user *store.UserMessage) error {
+	if in.profile.DevelopmentIAM {
+		return in.checkIAMPermission(ctx, fullMethod, request, user)
+	}
+
 	if isOwnerAndDBAMethod(fullMethod) {
 		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", fullMethod)
 	}
@@ -145,10 +149,6 @@ func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod strin
 				return status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
 			}
 		}
-	}
-
-	if in.profile.DevelopmentIAM {
-		return in.checkIAMPermission(ctx, fullMethod, request, user)
 	}
 
 	return nil
