@@ -1811,19 +1811,20 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 		if project.Deleted {
 			continue
 		}
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
-			continue
-		}
 		if s.profile.DevelopmentIAM {
 			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
 			}
 			if !ok {
+				continue
+			}
+		} else {
+			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, err.Error())
+			}
+			if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
 				continue
 			}
 		}
@@ -2084,14 +2085,14 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionProjectsGet)
 		}
-	}
-
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	} else {
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
+		}
+		if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 	}
 
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
