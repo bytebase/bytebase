@@ -48,6 +48,7 @@
         <TooltipButton
           v-if="allowMigrate"
           tooltip-mode="DISABLED-ONLY"
+          :disabled="false"
           type="primary"
           @click="state.showBaselineModal = true"
         >
