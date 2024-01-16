@@ -453,7 +453,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
 	case v1pb.Issue_GRANT_REQUEST:
-		if !loopback {
+		if !s.profile.DevelopmentIAM && !loopback {
 			ok, err := isUserAtLeastProjectViewer(ctx, s.store, projectID)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
@@ -464,7 +464,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 		}
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
-		if !loopback {
+		if !s.profile.DevelopmentIAM && !loopback {
 			ok, err := isUserAtLeastProjectDeveloper(ctx, s.store, projectID)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue, error: %v", err)
