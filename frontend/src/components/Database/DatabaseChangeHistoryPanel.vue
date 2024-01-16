@@ -114,6 +114,7 @@ import {
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { AffectedTable, EmptyAffectedTable } from "@/types/changeHistory";
@@ -127,6 +128,7 @@ import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {
@@ -275,9 +277,10 @@ const doCreateBaseline = () => {
   state.showBaselineModal = false;
 
   router.push({
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(props.database.project),
+      issueSlug: "create",
     },
     query: {
       template: "bb.issue.database.schema.baseline",

@@ -1,4 +1,4 @@
-import { computed, ref, Ref, watch } from "vue";
+import { computed, MaybeRef, ref, unref, watch } from "vue";
 import {
   useRoute,
   useRouter,
@@ -13,13 +13,20 @@ import { createIssueSkeleton } from "./create";
 export * from "./create";
 
 export function useInitializeIssue(
-  issueSlug: Ref<string>,
+  issueSlug: MaybeRef<string>,
+  project: MaybeRef<string> = "-",
   redirectNotFound: boolean = true
 ) {
-  const isCreating = computed(() => issueSlug.value.toLowerCase() == "new");
+  const isCreating = computed(() => {
+    return (
+      unref(issueSlug).toLowerCase() == "new" ||
+      unref(issueSlug).toLowerCase() === "create"
+    );
+  });
   const uid = computed(() => {
-    const slug = issueSlug.value;
+    const slug = unref(issueSlug);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
+    if (slug.toLowerCase() === "create") return String(EMPTY_ID);
     const uid = Number(idFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
@@ -30,13 +37,13 @@ export function useInitializeIssue(
 
   const issue = ref<ComposedIssue>(emptyIssue());
 
-  const runner = async (uid: string, url: string) => {
+  const runner = async (uid: string, project: string, url: string) => {
     const issue =
       uid === String(EMPTY_ID)
         ? await createIssueSkeleton(
             convertRouterQuery(router.resolve(url).query)
           )
-        : await experimentalFetchIssueByUID(uid);
+        : await experimentalFetchIssueByUID(uid, project);
     return {
       issue,
       url,
@@ -44,15 +51,15 @@ export function useInitializeIssue(
   };
 
   watch(
-    uid,
-    (uid) => {
+    [uid, () => unref(project)],
+    ([uid, project]) => {
       if (uid === String(UNKNOWN_ID) && redirectNotFound) {
         router.push({ name: "error.404" });
         return;
       }
       const url = route.fullPath;
       isInitializing.value = true;
-      runner(uid, url).then((result) => {
+      runner(uid, project, url).then((result) => {
         if (result.url !== route.fullPath) {
           // the url changed, drop the outdated result
           return;

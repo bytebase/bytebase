@@ -138,6 +138,7 @@ import {
   PROJECT_V1_ROUTE_BRANCH_MERGE,
   PROJECT_V1_ROUTE_BRANCH_ROLLOUT,
   PROJECT_V1_ROUTE_BRANCH_REBASE,
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
 } from "@/router/dashboard/projectV1";
 import {
   extractUserEmail,
@@ -150,8 +151,11 @@ import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { ComposedProject, ProjectPermission } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { defer } from "@/utils";
-import { hasProjectPermissionV2 } from "@/utils";
+import {
+  defer,
+  extractProjectResourceName,
+  hasProjectPermissionV2,
+} from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
@@ -491,9 +495,10 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
     targetDatabaseList.map((db) => db.databaseName)
   );
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(props.project.name),
+      issueSlug: "create",
     },
     query,
   };

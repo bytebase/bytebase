@@ -18,7 +18,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { experimentalFetchIssueByUID } from "@/store";
 import { RollbackDetail, UNKNOWN_ID, unknownIssue, unknownTask } from "@/types";
@@ -26,6 +27,7 @@ import { Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   buildIssueV1LinkWithTask,
   extractIssueUID,
+  extractProjectResourceName,
   extractTaskUID,
   flattenTaskV1List,
 } from "@/utils";
@@ -82,23 +84,15 @@ const rollbackFromTaskUID = computed(() => {
   return String(UNKNOWN_ID);
 });
 
-// const rollbackFromIssue = useIssueById(
-//   rollbackFromIssueUID,
-//   true /* Lazy fetch */
-// );
-const rollbackFromIssue = ref(unknownIssue()); // TODO: useComposedIssueByUID
-
-watch(
-  rollbackFromIssueUID,
-  (uid) => {
-    experimentalFetchIssueByUID(uid).then((issue) => {
-      if (issue.uid === rollbackFromIssueUID.value) {
-        rollbackFromIssue.value = issue;
-      }
-    });
-  },
-  { immediate: true }
-);
+const rollbackFromIssue = computedAsync(async () => {
+  const uid = rollbackFromIssueUID.value;
+  // Here we assume that the rollback issue and the original issue are always
+  // in the same project
+  return await experimentalFetchIssueByUID(
+    uid,
+    extractProjectResourceName(issue.value.project)
+  );
+}, unknownIssue());
 
 const rollbackFromTask = computed(() => {
   const issue = rollbackFromIssue.value;

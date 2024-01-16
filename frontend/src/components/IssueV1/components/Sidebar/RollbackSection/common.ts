@@ -155,7 +155,6 @@ export const useRollbackContext = () => {
       try {
         await useIssueV1Store().createIssueComment({
           issueName: issue.value.name,
-          issueId: issue.value.uid,
           comment: `${action} SQL rollback log for task [${issue.value.title}].`,
           payload: {
             issueName: issue.value.title,

@@ -56,9 +56,11 @@ import { Status } from "nice-grpc-common";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { databaseServiceClient } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { featureToRef, hasFeature } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { ComposedSlowQueryLog } from "@/types";
+import { extractProjectResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 
 const props = defineProps<{
@@ -116,9 +118,10 @@ const handleCreateIndex = () => {
   query.name = generateIssueName();
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(database.value.project),
+      issueSlug: "create",
     },
     query,
   };

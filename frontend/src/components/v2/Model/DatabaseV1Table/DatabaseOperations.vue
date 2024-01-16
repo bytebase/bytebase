@@ -94,6 +94,7 @@ import { computed, h, VNode, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
@@ -116,6 +117,7 @@ import {
   allowUsingSchemaEditorV1,
   generateIssueName,
   hasProjectPermissionV2,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface DatabaseAction {
@@ -287,10 +289,12 @@ const generateMultiDb = async (
     // So we need not to sort them here.
     databaseList: selectedDatabaseUidList.value.join(","),
   };
+  const project = useProjectV1Store().getProjectByUID(selectedProjectUid.value);
   router.push({
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
     },
     query,
   });

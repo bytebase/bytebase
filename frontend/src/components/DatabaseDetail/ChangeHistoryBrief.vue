@@ -20,13 +20,19 @@
         {{ $t("common.issue") }}
       </label>
       <div class="flex-1">
-        <a
-          :href="`/issue/${extractIssueUID(changeHistory.issue)}`"
-          target="__BLANK"
+        <router-link
+          :to="{
+            name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+            params: {
+              projectId: extractProjectResourceName(changeHistory.issue),
+              issueSlug: extractIssueUID(changeHistory.issue),
+            },
+          }"
+          target="_blank"
           class="normal-link flex items-center gap-x-1"
         >
           {{ extractIssueUID(changeHistory.issue) }}
-        </a>
+        </router-link>
       </div>
     </div>
 
@@ -81,6 +87,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { computed, PropType } from "vue";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUserStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -88,6 +95,7 @@ import {
   extractUserResourceName,
   extractIssueUID,
   changeHistoryLink as makeChangeHistoryLink,
+  extractProjectResourceName,
 } from "@/utils";
 
 const props = defineProps({

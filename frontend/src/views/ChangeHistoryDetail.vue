@@ -28,7 +28,13 @@
                 >{{ $t("common.issue") }}&nbsp;-&nbsp;</span
               >
               <router-link
-                :to="`/issue/${extractIssueUID(changeHistory.issue)}`"
+                :to="{
+                  name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+                  params: {
+                    projectId: extractProjectResourceName(changeHistory.issue),
+                    issueSlug: extractIssueUID(changeHistory.issue),
+                  },
+                }"
                 class="normal-link"
               >
                 {{ extractIssueUID(changeHistory.issue) }}
@@ -328,6 +334,7 @@ import { computed, reactive, watch, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useChangeHistoryStore,
@@ -358,6 +365,7 @@ import {
   toClipboard,
   getStatementSize,
   hasProjectPermissionV2,
+  extractProjectResourceName,
 } from "@/utils";
 
 interface LocalState {
