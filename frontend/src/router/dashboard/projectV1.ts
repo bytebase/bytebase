@@ -289,7 +289,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ANOMALIES,
         meta: {
           overrideTitle: true,
-          // TODO(ed): permission check
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
@@ -301,7 +300,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ACTIVITIES,
         meta: {
           overrideTitle: true,
-          // TODO(ed): permission check
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectActivityDashboard.vue"),
@@ -312,7 +310,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_GITOPS,
         meta: {
           overrideTitle: true,
-          // TODO(ed): permission check
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () =>
@@ -323,7 +320,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         path: "webhooks",
         meta: {
           overrideTitle: true,
-          // TODO(ed): permission check
           requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         props: true,
@@ -364,7 +360,6 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_MEMBERS,
         meta: {
           overrideTitle: true,
-          // TODO(ed): permission check
           requiredProjectPermissionList: () => [
             "bb.projects.get",
             "bb.projects.getIamPolicy",
