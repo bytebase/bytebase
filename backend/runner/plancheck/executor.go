@@ -17,8 +17,8 @@ func runExecutorOnce(ctx context.Context, exec Executor, config *storepb.PlanChe
 			if !ok {
 				panicErr = errors.Errorf("%v", r)
 			}
-			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
-			err = errors.Errorf("encounter internal error when executing check")
+			slog.Error("planCheckExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
+			err = errors.Errorf("planCheckExecutor PANIC RECOVER, err: %v", panicErr)
 		}
 	}()
 
