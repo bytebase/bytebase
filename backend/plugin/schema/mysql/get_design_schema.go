@@ -880,7 +880,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 //
 // mysqldump generate drop view if exists statement after all create table statement.
 // To provide the better ux, we generate the new tables before the drop view statement.
-func (g *mysqlDesignSchemaGenerator) EnterDropView(ctx *mysql.DropViewContext) {
+func (g *mysqlDesignSchemaGenerator) EnterDropView(*mysql.DropViewContext) {
 	if g.err != nil {
 		return
 	}
@@ -891,7 +891,7 @@ func (g *mysqlDesignSchemaGenerator) EnterDropView(ctx *mysql.DropViewContext) {
 	}
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(*mysql.CreateProcedureContext) {
 	if g.err != nil {
 		return
 	}
@@ -902,7 +902,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(ctx *mysql.CreateProce
 	}
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(*mysql.CreateFunctionContext) {
 	if g.err != nil {
 		return
 	}
@@ -913,7 +913,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(ctx *mysql.CreateFuncti
 	}
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(ctx *mysql.CreateEventContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(*mysql.CreateEventContext) {
 	if g.err != nil {
 		return
 	}
@@ -924,7 +924,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(ctx *mysql.CreateEventCont
 	}
 }
 
-func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(ctx *mysql.CreateTriggerContext) {
+func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(*mysql.CreateTriggerContext) {
 	if g.err != nil {
 		return
 	}
