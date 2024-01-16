@@ -1,0 +1,66 @@
+- description: empty statement
+  statement: "  "
+  expected: []
+- description: multi-newline
+  statement: |-
+    CREATE TABLE `u` (
+      `b` blob NOT NULL,
+    );
+
+
+
+    /*
+
+
+
+    */
+
+
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `b` blob NOT NULL,
+    );
+  expected:
+    - text: |-
+        CREATE TABLE `u` (
+          `b` blob NOT NULL,
+        );
+      baseline: 0
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 3
+      lastcolumn: 0
+      empty: false
+    - text: |4+
+
+
+      baseline: 3
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 6
+      lastcolumn: 0
+      empty: true
+    - text: |-
+        /*
+
+
+
+        */
+
+
+
+        --
+        -- Table structure for `t`
+        --
+        CREATE TABLE `t` (
+          `b` blob NOT NULL,
+        );
+      baseline: 0
+      firststatementline: 0
+      firststatementcolumn: 0
+      lastline: 20
+      lastcolumn: 0
+      empty: false

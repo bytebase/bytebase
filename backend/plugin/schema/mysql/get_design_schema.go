@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -22,7 +23,7 @@ func init() {
 
 func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
-	list, err := mysqlparser.ParseMySQL(baselineSchema)
+	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks())
 	if err != nil {
 		return "", err
 	}
