@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,11 +11,24 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", fullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
+
 	if isSkippedMethod(fullMethod) {
 		return nil
 	}
@@ -33,6 +47,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ProjectService_CreateProject_FullMethodName,
 		v1pb.ProjectService_DeleteProject_FullMethodName,
 		v1pb.ProjectService_UndeleteProject_FullMethodName,
+		v1pb.SQLService_AdminExecute_FullMethodName,
 		v1pb.InstanceService_ListInstances_FullMethodName,
 		v1pb.InstanceService_GetInstance_FullMethodName,
 		v1pb.InstanceService_CreateInstance_FullMethodName,
@@ -45,6 +60,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
 		v1pb.InstanceService_SyncSlowQueries_FullMethodName,
+		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName,
 		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
 		v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName,
 		v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName,
@@ -225,7 +241,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.LoggingService_ExportLogs_FullMethodName,
 		v1pb.SQLService_Query_FullMethodName,
 		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_AdminExecute_FullMethodName,
 		v1pb.SQLService_DifferPreview_FullMethodName,
 		v1pb.SQLService_Check_FullMethodName,
 		v1pb.SQLService_Pretty_FullMethodName,

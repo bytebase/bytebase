@@ -14,14 +14,12 @@ import {
   useTabStore,
   useIdentityProviderStore,
   useUserStore,
-  useEnvironmentV1Store,
   useCurrentUserV1,
   useInstanceV1Store,
   useDatabaseV1Store,
   useChangeHistoryStore,
   usePageMode,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { idFromSlug, sheetNameFromSlug, uidFromSlug } from "@/utils";
 import authRoutes, {
@@ -34,6 +32,7 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
+import { ENVIRONMENT_V1_ROUTE } from "./dashboard/environmentV1";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "./dashboard/workspace";
 import {
@@ -84,7 +83,6 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
   const dbSchemaStore = useDBSchemaV1Store();
   const routerStore = useRouterStore();
-
   const isLoggedIn = authStore.isLoggedIn();
 
   const fromModule = from.name
@@ -206,13 +204,17 @@ router.beforeEach((to, from, next) => {
     to.name === "workspace.instance" ||
     to.name === "workspace.database" ||
     to.name === "workspace.issue" ||
-    to.name === "workspace.environment" ||
     to.name === SQL_EDITOR_HOME_MODULE ||
     (to.name?.toString().startsWith(SETTING_ROUTE) &&
       to.name?.toString() != SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL &&
       to.name?.toString() != SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL &&
       to.name?.toString() != SETTING_ROUTE_WORKSPACE_SSO_DETAIL)
   ) {
+    next();
+    return;
+  }
+
+  if (to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE)) {
     next();
     return;
   }
@@ -253,7 +255,6 @@ router.beforeEach((to, from, next) => {
 
   const routerSlug = routerStore.routeSlug(to);
   const principalEmail = routerSlug.principalEmail;
-  const environmentSlug = routerSlug.environmentSlug;
   const issueSlug = routerSlug.issueSlug;
   const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
@@ -275,28 +276,6 @@ router.beforeEach((to, from, next) => {
           replace: false,
         });
         throw error;
-      });
-    return;
-  }
-
-  if (environmentSlug) {
-    useEnvironmentV1Store()
-      .getOrFetchEnvironmentByUID(String(idFromSlug(environmentSlug)))
-      .then((env) => {
-        // getEnvironmentById returns unknown("ENVIRONMENT") when it doesn't exist
-        // so we need to check the id here
-        if (env && env.uid !== String(UNKNOWN_ID)) {
-          next();
-          return;
-        } else {
-          throw new Error();
-        }
-      })
-      .catch(() => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
       });
     return;
   }

@@ -166,7 +166,7 @@ const introList = computed(() => {
   if (hasWorkspacePermissionV2(currentUserV1.value, "bb.environments.create")) {
     introList.push({
       name: computed(() => t("quick-start.visit-environment")),
-      link: "/environment",
+      link: "/environments",
       done: computed(() =>
         uiStateStore.getIntroStateByKey("environment.visit")
       ),

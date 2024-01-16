@@ -1,16 +1,18 @@
 import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { useEnvironmentV1Store } from "@/store";
-import { idFromSlug } from "@/utils";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
+import { unknownEnvironment } from "@/types";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
-export const ENVIRONMENT_ROUTE_DASHBOARD = "workspace.environment";
-export const ENVIRONMENT_ROUTE_DETAIL = `${ENVIRONMENT_ROUTE_DASHBOARD}.detail`;
+export const ENVIRONMENT_V1_ROUTE = "workspace.environment";
+export const ENVIRONMENT_V1_ROUTE_DASHBOARD = `${ENVIRONMENT_V1_ROUTE}.dashboard`;
+export const ENVIRONMENT_V1_ROUTE_DETAIL = `${ENVIRONMENT_V1_ROUTE}.detail`;
 
-const environmentRoutes: RouteRecordRaw[] = [
+const environmentV1Routes: RouteRecordRaw[] = [
   {
-    path: "environment",
-    name: ENVIRONMENT_ROUTE_DASHBOARD,
+    path: "environments",
+    name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
       getQuickActionList: () => {
@@ -27,13 +29,15 @@ const environmentRoutes: RouteRecordRaw[] = [
     props: { content: true, leftSidebar: true },
   },
   {
-    path: "environment/:environmentSlug",
-    name: ENVIRONMENT_ROUTE_DETAIL,
+    path: "environments/:environmentId",
+    name: ENVIRONMENT_V1_ROUTE_DETAIL,
     meta: {
       title: (route: RouteLocationNormalized) => {
-        const slug = route.params.environmentSlug as string;
-        return useEnvironmentV1Store().getEnvironmentByUID(
-          String(idFromSlug(slug))
+        const environmentId = route.params.environmentId as string;
+        return (
+          useEnvironmentV1Store().getEnvironmentByName(
+            `${environmentNamePrefix}${environmentId}`
+          ) || unknownEnvironment()
         ).title;
       },
     },
@@ -45,4 +49,4 @@ const environmentRoutes: RouteRecordRaw[] = [
   },
 ];
 
-export default environmentRoutes;
+export default environmentV1Routes;
