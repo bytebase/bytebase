@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -10,11 +11,24 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) error {
+func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			perr, ok := r.(error)
+			if !ok {
+				perr = errors.Errorf("%v", r)
+			}
+			err = errors.Errorf("iam check PANIC RECOVER, method: %v, err: %v", fullMethod, perr)
+
+			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
+		}
+	}()
+
 	if isSkippedMethod(fullMethod) {
 		return nil
 	}
