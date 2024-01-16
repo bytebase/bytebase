@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-4">
-    <NavBar :disable-project-select="!!project" />
+    <NavBar :disable-project-select="!!project" :allow-create="allowCreate" />
 
     <ChangelistTable
       :changelists="filteredChangelists"
@@ -19,20 +19,21 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useChangelistStore } from "@/store";
+import { useChangelistStore, useCurrentUserV1 } from "@/store";
 import { ComposedProject } from "@/types";
 import { Changelist } from "@/types/proto/v1/changelist_service";
+import { hasProjectPermissionV2 } from "@/utils";
 import ChangelistTable from "./ChangelistTable.vue";
 import CreateChangelistPanel from "./CreateChangelistPanel.vue";
 import NavBar from "./NavBar.vue";
 import { provideChangelistDashboardContext } from "./context";
 
 const props = defineProps<{
-  project?: ComposedProject;
+  project: ComposedProject;
 }>();
 
 const { filter, events } = provideChangelistDashboardContext(
-  props.project?.name
+  props.project.name
 );
 
 const isFetching = ref(false);
@@ -66,4 +67,12 @@ const fetchChangelists = async () => {
 
 useEmitteryEventListener(events, "refresh", fetchChangelists);
 onMounted(fetchChangelists);
+
+const allowCreate = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    useCurrentUserV1().value,
+    "bb.changelists.create"
+  );
+});
 </script>

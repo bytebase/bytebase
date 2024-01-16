@@ -15,7 +15,12 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import { ComposedProject, unknownChangelist, unknownProject } from "@/types";
+import {
+  ComposedProject,
+  unknownChangelist,
+  unknownProject,
+  ProjectPermission,
+} from "@/types";
 import {
   Changelist,
   Changelist_Change as Change,
@@ -31,6 +36,8 @@ export type ChangelistDetailContext = {
   changelist: Ref<Changelist>;
   project: Ref<ComposedProject>;
   allowEdit: Ref<boolean>;
+  allowDelete: Ref<boolean>;
+  allowApply: Ref<boolean>;
   reorderMode: Ref<boolean>;
   selectedChanges: Ref<Change[]>;
   showAddChangePanel: Ref<boolean>;
@@ -77,24 +84,29 @@ export const provideChangelistDetailContext = () => {
     );
   });
 
+  const checkPermission = (permission: ProjectPermission): boolean => {
+    return (
+      hasProjectPermissionV2(project.value, me.value, permission) ||
+      extractUserResourceName(changelist.value.creator) === me.value.email
+    );
+  };
+
+  const allowDelete = computed(() => {
+    return checkPermission("bb.changelists.delete");
+  });
+  const allowApply = computed(() => {
+    return hasProjectPermissionV2(project.value, me.value, "bb.issues.create");
+  });
   const allowEdit = computed(() => {
-    if (
-      hasProjectPermissionV2(project.value, me.value, "bb.changelists.update")
-    ) {
-      return true;
-    }
-    if (extractUserResourceName(changelist.value.creator) === me.value.email) {
-      // Allow the initial creator of the changelist to edit it.
-      return true;
-    }
-    // Disallowed to edit otherwise.
-    return false;
+    return checkPermission("bb.changelists.update");
   });
 
   const context: ChangelistDetailContext = {
     changelist,
     project,
     allowEdit,
+    allowDelete,
+    allowApply,
     reorderMode: ref(false),
     selectedChanges: ref([]),
     showAddChangePanel: ref(false),
