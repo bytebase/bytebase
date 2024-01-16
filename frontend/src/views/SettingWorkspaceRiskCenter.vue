@@ -59,9 +59,9 @@ const state = reactive<LocalState>({
 });
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.risks.update");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.update");
 });
 
 provideRiskFilter();

@@ -2,7 +2,7 @@
   <div class="w-full">
     <RiskFilter class="my-4">
       <template #suffix>
-        <NButton type="primary" :disabled="!allowAdmin" @click="addRisk">
+        <NButton type="primary" :disabled="!allowCreateRisk" @click="addRisk">
           {{ $t("common.add") }}
         </NButton>
       </template>
@@ -21,18 +21,25 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
+import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
-import { useRiskStore } from "@/store";
+import { useCurrentUserV1, useRiskStore } from "@/store";
 import { PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { RiskFilter, orderByLevelDesc, useRiskFilter } from "../common";
 import RiskSection from "./RiskSection.vue";
 import { useRiskCenterContext } from "./context";
 
-const riskStore = useRiskStore();
 const context = useRiskCenterContext();
+const currentUser = useCurrentUserV1();
+const riskStore = useRiskStore();
 const filter = useRiskFilter();
-const { allowAdmin, hasFeature, showFeatureModal } = context;
+const { hasFeature, showFeatureModal } = context;
+
+const allowCreateRisk = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.create");
+});
 
 const filteredRiskList = computed(() => {
   let list = [...riskStore.riskList];

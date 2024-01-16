@@ -815,7 +815,11 @@ import { useRouter } from "vue-router";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { SETTING_ROUTE_WORKSPACE_SSO } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useActuatorV1Store } from "@/store";
+import {
+  pushNotification,
+  useActuatorV1Store,
+  useCurrentUserV1,
+} from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
   getIdentityProviderResourceId,
@@ -835,6 +839,7 @@ import {
 } from "@/types/proto/v1/idp_service";
 import {
   IdentityProviderTemplate,
+  hasWorkspacePermissionV2,
   identityProviderTemplateList,
   identityProviderTypeToString,
   openWindowForSSO,
@@ -852,6 +857,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const identityProviderStore = useIdentityProviderStore();
 const state = reactive<LocalState>({
   type: IdentityProviderType.OAUTH2,
@@ -995,7 +1001,19 @@ const isFormCompleted = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  return !isDeleted.value;
+  if (isCreating.value) {
+    return hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.identityProviders.create"
+    );
+  } else if (!isDeleted.value) {
+    return hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.identityProviders.update"
+    );
+  } else {
+    return false;
+  }
 });
 
 const allowCreate = computed(() => {
@@ -1197,32 +1215,59 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
 };
 
 const handleDeleteButtonClick = async () => {
-  if (currentIdentityProvider.value) {
-    await identityProviderStore.deleteIdentityProvider(
-      currentIdentityProvider.value.name
-    );
+  if (!currentIdentityProvider.value) {
+    return;
+  }
+  if (
+    !hasWorkspacePermissionV2(currentUser.value, "bb.identityProviders.delete")
+  ) {
     pushNotification({
       module: "bytebase",
-      style: "SUCCESS",
-      title: "Archive SSO succeed",
+      style: "WARN",
+      title: "Permission denied",
     });
-    router.push({
-      name: SETTING_ROUTE_WORKSPACE_SSO,
-    });
+    return;
   }
+
+  await identityProviderStore.deleteIdentityProvider(
+    currentIdentityProvider.value.name
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "Archive SSO succeed",
+  });
+  router.push({
+    name: SETTING_ROUTE_WORKSPACE_SSO,
+  });
 };
 
 const handleRestoreButtonClick = async () => {
-  if (currentIdentityProvider.value) {
-    await identityProviderStore.undeleteIdentityProvider(
-      currentIdentityProvider.value.name
-    );
+  if (!currentIdentityProvider.value) {
+    return;
+  }
+  if (
+    !hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.identityProviders.undelete"
+    )
+  ) {
     pushNotification({
       module: "bytebase",
-      style: "SUCCESS",
-      title: "Restore SSO succeed",
+      style: "WARN",
+      title: "Permission denied",
     });
+    return;
   }
+
+  await identityProviderStore.undeleteIdentityProvider(
+    currentIdentityProvider.value.name
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: "Restore SSO succeed",
+  });
 };
 
 const handleCancelButtonClick = () => {
