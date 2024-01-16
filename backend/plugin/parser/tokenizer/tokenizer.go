@@ -24,7 +24,7 @@ var (
 	delimiterRuneList = []rune{'D', 'E', 'L', 'I', 'M', 'I', 'T', 'E', 'R'}
 )
 
-type TokenizerOption func(*Tokenizer)
+type Option func(*Tokenizer)
 
 // KeepEmptyBlocks is used to keep empty lines between the blocks.
 // Currently, it is only available for SplitTiDBMultiSQL.
@@ -53,7 +53,7 @@ type TokenizerOption func(*Tokenizer)
 // ]
 // Note, the sum of the empty lines in that block will be 1(2-1) instead of 2, the reason is
 // that do not break the current caller.
-func KeepEmptyBlocks() TokenizerOption {
+func KeepEmptyBlocks() Option {
 	return func(t *Tokenizer) {
 		t.keepEmptyBlocks = true
 	}
@@ -78,7 +78,7 @@ type Tokenizer struct {
 
 // NewTokenizer creates a new tokenizer.
 // Notice: we append an additional eofRune in the statement. This is a sentinel rune.
-func NewTokenizer(statement string, options ...TokenizerOption) *Tokenizer {
+func NewTokenizer(statement string, options ...Option) *Tokenizer {
 	t := &Tokenizer{
 		buffer: []rune(statement),
 		cursor: 0,
@@ -453,7 +453,7 @@ func (t *Tokenizer) SplitTiDBMultiSQL() ([]base.SingleSQL, error) {
 					lines := strings.Split(sql.Text, "\n")
 					if lap := sql.LastLine - len(lines) - baseline; lap > 0 {
 						newRes = append(newRes, base.SingleSQL{
-							Text:     strings.Repeat("\n", lap),
+							Text:     strings.Repeat("\n", lap-1),
 							BaseLine: baseline,
 							LastLine: baseline + lap,
 							Empty:    true,

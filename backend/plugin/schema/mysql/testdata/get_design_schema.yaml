@@ -2,6 +2,109 @@
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
+    -- Table structure for `u`
+    --
+    CREATE TABLE `u` (
+      `t` text NOT NULL,
+      `g` geometry NOT NULL,
+      `j` json NOT NULL,
+      `ti` tinyint(1) NOT NULL,
+      `tb` tinyblob
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Function structure for `hello`
+    --
+    SET character_set_client  = utf8mb3;
+    SET character_set_results = utf8mb3;
+    SET collation_connection  = utf8mb3_general_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+        DETERMINISTIC
+    RETURN CONCAT ('Hello, ', s, '!') ;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "u",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "t",
+                  "type": "text",
+                  "comment": "123",
+                  "position": 1,
+                  "userComment": "123"
+                },
+                {
+                  "name": "g",
+                  "type": "geometry",
+                  "position": 2
+                },
+                {
+                  "name": "j",
+                  "type": "json",
+                  "position": 3
+                },
+                {
+                  "name": "ti",
+                  "type": "tinyint(1)",
+                  "position": 4
+                },
+                {
+                  "name": "tb",
+                  "type": "tinyblob",
+                  "nullable": true,
+                  "position": 5,
+                  "defaultNull": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `u`
+    --
+    CREATE TABLE `u` (
+      `t` text NOT NULL COMMENT '123',
+      `g` geometry NOT NULL,
+      `j` json NOT NULL,
+      `ti` tinyint(1) NOT NULL,
+      `tb` tinyblob
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Function structure for `hello`
+    --
+    SET character_set_client  = utf8mb3;
+    SET character_set_results = utf8mb3;
+    SET collation_connection  = utf8mb3_general_ci;
+    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
+        DETERMINISTIC
+    RETURN CONCAT ('Hello, ', s, '!') ;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
     -- Table structure for `t`
     --
     CREATE TABLE `t` (
