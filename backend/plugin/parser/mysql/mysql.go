@@ -67,8 +67,14 @@ func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, e
 	return statement, nil
 }
 
-// RestoreDelimiter trys to restore the delimiter statement which commentted by DealWithDelimiter, assumes the delimiter comment takes up a single line
-// and follows the syntax `-- DELIMITER ?`, otherwise returns an error.
+// RestoreDelimiter tries to restore the delimiter statement which is commented by DealWithDelimiter,
+//
+// Assumes the delimiter comment takes up a single line and matches the syntax `-- DELIMITER ?`,
+// also, one delimiter comment MUST only affect one statement, in the other words, the following statement cause UB:
+// -- DELIMITER ;
+// SELECT 1;
+// SELECT 2;
+// -- DELIMITER ;
 func RestoreDelimiter(statement string) (string, error) {
 	delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
 	lines := strings.Split(statement, "\n")
@@ -78,20 +84,17 @@ func RestoreDelimiter(statement string) (string, error) {
 
 	flushBuf := func(delimiter string) error {
 		bufStmt := buf.String()
-		t := tokenizer.NewTokenizer(bufStmt)
-		list, err := t.SplitTiDBMultiSQL()
-		if err != nil {
-			return errors.Errorf("failed to split multi sql %q: %v", bufStmt, err)
-		}
-		for _, sql := range list {
-			if IsDelimiter(sql.Text) {
-				return errors.Errorf("delimiter statement %q miexed with delimiter comments lap, previous delimiter %q", sql.Text, delimiter)
-			}
-			if _, err := result.WriteString(fmt.Sprintf("%s%s\n", strings.TrimSuffix(sql.Text, ";"), previousDelimiter)); err != nil {
-				return errors.Wrapf(err, "failed to write string %q into builder", sql.Text)
-			}
-		}
 		buf.Reset()
+		// Lookup reversely to modify the last delimiter.
+		for i := len(bufStmt) - 1; i >= 0; i-- {
+			if bufStmt[i] == ';' {
+				bufStmt = bufStmt[:i] + delimiter + bufStmt[i+1:]
+				break
+			}
+		}
+		if _, err := result.WriteString(bufStmt); err != nil {
+			return errors.Wrapf(err, "failed to write string %q into builder", bufStmt)
+		}
 		return nil
 	}
 
