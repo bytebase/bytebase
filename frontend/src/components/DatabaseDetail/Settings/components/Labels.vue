@@ -20,7 +20,7 @@
     </div>
     <div class="flex flex-row justify-end items-center gap-x-3">
       <template v-if="state.mode === 'view'">
-        <NButton :disabled="!allowAdmin" @click="beginEdit">
+        <NButton :disabled="!allowEdit" @click="beginEdit">
           {{ $t("common.edit") }}
         </NButton>
       </template>
@@ -47,18 +47,10 @@ import { NButton } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { LabelListEditor } from "@/components/Label/";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useDatabaseV1Store,
-} from "@/store";
+import { pushNotification, useDatabaseV1Store } from "@/store";
 import { type ComposedDatabase } from "@/types";
 import { Database } from "@/types/proto/v1/database_service";
-import {
-  convertKVListToLabels,
-  convertLabelsToKVList,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 
 type LocalState = {
   kvList: { key: string; value: string }[];
@@ -68,20 +60,15 @@ type LocalState = {
 
 const props = defineProps<{
   database: ComposedDatabase;
+  allowEdit: boolean;
 }>();
 
 const { t } = useI18n();
 const labelListEditorRef = ref<InstanceType<typeof LabelListEditor>>();
-const me = useCurrentUserV1();
 const state = reactive<LocalState>({
   kvList: [],
   mode: "view",
   isUpdating: false,
-});
-
-const allowAdmin = computed(() => {
-  const project = props.database.projectEntity;
-  return hasProjectPermissionV2(project, me.value, "bb.databases.update");
 });
 
 const convert = () => {
@@ -137,7 +124,7 @@ const handleSave = async () => {
 };
 
 watch(
-  allowAdmin,
+  () => props.allowEdit,
   () => {
     state.mode = "view";
   },

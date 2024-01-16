@@ -21,7 +21,7 @@
               <span>{{ $t("database.backup-policy-violation") }}</span>
             </router-link>
             <NButton
-              v-if="allowAdmin"
+              v-if="allowUpdateBackupSetting"
               @click.prevent="state.showBackupSettingModal = true"
             >
               {{
@@ -66,14 +66,14 @@
             name="hookUrl"
             class="mt-1 w-full"
             placeholder="https://betteruptime.com/api/v1/heartbeat/..."
-            :disabled="!allowEdit"
+            :disabled="!allowUpdateBackupSetting"
           />
           <div class="mt-2">
             <NButton
-              v-if="allowEdit"
+              v-if="allowUpdateBackupSetting"
               type="primary"
               class="mt-2"
-              :disabled="!allowEdit || !urlChanged"
+              :disabled="!allowUpdateBackupSetting || !urlChanged"
               @click.prevent="updateBackupHookUrl()"
             >
               {{ $t("common.update") }}
@@ -89,7 +89,10 @@
         <span class="ml-1 text-control-light">{{
           $t("database.backup.disabled")
         }}</span>
-        <div v-if="allowAdmin && !state.autoBackupEnabled" class="ml-4">
+        <div
+          v-if="allowUpdateDatabase && !state.autoBackupEnabled"
+          class="ml-4"
+        >
           <NButton
             type="primary"
             @click.prevent="state.showBackupSettingModal = true"
@@ -107,13 +110,13 @@
 
         <div class="flex-1 flex items-center justify-end">
           <PITRRestoreButton
-            v-if="allowAdmin"
+            v-if="allowUpdateDatabase"
             :database="database"
-            :allow-admin="allowAdmin"
+            :allow-admin="allowUpdateDatabase"
           />
 
           <NButton
-            v-if="allowEdit && !disableBackupButton"
+            v-if="allowUpdateDatabase && !disableBackupButton"
             type="primary"
             @click.prevent="state.showCreateBackupModal = true"
           >
@@ -124,7 +127,7 @@
       <BackupTable
         :database="database"
         :backup-list="backupList"
-        :allow-edit="allowEdit"
+        :allow-edit="allowUpdateDatabase"
       />
     </div>
 
@@ -134,7 +137,7 @@
     >
       <DatabaseBackupSettingForm
         :database="database"
-        :allow-admin="allowAdmin"
+        :allow-admin="allowUpdateBackupSetting"
         :backup-policy="backupPolicy"
         :backup-setting="state.backupSetting"
         @cancel="state.showBackupSettingModal = false"
@@ -168,10 +171,10 @@ import {
   watchEffect,
   reactive,
   onUnmounted,
-  PropType,
   onBeforeMount,
 } from "vue";
 import { useI18n } from "vue-i18n";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseBackupSettingForm,
   BackupTable,
@@ -223,24 +226,15 @@ interface LocalState {
   backupSetting: BackupSetting | undefined;
 }
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  allowAdmin: {
-    required: true,
-    type: Boolean,
-  },
-  allowEdit: {
-    required: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  database: ComposedDatabase;
+}>();
 
 const backupStore = useBackupV1Store();
 const policyV1Store = usePolicyV1Store();
 const { t } = useI18n();
+const { allowUpdateDatabase, allowUpdateBackupSetting } =
+  useDatabaseDetailContext();
 
 const state = reactive<LocalState>({
   showCreateBackupModal: false,
