@@ -141,7 +141,6 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { escape } from "lodash-es";
 import { NCheckbox, NPerformantEllipsis } from "naive-ui";
 import { reactive, computed, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -380,8 +379,8 @@ const highlights = computed(() => {
 
 const highlight = (content: string) => {
   return getHighlightHTMLByRegExp(
-    escape(content),
-    highlights.value.map((kw) => escape(kw)),
+    content,
+    highlights.value,
     /* !caseSensitive */ false,
     /* className */ "bg-yellow-100"
   );

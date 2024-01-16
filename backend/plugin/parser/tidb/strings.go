@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	PrimarySymbol = "PRIMARY"
+	PrimarySymbol                       = "PRIMARY"
+	restoreUniqueAndForeignKeyCheckStmt = "SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;"
 )
 
 type StringsManipulator struct {
@@ -435,6 +436,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 	}
 
 	var results []string
+	doneAddTableActions := false
 
 	for _, stmt := range stmts {
 		if stmt.Empty {
@@ -443,6 +445,16 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 		}
 		isCreateTable, tableName := s.extractTableNameForCreateTable(stmt.Text)
 		if !isCreateTable {
+			if strings.Contains(stmt.Text, restoreUniqueAndForeignKeyCheckStmt) {
+				// Do add table actions
+				doneAddTableActions = true
+				addTableActions := tableActions[""]
+				for _, action := range addTableActions {
+					if action.GetType() == StringsManipulatorActionTypeAddTable {
+						results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
+					}
+				}
+			}
 			results = append(results, stmt.Text)
 			continue
 		}
@@ -477,10 +489,12 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 		}
 	}
 
-	addTableActions := tableActions[""]
-	for _, action := range addTableActions {
-		if action.GetType() == StringsManipulatorActionTypeAddTable {
-			results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
+	if !doneAddTableActions {
+		addTableActions := tableActions[""]
+		for _, action := range addTableActions {
+			if action.GetType() == StringsManipulatorActionTypeAddTable {
+				results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
+			}
 		}
 	}
 

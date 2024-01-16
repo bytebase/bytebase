@@ -12,7 +12,7 @@
           <heroicons-outline:external-link class="w-4 h-4" />
         </a>
       </div>
-      <NButton type="primary" :disabled="!allowAdmin" @click="addRole">
+      <NButton type="primary" :disabled="!allowCreateRole" @click="addRole">
         {{ $t("role.setting.add") }}
       </NButton>
     </div>
@@ -79,8 +79,8 @@ const currentUser = useCurrentUserV1();
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 
-const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.update");
+const allowCreateRole = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.create");
 });
 
 const filteredRoleList = computed(() => {

@@ -40,6 +40,8 @@
      CREATE TABLE `t1` (
        `id` int
      ) COMMENT 'this is comment';
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   actions:
     - type: addTable
       arguments:
@@ -110,6 +112,8 @@
     CREATE TABLE `t2` (
       `id` int
     );
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - input: |-
     -- Table structure for `t`
     CREATE TABLE `t` (

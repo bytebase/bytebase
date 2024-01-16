@@ -16,6 +16,7 @@
         <NButton
           v-if="identityProviderList.length > 0"
           type="primary"
+          :disabled="!allowCreateSSO"
           @click="handleCreateSSO"
         >
           {{ $t("common.create") }}
@@ -24,7 +25,11 @@
       </div>
     </div>
     <NoDataPlaceholder v-if="identityProviderList.length === 0">
-      <NButton type="primary" @click="handleCreateSSO">
+      <NButton
+        type="primary"
+        :disabled="!allowCreateSSO"
+        @click="handleCreateSSO"
+      >
         {{ $t("settings.sso.create") }}
         <FeatureBadge
           :feature="'bb.feature.sso'"
@@ -42,7 +47,10 @@
         >
           <div class="w-full flex flex-row justify-between items-center">
             <span class="truncate">{{ identityProvider.title }}</span>
-            <NButton @click="handleViewSSO(identityProvider)">
+            <NButton
+              :disabled="!allowGetSSO"
+              @click="handleViewSSO(identityProvider)"
+            >
               {{ $t("common.view") }}
             </NButton>
           </div>
@@ -78,16 +86,20 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
   SETTING_ROUTE_WORKSPACE_SSO_CREATE,
   SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
 } from "@/router/dashboard/workspaceSetting";
-import { featureToRef } from "@/store";
+import { featureToRef, useCurrentUserV1 } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
-import { identityProviderTypeToString } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  identityProviderTypeToString,
+} from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -96,6 +108,7 @@ interface LocalState {
 }
 
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showCreatingSSOModal: false,
@@ -108,6 +121,20 @@ const identityProviderList = computed(() => {
   return identityProviderStore.identityProviderList;
 });
 
+const allowCreateSSO = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.identityProviders.create"
+  );
+});
+
+const allowGetSSO = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.identityProviders.get"
+  );
+});
+
 onMounted(() => {
   identityProviderStore.fetchIdentityProviderList();
 });
@@ -117,6 +144,7 @@ const handleCreateSSO = () => {
     state.showFeatureModal = true;
     return;
   }
+
   router.push({
     name: SETTING_ROUTE_WORKSPACE_SSO_CREATE,
   });
@@ -127,6 +155,7 @@ const handleViewSSO = (identityProvider: IdentityProvider) => {
     state.showFeatureModal = true;
     return;
   }
+
   router.push({
     name: SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
     params: {

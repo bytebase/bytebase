@@ -22,6 +22,7 @@ import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
+  const currentUser = useCurrentUserV1();
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
 
   const reset = () => {
@@ -43,9 +44,13 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   const fetchProjectList = async (showDeleted = false) => {
     const actuatorStore = useActuatorV1Store();
     const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
-    const { projects } = isDevelopmentIAM
-      ? await projectServiceClient.searchProjects({ showDeleted })
-      : await projectServiceClient.listProjects({ showDeleted });
+    let request = isDevelopmentIAM
+      ? projectServiceClient.searchProjects
+      : projectServiceClient.listProjects;
+    if (hasWorkspacePermissionV2(currentUser.value, "bb.projects.list")) {
+      request = projectServiceClient.listProjects;
+    }
+    const { projects } = await request({ showDeleted });
     await upsertProjectMap(projects);
     return projects;
   };

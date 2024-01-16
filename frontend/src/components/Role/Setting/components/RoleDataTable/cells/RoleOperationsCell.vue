@@ -1,11 +1,15 @@
 <template>
   <div v-if="isCustomRole(role.name)" class="w-full flex justify-end space-x-2">
-    <NButton size="tiny" :disabled="!allowAdmin" @click="$emit('edit', role)">
+    <NButton
+      size="tiny"
+      :disabled="!hasPermission('bb.roles.update')"
+      @click="$emit('edit', role)"
+    >
       {{ $t("common.edit") }}
     </NButton>
     <SpinnerButton
       size="tiny"
-      :disabled="!allowAdmin"
+      :disabled="!hasPermission('bb.roles.delete')"
       :tooltip="$t('role.setting.delete')"
       :on-confirm="deleteRole"
     >
@@ -15,8 +19,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
 import { useCurrentUserV1, useRoleStore } from "@/store";
+import { WorkspacePermission } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -33,9 +37,9 @@ const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const currentUser = useCurrentUserV1();
 
-const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.update");
-});
+const hasPermission = (permission: WorkspacePermission) => {
+  return hasWorkspacePermissionV2(currentUser.value, permission);
+};
 
 const deleteRole = async () => {
   if (!hasCustomRoleFeature.value) {

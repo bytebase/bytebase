@@ -103,7 +103,6 @@ func splitByParser(lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([
 type openParenthesis struct {
 	tokenType int
 	pos       int
-	rightPos  int
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
@@ -194,9 +193,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				if len(ifStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				ifStack[0].rightPos = i
-				popIf := ifStack[len(ifStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popIf)
+				semicolonStack = popSemicolonStack(semicolonStack, ifStack[0].pos)
 				ifStack = ifStack[:len(ifStack)-1]
 			case parser.MySQLParserLOOP_SYMBOL:
 				// For the LOOP symbol, MySQL only has LOOP with END LOOP statement.
@@ -205,9 +202,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				if len(loopStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				loopStack[len(loopStack)-1].rightPos = i
-				popLoop := loopStack[len(loopStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popLoop)
+				semicolonStack = popSemicolonStack(semicolonStack, loopStack[len(loopStack)-1].pos)
 				loopStack = loopStack[:len(loopStack)-1]
 			case parser.MySQLParserWHILE_SYMBOL:
 				// For the WHILE symbol, MySQL only has WHILE with END WHILE statement.
@@ -216,9 +211,7 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				if len(whileStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				whileStack[len(whileStack)-1].rightPos = i
-				popWile := whileStack[len(whileStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popWile)
+				semicolonStack = popSemicolonStack(semicolonStack, whileStack[len(whileStack)-1].pos)
 				whileStack = whileStack[:len(whileStack)-1]
 			case parser.MySQLParserREPEAT_SYMBOL:
 				// The are two types of REPEAT statement:
@@ -228,26 +221,20 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				if len(repeatStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				repeatStack[0].rightPos = i
-				popRepeat := repeatStack[len(repeatStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popRepeat)
+				semicolonStack = popSemicolonStack(semicolonStack, repeatStack[0].pos)
 				repeatStack = repeatStack[:len(repeatStack)-1]
 			case parser.MySQLParserCASE_SYMBOL:
 				if len(beginCaseStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				beginCaseStack[len(beginCaseStack)-1].rightPos = i
-				popCase := beginCaseStack[len(beginCaseStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popCase)
+				semicolonStack = popSemicolonStack(semicolonStack, beginCaseStack[len(beginCaseStack)-1].pos)
 				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			default:
 				// is BEGIN ... END or CASE .. END case
 				if len(beginCaseStack) == 0 {
 					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				beginCaseStack[len(beginCaseStack)-1].rightPos = i
-				popCase := beginCaseStack[len(beginCaseStack)-1]
-				semicolonStack = popSemicolonStack(semicolonStack, popCase)
+				semicolonStack = popSemicolonStack(semicolonStack, beginCaseStack[len(beginCaseStack)-1].pos)
 				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			}
 		case parser.MySQLParserSEMICOLON_SYMBOL:
@@ -291,13 +278,13 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 	return result, nil
 }
 
-func popSemicolonStack(stack []int, node *openParenthesis) []int {
-	if len(stack) == 0 || node.rightPos == 0 {
+func popSemicolonStack(stack []int, openParPos int) []int {
+	if len(stack) == 0 {
 		return stack
 	}
 
 	for i := len(stack) - 1; i >= 0; i-- {
-		if stack[i] < node.pos {
+		if stack[i] < openParPos {
 			return stack[:i+1]
 		}
 	}

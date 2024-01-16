@@ -2646,7 +2646,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 			}
 		}
 		v1pbBinding := &v1pb.Binding{
-			Role:      convertToProjectRole(binding.Role),
+			Role:      common.FormatRole(binding.Role.String()),
 			Members:   members,
 			Condition: binding.Condition,
 		}
@@ -2710,10 +2710,6 @@ func (s *ProjectService) convertToIAMPolicyMessage(ctx context.Context, iamPolic
 	return &store.IAMPolicyMessage{
 		Bindings: bindings,
 	}, nil
-}
-
-func convertToProjectRole(role api.Role) string {
-	return fmt.Sprintf("%s%s", common.RolePrefix, role)
 }
 
 func convertProjectRole(role string) (api.Role, error) {
