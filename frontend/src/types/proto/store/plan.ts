@@ -10,6 +10,11 @@ export interface PlanConfig {
 }
 
 export interface PlanConfig_Step {
+  /**
+   * Use the title if set.
+   * Use a generated title if empty.
+   */
+  title: string;
   specs: PlanConfig_Spec[];
 }
 
@@ -274,11 +279,14 @@ export const PlanConfig = {
 };
 
 function createBasePlanConfig_Step(): PlanConfig_Step {
-  return { specs: [] };
+  return { title: "", specs: [] };
 }
 
 export const PlanConfig_Step = {
   encode(message: PlanConfig_Step, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
     for (const v of message.specs) {
       PlanConfig_Spec.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -292,6 +300,13 @@ export const PlanConfig_Step = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -310,12 +325,16 @@ export const PlanConfig_Step = {
 
   fromJSON(object: any): PlanConfig_Step {
     return {
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       specs: globalThis.Array.isArray(object?.specs) ? object.specs.map((e: any) => PlanConfig_Spec.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: PlanConfig_Step): unknown {
     const obj: any = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
     if (message.specs?.length) {
       obj.specs = message.specs.map((e) => PlanConfig_Spec.toJSON(e));
     }
@@ -327,6 +346,7 @@ export const PlanConfig_Step = {
   },
   fromPartial(object: DeepPartial<PlanConfig_Step>): PlanConfig_Step {
     const message = createBasePlanConfig_Step();
+    message.title = object.title ?? "";
     message.specs = object.specs?.map((e) => PlanConfig_Spec.fromPartial(e)) || [];
     return message;
   },
