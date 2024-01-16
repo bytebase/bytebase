@@ -112,11 +112,11 @@
           <PITRRestoreButton
             v-if="allowUpdateDatabase"
             :database="database"
-            :allow-admin="allowUpdateDatabase"
+            :allow-admin="allowCreateBackup"
           />
 
           <NButton
-            v-if="allowUpdateDatabase && !disableBackupButton"
+            v-if="allowCreateBackup"
             type="primary"
             @click.prevent="state.showCreateBackupModal = true"
           >
@@ -125,6 +125,7 @@
         </div>
       </div>
       <BackupTable
+        v-if="allowListBackup"
         :database="database"
         :backup-list="backupList"
         :allow-edit="allowUpdateDatabase"
@@ -211,7 +212,6 @@ import {
   PolicyType,
   BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
-import { instanceV1HasBackupRestore } from "@/utils";
 
 interface LocalState {
   showCreateBackupModal: boolean;
@@ -233,8 +233,12 @@ const props = defineProps<{
 const backupStore = useBackupV1Store();
 const policyV1Store = usePolicyV1Store();
 const { t } = useI18n();
-const { allowUpdateDatabase, allowUpdateBackupSetting } =
-  useDatabaseDetailContext();
+const {
+  allowUpdateDatabase,
+  allowUpdateBackupSetting,
+  allowListBackup,
+  allowCreateBackup,
+} = useDatabaseDetailContext();
 
 const state = reactive<LocalState>({
   showCreateBackupModal: false,
@@ -283,10 +287,6 @@ const assignBackupSetting = (backupSetting: BackupSetting) => {
 
   state.backupSetting = backupSetting;
 };
-
-const disableBackupButton = computed(() => {
-  return !instanceV1HasBackupRestore(props.database.instanceEntity);
-});
 
 // List PENDING_CREATE backups first, followed by backups in createdTs descending order.
 const backupList = computed(() => {
