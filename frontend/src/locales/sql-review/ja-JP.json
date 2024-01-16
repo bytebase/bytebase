@@ -1,0 +1,446 @@
+{
+  "engine": {
+    "mysql": "MySQL",
+    "tidb": "TiDB",
+    "postgres": "PostgreSQL",
+    "oracle": "Oracle",
+    "oceanbase": "OceanBase",
+    "snowflake": "Snowflake",
+    "mssql": "SQL Server",
+    "dm": "DM",
+    "mariadb": "MariaDB",
+    "oceanbase_oracle": "OceanBase（Oracle）"
+  },
+  "category": {
+    "engine": "エンジン",
+    "naming": "命名",
+    "statement": "ステートメント",
+    "table": "テーブル",
+    "column": "カラム",
+    "schema": "スキーマ",
+    "database": "データベース",
+    "index": "インデックス",
+    "system": "システム"
+  },
+  "template": {
+    "bb-sql-review-prod": "高度なテンプレート",
+    "bb-sql-review-prod-desc": "データベースの総合的な保護とベストプラクティスを提供します。",
+    "bb-sql-review-dev": "基本的なテンプレート",
+    "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",
+    "bb-sql-review-sample": "サンプルテンプレート",
+    "bb-sql-review-sample-desc": "DROP保護とカラムのNULL許容を禁止した最小のテンプレート。"
+  },
+  "rule": {
+    "engine-mysql-use-innodb": {
+      "title": "InnoDBストレージエンジンの強制",
+      "description": "InnoDBはMySQLのデフォルトのストレージエンジンであり、トランザクションのサポートを提供します。高並行性と低遅延のシナリオにおいても優れたパフォーマンスを提供し、オンラインデータのバックアップとリカバリをサポートします。OLTPビジネスにおいては優先される選択肢です。提案エラーレベル：エラー"
+    },
+    "table-require-pk": {
+      "title": "テーブルに主キーの含まれることを強制する",
+      "description": "主キーはビジネスの意味を持つだけでなく、MySQLにおいて高並行性のクエリにも有益です。さまざまなデータ同期、比較、およびロールバックツールでは、テーブルに主キーが必要です。提案エラーレベル：エラー"
+    },
+    "table-no-foreign-key": {
+      "title": "外部キー制約の使用を禁止する",
+      "description": "外部キーの利点と欠点は非常に議論が分かれています。外部キーの使用は、データベースの変更やスケーラビリティ（シャーディングなど）の難しさを大幅に増加させる可能性があります。また、一部のツールの使用を妨げることさえあります。そのため、別のオプションとして、アプリケーションレイヤーで外部キー制約を実装することがあります。提案エラーレベル：警告"
+    },
+    "table-drop-naming-convention": {
+      "title": "削除するテーブルの命名形式を制限する",
+      "description": "例えば、「_del」の接尾辞を要求することで、誤って削除することを効果的に防ぐことができます。提案エラーレベル：エラー",
+      "component": {
+        "format": {
+          "title": "テーブル名の形式（正規表現）"
+        }
+      }
+    },
+    "table-disallow-partition": {
+      "title": "パーティションテーブルの使用を禁止する",
+      "description": "一部のデータベースエンジンでは、パーティションテーブルは未熟であり、使用やメンテナンスが不便です。そのため、データベースやテーブルのシャーディングなどの手動のデータパーティショニング方法の使用がより好まれます。提案エラーレベル：警告"
+    },
+    "table-comment": {
+      "title": "コメントの規約",
+      "description": "テーブルにコメントが必要かどうか、および最大コメント長を設定します。",
+      "component": {
+        "required": {
+          "title": "コメントの必須化"
+        },
+        "maxLength": {
+          "title": "最大長"
+        }
+      }
+    },
+    "naming-table": {
+      "title": "テーブルの命名形式の強制",
+      "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "テーブル名の形式（正規表現）"
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-column": {
+      "title": "列名の形式を強制する",
+      "description": "デフォルトの形式はすべて小文字で、単語間にアンダースコアで区切られ、最大63文字までです。例えば「abc」や「abc_def」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "列名の形式（正規表現）"
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-index-uk": {
+      "title": "一意キーの命名形式を強制する",
+      "description": "名前は空白であることが許可され、データベースによって命名されます。空でない場合、デフォルトの形式は「uk_<テーブル名>_<一意キーカラム名の組み合わせ>」で、最大63文字までです。例えば「uk_my_table_id_name」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "一意キーの名前の形式",
+          "template": {
+            "table": "テーブル名",
+            "column_list": "インデックス列名は_で結合されます"
+          }
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-index-pk": {
+      "title": "主キーの命名形式を強制する",
+      "description": "名前は空白であることが許可され、データベースによって命名されます。空でない場合、デフォルトの形式は「pk_<テーブル名>_<一意キーカラム名の組み合わせ>」で、最大63文字までです。例えば「pk_my_table_id_name」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "プライマリキーの名前の形式",
+          "template": {
+            "table": "テーブル名",
+            "column_list": "_で結合されたインデックス列の名前"
+          }
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-index-fk": {
+      "title": "外部キーの命名形式を強制する",
+      "description": "名前は空であることもあり、データベースによって命名されることもあります。空でない場合、デフォルトの形式は「fk_<テーブル名>_<一意のキーカラム名の組み合わせ>」で、63文字を超えないようにします。例えば「fk_my_table_id_name」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "外部キーの名前の形式",
+          "template": {
+            "referencing_table": "参照しているテーブル名",
+            "referencing_column": "参照している列名",
+            "referenced_table": "参照されているテーブル名",
+            "referenced_column": "参照されている列名"
+          }
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-index-idx": {
+      "title": "インデックスの命名形式を強制する",
+      "description": "名前は空であることもあり、データベースによって命名されることもあります。空でない場合、デフォルトの形式は「idx_<テーブル名>_<一意のキーカラム名の組み合わせ>」で、63文字を超えないようにします。例えば「idx_my_table_id_name」です。提案エラーレベル：警告",
+      "component": {
+        "format": {
+          "title": "インデックスの名前の形式",
+          "template": {
+            "table": "テーブル名",
+            "column_list": "_で結合されたインデックス列の名前"
+          }
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-column-auto-increment": {
+      "title": "オートインクリメント列の命名形式を強制する",
+      "description": "デフォルトの列名は「ID」で、63文字を超えないようにします。",
+      "component": {
+        "format": {
+          "title": "オートインクリメント列の名前の形式（正規表現）"
+        },
+        "maxLength": {
+          "title": "長さ制限"
+        }
+      }
+    },
+    "naming-table-no-keyword": {
+      "title": "テーブル名としてキーワードの使用を禁止する",
+      "description": ""
+    },
+    "naming-identifier-no-keyword": {
+      "title": "識別子としてキーワードの使用を禁止する",
+      "description": ""
+    },
+    "naming-identifier-case": {
+      "title": "識別子の大文字小文字を強制する",
+      "description": "",
+      "component": {
+        "upper": {
+          "title": "大文字にする"
+        }
+      }
+    },
+    "column-required": {
+      "title": "テーブルに特定の列を含めることを強制する",
+      "description": "いくつかの共通の列は、アプリケーションのメンテナンスを向上させるために役立ちます。例えば、ビジネスに依存しない「ID」列を主キーとして追加することで、ビジネスの変更（ビジネスの統合など）による主キーの競合を回避することができ、一部のシナリオではデータの挿入パフォーマンスも向上させることができます。推奨エラーレベル：警告",
+      "component": {
+        "list": {
+          "title": "必須の列名"
+        }
+      }
+    },
+    "column-type-disallow-list": {
+      "title": "特定の列データ型の使用を禁止する",
+      "description": "列のデータ型の乱用は、システムの保守性とパフォーマンスに深刻な悪影響を与える可能性があります。例えば、「LOB」列を使用して大量の音声やビデオデータを保存すると、データベースのパフォーマンスが低下し、バックアップと復旧時間が長くなり、データ同期ツールとの互換性が失われる可能性があります。推奨エラーレベル：エラー",
+      "component": {
+        "list": {
+          "title": "禁止リスト"
+        }
+      }
+    },
+    "column-no-null": {
+      "title": "列に「NOT NULL」制約を強制する",
+      "description": "列にNULL値を持つことはできません。"
+    },
+    "column-disallow-set-charset": {
+      "title": "列のプロパティで文字セットの定義を禁止する",
+      "description": "データベースレベルまたはテーブルレベルで文字セットを設定することをおすすめします。細かい粒度で文字セットを設定すると、不必要な複雑さが生じる場合があります。推奨エラーレベル：エラー。"
+    },
+    "column-disallow-change-type": {
+      "title": "列の型の変更を禁止する",
+      "description": "列の型を変更すると、システムのパフォーマンス、保守性、さらにはデータの損失に影響を与える可能性があります。推奨エラーレベル：警告"
+    },
+    "column-disallow-change": {
+      "title": "\"CHANGE COLUMN\" ステートメントの使用を禁止する",
+      "description": "\"CHANGE COLUMN\" は MySQL の構文に固有のものであり、列名やその他のプロパティを同時に変更するために使用できます。ただし、プロパティを変更する際に列名が誤って変更される可能性があります。2つの変更の種類を区別するために、引き続き標準の \"RENAME\" および \"MODIFY\" ステートメントを使用することを推奨します。推奨エラーレベル：エラー"
+    },
+    "column-disallow-changing-order": {
+      "title": "テーブル内の列の順序の変更を禁止する",
+      "description": "列の順序を変更すると、元のテーブルのデフォルトの順序に依存する一部のアプリケーションやビューが予期しない結果（\"select *\" など）を生成する可能性があります。推奨エラーレベル：警告"
+    },
+    "column-disallow-drop-in-index": {
+      "title": "インデックス内の列の削除を禁止する",
+      "description": "インデックス内の列の削除を禁止します。推奨エラーレベル：エラー"
+    },
+    "column-set-default-for-not-null": {
+      "title": "「NOT NULL」列にデフォルト値を強制します",
+      "description": "「NOT NULL」列に新しい行を挿入する際に列に値が割り当てられていない場合、かつ列にデフォルト値がない場合、データベースはその行の挿入を拒否します。新しい列にデフォルト値を設定することで、レガシーアプリケーションとの互換性も確保できます。推奨エラーレベル：エラー"
+    },
+    "column-auto-increment-must-integer": {
+      "title": "自動増分列に「INTEGER」データ型の使用を強制します",
+      "description": "MySQLの自動増分列は一般的にビジネスに依存しない主キーとして使用されます。整数型を使用することで、ストレージスペースを節約し、主キーのインデックス構造をよりコンパクトにし、クエリとDMLのパフォーマンスを向上させることができます。推奨エラーレベル：エラー"
+    },
+    "column-auto-increment-must-unsigned": {
+      "title": "自動増分列に「UNSIGNED」データ型の使用を強制します",
+      "description": "符号なしの型は負の数を格納せず、同じ型で格納できる値の範囲が倍増するため、自動増分列のオーバーフローを回避することができます。推奨エラーレベル：警告"
+    },
+    "column-comment": {
+      "title": "カラムにコメントの追加を強制する",
+      "description": "カラムにコメントを追加することは良い開発の慣行ですが、極端に長いコメントはスキーマの可読性を低下させる可能性があります。推奨エラーレベル：警告",
+      "component": {
+        "required": {
+          "title": "コメントの必須化"
+        },
+        "maxLength": {
+          "title": "最大長"
+        }
+      }
+    },
+    "column-maximum-character-length": {
+      "title": "\"CHAR\"データ型の長さを制限する",
+      "description": "\"CHAR\"は固定長のタイプです。例えば、CHAR(20)のカラムは1文字しか格納されていなくても20文字分のスペースを占有し、無駄になります。文字列が長すぎて長さが固定されていない場合は、MySQLではVARCHARを使用し、PostgreSQLではTEXTを使用することを検討してください。推奨エラーレベル：エラー",
+      "component": {
+        "number": {
+          "title": "最大長"
+        }
+      }
+    },
+    "column-maximum-varchar-length": {
+      "title": "\"VARCHAR\"データ型の長さを制限する",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "最大長"
+        }
+      }
+    },
+    "column-auto-increment-initial-value": {
+      "title": "自動インクリメントカラムの初期値を制限する",
+      "description": "管理要件に基づいて自動インクリメントカラムの初期値を制限します。推奨エラーレベル：警告",
+      "component": {
+        "number": {
+          "title": "初期値"
+        }
+      }
+    },
+    "column-current-time-count-limit": {
+      "title": "システム時刻を取得する必要のあるテーブルのカラム数を制限する",
+      "description": "レコードの作成時に\"DEFAULT NOW()\"で作成時刻を記録し、レコードの更新時に\"DEFAULT NOW() ON UPDATE\"で更新時刻を記録するカラムのみ、システム時刻を取得するための関数を呼び出す必要があります。他のカラムにシステム時刻を記録することは意味がなく、リソースのオーバーヘッドを増やすだけです。推奨エラーレベル：エラー"
+    },
+    "column-require-default": {
+      "title": "カラムにデフォルト値の設定を強制する",
+      "description": "ビジネスロジックを満たすデフォルト値の設定は、ダウンストリームの分析パイプラインのデータ品質を効果的に向上させることができます。このルールは「PRIMARY KEY」、「JSON」、「BLOB」、「TEXT」、「GEOMETRY」、「AUTO_INCREMENT」、「GENERATED」のタイプをチェックしません。提案エラーレベル：警告"
+    },
+    "statement-select-no-select-all": {
+      "title": "「SELECT *」の使用を禁止する",
+      "description": "「SELECT *」を使用して全行データを取得すると、不必要なリソースのオーバーヘッドが発生し、テーブルに列を追加または削除した場合にアプリケーションで予期しない結果が発生する可能性があります。提案エラーレベル：エラー"
+    },
+    "statement-where-require": {
+      "title": "ステートメントに「WHERE」条件の存在を強制する",
+      "description": "WHERE句のないクエリは、巨大な不必要なリソースのオーバーヘッドを引き起こす可能性があり、DMLは大量の誤ったデータ損失を引き起こす可能性があります。提案エラーレベル：エラー"
+    },
+    "statement-where-no-leading-wildcard-like": {
+      "title": "フィルタ条件で先行ワイルドカードの使用を禁止する",
+      "description": "「LIKE '%ABC'」のような先行ワイルドカードを使用すると、データベースの最適化プランナーは高速なインデックススキャンを使用できず、フルテーブルスキャンまたはフルインデックススキャンにフォールバックする可能性があります。これにより、重大なパフォーマンスの影響が発生する可能性があります。提案エラーレベル：エラー"
+    },
+    "statement-disallow-commit": {
+      "title": "明示的な\"COMMIT\"ステートメントの禁止",
+      "description": "システムによってコミットされるトランザクションには複数のステートメントが含まれる場合があり、部分的な障害の場合にはすばやく再実行するために必要です。そのため、明示的な\"COMMIT\"は許可されていません。提案エラーレベル：警告"
+    },
+    "statement-disallow-limit": {
+      "title": "DMLステートメントでの\"LIMIT\"句の使用の禁止",
+      "description": "ORDER BY句がない場合にDMLステートメントでLIMITを使用すると、影響を受ける行の順序が固定されないため、一部のレプリケーションモードではプライマリとレプリカのデータの整合性の問題が発生する可能性があります。提案エラーレベル：エラー"
+    },
+    "statement-disallow-order-by": {
+      "title": "\"UPDATE\"および\"DELETE\"ステートメントでの\"ORDER BY\"句の使用の禁止",
+      "description": "ソート操作は非常にリソースを消費するため、更新および削除操作では、ORDER BYおよびLIMITの代わりに可能な限り決定論的なフィルタリング条件を使用することをお勧めします。提案エラーレベル：エラー"
+    },
+    "statement-merge-alter-table": {
+      "title": "同じテーブルに対して複数の独立した変更の発行の禁止",
+      "description": "テーブルへの変更ごとにテーブルレベルのロックが発生し、大量のリソースを消費する可能性があります。同じテーブルに複数の変更がある場合は、それらを1つの変更ステートメントに統合する必要があります。提案エラーレベル：エラー"
+    },
+    "statement-insert-must-specify-column": {
+      "title": "\"INSERT\" ステートメントで列名の指定を強制する",
+      "description": "\"INSERT INTO table VALUES (...)\" ステートメントは列名を明示的にリストしません。列の順序が変更されたり、列が追加または削除された場合、ステートメントは失敗するか予期しないデータを生成する可能性があります。提案エラーレベル：エラー"
+    },
+    "statement-insert-disallow-order-by-rand": {
+      "title": "\"INSERT\" ステートメントで \"ORDER BY rand()\" の使用を禁止する",
+      "description": "挿入するデータをランダムに並べ替えることは意味がなく、不必要なリソースを消費するだけです。提案エラーレベル：エラー"
+    },
+    "statement-insert-row-limit": {
+      "title": "挿入される行数の最大制限",
+      "description": "挿入される行数を明示することで、ステートメントがビジネスの期待に沿っているかどうかを判断するのに役立ちます。提案エラーレベル：警告",
+      "component": {
+        "number": {
+          "title": "最大挿入量"
+        }
+      }
+    },
+    "statement-affected-row-limit": {
+      "title": "更新または削除される行数の最大制限",
+      "description": "更新または削除される行数を明示することで、ステートメントがビジネスの期待に沿っているかどうかを判断するのに役立ちます。提案エラーレベル：警告",
+      "component": {
+        "number": {
+          "title": "影響を受ける行数の最大制限"
+        }
+      }
+    },
+    "statement-dml-dry-run": {
+      "title": "DML ステートメントの実行可能性を検証する",
+      "description": "構文は正しいが、テーブル名が間違っているか、権限が不足している場合、実際の実行前にドライランで発見できます。提案エラーレベル：警告"
+    },
+    "statement-disallow-add-column-with-default": {
+      "title": "テーブルにデフォルト値を持つ列を追加することを制限する",
+      "description": "PostgreSQL 11以前では、デフォルト値を持つ列を追加するとテーブルがロックされて読み書きができなくなり、業務の中断を引き起こす可能性があります。PostgreSQL 11以降では、この問題が最適化されており、このルールに注意する必要はありません。提案エラーレベル：警告"
+    },
+    "statement-add-check-not-valid": {
+      "title": "\"CHECK\"制約を追加する際に\"NOT VALID\"オプションを強制する",
+      "description": "PostgreSQL 11以前では、CHECK制約を追加するには既存のデータを検証し、テーブルをロックする必要があります。これにより読み書きがブロックされ、業務の中断を引き起こす可能性があります。新しいデータを検証するために\"NOT VALID\"オプションを追加し、変更が完了した後に既存のデータを手動で検証することをおすすめします。PostgreSQL 11以降では、この問題が最適化されており、このルールに注意する必要はありません。提案エラーレベル：警告"
+    },
+    "statement-disallow-add-not-null": {
+      "title": "既存の列に\"NOT NULL\"制約を追加することを制限する",
+      "description": "PostgreSQL 11以前では、NOT NULL制約を追加するには既存のデータを検証する必要があります。これにより読み書きがブロックされ、業務の中断を引き起こす可能性があります。PostgreSQL 11以降では、この問題が最適化されており、この仕様に注意する必要はありません。提案エラーレベル：警告"
+    },
+    "schema-backward-compatibility": {
+      "title": "アプリケーションの後方互換性を確認する",
+      "description": "一部の変更は実行中のアプリケーションに影響を与える可能性があります。データベースオブジェクトの名前の変更や新しい制約の追加などが該当します。このルールにより、既存のアプリケーションの障害を防ぐことができます。提案されるエラーレベル：警告"
+    },
+    "database-drop-empty-database": {
+      "title": "空でないデータベースの削除を禁止する",
+      "description": "データベース内にテーブルが存在しない場合のみ削除が許可されます。これにより、誤って削除することを大幅に防ぐことができます。提案されるエラーレベル：エラー"
+    },
+    "index-no-duplicate-column": {
+      "title": "重複する列を含むインデックスの作成を禁止する",
+      "description": "重複する列を持つインデックスの作成は失敗します。提案されるエラーレベル：エラー"
+    },
+    "index-type-no-blob": {
+      "title": "\"BLOB\"および\"TEXT\"データ型の列にインデックスの作成を禁止する",
+      "description": "\"BLOB\"タイプは通常、バイナリデータを格納するために使用され、クエリ条件として使用するべきではありません。誤ってこの列タイプにインデックスを作成すると、多くのリソースを消費し、重大なパフォーマンスの影響を引き起こす可能性があります。提案されるエラーレベル：エラー"
+    },
+    "index-pk-type-limit": {
+      "title": "プライマリキーのタイプ制限",
+      "description": "プライマリキーのタイプをINTまたはBIGINTに制限します。"
+    },
+    "index-key-number-limit": {
+      "title": "単一のインデックス内の列の数を制限する",
+      "description": "5つ以上の列を持つ複合インデックスは、クエリのパフォーマンスを大幅に向上させるわけではありませんが、多くのスペースを占有し、DMLのパフォーマンスを低下させます。提案エラーレベル：警告",
+      "component": {
+        "number": {
+          "title": "最大列数"
+        }
+      }
+    },
+    "index-total-number-limit": {
+      "title": "単一のテーブルにおけるインデックスの数を制限します",
+      "description": "インデックスはクエリのパフォーマンスを向上させることができますが、多くのスペースを占有し、DMLのパフォーマンスを低下させることもあります。したがって、テーブルに5つ以上のインデックスを作成することは推奨されません。提案エラーレベル：警告",
+      "component": {
+        "number": {
+          "title": "最大インデックス数"
+        }
+      }
+    },
+    "index-primary-key-type-allowlist": {
+      "title": "許可される主キーのタイプのリスト",
+      "description": "適切な主キーのタイプは、ストレージ構造を最適化し、スペース使用量を減らし、挿入およびクエリのパフォーマンスを向上させることができます。提案エラーレベル：警告",
+      "component": {
+        "list": {
+          "title": "許可リスト"
+        }
+      }
+    },
+    "index-create-concurrently": {
+      "title": "同時インデックス作成の強制",
+      "description": "PostgreSQL 11以降では、標準のステートメントを使用してインデックスを作成すると、テーブルのロックが発生し、書き込みができなくなります。\"CONCURRENTLY\"モードを使用すると、この問題を回避できます。提案エラーレベル：警告"
+    },
+    "system-charset-allowlist": {
+      "title": "許可される文字セットのリスト",
+      "description": "文字セットは、テーブルに格納できる文字を決定します。間違った文字セットを使用すると、アプリケーションの一部の文字が正しく格納および表示されない場合があります。CJKや絵文字などが該当します。提案エラーレベル：エラー",
+      "component": {
+        "list": {
+          "title": "許可リスト"
+        }
+      }
+    },
+    "system-collation-allowlist": {
+      "title": "許可可能な照合のリスト",
+      "description": "照合は文字の比較とソートのルールを決定します。例えば、大文字小文字を区別しない照合を使用する場合、クエリ内では\"ABC\"と\"abc\"は同じ文字列として扱われます。推奨エラーレベル：エラー",
+      "component": {
+        "list": {
+          "title": "許可リスト"
+        }
+      }
+    },
+    "system-comment-length": {
+      "title": "コメントの長さを制限する",
+      "description": "",
+      "component": {
+        "number": {
+          "title": "最大コメント長"
+        }
+      }
+    }
+  },
+  "level": {
+    "name": "エラーレベル",
+    "error": "エラー",
+    "warning": "警告",
+    "disabled": "無効化"
+  }
+}
