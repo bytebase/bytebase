@@ -135,6 +135,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import { databaseServiceClient } from "@/grpcweb";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -152,7 +153,7 @@ import {
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { TinyTimer } from "@/utils";
+import { TinyTimer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import SchemaEditorLite, {
@@ -523,9 +524,10 @@ const handlePreviewIssue = async () => {
   }
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.value.name),
+      issueSlug: "create",
     },
     query,
   };

@@ -109,10 +109,11 @@ import hljs from "highlight.js/lib/core";
 import codeStyle from "highlight.js/styles/github.css?raw";
 import { computed, nextTick, ref, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { ComposedIssue } from "@/types";
+import { ComposedIssue, ComposedProject } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   activeTaskInRollout,
+  extractProjectResourceName,
   isDatabaseRelatedIssue,
   sizeToFit,
 } from "@/utils";
@@ -157,6 +158,7 @@ type EditorMode = "editor" | "preview";
 const props = defineProps<{
   content: string;
   mode: EditorMode;
+  project?: ComposedProject;
   issueList: ComposedIssue[];
 }>();
 const emit = defineEmits<{
@@ -192,9 +194,20 @@ const markdownContent = computed(() => {
       }
       const id = parseInt(part.slice(1), 10);
       if (!Number.isNaN(id) && id > 0) {
-        return `[${t("common.issue")} #${id}](${
-          window.location.origin
-        }/issue/${id})`;
+        if (props.project) {
+          // Here we assume that the referenced issue and the current issue are always
+          // in the same project
+          // if props.project is specified
+          const path = `projects/${extractProjectResourceName(
+            props.project.name
+          )}/issues/${id}`;
+          const url = `${window.location.origin}/${path}`;
+          return `[${t("common.issue")} #${id}](${url})`;
+        } else {
+          return `[${t("common.issue")} #${id}](${
+            window.location.origin
+          }/issue/${id})`;
+        }
       }
       return part;
     })

@@ -65,10 +65,12 @@ import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
 import { useProjectV1Store } from "@/store";
 import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { extractProjectResourceName } from "@/utils";
 import DatabaseSchemaSelector from "./DatabaseSchemaSelector.vue";
 import RawSQLEditor from "./RawSQLEditor.vue";
 import SelectTargetDatabasesView from "./SelectTargetDatabasesView.vue";
@@ -241,9 +243,10 @@ const tryFinishSetup = async () => {
   );
 
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(project.name),
+      issueSlug: "create",
     },
     query,
   };
