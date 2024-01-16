@@ -1,10 +1,7 @@
 package mysql
 
 import (
-	"context"
 	"log/slog"
-	"strings"
-	"time"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
@@ -34,38 +31,109 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	list, err := splitMySQLStatement(stream)
-	// HACK(p0ny): the callee may end up in an infinite loop, we print the statement here to help debug.
-	if err != nil && strings.Contains(err.Error(), "split SQL statement timed out") {
-		slog.Info("split SQL statement timed out", "statement", statement)
+	if err != nil {
+		slog.Info("failed to split MySQL statement, use parser instead", "statement", statement)
+		// Use parser to split statement.
+		return splitByParser(lexer, stream)
 	}
-	return list, err
+	return list, nil
+}
+
+func splitByParser(lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+	p := parser.NewMySQLParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = true
+
+	tree := p.Script()
+
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
+	}
+
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
+	}
+
+	var result []base.SingleSQL
+	tokens := stream.GetAllTokens()
+
+	start := 0
+	for _, semicolon := range tree.AllSEMICOLON_SYMBOL() {
+		pos := semicolon.GetSymbol().GetStart()
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[pos].GetLine() - 1,
+			LastColumn:           tokens[pos].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
+		})
+		start = pos + 1
+	}
+	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
+	eofPos := len(tokens) - 1
+	if start < eofPos {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[eofPos-1].GetLine() - 1,
+			LastColumn:           tokens[eofPos-1].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
+		})
+	}
+	return result, nil
+}
+
+func isCloseParenthesis(tokens []antlr.Token, index int) bool {
+	if index < 0 || index >= len(tokens) {
+		return false
+	}
+
+	if tokens[index].GetTokenType() != parser.MySQLParserEND_SYMBOL {
+		return false
+	}
+
+	isXa := base.GetDefaultChannelTokenType(tokens, index, -1) == parser.MySQLParserXA_SYMBOL
+	if isXa {
+		return false
+	}
+
+	return true
+}
+
+type openParenthesis struct {
+	tokenType int
+	pos       int
+	rightPos  int
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
-	// HACK(p0ny): this function might end up in an infinite loop. Before we figure out how to fix it, we set a deadline to avoid it and log to help debug.
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(10*time.Minute))
-	defer cancel()
-
 	var result []base.SingleSQL
 	stream.Fill()
 	tokens := stream.GetAllTokens()
-	start := 0
-	// Splitting multiple statements by semicolon symbol should consider the special case.
-	// For CASE/REPLACE/IF/LOOP/WHILE/REPEAT statement, the semicolon symbol is not the end of the statement.
-	// So we should skip the semicolon symbol in these statements.
-	// These statements are begin with BEGIN/REPLACE/IF/LOOP/WHILE/REPEAT symbol and end with END/END REPLACE/END IF/END LOOP/END WHILE/END REPEAT symbol.
-	// So this is a parenthesis matching problem.
-	type openParenthesis struct {
-		tokenType int
-		pos       int
-	}
-	var stack []openParenthesis
-	for i := 0; i < len(tokens); i++ {
-		if ctx.Err() != nil {
-			return nil, errors.New("split SQL statement timed out")
-		}
 
-		switch tokens[i].GetTokenType() {
+	var beginCaseStack, ifStack, loopStack, whileStack, repeatStack []*openParenthesis
+
+	var semicolonStack []int
+
+	for i, token := range tokens {
+		switch token.GetTokenType() {
 		case parser.MySQLParserBEGIN_SYMBOL:
 			isBeginWork := base.GetDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserWORK_SYMBOL
 			isBeginWork = isBeginWork || (base.GetDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserSEMICOLON_SYMBOL)
@@ -79,14 +147,14 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			beginCaseStack = append(beginCaseStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserCASE_SYMBOL:
 			isEndCase := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndCase {
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			beginCaseStack = append(beginCaseStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserIF_SYMBOL:
 			isEndIf := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndIf {
@@ -105,155 +173,151 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			ifStack = append(ifStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserLOOP_SYMBOL:
 			isEndLoop := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndLoop {
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			loopStack = append(loopStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserWHILE_SYMBOL:
 			isEndWhile := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
 			if isEndWhile {
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			whileStack = append(whileStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserREPEAT_SYMBOL:
 			isEndRepeat := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserUNTIL_SYMBOL
 			if isEndRepeat {
 				continue
 			}
 
-			stack = append(stack, openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
+			repeatStack = append(repeatStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserEND_SYMBOL:
 			isXa := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserXA_SYMBOL
 			if isXa {
 				continue
 			}
 
-			// There are some special case for IF and REPEAT statement.
-			// MySQL has two functions: IF(expr1,expr2,expr3) and REPEAT(str,count).
-			// So we may meet single IF/REPEAT symbol without END IF/REPEAT symbol.
-			// For these cases, we will see the END XXX symbol is not matched with the top of the stack.
-			// We should skip these single IF/REPEAT symbol and backtracking these processes after IF/REPEAT symbol.
-			if len(stack) == 0 {
-				return nil, errors.New("invalid statement: failed to split multiple statements")
-			}
-
 			nextDefaultChannelTokenType := base.GetDefaultChannelTokenType(tokens, i, 1)
-
-			isEndIf := nextDefaultChannelTokenType == parser.MySQLParserIF_SYMBOL
-			if isEndIf {
-				if stack[len(stack)-1].tokenType != parser.MySQLParserIF_SYMBOL {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+			switch nextDefaultChannelTokenType {
+			case parser.MySQLParserIF_SYMBOL:
+				// There are two types of IF statement:
+				// 1. IF(expr1,expr2,expr3)
+				// 2. IF search_condition THEN statement_list [ELSEIF search_condition THEN statement_list] ... [ELSE statement_list] END IF
+				// For the first type, we will meet single IF symbol without END IF symbol.
+				if len(ifStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			isEndCase := nextDefaultChannelTokenType == parser.MySQLParserCASE_SYMBOL
-			if isEndCase {
-				if stack[len(stack)-1].tokenType != parser.MySQLParserCASE_SYMBOL {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				ifStack[0].rightPos = i
+				popIf := ifStack[len(ifStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popIf)
+				ifStack = ifStack[:len(ifStack)-1]
+			case parser.MySQLParserLOOP_SYMBOL:
+				// For the LOOP symbol, MySQL only has LOOP with END LOOP statement.
+				// Other cases are invalid.
+				// So we only need to do the simple parenthesis matching.
+				if len(loopStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			isEndLoop := nextDefaultChannelTokenType == parser.MySQLParserLOOP_SYMBOL
-			if isEndLoop {
-				if stack[len(stack)-1].tokenType != parser.MySQLParserLOOP_SYMBOL {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				loopStack[len(loopStack)-1].rightPos = i
+				popLoop := loopStack[len(loopStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popLoop)
+				loopStack = loopStack[:len(loopStack)-1]
+			case parser.MySQLParserWHILE_SYMBOL:
+				// For the WHILE symbol, MySQL only has WHILE with END WHILE statement.
+				// Other cases are invalid.
+				// So we only need to do the simple parenthesis matching.
+				if len(whileStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			isEndWhile := nextDefaultChannelTokenType == parser.MySQLParserWHILE_SYMBOL
-			if isEndWhile {
-				if stack[len(stack)-1].tokenType != parser.MySQLParserWHILE_SYMBOL {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				whileStack[len(whileStack)-1].rightPos = i
+				popWile := whileStack[len(whileStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popWile)
+				whileStack = whileStack[:len(whileStack)-1]
+			case parser.MySQLParserREPEAT_SYMBOL:
+				// The are two types of REPEAT statement:
+				// 1. REPEAT(expr,expr)
+				// 2. REPEAT statement_list UNTIL search_condition END REPEAT
+				// For the first type, we will meet single REPEAT symbol without END REPEAT symbol.
+				if len(repeatStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			isEndRepeat := nextDefaultChannelTokenType == parser.MySQLParserREPEAT_SYMBOL
-			if isEndRepeat {
-				if stack[len(stack)-1].tokenType != parser.MySQLParserREPEAT_SYMBOL {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				repeatStack[0].rightPos = i
+				popRepeat := repeatStack[len(repeatStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popRepeat)
+				repeatStack = repeatStack[:len(repeatStack)-1]
+			case parser.MySQLParserCASE_SYMBOL:
+				if len(beginCaseStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
+				beginCaseStack[len(beginCaseStack)-1].rightPos = i
+				popCase := beginCaseStack[len(beginCaseStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popCase)
+				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
+			default:
+				// is BEGIN ... END or CASE .. END case
+				if len(beginCaseStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
+				}
+				beginCaseStack[len(beginCaseStack)-1].rightPos = i
+				popCase := beginCaseStack[len(beginCaseStack)-1]
+				semicolonStack = popSemicolonStack(semicolonStack, popCase)
+				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			}
-
-			// is BEGIN ... END or CASE .. END case
-			leftTokenType := stack[len(stack)-1].tokenType
-			if leftTokenType != parser.MySQLParserBEGIN_SYMBOL && leftTokenType != parser.MySQLParserCASE_SYMBOL {
-				// Backtracking the process.
-				i = stack[len(stack)-1].pos
-				stack = stack[:len(stack)-1]
-				continue
-			}
-			stack = stack[:len(stack)-1]
 		case parser.MySQLParserSEMICOLON_SYMBOL:
-			if len(stack) != 0 {
-				continue
-			}
-
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
-			// From antlr4, the line is ONE based, and the column is ZERO based.
-			// So we should minus 1 for the line.
-			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[i].GetLine() - 1,
-				LastColumn:           tokens[i].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                base.IsEmpty(tokens[start:i+1], parser.MySQLLexerSEMICOLON_SYMBOL),
-			})
-			start = i + 1
-		case parser.MySQLParserEOF:
-			if len(stack) != 0 {
-				// Backtracking the process.
-				i = stack[len(stack)-1].pos
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			if start <= i-1 {
-				line, col := base.FirstDefaultChannelTokenPosition(tokens[start:i])
-				// From antlr4, the line is ONE based, and the column is ZERO based.
-				// So we should minus 1 for the line.
-				result = append(result, base.SingleSQL{
-					Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]),
-					BaseLine:             tokens[start].GetLine() - 1,
-					LastLine:             tokens[i-1].GetLine() - 1,
-					LastColumn:           tokens[i-1].GetColumn(),
-					FirstStatementLine:   line,
-					FirstStatementColumn: col,
-					Empty:                base.IsEmpty(tokens[start:i], parser.MySQLLexerSEMICOLON_SYMBOL),
-				})
-			}
+			semicolonStack = append(semicolonStack, i)
 		}
 	}
+
+	start := 0
+	for _, pos := range semicolonStack {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[pos].GetLine() - 1,
+			LastColumn:           tokens[pos].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:pos+1], parser.MySQLLexerSEMICOLON_SYMBOL),
+		})
+		start = pos + 1
+	}
+	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
+	eofPos := len(tokens) - 1
+	if start < eofPos {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[eofPos-1].GetLine() - 1,
+			LastColumn:           tokens[eofPos-1].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:eofPos], parser.MySQLLexerSEMICOLON_SYMBOL),
+		})
+	}
+
 	return result, nil
+}
+
+func popSemicolonStack(stack []int, node *openParenthesis) []int {
+	if len(stack) == 0 || node.rightPos == 0 {
+		return stack
+	}
+
+	for i := len(stack) - 1; i >= 0; i-- {
+		if stack[i] < node.pos {
+			return stack[:i+1]
+		}
+	}
+
+	return []int{}
 }
