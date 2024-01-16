@@ -32,7 +32,7 @@ import { defineComponent, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useOverlayStackContext } from "@/components/misc/OverlayStackManager.vue";
-import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
 import { UNKNOWN_USER_NAME } from "@/types";
 import KBarFooter from "./KBarFooter.vue";

@@ -61,9 +61,9 @@ const hasSettingListPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
 });
 
-const getItemClass = (path: string | undefined) => {
+const getItemClass = (item: SidebarItem) => {
   const list = [];
-  if (route.name === path) {
+  if (route.name === item.name) {
     list.push("router-link-active", "bg-link-hover");
     return list;
   }
@@ -71,19 +71,19 @@ const getItemClass = (path: string | undefined) => {
   switch (route.name) {
     case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
     case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
-      if (path === SETTING_ROUTE_WORKSPACE_SSO) {
+      if (item.name === SETTING_ROUTE_WORKSPACE_SSO) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE:
     case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL:
-      if (path === SETTING_ROUTE_WORKSPACE_SQL_REVIEW) {
+      if (item.name === SETTING_ROUTE_WORKSPACE_SQL_REVIEW) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
     case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
-      if (path === SETTING_ROUTE_WORKSPACE_GITOPS) {
+      if (item.name === SETTING_ROUTE_WORKSPACE_GITOPS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -91,12 +91,12 @@ const getItemClass = (path: string | undefined) => {
   return list;
 };
 
-const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
-  if (!path) {
+const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
+  if (!item.name) {
     return;
   }
   const route = router.resolve({
-    name: path,
+    name: item.name,
   });
 
   if (e?.ctrlKey || e?.metaKey) {
@@ -115,8 +115,8 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.profile"),
-          path: SETTING_ROUTE_PROFILE,
-          type: "div",
+          name: SETTING_ROUTE_PROFILE,
+          type: "route",
         },
       ],
     },
@@ -127,30 +127,30 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.general"),
-          path: SETTING_ROUTE_WORKSPACE_GENERAL,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_GENERAL,
+          type: "route",
         },
         {
           title: t("settings.sidebar.members"),
-          path: SETTING_ROUTE_WORKSPACE_MEMBER,
+          name: SETTING_ROUTE_WORKSPACE_MEMBER,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
         {
           title: t("settings.sidebar.custom-roles"),
-          path: SETTING_ROUTE_WORKSPACE_ROLE,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_ROLE,
+          type: "route",
         },
         {
           title: t("settings.sidebar.subscription"),
-          path: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+          type: "route",
         },
         {
           title: t("settings.sidebar.debug-log"),
-          path: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
+          name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
       ],
     },
@@ -161,46 +161,46 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("sql-review.title"),
-          path: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+          type: "route",
         },
         {
           title: t("slow-query.self"),
-          path: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
+          type: "route",
         },
         {
           title: t("schema-template.self"),
-          path: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
+          type: "route",
         },
         {
           title: t("custom-approval.risk.risk-center"),
-          path: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
+          type: "route",
         },
         {
           title: t("custom-approval.self"),
-          path: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
-          type: "div",
+          name: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
+          type: "route",
         },
         {
           title: t("settings.sidebar.sensitive-data"),
-          path: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
+          name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
         {
           title: t("settings.sidebar.access-control"),
-          path: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
+          name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
         {
           title: t("settings.sidebar.audit-log"),
-          path: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
+          name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
       ],
     },
@@ -211,29 +211,29 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       children: [
         {
           title: t("settings.sidebar.gitops"),
-          path: SETTING_ROUTE_WORKSPACE_GITOPS,
+          name: SETTING_ROUTE_WORKSPACE_GITOPS,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
         {
           title: t("settings.sidebar.sso"),
-          path: SETTING_ROUTE_WORKSPACE_SSO,
+          name: SETTING_ROUTE_WORKSPACE_SSO,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
         {
           title: t("settings.sidebar.mail-delivery"),
-          path: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
+          name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
           hide: !hasSettingListPermission.value,
-          type: "div",
+          type: "route",
         },
       ],
     },
     {
       title: t("common.archived"),
       icon: h(Archive),
-      path: SETTING_ROUTE_WORKSPACE_ARCHIVE,
-      type: "div",
+      name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
+      type: "route",
     },
   ];
 

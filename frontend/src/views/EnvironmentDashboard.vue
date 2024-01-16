@@ -63,7 +63,7 @@ import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
-import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/environmentV1";
+import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useRegisterCommand,
   useUIStateStore,
