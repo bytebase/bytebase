@@ -1229,6 +1229,9 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, licenseService enter
 		}
 		stageCreate.EnvironmentID = environment.UID
 		stageCreate.Name = fmt.Sprintf("%s Stage", environment.Title)
+		if step.Title != "" {
+			stageCreate.Name = step.Title
+		}
 
 		pipelineCreate.Stages = append(pipelineCreate.Stages, stageCreate)
 	}
