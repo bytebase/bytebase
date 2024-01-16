@@ -1938,6 +1938,7 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | Use the title if set. Use a generated title if empty. |
 | specs | [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec) | repeated |  |
 
 
