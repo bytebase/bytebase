@@ -4,10 +4,9 @@ import { useEnvironmentV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { unknownEnvironment } from "@/types";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
-export const ENVIRONMENT_V1_ROUTE = "workspace.environment";
-export const ENVIRONMENT_V1_ROUTE_DASHBOARD = `${ENVIRONMENT_V1_ROUTE}.dashboard`;
-export const ENVIRONMENT_V1_ROUTE_DETAIL = `${ENVIRONMENT_V1_ROUTE}.detail`;
+export const ENVIRONMENT_V1_ROUTE_DETAIL = `${ENVIRONMENT_V1_ROUTE_DASHBOARD}.detail`;
 
 const environmentV1Routes: RouteRecordRaw[] = [
   {

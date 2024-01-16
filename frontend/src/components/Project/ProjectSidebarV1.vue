@@ -62,7 +62,6 @@ import { useCurrentProject } from "./useCurrentProject";
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
   type: "div";
-  path?: string;
   hide?: boolean;
   children?: ProjectSidebarItem[];
 }
@@ -273,9 +272,9 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
   return filterprojectSidebarByPermissions(sidebarList);
 });
 
-const getItemClass = (path: string | undefined) => {
+const getItemClass = (item: SidebarItem) => {
   const list = ["outline-item"];
-  if (route.name === path) {
+  if (route.name === item.path) {
     list.push("router-link-active", "bg-link-hover");
     return list;
   }
@@ -283,7 +282,7 @@ const getItemClass = (path: string | undefined) => {
   switch (route.name) {
     case PROJECT_V1_ROUTE_WEBHOOK_CREATE:
     case PROJECT_V1_ROUTE_WEBHOOK_DETAIL:
-      if (path === PROJECT_V1_ROUTE_WEBHOOKS) {
+      if (item.path === PROJECT_V1_ROUTE_WEBHOOKS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -291,34 +290,34 @@ const getItemClass = (path: string | undefined) => {
     case PROJECT_V1_ROUTE_BRANCH_ROLLOUT:
     case PROJECT_V1_ROUTE_BRANCH_MERGE:
     case PROJECT_V1_ROUTE_BRANCH_REBASE:
-      if (path === PROJECT_V1_ROUTE_BRANCHES) {
+      if (item.path === PROJECT_V1_ROUTE_BRANCHES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case PROJECT_V1_ROUTE_CHANGELIST_DETAIL:
-      if (path === PROJECT_V1_ROUTE_CHANGELISTS) {
+      if (item.path === PROJECT_V1_ROUTE_CHANGELISTS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL:
     case PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL:
-      if (path === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
+      if (item.path === PROJECT_V1_ROUTE_DATABASE_GROUPS) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.issue.detail":
     case PROJECT_V1_ROUTE_ISSUE_DETAIL:
-      if (path === PROJECT_V1_ROUTE_ISSUES) {
+      if (item.path === PROJECT_V1_ROUTE_ISSUES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.database.history.detail":
-      if (path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
+      if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
     case "workspace.database.detail":
-      if (path === PROJECT_V1_ROUTE_DATABASES) {
+      if (item.path === PROJECT_V1_ROUTE_DATABASES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
@@ -326,12 +325,12 @@ const getItemClass = (path: string | undefined) => {
   return list;
 };
 
-const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
-  if (!path) {
+const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
+  if (!item.path) {
     return;
   }
   const route = router.resolve({
-    name: path,
+    name: item.path,
     params: {
       projectId: getProjectName(project.value.name),
     },
@@ -345,25 +344,11 @@ const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
 };
 
 const flattenNavigationItems = computed(() => {
-  return projectSidebarItemList.value.flatMap<{
-    path: string;
-    title: string;
-    hide?: boolean;
-  }>((item) => {
+  return projectSidebarItemList.value.flatMap<ProjectSidebarItem>((item) => {
     if (item.children && item.children.length > 0) {
-      return item.children.map((child) => ({
-        path: child.path ?? "",
-        title: child.title,
-        hide: child.hide,
-      }));
+      return item.children;
     }
-    return [
-      {
-        path: item.path ?? "",
-        title: item.title,
-        hide: item.hide,
-      },
-    ];
+    return item;
   });
 });
 
@@ -374,7 +359,7 @@ const navigationKbarActions = computed(() => {
       name: item.title,
       section: t("kbar.navigation"),
       keywords: [item.title.toLowerCase(), item.path].join(" "),
-      perform: () => onSelect(item.path, undefined),
+      perform: () => onSelect(item, undefined),
     })
   );
   return actions;

@@ -49,10 +49,8 @@ import { useRouter } from "vue-router";
 import BBModal from "@/bbkit/BBModal.vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
-import {
-  ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  ENVIRONMENT_V1_ROUTE_DETAIL,
-} from "@/router/dashboard/environmentV1";
+import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
+import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
