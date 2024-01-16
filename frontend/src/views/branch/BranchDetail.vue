@@ -1,16 +1,14 @@
 <template>
   <template v-if="ready">
     <template v-if="isCreating">
-      <BranchCreateView :project-id="project?.uid" v-bind="$attrs" />
+      <BranchCreateView :project="project" v-bind="$attrs" />
     </template>
     <template v-else-if="branch">
       <BranchDetailView
-        v-if="project"
         :key="detailViewKey"
         :project="project"
         :clean-branch="branch.clean"
         :dirty-branch="branch.dirty"
-        :readonly="!allowEdit"
         v-bind="$attrs"
         @update:branch-id="handleUpdateBranchId"
       />
@@ -30,11 +28,10 @@ import { useRouter } from "vue-router";
 import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
-import { extractUserEmail, useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { isOwnerOfProjectV1 } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -43,7 +40,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const branchFullName = ref<string>("");
@@ -53,20 +49,9 @@ const detailViewKey = ref(uniqueId());
 const isCreating = computed(() => props.branchName === "new");
 const branch = ref<{ clean: Branch; dirty: Branch }>();
 const project = computed(() => {
-  if (props.projectId === "-") {
-    return;
-  }
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectId}`
   );
-});
-const allowEdit = computed(() => {
-  if (!project.value) return false;
-  if (!branch.value) return false;
-  if (isOwnerOfProjectV1(project.value.iamPolicy, me.value)) {
-    return true;
-  }
-  return extractUserEmail(branch.value.clean.creator) === me.value.email;
 });
 
 const handleUpdateBranchId = (id: string) => {

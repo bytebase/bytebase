@@ -156,7 +156,8 @@ const projectV1Routes: RouteRecordRaw[] = [
               overrideTitle: true,
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
-                "bb.branches.update",
+                "bb.branches.get",
+                "bb.issues.create",
               ],
             },
             component: () => import("@/views/branch/BranchRollout.vue"),
@@ -169,6 +170,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               title: () => t("branch.merge-rebase.merge-branch"),
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
+                "bb.branches.get",
                 "bb.branches.update",
               ],
             },
@@ -182,6 +184,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               title: () => t("branch.merge-rebase.rebase-branch"),
               requiredProjectPermissionList: () => [
                 "bb.projects.get",
+                "bb.branches.get",
                 "bb.branches.update",
               ],
             },

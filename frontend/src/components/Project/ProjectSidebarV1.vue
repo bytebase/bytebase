@@ -52,7 +52,7 @@ import projectV1Routes, {
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
-import { DEFAULT_PROJECT_V1_NAME } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, ProjectPermission } from "@/types";
 import { TenantMode } from "@/types/proto/v1/project_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { useProjectDatabaseActions } from "../KBar/useDatabaseActions";
@@ -97,15 +97,43 @@ const isTenantProject = computed((): boolean => {
   return project.value.tenantMode === TenantMode.TENANT_MODE_ENABLED;
 });
 
-const flattenProjectV1Routes = computed(() => {
-  return projectV1Routes.reduce((list, projectV1Route) => {
-    if (!projectV1Route.children || projectV1Route.children.length === 0) {
-      list.push(projectV1Route);
-    } else {
-      list.push(...projectV1Route.children);
+const getFlattenProjectV1Routes = (
+  routes: RouteRecordRaw[],
+  permissions: ProjectPermission[] = []
+): {
+  name: string;
+  permissions: ProjectPermission[];
+}[] => {
+  return routes.reduce((list, projectV1Route) => {
+    const requiredProjectPermissionListFunc =
+      projectV1Route.meta?.requiredProjectPermissionList;
+    let requiredPermissionList = requiredProjectPermissionListFunc
+      ? requiredProjectPermissionListFunc()
+      : [];
+    if (requiredPermissionList.length === 0) {
+      requiredPermissionList = permissions;
+    }
+
+    if (projectV1Route.name && projectV1Route.name.toString() !== "") {
+      list.push({
+        name: projectV1Route.name.toString(),
+        permissions: requiredPermissionList,
+      });
+    }
+    if (projectV1Route.children) {
+      list.push(
+        ...getFlattenProjectV1Routes(
+          projectV1Route.children,
+          requiredPermissionList
+        )
+      );
     }
     return list;
-  }, [] as RouteRecordRaw[]);
+  }, [] as { name: string; permissions: ProjectPermission[] }[]);
+};
+
+const flattenProjectV1Routes = computed(() => {
+  return getFlattenProjectV1Routes(projectV1Routes);
 });
 
 const filterprojectSidebarByPermissions = (
@@ -116,13 +144,7 @@ const filterprojectSidebarByPermissions = (
       const routeConfig = flattenProjectV1Routes.value.find(
         (projectV1Route) => projectV1Route.name === item.path
       );
-      const getPermissionListFunc =
-        routeConfig?.meta?.requiredProjectPermissionList;
-      const requiredPermissions = getPermissionListFunc
-        ? getPermissionListFunc()
-        : [];
-
-      return requiredPermissions.every((permission) =>
+      return (routeConfig?.permissions ?? []).every((permission) =>
         hasProjectPermissionV2(project.value, currentUser.value, permission)
       );
     })
