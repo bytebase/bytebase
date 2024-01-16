@@ -132,6 +132,7 @@ import SchemaEditorLite, {
 } from "@/components/SchemaEditorLite";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
@@ -149,7 +150,11 @@ import {
   Sheet_Type,
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
-import { extractSheetUID, setSheetStatement } from "@/utils";
+import {
+  extractProjectResourceName,
+  extractSheetUID,
+  setSheetStatement,
+} from "@/utils";
 import { useVirtualBranch } from "./useVirtualBranch";
 
 type TabType = "schema-editor" | "raw-sql-preview";
@@ -355,9 +360,10 @@ const handlePreviewIssue = async () => {
     name: generateIssueName(db.databaseName),
   };
   const routeInfo = {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      project: extractProjectResourceName(props.project.name),
+      issueSlug: "create",
     },
     query,
   };

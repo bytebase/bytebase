@@ -156,6 +156,7 @@ import {
 import EllipsisText from "@/components/EllipsisText.vue";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
@@ -170,7 +171,11 @@ import {
 } from "@/types/proto/v1/database_service";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import { Plan, Plan_Spec } from "@/types/proto/v1/rollout_service";
-import { extractBackupResourceName } from "@/utils";
+import {
+  extractBackupResourceName,
+  extractProjectResourceName,
+  issueSlug,
+} from "@/utils";
 
 export type BackupRow = BBGridRow<Backup>;
 
@@ -364,7 +369,13 @@ const doRestoreInPlaceV1 = async () => {
       planCreate
     );
 
-    router.push(`/issue/${createdIssue.uid}`);
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+      },
+    });
   } catch {
     state.creatingRestoreIssue = false;
   }

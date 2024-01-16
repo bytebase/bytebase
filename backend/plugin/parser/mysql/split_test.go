@@ -38,6 +38,233 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []splitTestData{
 		{
+			// 20 IF symbol
+			statement: `
+			SELECT
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			)
+			FROM t; SELECT * FROM t;`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text: `
+			SELECT
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			),
+			IF (
+				age < 18,
+				'child',
+				'adult'
+			)
+			FROM t;`,
+						FirstStatementLine:   1,
+						FirstStatementColumn: 3,
+						LastLine:             102,
+						LastColumn:           9,
+					},
+					{
+						Text:                 " SELECT * FROM t;",
+						BaseLine:             102,
+						FirstStatementLine:   102,
+						FirstStatementColumn: 11,
+						LastLine:             102,
+						LastColumn:           26,
+					},
+				},
+			},
+		},
+		{
 			statement: `select * from t;select "\"" where true;`,
 			want: resData{
 				res: []base.SingleSQL{
@@ -63,8 +290,8 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 				res: []base.SingleSQL{
 					{
 						Text:                 "-- klsjdfjasldf\n\t\t\t-- klsjdflkjaskldfj\n",
-						FirstStatementLine:   1,
-						FirstStatementColumn: 22,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 0,
 						LastLine:             1,
 						LastColumn:           22,
 						Empty:                true,
@@ -89,7 +316,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						LastLine:             1,
 						LastColumn:           3,
 						FirstStatementLine:   1,
-						FirstStatementColumn: 3,
+						FirstStatementColumn: 16,
 						Empty:                true,
 					},
 				},
@@ -291,7 +518,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						LastLine:             9,
 						LastColumn:           5,
 						FirstStatementLine:   9,
-						FirstStatementColumn: 5,
+						FirstStatementColumn: 6,
 						Empty:                true,
 					},
 				},
@@ -340,7 +567,7 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						LastLine:             10,
 						LastColumn:           5,
 						FirstStatementLine:   10,
-						FirstStatementColumn: 5,
+						FirstStatementColumn: 6,
 						Empty:                true,
 					},
 				},

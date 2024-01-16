@@ -21,8 +21,18 @@
         <template
           v-if="taskRollbackBy && rollbackByIssue.uid !== String(UNKNOWN_ID)"
         >
+          <!--
+          here we assume that the rollbackBy issue and the original issue 
+          are always in the same project
+        -->
           <router-link
-            :to="`/issue/${taskRollbackBy.rollbackByIssueId}`"
+            :to="{
+              name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+              params: {
+                projectId: extractProjectResourceName(issue.project),
+                issueSlug: taskRollbackBy.rollbackByIssueId,
+              },
+            }"
             class="text-accent inline-flex gap-x-1"
           >
             <span>{{ $t("common.issue") }}</span>
@@ -70,6 +80,7 @@ import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useActivityV1Store, useSheetV1Store } from "@/store";
 import {
   ActivityIssueCommentCreatePayload,
@@ -79,7 +90,7 @@ import {
 } from "@/types";
 import { LogEntity_Action } from "@/types/proto/v1/logging_service";
 import { Task_DatabaseDataUpdate_RollbackSqlStatus as RollbackSqlStatus } from "@/types/proto/v1/rollout_service";
-import { extractSheetUID } from "@/utils";
+import { extractProjectResourceName, extractSheetUID } from "@/utils";
 import IssueStatusIcon from "../../IssueStatusIcon.vue";
 import LogButton from "./LogButton.vue";
 import LoggingButton from "./LoggingButton.vue";
@@ -165,9 +176,10 @@ const tryRollbackTask = async () => {
     ].join("\n");
 
     router.push({
-      name: "workspace.issue.detail",
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
-        issueSlug: "new",
+        projectId: extractProjectResourceName(issue.value.project),
+        issueSlug: "create",
       },
       query: {
         template: "bb.issue.database.data.update",

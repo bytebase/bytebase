@@ -157,6 +157,7 @@ import {
   ContextMenuButtonAction,
 } from "@/components/v2";
 import { usePITRLogic } from "@/plugins";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   experimentalCreateIssueByPlan,
   useCurrentUserV1,
@@ -169,6 +170,7 @@ import {
   Plan_RestoreDatabaseConfig,
   Plan_Spec,
 } from "@/types/proto/v1/rollout_service";
+import { extractProjectResourceName, issueSlug } from "@/utils";
 import RestoreTargetForm from "../DatabaseBackup/RestoreTargetForm.vue";
 import ChangeHistoryBrief from "./ChangeHistoryBrief.vue";
 import CreatePITRDatabaseForm from "./CreatePITRDatabaseForm.vue";
@@ -404,7 +406,13 @@ const onConfirmV1 = async () => {
       planCreate
     );
 
-    router.push(`/issue/${createdIssue.uid}`);
+    router.push({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        issueSlug: issueSlug(createdIssue.title, createdIssue.uid),
+      },
+    });
   } catch (ex) {
     // TODO: error handling
   } finally {

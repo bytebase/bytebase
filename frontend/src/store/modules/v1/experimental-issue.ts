@@ -84,7 +84,10 @@ export const shallowComposeIssue = async (
   return composeIssue(rawIssue, false, false);
 };
 
-export const experimentalFetchIssueByUID = async (uid: string) => {
+export const experimentalFetchIssueByUID = async (
+  uid: string,
+  project = "-"
+) => {
   if (uid === "undefined") {
     console.warn("undefined issue uid");
     return unknownIssue();
@@ -94,7 +97,7 @@ export const experimentalFetchIssueByUID = async (uid: string) => {
   if (uid === String(UNKNOWN_ID)) return unknownIssue();
 
   const rawIssue = await issueServiceClient.getIssue({
-    name: `projects/-/issues/${uid}`,
+    name: `projects/${project}/issues/${uid}`,
   });
 
   return composeIssue(rawIssue);

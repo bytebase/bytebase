@@ -23,6 +23,7 @@
       v-if="hasPermission"
       :project-id="projectId"
       :allow-edit="allowEdit"
+      v-bind="$attrs"
     />
     <NoPermissionPlaceholder v-else />
   </div>
