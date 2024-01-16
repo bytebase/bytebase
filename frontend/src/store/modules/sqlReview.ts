@@ -12,7 +12,6 @@ import {
   IdType,
   MaybeRef,
   RuleType,
-  UNKNOWN_ID,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
@@ -22,18 +21,9 @@ import {
   SQLReviewPolicy as SQLReviewPolicyV1,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
+import { extractEnvironmentResourceName } from "@/utils";
 import { useEnvironmentV1Store } from "./v1/environment";
 import { usePolicyV1Store } from "./v1/policy";
-
-const getEnvironmentById = async (
-  environmentId: IdType
-): Promise<Environment> => {
-  const environmentV1Store = useEnvironmentV1Store();
-  const environment = await environmentV1Store.getOrFetchEnvironmentByName(
-    `${environmentNamePrefix}${environmentId}`
-  );
-  return environment;
-};
 
 const convertToSQLReviewPolicy = async (
   policy: Policy
@@ -56,7 +46,9 @@ const convertToSQLReviewPolicy = async (
     ruleList.push(rule);
   }
 
-  const environment = await getEnvironmentById(policy.resourceUid);
+  const environment = await useEnvironmentV1Store().getOrFetchEnvironmentByName(
+    `${environmentNamePrefix}${extractEnvironmentResourceName(policy.name)}`
+  );
 
   return {
     id: policy.name,
@@ -222,11 +214,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         this.setReviewPolicy(reviewPolicy);
       }
     },
-    getReviewPolicyByEnvironmentUID(
-      environmentUID: string
+    getReviewPolicyByEnvironmentId(
+      environmentId: string
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find(
-        (g) => g.environment.uid == environmentUID
+        (g) => g.environment.name === `${environmentNamePrefix}${environmentId}`
       );
     },
 
@@ -248,10 +240,14 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       this.reviewPolicyList = reviewPolicyList;
       return reviewPolicyList;
     },
-    async getOrFetchReviewPolicyByEnvironmentUID(
-      environmentUID: string
+    async getOrFetchReviewPolicyByEnvironmentId(
+      environmentId: string
     ): Promise<SQLReviewPolicy | undefined> {
-      const environment = await getEnvironmentById(environmentUID);
+      const environmentV1Store = useEnvironmentV1Store();
+      const environment = await environmentV1Store.getOrFetchEnvironmentByName(
+        `${environmentNamePrefix}${environmentId}`,
+        true /* silent */
+      );
       const policyStore = usePolicyV1Store();
       const policy = await policyStore.getOrFetchPolicyByName(
         getSQLReviewPolicyName(environment.name)
@@ -279,17 +275,16 @@ export const useSQLReviewPolicyList = () => {
   return computed(() => store.reviewPolicyList);
 };
 
-export const useReviewPolicyByEnvironmentId = (
+export const useReviewPolicyByEnvironmentName = (
   environmentId: MaybeRef<string>
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    const uid = unref(environmentId);
-    if (uid === String(UNKNOWN_ID)) return;
-    store.getOrFetchReviewPolicyByEnvironmentUID(uid);
+    const id = unref(environmentId);
+    store.getOrFetchReviewPolicyByEnvironmentId(id);
   });
 
   return computed(() =>
-    store.getReviewPolicyByEnvironmentUID(unref(environmentId))
+    store.getReviewPolicyByEnvironmentId(unref(environmentId))
   );
 };

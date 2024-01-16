@@ -55,7 +55,11 @@
         <heroicons-outline:terminal class="w-6 h-6" />
         <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
       </a>
-      <router-link to="/setting/general" exact-active-class="">
+      <router-link
+        v-if="hasSetSettingPermission"
+        :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
+        exact-active-class=""
+      >
         <Settings class="w-6 h-6" />
       </router-link>
       <div class="ml-2">
@@ -88,9 +92,13 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
-import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store } from "@/store";
+import {
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+  SETTING_ROUTE_WORKSPACE_MEMBER,
+} from "@/router/dashboard/workspaceSetting";
+import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -122,6 +130,7 @@ const params = computed(() => {
   };
 });
 
+const currentUser = useCurrentUserV1();
 const { project } = useCurrentProject(params);
 
 const isMac = navigator.platform.match(/mac/i);
@@ -131,6 +140,10 @@ const onClickSearchButton = () => {
 };
 
 const { currentPlan } = storeToRefs(subscriptionStore);
+
+const hasSetSettingPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+});
 
 const kbarActions = computed(() => {
   return [

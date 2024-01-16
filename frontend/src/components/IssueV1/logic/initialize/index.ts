@@ -7,7 +7,7 @@ import {
 } from "vue-router";
 import { experimentalFetchIssueByUID } from "@/store";
 import { ComposedIssue, emptyIssue, EMPTY_ID, UNKNOWN_ID } from "@/types";
-import { idFromSlug } from "@/utils";
+import { uidFromSlug } from "@/utils";
 import { createIssueSkeleton } from "./create";
 
 export * from "./create";
@@ -27,7 +27,7 @@ export function useInitializeIssue(
     const slug = unref(issueSlug);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
     if (slug.toLowerCase() === "create") return String(EMPTY_ID);
-    const uid = Number(idFromSlug(slug));
+    const uid = Number(uidFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
   });

@@ -97,7 +97,7 @@ import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
-import { useReviewPolicyByEnvironmentId } from "@/store";
+import { useReviewPolicyByEnvironmentName } from "@/store";
 import {
   GeneralErrorCode,
   RuleTemplate,
@@ -115,6 +115,7 @@ import {
   PlanCheckRun_Status,
   Task,
 } from "@/types/proto/v1/rollout_service";
+import { extractEnvironmentResourceName } from "@/utils";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
@@ -272,14 +273,16 @@ const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
 
-const reviewPolicy = useReviewPolicyByEnvironmentId(
+const reviewPolicy = useReviewPolicyByEnvironmentName(
   computed(() => {
     const task = props.task;
     if (!task) {
       return String(UNKNOWN_ID);
     }
     const database = databaseForTask(issue.value, task);
-    return database.effectiveEnvironmentEntity.uid;
+    return extractEnvironmentResourceName(
+      database.effectiveEnvironmentEntity.name
+    );
   })
 );
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {

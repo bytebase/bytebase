@@ -11,7 +11,9 @@
 <script lang="ts" setup>
 import { computed, watchEffect } from "vue";
 import { useSQLReviewStore } from "@/store";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
+import { unknownEnvironment } from "@/types";
 
 const url = new URL(window.location.href);
 const params = new URLSearchParams(url.search);
@@ -21,11 +23,14 @@ const envStore = useEnvironmentV1Store();
 watchEffect(() => {
   Promise.all([
     useSQLReviewStore().fetchReviewPolicyList(),
-    envStore.getOrFetchEnvironmentByUID(environmentId),
+    envStore.getEnvironmentByName(`${environmentNamePrefix}${environmentId}`),
   ]);
 });
 
 const environment = computed(() => {
-  return envStore.getEnvironmentByUID(environmentId) ?? {};
+  return (
+    envStore.getEnvironmentByName(`${environmentNamePrefix}${environmentId}`) ??
+    unknownEnvironment()
+  );
 });
 </script>

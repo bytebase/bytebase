@@ -3,7 +3,7 @@ import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
 import { t } from "@/plugins/i18n";
 import { useDatabaseV1Store } from "@/store";
-import { idFromSlug } from "@/utils";
+import { uidFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
 export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
@@ -43,7 +43,7 @@ const databaseRoutes: RouteRecordRaw[] = [
               return t("common.new");
             }
             return useDatabaseV1Store().getDatabaseByUID(
-              String(idFromSlug(slug))
+              String(uidFromSlug(slug))
             ).databaseName;
           },
         },
