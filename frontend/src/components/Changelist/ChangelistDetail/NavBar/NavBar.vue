@@ -5,10 +5,10 @@
     </div>
     <div class="flex items-center justify-end gap-x-3">
       <template v-if="!reorderMode">
-        <ReorderButton @click="beginReorder" />
+        <ReorderButton v-if="allowEdit" @click="beginReorder" />
         <ExportButton />
-        <AddChangeButton />
-        <ApplyToDatabaseButton />
+        <AddChangeButton v-if="allowEdit" />
+        <ApplyToDatabaseButton v-if="allowApply" />
       </template>
 
       <template v-if="reorderMode">
@@ -33,7 +33,7 @@ import ReorderButton from "./ReorderButton.vue";
 import TitleEditor from "./TitleEditor.vue";
 import { useReorderChangelist } from "./reorder";
 
-const { reorderMode } = useChangelistDetailContext();
+const { reorderMode, allowEdit, allowApply } = useChangelistDetailContext();
 
 const {
   begin: beginReorder,
