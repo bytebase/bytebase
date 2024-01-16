@@ -5,11 +5,12 @@ import { t } from "@/plugins/i18n";
 import { useChangeHistoryStore, useInstanceV1Store } from "@/store";
 import { uidFromSlug, idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 const instanceRoutes: RouteRecordRaw[] = [
   {
     path: "instance",
-    name: "workspace.instance",
+    name: INSTANCE_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.instances"),
       getQuickActionList: () => {

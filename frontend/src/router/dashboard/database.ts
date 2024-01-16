@@ -5,8 +5,8 @@ import { t } from "@/plugins/i18n";
 import { useDatabaseV1Store } from "@/store";
 import { uidFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import { DATABASE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
-export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
 export const DATABASE_ROUTE_DETAIL = `${DATABASE_ROUTE_DASHBOARD}.detail`;
 
 const databaseRoutes: RouteRecordRaw[] = [

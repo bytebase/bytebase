@@ -11,13 +11,14 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import { useIssueContext } from "@/components/IssueV1";
+import { WORKSPACE_ROUTE_EXPORT_CENTER } from "@/router/dashboard/workspaceRoutes";
 
 const router = useRouter();
 const { issue } = useIssueContext();
 
 const toExportCenter = () => {
   router.push({
-    name: "workspace.export-center",
+    name: WORKSPACE_ROUTE_EXPORT_CENTER,
     hash: `#${issue.value.uid}`,
   });
 };

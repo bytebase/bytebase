@@ -6,8 +6,12 @@ import { unknownUser } from "@/types";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import SettingSidebar from "@/views/SettingSidebar.vue";
-
-export const WORKSPACE_HOME_MODULE = "workspace.home";
+import {
+  WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_SLOW_QUERY,
+  WORKSPACE_ROUTE_EXPORT_CENTER,
+  WORKSPACE_ROUTE_ANOMALY_CENTER,
+} from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
   {
@@ -60,7 +64,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "slow-query",
-    name: "workspace.slow-query",
+    name: WORKSPACE_ROUTE_SLOW_QUERY,
     meta: { title: () => startCase(t("slow-query.slow-queries")) },
     components: {
       content: () => import("@/views/SlowQuery/SlowQueryDashboard.vue"),
@@ -73,7 +77,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "export-center",
-    name: "workspace.export-center",
+    name: WORKSPACE_ROUTE_EXPORT_CENTER,
     meta: { title: () => startCase(t("export-center.self")) },
     components: {
       content: () => import("@/views/ExportCenter/index.vue"),
@@ -86,7 +90,7 @@ const workspaceRoutes: RouteRecordRaw[] = [
   },
   {
     path: "anomaly-center",
-    name: "workspace.anomaly-center",
+    name: WORKSPACE_ROUTE_ANOMALY_CENTER,
     meta: { title: () => t("anomaly-center") },
     components: {
       content: () => import("@/views/AnomalyCenterDashboard.vue"),
