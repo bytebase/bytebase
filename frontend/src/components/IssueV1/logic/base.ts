@@ -12,7 +12,7 @@ import {
   activeTaskInRollout,
   activeTaskInStageV1,
   flattenTaskV1List,
-  idFromSlug,
+  uidFromSlug,
   indexOrUIDFromSlug,
   stageV1Slug,
   taskV1Slug,
@@ -72,7 +72,7 @@ export const useBaseIssueContext = (
         }
       }
     } else if (!isCreating.value && taskSlug) {
-      const taskUID = String(idFromSlug(taskSlug));
+      const taskUID = String(uidFromSlug(taskSlug));
       for (const stage of stageList) {
         if (stage.tasks.findIndex((task) => task.uid === taskUID)) {
           return stage;

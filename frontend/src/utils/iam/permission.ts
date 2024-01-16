@@ -1,4 +1,4 @@
-import { useRoleStore } from "@/store";
+import { useProjectV1ListByUser, useRoleStore } from "@/store";
 import {
   ComposedProject,
   ProjectPermission,
@@ -39,4 +39,15 @@ export const hasProjectPermissionV2 = (
     .map((role) => roleStore.getRoleByName(role))
     .flatMap((role) => (role ? role.permissions : []));
   return permissions.includes(permission);
+};
+
+// hasWorkspaceLevelProjectPermission checks if the user has the given permission on any project in the workspace.
+export const hasWorkspaceLevelProjectPermission = (
+  user: User,
+  permission: ProjectPermission
+): boolean => {
+  const { projectList } = useProjectV1ListByUser(user);
+  return projectList.value.some((project) =>
+    hasProjectPermissionV2(project, user, permission)
+  );
 };
