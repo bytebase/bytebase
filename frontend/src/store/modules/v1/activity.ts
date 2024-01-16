@@ -21,7 +21,6 @@ import {
 import { isDatabaseRelatedIssue, extractRolloutUID } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
 import { userNamePrefix, getLogId, logNamePrefix } from "./common";
-import { experimentalFetchIssueByUID } from "./experimental-issue";
 
 dayjs.extend(utc);
 
@@ -106,11 +105,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
     return mergedList;
   };
 
-  const fetchActivityListByIssueUID = async (uid: string) => {
-    const issue = await experimentalFetchIssueByUID(uid);
-    return fetchActivityListForIssueV1(issue);
-  };
-
   const fetchActivityListForQueryHistory = async ({
     limit,
     order,
@@ -161,7 +155,6 @@ export const useActivityV1Store = defineStore("activity_v1", () => {
   return {
     fetchActivityList,
     fetchActivityListForIssueV1,
-    fetchActivityListByIssueUID,
     fetchActivityListForQueryHistory,
     fetchActivityByUID,
     getActivityListByIssueV1,

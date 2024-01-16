@@ -1,5 +1,7 @@
 import dayjs from "dayjs";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { ComposedDatabaseGroup } from "@/types";
+import { extractProjectResourceName } from "../v1";
 
 export const generateDatabaseGroupIssueRoute = (
   type: "bb.issue.database.schema.update" | "bb.issue.database.data.update",
@@ -25,9 +27,10 @@ export const generateDatabaseGroupIssueRoute = (
   };
 
   return {
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(databaseGroup.project.name),
+      issueSlug: "create",
     },
     query,
   };
