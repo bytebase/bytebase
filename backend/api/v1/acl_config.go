@@ -43,6 +43,7 @@ var transferDatabaseMethods = map[string]bool{
 }
 
 var methodPermissionMap = map[string]iam.Permission{
+	v1pb.SQLService_AdminExecute_FullMethodName:           iam.PermissionInstancesAdminExecute,
 	v1pb.InstanceService_ListInstances_FullMethodName:     iam.PermissionInstancesList,
 	v1pb.InstanceService_SearchInstances_FullMethodName:   "", // handled in the method; if the user can get the database, then the user can get the instance.
 	v1pb.InstanceService_GetInstance_FullMethodName:       iam.PermissionInstancesGet,
