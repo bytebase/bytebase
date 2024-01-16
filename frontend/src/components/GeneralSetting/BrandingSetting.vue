@@ -168,6 +168,7 @@ const allowDelete = computed(() => {
   if (!allowEdit.value) return false;
   return settingV1Store.brandingLogo !== "";
 });
+
 const allowSave = computed((): boolean => {
   return (
     allowEdit.value && state.logoFile !== null && valid.value && !state.loading

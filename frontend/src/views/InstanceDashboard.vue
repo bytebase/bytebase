@@ -44,12 +44,12 @@ interface LocalState {
   params: SearchParams;
 }
 
+const { t } = useI18n();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
-const { t } = useI18n();
-
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
+const environmentList = useEnvironmentV1List();
+const { instanceList: rawInstanceV1List } = useInstanceV1List();
 
 const state = reactive<LocalState>({
   params: {
@@ -73,10 +73,6 @@ onMounted(() => {
     });
   }
 });
-
-const { instanceList: rawInstanceV1List } = useInstanceV1List(
-  false /* !showDeleted */
-);
 
 const filteredInstanceV1List = computed(() => {
   let list = [...rawInstanceV1List.value];
