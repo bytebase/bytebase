@@ -1,11 +1,11 @@
 import { InjectionKey, Ref, computed, inject, provide, unref } from "vue";
-import { useDatabaseV1Store, useCurrentUserV1 } from "../../store";
+import { useDatabaseV1Store, useCurrentUserV1 } from "@/store";
 import {
   ComposedDatabase,
   MaybeRef,
   ProjectPermission,
   DEFAULT_PROJECT_V1_NAME,
-} from "../../types";
+} from "@/types";
 import {
   idFromSlug,
   hasProjectPermissionV2,
@@ -13,7 +13,7 @@ import {
   instanceV1SupportSlowQuery,
   isArchivedDatabaseV1,
   instanceV1HasBackupRestore,
-} from "../../utils";
+} from "@/utils";
 
 export type DatabaseDetailContext = {
   database: Ref<ComposedDatabase>;
@@ -21,6 +21,8 @@ export type DatabaseDetailContext = {
   allowUpdateDatabase: Ref<boolean>;
   allowSyncDatabase: Ref<boolean>;
   allowTransferDatabase: Ref<boolean>;
+  allowListBackup: Ref<boolean>;
+  allowCreateBackup: Ref<boolean>;
   allowGetBackupSetting: Ref<boolean>;
   allowUpdateBackupSetting: Ref<boolean>;
   allowGetSchema: Ref<boolean>;
@@ -77,6 +79,12 @@ export const provideDatabaseDetailContext = (
     return allowUpdateDatabase.value;
   });
 
+  const allowListBackup = computed(() => checkPermission("bb.backups.list"));
+  const allowCreateBackup = computed(
+    () =>
+      checkPermission("bb.backups.create") &&
+      instanceV1HasBackupRestore(database.value.instanceEntity)
+  );
   const allowGetBackupSetting = computed(
     () =>
       checkPermission("bb.databases.getBackupSetting") &&
@@ -132,6 +140,8 @@ export const provideDatabaseDetailContext = (
     allowUpdateDatabase,
     allowSyncDatabase,
     allowTransferDatabase,
+    allowListBackup,
+    allowCreateBackup,
     allowGetBackupSetting,
     allowUpdateBackupSetting,
     allowGetSchema,

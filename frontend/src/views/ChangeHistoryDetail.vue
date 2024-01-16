@@ -1,9 +1,10 @@
 <template>
-  <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
-    <main v-if="changeHistory" class="flex flex-col relative pb-8 gap-y-6">
+  <div class="focus:outline-none px-4 pb-4" tabindex="0" v-bind="$attrs">
+    <NoPermissionPlaceholder v-if="!hasPermission" />
+    <main v-else-if="changeHistory" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
       <div
-        class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
+        class="pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
       >
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
@@ -103,7 +104,7 @@
         </div>
       </div>
 
-      <div v-if="affectedTables.length > 0" class="px-4">
+      <div v-if="affectedTables.length > 0">
         <span class="flex items-center text-lg text-main capitalize">
           {{ $t("change-history.affected-tables") }}
         </span>
@@ -127,7 +128,7 @@
         </div>
       </div>
 
-      <div class="px-4 flex flex-col gap-y-6">
+      <div class="flex flex-col gap-y-6">
         <div class="flex flex-col gap-y-2">
           <a
             id="statement"
@@ -340,6 +341,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useUserStore,
+  useCurrentUserV1,
   useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
@@ -362,6 +364,7 @@ import {
   getAffectedTablesOfChangeHistory,
   toClipboard,
   getStatementSize,
+  hasProjectPermissionV2,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -398,6 +401,14 @@ const v1Instance = computed(() => {
 const database = computed(() => {
   return databaseStore.getDatabaseByName(changeHistoryParent.value);
 });
+
+const hasPermission = computed(() =>
+  hasProjectPermissionV2(
+    database.value.projectEntity,
+    useCurrentUserV1().value,
+    "bb.changeHistories.get"
+  )
+);
 
 const classificationConfig = computed(() => {
   return settingStore.getProjectClassification(
