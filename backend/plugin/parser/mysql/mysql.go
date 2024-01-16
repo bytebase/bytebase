@@ -23,8 +23,8 @@ type ParseResult struct {
 }
 
 // ParseMySQL parses the given SQL statement and returns the AST.
-func ParseMySQL(statement string) ([]*ParseResult, error) {
-	statement, err := DealWithDelimiter(statement)
+func ParseMySQL(statement string, options ...tokenizer.Option) ([]*ParseResult, error) {
+	statement, err := DealWithDelimiter(statement, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func ParseMySQL(statement string) ([]*ParseResult, error) {
 }
 
 // DealWithDelimiter converts the delimiter statement to comment, also converts the following statement's delimiter to semicolon(`;`).
-func DealWithDelimiter(statement string) (string, error) {
-	has, list, err := hasDelimiter(statement)
+func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, error) {
+	has, list, err := hasDelimiter(statement, options...)
 	if err != nil {
 		return "", err
 	}
@@ -261,9 +261,9 @@ func ExtractDelimiter(stmt string) (string, error) {
 	return "", errors.Errorf("cannot extract delimiter from %q", stmt)
 }
 
-func hasDelimiter(statement string) (bool, []base.SingleSQL, error) {
+func hasDelimiter(statement string, options ...tokenizer.Option) (bool, []base.SingleSQL, error) {
 	// use splitTiDBMultiSQL to check if the statement has delimiter
-	t := tokenizer.NewTokenizer(statement)
+	t := tokenizer.NewTokenizer(statement, options...)
 	list, err := t.SplitTiDBMultiSQL()
 	if err != nil {
 		return false, nil, errors.Errorf("failed to split multi sql: %v", err)
