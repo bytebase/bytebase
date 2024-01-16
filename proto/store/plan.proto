@@ -11,6 +11,9 @@ message PlanConfig {
   repeated Step steps = 1;
 
   message Step {
+    // Use the title if set.
+    // Use a generated title if empty.
+    string title = 2;
     repeated Spec specs = 1;
   }
   message Spec {
