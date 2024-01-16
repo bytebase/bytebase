@@ -6,7 +6,7 @@
         :autofocus="true"
         :placeholder="$t('common.filter-by-name')"
       />
-      <NButton type="primary" @click="handleCreateBranch">
+      <NButton v-if="allowCreate" type="primary" @click="handleCreateBranch">
         <PlusIcon class="w-4 h-auto mr-0.5" />
         <span>{{ $t("database.new-branch") }}</span>
       </NButton>
@@ -46,6 +46,7 @@ import { useCurrentUserV1 } from "@/store";
 import { useBranchListByProject } from "@/store/modules/branch";
 import { userNamePrefix } from "@/store/modules/v1/common";
 import { ComposedProject } from "@/types";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -66,6 +67,13 @@ const { branchList, ready } = useBranchListByProject(
 );
 const state = reactive<LocalState>({
   searchKeyword: "",
+});
+const allowCreate = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    currentUser.value,
+    "bb.branches.create"
+  );
 });
 
 const filteredBranches = computed(() => {
