@@ -63,12 +63,14 @@ func transformDeploymentConfigTargetToSteps(ctx context.Context, s *store.Store,
 	}
 
 	var steps []*storepb.PlanConfig_Step
-	for _, databases := range matrix {
+	for i, databases := range matrix {
 		if len(databases) == 0 {
 			continue
 		}
 
-		step := &storepb.PlanConfig_Step{}
+		step := &storepb.PlanConfig_Step{
+			Title: deploySchedule.Deployments[i].Name,
+		}
 		for _, database := range databases {
 			step.Specs = append(step.Specs, &storepb.PlanConfig_Spec{
 				EarliestAllowedTime: spec.EarliestAllowedTime,
