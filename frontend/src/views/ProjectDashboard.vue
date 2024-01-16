@@ -16,6 +16,7 @@
 import { computed, onMounted, reactive } from "vue";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { useUIStateStore, useProjectV1ListByCurrentUser } from "@/store";
+import { DEFAULT_PROJECT_ID } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 
 interface LocalState {
@@ -28,7 +29,9 @@ const state = reactive<LocalState>({
 const { projectList } = useProjectV1ListByCurrentUser();
 
 const filteredProjectList = computed(() => {
-  const list = projectList.value;
+  const list = projectList.value.filter(
+    (project) => project.uid !== String(DEFAULT_PROJECT_ID)
+  );
   return filterProjectV1ListByKeyword(list, state.searchText);
 });
 
