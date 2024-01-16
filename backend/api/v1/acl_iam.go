@@ -141,11 +141,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 	case
 		v1pb.BranchService_ListBranches_FullMethodName,
 		v1pb.BranchService_GetBranch_FullMethodName,
-		v1pb.BranchService_CreateBranch_FullMethodName,
-		v1pb.BranchService_UpdateBranch_FullMethodName,
-		v1pb.BranchService_DeleteBranch_FullMethodName,
-		v1pb.BranchService_MergeBranch_FullMethodName,
-		v1pb.BranchService_RebaseBranch_FullMethodName:
+		v1pb.BranchService_CreateBranch_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForBranchService
 	case
@@ -261,6 +257,13 @@ func isSkippedMethod(fullMethod string) bool {
 	// project may not be present in request.Issue.Name.
 	case
 		v1pb.IssueService_GetIssue_FullMethodName:
+		return true
+	// handled in the method because we need to consider branch.Creator.
+	case
+		v1pb.BranchService_UpdateBranch_FullMethodName,
+		v1pb.BranchService_DeleteBranch_FullMethodName,
+		v1pb.BranchService_MergeBranch_FullMethodName,
+		v1pb.BranchService_RebaseBranch_FullMethodName:
 		return true
 	// handled in the method because we need to consider changelist.Creator.
 	case
@@ -438,14 +441,6 @@ func (*ACLInterceptor) getProjectIDsForBranchService(_ context.Context, req any)
 		projects = append(projects, r.GetParent())
 	case *v1pb.CreateBranchRequest:
 		projects = append(projects, r.GetParent())
-	case *v1pb.UpdateBranchRequest:
-		branches = append(branches, r.GetBranch().GetName())
-	case *v1pb.DeleteBranchRequest:
-		branches = append(branches, r.GetName())
-	case *v1pb.MergeBranchRequest:
-		branches = append(branches, r.GetName())
-	case *v1pb.RebaseBranchRequest:
-		branches = append(branches, r.GetName())
 	}
 
 	var projectIDs []string
