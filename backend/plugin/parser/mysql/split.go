@@ -100,23 +100,6 @@ func splitByParser(lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([
 	return result, nil
 }
 
-func isCloseParenthesis(tokens []antlr.Token, index int) bool {
-	if index < 0 || index >= len(tokens) {
-		return false
-	}
-
-	if tokens[index].GetTokenType() != parser.MySQLParserEND_SYMBOL {
-		return false
-	}
-
-	isXa := base.GetDefaultChannelTokenType(tokens, index, -1) == parser.MySQLParserXA_SYMBOL
-	if isXa {
-		return false
-	}
-
-	return true
-}
-
 type openParenthesis struct {
 	tokenType int
 	pos       int
