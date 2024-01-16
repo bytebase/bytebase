@@ -135,9 +135,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		projectIDsGetter = in.getProjectIDsForIssueService
 	case
 		v1pb.ChangelistService_CreateChangelist_FullMethodName,
-		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
-		v1pb.ChangelistService_GetChangelist_FullMethodName,
-		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
+		v1pb.ChangelistService_GetChangelist_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForChangelistService
 	case
@@ -264,6 +262,11 @@ func isSkippedMethod(fullMethod string) bool {
 	case
 		v1pb.IssueService_GetIssue_FullMethodName:
 		return true
+	// handled in the method because we need to consider changelist.Creator.
+	case
+		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
+		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
+		return true
 	// handled in the method because we need to consider issue.Creator.
 	case
 		v1pb.IssueService_UpdateIssue_FullMethodName,
@@ -334,11 +337,7 @@ func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req 
 	switch r := req.(type) {
 	case *v1pb.CreateChangelistRequest:
 		projects = append(projects, r.GetParent())
-	case *v1pb.UpdateChangelistRequest:
-		changelists = append(changelists, r.GetChangelist().GetName())
 	case *v1pb.GetChangelistRequest:
-		changelists = append(changelists, r.GetName())
-	case *v1pb.DeleteChangelistRequest:
 		changelists = append(changelists, r.GetName())
 	}
 
