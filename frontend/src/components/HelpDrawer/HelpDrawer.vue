@@ -13,14 +13,6 @@
       <div v-if="state.html" class="overflow-auto" v-html="state.html"></div>
       <template #footer>
         <div class="flex flex-row justify-center pb-10">
-          <div v-if="locale === 'en-US'" class="w-1/2 pt-2">
-            <a href="https://discord.gg/huyw7gRsyA" target="_blank">
-              <img
-                src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
-                alt="discord invitation"
-              />
-            </a>
-          </div>
           <div
             v-if="locale === 'zh-CN'"
             class="w-full flex flex-col items-center pt-2"
@@ -43,11 +35,11 @@
               </div>
             </div>
           </div>
-          <div v-if="locale === 'es-ES'" class="w-1/2 pt-2">
+          <div v-else class="w-1/2 pt-2">
             <a href="https://discord.gg/huyw7gRsyA" target="_blank">
               <img
                 src="https://discordapp.com/api/guilds/861117579216420874/widget.png?style=banner4"
-                alt="invitación a discord"
+                alt="Discord Invite"
               />
             </a>
           </div>
@@ -103,7 +95,9 @@ const state = reactive<State>({
 watch(helpId, async (id) => {
   if (id) {
     const res = await fetch(
-      `/help/${locale.value === "zh-CN" ? "zh" : "en"}/${id}.md`
+      `/help/${
+        locale.value === "zh-CN" ? "zh" : locale.value === "ja-JP" ? "ja" : "en"
+      }/${id}.md`
     );
     const markdown = await res.text();
     const ast: Node = Markdoc.parse(markdown);
