@@ -22,7 +22,7 @@ import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
-import { isDatabaseV1Alterable } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -220,9 +220,15 @@ const useExecuteSQL = () => {
           ) {
             const { databaseId } = tab.connection;
             const database = databaseStore.getDatabaseByUID(databaseId);
-            // Only show the warning if the database is alterable.
-            // AKA, the current user has the permission to alter the database.
-            if (isDatabaseV1Alterable(database, currentUser.value)) {
+            // Show a tips to navigate to issue creation
+            // if the user is allowed to create issue in the project.
+            if (
+              hasProjectPermissionV2(
+                database.projectEntity,
+                currentUser.value,
+                "bb.issues.create"
+              )
+            ) {
               sqlEditorStore.setSQLEditorState({
                 isShowExecutingHint: true,
               });

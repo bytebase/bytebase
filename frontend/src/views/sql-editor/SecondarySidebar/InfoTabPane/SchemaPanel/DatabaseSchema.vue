@@ -18,7 +18,6 @@
         </HideInStandaloneMode>
         <HideInStandaloneMode>
           <AlterSchemaButton
-            v-if="instanceV1HasAlterSchema(database.instanceEntity)"
             :database="database"
             @click="
               editorEvents.emit('alter-schema', {
@@ -58,11 +57,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  databaseV1Slug,
-  instanceV1HasAlterSchema,
-  isTableQueryable,
-} from "@/utils";
+import { databaseV1Slug, isTableQueryable } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
