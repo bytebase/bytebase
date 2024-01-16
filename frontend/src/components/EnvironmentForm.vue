@@ -160,7 +160,7 @@
               </NButton>
             </div>
             <NButton
-              v-else-if="hasPermission"
+              v-else-if="hasPermission('bb.policies.update')"
               @click.prevent="onSQLReviewPolicyClick"
             >
               {{ $t("sql-review.configure-policy") }}
@@ -260,7 +260,12 @@ import {
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
-import type { ResourceId, SQLReviewPolicy, ValidatedMessage } from "@/types";
+import type {
+  ResourceId,
+  SQLReviewPolicy,
+  ValidatedMessage,
+  WorkspacePermission,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   Environment,
@@ -351,14 +356,16 @@ const environmentId = computed(() => {
   if (props.create) {
     return;
   }
-  return (props.environment as Environment).uid;
+  return extractEnvironmentResourceName(
+    (props.environment as Environment).name
+  );
 });
 
 const prepareSQLReviewPolicy = () => {
   if (!environmentId.value) {
     return;
   }
-  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentUID(
+  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentId(
     environmentId.value
   );
 };
@@ -368,7 +375,7 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
   if (!environmentId.value) {
     return;
   }
-  return sqlReviewStore.getReviewPolicyByEnvironmentUID(environmentId.value);
+  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
 });
 
 const onSQLReviewPolicyClick = () => {
@@ -417,12 +424,9 @@ watch(
   }
 );
 
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUserV1.value,
-    "bb.environments.update"
-  );
-});
+const hasPermission = (permission: WorkspacePermission) => {
+  return hasWorkspacePermissionV2(currentUserV1.value, permission);
+};
 
 const validateResourceId = async (
   resourceId: ResourceId
@@ -459,14 +463,14 @@ const allowArchive = computed(() => {
 });
 
 const allowRestore = computed(() => {
-  return hasPermission.value;
+  return hasPermission("bb.environments.undelete");
 });
 
 const allowEdit = computed(() => {
   return (
     props.create ||
     ((state.environment as Environment).state === State.ACTIVE &&
-      hasPermission.value)
+      hasPermission("bb.environments.update"))
   );
 });
 

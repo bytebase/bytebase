@@ -8,7 +8,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { unknownProject, unknownDatabase, UNKNOWN_ID, EMPTY_ID } from "@/types";
-import { idFromSlug } from "@/utils";
+import { uidFromSlug } from "@/utils";
 
 export const useCurrentProject = (
   params: ComputedRef<{
@@ -25,7 +25,7 @@ export const useCurrentProject = (
     if (!slug) return String(UNKNOWN_ID);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
     if (slug.toLowerCase() === "create") return String(EMPTY_ID);
-    const uid = Number(idFromSlug(slug));
+    const uid = Number(uidFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
   });
@@ -36,7 +36,7 @@ export const useCurrentProject = (
       return useDatabaseV1Store().getDatabaseByName(parent);
     } else if (unref(params).databaseSlug) {
       return useDatabaseV1Store().getDatabaseByUID(
-        String(idFromSlug(unref(params).databaseSlug!))
+        String(uidFromSlug(unref(params).databaseSlug!))
       );
     }
     return unknownDatabase();

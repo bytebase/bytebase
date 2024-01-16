@@ -3,7 +3,7 @@ import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import InstanceLayout from "@/layouts/InstanceLayout.vue";
 import { t } from "@/plugins/i18n";
 import { useChangeHistoryStore, useInstanceV1Store } from "@/store";
-import { idFromSlug, uidFromSlug } from "@/utils";
+import { uidFromSlug, idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 
 const instanceRoutes: RouteRecordRaw[] = [
@@ -40,7 +40,7 @@ const instanceRoutes: RouteRecordRaw[] = [
               return t("common.new");
             }
             return useInstanceV1Store().getInstanceByUID(
-              String(idFromSlug(slug))
+              String(uidFromSlug(slug))
             ).title;
           },
         },
@@ -55,7 +55,7 @@ const instanceRoutes: RouteRecordRaw[] = [
     meta: {
       title: (route) => {
         const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
-        const uid = uidFromSlug(route.params.changeHistorySlug as string);
+        const uid = idFromSlug(route.params.changeHistorySlug as string);
         const name = `${parent}/changeHistories/${uid}`;
         const history = useChangeHistoryStore().getChangeHistoryByName(name);
 
