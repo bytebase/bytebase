@@ -2,7 +2,7 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
-import { useActuatorV1Store } from "@/store";
+import { useActuatorV1Store, useCurrentUserV1 } from "@/store";
 import {
   ComposedInstance,
   ComposedDatabase,
@@ -22,13 +22,18 @@ import {
   UpdateDatabaseRequest,
   DiffSchemaRequest,
 } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName, isMemberOfProjectV1 } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  hasWorkspaceLevelProjectPermission,
+  isMemberOfProjectV1,
+} from "@/utils";
 import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useInstanceV1Store } from "./instance";
 import { useProjectV1Store } from "./project";
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
+  const currentUser = useCurrentUserV1();
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
   const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
@@ -67,9 +72,15 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
     const actuatorStore = useActuatorV1Store();
     const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
-    const { databases } = isDevelopmentIAM
-      ? await databaseServiceClient.searchDatabases(args)
-      : await databaseServiceClient.listDatabases(args);
+    let request = isDevelopmentIAM
+      ? databaseServiceClient.searchDatabases
+      : databaseServiceClient.listDatabases;
+    if (
+      hasWorkspaceLevelProjectPermission(currentUser.value, "bb.databases.list")
+    ) {
+      request = databaseServiceClient.listDatabases;
+    }
+    const { databases } = await request(args);
     const composedDatabaseList = await upsertDatabaseMap(databases);
     return composedDatabaseList;
   };
