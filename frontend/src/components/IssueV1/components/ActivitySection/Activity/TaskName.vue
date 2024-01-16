@@ -21,9 +21,13 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed } from "vue";
 import { stageForTask } from "@/components/IssueV1/logic";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { ComposedIssue } from "@/types";
 import { Task } from "@/types/proto/v1/rollout_service";
-import { extractSchemaVersionFromTask } from "@/utils";
+import {
+  extractProjectResourceName,
+  extractSchemaVersionFromTask,
+} from "@/utils";
 
 const props = defineProps<{
   issue: ComposedIssue;
@@ -47,7 +51,11 @@ const link = computed(() => {
   }
 
   return {
-    path: `/issue/${issue.uid}`,
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+    params: {
+      projectId: extractProjectResourceName(issue.project),
+      issueSlug: issue.uid,
+    },
     query,
   };
 });

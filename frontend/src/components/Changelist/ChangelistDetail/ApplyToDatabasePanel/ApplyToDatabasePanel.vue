@@ -87,6 +87,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ProjectStandardView from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
 import { ErrorTipsButton, SearchBox } from "@/components/v2";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useDatabaseV1Store,
   useEnvironmentV1List,
@@ -95,6 +96,7 @@ import {
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
+  extractProjectResourceName,
   filterDatabaseV1ByKeyword,
   guessChangelistChangeType,
   instanceV1HasAlterSchema,
@@ -218,9 +220,10 @@ const handleClickNext = async () => {
     };
 
     router.push({
-      name: "workspace.issue.detail",
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
-        issueSlug: "new",
+        projectId: extractProjectResourceName(project.value.name),
+        issueSlug: "create",
       },
       query,
     });

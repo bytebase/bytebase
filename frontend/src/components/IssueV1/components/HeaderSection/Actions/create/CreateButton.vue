@@ -44,6 +44,7 @@ import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
@@ -51,9 +52,11 @@ import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDeploymentConfigName,
+  extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
   getSheetStatement,
+  issueSlug,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
@@ -118,7 +121,13 @@ const doCreateIssue = async () => {
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
-      router.push(`/issue/${composedIssue.uid}`);
+      router.push({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(composedIssue.project),
+          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+        },
+      });
     });
 
     return composedIssue;

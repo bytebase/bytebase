@@ -204,6 +204,10 @@ watchEffect(async () => {
 
       const databaseResource = conditionExpr.databaseResources[0];
       const description = binding.condition?.description || "";
+      // TODO: Here issueDescription looks like "#{uid}" so we don't have any parent
+      // project info here.
+      // To migrate this, we need to DML the description and re-write the issue
+      // id extraction logic below.
       const issueId = description.match(issueDescriptionRegexp)?.[1];
       const database = await databaseStore.getOrFetchDatabaseByName(
         databaseResource.databaseName

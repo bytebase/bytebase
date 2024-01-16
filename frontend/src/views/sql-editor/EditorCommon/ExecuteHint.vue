@@ -70,6 +70,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
+import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -77,6 +78,7 @@ import {
   useTabStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { extractProjectResourceName } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
 const emit = defineEmits<{
@@ -122,9 +124,10 @@ const gotoCreateIssue = () => {
   const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
 
   router.push({
-    name: "workspace.issue.detail",
+    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      issueSlug: "new",
+      projectId: extractProjectResourceName(database.project),
+      issueSlug: "create",
     },
     query: {
       template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,

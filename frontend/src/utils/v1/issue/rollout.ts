@@ -15,6 +15,7 @@ import {
   Task,
   Task_Status,
 } from "@/types/proto/v1/rollout_service";
+import { extractProjectResourceName } from "../project";
 import { flattenTaskV1List, issueV1Slug } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
@@ -145,6 +146,7 @@ export const buildIssueV1LinkWithTask = (
     (s) => s.tasks.findIndex((t) => t.uid === task.uid) >= 0
   );
 
+  const projectId = extractProjectResourceName(issue.project);
   const issueSlug = simple ? issue.uid : issueV1Slug(issue);
   const query: Record<string, string> = {};
   if (stage) {
@@ -153,7 +155,7 @@ export const buildIssueV1LinkWithTask = (
   query.task = simple ? task.uid : taskV1Slug(task);
 
   const querystring = stringify(query);
-  const url = `/issue/${issueSlug}?${querystring}`;
+  const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;
 
   return url;
 };
