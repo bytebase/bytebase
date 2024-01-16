@@ -129,9 +129,9 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep, head, uniq } from "lodash-es";
-import { NTabs, NTabPane } from "naive-ui";
-import { computed, onMounted, PropType, reactive, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
+import { NTabs, NTabPane, useDialog } from "naive-ui";
+import { computed, onMounted, h, PropType, reactive, ref, watch } from "vue";
+import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ActionConfirmModal from "@/components/SchemaEditorV1/Modals/ActionConfirmModal.vue";
 import { databaseServiceClient } from "@/grpcweb";
@@ -153,7 +153,7 @@ import {
   DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import { TenantMode } from "@/types/proto/v1/project_service";
-import { TinyTimer, extractProjectResourceName } from "@/utils";
+import { TinyTimer, defer, extractProjectResourceName } from "@/utils";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import SchemaEditorLite, {
@@ -213,6 +213,7 @@ const state = reactive<LocalState>({
 const databaseV1Store = useDatabaseV1Store();
 const notificationStore = useNotificationStore();
 const { runSQLCheck } = provideSQLCheckContext();
+const $dialog = useDialog();
 
 const onUploaderClick = () => {
   sqlFileUploader.value?.click();
@@ -321,6 +322,19 @@ const handleSyncSQLFromSchemaEditor = async () => {
   const results = Array.from(statementMap.values());
 
   state.editStatement = results.map((result) => result.statement).join("\n\n");
+
+  const emptyStatementDatabaseList: ComposedDatabase[] = [];
+  for (const [database, result] of statementMap.entries()) {
+    if (!result.statement) {
+      emptyStatementDatabaseList.push(
+        useDatabaseV1Store().getDatabaseByName(database)
+      );
+    }
+  }
+  if (emptyStatementDatabaseList.length > 0) {
+    // Some of the DDLs are empty
+    warnEmptyGeneratedDDL(emptyStatementDatabaseList);
+  }
 };
 
 const generateOrGetEditingDDL = async () => {
@@ -493,19 +507,24 @@ const handlePreviewIssue = async () => {
 
     const databaseIdList = databaseList.value.map((db) => db.uid);
     const statementList: string[] = [];
+    const emptyStatementDatabaseList: ComposedDatabase[] = [];
     for (const [database, result] of statementMap.entries()) {
       if (!result.statement) {
-        pushNotification({
-          module: "bytebase",
-          style: "WARN",
-          title: t("common.warning"),
-          description: t("schema-editor.nothing-changed-for-database", {
-            database,
-          }),
-        });
-        return cleanup();
+        emptyStatementDatabaseList.push(
+          useDatabaseV1Store().getDatabaseByName(database)
+        );
       }
       statementList.push(result.statement);
+    }
+    if (emptyStatementDatabaseList.length > 0) {
+      // Some of the DDLs are empty
+      if (
+        !(await confirmCreateIssueWithEmptyStatement(
+          emptyStatementDatabaseList
+        ))
+      ) {
+        return cleanup();
+      }
     }
     if (isBatchMode.value) {
       query.sql = statementList.join("\n\n");
@@ -558,5 +577,56 @@ const generateIssueName = (
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
   return issueNameParts.join(" ");
+};
+
+const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
+  const children = databases.map((database) => {
+    return h(
+      I18nT,
+      {
+        tag: "li",
+        keypath: "schema-editor.nothing-changed-for-database",
+      },
+      {
+        database: database.databaseName,
+      }
+    );
+  });
+  return h(
+    "ul",
+    {
+      class: "text-sm space-y-1 max-h-[20rem] overflow-y-auto",
+    },
+    children
+  );
+};
+
+const warnEmptyGeneratedDDL = (databases: ComposedDatabase[]) => {
+  pushNotification({
+    module: "bytebase",
+    style: "WARN",
+    title: t("common.warning"),
+    description: () => renderEmptyGeneratedDDLContent(databases),
+  });
+};
+
+const confirmCreateIssueWithEmptyStatement = (
+  databases: ComposedDatabase[]
+) => {
+  const d = defer<boolean>();
+  $dialog.warning({
+    title: t("common.warning"),
+    content: () => renderEmptyGeneratedDDLContent(databases),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
 };
 </script>

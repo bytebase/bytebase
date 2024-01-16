@@ -292,24 +292,6 @@ const fetchRawSQLPreview = async () => {
   rawSQLPreviewState.isFetching = false;
 };
 
-const confirmCreateIssueWithEmptyStatement = () => {
-  const d = defer<boolean>();
-  $dialog.warning({
-    title: t("common.warning"),
-    content: t("schema-editor.generated-ddl-is-empty"),
-    style: "z-index: 100000",
-    negativeText: t("common.cancel"),
-    positiveText: t("common.continue-anyway"),
-    onNegativeClick: () => {
-      d.resolve(false);
-    },
-    onPositiveClick: () => {
-      d.resolve(true);
-    },
-  });
-  return d.promise;
-};
-
 const handlePreviewIssue = async () => {
   const cleanup = (errors: string[], fatal: boolean) => {
     if (errors.length > 0) {
@@ -405,6 +387,24 @@ const generateIssueName = (databaseName: string) => {
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
   return issueNameParts.join(" ");
+};
+
+const confirmCreateIssueWithEmptyStatement = () => {
+  const d = defer<boolean>();
+  $dialog.warning({
+    title: t("common.warning"),
+    content: t("schema-editor.generated-ddl-is-empty"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
 };
 
 watch(
