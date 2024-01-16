@@ -93,6 +93,8 @@ export interface Plan {
 }
 
 export interface Plan_Step {
+  /** TODO: implement */
+  title: string;
   specs: Plan_Spec[];
 }
 
@@ -1680,11 +1682,14 @@ export const Plan = {
 };
 
 function createBasePlan_Step(): Plan_Step {
-  return { specs: [] };
+  return { title: "", specs: [] };
 }
 
 export const Plan_Step = {
   encode(message: Plan_Step, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
     for (const v of message.specs) {
       Plan_Spec.encode(v!, writer.uint32(10).fork()).ldelim();
     }
@@ -1698,6 +1703,13 @@ export const Plan_Step = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.title = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -1716,12 +1728,16 @@ export const Plan_Step = {
 
   fromJSON(object: any): Plan_Step {
     return {
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       specs: globalThis.Array.isArray(object?.specs) ? object.specs.map((e: any) => Plan_Spec.fromJSON(e)) : [],
     };
   },
 
   toJSON(message: Plan_Step): unknown {
     const obj: any = {};
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
     if (message.specs?.length) {
       obj.specs = message.specs.map((e) => Plan_Spec.toJSON(e));
     }
@@ -1733,6 +1749,7 @@ export const Plan_Step = {
   },
   fromPartial(object: DeepPartial<Plan_Step>): Plan_Step {
     const message = createBasePlan_Step();
+    message.title = object.title ?? "";
     message.specs = object.specs?.map((e) => Plan_Spec.fromPartial(e)) || [];
     return message;
   },
