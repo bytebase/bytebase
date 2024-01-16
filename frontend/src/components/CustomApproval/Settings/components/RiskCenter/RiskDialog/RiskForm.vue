@@ -102,6 +102,7 @@ import {
   wrapAsGroup,
   validateSimpleExpr,
 } from "@/plugins/cel";
+import { useCurrentUserV1 } from "@/store";
 import {
   Expr as CELExpr,
   ParsedExpr,
@@ -111,6 +112,7 @@ import { Risk } from "@/types/proto/v1/risk_service";
 import {
   batchConvertCELStringToParsedExpr,
   batchConvertParsedExprToCELString,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import {
   getFactorList,
@@ -139,6 +141,7 @@ const emit = defineEmits<{
 
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
+const currentUser = useCurrentUserV1();
 
 const state = ref<LocalState>({
   risk: Risk.fromJSON({}),
@@ -164,7 +167,15 @@ const resolveLocalState = async () => {
 };
 
 const allowCreateOrUpdate = computed(() => {
-  if (mode.value === "EDIT") {
+  // Check create or update permission.
+  if (mode.value === "CREATE") {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.risks.create")) {
+      return false;
+    }
+  } else if (mode.value === "EDIT") {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.risks.update")) {
+      return false;
+    }
     if (!props.dirty) return false;
   }
 

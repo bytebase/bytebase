@@ -174,6 +174,19 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUser = useCurrentUserV1();
+const databaseStore = useDatabaseV1Store();
+const policyStore = usePolicyV1Store();
+const environmentStore = useEnvironmentV1Store();
+const subscriptionStore = useSubscriptionV1Store();
+const instanceV1Store = useInstanceV1Store();
+const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
+const policyList = usePolicyListByResourceTypeAndPolicyType({
+  resourceType: PolicyResourceType.DATABASE,
+  policyType: PolicyType.MASKING,
+  showDeleted: false,
+});
+
 const state = reactive<LocalState>({
   showFeatureModal: false,
   isLoading: false,
@@ -186,22 +199,9 @@ const state = reactive<LocalState>({
   showGrantAccessDrawer: false,
   showSensitiveColumnDrawer: false,
 });
-const databaseStore = useDatabaseV1Store();
-const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
-const policyStore = usePolicyV1Store();
-const environmentStore = useEnvironmentV1Store();
-const subscriptionStore = useSubscriptionV1Store();
-const instanceV1Store = useInstanceV1Store();
 
-const policyList = usePolicyListByResourceTypeAndPolicyType({
-  resourceType: PolicyResourceType.DATABASE,
-  policyType: PolicyType.MASKING,
-  showDeleted: false,
-});
-
-const currentUserV1 = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 
 const updateList = async () => {

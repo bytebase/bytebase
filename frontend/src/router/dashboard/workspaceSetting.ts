@@ -14,7 +14,6 @@ export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
 export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
 export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
-export const SETTING_ROUTE_WORKSPACE_AGENT = `${SETTING_ROUTE_WORKSPACE}.agent`;
 export const SETTING_ROUTE_WORKSPACE_MEMBER = `${SETTING_ROUTE_WORKSPACE}.member`;
 export const SETTING_ROUTE_WORKSPACE_ROLE = `${SETTING_ROUTE_WORKSPACE}.role`;
 export const SETTING_ROUTE_WORKSPACE_SSO = `${SETTING_ROUTE_WORKSPACE}.sso`;
@@ -62,9 +61,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       {
         path: "profile/two-factor",
         name: SETTING_ROUTE_PROFILE_TWO_FACTOR,
-        meta: {
-          title: () => t("two-factor.self"),
-        },
+        meta: { title: () => t("two-factor.self") },
         component: () => import("@/views/TwoFactorSetup.vue"),
         props: true,
       },
@@ -73,19 +70,9 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_GENERAL,
         meta: {
           title: () => t("settings.sidebar.general"),
-          requiredWorkspacePermissionList: () => ["bb.settings.set"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
-        props: true,
-      },
-      {
-        path: "agent",
-        name: SETTING_ROUTE_WORKSPACE_AGENT,
-        meta: {
-          title: () => t("common.agents"),
-          requiredWorkspacePermissionList: () => ["bb.settings.set"],
-        },
-        component: () => import("@/views/SettingWorkspaceAgent.vue"),
         props: true,
       },
       {
@@ -94,6 +81,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         meta: {
           title: () => t("settings.sidebar.members"),
           requiredWorkspacePermissionList: () => [
+            "bb.policies.get",
             "bb.policies.update",
             "bb.settings.set",
           ],
@@ -106,10 +94,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_ROLE,
         meta: {
           title: () => t("settings.sidebar.custom-roles"),
-          requiredWorkspacePermissionList: () => [
-            "bb.policies.update",
-            "bb.settings.set",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.roles.list"],
         },
         component: () => import("@/views/SettingWorkspaceRole.vue"),
         props: true,
@@ -119,7 +104,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SSO,
         meta: {
           title: () => t("settings.sidebar.sso"),
-          // Only allow users with bb.identityProviders.create permission to view this page.
           requiredWorkspacePermissionList: () => [
             "bb.identityProviders.create",
           ],
@@ -158,7 +142,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
         meta: {
           title: () => t("settings.sidebar.sensitive-data"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSensitiveData.vue"),
         props: true,
@@ -168,7 +152,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
         meta: {
           title: () => t("settings.sidebar.access-control"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceAccessControl.vue"),
         props: true,
@@ -178,7 +162,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
         meta: {
           title: () => t("custom-approval.risk.risk-center"),
-          requiredWorkspacePermissionList: () => ["bb.risks.update"],
+          requiredWorkspacePermissionList: () => ["bb.risks.list"],
         },
         component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
@@ -188,7 +172,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
         meta: {
           title: () => t("custom-approval.self"),
-          requiredWorkspacePermissionList: () => ["bb.settings.set"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
         props: true,
@@ -208,7 +192,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
         meta: {
           title: () => startCase(t("schema-template.self")),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
         props: true,
@@ -257,7 +241,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
         meta: {
           title: () => t("settings.sidebar.mail-delivery"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
       },
@@ -266,7 +250,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         meta: {
           title: () => t("settings.sidebar.subscription"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
         props: true,
@@ -276,7 +260,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
         meta: {
           title: () => t("sql-review.title"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReview.vue"),
         props: true,
@@ -286,7 +270,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
         meta: {
           title: () => t("sql-review.create.breadcrumb"),
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.create"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewCreate.vue"),
         props: true,
@@ -303,7 +287,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
               )?.name ?? ""
             );
           },
-          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
         props: true,
