@@ -876,9 +876,69 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	}
 }
 
+// DropViewStatement is called when production dropViewStatement is entered.
+//
+// mysqldump generate drop view if exists statement after all create table statement.
+// To provide the better ux, we generate the new tables before the drop view statement.
+func (g *mysqlDesignSchemaGenerator) EnterDropView(ctx *mysql.DropViewContext) {
+	if g.err != nil {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	if g.err != nil {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+	if g.err != nil {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateEvent(ctx *mysql.CreateEventContext) {
+	if g.err != nil {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
+func (g *mysqlDesignSchemaGenerator) EnterCreateTriggers(ctx *mysql.CreateTriggerContext) {
+	if g.err != nil {
+		return
+	}
+
+	if err := writeRemainingTables(&g.result, g.desired, g.to); err != nil {
+		g.err = err
+		return
+	}
+}
+
 // EnterSetStatement is called when production setStatement is entered.
 //
-// mysqldump generate `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;` statement at the end of the file,
+// mysqldump generates `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;` statement at the end of the file, and
+// generates `SET character_set_client` statement at the beginning of create function statement.
 // to provide the better user experience, we generate the remaining tables before the set statement mentioned above.
 func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementContext) {
 	if g.err != nil {
@@ -886,7 +946,7 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 	}
 
 	curSet := strings.TrimSpace(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
-	if curSet != `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS` {
+	if curSet != `SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS` && !strings.HasPrefix(curSet, "SET character_set_client") {
 		return
 	}
 
