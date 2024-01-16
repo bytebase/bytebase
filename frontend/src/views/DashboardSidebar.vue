@@ -92,7 +92,7 @@ const dashboardSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("common.environments"),
       icon: h(SquareStackIcon),
-      path: "/environment",
+      path: "/environments",
       type: "route",
     },
     {

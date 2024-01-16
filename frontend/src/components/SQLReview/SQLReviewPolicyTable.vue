@@ -76,7 +76,7 @@
           <BBBadge
             v-if="policy.environment"
             :can-remove="false"
-            :link="`/environment/${policy.environment.uid}`"
+            :link="`/${policy.environment.name}`"
           >
             <EnvironmentV1Name
               :environment="policy.environment"

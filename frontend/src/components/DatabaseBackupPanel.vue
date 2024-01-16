@@ -15,7 +15,7 @@
             <router-link
               v-if="hasBackupPolicyViolation"
               class="flex items-center normal-link text-sm"
-              :to="`/environment/${database.effectiveEnvironmentEntity.uid}`"
+              :to="`/${database.effectiveEnvironmentEntity.name}`"
             >
               <heroicons-outline:exclamation-circle class="w-4 h-4 mr-1" />
               <span>{{ $t("database.backup-policy-violation") }}</span>
