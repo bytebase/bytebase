@@ -201,12 +201,28 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if changelist.CreatorID == user.ID {
+				return true, nil
+			}
+			return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsUpdate, user, project.ResourceID)
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to update changelist")
+		}
+	}
+
 	update := &store.UpdateChangelistMessage{
-		UpdaterID:  principalID,
+		UpdaterID:  user.ID,
 		ProjectID:  project.ResourceID,
 		ResourceID: changelistID,
 	}
@@ -259,6 +275,26 @@ func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.
 	}
 	if changelist == nil {
 		return nil, status.Errorf(codes.NotFound, "changelist %q not found", changelistID)
+	}
+
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if changelist.CreatorID == user.ID {
+				return true, nil
+			}
+			return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsDelete, user, project.ResourceID)
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete changelist")
+		}
 	}
 
 	if err := s.store.DeleteChangelist(ctx, project.ResourceID, changelistID); err != nil {
