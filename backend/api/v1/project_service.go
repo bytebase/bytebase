@@ -2622,10 +2622,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 		find.ResourceID = &projectID
 	}
 
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID:  &projectID,
-		ShowDeleted: true,
-	})
+	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
