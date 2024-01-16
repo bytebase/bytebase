@@ -26,6 +26,7 @@ export function useInitializeIssue(
   const uid = computed(() => {
     const slug = unref(issueSlug);
     if (slug.toLowerCase() === "new") return String(EMPTY_ID);
+    if (slug.toLowerCase() === "create") return String(EMPTY_ID);
     const uid = Number(uidFromSlug(slug));
     if (uid > 0) return String(uid);
     return String(UNKNOWN_ID);
