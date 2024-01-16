@@ -24,7 +24,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { environmentV1Slug } from "@/utils";
 import { EnvironmentV1Name } from ".";
 
 export type EnvironmentRow = BBGridRow<Environment>;
@@ -54,7 +53,7 @@ const clickEnvironment = function (
   row: number,
   e: MouseEvent
 ) {
-  const url = `/environment/${environmentV1Slug(environment)}`;
+  const url = `/${environment.name}`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {

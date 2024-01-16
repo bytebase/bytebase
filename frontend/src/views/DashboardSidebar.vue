@@ -92,7 +92,7 @@ const dashboardSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("common.environments"),
       icon: h(SquareStackIcon),
-      path: "/environment",
+      path: "/environments",
       type: "route",
     },
     {
@@ -160,7 +160,7 @@ const navigationKbarActions = computed(() => {
       shortcut: ["g", "e"],
       section: t("kbar.navigation"),
       keywords: "navigation",
-      perform: () => router.push({ name: "workspace.environment" }),
+      perform: () => router.push({ name: "workspace.environment.dashboar" }),
     })
   );
   if (shouldShowSyncSchemaEntry.value) {

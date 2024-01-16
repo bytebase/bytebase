@@ -108,7 +108,7 @@
     "helpName": ""
   },
   {
-    "routeName": "workspace.environment",
+    "routeName": "workspace.environment.dashboard",
     "helpName": "help.environment"
   },
   {
