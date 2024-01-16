@@ -46,10 +46,9 @@
           </template>
         </TooltipButton>
         <TooltipButton
-          v-if="showEstablishBaselineButton"
+          v-if="allowMigrate"
           tooltip-mode="DISABLED-ONLY"
           type="primary"
-          :disabled="!allowMigrate"
           @click="state.showBaselineModal = true"
         >
           <template #default>
@@ -104,7 +103,7 @@ import saveAs from "file-saver";
 import JSZip from "jszip";
 import { isEqual } from "lodash-es";
 import { NCheckbox } from "naive-ui";
-import { computed, onBeforeMount, PropType, reactive, watch } from "vue";
+import { computed, onBeforeMount, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
@@ -112,6 +111,8 @@ import {
   AffectedTableSelect,
   ChangeHistoryTable,
 } from "@/components/ChangeHistory";
+import { useDatabaseDetailContext } from "@/components/Database/context";
+import { TooltipButton } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -125,11 +126,9 @@ import {
 import { TenantMode } from "@/types/proto/v1/project_service";
 import {
   getAffectedTablesOfChangeHistory,
-  instanceV1HasAlterSchema,
   getHistoryChangeType,
   extractProjectResourceName,
 } from "@/utils";
-import { TooltipButton } from "./v2";
 
 interface LocalState {
   showBaselineModal: boolean;
@@ -140,16 +139,9 @@ interface LocalState {
   selectedChangeType: Set<string>;
 }
 
-const props = defineProps({
-  database: {
-    required: true,
-    type: Object as PropType<ComposedDatabase>,
-  },
-  allowEdit: {
-    required: true,
-    type: Boolean,
-  },
-});
+const props = defineProps<{
+  database: ComposedDatabase;
+}>();
 
 const { t } = useI18n();
 
@@ -165,6 +157,8 @@ const state = reactive<LocalState>({
   selectedAffectedTable: EmptyAffectedTable,
   selectedChangeType: new Set(CHANGE_TYPES),
 });
+
+const { allowAlterSchema } = useDatabaseDetailContext();
 
 const prepareChangeHistoryList = async () => {
   state.loading = true;
@@ -187,29 +181,15 @@ const isTenantProject = computed(() => {
   );
 });
 
-const showEstablishBaselineButton = computed(() => {
-  if (!instanceV1HasAlterSchema(props.database.instanceEntity)) {
-    return false;
-  }
-  if (isTenantProject.value) return false;
-  if (!props.allowEdit) return false;
-  return true;
-});
-
 const allowExportChangeHistory = computed(() => {
   return state.selectedChangeHistoryNameList.length > 0;
 });
 
 const allowMigrate = computed(() => {
-  if (!props.allowEdit) return false;
-
-  if (props.database.projectEntity.name === DEFAULT_PROJECT_V1_NAME) {
-    return false;
-  }
-
   // Migrating single database in tenant mode is not allowed
   // Since this will probably cause different migration version across a group of tenant databases
-  return !isTenantProject.value;
+  if (isTenantProject.value) return false;
+  return allowAlterSchema.value;
 });
 
 const changeHistoryList = computed(() => {
