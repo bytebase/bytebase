@@ -12,7 +12,11 @@
         v-model:value="filter.keyword"
         :placeholder="$t('common.filter-by-name')"
       />
-      <NButton type="primary" @click="showCreatePanel = true">
+      <NButton
+        v-if="!allowCreate"
+        type="primary"
+        @click="showCreatePanel = true"
+      >
         <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
         {{ $t("changelist.new") }}
       </NButton>
@@ -30,6 +34,7 @@ import { useChangelistDashboardContext } from "./context";
 
 defineProps<{
   disableProjectSelect?: boolean;
+  allowCreate: boolean;
 }>();
 
 const { filter, showCreatePanel, events } = useChangelistDashboardContext();
