@@ -7,13 +7,23 @@
       <EnvironmentSelect
         class="mt-1 max-w-md"
         :environment="environment?.uid"
-        :disabled="!allowEdit"
+        :disabled="!allowUpdateDatabase"
         :default-environment-name="database.instanceEntity.environment"
         @update:environment="handleSelectEnvironmentUID"
       />
     </div>
-    <Labels :database="database" class="pt-5" />
-    <Secrets :database="database" class="pt-5" />
+    <Labels
+      :database="database"
+      :allow-edit="allowUpdateDatabase"
+      class="pt-5"
+    />
+    <Secrets
+      v-if="allowListSecrets"
+      :database="database"
+      :allow-edit="allowUpdateSecrets"
+      :allow-delete="allowDeleteSecrets"
+      class="pt-5"
+    />
   </div>
 </template>
 
@@ -21,6 +31,7 @@
 import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import { EnvironmentSelect } from "@/components/v2";
 import {
   useDatabaseV1Store,
@@ -33,7 +44,6 @@ import Secrets from "./components/Secrets.vue";
 
 const props = defineProps<{
   database: ComposedDatabase;
-  allowEdit: boolean;
 }>();
 
 const databaseStore = useDatabaseV1Store();
@@ -43,6 +53,13 @@ const { t } = useI18n();
 const environment = computed(() => {
   return envStore.getEnvironmentByName(props.database.effectiveEnvironment);
 });
+
+const {
+  allowUpdateDatabase,
+  allowListSecrets,
+  allowUpdateSecrets,
+  allowDeleteSecrets,
+} = useDatabaseDetailContext();
 
 const handleSelectEnvironmentUID = async (uid?: string) => {
   const environment = envStore.getEnvironmentByUID(String(uid));

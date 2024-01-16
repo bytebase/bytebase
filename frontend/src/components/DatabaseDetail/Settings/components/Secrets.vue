@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="flex justify-end">
-        <NButton type="primary" :disabled="!allowAdmin" @click="showDetail()">
+        <NButton type="primary" :disabled="!allowEdit" @click="showDetail()">
           {{ $t("database.secret.new") }}
         </NButton>
       </div>
@@ -55,14 +55,14 @@
           <div class="bb-grid-cell gap-x-1">
             <NButton
               size="tiny"
-              :disabled="!allowAdmin"
+              :disabled="!allowEdit"
               @click="showDetail(secret)"
             >
               {{ $t("common.edit") }}
             </NButton>
             <SpinnerButton
               size="tiny"
-              :disabled="!allowAdmin"
+              :disabled="!allowDelete"
               :tooltip="$t('database.secret.delete-tips')"
               :on-confirm="() => handleDelete(secret)"
             >
@@ -202,13 +202,11 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
   useDatabaseSecretStore,
-  useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
 import { type ComposedDatabase } from "@/types";
 import { Secret } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2 } from "@/utils";
 
 export type Detail = {
   secret: Secret;
@@ -222,6 +220,8 @@ export type SecretRow = BBGridRow<Secret>;
 
 const props = defineProps<{
   database: ComposedDatabase;
+  allowEdit: boolean;
+  allowDelete: boolean;
 }>();
 
 const store = useDatabaseSecretStore();
@@ -233,7 +233,6 @@ const parent = computed(() => {
 });
 const detail = ref<Detail>();
 const showFeatureModal = ref(false);
-const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();
 
 const COLUMNS = computed(() => {
@@ -252,15 +251,6 @@ const COLUMNS = computed(() => {
     },
   ];
   return columns;
-});
-
-const allowAdmin = computed(() => {
-  const project = props.database.projectEntity;
-  return hasProjectPermissionV2(
-    project,
-    currentUserV1.value,
-    "bb.databaseSecrets.update"
-  );
 });
 
 const extractSecretName = (name: string) => {
