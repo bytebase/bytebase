@@ -50,7 +50,7 @@
       <BaselineSchemaSelector
         v-if="source === 'BASELINE'"
         v-model:database-id="databaseId"
-        :project-id="projectId"
+        :project-id="project.uid"
         :loading="isPreparingBranch"
       />
     </div>
@@ -93,12 +93,13 @@ import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useProjectV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { hasProjectPermissionV2 } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
@@ -110,21 +111,16 @@ type BranchData = {
   parent: string | undefined;
 };
 
-const props = defineProps({
-  projectId: {
-    type: String,
-    default: undefined,
-  },
-});
+const props = defineProps<{
+  project: ComposedProject;
+}>();
 
 const DEBOUNCE_RATE = 100;
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
-const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 const source = ref<Source>("PARENT");
-const projectId = ref(props.projectId);
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
 const isCreating = ref(false);
@@ -132,11 +128,6 @@ const branchId = ref<string>("");
 const isPreparingBranch = ref(false);
 
 const EMPTY_BRANCH = Branch.fromPartial({});
-
-const project = computed(() => {
-  const project = projectStore.getProjectByUID(projectId.value || "");
-  return project;
-});
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
@@ -147,7 +138,7 @@ const filterParentBranch = (branch: Branch) => {
 };
 
 const nextFakeBranchName = () => {
-  return `${project.value.name}/branches/-${uniqueId()}`;
+  return `${props.project.name}/branches/-${uniqueId()}`;
 };
 
 const prepareBranchFromParentBranch = async (parent: string) => {
@@ -244,6 +235,15 @@ watch(
 );
 
 const allowConfirm = computed(() => {
+  if (
+    !hasProjectPermissionV2(
+      props.project,
+      useCurrentUserV1().value,
+      "bb.branches.create"
+    )
+  ) {
+    return false;
+  }
   return branchId.value && branchData.value && !isCreating.value;
 });
 
@@ -271,7 +271,7 @@ const handleConfirm = async () => {
   isCreating.value = true;
   if (!parent) {
     await branchStore.createBranch(
-      project.value.name,
+      props.project.name,
       branchId.value,
       Branch.fromPartial({
         baselineDatabase,
@@ -279,7 +279,7 @@ const handleConfirm = async () => {
     );
   } else {
     await branchStore.createBranch(
-      project.value.name,
+      props.project.name,
       branchId.value,
       Branch.fromPartial({
         parentBranch: parent,

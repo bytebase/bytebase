@@ -14,12 +14,12 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
         <NInput
-          v-if="!readonly"
+          v-if="allowEdit"
           v-model:value="state.branchId"
           class="!w-auto"
           :passively-activated="true"
           :style="branchIdInputStyle"
-          :readonly="readonly || !state.isEditingBranchId"
+          :readonly="!allowEdit || !state.isEditingBranchId"
           :placeholder="'feature/add-billing'"
           @focus="state.isEditingBranchId = true"
           @blur="handleBranchIdInputBlur"
@@ -43,7 +43,7 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <div
-            v-if="!readonly"
+            v-if="allowEdit"
             class="flex flex-row justify-end items-center space-x-2"
           >
             <template v-if="!state.isEditing">
@@ -99,7 +99,7 @@
       />
     </div>
     <!-- Don't show delete button in view mode. -->
-    <div v-if="!readonly">
+    <div v-if="allowDelete">
       <BBButtonConfirm
         :style="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
@@ -140,13 +140,22 @@ import {
   PROJECT_V1_ROUTE_BRANCH_REBASE,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { pushNotification, useDatabaseV1Store } from "@/store";
+import {
+  extractUserEmail,
+  pushNotification,
+  useDatabaseV1Store,
+  useCurrentUserV1,
+} from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
-import { ComposedProject } from "@/types";
+import { ComposedProject, ProjectPermission } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { defer, extractProjectResourceName } from "@/utils";
+import {
+  defer,
+  extractProjectResourceName,
+  hasProjectPermissionV2,
+} from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
@@ -168,7 +177,6 @@ const props = defineProps<{
   project: ComposedProject;
   cleanBranch: Branch;
   dirtyBranch: Branch;
-  readonly?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:branch-id", id: string): void;
@@ -194,6 +202,23 @@ const selectTargetDatabasesContext = ref<{
   show: boolean;
 }>({
   show: false,
+});
+
+const currentUser = useCurrentUserV1();
+
+const checkPermission = (permission: ProjectPermission): boolean => {
+  return (
+    hasProjectPermissionV2(props.project, currentUser.value, permission) ||
+    extractUserEmail(props.cleanBranch.creator) === currentUser.value.email
+  );
+};
+
+const allowEdit = computed(() => {
+  return checkPermission("bb.branches.update");
+});
+
+const allowDelete = computed(() => {
+  return checkPermission("bb.branches.delete");
 });
 
 const parentBranch = asyncComputed(async () => {
