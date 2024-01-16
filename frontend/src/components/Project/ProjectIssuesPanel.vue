@@ -258,15 +258,6 @@ const state = reactive<LocalState>({
   loadingMore: false,
 });
 
-watch(
-  () => state,
-  () => {
-    console.log("state");
-    console.log(`state.loading: ${state.loading}`);
-    console.log(`state.loadingMore: ${state.loadingMore}`);
-  },
-  { deep: true }
-);
 const tab = computed<TabValue>({
   set(tab) {
     if (tab === "") return;
