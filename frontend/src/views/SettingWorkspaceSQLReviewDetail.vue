@@ -17,7 +17,7 @@
         <BBBadge
           v-if="reviewPolicy.environment"
           :can-remove="false"
-          :link="`/environment/${reviewPolicy.environment.uid}`"
+          :link="`/${reviewPolicy.environment.name}`"
         >
           <EnvironmentV1Name
             :environment="reviewPolicy.environment"

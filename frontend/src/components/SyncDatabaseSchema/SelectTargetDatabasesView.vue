@@ -22,7 +22,7 @@
             <span>{{ $t("common.environment") }} - </span>
             <a
               class="normal-link inline-flex items-center"
-              :href="`/environment#${getDatabaseSourceSchemaEnvironment()!.uid}`"
+              :href="`/${getDatabaseSourceSchemaEnvironment()!.name}`"
               >{{ getDatabaseSourceSchemaEnvironment()!.title }}</a
             >
           </div>

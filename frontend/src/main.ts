@@ -27,7 +27,6 @@ import {
 import {
   databaseSlug,
   environmentName,
-  environmentSlug,
   humanizeTs,
   humanizeDuration,
   humanizeDurationV1,
@@ -148,7 +147,6 @@ app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.isEmpty = isEmpty;
 app.config.globalProperties.environmentName = environmentName;
-app.config.globalProperties.environmentSlug = environmentSlug;
 app.config.globalProperties.projectName = projectName;
 app.config.globalProperties.instanceName = instanceName;
 app.config.globalProperties.instanceSlug = instanceSlug;

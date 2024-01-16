@@ -9,7 +9,6 @@ import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_ser
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
 import {
   Database,
-  Environment,
   Instance,
   IssueId,
   SQLReviewPolicy,
@@ -50,11 +49,6 @@ export function indexFromSlug(slug: string): number {
 
 export function issueSlug(issueName: string, issueId: IssueId): string {
   return [slug(issueName), issueId].join("-");
-}
-
-// On the other hand, it's not possible to de-slug due to slug's one-way algorithm
-export function environmentSlug(environment: Environment): string {
-  return [slug(environment.name), environment.id].join("-");
 }
 
 export function instanceSlug(instance: Instance): string {
