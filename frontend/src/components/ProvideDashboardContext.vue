@@ -39,18 +39,22 @@ const prepareDatabases = async () => {
 };
 
 onMounted(async () => {
+  // Prepare roles, workspace policies and settings first.
   await Promise.all([
-    useUserStore().fetchUserList(),
-    useSettingV1Store().fetchSettingList(),
     useRoleStore().fetchRoleList(),
-    useEnvironmentV1Store().fetchEnvironments(),
-    useInstanceV1Store().fetchInstanceList(),
-    useProjectV1Store().fetchProjectList(true),
     policyStore.fetchPolicies({
       resourceType: PolicyResourceType.WORKSPACE,
     }),
+    useSettingV1Store().fetchSettingList(),
   ]);
 
+  // Then prepare the other resources.
+  await Promise.all([
+    useUserStore().fetchUserList(),
+    useEnvironmentV1Store().fetchEnvironments(),
+    useInstanceV1Store().fetchInstanceList(),
+    useProjectV1Store().fetchProjectList(),
+  ]);
   await Promise.all([prepareDatabases(), useUIStateStore().restoreState()]);
 
   isLoading.value = false;
