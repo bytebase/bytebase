@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { useRouter } from "vue-router";
-import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspace";
+import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
 
 export default {
   name: "ThePage404",

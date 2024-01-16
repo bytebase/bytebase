@@ -53,14 +53,7 @@
     </IssueSearch>
 
     <div class="relative min-h-[20rem]">
-      <div
-        v-if="state.loading && !state.loadingMore"
-        class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
-      >
-        <BBSpin />
-      </div>
       <PagedIssueTableV1
-        v-else
         :key="keyForTab(tab)"
         v-model:loading="state.loading"
         v-model:loading-more="state.loadingMore"
@@ -70,7 +63,14 @@
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
+          <div
+            v-if="state.loading"
+            class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
+          >
+            <BBSpin />
+          </div>
           <IssueTableV1
+            v-else
             mode="PROJECT"
             :show-placeholder="!loading"
             :issue-list="issueList"
@@ -257,6 +257,7 @@ const state = reactive<LocalState>({
   loading: false,
   loadingMore: false,
 });
+
 const tab = computed<TabValue>({
   set(tab) {
     if (tab === "") return;
