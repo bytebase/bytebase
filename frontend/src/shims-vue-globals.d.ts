@@ -3,7 +3,6 @@ import type { isEmpty } from "lodash-es";
 import type {
   databaseSlug,
   environmentName,
-  environmentSlug,
   humanizeTs,
   humanizeDuration,
   humanizeDurationV1,
@@ -30,7 +29,6 @@ declare module "vue" {
     urlfy: typeof urlfy;
     isEmpty: typeof isEmpty;
     environmentName: typeof environmentName;
-    environmentSlug: typeof environmentSlug;
     projectName: typeof projectName;
     instanceName: typeof instanceName;
     instanceSlug: typeof instanceSlug;

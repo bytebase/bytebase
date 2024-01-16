@@ -3,7 +3,7 @@
     <NTabs
       type="line"
       :bar-width="200"
-      :value="state.selectedUid"
+      :value="state.selectedId"
       size="large"
       justify-content="start"
       tab-style="margin: 0 1rem; padding-left: 2rem; padding: 0 2.5rem 0.5rem 2.5rem;"
@@ -17,7 +17,7 @@
       >
         <EnvironmentDetail
           v-if="!state.reorder"
-          :environment-slug="environmentV1Slug(item.data)"
+          :environment-id="item.id"
           @archive="doArchive"
         />
       </NTabPane>
@@ -63,7 +63,7 @@ import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
 import { Drawer } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
-import { ENVIRONMENT_ROUTE_DASHBOARD } from "@/router/dashboard/environment";
+import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/environmentV1";
 import {
   useRegisterCommand,
   useUIStateStore,
@@ -89,7 +89,7 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import type { BBTabItem } from "../bbkit/types";
 import EnvironmentForm from "../components/EnvironmentForm.vue";
-import { arraySwap, environmentV1Slug } from "../utils";
+import { arraySwap, extractEnvironmentResourceName } from "../utils";
 import EnvironmentDetail from "../views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
@@ -104,7 +104,7 @@ const DEFAULT_NEW_BACKUP_PLAN_POLICY: Policy = getDefaultBackupPlanPolicy(
 );
 
 interface LocalState {
-  selectedUid: string;
+  selectedId: string;
   reorderedEnvironmentList: Environment[];
   showCreateModal: boolean;
   reorder: boolean;
@@ -121,7 +121,7 @@ const policyV1Store = usePolicyV1Store();
 const router = useRouter();
 
 const state = reactive<LocalState>({
-  selectedUid: "",
+  selectedId: "",
   reorderedEnvironmentList: [],
   showCreateModal: false,
   reorder: false,
@@ -131,10 +131,10 @@ const selectEnvironmentOnHash = () => {
   if (environmentList.value.length > 0) {
     if (router.currentRoute.value.hash) {
       for (let i = 0; i < environmentList.value.length; i++) {
-        if (
-          environmentList.value[i].uid ===
-          router.currentRoute.value.hash.slice(1)
-        ) {
+        const id = extractEnvironmentResourceName(
+          environmentList.value[i].name
+        );
+        if (id === router.currentRoute.value.hash.slice(1)) {
           selectEnvironment(i);
           break;
         }
@@ -174,7 +174,7 @@ useRegisterCommand({
 watch(
   () => router.currentRoute.value.hash,
   () => {
-    if (router.currentRoute.value.name == "workspace.environment") {
+    if (router.currentRoute.value.name == ENVIRONMENT_V1_ROUTE_DASHBOARD) {
       selectEnvironmentOnHash();
     }
   }
@@ -189,7 +189,7 @@ const tabItemList = computed((): BBTabItem[] => {
       : environmentList.value;
     return list.map((item, index: number): BBTabItem => {
       const title = `${index + 1}. ${item.title}`;
-      const id = item.uid;
+      const id = extractEnvironmentResourceName(item.name);
       return { title, id, data: item };
     });
   }
@@ -281,7 +281,9 @@ const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
 
 const orderChanged = computed(() => {
   for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
-    if (state.reorderedEnvironmentList[i].uid != environmentList.value[i].uid) {
+    if (
+      state.reorderedEnvironmentList[i].name != environmentList.value[i].name
+    ) {
       return true;
     }
   }
@@ -307,14 +309,15 @@ const doArchive = (/* environment: Environment */) => {
 };
 
 const selectEnvironment = (index: number) => {
-  onTabChange(environmentList.value[index].uid);
+  const id = extractEnvironmentResourceName(environmentList.value[index].name);
+  onTabChange(id);
 };
 
-const onTabChange = (uid: string) => {
-  state.selectedUid = uid;
+const onTabChange = (id: string) => {
+  state.selectedId = id;
   router.replace({
-    name: ENVIRONMENT_ROUTE_DASHBOARD,
-    hash: "#" + uid,
+    name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
+    hash: "#" + id,
   });
 };
 

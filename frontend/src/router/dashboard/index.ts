@@ -2,7 +2,7 @@ import { RouteRecordRaw } from "vue-router";
 import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import databaseRoutes from "./database";
-import environmentRoutes from "./environment";
+import environmentV1Routes from "./environmentV1";
 import instanceRoutes from "./instance";
 import issueRoutes from "./issue";
 import projectV1Routes from "./projectV1";
@@ -20,7 +20,7 @@ const dashboardRoutes: RouteRecordRaw[] = [
         children: [
           ...workspaceRoutes,
           ...workspaceSettingRoutes,
-          ...environmentRoutes,
+          ...environmentV1Routes,
           ...instanceRoutes,
           ...projectV1Routes,
           ...issueRoutes,

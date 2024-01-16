@@ -43,17 +43,18 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NButton } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import BBModal from "@/bbkit/BBModal.vue";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import EnvironmentForm from "@/components/EnvironmentForm.vue";
 import {
-  ENVIRONMENT_ROUTE_DASHBOARD,
-  ENVIRONMENT_ROUTE_DETAIL,
-} from "@/router/dashboard/environment";
+  ENVIRONMENT_V1_ROUTE_DASHBOARD,
+  ENVIRONMENT_V1_ROUTE_DETAIL,
+} from "@/router/dashboard/environmentV1";
 import { hasFeature, pushNotification, useBackupV1Store } from "@/store";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   useEnvironmentV1Store,
   defaultEnvironmentTier,
@@ -64,7 +65,7 @@ import {
   getDefaultBackupPlanPolicy,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { VirtualRoleType } from "@/types";
+import { VirtualRoleType, unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   Environment,
@@ -76,7 +77,7 @@ import {
   PolicyResourceType,
   BackupPlanSchedule,
 } from "@/types/proto/v1/org_policy_service";
-import { environmentV1Slug, idFromSlug } from "@/utils";
+import { extractEnvironmentResourceName } from "@/utils";
 
 interface LocalState {
   environment: Environment;
@@ -93,7 +94,7 @@ interface LocalState {
 }
 
 const props = defineProps({
-  environmentSlug: {
+  environmentId: {
     required: true,
     type: String,
   },
@@ -101,18 +102,29 @@ const props = defineProps({
 
 const emit = defineEmits(["archive"]);
 
+const router = useRouter();
+const { t } = useI18n();
 const environmentV1Store = useEnvironmentV1Store();
 const policyV1Store = usePolicyV1Store();
 const backupStore = useBackupV1Store();
-const router = useRouter();
-const { t } = useI18n();
 
 const state = reactive<LocalState>({
-  environment: environmentV1Store.getEnvironmentByUID(
-    String(idFromSlug(props.environmentSlug))
-  ),
+  environment:
+    environmentV1Store.getEnvironmentByName(
+      `${environmentNamePrefix}${props.environmentId}`
+    ) || unknownEnvironment(),
   showArchiveModal: false,
   showDisableAutoBackupModal: false,
+});
+
+const prepareEnvironment = async () => {
+  await environmentV1Store.getOrFetchEnvironmentByName(
+    `${environmentNamePrefix}${props.environmentId}`
+  );
+};
+
+watch(() => props.environmentId, prepareEnvironment, {
+  immediate: true,
 });
 
 const preparePolicy = () => {
@@ -191,9 +203,9 @@ const doArchive = (environment: Environment) => {
     environment.state = State.DELETED;
     assignEnvironment(environment);
     router.replace({
-      name: ENVIRONMENT_ROUTE_DETAIL,
+      name: ENVIRONMENT_V1_ROUTE_DETAIL,
       params: {
-        environmentSlug: environmentV1Slug(environment),
+        environmentId: extractEnvironmentResourceName(environment.name),
       },
     });
   });
@@ -204,9 +216,10 @@ const doRestore = (environment: Environment) => {
     .undeleteEnvironment(environment.name)
     .then((environment) => {
       assignEnvironment(environment);
+      const id = extractEnvironmentResourceName(environment.name);
       router.replace({
-        name: ENVIRONMENT_ROUTE_DASHBOARD,
-        hash: `#${environment.uid}`,
+        name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
+        hash: `#${id}`,
       });
     });
 };

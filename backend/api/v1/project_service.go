@@ -2611,19 +2611,18 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var project *store.ProjectMessage
+
 	projectUID, isNumber := isNumber(projectID)
-	if isNumber {
-		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID:         &projectUID,
-			ShowDeleted: true,
-		})
-	} else {
-		project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID:  &projectID,
-			ShowDeleted: true,
-		})
+	find := &store.FindProjectMessage{
+		ShowDeleted: true,
 	}
+	if isNumber {
+		find.UID = &projectUID
+	} else {
+		find.ResourceID = &projectID
+	}
+
+	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

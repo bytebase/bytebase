@@ -66,7 +66,6 @@ export function useRecentVisit() {
         // We treat the two URLs "the same" when their urls'
         //   `path` are the same (means ignoring querystring and hash).
         //   e.g. "/db?environment=5003" & "/db?environment=5005"
-        //   e.g. "/environment#5001" & "/environment#5005"
         // Because usually they are just different tab-panes
         //   or filters on the page.
         return getPath(item.url) === getPath(curr.url);
