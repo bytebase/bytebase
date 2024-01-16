@@ -324,6 +324,7 @@ CREATE TABLE u (
 CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ;
 CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;
@@ -352,9 +353,10 @@ DELIMITER ;;
 CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;;
+DELIMITER ;
 CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;;
+RETURN CONCAT('Hello, ',s,'!') ;
 DELIMITER ??
 CREATE FUNCTION hello3(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
@@ -365,9 +367,9 @@ DROP FUNCTION hello3;
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		got, err := RestoreDelimiter(tc.input)
 		require.NoError(t, err)
-		require.Equal(t, tc.want, got)
+		require.Equalf(t, tc.want, got, "test cases: %d", i)
 	}
 }
