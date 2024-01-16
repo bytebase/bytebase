@@ -32,6 +32,7 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
+import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
@@ -49,7 +50,10 @@ import {
   SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
   SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
 } from "./dashboard/workspaceSetting";
-import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
+import sqlEditorRoutes, {
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_SHARE_MODULE,
+} from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -113,10 +117,6 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_OAUTH_CALLBACK_MODULE ||
     to.name === AUTH_OIDC_CALLBACK_MODULE
   ) {
-    next();
-    return;
-  }
-  if (to.name === "workspace.debug-lsp") {
     next();
     return;
   }
@@ -192,7 +192,10 @@ router.beforeEach((to, from, next) => {
       // Open the "Sample Sheet" when the first time onboarding SQL Editor
       onboardingStateStore.consume("sql-editor");
       next({
-        path: `/sql-editor/sheet/project-sample-101`,
+        name: SQL_EDITOR_SHARE_MODULE,
+        params: {
+          sheetSlug: "project-sample-101",
+        },
         replace: true,
       });
       return;
@@ -210,7 +213,7 @@ router.beforeEach((to, from, next) => {
     to.name === PROJECT_V1_ROUTE_DASHBOARD ||
     to.name === INSTANCE_ROUTE_DASHBOARD ||
     to.name === DATABASE_ROUTE_DASHBOARD ||
-    to.name === "workspace.issue" ||
+    to.name === ISSUE_ROUTE_DASHBOARD ||
     to.name === SQL_EDITOR_HOME_MODULE ||
     (to.name?.toString().startsWith(SETTING_ROUTE) &&
       to.name?.toString() != SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL &&
