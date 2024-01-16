@@ -74,7 +74,7 @@ func DealWithDelimiter(statement string, options ...tokenizer.Option) (string, e
 // -- DELIMITER ;
 // SELECT 1;
 // SELECT 2;
-// -- DELIMITER ;
+// -- DELIMITER ;.
 func RestoreDelimiter(statement string) (string, error) {
 	delimiterRegexp := regexp.MustCompile(`(?i)^-- DELIMITER\s+(?P<DELIMITER>[^\s\\]+)\s*`)
 	lines := strings.Split(statement, "\n")
