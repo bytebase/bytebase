@@ -184,6 +184,85 @@ CREATE TABLE u (
 		},
 
 		{
+			// Semicolon in body after delimiter
+			input: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- DELIMITER ;;
+CREATE DEFINER=root@localhost PROCEDURE GetEmployeeFullName(IN in_employee_id INT, OUT out_full_name VARCHAR(100))
+BEGIN
+    -- Declare variables
+    DECLARE first_name VARCHAR(50);
+    DECLARE last_name VARCHAR(50);
+
+    -- Initialize variables
+    SET out_full_name = NULL;
+
+    -- Retrieve employee details based on employee_id
+    SELECT first_name, last_name INTO first_name, last_name
+    FROM employees
+    WHERE employee_id = in_employee_id;
+
+    -- Check if employee exists
+    IF first_name IS NOT NULL THEN
+        -- Concatenate first and last names
+        SET out_full_name = CONCAT(first_name, ' ', last_name);
+    END IF;
+END ;
+-- DELIMITER ;
+`,
+			want: `
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+--
+-- Table structure for u
+--
+CREATE TABLE u (
+	b blob NOT NULL,
+	t text NOT NULL,
+	g geometry NOT NULL,
+	j json NOT NULL,
+	ti tinyint(1) NOT NULL,
+	tb tinyblob
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+DELIMITER ;;
+CREATE DEFINER=root@localhost PROCEDURE GetEmployeeFullName(IN in_employee_id INT, OUT out_full_name VARCHAR(100))
+BEGIN
+    -- Declare variables
+    DECLARE first_name VARCHAR(50);
+    DECLARE last_name VARCHAR(50);
+
+    -- Initialize variables
+    SET out_full_name = NULL;
+
+    -- Retrieve employee details based on employee_id
+    SELECT first_name, last_name INTO first_name, last_name
+    FROM employees
+    WHERE employee_id = in_employee_id;
+
+    -- Check if employee exists
+    IF first_name IS NOT NULL THEN
+        -- Concatenate first and last names
+        SET out_full_name = CONCAT(first_name, ' ', last_name);
+    END IF;
+END ;;
+DELIMITER ;
+`,
+		},
+		{
 			// One delimiter
 			input: `
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
@@ -245,6 +324,7 @@ CREATE TABLE u (
 CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;
+-- DELIMITER ;
 CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;
@@ -273,9 +353,10 @@ DELIMITER ;;
 CREATE FUNCTION hello(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
 RETURN CONCAT('Hello, ',s,'!') ;;
+DELIMITER ;
 CREATE FUNCTION hello2(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
-RETURN CONCAT('Hello, ',s,'!') ;;
+RETURN CONCAT('Hello, ',s,'!') ;
 DELIMITER ??
 CREATE FUNCTION hello3(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
     DETERMINISTIC
@@ -286,9 +367,9 @@ DROP FUNCTION hello3;
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		got, err := RestoreDelimiter(tc.input)
 		require.NoError(t, err)
-		require.Equal(t, tc.want, got)
+		require.Equalf(t, tc.want, got, "test cases: %d", i)
 	}
 }
