@@ -37,12 +37,18 @@ const languageList = [
     label: "Español",
     value: "es-ES",
   },
+  {
+    label: "日本語",
+    value: "ja-JP",
+  },
 ];
 const localeLabel =
   locale.value === "en-US" || locale.value === "en"
     ? "English"
     : locale.value === "es-ES" || locale.value === "es"
     ? "Español"
+    : locale.value === "ja-JP" || locale.value === "ja"
+    ? "日本語"
     : "简体中文";
 const selectedLanguage = ref(localeLabel);
 const year = new Date().getFullYear();

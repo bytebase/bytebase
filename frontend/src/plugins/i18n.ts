@@ -4,7 +4,7 @@ import { App } from "vue";
 import { createI18n } from "vue-i18n";
 
 const localPathPrefix = "../locales/";
-const validLocaleList = ["en-US", "zh-CN", "es-ES"];
+const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP"];
 
 const getValidLocale = () => {
   const storage = useLocalStorage("bytebase_options", {}) as any;
@@ -20,6 +20,7 @@ const getValidLocale = () => {
   }
 
   locale = storage.value?.appearance?.language || "";
+  console.log("locale", locale);
   if (validLocaleList.includes(locale)) {
     return locale;
   }
