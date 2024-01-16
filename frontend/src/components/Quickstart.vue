@@ -158,7 +158,7 @@ const introList = computed(() => {
     },
     {
       name: computed(() => t("quick-start.visit-project")),
-      link: "/project",
+      link: "/projects",
       done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
     },
   ];
