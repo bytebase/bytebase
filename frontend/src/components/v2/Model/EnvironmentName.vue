@@ -17,7 +17,7 @@
 import { computed } from "vue";
 import ProductionEnvironmentIcon from "@/components/Environment/ProductionEnvironmentIcon.vue";
 import type { Environment } from "@/types";
-import { environmentName, environmentSlug } from "@/utils";
+import { environmentName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -34,7 +34,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/environment/${environmentSlug(props.environment)}`,
+      to: `/${props.environment.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

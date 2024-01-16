@@ -31,19 +31,6 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /environment/:environmentSlug
-        // Total 2 elements, 2nd element is the issue slug
-        const environmentComponents = currentRoute.path.match(
-          "/environment/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined];
-        if (environmentComponents[1]) {
-          return {
-            environmentSlug: environmentComponents[1],
-          };
-        }
-      }
-
-      {
         // /projects/:projectId/webhook/:hookSlug
         // Total 3 elements, 2nd element is the project slug, 3rd element is the project webhook slug
         const projectComponents = currentRoute.path.match(

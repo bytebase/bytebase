@@ -22,7 +22,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { VueClass, environmentV1Name, environmentV1Slug } from "@/utils";
+import { VueClass, environmentV1Name } from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
 const props = withDefaults(
@@ -54,7 +54,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/environment/${environmentV1Slug(props.environment)}`,
+      to: `/${props.environment.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {
