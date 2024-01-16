@@ -10,7 +10,7 @@
       @reorder-move="(row, delta) => handleReorderMove(row, delta)"
     />
 
-    <div class="flex flex-row">
+    <div v-if="allowDelete" class="flex flex-row">
       <DeleteChangelistButton />
     </div>
 
@@ -64,7 +64,7 @@ import { provideChangelistDetailContext } from "./context";
 
 const { t } = useI18n();
 const route = useRoute();
-const { changelist, reorderMode, isUpdating, events } =
+const { changelist, reorderMode, isUpdating, events, allowDelete } =
   provideChangelistDetailContext();
 
 const state = reactive({
