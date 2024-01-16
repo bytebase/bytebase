@@ -176,6 +176,8 @@ message Plan {
   repeated Step steps = 6;
 
   message Step {
+    // TODO: implement
+    string title = 2;
     repeated Spec specs = 1;
   }
 
