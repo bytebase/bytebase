@@ -6,7 +6,7 @@ import {
   useSQLReviewStore,
   useVCSV1Store,
 } from "@/store";
-import { idFromSlug } from "@/utils";
+import { uidFromSlug } from "@/utils";
 import SettingSidebar from "@/views/SettingSidebar.vue";
 
 export const SETTING_ROUTE = "setting";
@@ -41,6 +41,7 @@ export const SETTING_ROUTE_WORKSPACE_ARCHIVE = `${SETTING_ROUTE_WORKSPACE}.archi
 const workspaceSettingRoutes: RouteRecordRaw[] = [
   {
     path: "setting",
+    name: SETTING_ROUTE_WORKSPACE,
     meta: { title: () => t("common.settings") },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
@@ -70,41 +71,70 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       {
         path: "general",
         name: SETTING_ROUTE_WORKSPACE_GENERAL,
-        meta: { title: () => t("settings.sidebar.general") },
+        meta: {
+          title: () => t("settings.sidebar.general"),
+          requiredWorkspacePermissionList: () => ["bb.settings.set"],
+        },
         component: () => import("@/views/SettingWorkspaceGeneral.vue"),
         props: true,
       },
       {
         path: "agent",
         name: SETTING_ROUTE_WORKSPACE_AGENT,
-        meta: { title: () => t("common.agents") },
+        meta: {
+          title: () => t("common.agents"),
+          requiredWorkspacePermissionList: () => ["bb.settings.set"],
+        },
         component: () => import("@/views/SettingWorkspaceAgent.vue"),
         props: true,
       },
       {
         path: "member",
         name: SETTING_ROUTE_WORKSPACE_MEMBER,
-        meta: { title: () => t("settings.sidebar.members") },
+        meta: {
+          title: () => t("settings.sidebar.members"),
+          requiredWorkspacePermissionList: () => [
+            "bb.policies.update",
+            "bb.settings.set",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceMember.vue"),
         props: true,
       },
       {
         path: "role",
         name: SETTING_ROUTE_WORKSPACE_ROLE,
-        meta: { title: () => t("settings.sidebar.custom-roles") },
+        meta: {
+          title: () => t("settings.sidebar.custom-roles"),
+          requiredWorkspacePermissionList: () => [
+            "bb.policies.update",
+            "bb.settings.set",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceRole.vue"),
         props: true,
       },
       {
         path: "sso",
         name: SETTING_ROUTE_WORKSPACE_SSO,
-        meta: { title: () => t("settings.sidebar.sso") },
+        meta: {
+          title: () => t("settings.sidebar.sso"),
+          // Only allow users with bb.identityProviders.create permission to view this page.
+          requiredWorkspacePermissionList: () => [
+            "bb.identityProviders.create",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
       {
         path: "sso/new",
         name: SETTING_ROUTE_WORKSPACE_SSO_CREATE,
-        meta: { title: () => t("settings.sidebar.sso") },
+        meta: {
+          title: () => t("settings.sidebar.sso"),
+          requiredWorkspacePermissionList: () => [
+            "bb.identityProviders.create",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
       },
       {
@@ -118,6 +148,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
                 ?.title || t("settings.sidebar.sso")
             );
           },
+          requiredWorkspacePermissionList: () => ["bb.identityProviders.get"],
         },
         component: () => import("@/views/SettingWorkspaceSSODetail.vue"),
         props: true,
@@ -125,56 +156,84 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       {
         path: "sensitive-data",
         name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-        meta: { title: () => t("settings.sidebar.sensitive-data") },
+        meta: {
+          title: () => t("settings.sidebar.sensitive-data"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+        },
         component: () => import("@/views/SettingWorkspaceSensitiveData.vue"),
         props: true,
       },
       {
         path: "access-control",
         name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-        meta: { title: () => t("settings.sidebar.access-control") },
+        meta: {
+          title: () => t("settings.sidebar.access-control"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+        },
         component: () => import("@/views/SettingWorkspaceAccessControl.vue"),
         props: true,
       },
       {
         path: "risk-center",
         name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
-        meta: { title: () => t("custom-approval.risk.risk-center") },
+        meta: {
+          title: () => t("custom-approval.risk.risk-center"),
+          requiredWorkspacePermissionList: () => ["bb.risks.update"],
+        },
         component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
       },
       {
         path: "custom-approval",
         name: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
-        meta: { title: () => t("custom-approval.self") },
+        meta: {
+          title: () => t("custom-approval.self"),
+          requiredWorkspacePermissionList: () => ["bb.settings.set"],
+        },
         component: () => import("@/views/SettingWorkspaceCustomApproval.vue"),
         props: true,
       },
       {
         path: "slow-query",
         name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
-        meta: { title: () => startCase(t("slow-query.self")) },
+        meta: {
+          title: () => startCase(t("slow-query.self")),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+        },
         component: () => import("@/views/SettingWorkspaceSlowQuery.vue"),
         props: true,
       },
       {
         path: "schema-template",
         name: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
-        meta: { title: () => startCase(t("schema-template.self")) },
+        meta: {
+          title: () => startCase(t("schema-template.self")),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+        },
         component: () => import("@/views/SettingWorkspaceSchemaTemplate.vue"),
         props: true,
       },
       {
         path: "gitops",
         name: SETTING_ROUTE_WORKSPACE_GITOPS,
-        meta: { title: () => t("settings.sidebar.gitops") },
+        meta: {
+          title: () => t("settings.sidebar.gitops"),
+          requiredWorkspacePermissionList: () => [
+            "bb.externalVersionControls.list",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceVCS.vue"),
         props: true,
       },
       {
         path: "gitops/new",
         name: SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
-        meta: { title: () => t("repository.add-git-provider") },
+        meta: {
+          title: () => t("repository.add-git-provider"),
+          requiredWorkspacePermissionList: () => [
+            "bb.externalVersionControls.create",
+          ],
+        },
         component: () => import("@/views/SettingWorkspaceVCSCreate.vue"),
         props: true,
       },
@@ -184,8 +243,11 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.vcsSlug as string;
-            return useVCSV1Store().getVCSByUid(idFromSlug(slug))?.title ?? "";
+            return useVCSV1Store().getVCSByUid(uidFromSlug(slug))?.title ?? "";
           },
+          requiredWorkspacePermissionList: () => [
+            "bb.externalVersionControls.get",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceVCSDetail.vue"),
         props: true,
@@ -193,13 +255,19 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       {
         path: "mail-delivery",
         name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
-        meta: { title: () => t("settings.sidebar.mail-delivery") },
+        meta: {
+          title: () => t("settings.sidebar.mail-delivery"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+        },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
       },
       {
         path: "subscription",
         name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-        meta: { title: () => t("settings.sidebar.subscription") },
+        meta: {
+          title: () => t("settings.sidebar.subscription"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
+        },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
         props: true,
       },
@@ -208,6 +276,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
         meta: {
           title: () => t("sql-review.title"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReview.vue"),
         props: true,
@@ -217,6 +286,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
         meta: {
           title: () => t("sql-review.create.breadcrumb"),
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewCreate.vue"),
         props: true,
@@ -228,11 +298,12 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.sqlReviewPolicySlug as string;
             return (
-              useSQLReviewStore().getReviewPolicyByEnvironmentUID(
-                String(idFromSlug(slug))
+              useSQLReviewStore().getReviewPolicyByEnvironmentId(
+                String(uidFromSlug(slug))
               )?.name ?? ""
             );
           },
+          requiredWorkspacePermissionList: () => ["bb.policies.update"],
         },
         component: () => import("@/views/SettingWorkspaceSQLReviewDetail.vue"),
         props: true,
@@ -242,6 +313,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
         meta: {
           title: () => t("settings.sidebar.audit-log"),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceAuditLog.vue"),
         props: true,
@@ -251,6 +323,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
         meta: {
           title: () => t("settings.sidebar.debug-log"),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceDebugLog.vue"),
         props: true,
@@ -258,7 +331,10 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
       {
         path: "archive",
         name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
-        meta: { title: () => t("common.archived") },
+        meta: {
+          title: () => t("common.archived"),
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+        },
         component: () => import("@/views/Archive.vue"),
         props: true,
       },

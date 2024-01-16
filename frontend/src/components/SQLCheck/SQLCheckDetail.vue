@@ -80,7 +80,7 @@ import { useI18n } from "vue-i18n";
 import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
-import { useReviewPolicyByEnvironmentId } from "@/store";
+import { useReviewPolicyByEnvironmentName } from "@/store";
 import {
   ComposedDatabase,
   GeneralErrorCode,
@@ -92,6 +92,7 @@ import {
   ruleTemplateMap,
 } from "@/types";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import { extractEnvironmentResourceName } from "@/utils";
 
 interface ErrorCodeLink {
   title: string;
@@ -211,10 +212,9 @@ const showCategoryColumn = computed((): boolean =>
   tableRows.value.some((row) => row.category !== "")
 );
 
-const environmentUID = computed(
-  () => props.database.effectiveEnvironmentEntity.uid
+const reviewPolicy = useReviewPolicyByEnvironmentName(
+  extractEnvironmentResourceName(props.database.effectiveEnvironmentEntity.name)
 );
-const reviewPolicy = useReviewPolicyByEnvironmentId(environmentUID);
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {

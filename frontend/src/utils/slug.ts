@@ -15,6 +15,7 @@ import {
   UNKNOWN_ID,
 } from "../types";
 import { IdType } from "../types/id";
+import { extractEnvironmentResourceName } from "./v1";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
   const parts = slug.split("-");
@@ -25,12 +26,12 @@ export const indexOrUIDFromSlug = (slug: string): number => {
   return indexOrUID;
 };
 
-export function idFromSlug(slug: string): IdType {
+export function uidFromSlug(slug: string): IdType {
   const parts = slug.split("-");
   return parseInt(parts[parts.length - 1]);
 }
 
-export const uidFromSlug = (slug: string): string => {
+export const idFromSlug = (slug: string): string => {
   const parts = slug.split("-");
   return parts[parts.length - 1];
 };
@@ -80,7 +81,10 @@ export function vcsSlugV1(vcs: VCSV1): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
+  return [
+    slug(reviewPolicy.name),
+    extractEnvironmentResourceName(reviewPolicy.environment.name),
+  ].join("-");
 }
 
 export function connectionSlug(

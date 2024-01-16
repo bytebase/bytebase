@@ -129,27 +129,24 @@ watch(() => props.environmentId, prepareEnvironment, {
 
 const preparePolicy = () => {
   policyV1Store
-    .getOrFetchPolicyByParentAndType({
-      parentPath: state.environment.name,
-      policyType: PolicyTypeV1.ROLLOUT_POLICY,
+    .fetchPolicies({
+      resourceType: PolicyResourceType.ENVIRONMENT,
     })
-    .then((policy) => {
+    .then((policies) => {
+      const rolloutPolicy = policies.find(
+        (policy) => policy.type === PolicyTypeV1.ROLLOUT_POLICY
+      );
+      const backupPolicy = policies.find(
+        (policy) => policy.type === PolicyTypeV1.BACKUP_PLAN
+      );
       state.rolloutPolicy =
-        policy ??
+        rolloutPolicy ||
         getEmptyRolloutPolicy(
           state.environment.name,
           PolicyResourceType.ENVIRONMENT
         );
-    });
-
-  policyV1Store
-    .getOrFetchPolicyByParentAndType({
-      parentPath: state.environment.name,
-      policyType: PolicyTypeV1.BACKUP_PLAN,
-    })
-    .then((policy) => {
       state.backupPolicy =
-        policy ||
+        backupPolicy ||
         getDefaultBackupPlanPolicy(
           state.environment.name,
           PolicyResourceType.ENVIRONMENT

@@ -21,7 +21,7 @@ import {
   usePageMode,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { idFromSlug, sheetNameFromSlug, uidFromSlug } from "@/utils";
+import { uidFromSlug, sheetNameFromSlug, idFromSlug } from "@/utils";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -233,11 +233,11 @@ router.beforeEach((to, from, next) => {
 
   if (to.name === "workspace.database.history.detail") {
     const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
-    const uid = uidFromSlug(to.params.changeHistorySlug as string);
+    const id = idFromSlug(to.params.changeHistorySlug as string);
     Promise.all([
       useDatabaseV1Store().getOrFetchDatabaseByName(parent),
       useChangeHistoryStore().fetchChangeHistory({
-        name: `${parent}/changeHistories/${uid}`,
+        name: `${parent}/changeHistories/${id}`,
       }),
     ])
       .then(() => {
@@ -293,7 +293,7 @@ router.beforeEach((to, from, next) => {
       return;
     }
     useDatabaseV1Store()
-      .fetchDatabaseByUID(String(idFromSlug(databaseSlug)))
+      .fetchDatabaseByUID(String(uidFromSlug(databaseSlug)))
       .then((database) => {
         dbSchemaStore
           .getOrFetchDatabaseMetadata({
@@ -317,7 +317,7 @@ router.beforeEach((to, from, next) => {
 
   if (instanceSlug) {
     useInstanceV1Store()
-      .getOrFetchInstanceByUID(String(idFromSlug(instanceSlug)))
+      .getOrFetchInstanceByUID(String(uidFromSlug(instanceSlug)))
       .then(() => {
         next();
       })
@@ -333,7 +333,7 @@ router.beforeEach((to, from, next) => {
 
   if (vcsSlug) {
     useVCSV1Store()
-      .fetchVCSByUid(idFromSlug(vcsSlug))
+      .fetchVCSByUid(uidFromSlug(vcsSlug))
       .then(() => {
         next();
       })
@@ -349,7 +349,7 @@ router.beforeEach((to, from, next) => {
 
   if (sqlReviewPolicySlug) {
     useSQLReviewStore()
-      .getOrFetchReviewPolicyByEnvironmentUID(
+      .getOrFetchReviewPolicyByEnvironmentId(
         String(idFromSlug(sqlReviewPolicySlug))
       )
       .then(() => {

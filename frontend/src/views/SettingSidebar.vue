@@ -17,9 +17,9 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { RouteRecordRaw, useRoute, useRouter } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
-import {
+import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_MEMBER,
@@ -44,17 +44,21 @@ import {
   SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
   SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
+  SETTING_ROUTE_WORKSPACE,
 } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV2 } from "../utils";
+import {
+  hasWorkspaceLevelProjectPermission,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 
 const hasSettingListPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
 });
 
 const getItemClass = (path: string | undefined) => {
@@ -103,7 +107,7 @@ const onSelect = (path: string | undefined, e: MouseEvent | undefined) => {
 };
 
 const settingSidebarItemList = computed((): SidebarItem[] => {
-  return [
+  const list: SidebarItem[] = [
     {
       title: t("settings.sidebar.account"),
       icon: h(UserCircle),
@@ -232,5 +236,46 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       type: "div",
     },
   ];
+
+  const checkSidebarItemPermission = (item: SidebarItem) => {
+    if (item.path) {
+      item.hide = !hasRoutePermission(item.path as string);
+    }
+    if (item.children) {
+      item.children.forEach((child) => {
+        checkSidebarItemPermission(child);
+      });
+    }
+  };
+  list.forEach((item) => {
+    checkSidebarItemPermission(item);
+  });
+
+  return list;
 });
+
+const routes = workspaceSettingRoutes.find(
+  (route) => route.name === SETTING_ROUTE_WORKSPACE
+)?.children as RouteRecordRaw[];
+
+const hasRoutePermission = (routeName: string) => {
+  const route = routes.find((route) => route.name === routeName);
+  if (!route) {
+    return false;
+  }
+
+  if (route.meta?.requiredWorkspacePermissionList) {
+    const requiredPermissions = route.meta.requiredWorkspacePermissionList();
+    return requiredPermissions.every((permission) =>
+      hasWorkspacePermissionV2(currentUser.value, permission)
+    );
+  } else if (route.meta?.requiredProjectPermissionList) {
+    const requiredPermissions = route.meta.requiredProjectPermissionList();
+    return requiredPermissions.every((permission) =>
+      hasWorkspaceLevelProjectPermission(currentUser.value, permission)
+    );
+  }
+
+  return true;
+};
 </script>
