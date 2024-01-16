@@ -148,7 +148,11 @@ import {
 } from "@/store";
 import { SQLReviewPolicy } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import {
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV2,
+  sqlReviewPolicySlug,
+} from "@/utils";
 
 type EnvironmentReviewPolicy = {
   environment: Environment;
@@ -220,7 +224,7 @@ const handleClickCreate = (environment: Environment) => {
     router.push({
       name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
       query: {
-        environmentId: environment.uid,
+        environmentId: extractEnvironmentResourceName(environment.name),
       },
     });
   } else {

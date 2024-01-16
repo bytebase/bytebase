@@ -1,4 +1,8 @@
-import { QuickActionType, ProjectPermission } from "./types";
+import {
+  QuickActionType,
+  ProjectPermission,
+  WorkspacePermission,
+} from "./types";
 
 export {};
 
@@ -7,6 +11,7 @@ declare module "vue-router" {
     title?: (route: RouteLocationNormalized) => string;
     getQuickActionList?: (route: RouteLocationNormalized) => QuickActionType[];
     overrideTitle?: boolean;
+    requiredWorkspacePermissionList?: () => WorkspacePermission[];
     requiredProjectPermissionList?: () => ProjectPermission[];
   }
 }
