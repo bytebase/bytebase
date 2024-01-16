@@ -58,7 +58,7 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 			slog.Error("TaskExecutor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
 			terminated = true
 			result = nil
-			err = errors.Errorf("encounter internal error when executing task")
+			err = errors.Errorf("TaskExecutor PANIC RECOVER, err: %v", panicErr)
 		}
 	}()
 
