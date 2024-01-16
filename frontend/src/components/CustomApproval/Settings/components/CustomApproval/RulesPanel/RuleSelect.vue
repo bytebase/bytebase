@@ -11,7 +11,7 @@
       :options="options"
       :placeholder="$t('custom-approval.approval-flow.select')"
       :consistent-menu-width="false"
-      :disabled="disabled || !allowAdmin"
+      :disabled="disabled || !allowSetSetting"
       :filterable="true"
       class="bb-rule-select"
       v-bind="selectAttrs"
@@ -21,7 +21,7 @@
       quaternary
       type="info"
       class="!rounded !w-[var(--n-height)] !p-0 !ml-1"
-      :disabled="!selectedRule"
+      :disabled="!selectedRule || !allowSetSetting"
       @click="toApprovalFlow"
     >
       <heroicons:pencil-square class="w-5 h-5" />
@@ -34,8 +34,8 @@ import { omit } from "lodash-es";
 import { NButton, type SelectProps, SelectOption } from "naive-ui";
 import { computed, useAttrs } from "vue";
 import { useI18n } from "vue-i18n";
-import { useWorkspaceApprovalSettingStore } from "@/store";
-import { VueClass, VueStyle } from "@/utils";
+import { useCurrentUserV1, useWorkspaceApprovalSettingStore } from "@/store";
+import { VueClass, VueStyle, hasWorkspacePermissionV2 } from "@/utils";
 import { SpinnerSelect } from "../../common";
 import { useCustomApprovalContext } from "../context";
 
@@ -56,9 +56,10 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const store = useWorkspaceApprovalSettingStore();
 const context = useCustomApprovalContext();
-const { hasFeature, showFeatureModal, allowAdmin } = context;
+const { hasFeature, showFeatureModal } = context;
 
 const attrs = useAttrs();
 const selectAttrs = computed(() => ({
@@ -66,6 +67,10 @@ const selectAttrs = computed(() => ({
   class: props.selectClass,
   style: props.selectStyle,
 }));
+
+const allowSetSetting = computed(() =>
+  hasWorkspacePermissionV2(currentUser.value, "bb.settings.set")
+);
 
 const options = computed(() => {
   const ruleOptions = store.config.rules.map<SelectOption>((rule) => ({

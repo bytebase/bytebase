@@ -17,19 +17,19 @@
       <div class="bb-grid-cell justify-center">
         <SpinnerSwitch
           :value="risk.active"
-          :disabled="!allowAdmin"
+          :disabled="!allowUpdateRisk"
           :on-toggle="(active) => toggleRisk(risk, active)"
           size="small"
         />
       </div>
       <div class="bb-grid-cell gap-x-2">
         <NButton size="small" @click="editRisk(risk)">
-          {{ allowAdmin ? $t("common.edit") : $t("common.view") }}
+          {{ allowUpdateRisk ? $t("common.edit") : $t("common.view") }}
         </NButton>
         <SpinnerButton
           size="small"
           :tooltip="$t('custom-approval.risk-rule.delete')"
-          :disabled="!allowAdmin"
+          :disabled="!allowDeleteRisk"
           :on-confirm="() => deleteRisk(risk)"
         >
           {{ $t("common.delete") }}
@@ -44,8 +44,9 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { pushNotification, useRiskStore } from "@/store";
+import { pushNotification, useCurrentUserV1, useRiskStore } from "@/store";
 import { Risk } from "@/types/proto/v1/risk_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
 import { useRiskCenterContext } from "./context";
 
@@ -54,8 +55,9 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
 const context = useRiskCenterContext();
-const { hasFeature, showFeatureModal, allowAdmin } = context;
+const { hasFeature, showFeatureModal } = context;
 
 const COLUMN_LIST = computed(() => {
   const columns: BBGridColumn[] = [
@@ -76,6 +78,14 @@ const COLUMN_LIST = computed(() => {
   ];
 
   return columns;
+});
+
+const allowUpdateRisk = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.update");
+});
+
+const allowDeleteRisk = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.delete");
 });
 
 const editRisk = (risk: Risk) => {

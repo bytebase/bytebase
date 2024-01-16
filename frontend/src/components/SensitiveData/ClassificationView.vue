@@ -81,13 +81,13 @@ interface LocalState {
   showOverrideModal: boolean;
 }
 
+const { t } = useI18n();
+const settingStore = useSettingV1Store();
+const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showExampleModal: false,
   showOverrideModal: false,
 });
-const { t } = useI18n();
-const settingStore = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 
 watch(
   () => state.classification,
@@ -122,7 +122,7 @@ const upsertSetting = async () => {
 };
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 
