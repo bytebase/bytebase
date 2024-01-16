@@ -140,13 +140,14 @@ import {
   PROJECT_V1_ROUTE_BRANCH_REBASE,
 } from "@/router/dashboard/projectV1";
 import {
+  extractUserEmail,
   pushNotification,
   useDatabaseV1Store,
   useCurrentUserV1,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
-import { ComposedProject } from "@/types";
+import { ComposedProject, ProjectPermission } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { defer } from "@/utils";
@@ -201,20 +202,19 @@ const selectTargetDatabasesContext = ref<{
 
 const currentUser = useCurrentUserV1();
 
-const allowEdit = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.branches.update"
+const checkPermission = (permission: ProjectPermission): boolean => {
+  return (
+    hasProjectPermissionV2(props.project, currentUser.value, permission) ||
+    extractUserEmail(props.cleanBranch.creator) === currentUser.value.email
   );
+};
+
+const allowEdit = computed(() => {
+  return checkPermission("bb.branches.update");
 });
 
 const allowDelete = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.branches.delete"
-  );
+  return checkPermission("bb.branches.delete");
 });
 
 const parentBranch = asyncComputed(async () => {
