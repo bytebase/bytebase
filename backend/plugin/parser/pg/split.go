@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"log/slog"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -20,130 +22,208 @@ func init() {
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	return splitSQLImpl(stream)
+	list, err := splitSQLImpl(stream)
+	if err != nil {
+		slog.Info("failed to split PostgreSQL statement", "statement", statement)
+		// Use parser to split statement.
+		return splitByParser(lexer, stream)
+	}
+	return list, nil
+}
+
+func splitByParser(lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+	p := parser.NewPostgreSQLParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = true
+	p.SetErrorHandler(antlr.NewBailErrorStrategy())
+
+	tree := p.Root()
+	if lexerErrorListener.Err != nil {
+		return nil, lexerErrorListener.Err
+	}
+
+	if parserErrorListener.Err != nil {
+		return nil, parserErrorListener.Err
+	}
+
+	if tree == nil || tree.Stmtblock() == nil || tree.Stmtblock().Stmtmulti() == nil {
+		return nil, errors.New("failed to split multiple statements")
+	}
+
+	var result []base.SingleSQL
+	tokens := stream.GetAllTokens()
+
+	start := 0
+	for _, semi := range tree.Stmtblock().Stmtmulti().AllSEMI() {
+		pos := semi.GetSymbol().GetStart()
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[pos].GetLine() - 1,
+			LastColumn:           tokens[pos].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
+		})
+		start = pos + 1
+	}
+	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
+	eofPos := len(tokens) - 1
+	if start < eofPos {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[eofPos-1].GetLine() - 1,
+			LastColumn:           tokens[eofPos-1].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:eofPos], parser.PostgreSQLParserSEMI),
+		})
+	}
+	return result, nil
+}
+
+type openParenthesis struct {
+	tokenType int
+	pos       int
 }
 
 func splitSQLImpl(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
 	var result []base.SingleSQL
 	stream.Fill()
 	tokens := stream.GetAllTokens()
-	start := 0
-	// Splitting multiple statements by semicolon symbol should consider the special case.
-	// For create function/procedure statements, the semicolon symbol is used as part of the statement.
-	// We should skip the semicolon symbol between the "BEGIN ATOMIC" and "END" keywords.
-	// So this is a parenthesis matching problem.
-	type openParenthesis struct {
-		tokenType int
-		pos       int
-	}
-	var stack []openParenthesis
-	for i := 0; i < len(tokens); i++ {
-		switch tokens[i].GetTokenType() {
-		case parser.PostgreSQLLexerBEGIN_P:
+
+	var beginCaseStack, ifStack, loopStack []openParenthesis
+	var semicolonStack []int
+
+	for i, token := range tokens {
+		switch token.GetTokenType() {
+		case parser.PostgreSQLParserBEGIN_P:
 			if isBeginTransaction(tokens, i) {
 				continue
 			}
 
-			stack = append(stack, openParenthesis{
-				tokenType: tokens[i].GetTokenType(),
+			beginCaseStack = append(beginCaseStack, openParenthesis{
+				tokenType: token.GetTokenType(),
 				pos:       i,
 			})
-		case parser.PostgreSQLLexerCASE:
-			stack = append(stack, openParenthesis{
-				tokenType: tokens[i].GetTokenType(),
+		case parser.PostgreSQLParserCASE:
+			beginCaseStack = append(beginCaseStack, openParenthesis{
+				tokenType: token.GetTokenType(),
 				pos:       i,
 			})
-		case parser.PostgreSQLLexerEND_P:
+		case parser.PostgreSQLParserIF_P:
+			ifStack = append(ifStack, openParenthesis{
+				tokenType: token.GetTokenType(),
+				pos:       i,
+			})
+		case parser.PostgreSQLParserLOOP:
+			loopStack = append(loopStack, openParenthesis{
+				tokenType: token.GetTokenType(),
+				pos:       i,
+			})
+		case parser.PostgreSQLParserSEMI:
+			semicolonStack = append(semicolonStack, i)
+		case parser.PostgreSQLParserEND_P:
 			if isEndTransaction(tokens, i) {
 				continue
 			}
 
-			if len(stack) == 0 {
-				return nil, errors.New("invalid statement: failed to split multiple statements")
-			}
-
 			nextToken := base.GetDefaultChannelTokenType(tokens, i, 1)
 			switch nextToken {
-			case parser.PostgreSQLLexerCASE:
-				if stack[len(stack)-1].tokenType != parser.PostgreSQLLexerCASE {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+			case parser.PostgreSQLParserIF_P:
+				if len(ifStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			case parser.PostgreSQLLexerIF_P:
-				if stack[len(stack)-1].tokenType != parser.PostgreSQLLexerIF_P {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				// There are two cases:
+				// 1. The IF statement with END IF statement.
+				// 2. The IF statement without END IF statement.
+				// We should match the longest IF statement, so we should check the first IF statement in the stack.
+				semicolonStack = popSemicolonStack(semicolonStack, ifStack[0].pos)
+				ifStack = ifStack[:len(ifStack)-1]
+			case parser.PostgreSQLParserLOOP:
+				if len(loopStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
-			case parser.PostgreSQLLexerLOOP:
-				if stack[len(stack)-1].tokenType != parser.PostgreSQLLexerLOOP {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				semicolonStack = popSemicolonStack(semicolonStack, loopStack[len(semicolonStack)-1].pos)
+				loopStack = loopStack[:len(loopStack)-1]
+			case parser.PostgreSQLParserCASE:
+				if len(beginCaseStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-				continue
+				semicolonStack = popSemicolonStack(semicolonStack, beginCaseStack[len(beginCaseStack)-1].pos)
+				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			default:
-				leftTokenType := stack[len(stack)-1].tokenType
-				if leftTokenType != parser.PostgreSQLLexerBEGIN_P && leftTokenType != parser.PostgreSQLLexerCASE {
-					// Backtracking the process.
-					i = stack[len(stack)-1].pos
-					stack = stack[:len(stack)-1]
-					continue
+				if len(beginCaseStack) == 0 {
+					return nil, errors.New("invalid statement: failed to split multiple statements")
 				}
-				stack = stack[:len(stack)-1]
-			}
-		case parser.PostgreSQLLexerSEMI:
-			if len(stack) > 0 {
-				continue
-			}
-
-			line, col := base.FirstDefaultChannelTokenPosition(tokens[start:i])
-			// From antlr4, the line is ONE based, and the column is ZERO based.
-			// So we should minus 1 for the line.
-			result = append(result, base.SingleSQL{
-				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
-				BaseLine:             tokens[start].GetLine() - 1,
-				LastLine:             tokens[i].GetLine() - 1,
-				LastColumn:           tokens[i].GetColumn(),
-				FirstStatementLine:   line,
-				FirstStatementColumn: col,
-				Empty:                base.IsEmpty(tokens[start:i+1], parser.PostgreSQLLexerSEMI),
-			})
-			start = i + 1
-		case antlr.TokenEOF:
-			if len(stack) > 0 {
-				// Backtracking the process.
-				i = stack[len(stack)-1].pos
-				stack = stack[:len(stack)-1]
-				continue
-			}
-
-			if start <= i-1 {
-				line, col := base.FirstDefaultChannelTokenPosition(tokens[start:i])
-				// From antlr4, the line is ONE based, and the column is ZERO based.
-				// So we should minus 1 for the line.
-				result = append(result, base.SingleSQL{
-					Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]),
-					BaseLine:             tokens[start].GetLine() - 1,
-					LastLine:             tokens[i-1].GetLine() - 1,
-					LastColumn:           tokens[i-1].GetColumn(),
-					FirstStatementLine:   line,
-					FirstStatementColumn: col,
-					Empty:                base.IsEmpty(tokens[start:i], parser.PostgreSQLLexerSEMI),
-				})
+				semicolonStack = popSemicolonStack(semicolonStack, beginCaseStack[len(beginCaseStack)-1].pos)
+				beginCaseStack = beginCaseStack[:len(beginCaseStack)-1]
 			}
 		}
 	}
+
+	start := 0
+	for _, pos := range semicolonStack {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start : pos+1])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[pos]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[pos].GetLine() - 1,
+			LastColumn:           tokens[pos].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:pos+1], parser.PostgreSQLParserSEMI),
+		})
+		start = pos + 1
+	}
+	// For the last statement, it may not end with semicolon symbol, EOF symbol instead.
+	eofPos := len(tokens) - 1
+	if start < eofPos {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[eofPos-1]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[eofPos-1].GetLine() - 1,
+			LastColumn:           tokens[eofPos-1].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:eofPos], parser.PostgreSQLParserSEMI),
+		})
+	}
+
 	return result, nil
+}
+
+func popSemicolonStack(semicolonStack []int, pos int) []int {
+	if len(semicolonStack) == 0 {
+		return semicolonStack
+	}
+
+	for i := len(semicolonStack) - 1; i >= 0; i-- {
+		if semicolonStack[i] < pos {
+			return semicolonStack[:i+1]
+		}
+	}
+
+	return []int{}
 }
 
 func isEndTransaction(tokens []antlr.Token, index int) bool {
