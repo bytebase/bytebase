@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-1 overflow-auto focus:outline-none p-6 space-y-4"
+    class="flex-1 overflow-auto focus:outline-none px-6 pb-6 space-y-4"
     tabindex="0"
     v-bind="$attrs"
   >
@@ -95,13 +95,14 @@
             </span>
           </div>
           <NButton
+            v-if="allowSyncDatabase"
             :disabled="state.syncingSchema"
             @click.prevent="syncDatabaseSchema"
           >
             {{ $t("common.sync-now") }}
           </NButton>
           <NButton
-            v-if="allowTransferProject"
+            v-if="allowTransferDatabase"
             @click.prevent="tryTransferProject"
           >
             <span>{{ $t("database.transfer-project") }}</span>
@@ -110,7 +111,7 @@
             />
           </NButton>
           <NButton
-            v-if="allowAlterSchemaOrChangeData"
+            v-if="allowChangeData"
             @click="createMigration('bb.issue.database.data.update')"
           >
             <span>{{ $t("database.change-data") }}</span>
@@ -133,34 +134,21 @@
         />
       </NTabPane>
       <NTabPane
-        v-if="allowToChangeDatabase"
+        v-if="allowToChangeDatabase && allowListChangeHistories"
         name="change-history"
         :tab="$t('change-history.self')"
       >
-        <DatabaseChangeHistoryPanel
-          :database="database"
-          :allow-edit="allowEdit"
-        />
+        <DatabaseChangeHistoryPanel :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="
-          allowToChangeDatabase &&
-          instanceV1HasBackupRestore(database.instanceEntity)
-        "
+        v-if="allowToChangeDatabase && allowGetBackupSetting"
         name="backup-and-restore"
         :tab="$t('common.backup-and-restore')"
       >
-        <DatabaseBackupPanel
-          :database="database"
-          :allow-admin="allowAdmin"
-          :allow-edit="allowEdit"
-        />
+        <DatabaseBackupPanel :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="
-          allowToChangeDatabase &&
-          instanceV1SupportSlowQuery(database.instanceEntity)
-        "
+        v-if="allowToChangeDatabase && allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
       >
@@ -171,7 +159,7 @@
         name="setting"
         :tab="$t('common.settings')"
       >
-        <DatabaseSettingsPanel :database="database" :allow-edit="allowEdit" />
+        <DatabaseSettingsPanel :database="database" />
       </NTabPane>
     </NTabs>
 
@@ -228,15 +216,16 @@ import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useRoute } from "vue-router";
-import DatabaseBackupPanel from "@/components/DatabaseBackupPanel.vue";
-import DatabaseChangeHistoryPanel from "@/components/DatabaseChangeHistoryPanel.vue";
+import DatabaseBackupPanel from "@/components/Database/DatabaseBackupPanel.vue";
+import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
+import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
+import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
   DatabaseSettingsPanel,
   SQLEditorButtonV1,
+  SchemaDiagramButton,
 } from "@/components/DatabaseDetail";
-import SchemaDiagramButton from "@/components/DatabaseDetail/SchemaDiagramButton.vue";
-import DatabaseOverviewPanel from "@/components/DatabaseOverviewPanel.vue";
-import DatabaseSlowQueryPanel from "@/components/DatabaseSlowQueryPanel.vue";
 import { Drawer } from "@/components/v2";
 import {
   EnvironmentV1Name,
@@ -254,24 +243,16 @@ import {
   useDBSchemaV1Store,
   useEnvironmentV1Store,
 } from "@/store";
-import {
-  UNKNOWN_ID,
-  DEFAULT_PROJECT_V1_NAME,
-  unknownEnvironment,
-} from "@/types";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   idFromSlug,
   isPITRDatabaseV1,
-  isArchivedDatabaseV1,
-  instanceV1HasBackupRestore,
-  instanceV1SupportSlowQuery,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
   allowUsingSchemaEditorV1,
-  hasProjectPermissionV2,
 } from "@/utils";
 
 const databaseHashList = [
@@ -320,6 +301,15 @@ const route = useRoute();
 const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const anomalyList = ref<Anomaly[]>([]);
+const {
+  allowSyncDatabase,
+  allowTransferDatabase,
+  allowChangeData,
+  allowAlterSchema,
+  allowGetBackupSetting,
+  allowListChangeHistories,
+  allowListSlowQueries,
+} = useDatabaseDetailContext();
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
@@ -368,95 +358,6 @@ const hasSchemaDiagramFeature = computed((): boolean => {
 
 const allowQuery = computed(() => {
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
-});
-
-// Project can be transferred if meets either of the condition below:
-// - Database is in default project
-// - Workspace role can manage instance
-// - Project role can transfer database
-const allowTransferProject = computed(() => {
-  if (isArchivedDatabaseV1(database.value)) {
-    return false;
-  }
-
-  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
-    return true;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      database.value.projectEntity,
-      currentUserV1.value,
-      "bb.projects.update"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
-// Database can be admined if meets either of the condition below:
-// - Workspace role can manage instance
-// - Project role can admin database
-//
-// The admin operation includes
-// - Edit database label
-// - Enable/disable backup
-const allowAdmin = computed(() => {
-  if (isArchivedDatabaseV1(database.value)) {
-    return false;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      database.value.projectEntity,
-      currentUserV1.value,
-      "bb.databases.update"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
-// Database can be edited if meets either of the condition below:
-// - Workspace role can manage instance
-// - Project role can change database
-//
-// The edit operation includes
-// - Take manual backup
-const allowEdit = computed(() => {
-  if (isArchivedDatabaseV1(database.value)) {
-    return false;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      database.value.projectEntity,
-      currentUserV1.value,
-      "bb.databases.update"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
-const allowAlterSchemaOrChangeData = computed(() => {
-  if (database.value.project === DEFAULT_PROJECT_V1_NAME) {
-    return false;
-  }
-  return allowEdit.value;
-});
-
-const allowAlterSchema = computed(() => {
-  return (
-    allowAlterSchemaOrChangeData.value &&
-    instanceV1HasAlterSchema(database.value.instanceEntity)
-  );
 });
 
 const tryTransferProject = () => {

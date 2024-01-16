@@ -77,7 +77,7 @@
       </div>
     </dl>
 
-    <div class="pt-6">
+    <div v-if="allowGetSchema" class="pt-6">
       <div
         v-if="hasSchemaProperty"
         class="flex flex-row justify-start items-center mb-4"
@@ -190,20 +190,21 @@ import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
 import { computed, reactive, watch, PropType } from "vue";
 import { useRoute } from "vue-router";
+import { BBTableSectionDataSource } from "@/bbkit/types";
+import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
+import { useDatabaseDetailContext } from "@/components/Database/context";
 import ExternalTableDataTable from "@/components/ExternalTableDataTable.vue";
 import FunctionDataTable from "@/components/FunctionDataTable.vue";
+import StreamTable from "@/components/StreamTable.vue";
 import TableDataTable from "@/components/TableDataTable.vue";
+import TaskTable from "@/components/TaskTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
 import { useDBSchemaV1Store } from "@/store";
+import { ComposedDatabase, DataSource } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { BBTableSectionDataSource } from "../bbkit/types";
-import AnomalyTable from "../components/AnomalyCenter/AnomalyTable.vue";
-import { ComposedDatabase, DataSource } from "../types";
-import StreamTable from "./StreamTable.vue";
-import TaskTable from "./TaskTable.vue";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -228,6 +229,8 @@ const state = reactive<LocalState>({
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
+
+const { allowGetSchema } = useDatabaseDetailContext();
 
 const dbSchemaStore = useDBSchemaV1Store();
 
