@@ -34,7 +34,7 @@ export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
-    path: "project",
+    path: "projects",
     name: PROJECT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.projects"),
@@ -229,7 +229,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           overrideTitle: true,
           requiredProjectPermissionList: () => [
             "bb.projects.get",
-            "bb.changeHistories.list",
+            "bb.issues.get",
           ],
         },
         component: () => import("@/views/project/ProjectIssueDetail.vue"),
