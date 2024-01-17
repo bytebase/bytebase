@@ -194,14 +194,14 @@
               >
                 <QuickActionPanel
                   :quick-action-list="quickActionList"
-                  class="flex-1 pt-3"
+                  class="flex-1 pt-4"
                 />
               </div>
             </div>
           </div>
         </HideInStandaloneMode>
         <!-- This area may scroll -->
-        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto mt-4">
+        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto pt-4">
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->

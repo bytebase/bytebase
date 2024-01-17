@@ -142,7 +142,7 @@ const onClickSearchButton = () => {
 const { currentPlan } = storeToRefs(subscriptionStore);
 
 const hasSetSettingPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.get");
 });
 
 const kbarActions = computed(() => {
