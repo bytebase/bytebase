@@ -1,11 +1,12 @@
 <template>
-  <div class="p-6">
-    <router-view />
+  <div class="px-6 pb-6 pt-2">
+    <router-view v-if="hasPermission" />
+    <NoPermissionPlaceholder v-else />
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, watch } from "vue";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -24,21 +25,4 @@ const hasPermission = computed(() => {
     hasWorkspacePermissionV2(currentUser.value, permission)
   );
 });
-
-onMounted(() => {});
-
-watch(
-  () => hasPermission.value,
-  (hasPermission) => {
-    if (!hasPermission) {
-      router.push({
-        name: "error.403",
-        replace: false,
-      });
-    }
-  },
-  {
-    immediate: true,
-  }
-);
 </script>
