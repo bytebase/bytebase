@@ -132,7 +132,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, groupBy } from "lodash-es";
-import { computed, reactive, toRef, watch } from "vue";
+import { computed, reactive, toRef, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
@@ -166,12 +166,9 @@ import { Engine } from "@/types/proto/v1/common";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { idFromSlug, hasWorkspacePermissionV2 } from "@/utils";
 
-const props = defineProps({
-  sqlReviewPolicySlug: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  sqlReviewPolicySlug: string;
+}>();
 
 interface LocalState {
   showDisableModal: boolean;
@@ -200,6 +197,12 @@ const state = reactive<LocalState>({
   ruleList: [],
   rulesUpdated: false,
   updating: false,
+});
+
+watchEffect(async () => {
+  await store.getOrFetchReviewPolicyByEnvironmentId(
+    idFromSlug(props.sqlReviewPolicySlug)
+  );
 });
 
 const hasPermission = computed(() => {
@@ -279,7 +282,7 @@ const changeName = async (name: string) => {
     ruleList: policy.ruleList,
   };
 
-  await useSQLReviewStore().updateReviewPolicy({
+  await store.updateReviewPolicy({
     id: policy.id,
     ...upsert,
   });
@@ -336,7 +339,7 @@ const onApplyChanges = async () => {
 
   state.updating = true;
   try {
-    await useSQLReviewStore().updateReviewPolicy({
+    await store.updateReviewPolicy({
       id: policy.id,
       name: policy.name,
       ruleList,

@@ -7,6 +7,8 @@ import { uidFromSlug, idFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
+export const INSTANCE_ROUTE_DETAIL = "workspace.instance.detail";
+
 const instanceRoutes: RouteRecordRaw[] = [
   {
     path: "instance",
@@ -33,7 +35,7 @@ const instanceRoutes: RouteRecordRaw[] = [
     children: [
       {
         path: "",
-        name: "workspace.instance.detail",
+        name: INSTANCE_ROUTE_DETAIL,
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.instanceSlug as string;
