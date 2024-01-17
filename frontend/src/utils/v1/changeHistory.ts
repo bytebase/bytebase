@@ -125,7 +125,7 @@ export const mockLatestSchemaChangeHistory = (
   schema: DatabaseSchema | undefined = undefined
 ) => {
   return ChangeHistory.fromPartial({
-    name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
+    name: `${database.name}/change-histories/${UNKNOWN_ID}`,
     uid: String(UNKNOWN_ID),
     schema: schema?.schema,
     version: "Latest version",

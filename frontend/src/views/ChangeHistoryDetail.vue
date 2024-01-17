@@ -423,7 +423,7 @@ const changeHistoryUID = computed(() => {
   return uidFromSlug(props.changeHistorySlug);
 });
 const changeHistoryName = computed(() => {
-  return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
+  return `${changeHistoryParent.value}/change-histories/${changeHistoryUID.value}`;
 });
 
 const affectedTables = computed(() => {

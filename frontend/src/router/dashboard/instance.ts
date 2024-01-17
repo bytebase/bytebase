@@ -51,15 +51,14 @@ const instanceRoutes: RouteRecordRaw[] = [
     ],
   },
   {
-    path: "instances/:instance/databases/:database/changeHistories/:changeHistorySlug",
+    path: "instances/:instance/databases/:database/change-histories/:changeHistorySlug",
     name: "workspace.database.history.detail",
     meta: {
       title: (route) => {
         const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
         const uid = idFromSlug(route.params.changeHistorySlug as string);
-        const name = `${parent}/changeHistories/${uid}`;
+        const name = `${parent}/change-histories/${uid}`;
         const history = useChangeHistoryStore().getChangeHistoryByName(name);
-
         return history?.version ?? "";
       },
     },
