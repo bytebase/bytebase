@@ -1098,8 +1098,8 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 // sanitizeResults sanitizes the strings in the results by replacing all the invalid UTF-8 characters with its hexadecimal representation.
 func sanitizeResults(results []*v1pb.QueryResult) {
 	for _, result := range results {
-		for _, row := range result.Rows {
-			for _, value := range row.Values {
+		for _, row := range result.GetRows() {
+			for _, value := range row.GetValues() {
 				if value, ok := value.Kind.(*v1pb.RowValue_StringValue); ok {
 					value.StringValue = common.SanitizeUTF8String(value.StringValue)
 				}
