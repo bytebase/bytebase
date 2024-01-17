@@ -45,7 +45,7 @@ export const changeHistoryLinkRaw = (
     encodeURIComponent(instance),
     "databases",
     encodeURIComponent(database),
-    "changeHistories",
+    "change-histories",
     changeHistorySlug(uid, version),
   ].join("/");
   return `/${path}`;

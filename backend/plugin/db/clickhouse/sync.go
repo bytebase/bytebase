@@ -28,11 +28,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	// Query db info
-	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", systemDatabaseClause)
+	where := fmt.Sprintf("schema_name NOT IN (%s)", systemDatabaseClause)
 	query := `
 		SELECT
 			schema_name
-		FROM information_schema.SCHEMATA
+		FROM information_schema.schemata
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
@@ -70,18 +70,18 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	columnMap := make(map[string][]*storepb.ColumnMetadata)
 	columnQuery := `
 		SELECT
-			TABLE_NAME,
-			IFNULL(COLUMN_NAME, ''),
-			ORDINAL_POSITION,
-			COLUMN_DEFAULT,
-			IS_NULLABLE,
-			COLUMN_TYPE,
-			IFNULL(CHARACTER_SET_NAME, ''),
-			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT
-		FROM information_schema.COLUMNS
-		WHERE TABLE_SCHEMA = $1
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+			table_name,
+			ifNull(column_name, ''),
+			ordinal_position,
+			column_default,
+			is_nullable,
+			column_type,
+			ifNull(character_set_name, ''),
+			ifNull(collation_name, ''),
+			column_comment
+		FROM information_schema.columns
+		WHERE table_schema = $1
+		ORDER BY table_name, ordinal_position`
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
@@ -131,8 +131,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		SELECT
 			name,
 			engine,
-			IFNULL(total_rows, 0),
-			IFNULL(total_bytes, 0),
+			ifNull(total_rows, 0),
+			ifNull(total_bytes, 0),
 			metadata_modification_time,
 			create_table_query,
 			comment
