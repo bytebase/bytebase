@@ -57,10 +57,6 @@ const route = useRoute();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
 
-const hasSettingListPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
-});
-
 const getItemClass = (item: SidebarItem) => {
   const list = [];
   if (route.name === item.name) {
@@ -133,7 +129,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.members"),
           name: SETTING_ROUTE_WORKSPACE_MEMBER,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
         {
@@ -149,7 +144,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.debug-log"),
           name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
       ],
@@ -187,19 +181,16 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.sensitive-data"),
           name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
         {
           title: t("settings.sidebar.access-control"),
           name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
         {
           title: t("settings.sidebar.audit-log"),
           name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
       ],
@@ -212,19 +203,16 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.gitops"),
           name: SETTING_ROUTE_WORKSPACE_GITOPS,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
         {
           title: t("settings.sidebar.sso"),
           name: SETTING_ROUTE_WORKSPACE_SSO,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
         {
           title: t("settings.sidebar.mail-delivery"),
           name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
-          hide: !hasSettingListPermission.value,
           type: "route",
         },
       ],
@@ -238,8 +226,8 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
   ];
 
   const checkSidebarItemPermission = (item: SidebarItem) => {
-    if (item.path) {
-      item.hide = !hasRoutePermission(item.path as string);
+    if (item.name) {
+      item.hide = !hasRoutePermission(item.name);
     }
     if (item.children) {
       item.children.forEach((child) => {
