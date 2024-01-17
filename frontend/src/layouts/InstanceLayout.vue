@@ -12,21 +12,19 @@
   </Suspense>
 </template>
 
-<script lang="ts">
-import ProvideInstanceContext from "../components/ProvideInstanceContext.vue";
+<script lang="ts" setup>
+import { watchEffect } from "vue";
+import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
+import { useInstanceV1Store } from "@/store";
+import { idFromSlug } from "@/utils";
 
-export default {
-  name: "InstanceLayout",
-  components: { ProvideInstanceContext },
-  props: {
-    instanceSlug: {
-      required: true,
-      type: String,
-    },
-    databaseSlug: {
-      type: String,
-      default: "",
-    },
-  },
-};
+const props = defineProps<{
+  instanceSlug: string;
+}>();
+
+watchEffect(async () => {
+  await useInstanceV1Store().getOrFetchInstanceByUID(
+    idFromSlug(props.instanceSlug)
+  );
+});
 </script>
