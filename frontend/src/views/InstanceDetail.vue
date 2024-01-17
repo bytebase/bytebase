@@ -9,7 +9,7 @@
       </div>
       <div class="flex items-center gap-x-2">
         <NButton
-          v-if="allowEdit"
+          v-if="allowSyncInstance"
           :loading="state.syncingSchema"
           @click.prevent="syncSchema"
         >
@@ -21,10 +21,7 @@
           </template>
         </NButton>
         <NButton
-          v-if="
-            instance.state === State.ACTIVE &&
-            instanceV1HasCreateDatabase(instance)
-          "
+          v-if="allowCreateDatabase"
           type="primary"
           @click.prevent="createDatabase"
         >
@@ -87,6 +84,7 @@ import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
   hasWorkspacePermissionV2,
+  hasWorkspaceLevelProjectPermission,
 } from "@/utils";
 
 interface LocalState {
@@ -105,7 +103,7 @@ const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const { t } = useI18n();
 
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -138,10 +136,18 @@ const instanceRoleList = computed(() => {
   return instanceV1Store.getInstanceRoleListByName(instance.value.name);
 });
 
-const allowEdit = computed(() => {
+const allowSyncInstance = computed(() => {
   return (
     instance.value.state === State.ACTIVE &&
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update")
+    hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync")
+  );
+});
+
+const allowCreateDatabase = computed(() => {
+  return (
+    instance.value.state === State.ACTIVE &&
+    hasWorkspaceLevelProjectPermission(currentUser.value, "bb.issues.create") &&
+    instanceV1HasCreateDatabase(instance.value)
   );
 });
 
