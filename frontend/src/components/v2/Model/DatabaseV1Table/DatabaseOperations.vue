@@ -464,7 +464,7 @@ const actions = computed((): DatabaseAction[] => {
     }
   );
 
-  if (operationsInProjectDetail.value) {
+  if (operationsInProjectDetail.value && !isStandaloneMode.value) {
     resp.push({
       icon: h(UnlinkIcon),
       text: t("database.unassign"),
