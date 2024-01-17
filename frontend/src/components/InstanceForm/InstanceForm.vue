@@ -358,6 +358,7 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
   useGracefulRequest,
+  useCurrentUserV1,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -383,6 +384,7 @@ import {
   instanceV1Slug,
   calcUpdateMask,
   onlyAllowNumber,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import DataSourceSection from "./DataSourceSection/DataSourceSection.vue";
@@ -440,6 +442,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
@@ -557,6 +560,9 @@ const currentMongoDBConnectionSchema = computed(() => {
     : MongoDBConnectionStringSchemaList[1];
 });
 const allowCreate = computed(() => {
+  if (!hasWorkspacePermissionV2(currentUser.value, "bb.instances.create")) {
+    return false;
+  }
   if (environment.value.uid === String(UNKNOWN_ID)) {
     return false;
   }

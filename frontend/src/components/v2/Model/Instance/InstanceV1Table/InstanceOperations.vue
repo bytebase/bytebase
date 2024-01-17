@@ -34,6 +34,7 @@
 
 <script setup lang="ts">
 import { GraduationCapIcon, RefreshCwIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, h, VNode, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -61,27 +62,29 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
+const currentUser = useCurrentUserV1();
+const instanceStore = useInstanceV1Store();
 const state = reactive<LocalState>({
   loading: false,
   showAssignLicenseDrawer: false,
 });
-const instanceStore = useInstanceV1Store();
-const currentUserV1 = useCurrentUserV1();
-
-const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
-});
 
 const actions = computed((): Action[] => {
   const list: Action[] = [
+    // We'll always show the sync button, even if the user doesn't have the permission to sync.
+    // If the user doesn't have the permission, the button will be disabled.
     {
       icon: h(RefreshCwIcon),
       text: t("common.sync"),
-      disabled: props.instanceList.length < 1 || state.loading,
+      disabled:
+        props.instanceList.length < 1 ||
+        state.loading ||
+        !hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync"),
       click: syncSchema,
     },
   ];
-  if (canManageSubscription.value) {
+
+  if (hasWorkspacePermissionV2(currentUser.value, "bb.instances.update")) {
     list.push({
       icon: h(GraduationCapIcon),
       text: t("subscription.instance-assignment.assign-license"),
