@@ -122,7 +122,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
-import { NButton } from "naive-ui";
+import { NButton, useDialog } from "naive-ui";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -151,6 +151,7 @@ import {
   Sheet_Visibility,
 } from "@/types/proto/v1/sheet_service";
 import {
+  defer,
   extractProjectResourceName,
   extractSheetUID,
   setSheetStatement,
@@ -194,6 +195,7 @@ const {
 const selectedRolloutObjects = ref<RolloutObject[]>([]);
 const emptyBranch = Branch.fromJSON({});
 const isGeneratingDDL = ref(false);
+const $dialog = useDialog();
 
 const handleSelectEnvironment = (uid: string | undefined) => {
   if (!uid || uid === String(UNKNOWN_ID)) {
@@ -332,6 +334,11 @@ const handlePreviewIssue = async () => {
   if (errors.length > 0) {
     return cleanup(errors, fatal);
   }
+  if (statement === "") {
+    if (!(await confirmCreateIssueWithEmptyStatement())) {
+      return cleanup([], false);
+    }
+  }
   const sheet = Sheet.fromPartial({
     database: db.name,
     visibility: Sheet_Visibility.VISIBILITY_PROJECT,
@@ -380,6 +387,24 @@ const generateIssueName = (databaseName: string) => {
   const tz = "UTC" + dayjs().format("ZZ");
   issueNameParts.push(`${datetime} ${tz}`);
   return issueNameParts.join(" ");
+};
+
+const confirmCreateIssueWithEmptyStatement = () => {
+  const d = defer<boolean>();
+  $dialog.warning({
+    title: t("common.warning"),
+    content: t("schema-editor.generated-ddl-is-empty"),
+    style: "z-index: 100000",
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    onNegativeClick: () => {
+      d.resolve(false);
+    },
+    onPositiveClick: () => {
+      d.resolve(true);
+    },
+  });
+  return d.promise;
 };
 
 watch(
