@@ -12,6 +12,7 @@
       <div class="flex justify-end gap-x-0.5">
         <HideInStandaloneMode>
           <ExternalLinkButton
+            v-if="database.uid !== String(UNKNOWN_ID)"
             :link="`/db/${databaseV1Slug(database)}`"
             :tooltip="$t('common.detail')"
           />
@@ -49,7 +50,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DatabaseMetadata,

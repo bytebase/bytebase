@@ -24,7 +24,7 @@
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import type {
   SchemaMetadata,
   TableMetadata,
@@ -44,6 +44,9 @@ const emit = defineEmits<{
 const me = useCurrentUserV1();
 
 const allowAlterSchema = computed(() => {
+  if (props.database.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
   return (
     instanceV1HasAlterSchema(props.database.instanceEntity) &&
     hasProjectPermissionV2(

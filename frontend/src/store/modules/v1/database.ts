@@ -72,6 +72,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
     const actuatorStore = useActuatorV1Store();
     const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
+    console.log("isDevelopmentIAM", isDevelopmentIAM);
     let request = isDevelopmentIAM
       ? databaseServiceClient.searchDatabases
       : databaseServiceClient.listDatabases;
