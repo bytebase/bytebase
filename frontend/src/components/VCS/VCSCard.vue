@@ -9,7 +9,7 @@
           {{ vcs.title }}
         </h3>
       </div>
-      <NButton @click.prevent="editVCS">
+      <NButton :disabled="!hasUpdateVCSPermission" @click.prevent="editVCS">
         {{ $t("common.edit") }}
       </NButton>
     </div>
@@ -37,11 +37,13 @@
 </template>
 
 <script lang="ts" setup>
-import { PropType } from "vue";
+import { NButton } from "naive-ui";
+import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
 import { SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL } from "@/router/dashboard/workspaceSetting";
+import { useCurrentUserV1 } from "@/store";
 import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
-import { vcsSlugV1 } from "@/utils";
+import { hasWorkspacePermissionV2, vcsSlugV1 } from "@/utils";
 
 const props = defineProps({
   vcs: {
@@ -51,6 +53,14 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const currentUser = useCurrentUserV1();
+
+const hasUpdateVCSPermission = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.externalVersionControls.update"
+  );
+});
 
 const editVCS = () => {
   router.push({
