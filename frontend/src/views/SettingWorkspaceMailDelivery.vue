@@ -176,19 +176,21 @@
     </div>
   </div>
 </template>
+
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import { SelectOption, NCheckbox } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification } from "@/store";
+import { pushNotification, useCurrentUserV1 } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
   SMTPMailDeliverySettingValue,
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
 } from "@/types/proto/v1/setting_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;
@@ -214,6 +216,7 @@ const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
   };
 };
 
+const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   mailDeliverySetting: defaultMailDeliverySetting(),
   testMailTo: "",
@@ -223,6 +226,11 @@ const state = reactive<LocalState>({
 });
 
 const store = useWorkspaceMailDeliverySettingStore();
+
+const hasPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+});
+
 const mailDeliverySettingButtonText = computed(() => {
   return state.originMailDeliverySetting === undefined
     ? t("common.create")
@@ -230,8 +238,9 @@ const mailDeliverySettingButtonText = computed(() => {
 });
 const allowMailDeliveryActionButton = computed(() => {
   return (
-    state.useEmptyPassword ||
-    !isEqual(state.originMailDeliverySetting, state.mailDeliverySetting)
+    hasPermission.value &&
+    (state.useEmptyPassword ||
+      !isEqual(state.originMailDeliverySetting, state.mailDeliverySetting))
   );
 });
 
@@ -395,6 +404,7 @@ const handleToggleUseEmptyPassword = (on: boolean) => {
   }
 };
 </script>
+
 <style scoped>
 /*  Removed the ticker in the number field  */
 input::-webkit-outer-spin-button,

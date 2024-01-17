@@ -80,11 +80,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_MEMBER,
         meta: {
           title: () => t("settings.sidebar.members"),
-          requiredWorkspacePermissionList: () => [
-            "bb.policies.get",
-            "bb.policies.update",
-            "bb.settings.set",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceMember.vue"),
         props: true,
@@ -104,7 +100,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SSO,
         meta: {
           title: () => t("settings.sidebar.sso"),
-          requiredWorkspacePermissionList: () => ["bb.identityProviders.get"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
@@ -160,7 +156,10 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
         meta: {
           title: () => t("custom-approval.risk.risk-center"),
-          requiredWorkspacePermissionList: () => ["bb.risks.list"],
+          requiredWorkspacePermissionList: () => [
+            "bb.settings.get",
+            "bb.risks.list",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceRiskCenter.vue"),
         props: true,
@@ -248,7 +247,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
         meta: {
           title: () => t("settings.sidebar.subscription"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+          requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
         props: true,
