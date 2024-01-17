@@ -104,9 +104,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_SSO,
         meta: {
           title: () => t("settings.sidebar.sso"),
-          requiredWorkspacePermissionList: () => [
-            "bb.identityProviders.create",
-          ],
+          requiredWorkspacePermissionList: () => ["bb.identityProviders.get"],
         },
         component: () => import("@/views/SettingWorkspaceSSO.vue"),
       },
