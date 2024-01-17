@@ -187,6 +187,9 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
 	}
+	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.GetSteps(), project); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+	}
 
 	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
 	if err != nil {
