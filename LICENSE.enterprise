@@ -3,7 +3,8 @@
 ##  NOTE: The following license applies to following code:                         ##
 ##  1. backend/enterprise/ and its subdirectories                                  ##
 ##  2. frontend/src/enterprise/ and its directories                                ##
-##  3. Any code controlling feature, permission, role and plan enablement          ##
+##  3. frontend/src/views/sql-editor and its directories                           ##
+##  4. Any code controlling feature, permission, role and plan enablement          ##
 ##                                                                                 ##
 #####################################################################################
 
