@@ -155,6 +155,7 @@
 import isEmpty from "lodash-es/isEmpty";
 import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
+import RepositoryTable from "@/components/RepositoryTable.vue";
 import { vcsListByUIType } from "@/components/VCS/utils";
 import { SETTING_ROUTE_WORKSPACE_GITOPS } from "@/router/dashboard/workspaceSetting";
 import {
@@ -164,17 +165,21 @@ import {
   useVCSV1Store,
 } from "@/store";
 import {
+  openWindowForOAuth,
+  OAuthWindowEventPayload,
+  VCSUIType,
+} from "@/types";
+import {
   OAuthToken,
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
-import RepositoryTable from "../components/RepositoryTable.vue";
 import {
-  openWindowForOAuth,
-  OAuthWindowEventPayload,
-  VCSUIType,
-} from "../types";
-import { idFromSlug, getVCSUIType, hasWorkspacePermissionV2 } from "../utils";
+  idFromSlug,
+  uidFromSlug,
+  getVCSUIType,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 
 interface LocalState {
   title: string;
@@ -183,12 +188,9 @@ interface LocalState {
   oAuthResultCallback?: (token: OAuthToken | undefined) => void;
 }
 
-const props = defineProps({
-  vcsSlug: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  vcsSlug: string;
+}>();
 
 const router = useRouter();
 const currentUser = useCurrentUserV1();
@@ -266,9 +268,11 @@ const eventListener = (event: Event) => {
 };
 
 watchEffect(async () => {
-  if (vcs.value) {
-    await repositoryV1Store.fetchRepositoryListByVCS(vcs.value.name);
-  }
+  await vcsV1Store.fetchVCSByUid(uidFromSlug(props.vcsSlug)).then((vcs) => {
+    if (vcs) {
+      return repositoryV1Store.fetchRepositoryListByVCS(vcs.name);
+    }
+  });
 });
 
 const adminApplicationUrl = computed(() => {
