@@ -1,3 +1,4 @@
+import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
 import { BackupSetting } from "./backup";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
 import { DataSource } from "./dataSource";
@@ -44,23 +45,10 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 // Router
 export type RouterSlug = {
   principalEmail?: string;
-  projectWebhookSlug?: string;
   issueSlug?: string;
-  instanceSlug?: string;
   databaseSlug?: string;
-  tableName?: string;
-  vcsSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
-  sqlReviewPolicySlug?: string;
-  ssoName?: string;
-
-  // Resource names.
-  projectId?: string;
-  databaseGroupName?: string;
-  schemaGroupName?: string;
-  changelistName?: string;
-  branchName?: string;
 };
 
 // Quick Action Type
@@ -290,6 +278,14 @@ const makeUnknown = (type: ResourceType) => {
     secret: "",
   };
 
+  const UNKNOWN_SQL_REVIEW_POLICY: SQLReviewPolicy = {
+    id: UNKNOWN_ID,
+    enforce: false,
+    name: "",
+    ruleList: [],
+    environment: EnvironmentV1.fromJSON({}),
+  };
+
   switch (type) {
     case "PRINCIPAL":
       return UNKNOWN_PRINCIPAL;
@@ -319,6 +315,8 @@ const makeUnknown = (type: ResourceType) => {
       return UNKNOWN_TASK;
     case "VCS":
       return UNKNOWN_VCS;
+    case "SQL_REVIEW":
+      return UNKNOWN_SQL_REVIEW_POLICY;
   }
 };
 
