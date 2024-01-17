@@ -271,7 +271,8 @@
     "nothing-changed": "Nothing changed",
     "untitled": "Untitled",
     "nickname": "Nickname",
-    "missing-permission": "Missing required permissions"
+    "missing-permission": "Missing required permissions",
+    "continue-anyway": "Continue anyway"
   },
   "error-page": {
     "go-back-home": "Go back home"

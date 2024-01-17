@@ -154,9 +154,9 @@ const state = reactive<LocalState>({
 });
 
 const policyStore = usePolicyV1Store();
-const currentUserV1 = useCurrentUserV1();
+const currentUser = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

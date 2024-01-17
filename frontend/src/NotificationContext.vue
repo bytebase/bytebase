@@ -48,25 +48,36 @@ const watchNotification = () => {
     title: () =>
       h(
         "div",
-        { class: "text-sm font-medium text-gray-900 whitespace-pre-wrap mt-1" },
+        {
+          class: "text-sm font-medium text-gray-900 whitespace-pre-wrap mt-1",
+        },
         item.title
       ),
-    content: () =>
-      h(
-        "div",
-        { class: "text-sm text-gray-500 whitespace-pre-wrap" },
-        item.description
-      ),
-    meta: () => {
-      if (!item.link || !item.linkTitle) {
-        return undefined;
-      }
-      return h(
-        "a",
-        { href: item.link, class: "normal-link", target: "_blank" },
-        item.linkTitle
-      );
-    },
+    content:
+      typeof item.description !== "undefined"
+        ? () => {
+            if (typeof item.description === "function") {
+              return item.description();
+            }
+            if (typeof item.description === "string") {
+              return h(
+                "div",
+                { class: "text-sm text-gray-500 whitespace-pre-wrap" },
+                item.description
+              );
+            }
+          }
+        : undefined,
+    meta:
+      item.link && item.linkTitle
+        ? () => {
+            return h(
+              "a",
+              { href: item.link, class: "normal-link", target: "_blank" },
+              item.linkTitle
+            );
+          }
+        : undefined,
   });
 };
 

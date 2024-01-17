@@ -26,6 +26,16 @@ import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import { useProjectActions } from "@/components/KBar/useProjectActions";
 import {
+  DATABASE_ROUTE_DASHBOARD,
+  ENVIRONMENT_V1_ROUTE_DASHBOARD,
+  INSTANCE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DASHBOARD,
+  WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_SLOW_QUERY,
+  WORKSPACE_ROUTE_EXPORT_CENTER,
+  WORKSPACE_ROUTE_ANOMALY_CENTER,
+} from "@/router/dashboard/workspaceRoutes";
+import {
   useCurrentUserV1,
   useCurrentUserIamPolicy,
   useProjectV1ListByCurrentUser,
@@ -52,9 +62,11 @@ const shouldShowInstanceEntry = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list");
 });
 
-const getItemClass = (path: string | undefined): string[] => {
-  const { path: current } = route;
-  const isActiveRoute = path === current || current.startsWith(`${path}/`);
+const getItemClass = (item: SidebarItem): string[] => {
+  const { name: current } = route;
+  const isActiveRoute =
+    item.name === current?.toString ||
+    current?.toString().startsWith(`${item.name}/`);
   const classes: string[] = [];
   if (isActiveRoute) {
     classes.push("router-link-active", "bg-link-hover");
@@ -67,32 +79,32 @@ const dashboardSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("issue.my-issues"),
       icon: h(HomeIcon),
-      path: "/",
+      name: WORKSPACE_HOME_MODULE,
       type: "route",
     },
     {
       title: t("common.projects"),
       icon: h(GalleryHorizontalEndIcon),
-      path: "/project",
+      name: PROJECT_V1_ROUTE_DASHBOARD,
       type: "route",
     },
     {
       title: t("common.instances"),
       icon: h(LayersIcon),
-      path: "/instance",
+      name: INSTANCE_ROUTE_DASHBOARD,
       type: "route",
       hide: !shouldShowInstanceEntry.value,
     },
     {
       title: t("common.databases"),
       icon: h(DatabaseIcon),
-      path: "/db",
+      name: DATABASE_ROUTE_DASHBOARD,
       type: "route",
     },
     {
       title: t("common.environments"),
       icon: h(SquareStackIcon),
-      path: "/environments",
+      name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
       type: "route",
     },
     {
@@ -101,20 +113,20 @@ const dashboardSidebarItemList = computed((): SidebarItem[] => {
     {
       title: t("slow-query.slow-queries"),
       icon: h(TurtleIcon),
-      path: "/slow-query",
+      name: WORKSPACE_ROUTE_SLOW_QUERY,
       type: "route",
       hide: !shouldShowSyncSchemaEntry.value,
     },
     {
       title: t("export-center.self"),
       icon: h(DownloadIcon),
-      path: "/export-center",
+      name: WORKSPACE_ROUTE_EXPORT_CENTER,
       type: "route",
     },
     {
       title: t("anomaly-center"),
       icon: h(ShieldAlertIcon),
-      path: "/anomaly-center",
+      name: WORKSPACE_ROUTE_ANOMALY_CENTER,
       type: "route",
     },
   ];
@@ -129,7 +141,7 @@ const navigationKbarActions = computed(() => {
       shortcut: ["g", "p"],
       section: t("kbar.navigation"),
       keywords: "navigation",
-      perform: () => router.push({ name: "workspace.project" }),
+      perform: () => router.push({ name: PROJECT_V1_ROUTE_DASHBOARD }),
     }),
     defineAction({
       id: "bb.navigation.databases",
@@ -137,7 +149,7 @@ const navigationKbarActions = computed(() => {
       shortcut: ["g", "d"],
       section: t("kbar.navigation"),
       keywords: "navigation db",
-      perform: () => router.push({ name: "workspace.database" }),
+      perform: () => router.push({ name: DATABASE_ROUTE_DASHBOARD }),
     })
   );
 
@@ -149,7 +161,7 @@ const navigationKbarActions = computed(() => {
         shortcut: ["g", "i"],
         section: t("kbar.navigation"),
         keywords: "navigation",
-        perform: () => router.push({ name: "workspace.instance" }),
+        perform: () => router.push({ name: INSTANCE_ROUTE_DASHBOARD }),
       })
     );
   }
@@ -160,21 +172,9 @@ const navigationKbarActions = computed(() => {
       shortcut: ["g", "e"],
       section: t("kbar.navigation"),
       keywords: "navigation",
-      perform: () => router.push({ name: "workspace.environment.dashboar" }),
+      perform: () => router.push({ name: ENVIRONMENT_V1_ROUTE_DASHBOARD }),
     })
   );
-  if (shouldShowSyncSchemaEntry.value) {
-    actions.push(
-      defineAction({
-        id: "bb.navigation.sync-schema",
-        name: "Sync Schema",
-        shortcut: ["g", "s", "s"],
-        section: t("kbar.navigation"),
-        keywords: "sync schema",
-        perform: () => router.push({ name: "workspace.sync-schema" }),
-      })
-    );
-  }
   actions.push(
     defineAction({
       id: "bb.navigation.slow-query",
@@ -182,7 +182,7 @@ const navigationKbarActions = computed(() => {
       section: t("kbar.navigation"),
       shortcut: ["g", "s", "q"],
       keywords: "slow query",
-      perform: () => router.push({ name: "workspace.slow-query" }),
+      perform: () => router.push({ name: WORKSPACE_ROUTE_SLOW_QUERY }),
     }),
     defineAction({
       id: "bb.navigation.export-center",
@@ -190,7 +190,7 @@ const navigationKbarActions = computed(() => {
       section: t("kbar.navigation"),
       shortcut: ["g", "x", "c"],
       keywords: "export center",
-      perform: () => router.push({ name: "workspace.export-center" }),
+      perform: () => router.push({ name: WORKSPACE_ROUTE_EXPORT_CENTER }),
     }),
     defineAction({
       id: "bb.navigation.anomaly-center",
@@ -198,7 +198,7 @@ const navigationKbarActions = computed(() => {
       shortcut: ["g", "a", "c"],
       section: t("kbar.navigation"),
       keywords: "anomaly center",
-      perform: () => router.push({ name: "workspace.anomaly-center" }),
+      perform: () => router.push({ name: WORKSPACE_ROUTE_ANOMALY_CENTER }),
     })
   );
   return actions;

@@ -2,6 +2,7 @@ import { RouteRecordRaw } from "vue-router";
 import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
 import { t } from "@/plugins/i18n";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
+import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE = "workspace.projectV1";
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE}.detail`;
@@ -33,8 +34,8 @@ export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE}.settings`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
-    path: "project",
-    name: "workspace.project",
+    path: "projects",
+    name: PROJECT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.projects"),
       getQuickActionList: () => {
@@ -195,6 +196,20 @@ const projectV1Routes: RouteRecordRaw[] = [
         ],
       },
       {
+        path: "change-histories",
+        name: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.changeHistories.list",
+          ],
+        },
+        component: () =>
+          import("@/views/project/ProjectChangeHistoryDashboard.vue"),
+        props: true,
+      },
+      {
         path: "issues",
         name: PROJECT_V1_ROUTE_ISSUES,
         meta: {
@@ -214,7 +229,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           overrideTitle: true,
           requiredProjectPermissionList: () => [
             "bb.projects.get",
-            "bb.changeHistories.list",
+            "bb.issues.get",
           ],
         },
         component: () => import("@/views/project/ProjectIssueDetail.vue"),

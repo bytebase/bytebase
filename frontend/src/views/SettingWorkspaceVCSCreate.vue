@@ -19,24 +19,6 @@
   </div>
 </template>
 
-<script lang="ts">
-import { reactive } from "vue";
+<script lang="ts" setup>
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface LocalState {}
-
-export default {
-  name: "SettingWorkspaceVCSCreate",
-  components: {
-    VCSSetupWizard,
-  },
-  setup() {
-    const state = reactive<LocalState>({});
-
-    return {
-      state,
-    };
-  },
-};
 </script>

@@ -32,16 +32,28 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
-import { ENVIRONMENT_V1_ROUTE } from "./dashboard/environmentV1";
+import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
-import { WORKSPACE_HOME_MODULE } from "./dashboard/workspace";
+import {
+  DATABASE_ROUTE_DASHBOARD,
+  ENVIRONMENT_V1_ROUTE_DASHBOARD,
+  INSTANCE_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DASHBOARD,
+  WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROUTE_SLOW_QUERY,
+  WORKSPACE_ROUTE_EXPORT_CENTER,
+  WORKSPACE_ROUTE_ANOMALY_CENTER,
+} from "./dashboard/workspaceRoutes";
 import {
   SETTING_ROUTE,
   SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
   SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
   SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
 } from "./dashboard/workspaceSetting";
-import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
+import sqlEditorRoutes, {
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_SHARE_MODULE,
+} from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -105,10 +117,6 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_OAUTH_CALLBACK_MODULE ||
     to.name === AUTH_OIDC_CALLBACK_MODULE
   ) {
-    next();
-    return;
-  }
-  if (to.name === "workspace.debug-lsp") {
     next();
     return;
   }
@@ -184,7 +192,10 @@ router.beforeEach((to, from, next) => {
       // Open the "Sample Sheet" when the first time onboarding SQL Editor
       onboardingStateStore.consume("sql-editor");
       next({
-        path: `/sql-editor/sheet/project-sample-101`,
+        name: SQL_EDITOR_SHARE_MODULE,
+        params: {
+          sheetSlug: "project-sample-101",
+        },
         replace: true,
       });
       return;
@@ -196,14 +207,13 @@ router.beforeEach((to, from, next) => {
     to.name === "error.404" ||
     to.name === "error.500" ||
     to.name === WORKSPACE_HOME_MODULE ||
-    to.name === "workspace.slow-query" ||
-    to.name === "workspace.sync-schema" ||
-    to.name === "workspace.export-center" ||
-    to.name === "workspace.anomaly-center" ||
-    to.name === "workspace.project" ||
-    to.name === "workspace.instance" ||
-    to.name === "workspace.database" ||
-    to.name === "workspace.issue" ||
+    to.name === WORKSPACE_ROUTE_SLOW_QUERY ||
+    to.name === WORKSPACE_ROUTE_EXPORT_CENTER ||
+    to.name === WORKSPACE_ROUTE_ANOMALY_CENTER ||
+    to.name === PROJECT_V1_ROUTE_DASHBOARD ||
+    to.name === INSTANCE_ROUTE_DASHBOARD ||
+    to.name === DATABASE_ROUTE_DASHBOARD ||
+    to.name === ISSUE_ROUTE_DASHBOARD ||
     to.name === SQL_EDITOR_HOME_MODULE ||
     (to.name?.toString().startsWith(SETTING_ROUTE) &&
       to.name?.toString() != SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL &&
@@ -214,7 +224,7 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE)) {
+  if (to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD)) {
     next();
     return;
   }

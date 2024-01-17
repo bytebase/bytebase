@@ -13,7 +13,11 @@ import { filterColumnMetadata, filterTableMetadata } from "@/utils";
 import { SchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { RolloutObject } from "../types";
-import { buildColumnConfigMap, buildColumnMap } from "./utils";
+import {
+  buildColumnConfigMap,
+  buildColumnMap,
+  cleanupUnusedConfigs,
+} from "./utils";
 
 export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
   const { getTableStatus, getColumnStatus } = context;
@@ -170,6 +174,8 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       }
     }
     target.schemaConfigs = schemaConfigs;
+
+    cleanupUnusedConfigs(target);
   };
 
   return { applySelectedMetadataEdit };

@@ -271,7 +271,8 @@
     "nothing-changed": "nada ha cambiado",
     "untitled": "Intitulado",
     "nickname": "Apodo",
-    "missing-permission": "Faltan permisos requeridos"
+    "missing-permission": "Faltan permisos requeridos",
+    "continue-anyway": "De todas maneras, continúe"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
