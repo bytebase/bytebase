@@ -30,7 +30,7 @@
         </div>
         <div class="bb-grid-cell justify-center">
           <NCheckbox
-            :disabled="!review || !hasPermission"
+            :disabled="!review || !hasUpdatePolicyPermission"
             :checked="review?.enforce ?? false"
             @update:checked="toggleReviewEnabled(review!, $event)"
           />
@@ -38,7 +38,7 @@
         <div class="bb-grid-cell gap-x-2 !pr-[3rem]">
           <template v-if="!review">
             <NButton
-              :disabled="!hasPermission"
+              :disabled="!hasUpdatePolicyPermission"
               @click.prevent="handleClickCreate(environment)"
             >
               {{ $t("sql-review.configure-policy") }}
@@ -46,12 +46,16 @@
           </template>
           <template v-else>
             <NButton @click.prevent="handleClickEdit(review)">
-              {{ hasPermission ? $t("common.edit") : $t("common.view") }}
+              {{
+                hasUpdatePolicyPermission
+                  ? $t("common.edit")
+                  : $t("common.view")
+              }}
             </NButton>
 
             <BBButtonConfirm
               type="default"
-              :disabled="!hasPermission"
+              :disabled="!hasUpdatePolicyPermission"
               :style="'DELETE'"
               :hide-icon="true"
               :button-text="$t('common.delete')"
@@ -100,7 +104,7 @@
         <div class="flex items-center gap-x-2">
           <template v-if="!policy.review">
             <NButton
-              :disabled="!hasPermission"
+              :disabled="!hasUpdatePolicyPermission"
               @click.prevent="handleClickCreate(policy.environment)"
             >
               {{ $t("sql-review.configure-policy") }}
@@ -108,12 +112,16 @@
           </template>
           <template v-else>
             <NButton @click.prevent="handleClickEdit(policy.review)">
-              {{ hasPermission ? $t("common.edit") : $t("common.view") }}
+              {{
+                hasUpdatePolicyPermission
+                  ? $t("common.edit")
+                  : $t("common.view")
+              }}
             </NButton>
 
             <BBButtonConfirm
               type="default"
-              :disabled="!hasPermission"
+              :disabled="!hasDeletePolicyPermission"
               :style="'DELETE'"
               :hide-icon="true"
               :button-text="$t('common.delete')"
@@ -193,8 +201,12 @@ const columnList = computed((): BBGridColumn[] => {
   ];
 });
 
-const hasPermission = computed(() => {
+const hasUpdatePolicyPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+});
+
+const hasDeletePolicyPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.delete");
 });
 
 const environmentList = useEnvironmentV1List();
@@ -220,7 +232,7 @@ const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
 };
 
 const handleClickCreate = (environment: Environment) => {
-  if (hasPermission.value) {
+  if (hasUpdatePolicyPermission.value) {
     router.push({
       name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
       query: {

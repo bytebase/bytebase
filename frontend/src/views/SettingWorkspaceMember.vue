@@ -27,7 +27,11 @@
       </div>
 
       <div>
-        <NButton type="primary" @click="handleCreateUser">
+        <NButton
+          type="primary"
+          :disabled="!allowCreateUser"
+          @click="handleCreateUser"
+        >
           <template #icon>
             <PlusIcon class="h-5 w-5" />
           </template>
@@ -137,6 +141,13 @@ const subscriptionV1Store = useSubscriptionV1Store();
 const hasRBACFeature = computed(() =>
   subscriptionV1Store.hasFeature("bb.feature.rbac")
 );
+
+const allowCreateUser = computed(() => {
+  return (
+    hasRBACFeature.value ||
+    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
+  );
+});
 
 onMounted(() => {
   if (!uiStateStore.getIntroStateByKey("member.visit")) {

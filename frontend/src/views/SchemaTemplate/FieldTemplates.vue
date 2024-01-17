@@ -35,7 +35,11 @@
             :placeholder="$t('schema-template.search-by-name-or-comment')"
           />
         </div>
-        <NButton type="primary" @click="createSchemaTemplate">
+        <NButton
+          type="primary"
+          :disabled="readonly"
+          @click="createSchemaTemplate"
+        >
           {{ $t("common.add") }}
         </NButton>
       </div>

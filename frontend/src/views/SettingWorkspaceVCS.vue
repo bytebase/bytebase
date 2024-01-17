@@ -9,7 +9,11 @@
       >
     </div>
     <div v-if="vcsList.length > 0" class="flex justify-end">
-      <NButton type="primary" @click.prevent="addVCSProvider">
+      <NButton
+        type="primary"
+        :disabled="!hasCreateVCSPermission"
+        @click.prevent="addVCSProvider"
+      >
         {{ $t("gitops.setting.add-git-provider.self") }}
       </NButton>
     </div>
@@ -26,15 +30,25 @@
 </template>
 
 <script lang="ts" setup>
+import { NButton } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "@/components/VCS/VCSCard.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
 import { SETTING_ROUTE_WORKSPACE_GITOPS_CREATE } from "@/router/dashboard/workspaceSetting";
-import { useVCSV1Store } from "@/store";
+import { useCurrentUserV1, useVCSV1Store } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
+const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSV1Store();
 const router = useRouter();
+
+const hasCreateVCSPermission = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.externalVersionControls.create"
+  );
+});
 
 const prepareVCSList = () => {
   vcsV1Store.fetchVCSList();

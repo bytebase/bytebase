@@ -56,7 +56,7 @@
         <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
       </a>
       <router-link
-        v-if="hasSetSettingPermission"
+        v-if="hasGetSettingPermission"
         :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
         exact-active-class=""
       >
@@ -141,8 +141,8 @@ const onClickSearchButton = () => {
 
 const { currentPlan } = storeToRefs(subscriptionStore);
 
-const hasSetSettingPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+const hasGetSettingPermission = computed(() => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.get");
 });
 
 const kbarActions = computed(() => {
