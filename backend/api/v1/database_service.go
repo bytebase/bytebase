@@ -159,7 +159,7 @@ func searchDatabases(ctx context.Context, s *store.Store, iamManager *iam.Manage
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return filterDatabasesV2(ctx, s, iamManager, databases)
+	return filterDatabasesV2(ctx, s, iamManager, databases, iam.PermissionDatabasesGet)
 }
 
 // ListDatabases lists all databases.
@@ -187,9 +187,16 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	databaseMessages, err = s.filterDatabases(ctx, databaseMessages)
-	if err != nil {
-		return nil, err
+	if s.profile.DevelopmentIAM {
+		databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
+		}
+	} else {
+		databaseMessages, err = s.filterDatabases(ctx, databaseMessages)
+		if err != nil {
+			return nil, err
+		}
 	}
 	response := &v1pb.ListDatabasesResponse{}
 	for _, databaseMessage := range databaseMessages {
@@ -202,7 +209,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	return response, nil
 }
 
-func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
@@ -213,7 +220,7 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 	}
 	var filteredDatabases []*store.DatabaseMessage
 	for projectID, dbs := range projectDatabases {
-		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s, iamManager, user, projectID, dbs)
+		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s, iamManager, user, projectID, dbs, needPermission)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
 		}
@@ -224,7 +231,7 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 
 // roles/projectQuerier and roles/projectExporter are too tedious to handle in the iam manager.
 // TODO(p0ny): eval cel time.
-func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
+func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
 	})
@@ -242,7 +249,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 			}
 			permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
 			for _, p := range permissions {
-				if p == iam.PermissionDatabasesGet {
+				if p == needPermission {
 					return databases, nil
 				}
 			}
@@ -283,41 +290,21 @@ func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*stor
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if !s.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user.Role) {
 		return databases, nil
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to check permission %q", iam.PermissionDatabasesList)
-		}
-		if ok {
-			return databases, nil
-		}
-	}
-
 	var filteredDatabases []*store.DatabaseMessage
 	projectDatabases := make(map[string][]*store.DatabaseMessage)
 	for _, database := range databases {
 		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
 	}
 	for projectID, dbs := range projectDatabases {
-		if s.profile.DevelopmentIAM {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesList, user, projectID)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to check permission %q", iam.PermissionDatabasesList)
-			}
-			if ok {
-				filteredDatabases = append(filteredDatabases, dbs...)
-			}
-		} else {
-			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			filteredDBs := filterPolicyDatabases(user.ID, policy, dbs)
-			filteredDatabases = append(filteredDatabases, filteredDBs...)
+		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
 		}
+		filteredDBs := filterPolicyDatabases(user.ID, policy, dbs)
+		filteredDatabases = append(filteredDatabases, filteredDBs...)
 	}
 
 	return filteredDatabases, nil
@@ -1735,7 +1722,12 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	return &emptypb.Empty{}, nil
 }
 
+// TODO(p0ny): delete this func.
 func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
+	if s.profile.DevelopmentIAM {
+		return nil
+	}
+
 	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
 	if !ok {
 		return status.Errorf(codes.Internal, "role not found")
