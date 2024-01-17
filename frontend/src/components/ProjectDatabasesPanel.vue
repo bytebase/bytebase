@@ -29,7 +29,10 @@
         table-class="border"
         :show-selection-column="true"
         :show-placeholder="true"
+        :custom-click="isStandaloneMode"
         :database-list="filteredDatabaseList"
+        @select-database="(db: ComposedDatabase) =>
+                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))"
       >
         <template #selection-all="{ databaseList: selectedDatabaseList }">
           <NCheckbox
@@ -112,6 +115,8 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const selectedInstance = computed(() => {
   return (
