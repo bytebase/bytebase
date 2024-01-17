@@ -20,7 +20,6 @@ const getValidLocale = () => {
   }
 
   locale = storage.value?.appearance?.language || "";
-  console.log("locale", locale);
   if (validLocaleList.includes(locale)) {
     return locale;
   }
@@ -30,6 +29,12 @@ const getValidLocale = () => {
     // To work with user stored legacy preferences, we switch to en-US
     // here if we got "en" from localStorage
     locale = "en-US";
+  }
+  if (locale === "ja") {
+    locale = "ja-JP";
+  }
+  if (locale === "es") {
+    locale = "es-ES";
   }
   if (validLocaleList.includes(locale)) {
     return locale;
