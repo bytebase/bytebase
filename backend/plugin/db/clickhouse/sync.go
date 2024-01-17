@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -28,11 +27,11 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 
 	var databases []*storepb.DatabaseSchemaMetadata
 	// Query db info
-	where := fmt.Sprintf("SCHEMA_NAME NOT IN (%s)", systemDatabaseClause)
+	where := fmt.Sprintf("name NOT IN (%s)", systemDatabaseClause)
 	query := `
 		SELECT
-			schema_name
-		FROM information_schema.SCHEMATA
+			name
+		FROM system.databases
 		WHERE ` + where
 	rows, err := driver.db.QueryContext(ctx, query)
 	if err != nil {
@@ -70,54 +69,37 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	columnMap := make(map[string][]*storepb.ColumnMetadata)
 	columnQuery := `
 		SELECT
-			TABLE_NAME,
-			IFNULL(COLUMN_NAME, ''),
-			ORDINAL_POSITION,
-			COLUMN_DEFAULT,
-			IS_NULLABLE,
-			COLUMN_TYPE,
-			IFNULL(CHARACTER_SET_NAME, ''),
-			IFNULL(COLLATION_NAME, ''),
-			COLUMN_COMMENT
-		FROM information_schema.COLUMNS
-		WHERE TABLE_SCHEMA = $1
-		ORDER BY TABLE_NAME, ORDINAL_POSITION`
+			table,
+			name,
+			position,
+			default_expression,
+			type,
+			comment
+		FROM system.columns
+		WHERE database = $1
+		ORDER BY table, position`
 	columnRows, err := driver.db.QueryContext(ctx, columnQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, columnQuery)
 	}
 	defer columnRows.Close()
 	for columnRows.Next() {
-		column := &storepb.ColumnMetadata{}
-		var tableName, nullable string
+		var tableName string
 		var defaultStr sql.NullString
+		column := &storepb.ColumnMetadata{}
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
 			&column.Position,
 			&defaultStr,
-			&nullable,
 			&column.Type,
-			&column.CharacterSet,
-			&column.Collation,
 			&column.Comment,
 		); err != nil {
 			return nil, err
 		}
-		nullableBool, err := util.ConvertYesNo(nullable)
-		if err != nil {
-			return nil, err
-		}
-		column.Nullable = nullableBool
 		if defaultStr.Valid {
-			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
-		} else if nullableBool {
-			// This is NULL if the column has an explicit default of NULL,
-			// or if the column definition includes no DEFAULT clause.
-			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-				DefaultNull: true,
-			}
+			// TODO: use correct default type
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 		}
 		columnMap[tableName] = append(columnMap[tableName], column)
 	}
@@ -126,7 +108,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	// Query table info
-	// We still use system.tables because information_schema.tables doesn't have engine attribute.
 	tableQuery := `
 		SELECT
 			name,
