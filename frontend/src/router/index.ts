@@ -247,7 +247,7 @@ router.beforeEach((to, from, next) => {
     Promise.all([
       useDatabaseV1Store().getOrFetchDatabaseByName(parent),
       useChangeHistoryStore().fetchChangeHistory({
-        name: `${parent}/change-histories/${id}`,
+        name: `${parent}/changeHistories/${id}`,
       }),
     ])
       .then(() => {

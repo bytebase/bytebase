@@ -57,7 +57,7 @@ const instanceRoutes: RouteRecordRaw[] = [
       title: (route) => {
         const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
         const uid = idFromSlug(route.params.changeHistorySlug as string);
-        const name = `${parent}/change-histories/${uid}`;
+        const name = `${parent}/changeHistories/${uid}`;
         const history = useChangeHistoryStore().getChangeHistoryByName(name);
         return history?.version ?? "";
       },
