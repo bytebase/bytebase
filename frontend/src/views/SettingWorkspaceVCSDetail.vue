@@ -116,6 +116,7 @@
               name: vcs?.title,
             })
           "
+          :disabled="!hasDeleteVCSPermission"
           :require-confirm="true"
           @confirm="deleteVCS"
         />
@@ -156,7 +157,12 @@ import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import { vcsListByUIType } from "@/components/VCS/utils";
 import { SETTING_ROUTE_WORKSPACE_GITOPS } from "@/router/dashboard/workspaceSetting";
-import { pushNotification, useRepositoryV1Store, useVCSV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useRepositoryV1Store,
+  useVCSV1Store,
+} from "@/store";
 import {
   OAuthToken,
   ExternalVersionControl,
@@ -168,7 +174,7 @@ import {
   OAuthWindowEventPayload,
   VCSUIType,
 } from "../types";
-import { idFromSlug, getVCSUIType } from "../utils";
+import { idFromSlug, getVCSUIType, hasWorkspacePermissionV2 } from "../utils";
 
 interface LocalState {
   title: string;
@@ -184,9 +190,10 @@ const props = defineProps({
   },
 });
 
+const router = useRouter();
+const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSV1Store();
 const repositoryV1Store = useRepositoryV1Store();
-const router = useRouter();
 
 const vcs = computed((): ExternalVersionControl | undefined => {
   return vcsV1Store.getVCSByUid(idFromSlug(props.vcsSlug));
@@ -207,6 +214,20 @@ const state = reactive<LocalState>({
   title: vcs.value?.title ?? "",
   applicationId: vcs.value?.applicationId ?? "",
   secret: "",
+});
+
+const hasUpdateVCSPermission = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.externalVersionControls.update"
+  );
+});
+
+const hasDeleteVCSPermission = computed(() => {
+  return hasWorkspacePermissionV2(
+    currentUser.value,
+    "bb.externalVersionControls.delete"
+  );
 });
 
 onMounted(() => {
@@ -269,9 +290,10 @@ const repositoryList = computed(() =>
 
 const allowUpdate = computed(() => {
   return (
-    state.title != vcs.value?.title ||
-    state.applicationId != vcs.value?.applicationId ||
-    !isEmpty(state.secret)
+    (state.title != vcs.value?.title ||
+      state.applicationId != vcs.value?.applicationId ||
+      !isEmpty(state.secret)) &&
+    hasUpdateVCSPermission.value
   );
 });
 
