@@ -2417,7 +2417,7 @@ func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *sto
 			for _, binding := range projectPolicy.Bindings {
 				role := common.FormatRole(binding.Role.String())
 				permissions := s.iamManager.GetPermissions(role)
-				if slices.Index(permissions, wantPermission) == -1 {
+				if !slices.Contains(permissions, wantPermission) {
 					continue
 				}
 				hasUser := false
