@@ -33,11 +33,11 @@ import { NButton } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { usePolicyV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
-import { Advice } from "@/types/proto/v1/sql_service";
+import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { Defer } from "@/utils";
 import SQLCheckDetail from "./SQLCheckDetail.vue";
 
-defineProps<{
+const { advices } = defineProps<{
   database: ComposedDatabase;
   advices: Advice[];
   overrideTitle?: string;
@@ -50,11 +50,14 @@ defineEmits<{
 
 const policyV1Store = usePolicyV1Store();
 
+// disallow creating issues if advice statuses contains any error.
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
-    policyV1Store.getPolicyByName(
+    (policyV1Store.getPolicyByName(
       "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
-    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+    )?.restrictIssueCreationForSqlReviewPolicy?.disallow ??
+      false) &&
+    advices.some((advice) => advice.status === Advice_Status.ERROR)
   );
 });
 
