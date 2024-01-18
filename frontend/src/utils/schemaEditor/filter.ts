@@ -27,7 +27,7 @@ export const filterColumnMetadata = (column: ColumnMetadata) => {
   return ColumnMetadata.fromPartial({
     name: column.name,
     comment: column.comment,
-    userComment: column.comment,
+    userComment: column.userComment,
     classification: column.classification,
     type: column.type,
     hasDefault: column.hasDefault,
