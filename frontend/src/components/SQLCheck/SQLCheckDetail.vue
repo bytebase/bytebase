@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-5 divide-y pb-5">
+  <div class="space-y-5 divide-y pb-5 px-2">
     <div
       v-for="(row, i) in tableRows"
       :key="i"
