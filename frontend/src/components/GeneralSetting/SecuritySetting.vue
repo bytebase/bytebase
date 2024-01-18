@@ -112,7 +112,7 @@
           }}
         </div>
       </div>
-      <SignInFrequencySetting />
+      <SignInFrequencySetting :allow-edit="allowEdit" />
     </div>
   </div>
 
@@ -131,7 +131,6 @@ import { useI18n } from "vue-i18n";
 import {
   featureToRef,
   pushNotification,
-  useCurrentUserV1,
   useActuatorV1Store,
   usePolicyV1Store,
 } from "@/store";
@@ -141,16 +140,19 @@ import {
   PolicyResourceType,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
 }
+
+defineProps<{
+  allowEdit: boolean;
+}>();
+
 const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 const actuatorStore = useActuatorV1Store();
 const policyV1Store = usePolicyV1Store();
 
@@ -159,9 +161,6 @@ const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 
-const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
 const watermarkEnabled = computed((): boolean => {
   return (
     settingV1Store.getSettingByName("bb.workspace.watermark")?.value

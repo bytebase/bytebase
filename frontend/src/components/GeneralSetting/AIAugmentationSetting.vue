@@ -82,7 +82,7 @@
         <div class="flex justify-end">
           <NButton
             type="primary"
-            :disabled="!allowSave"
+            :disabled="!allowEdit || !allowSave"
             @click.prevent="updateOpenAIKeyEndpoint"
           >
             {{ $t("common.update") }}
@@ -103,9 +103,8 @@
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
+import { hasFeature, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   openAIKey: string;
@@ -113,9 +112,12 @@ interface LocalState {
   showFeatureModal: boolean;
 }
 
+defineProps<{
+  allowEdit: boolean;
+}>();
+
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 const containerRef = ref<HTMLDivElement>();
 
 const state = reactive<LocalState>({
@@ -136,18 +138,13 @@ watchEffect(() => {
   state.openAIEndpoint = openAIEndpointSetting?.value?.stringValue ?? "";
 });
 
-const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
-
 const allowSave = computed((): boolean => {
   const openAIKeyUpdated =
     state.openAIKey !== maskKey(openAIKeySetting?.value?.stringValue) ||
     (state.openAIKey && !state.openAIKey.includes("***"));
   return (
-    allowEdit.value &&
-    (openAIKeyUpdated ||
-      state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue)
+    openAIKeyUpdated ||
+    state.openAIEndpoint !== openAIEndpointSetting?.value?.stringValue
   );
 });
 
@@ -160,10 +157,6 @@ const updateOpenAIKeyEndpoint = async () => {
   const isUnset = state.openAIKey === "" && state.openAIEndpoint === "";
   if (!isUnset && !hasFeature("bb.feature.plugin.openai")) {
     state.showFeatureModal = true;
-    return;
-  }
-
-  if (!allowSave.value) {
     return;
   }
 
