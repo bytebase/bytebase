@@ -157,6 +157,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// DM does not support transaction isolation level for read-only queries.(also like Oracle :)
+	queryContext.ReadOnly = false
+
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -192,12 +195,6 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	if !strings.HasPrefix(strings.ToUpper(stmt), "EXPLAIN") && queryContext.Limit > 0 {
 		stmt = getDMStatementWithResultLimit(stmt, queryContext.Limit)
 	}
-
-	if queryContext.ReadOnly {
-		// DM does not support transaction isolation level for read-only queries.(also like Oracle :)
-		queryContext.ReadOnly = false
-	}
-
 	if queryContext.SensitiveSchemaInfo != nil {
 		for _, database := range queryContext.SensitiveSchemaInfo.DatabaseList {
 			if len(database.SchemaList) == 0 {
