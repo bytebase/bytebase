@@ -3,7 +3,7 @@
     <template v-if="validationState.branch">
       <div class="flex flex-row items-center gap-x-1">
         <CheckIcon class="w-4 h-4 text-success" />
-        <span>{{ $t("branch.merge-rebase.able-to-merge") }}</span>
+        <span>{{ $t("branch.merge-rebase.able-to-rebase") }}</span>
       </div>
       <!-- BranchService.RebaseBranch now returns empty schema and metadata -->
       <!-- so we have nothing to show by now -->
