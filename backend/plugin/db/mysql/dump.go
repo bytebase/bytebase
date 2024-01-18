@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -126,7 +127,18 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		}
 	}
 
-	options := sql.TxOptions{ReadOnly: true}
+	readOnly := true
+	// MariaDB 5.5 doesn't support READ ONLY transactions.
+	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
+	if driver.dbType == storepb.Engine_MARIADB {
+		v, err := semver.Make(driver.connectionCtx.EngineVersion)
+		if err != nil {
+			slog.Debug("invalid version", slog.String("version", driver.connectionCtx.EngineVersion))
+		} else if v.LE(semver.Version{Major: 5, Minor: 5}) {
+			readOnly = false
+		}
+	}
+	options := sql.TxOptions{ReadOnly: readOnly}
 
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.
 	// Beginning a transaction in the same session will implicitly release existing table locks.
@@ -406,16 +418,6 @@ type eventSchema struct {
 type triggerSchema struct {
 	name      string
 	statement string
-}
-
-// getTables gets all tables of a database.
-func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
-	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
-	if err != nil {
-		return nil, err
-	}
-	defer txn.Rollback()
-	return getTablesTx(txn, storepb.Engine_MYSQL, dbName)
 }
 
 // getTablesTx gets all tables of a database using the provided transaction.
