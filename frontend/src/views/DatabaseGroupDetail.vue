@@ -52,16 +52,21 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <NButton @click="handleEditDatabaseGroup">{{
-            $t("common.configure")
-          }}</NButton>
+          <NButton v-if="allowEdit" @click="handleEditDatabaseGroup">
+            {{ $t("common.configure") }}
+          </NButton>
           <NButton
+            v-if="hasPermissionToCreateIssue"
             @click="createMigration('bb.issue.database.schema.update')"
-            >{{ $t("database.edit-schema") }}</NButton
           >
-          <NButton @click="createMigration('bb.issue.database.data.update')">{{
-            $t("database.change-data")
-          }}</NButton>
+            {{ $t("database.edit-schema") }}
+          </NButton>
+          <NButton
+            v-if="hasPermissionToCreateIssue"
+            @click="createMigration('bb.issue.database.data.update')"
+          >
+            {{ $t("database.change-data") }}
+          </NButton>
         </div>
       </div>
 
@@ -97,11 +102,9 @@
       <div class="w-full max-w-5xl">
         <div class="w-full flex flex-row justify-between items-center">
           <p class="my-4">{{ $t("database-group.table-group.self") }}</p>
-          <div>
-            <NButton @click.prevent="handleCreateSchemaGroup">
-              {{ $t("database-group.table-group.create") }}
-            </NButton>
-          </div>
+          <NButton v-if="allowEdit" @click.prevent="handleCreateSchemaGroup">
+            {{ $t("database-group.table-group.create") }}
+          </NButton>
         </div>
         <SchemaGroupTable
           :schema-group-list="schemaGroupList"
@@ -140,6 +143,7 @@ import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
 import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import {
+  useCurrentUserV1,
   useDBGroupStore,
   useProjectV1Store,
   useSubscriptionV1Store,
@@ -148,6 +152,7 @@ import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import { hasProjectPermissionV2 } from "@/utils";
 
 interface LocalState {
   isLoaded: boolean;
@@ -164,6 +169,7 @@ interface EditDatabaseGroupState {
 const props = defineProps<{
   projectId: string;
   databaseGroupName: string;
+  allowEdit: boolean;
 }>();
 
 const projectStore = useProjectV1Store();
@@ -201,6 +207,13 @@ const schemaGroupList = computed(() => {
   );
 });
 const environment = computed(() => databaseGroup.value?.environment);
+const hasPermissionToCreateIssue = computed(() =>
+  hasProjectPermissionV2(
+    project.value,
+    useCurrentUserV1().value,
+    "bb.issues.create"
+  )
+);
 
 onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value);

@@ -14,9 +14,9 @@
       </div>
       <div class="bb-grid-cell">{{ item.environment.title }}</div>
       <div v-if="props.showEdit" class="bb-grid-cell gap-x-2 justify-end">
-        <NButton size="small" @click.stop="$emit('edit', item)">{{
-          $t("common.configure")
-        }}</NButton>
+        <NButton size="small" @click.stop="$emit('edit', item)">
+          {{ $t("common.configure") }}
+        </NButton>
       </div>
     </template>
   </BBGrid>
@@ -27,6 +27,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
@@ -66,8 +67,11 @@ const clickDatabaseGroup = (databaseGroup: ComposedDatabaseGroup) => {
     return;
   }
 
-  router.push(
-    `/${databaseGroup.project.name}/database-groups/${databaseGroup.databaseGroupName}`
-  );
+  router.push({
+    name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+    params: {
+      databaseGroupName: databaseGroup.databaseGroupName,
+    },
+  });
 };
 </script>
