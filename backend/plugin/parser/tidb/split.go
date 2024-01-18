@@ -19,3 +19,14 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	}
 	return list, nil
 }
+
+// SplitSQLKeepEmptyBlocks splits the given SQL statement into multiple SQL statements.
+// TODO: remove SplitSQL, and rename this to SplitSQL
+func SplitSQLKeepEmptyBlocks(statement string) ([]base.SingleSQL, error) {
+	t := tokenizer.NewTokenizer(statement, tokenizer.KeepEmptyBlocks())
+	list, err := t.SplitTiDBMultiSQL()
+	if err != nil {
+		return nil, err
+	}
+	return list, nil
+}
