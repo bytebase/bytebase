@@ -499,7 +499,7 @@
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL AUTO_INCREMENT,
-      `e` int  NULL,
+      `e` int ,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`) COMMENT 'primary key of multiple key fields',
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
@@ -509,8 +509,8 @@
     -- Table structure for table `t2`
     --
     CREATE TABLE `t2` (
-      `b` int NULL,
-      `a` int NULL,
+      `b` int,
+      `a` int,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );

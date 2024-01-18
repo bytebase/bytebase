@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -623,7 +624,10 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get projectID from %q", r.GetDatabase().GetProject())
 			}
-			projectIDs = append(projectIDs, projectID)
+			// allow to transfer databases to the default project.
+			if projectID != api.DefaultProjectID {
+				projectIDs = append(projectIDs, projectID)
+			}
 		}
 	case *v1pb.BatchUpdateDatabasesRequest:
 		for _, request := range r.Requests {
@@ -633,7 +637,10 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get projectID from %q", request.GetDatabase().GetProject())
 				}
-				projectIDs = append(projectIDs, projectID)
+				// allow to transfer databases to the default project.
+				if projectID != api.DefaultProjectID {
+					projectIDs = append(projectIDs, projectID)
+				}
 			}
 		}
 	case *v1pb.GetDatabaseSchemaRequest:

@@ -146,6 +146,7 @@ import {
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit/types";
+import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { usePolicyV1Store, usePageMode, useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
@@ -487,14 +488,16 @@ const clickDatabase = (
         router.push(url);
       }
     } else {
-      const [_, databaseGroupName] = getProjectNameAndDatabaseGroupName(
+      const [projectId, databaseGroupName] = getProjectNameAndDatabaseGroupName(
         database.name
       );
-      router.push(
-        `/${
-          (database as ComposedDatabaseGroup).project.name
-        }/database-groups/${databaseGroupName}`
-      );
+      router.push({
+        name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+        params: {
+          projectId,
+          databaseGroupName,
+        },
+      });
     }
   }
 };

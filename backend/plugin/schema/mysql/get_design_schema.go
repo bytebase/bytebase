@@ -753,14 +753,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					g.err = err
 					return
 				}
-				if column.nullable {
-					if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(column.tp)]; !ok {
-						if _, err := g.columnDefine.WriteString(" NULL"); err != nil {
-							g.err = err
-							return
-						}
-					}
-				} else {
+				if !column.nullable {
 					if _, err := g.columnDefine.WriteString(" NOT NULL"); err != nil {
 						g.err = err
 						return

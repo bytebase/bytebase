@@ -18,11 +18,9 @@
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <div>
-            <NButton v-if="showDeleteButton" type="error" @click="doDelete">{{
-              $t("common.delete")
-            }}</NButton>
-          </div>
+          <NButton v-if="showDeleteButton" type="error" @click="doDelete">
+            {{ $t("common.delete") }}
+          </NButton>
           <div class="flex flex-row justify-end items-center gap-x-2">
             <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
             <NButton
@@ -57,7 +55,10 @@ import {
   useDBGroupStore,
   useEnvironmentV1Store,
 } from "@/store";
-import { getProjectNameAndDatabaseGroupNameAndSchemaGroupName } from "@/store/modules/v1/common";
+import {
+  getProjectNameAndDatabaseGroupName,
+  getProjectNameAndDatabaseGroupNameAndSchemaGroupName,
+} from "@/store/modules/v1/common";
 import {
   ComposedDatabaseGroup,
   ComposedProject,
@@ -184,12 +185,16 @@ const doDelete = () => {
           router.currentRoute.value.name ===
           PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL
         ) {
-          const [_, databaseGroupName] =
+          const [, databaseGroupName] =
             getProjectNameAndDatabaseGroupNameAndSchemaGroupName(
               schemaGroupName
             );
-          // TODO(steven): prevent `Cannot use 'in' operator to search for 'path' in undefined` error in vue-router.
-          window.location.href = `/${props.project.name}/database-groups/${databaseGroupName}`;
+          router.replace({
+            name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+            params: {
+              databaseGroupName,
+            },
+          });
         }
       }
       emit("close");
@@ -230,6 +235,12 @@ const doConfirm = async () => {
             }),
           },
           databaseGroupId: resourceId,
+        });
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+          params: {
+            databaseGroupName: resourceId,
+          },
         });
       } else {
         const environment = environmentStore.getEnvironmentByUID(
@@ -281,14 +292,16 @@ const doConfirm = async () => {
           },
           schemaGroupId: resourceId,
         });
-        const dbGroup = dbGroupStore.getDBGroupByName(
+        const [, databaseGroupName] = getProjectNameAndDatabaseGroupName(
           formState.selectedDatabaseGroupId
         );
-        if (dbGroup) {
-          router.push(
-            `/${dbGroup.project.name}/database-groups/${dbGroup.databaseGroupName}`
-          );
-        }
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
+          params: {
+            databaseGroupName,
+            schemaGroupName: resourceId,
+          },
+        });
       } else {
         const celStrings = await batchConvertParsedExprToCELString([
           ParsedExpr.fromJSON({

@@ -2,7 +2,7 @@
   <div class="w-full">
     <DatabaseGroupTable
       :database-group-list="databaseGroupList"
-      :show-edit="true"
+      :show-edit="allowEdit"
       @edit="handleConfigureDatabaseGroup"
     />
   </div>
@@ -32,6 +32,7 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
+  allowEdit: boolean;
 }>();
 
 const dbGroupStore = useDBGroupStore();
