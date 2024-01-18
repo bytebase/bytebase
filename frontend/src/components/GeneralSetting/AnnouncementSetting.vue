@@ -97,7 +97,7 @@
         <div class="flex justify-end">
           <NButton
             type="primary"
-            :disabled="!allowSave"
+            :disabled="!allowEdit || !allowSave"
             @click.prevent="updateAnnouncementSetting"
           >
             {{ $t("common.update") }}
@@ -119,22 +119,24 @@ import { cloneDeep, isEqual } from "lodash-es";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { AnnouncementLevelSelect } from "@/components/v2";
-import { pushNotification, useCurrentUserV1, featureToRef } from "@/store";
+import { pushNotification, featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import {
   Announcement,
   Announcement_AlertLevel,
 } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   announcement: Announcement;
   showFeatureModal: boolean;
 }
 
+defineProps<{
+  allowEdit: boolean;
+}>();
+
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 const hasAnnouncementSetting = featureToRef("bb.feature.announcement");
 
 const defaultAnnouncement = function (): Announcement {
@@ -157,15 +159,7 @@ watchEffect(() => {
   }
 });
 
-const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
-
 const allowSave = computed((): boolean => {
-  if (!allowEdit.value) {
-    return false;
-  }
-
   if (
     settingV1Store.workspaceProfileSetting?.announcement === undefined &&
     state.announcement.text === ""
@@ -182,10 +176,6 @@ const allowSave = computed((): boolean => {
 const updateAnnouncementSetting = async () => {
   if (!hasAnnouncementSetting.value) {
     state.showFeatureModal = true;
-    return;
-  }
-
-  if (!allowSave.value) {
     return;
   }
 

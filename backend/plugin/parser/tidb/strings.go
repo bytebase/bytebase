@@ -430,7 +430,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 		tableActions[tableName] = append(tableActions[tableName], action)
 	}
 
-	stmts, err := SplitSQL(s.s)
+	stmts, err := SplitSQLKeepEmptyBlocks(s.s)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to split sql")
 	}
@@ -498,6 +498,9 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 		}
 	}
 
+	// Add a empty line at the end of the file
+	results = append(results, "")
+
 	return strings.Join(results, "\n"), nil
 }
 
@@ -554,9 +557,6 @@ func (r *rewriter) generateStatement() (string, error) {
 	}
 	if _, err := buf.WriteString(r.suffixString); err != nil {
 		return "", errors.Wrap(err, "failed to write string")
-	}
-	if err := buf.WriteByte('\n'); err != nil {
-		return "", errors.Wrap(err, "failed to write byte")
 	}
 	return buf.String(), nil
 }

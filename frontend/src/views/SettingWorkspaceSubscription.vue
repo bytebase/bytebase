@@ -56,7 +56,7 @@
           {{ $t("subscription.instance-assignment.used-and-total-license") }}
         </dt>
         <dd
-          v-if="canManageSubscription"
+          v-if="allowEdit"
           class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
           @click="state.showInstanceAssignmentDrawer = true"
         >
@@ -72,10 +72,7 @@
         </dt>
         <dd class="mt-1 text-4xl">{{ expireAt || "n/a" }}</dd>
       </div>
-      <div
-        v-if="subscriptionStore.canTrial && canManageSubscription"
-        class="my-3"
-      >
+      <div v-if="subscriptionStore.canTrial && allowEdit" class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.try-for-free") }}
         </dt>
@@ -109,7 +106,7 @@
       </div>
     </dl>
     <div
-      v-if="canManageSubscription && subscriptionStore.isSelfHostLicense"
+      v-if="allowEdit && subscriptionStore.isSelfHostLicense"
       class="w-full mt-4 flex flex-col"
     >
       <NInput
@@ -154,13 +151,11 @@ import { useI18n } from "vue-i18n";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
-  useCurrentUserV1,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
@@ -171,11 +166,14 @@ interface LocalState {
   showInstanceAssignmentDrawer: boolean;
 }
 
+defineProps<{
+  allowEdit: boolean;
+}>();
+
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const { t } = useI18n();
 const { locale } = useLanguage();
-const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -258,8 +256,4 @@ const inquireEnterprise = () => {
     window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
   }
 };
-
-const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
 </script>

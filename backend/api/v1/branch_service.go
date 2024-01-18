@@ -554,7 +554,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 
-		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), string(baseBranch.HeadSchema), newHeadMetadata)
+		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), newBaseSchema, newHeadMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}

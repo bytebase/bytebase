@@ -9,18 +9,21 @@
     <p class="text-sm text-gray-400 mt-1">
       {{ $t("settings.general.workspace.sign-in-frequency.description") }}
     </p>
-    <NTooltip placement="top-start" :disabled="allowEdit">
+    <NTooltip placement="top-start" :disabled="allowChangeSetting">
       <template #trigger>
         <div class="mt-3 w-full flex flex-row justify-start items-center">
           <NInputNumber
             v-model:value="state.inputValue"
             class="w-20 mr-4"
-            :disabled="!allowEdit"
+            :disabled="!allowChangeSetting"
             :min="1"
             :max="state.timeFormat === 'HOURS' ? 23 : undefined"
             :precision="0"
           />
-          <NRadioGroup v-model:value="state.timeFormat" :disabled="!allowEdit">
+          <NRadioGroup
+            v-model:value="state.timeFormat"
+            :disabled="!allowChangeSetting"
+          >
             <NRadio
               :value="'HOURS'"
               :label="$t('settings.general.workspace.sign-in-frequency.hours')"
@@ -50,11 +53,10 @@ import { useDebounceFn } from "@vueuse/core";
 import { NInputNumber, NRadioGroup, NRadio } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { FeatureType, defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
@@ -81,18 +83,18 @@ interface LocalState {
   featureNameForModal?: FeatureType;
 }
 
+const props = defineProps<{
+  allowEdit: boolean;
+}>();
+
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>(getInitialState());
 
 const hasSecureTokenFeature = featureToRef("bb.feature.secure-token");
 
-const allowEdit = computed((): boolean => {
-  return (
-    hasSecureTokenFeature.value &&
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
-  );
+const allowChangeSetting = computed(() => {
+  return hasSecureTokenFeature.value && props.allowEdit;
 });
 
 const handleValueFieldClick = () => {

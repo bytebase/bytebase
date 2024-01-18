@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -155,6 +156,20 @@ func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 	return parseVersion(version)
 }
 
+func (driver *Driver) getReadOnly() bool {
+	// MariaDB 5.5 doesn't support READ ONLY transactions.
+	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
+	v, err := semver.Make(driver.connectionCtx.EngineVersion)
+	if err != nil {
+		slog.Debug("invalid version", slog.String("version", driver.connectionCtx.EngineVersion))
+		return true
+	}
+	if v.GT(semver.Version{Major: 5, Minor: 5}) {
+		return true
+	}
+	return false
+}
+
 func parseVersion(version string) (string, string, error) {
 	if loc := regexp.MustCompile(`^\d+.\d+.\d+`).FindStringIndex(version); loc != nil {
 		return version[loc[0]:loc[1]], version[loc[1]:], nil
@@ -288,6 +303,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.ReadOnly {
+		queryContext.ReadOnly = driver.getReadOnly()
+	}
+
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
