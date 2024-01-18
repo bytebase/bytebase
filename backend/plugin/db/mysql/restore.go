@@ -34,6 +34,7 @@ import (
 	bbs3 "github.com/bytebase/bytebase/backend/plugin/storage/s3"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/blang/semver/v4"
 )
@@ -494,6 +495,16 @@ func SwapPITRDatabase(ctx context.Context, conn *sql.Conn, database string, suff
 	}
 
 	return pitrDatabaseName, pitrOldDatabase, nil
+}
+
+// getTables gets all tables of a database.
+func getTables(ctx context.Context, conn *sql.Conn, dbName string) ([]*TableSchema, error) {
+	txn, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback()
+	return getTablesTx(txn, storepb.Engine_MYSQL, dbName)
 }
 
 func databaseExists(ctx context.Context, conn *sql.Conn, database string) (bool, error) {
