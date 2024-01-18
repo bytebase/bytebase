@@ -255,7 +255,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					for _, key := range constraint.Keys {
 						var keyString string
 						var err error
-						if key.Column == nil {
+						if key.Column != nil {
 							keyString = key.Column.Name.String()
 							if key.Length > 0 {
 								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
@@ -297,7 +297,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					for _, key := range constraint.Keys {
 						var keyString string
 						var err error
-						if key.Column == nil {
+						if key.Column != nil {
 							keyString = key.Column.Name.String()
 							if key.Length > 0 {
 								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
