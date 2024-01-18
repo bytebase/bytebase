@@ -14,7 +14,7 @@
       arguments:
         - t
         - '`age` int NOT NULL'
-  want: |-
+  want: |
     -- Table structure for `t`
      CREATE TABLE `t` (
       `id` int /* this is comment */,
@@ -22,7 +22,6 @@
       `age` int NOT NULL,
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
     );
-
     -- Table structure for `t1`
      CREATE TABLE `t1` (
        `id` int
@@ -92,7 +91,7 @@
       arguments:
         - t1
         - age int NOT NULL
-  want: |-
+  want: |
     -- Table structure for `t`
      CREATE TABLE `t` (
       `id` int NOT NULL,
@@ -101,13 +100,11 @@
       UNIQUE KEY `name` (`id`, `name`),
       UNIQUE KEY `id` (`id`)
     ) COMMENT 'this is comment' ;
-
     -- Table structure for `t1`
      CREATE TABLE `t1` (
       `id` int,
       age int NOT NULL
     ) COMMENT 'this is comment 2';
-
     -- Table structure for `t2`
     CREATE TABLE `t2` (
       `id` int
