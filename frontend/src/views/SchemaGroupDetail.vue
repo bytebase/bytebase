@@ -49,7 +49,10 @@
         <div
           class="flex flex-row justify-end items-center flex-wrap shrink gap-x-2 gap-y-2"
         >
-          <NButton @click.prevent="state.showConfigurePanel = true">
+          <NButton
+            v-if="allowEdit"
+            @click.prevent="state.showConfigurePanel = true"
+          >
             {{ $t("common.configure") }}
           </NButton>
         </div>
@@ -125,6 +128,7 @@ const props = defineProps<{
   projectId: string;
   databaseGroupName: string;
   schemaGroupName: string;
+  allowEdit: boolean;
 }>();
 
 const projectStore = useProjectV1Store();

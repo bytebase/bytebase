@@ -103,17 +103,11 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  if (
-    hasProjectPermissionV2(
-      project.value,
-      currentUserV1.value,
-      "bb.projects.update"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
+  return hasProjectPermissionV2(
+    project.value,
+    currentUserV1.value,
+    "bb.projects.update"
+  );
 });
 
 const cachedNotifiedActivities = useLocalStorage<string[]>(
@@ -129,16 +123,7 @@ onMounted(async () => {
   );
 
   if (
-    !hasProjectPermissionV2(
-      project.value,
-      currentUserV1.value,
-      "bb.issues.get"
-    ) &&
-    !hasProjectPermissionV2(
-      project.value,
-      currentUserV1.value,
-      "bb.databases.update"
-    )
+    !hasProjectPermissionV2(project.value, currentUserV1.value, "bb.issues.get")
   ) {
     return;
   }
