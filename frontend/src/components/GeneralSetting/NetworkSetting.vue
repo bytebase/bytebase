@@ -66,7 +66,7 @@
         <div class="flex justify-end">
           <NButton
             type="primary"
-            :disabled="!allowSave"
+            :disabled="!allowEdit || !allowSave"
             @click.prevent="updateNetworkSetting"
           >
             {{ $t("common.update") }}
@@ -80,9 +80,12 @@
 <script lang="ts" setup>
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { hasWorkspacePermissionV2 } from "@/utils";
+
+defineProps<{
+  allowEdit: boolean;
+}>();
 
 interface LocalState {
   externalUrl: string;
@@ -91,7 +94,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   externalUrl: "",
@@ -104,15 +106,7 @@ watchEffect(() => {
     settingV1Store.workspaceProfileSetting?.gitopsWebhookUrl ?? "";
 });
 
-const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
-
 const allowSave = computed((): boolean => {
-  if (!allowEdit.value) {
-    return false;
-  }
-
   const externalUrlChanged =
     state.externalUrl !==
     (settingV1Store.workspaceProfileSetting?.externalUrl ?? "");

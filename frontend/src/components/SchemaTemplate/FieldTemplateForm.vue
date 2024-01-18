@@ -15,7 +15,7 @@
               v-model:value="state.category"
               :options="categoryOptions"
               :placeholder="$t('schema-template.form.unclassified')"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
               :consistent-menu-width="true"
             />
           </div>
@@ -28,7 +28,7 @@
           <InstanceEngineRadioGrid
             v-model:engine="state.engine"
             :engine-list="engineList"
-            :disabled="!allowEdit"
+            :disabled="!readonly"
             class="grid-cols-4 gap-2"
           />
         </div>
@@ -44,7 +44,7 @@
             <NInput
               v-model:value="state.column!.name"
               placeholder="column name"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
             />
           </div>
 
@@ -54,7 +54,7 @@
             </label>
             <div class="flex items-center gap-x-2 mt-3 text-sm">
               {{ columnSemanticType?.title }}
-              <div v-if="allowEdit" class="flex items-center">
+              <div v-if="readonly" class="flex items-center">
                 <MiniActionButton
                   v-if="columnSemanticType"
                   @click.prevent="onSemanticTypeApply('')"
@@ -79,7 +79,7 @@
                 :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
-              <div v-if="allowEdit" class="flex items-center">
+              <div v-if="readonly" class="flex items-center">
                 <MiniActionButton
                   v-if="state.column?.classification"
                   @click.prevent="state.column!.classification = ''"
@@ -114,7 +114,7 @@
                     ? schemaTemplateColumnTypeOptions
                     : dataTypeOptions
                 "
-                :disabled="!allowEdit"
+                :disabled="!readonly"
                 placeholder="column type"
                 @update:value="state.column!.type = $event"
               />
@@ -130,7 +130,7 @@
               <DropdownInput
                 :value="getColumnDefaultDisplayString(state.column!)||null"
                 :options="defaultValueOptions"
-                :disabled="!allowEdit"
+                :disabled="!readonly"
                 :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
                 @update:value="handleColumnDefaultChange"
               />
@@ -146,7 +146,7 @@
               <NSwitch
                 v-model:value="state.column!.nullable"
                 :text="false"
-                :disabled="!allowEdit"
+                :disabled="!readonly"
               />
             </div>
           </div>
@@ -160,7 +160,7 @@
               v-model:value="state.column!.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
             />
           </div>
         </div>
@@ -187,7 +187,7 @@
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
-            v-if="allowEdit"
+            v-if="readonly"
             :disabled="submitDisabled"
             type="primary"
             @click.prevent="submit"
@@ -242,11 +242,7 @@ import {
   InstanceEngineRadioGrid,
   MiniActionButton,
 } from "@/components/v2";
-import {
-  useSettingV1Store,
-  useNotificationStore,
-  useCurrentUserV1,
-} from "@/store";
+import { useSettingV1Store, useNotificationStore } from "@/store";
 import {
   ColumnConfig,
   ColumnMetadata,
@@ -259,7 +255,6 @@ import {
   getDataTypeSuggestionList,
   convertKVListToLabels,
   convertLabelsToKVList,
-  hasWorkspacePermissionV2,
 } from "@/utils";
 import ColumnDefaultValueExpressionModal from "../SchemaEditorV1/Modals/ColumnDefaultValueExpressionModal.vue";
 import SemanticTypesDrawer from "../SensitiveData/components/SemanticTypesDrawer.vue";
@@ -296,14 +291,7 @@ const state = reactive<LocalState>({
   kvList: [],
 });
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const settingStore = useSettingV1Store();
-const allowEdit = computed(() => {
-  return (
-    hasWorkspacePermissionV2(currentUser.value, "bb.settings.set") &&
-    !props.readonly
-  );
-});
 
 const semanticTypeList = computed(() => {
   return (
