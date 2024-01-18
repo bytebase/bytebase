@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	pg_query "github.com/pganalyze/pg_query_go/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
@@ -1214,29 +1213,28 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 	return span.Results, nil
 }
 
-func newTypeNotSupportedErrorByNode(node *pg_query.Node) *parsererror.TypeNotSupportedError {
+func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupportedError {
 	switch node := node.Node.(type) {
-	case *pg_query.Node_RangeFunction:
+	case *pgquery.Node_RangeFunction:
 		name := extractFunctionNameInRangeFunction(node.RangeFunction)
 		if name == "" {
 			return &parsererror.TypeNotSupportedError{
 				Type: "function",
-				Err:  errors.New(fmt.Sprintf("node: %+v", node)),
+				Err:  errors.Errorf("node: %+v", node),
 			}
 		}
 		return &parsererror.TypeNotSupportedError{
 			Type: "function",
 			Name: name,
 		}
-	}
-
-	return &parsererror.TypeNotSupportedError{
-		Type: fmt.Sprintf("%T", node.Node),
-		Err:  errors.New(fmt.Sprintf("node: %+v", node)),
+	default:
+		return &parsererror.TypeNotSupportedError{
+			Err: errors.Errorf("node: %+v", node),
+		}
 	}
 }
 
-func extractFunctionNameInRangeFunction(node *pg_query.RangeFunction) string {
+func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) string {
 	// Capture the function name from the range function.
 
 	// regex := regexp.MustCompile(`funcname:{string:{sval:""}}`)
