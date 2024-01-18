@@ -17,7 +17,7 @@
           class="bb-grid-header-cell capitalize"
           :class="[column.class]"
         >
-          <template v-if="showSelectionColumn && index === 0">
+          <template v-if="allowEdit && index === 0">
             <slot name="selection-all" :member-list="memberList" />
           </template>
           <template v-else>{{ column.title }}</template>
@@ -25,7 +25,7 @@
       </div>
     </template>
     <template #item="{ item: projectMember }: ProjectMemberRow">
-      <div v-if="showSelectionColumn" class="bb-grid-cell items-start !px-2">
+      <div v-if="allowEdit" class="bb-grid-cell items-start !px-2">
         <div class="h-10 flex flex-col items-center justify-center">
           <slot name="selection" :member="projectMember" />
         </div>
@@ -96,7 +96,7 @@
       </div>
       <div class="bb-grid-cell items-start gap-x-2 justify-end">
         <div class="h-10 flex flex-col items-center justify-center">
-          <NTooltip v-if="allowAdmin" trigger="hover">
+          <NTooltip v-if="allowEdit" trigger="hover">
             <template #trigger>
               <button
                 class="cursor-pointer opacity-60 hover:opacity-100"
@@ -152,7 +152,7 @@ import {
   ProjectLevelRoles,
 } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import {
   getExpiredTimeString,
   isExpired,
@@ -166,10 +166,9 @@ export type ProjectMemberRow = BBGridRow<ComposedProjectMember>;
 
 const props = defineProps<{
   project: ComposedProject;
-  editable: boolean;
+  allowEdit: boolean;
   memberList: ComposedProjectMember[];
   ready?: boolean;
-  showSelectionColumn?: boolean;
 }>();
 
 const { t } = useI18n();
@@ -198,7 +197,7 @@ const columnList = computed(() => {
   const list = hasRBACFeature.value
     ? [ACCOUNT, ROLE, EXPIRATION, OPERATIONS]
     : [ACCOUNT, OPERATIONS];
-  if (props.showSelectionColumn) {
+  if (props.allowEdit) {
     list.unshift({
       title: "",
       width: "minmax(auto, 2rem)",
@@ -206,24 +205,6 @@ const columnList = computed(() => {
     });
   }
   return list;
-});
-
-const allowAdmin = computed(() => {
-  if (!props.editable) {
-    return false;
-  }
-
-  if (
-    hasProjectPermissionV2(
-      props.project,
-      currentUserV1.value,
-      "bb.projects.setIamPolicy"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
 });
 
 const allowView = (item: ComposedProjectMember) => {

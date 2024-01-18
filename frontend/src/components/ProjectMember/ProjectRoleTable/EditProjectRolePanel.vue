@@ -191,20 +191,6 @@ const panelTitle = computed(() => {
   return displayRoleTitle(props.binding.role);
 });
 
-const allowAdmin = computed(() => {
-  if (
-    hasProjectPermissionV2(
-      props.project,
-      currentUserV1.value,
-      "bb.projects.setIamPolicy"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
 const allowRemoveRole = () => {
   if (props.project.state === State.DELETED) {
     return false;
@@ -216,7 +202,7 @@ const allowRemoveRole = () => {
     return false;
   }
 
-  return allowAdmin.value;
+  return true;
 };
 
 const allowConfirm = computed(() => {

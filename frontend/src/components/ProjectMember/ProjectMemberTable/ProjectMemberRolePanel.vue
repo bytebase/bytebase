@@ -21,7 +21,6 @@
           >
             <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
             <NTooltip
-              v-if="allowAdmin"
               :disabled="
                 allowRemoveRole(role.role) ||
                 role.role !== PresetRoleType.PROJECT_OWNER
@@ -93,7 +92,7 @@
                 <RoleDescription :description="item.description || ''" />
               </div>
               <div class="bb-grid-cell space-x-1">
-                <NTooltip v-if="allowAdmin" trigger="hover">
+                <NTooltip trigger="hover">
                   <template #trigger>
                     <NButton
                       tag="div"
@@ -183,7 +182,7 @@ import {
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import {
   convertFromExpr,
   stringifyConditionExpression,
@@ -284,20 +283,6 @@ const getGridColumns = (role: string) => {
   }
 };
 
-const allowAdmin = computed(() => {
-  if (
-    hasProjectPermissionV2(
-      props.project,
-      currentUserV1.value,
-      "bb.projects.setIamPolicy"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-});
-
 // To prevent user accidentally removing roles and lock the project permanently, we take following measures:
 // 1. Disallow removing the last OWNER.
 // 2. Allow workspace roles who can manage project. This helps when the project OWNER is no longer available.
@@ -330,7 +315,7 @@ const allowRemoveRole = (role: string) => {
     }
   }
 
-  return allowAdmin.value;
+  return true;
 };
 
 const handleDeleteRole = (role: string) => {
