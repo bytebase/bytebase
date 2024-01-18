@@ -2394,7 +2394,7 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		ok, err := s.hasDatabaseAccessRights(user.ID, projectPolicy, attributes, isExport)
+		ok, err := s.hasDatabaseAccessRights(user, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -2406,12 +2406,19 @@ func (s *SQLService) checkQueryRights(
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
 	if s.profile.DevelopmentIAM {
 		return func() (bool, error) {
 			wantPermission := iam.PermissionDatabasesQuery
 			if isExport {
 				wantPermission = iam.PermissionDatabasesExport
+			}
+
+			for _, role := range user.Roles {
+				permissions := s.iamManager.GetPermissions(common.FormatRole(role.String()))
+				if slices.Contains(permissions, wantPermission) {
+					return true, nil
+				}
 			}
 
 			for _, binding := range projectPolicy.Bindings {
@@ -2422,7 +2429,7 @@ func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *sto
 				}
 				hasUser := false
 				for _, member := range binding.Members {
-					if member.ID == principalID || member.Email == api.AllUsers {
+					if member.ID == user.ID || member.Email == api.AllUsers {
 						hasUser = true
 						break
 					}
@@ -2430,21 +2437,12 @@ func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *sto
 				if !hasUser {
 					continue
 				}
-
-				switch binding.Role {
-				// We need to evaluate CEL expressions for ProjectQuerier & ProjectExporter.
-				case api.ProjectQuerier, api.ProjectExporter:
-					ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
-					if err != nil {
-						slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
-						continue
-					}
-					if ok {
-						return true, nil
-					}
-
-				// TODO(p0ny): eval CEL.
-				default:
+				ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
+				if err != nil {
+					slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
+					continue
+				}
+				if ok {
 					return true, nil
 				}
 			}
@@ -2459,7 +2457,7 @@ func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *sto
 		// Project owner has all permissions.
 		if binding.Role == api.ProjectOwner {
 			for _, member := range binding.Members {
-				if member.ID == principalID || member.Email == api.AllUsers {
+				if member.ID == user.ID || member.Email == api.AllUsers {
 					pass = true
 					break
 				}
@@ -2469,7 +2467,7 @@ func (s *SQLService) hasDatabaseAccessRights(principalID int, projectPolicy *sto
 			continue
 		}
 		for _, member := range binding.Members {
-			if member.ID != principalID && member.Email != api.AllUsers {
+			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
 			}
 			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
