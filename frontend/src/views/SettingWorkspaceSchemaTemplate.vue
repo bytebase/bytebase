@@ -8,7 +8,7 @@
       >
         <FieldTemplates
           :show-engine-filter="true"
-          :readonly="!hasFeature || !hasPermission"
+          :readonly="!hasFeature || !allowEdit"
         />
       </NTabPane>
       <NTabPane
@@ -17,14 +17,14 @@
       >
         <TableTemplates
           :show-engine-filter="true"
-          :readonly="!hasFeature || !hasPermission"
+          :readonly="!hasFeature || !allowEdit"
         />
       </NTabPane>
       <NTabPane
         name="COLUMN_TYPE_RESTRICTION"
         :tab="$t('schema-template.column-type-restriction.self')"
       >
-        <ColumnTypes :readonly="!hasFeature || !hasPermission" />
+        <ColumnTypes :readonly="!hasFeature || !allowEdit" />
       </NTabPane>
     </NTabs>
   </div>
@@ -33,10 +33,8 @@
 <script lang="ts" setup>
 import { NTabs, NTabPane } from "naive-ui";
 import { reactive, watch } from "vue";
-import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { featureToRef, useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { featureToRef } from "@/store";
 import ColumnTypes from "@/views/SchemaTemplate/ColumnTypes.vue";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import TableTemplates from "@/views/SchemaTemplate/TableTemplates.vue";
@@ -45,17 +43,17 @@ interface LocalState {
   selectedTab: "FIELD_TEMPLATE" | "COLUMN_TYPE_RESTRICTION" | "TABLE_TEMPLATE";
 }
 
+defineProps<{
+  allowEdit: boolean;
+}>();
+
 const route = useRoute();
 const router = useRouter();
 const state = reactive<LocalState>({
   selectedTab: "FIELD_TEMPLATE",
 });
-const currentUser = useCurrentUserV1();
 
 const hasFeature = featureToRef("bb.feature.schema-template");
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
-});
 
 watch(
   () => route.hash,

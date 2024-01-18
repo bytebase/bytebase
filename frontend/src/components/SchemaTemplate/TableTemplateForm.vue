@@ -17,7 +17,7 @@
               v-model:value="state.category"
               :options="categoryOptions"
               :placeholder="$t('schema-template.form.unclassified')"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
               :consistent-menu-width="true"
             />
           </div>
@@ -30,7 +30,7 @@
           <InstanceEngineRadioGrid
             v-model:engine="state.engine"
             :engine-list="engineList"
-            :disabled="!allowEdit"
+            :disabled="!readonly"
             class="grid-cols-4 gap-2"
           />
         </div>
@@ -44,7 +44,7 @@
               :classification="state.table?.classification"
               :classification-config="classificationConfig"
             />
-            <div v-if="allowEdit" class="flex">
+            <div v-if="readonly" class="flex">
               <MiniActionButton
                 v-if="state.table?.classification"
                 @click.prevent="state.table!.classification = ''"
@@ -71,7 +71,7 @@
             <NInput
               v-model:value="state.table!.name"
               placeholder="table name"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
             />
           </div>
 
@@ -84,13 +84,13 @@
               v-model:value="state.table!.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
-              :disabled="!allowEdit"
+              :disabled="!readonly"
             />
           </div>
 
           <div class="col-span-4">
             <div
-              v-if="allowEdit"
+              v-if="readonly"
               class="w-full py-2 flex items-center space-x-2"
             >
               <NButton size="small" :disabled="false" @click="onColumnAdd">
@@ -112,7 +112,7 @@
               </NButton>
             </div>
             <TableColumnEditor
-              :readonly="!allowEdit"
+              :readonly="!readonly"
               :show-foreign-key="false"
               :table="state.table"
               :engine="state.engine"
@@ -135,7 +135,7 @@
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
-            v-if="allowEdit"
+            v-if="readonly"
             :disabled="submitDisabled"
             type="primary"
             @click.prevent="onSubmit"
@@ -185,11 +185,7 @@ import {
   DrawerContent,
   InstanceEngineRadioGrid,
 } from "@/components/v2";
-import {
-  useSettingV1Store,
-  useNotificationStore,
-  useCurrentUserV1,
-} from "@/store";
+import { useSettingV1Store, useNotificationStore } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { ColumnMetadata, TableConfig } from "@/types/proto/v1/database_service";
 import {
@@ -203,11 +199,7 @@ import {
   Table,
   convertColumnMetadataToColumn,
 } from "@/types/v1/schemaEditor";
-import {
-  arraySwap,
-  hasWorkspacePermissionV2,
-  instanceV1AllowsReorderColumns,
-} from "@/utils";
+import { arraySwap, instanceV1AllowsReorderColumns } from "@/utils";
 import FieldTemplates from "@/views/SchemaTemplate/FieldTemplates.vue";
 import { engineList, categoryList, classificationConfig } from "./utils";
 
@@ -241,14 +233,7 @@ const state = reactive<LocalState>({
   showFieldTemplateDrawer: false,
 });
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const settingStore = useSettingV1Store();
-const allowEdit = computed(() => {
-  return (
-    hasWorkspacePermissionV2(currentUser.value, "bb.settings.set") &&
-    !props.readonly
-  );
-});
 
 const categoryOptions = computed(() => {
   return categoryList.value.map<SelectOption>((category) => ({
