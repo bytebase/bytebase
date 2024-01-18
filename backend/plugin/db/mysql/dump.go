@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -127,17 +126,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) 
 		}
 	}
 
-	readOnly := true
-	// MariaDB 5.5 doesn't support READ ONLY transactions.
-	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
-	if driver.dbType == storepb.Engine_MARIADB {
-		v, err := semver.Make(driver.connectionCtx.EngineVersion)
-		if err != nil {
-			slog.Debug("invalid version", slog.String("version", driver.connectionCtx.EngineVersion))
-		} else if v.LE(semver.Version{Major: 5, Minor: 5}) {
-			readOnly = false
-		}
-	}
+	readOnly := driver.getReadOnly()
 	options := sql.TxOptions{ReadOnly: readOnly}
 
 	// If `schemaOnly` is false, now we are still holding the tables' exclusive locks.

@@ -394,6 +394,12 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// Datashare doesn't support read-only transactions.
+	if driver.datashare {
+		queryContext.ReadOnly = false
+		queryContext.ShareDB = true
+	}
+
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -426,17 +432,12 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
 
 	stmt := statement
 	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
 		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
-	}
-	// Datashare doesn't support read-only transactions.
-	if driver.datashare {
-		queryContext.ReadOnly = false
-		queryContext.ShareDB = true
 	}
 
 	startTime := time.Now()
