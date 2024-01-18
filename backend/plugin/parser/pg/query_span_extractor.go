@@ -145,7 +145,7 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 	case *pgquery.Node_JoinExpr:
 		return q.extractTableSourceFromJoin(node)
 	}
-	return nil, nil
+	return nil, newTypeNotSupportedErrorByNode(node)
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_SelectStmt) (base.TableSource, error) {
@@ -1211,4 +1211,37 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 		return nil, err
 	}
 	return span.Results, nil
+}
+
+func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupportedError {
+	switch node := node.Node.(type) {
+	case *pgquery.Node_RangeFunction:
+		name := extractFunctionNameInRangeFunction(node.RangeFunction)
+		if name == "" {
+			return &parsererror.TypeNotSupportedError{
+				Type: "function",
+				Err:  errors.Errorf("node: %+v", node),
+			}
+		}
+		return &parsererror.TypeNotSupportedError{
+			Type: "function",
+			Name: name,
+		}
+	default:
+		return &parsererror.TypeNotSupportedError{
+			Err: errors.Errorf("node: %+v", node),
+		}
+	}
+}
+
+func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) string {
+	// Capture the function name from the range function.
+
+	// regex := regexp.MustCompile(`funcname:{string:{sval:""}}`)
+	regex := regexp.MustCompile(`funcname:{string:{sval:"(?P<funcname>[a-zA-Z0-9_]+)"}}`)
+	match := regex.FindStringSubmatch(fmt.Sprintf("%+v", node))
+	if len(match) == 0 {
+		return ""
+	}
+	return match[1]
 }
