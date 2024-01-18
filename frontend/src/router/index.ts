@@ -3,8 +3,6 @@ import { nextTick, ref } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import {
   hasFeature,
-  useVCSV1Store,
-  useSQLReviewStore,
   useSheetV1Store,
   useAuthStore,
   useActuatorV1Store,
@@ -12,10 +10,8 @@ import {
   useDBSchemaV1Store,
   useOnboardingStateStore,
   useTabStore,
-  useIdentityProviderStore,
   useUserStore,
   useCurrentUserV1,
-  useInstanceV1Store,
   useDatabaseV1Store,
   useChangeHistoryStore,
   usePageMode,
@@ -32,6 +28,7 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
+import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instance";
 import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
 import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import {
@@ -44,12 +41,7 @@ import {
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
 } from "./dashboard/workspaceRoutes";
-import {
-  SETTING_ROUTE,
-  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-} from "./dashboard/workspaceSetting";
+import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
 import sqlEditorRoutes, {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_SHARE_MODULE,
@@ -213,12 +205,10 @@ router.beforeEach((to, from, next) => {
     to.name === PROJECT_V1_ROUTE_DASHBOARD ||
     to.name === INSTANCE_ROUTE_DASHBOARD ||
     to.name === DATABASE_ROUTE_DASHBOARD ||
+    to.name === INSTANCE_ROUTE_DETAIL ||
     to.name === ISSUE_ROUTE_DASHBOARD ||
     to.name === SQL_EDITOR_HOME_MODULE ||
-    (to.name?.toString().startsWith(SETTING_ROUTE) &&
-      to.name?.toString() != SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL &&
-      to.name?.toString() != SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL &&
-      to.name?.toString() != SETTING_ROUTE_WORKSPACE_SSO_DETAIL)
+    to.name?.toString().startsWith(SETTING_ROUTE)
   ) {
     next();
     return;
@@ -266,13 +256,9 @@ router.beforeEach((to, from, next) => {
   const routerSlug = routerStore.routeSlug(to);
   const principalEmail = routerSlug.principalEmail;
   const issueSlug = routerSlug.issueSlug;
-  const instanceSlug = routerSlug.instanceSlug;
   const databaseSlug = routerSlug.databaseSlug;
-  const vcsSlug = routerSlug.vcsSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
-  const ssoName = routerSlug.ssoName;
-  const sqlReviewPolicySlug = routerSlug.sqlReviewPolicySlug;
 
   if (principalEmail) {
     useUserStore()
@@ -325,68 +311,10 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (instanceSlug) {
-    useInstanceV1Store()
-      .getOrFetchInstanceByUID(String(uidFromSlug(instanceSlug)))
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  if (vcsSlug) {
-    useVCSV1Store()
-      .fetchVCSByUid(uidFromSlug(vcsSlug))
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
-  if (sqlReviewPolicySlug) {
-    useSQLReviewStore()
-      .getOrFetchReviewPolicyByEnvironmentId(
-        String(idFromSlug(sqlReviewPolicySlug))
-      )
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
   if (sheetSlug) {
     const sheetName = sheetNameFromSlug(sheetSlug);
     useSheetV1Store()
       .fetchSheetByName(sheetName)
-      .then(() => next())
-      .catch(() => next());
-    return;
-  }
-
-  if (ssoName) {
-    useIdentityProviderStore()
-      .getOrFetchIdentityProviderByName(unescape(ssoName))
       .then(() => next())
       .catch(() => next());
     return;

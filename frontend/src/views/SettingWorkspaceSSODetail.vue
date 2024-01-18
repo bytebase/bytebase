@@ -31,26 +31,34 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
-import { useRoute } from "vue-router";
+import { computed, reactive, watchEffect } from "vue";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { State } from "@/types/proto/v1/common";
+
+const props = defineProps<{
+  ssoName?: string;
+}>();
 
 interface LocalState {
   showFeatureModal: boolean;
 }
 
-const route = useRoute();
 const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const identityProviderStore = useIdentityProviderStore();
 
+watchEffect(async () => {
+  if (props.ssoName) {
+    await identityProviderStore.getOrFetchIdentityProviderByName(
+      unescape(props.ssoName)
+    );
+  }
+});
+
 const currentIdentityProvider = computed(() => {
-  return identityProviderStore.getIdentityProviderByName(
-    (route.params.ssoName as string) || ""
-  );
+  return identityProviderStore.getIdentityProviderByName(props.ssoName ?? "");
 });
 
 const isDeleted = computed(() => {
