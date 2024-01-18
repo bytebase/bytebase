@@ -23,7 +23,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, ref, toRef } from "vue";
+import { onMounted, reactive, ref, toRef } from "vue";
 import {
   CustomApproval,
   ApprovalRuleDialog,
@@ -35,15 +35,17 @@ import { useRouteHash } from "@/composables/useRouteHash";
 import {
   featureToRef,
   useWorkspaceApprovalSettingStore,
-  useCurrentUserV1,
   useRiskStore,
 } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   ready: boolean;
   showFeatureModal: boolean;
 }
+
+const props = defineProps<{
+  allowEdit: boolean;
+}>();
 
 const state = reactive<LocalState>({
   ready: false,
@@ -52,15 +54,10 @@ const state = reactive<LocalState>({
 const tab = useRouteHash("rules", TabValueList, "replace");
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
-const currentUserV1 = useCurrentUserV1();
-const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
-
 provideCustomApprovalContext({
   hasFeature: hasCustomApprovalFeature,
   showFeatureModal: toRef(state, "showFeatureModal"),
-  allowAdmin,
+  allowAdmin: toRef(props, "allowEdit"),
   ready: toRef(state, "ready"),
   tab,
   dialog: ref(),

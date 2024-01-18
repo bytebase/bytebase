@@ -183,14 +183,13 @@ import { SelectOption, NCheckbox } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import {
   SMTPMailDeliverySettingValue,
   SMTPMailDeliverySettingValue_Authentication,
   SMTPMailDeliverySettingValue_Encryption,
 } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   originMailDeliverySetting?: SMTPMailDeliverySettingValue;
@@ -200,6 +199,11 @@ interface LocalState {
   isCreateOrUpdateLoading: boolean;
   useEmptyPassword: boolean;
 }
+
+const props = defineProps<{
+  allowEdit: boolean;
+}>();
+
 const { t } = useI18n();
 
 const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
@@ -216,7 +220,6 @@ const defaultMailDeliverySetting = function (): SMTPMailDeliverySettingValue {
   };
 };
 
-const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   mailDeliverySetting: defaultMailDeliverySetting(),
   testMailTo: "",
@@ -227,10 +230,6 @@ const state = reactive<LocalState>({
 
 const store = useWorkspaceMailDeliverySettingStore();
 
-const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
-});
-
 const mailDeliverySettingButtonText = computed(() => {
   return state.originMailDeliverySetting === undefined
     ? t("common.create")
@@ -238,7 +237,7 @@ const mailDeliverySettingButtonText = computed(() => {
 });
 const allowMailDeliveryActionButton = computed(() => {
   return (
-    hasPermission.value &&
+    props.allowEdit &&
     (state.useEmptyPassword ||
       !isEqual(state.originMailDeliverySetting, state.mailDeliverySetting))
   );

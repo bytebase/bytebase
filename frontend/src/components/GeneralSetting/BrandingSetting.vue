@@ -79,7 +79,10 @@
         </NTooltip>
       </div>
       <div class="flex justify-end gap-x-3">
-        <NPopconfirm v-if="allowDelete" @positive-click="deleteLogo">
+        <NPopconfirm
+          v-if="allowEdit && allowDelete"
+          @positive-click="deleteLogo"
+        >
           <template #trigger>
             <NButton :disabled="!allowEdit">
               {{ $t("common.delete") }}
@@ -91,7 +94,7 @@
         </NPopconfirm>
         <NButton
           type="primary"
-          :disabled="!allowSave"
+          :disabled="!allowEdit || !allowSave"
           @click.prevent="uploadLogo"
         >
           <FeatureBadge
@@ -115,9 +118,8 @@
 import { NPopconfirm } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useCurrentUserV1 } from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   displayName?: string;
@@ -126,6 +128,10 @@ interface LocalState {
   loading: boolean;
   showFeatureModal: boolean;
 }
+
+defineProps<{
+  allowEdit: boolean;
+}>();
 
 const maxFileSizeInMiB = 2;
 const supportImageExtensions = [".jpg", ".jpeg", ".png", ".webp", ".svg"];
@@ -154,25 +160,16 @@ watchEffect(() => {
   state.logoUrl = settingV1Store.brandingLogo;
 });
 
-const currentUserV1 = useCurrentUserV1();
-
-const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
-});
-
 const valid = computed((): boolean => {
   return !!state.displayName || !!state.logoFile;
 });
 
 const allowDelete = computed(() => {
-  if (!allowEdit.value) return false;
   return settingV1Store.brandingLogo !== "";
 });
 
 const allowSave = computed((): boolean => {
-  return (
-    allowEdit.value && state.logoFile !== null && valid.value && !state.loading
-  );
+  return state.logoFile !== null && valid.value && !state.loading;
 });
 
 const hasBrandingFeature = featureToRef("bb.feature.branding");
@@ -206,9 +203,6 @@ const deleteLogo = async () => {
 };
 
 const uploadLogo = async () => {
-  if (!allowSave.value) {
-    return;
-  }
   if (!hasBrandingFeature.value) {
     state.showFeatureModal = true;
     return;

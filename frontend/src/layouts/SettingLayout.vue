@@ -1,6 +1,6 @@
 <template>
   <div class="px-6 pb-6 pt-2">
-    <router-view v-if="hasPermission" />
+    <router-view v-if="hasPermission" :allow-edit="allowEdit" v-bind="$attrs" />
     <NoPermissionPlaceholder v-else />
   </div>
 </template>
@@ -24,5 +24,9 @@ const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
     hasWorkspacePermissionV2(currentUser.value, permission)
   );
+});
+
+const allowEdit = computed((): boolean => {
+  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
 });
 </script>

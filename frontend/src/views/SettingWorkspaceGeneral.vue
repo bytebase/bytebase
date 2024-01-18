@@ -1,10 +1,10 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
-    <NetworkSetting v-if="!isSaaSMode" />
-    <BrandingSetting />
-    <SecuritySetting />
-    <AIAugmentationSetting />
-    <AnnouncementSetting />
+    <NetworkSetting v-if="!isSaaSMode" :allow-edit="allowEdit" />
+    <BrandingSetting :allow-edit="allowEdit" />
+    <SecuritySetting :allow-edit="allowEdit" />
+    <AIAugmentationSetting :allow-edit="allowEdit" />
+    <AnnouncementSetting :allow-edit="allowEdit" />
   </div>
 </template>
 
@@ -20,6 +20,10 @@ import {
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+
+defineProps<{
+  allowEdit: boolean;
+}>();
 
 const actuatorStore = useActuatorV1Store();
 
