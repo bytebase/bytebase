@@ -1157,17 +1157,16 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 			if !ok {
 				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
 			}
-
-			// Check if the environment is open for query privileges.
-			result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-			if err != nil {
+		}
+		// Check if the environment is open for query privileges.
+		result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+		if err != nil {
+			return nil, nil, nil, advisor.Success, nil, nil, err
+		}
+		if !result {
+			// Check if the user has permission to execute the query.
+			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
 				return nil, nil, nil, advisor.Success, nil, nil, err
-			}
-			if !result {
-				// Check if the user has permission to execute the query.
-				if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-					return nil, nil, nil, advisor.Success, nil, nil, err
-				}
 			}
 		}
 	} else if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
