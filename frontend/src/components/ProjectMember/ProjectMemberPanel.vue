@@ -41,9 +41,8 @@
         <ProjectMemberTable
           :project="project"
           :ready="ready"
-          :editable="true"
+          :allow-edit="allowAdmin"
           :member-list="renderedComposedMemberList"
-          :show-selection-column="allowAdmin"
         >
           <template #selection-all="{ memberList }">
             <NCheckbox
@@ -80,7 +79,7 @@
           <ProjectMemberTable
             :project="project"
             :ready="ready"
-            :editable="false"
+            :allow-edit="false"
             :member-list="inactiveComposedMemberList"
           />
         </div>
@@ -90,6 +89,7 @@
           :project="project"
           :search-text="state.searchText"
           :ready="ready"
+          :allow-edit="allowAdmin"
         />
       </NTabPane>
     </NTabs>
@@ -131,7 +131,7 @@ import {
   PresetRoleType,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID, hasProjectPermissionV2 } from "@/utils";
+import { extractUserUID } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
 import ProjectMemberTable, {
@@ -150,6 +150,7 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
+  allowEdit: boolean;
 }>();
 
 const { t } = useI18n();
@@ -177,18 +178,7 @@ const allowAdmin = computed(() => {
     return false;
   }
 
-  // Allow workspace roles having manage project permission here in case project owners are not available.
-  if (
-    hasProjectPermissionV2(
-      props.project,
-      currentUserV1.value,
-      "bb.projects.setIamPolicy"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
+  return props.allowEdit;
 });
 
 const allowRemoveExpiredRoles = computed(() => {
