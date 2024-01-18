@@ -433,6 +433,7 @@ func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error 
 				diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
 			}
 			delete(oldDatabase.schemas[""].functions, functionName)
+			continue
 		}
 		diff.createFunctionList = append(diff.createFunctionList, function)
 	}
@@ -457,6 +458,7 @@ func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error
 				diff.dropProcedureList = append(diff.dropProcedureList, oldProcedure)
 			}
 			delete(oldDatabase.schemas[""].functions, procedureName)
+			continue
 		}
 		diff.createProcedureList = append(diff.createProcedureList, procedure)
 	}
