@@ -60,6 +60,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 }
 
 // GetPermissions returns all permissions for the given role.
+// Role format is roles/{role}.
 func (m *Manager) GetPermissions(role string) []Permission {
 	return m.roles[role]
 }
