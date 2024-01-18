@@ -250,11 +250,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement str
 	}
 
 	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
-	if queryContext.ReadOnly {
-		queryContext.ReadOnly = false
-	}
-
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{ReadOnly: queryContext.ReadOnly})
+	tx, err := conn.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}

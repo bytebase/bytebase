@@ -172,6 +172,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// Oracle does not support transaction isolation level for read-only queries.
+	queryContext.ReadOnly = false
+
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -229,11 +232,6 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 			stmt = getStatementWithResultLimitFor11g(stmt, queryContext.Limit)
 		}
-	}
-
-	if queryContext.ReadOnly {
-		// Oracle does not support transaction isolation level for read-only queries.
-		queryContext.ReadOnly = false
 	}
 
 	if queryContext.SensitiveSchemaInfo != nil {

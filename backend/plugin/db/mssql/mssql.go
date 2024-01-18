@@ -178,6 +178,9 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	// MSSQL does not support transaction isolation level for read-only queries.
+	queryContext.ReadOnly = false
+
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -215,10 +218,6 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 		}
 	}
 
-	if queryContext.ReadOnly {
-		// MSSQL does not support transaction isolation level for read-only queries.
-		queryContext.ReadOnly = false
-	}
 	startTime := time.Now()
 	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, stmt, queryContext)
 	if err != nil {
