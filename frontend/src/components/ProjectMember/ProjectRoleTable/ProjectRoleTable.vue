@@ -47,7 +47,7 @@
           </div>
         </div>
         <div class="bb-grid-cell gap-x-2 justify-end">
-          <NTooltip v-if="allowAdmin" trigger="hover">
+          <NTooltip v-if="allowEdit" trigger="hover">
             <template #trigger>
               <button
                 class="cursor-pointer opacity-60 hover:opacity-100"
@@ -89,7 +89,7 @@ import {
 import { ComposedProject, PresetRoleType, ProjectLevelRoles } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import { getExpiredTimeString, isExpired, getExpiredDateTime } from "./utils";
@@ -100,6 +100,7 @@ const props = defineProps<{
   project: ComposedProject;
   searchText: string;
   ready?: boolean;
+  allowEdit: boolean;
 }>();
 
 const { t } = useI18n();
@@ -193,20 +194,6 @@ const roleGroup = computed(() => {
     );
   }
   return roleMap;
-});
-
-const allowAdmin = computed(() => {
-  if (
-    hasProjectPermissionV2(
-      props.project,
-      currentUserV1.value,
-      "bb.projects.setIamPolicy"
-    )
-  ) {
-    return true;
-  }
-
-  return false;
 });
 
 const getUserList = (binding: Binding) => {
