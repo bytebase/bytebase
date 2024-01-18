@@ -166,7 +166,6 @@ import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow } from "@/bbkit";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -209,7 +208,6 @@ const emits = defineEmits<{
 
 const { t } = useI18n();
 const dialog = useDialog();
-const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();

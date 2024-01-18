@@ -124,7 +124,6 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   extractUserEmail,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -140,11 +139,7 @@ import { Expr } from "@/types/proto/google/type/expr";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import {
-  displayRoleTitle,
-  extractUserUID,
-  hasProjectPermissionV2,
-} from "@/utils";
+import { displayRoleTitle, extractUserUID } from "@/utils";
 import {
   convertFromCELString,
   convertFromExpr,
@@ -174,7 +169,6 @@ interface LocalState {
   databaseId?: string;
 }
 
-const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({

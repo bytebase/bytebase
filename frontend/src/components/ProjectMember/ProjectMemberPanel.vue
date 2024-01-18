@@ -89,7 +89,7 @@
           :project="project"
           :search-text="state.searchText"
           :ready="ready"
-          :allowEdit="allowAdmin"
+          :allow-edit="allowAdmin"
         />
       </NTabPane>
     </NTabs>
