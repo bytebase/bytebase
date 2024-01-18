@@ -492,30 +492,28 @@ func (c *columnState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
-	if c.nullable {
-		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; !ok {
-			if _, err := buf.WriteString(" NULL"); err != nil {
-				return err
-			}
-		}
-	} else {
+	if !c.nullable {
 		if _, err := buf.WriteString(" NOT NULL"); err != nil {
 			return err
 		}
 	}
 	if c.hasDefault {
-		// todo(zp): refactor column attribute.
-		if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
-			if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
-				return err
-			}
-		} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
-			if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
-				return err
-			}
-		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
-				return err
+		_, isDefaultNull := c.defaultValue.(*defaultValueNull)
+		// Some types do not default to NULL, but support default expressions.
+		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; !(isDefaultNull && ok) {
+			// todo(zp): refactor column attribute.
+			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
+				if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+					return err
+				}
+			} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
+				if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
+					return err
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+					return err
+				}
 			}
 		}
 	}
