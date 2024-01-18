@@ -500,9 +500,7 @@ func (c *columnState) toString(buf io.StringWriter) error {
 	if c.hasDefault {
 		_, isDefaultNull := c.defaultValue.(*defaultValueNull)
 		// Some types do not default to NULL, but support default expressions.
-		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; isDefaultNull && ok {
-			// Skip default null.
-		} else {
+		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; !(isDefaultNull && ok) {
 			// todo(zp): refactor column attribute.
 			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
 				if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
