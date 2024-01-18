@@ -21,7 +21,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 }
 
 // SplitSQLKeepEmptyBlocks splits the given SQL statement into multiple SQL statements.
-// TODO: remove SplitSQL, and rename this to SplitSQL
+// TODO: remove SplitSQL, and rename this to SplitSQL.
 func SplitSQLKeepEmptyBlocks(statement string) ([]base.SingleSQL, error) {
 	t := tokenizer.NewTokenizer(statement, tokenizer.KeepEmptyBlocks())
 	list, err := t.SplitTiDBMultiSQL()
