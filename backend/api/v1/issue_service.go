@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -1228,29 +1229,6 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		return nil, err
 	}
 
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if issue.Creator.ID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionIssuesUpdate, user, issue.Project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssuesUpdate)
-		}
-	} else {
-		ok, err = isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-		}
-	}
-
 	updateMasks := map[string]bool{}
 
 	patch := &store.UpdateIssueMessage{}
@@ -1413,6 +1391,52 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 					Payload:      string(activityPayload),
 				})
 			}
+		}
+	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if issue.Creator.ID == user.ID {
+				return true, nil
+			}
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesUpdate, user, issue.Project.ResourceID)
+			if err != nil {
+				return false, err
+			}
+			if ok {
+				return true, nil
+			}
+
+			allowedUpdateMask, err := fieldmaskpb.New(request.Issue, "subscribers")
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to new updateMask")
+			}
+			if issue.Assignee.ID == user.ID {
+				if err := allowedUpdateMask.Append(request.Issue, "assignee"); err != nil {
+					return false, errors.Wrapf(err, "failed to append update mask")
+				}
+			}
+
+			allowedUpdateMask.Normalize()
+			// request.UpdateMask is in allowedUpdateMask.
+			if len(fieldmaskpb.Union(request.UpdateMask, allowedUpdateMask).GetPaths()) <= len(allowedUpdateMask.GetPaths()) {
+				return true, nil
+			}
+			return false, nil
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssuesUpdate)
+		}
+	} else {
+		ok, err = isUserAtLeastProjectDeveloper(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can update issue, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 		}
 	}
 
