@@ -20,6 +20,6 @@ export const hasPermissionToCreateChangeDatabaseIssue = (
   return (
     hasProjectPermissionV2(database.projectEntity, user, "bb.issues.create") &&
     hasProjectPermissionV2(database.projectEntity, user, "bb.plans.create") &&
-    hasProjectPermissionV2(database.projectEntity, user, "bb.plans.create")
+    hasProjectPermissionV2(database.projectEntity, user, "bb.rollouts.create")
   );
 };
