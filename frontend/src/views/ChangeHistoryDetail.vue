@@ -1,5 +1,5 @@
 <template>
-  <div class="focus:outline-none px-4 pb-4" tabindex="0" v-bind="$attrs">
+  <div class="focus:outline-none" tabindex="0" v-bind="$attrs">
     <NoPermissionPlaceholder v-if="!hasPermission" />
     <main v-else-if="changeHistory" class="flex flex-col relative gap-y-6">
       <!-- Highlight Panel -->
