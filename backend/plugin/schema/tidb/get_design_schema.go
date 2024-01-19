@@ -215,7 +215,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					return in, true
 				}
 				if comment != stateColumn.comment {
-					g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
+					if stateColumn.comment != "" {
+						g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
+					} else {
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment))
+					}
 				}
 			} else {
 				if stateColumn.comment != "" {
@@ -464,84 +468,4 @@ func (g *tidbDesignSchemaGenerator) Leave(in tidbast.Node) (tidbast.Node, bool) 
 		g.currentTable = nil
 	}
 	return in, true
-}
-
-func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) []columnAttr {
-	var result []columnAttr
-	nullExists := false
-	defaultExists := false
-	commentExists := false
-
-	for _, option := range options {
-		switch option.Tp {
-		case tidbast.ColumnOptionNull, tidbast.ColumnOptionNotNull:
-			nullExists = true
-		case tidbast.ColumnOptionDefaultValue, tidbast.ColumnOptionAutoIncrement, tidbast.ColumnOptionAutoRandom:
-			defaultExists = true
-		case tidbast.ColumnOptionComment:
-			commentExists = true
-		}
-	}
-
-	if !nullExists && !column.nullable {
-		result = append(result, columnAttr{
-			text:  "NOT NULL",
-			order: columnAttrOrder["NULL"],
-		})
-	}
-	if !defaultExists && column.hasDefault {
-		// todo(zp): refactor column attribute.
-		if strings.EqualFold(column.defaultValue.toString(), autoIncrementSymbol) {
-			result = append(result, columnAttr{
-				text:  column.defaultValue.toString(),
-				order: columnAttrOrder["DEFAULT"],
-			})
-		} else if strings.Contains(strings.ToUpper(column.defaultValue.toString()), autoRandSymbol) {
-			result = append(result, columnAttr{
-				text:  fmt.Sprintf("/*T![auto_rand] %s */", column.defaultValue.toString()),
-				order: columnAttrOrder["DEFAULT"],
-			})
-		} else {
-			result = append(result, columnAttr{
-				text:  "DEFAULT " + column.defaultValue.toString(),
-				order: columnAttrOrder["DEFAULT"],
-			})
-		}
-	}
-	if !commentExists && column.comment != "" {
-		result = append(result, columnAttr{
-			text:  "COMMENT '" + column.comment + "'",
-			order: columnAttrOrder["COMMENT"],
-		})
-	}
-	return result
-}
-
-func tidbGetAttrOrder(option *tidbast.ColumnOption) int {
-	switch option.Tp {
-	case tidbast.ColumnOptionNull, tidbast.ColumnOptionNotNull:
-		return columnAttrOrder["NULL"]
-	case tidbast.ColumnOptionDefaultValue:
-		return columnAttrOrder["DEFAULT"]
-	case tidbast.ColumnOptionAutoIncrement:
-		return columnAttrOrder["AUTO_INCREMENT"]
-	case tidbast.ColumnOptionAutoRandom:
-		return columnAttrOrder["AUTO_RANDOM"]
-	case tidbast.ColumnOptionUniqKey:
-		return columnAttrOrder["UNIQUE"]
-	case tidbast.ColumnOptionColumnFormat:
-		return columnAttrOrder["COLUMN_FORMAT"]
-	case tidbast.ColumnOptionComment:
-		return columnAttrOrder["COMMENT"]
-	case tidbast.ColumnOptionCollate:
-		return columnAttrOrder["COLLATE"]
-	case tidbast.ColumnOptionStorage:
-		return columnAttrOrder["STORAGE"]
-	case tidbast.ColumnOptionCheck:
-		return columnAttrOrder["CHECK"]
-	}
-	if option.Enforced {
-		return columnAttrOrder["ENFORCED"]
-	}
-	return len(columnAttrOrder) + 1
 }

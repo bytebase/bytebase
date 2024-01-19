@@ -842,31 +842,6 @@ func restoreComment(expr tidbast.ExprNode) (string, error) {
 	return comment, nil
 }
 
-type columnAttr struct {
-	text  string
-	order int
-}
-
-var columnAttrOrder = map[string]int{
-	"NULL":           1,
-	"DEFAULT":        2,
-	"VISIBLE":        3,
-	"AUTO_INCREMENT": 4,
-	"AUTO_RAND":      4,
-	"UNIQUE":         5,
-	"KEY":            6,
-	"COMMENT":        7,
-	"COLLATE":        8,
-	"COLUMN_FORMAT":  9,
-	"SECONDARY":      10,
-	"STORAGE":        11,
-	"SERIAL":         12,
-	"SRID":           13,
-	"ON":             14,
-	"CHECK":          15,
-	"ENFORCED":       16,
-}
-
 func equalKeys(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -883,17 +858,6 @@ func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, e
 	var buffer strings.Builder
 	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
 	if err := node.Restore(ctx); err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
-func tidbRestoreFieldType(fieldType *tidbtypes.FieldType) (string, error) {
-	var buffer strings.Builder
-	// we want to use Default format flags but with lowercase keyword.
-	flag := tidbformat.RestoreKeyWordLowercase | tidbformat.RestoreStringSingleQuotes | tidbformat.RestoreNameBackQuotes
-	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
-	if err := fieldType.Restore(ctx); err != nil {
 		return "", err
 	}
 	return buffer.String(), nil
