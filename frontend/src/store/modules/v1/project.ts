@@ -96,8 +96,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     await upsertProjectMap([project]);
     return project as ComposedProject;
   };
-  const fetchProjectByUID = async (uid: string) => {
-    return fetchProjectByName(`${projectNamePrefix}${uid}`);
+  const fetchProjectByUID = async (uid: string, silent = false) => {
+    return fetchProjectByName(`${projectNamePrefix}${uid}`, silent);
   };
   const getOrFetchProjectByName = async (name: string, silent = false) => {
     const cachedData = projectMapByName.get(name);
@@ -106,7 +106,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     }
     return fetchProjectByName(name, silent);
   };
-  const getOrFetchProjectByUID = async (uid: string) => {
+  const getOrFetchProjectByUID = async (uid: string, silent = false) => {
     if (uid === String(EMPTY_ID)) return emptyProject();
     if (uid === String(UNKNOWN_ID)) return unknownProject();
 
@@ -114,7 +114,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (cachedData) {
       return cachedData;
     }
-    await fetchProjectByUID(uid);
+    await fetchProjectByUID(uid, silent);
     return getProjectByUID(uid);
   };
   const createProject = async (project: Project, resourceId: string) => {
