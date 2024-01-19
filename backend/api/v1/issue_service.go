@@ -115,12 +115,18 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	}
 
 	if s.profile.DevelopmentIAM {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, issue.Project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		needPermissions := []iam.Permission{iam.PermissionIssuesGet}
+		if issue.Type == api.IssueDatabaseGeneral {
+			needPermissions = append(needPermissions, iam.PermissionPlansGet, iam.PermissionRolloutsGet)
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionIssuesGet)
+		for _, p := range needPermissions {
+			ok, err := s.iamManager.CheckPermission(ctx, p, user, issue.Project.ResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "permission denied to get issue, user does not have permission %q", p)
+			}
 		}
 	} else {
 		ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
