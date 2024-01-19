@@ -779,6 +779,10 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if request.UpdateMask == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "steps":
@@ -797,6 +801,22 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if oldPlan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
 	}
+
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if oldPlan.CreatorUID == user.ID {
+				return true, nil
+			}
+			return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
+		}
+	}
+
 	oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
 
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &oldPlan.UID})
@@ -824,10 +844,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	var taskPatchList []*api.TaskPatch
 	var statementUpdates []api.ActivityPipelineTaskStatementUpdatePayload
 	var earliestUpdates []api.ActivityPipelineTaskEarliestAllowedTimeUpdatePayload
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
+
 	if oldPlan.PipelineUID != nil {
 		tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: oldPlan.PipelineUID})
 		if err != nil {
@@ -837,7 +854,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 			doUpdate := false
 			taskPatch := &api.TaskPatch{
 				ID:        task.ID,
-				UpdaterID: principalID,
+				UpdaterID: user.ID,
 			}
 			tasksMap[task.ID] = task
 
@@ -1015,7 +1032,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 	if err := s.store.UpdatePlan(ctx, &store.UpdatePlanMessage{
 		UID:       oldPlan.UID,
-		UpdaterID: principalID,
+		UpdaterID: user.ID,
 		Config: &storepb.PlanConfig{
 			Steps: convertPlanSteps(request.Plan.Steps),
 		},
@@ -1049,7 +1066,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   principalID,
+				CreatorUID:   user.ID,
 				ContainerUID: task.PipelineID,
 				Type:         api.ActivityPipelineTaskStatementUpdate,
 				Payload:      string(payload),
@@ -1070,7 +1087,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				return errors.Wrapf(err, "failed to marshal payload")
 			}
 			_, err = s.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-				CreatorUID:   principalID,
+				CreatorUID:   user.ID,
 				ContainerUID: task.PipelineID,
 				Type:         api.ActivityPipelineTaskEarliestAllowedTimeUpdate,
 				Payload:      string(payload),
