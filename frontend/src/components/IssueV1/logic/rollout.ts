@@ -93,9 +93,7 @@ export const allowUserToEditStatementForTask = (
   denyReasons.push(...isTaskEditable(issue, task));
 
   if (extractUserResourceName(issue.creator) !== user.email) {
-    if (
-      !hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")
-    ) {
+    if (!hasProjectPermissionV2(issue.projectEntity, user, "bb.plans.update")) {
       denyReasons.push("You don't have the privilege to edit this issue");
     }
   }
