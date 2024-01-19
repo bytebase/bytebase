@@ -933,7 +933,6 @@ func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.Column
 		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
 			return errors.Wrap(err, "failed to write string")
 		}
-		needOrigin = false
 	}
 	return nil
 }
