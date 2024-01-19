@@ -2205,6 +2205,7 @@
     "notify-invalid-sql-statement": "無効なSQLステートメントです",
     "can-not-execute-query": "データを読み込んでいるときにクエリを実行できません",
     "rows": "行 | 行",
+    "vertical-display": "縦型表示",
     "no-history-found": "履歴が見つかりません",
     "no-sheet-found": "シートが見つかりません",
     "search-history": "履歴を検索",
