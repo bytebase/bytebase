@@ -160,7 +160,6 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   usePageMode,
-  useCurrentUserIamPolicy,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -176,6 +175,7 @@ import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   createExplainToken,
   extractSQLRowValue,
+  hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
@@ -217,7 +217,6 @@ const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 const currentUserV1 = useCurrentUserV1();
-const currentUserIamPolicy = useCurrentUserIamPolicy();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const pageMode = usePageMode();
@@ -272,8 +271,10 @@ const allowToRequestExportData = computed(() => {
     return false;
   }
 
-  return currentUserIamPolicy.isProjectOwnerOrDeveloperOrViewer(
-    database.project
+  return hasProjectPermissionV2(
+    database.projectEntity,
+    currentUserV1.value,
+    "bb.issues.create"
   );
 });
 
