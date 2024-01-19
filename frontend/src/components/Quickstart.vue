@@ -110,7 +110,7 @@
 
 <script setup lang="ts">
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
-import { computed, unref, Ref } from "vue";
+import { computed, unref, Ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouteLocationRaw } from "vue-router";
 import { ISSUE_ROUTE_DETAIL } from "@/router/dashboard/issue";
@@ -122,16 +122,25 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
 import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
-import { pushNotification, useCurrentUserV1, useUIStateStore } from "@/store";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useUIStateStore,
+  useProjectV1Store,
+} from "@/store";
+import { WorkspacePermission, UNKNOWN_ID } from "@/types";
+import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 type IntroItem = {
   name: string | Ref<string>;
   link?: RouteLocationRaw;
   done: Ref<boolean>;
   click?: () => void;
+  hide?: boolean;
+  requiredPermissions?: WorkspacePermission[];
 };
 
+const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
 const { t } = useI18n();
 const kbarHandler = useKBarHandler();
@@ -140,6 +149,18 @@ const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
+});
+
+const sampleProject = computed(() => {
+  const project = projectStore.getProjectByUID("101");
+  if (project.uid === `${UNKNOWN_ID}`) {
+    return;
+  }
+  return project;
+});
+
+watchEffect(async () => {
+  await projectStore.getOrFetchProjectByUID("101", true /* silent */);
 });
 
 const introList = computed(() => {
@@ -164,6 +185,13 @@ const introList = computed(() => {
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
+      hide:
+        !sampleProject.value ||
+        !hasProjectPermissionV2(
+          sampleProject.value,
+          currentUserV1.value,
+          "bb.issues.get"
+        ),
     },
     {
       name: computed(() => t("quick-start.query-data")),
@@ -174,19 +202,23 @@ const introList = computed(() => {
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
+      hide:
+        !sampleProject.value ||
+        !hasProjectPermissionV2(
+          sampleProject.value,
+          currentUserV1.value,
+          "bb.databases.query"
+        ),
     },
     {
       name: computed(() => t("quick-start.visit-project")),
-
       link: {
         name: PROJECT_V1_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("project.visit")),
+      requiredPermissions: ["bb.projects.list"],
     },
-  ];
-
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.environments.create")) {
-    introList.push({
+    {
       name: computed(() => t("quick-start.visit-environment")),
       link: {
         name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -194,36 +226,40 @@ const introList = computed(() => {
       done: computed(() =>
         uiStateStore.getIntroStateByKey("environment.visit")
       ),
-    });
-  }
-
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
-    introList.push({
+      requiredPermissions: ["bb.environments.list"],
+    },
+    {
       name: computed(() => t("quick-start.visit-instance")),
       link: {
         name: INSTANCE_ROUTE_DASHBOARD,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("instance.visit")),
-    });
-  }
-
-  introList.push({
-    name: computed(() => t("quick-start.visit-database")),
-    link: {
-      name: DATABASE_ROUTE_DASHBOARD,
+      requiredPermissions: ["bb.instances.list"],
     },
-    done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
-  });
-
-  introList.push({
-    name: computed(() => t("quick-start.visit-member")),
-    link: {
-      name: SETTING_ROUTE_WORKSPACE_MEMBER,
+    {
+      name: computed(() => t("quick-start.visit-database")),
+      link: {
+        name: DATABASE_ROUTE_DASHBOARD,
+      },
+      done: computed(() => uiStateStore.getIntroStateByKey("database.visit")),
     },
-    done: computed(() => uiStateStore.getIntroStateByKey("member.visit")),
-  });
+    {
+      name: computed(() => t("quick-start.visit-member")),
+      link: {
+        name: SETTING_ROUTE_WORKSPACE_MEMBER,
+      },
+      done: computed(() => uiStateStore.getIntroStateByKey("member.visit")),
+      requiredPermissions: ["bb.policies.get"],
+    },
+  ];
 
-  return introList;
+  return introList.filter(
+    (item) =>
+      !item.hide &&
+      (item.requiredPermissions ?? []).every((permission) =>
+        hasWorkspacePermissionV2(currentUserV1.value, permission)
+      )
+  );
 });
 
 const showQuickstart = computed(() => {
