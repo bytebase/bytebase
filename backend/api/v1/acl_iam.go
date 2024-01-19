@@ -130,11 +130,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 		projectIDsGetter = in.getProjectIDsForDatabaseService
 	case
-		v1pb.IssueService_CreateIssue_FullMethodName,
-		v1pb.IssueService_CreateIssueComment_FullMethodName:
-
-		projectIDsGetter = in.getProjectIDsForIssueService
-	case
 		v1pb.ChangelistService_CreateChangelist_FullMethodName,
 		v1pb.ChangelistService_GetChangelist_FullMethodName:
 
@@ -255,10 +250,6 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
 		v1pb.SheetService_DeleteSheet_FullMethodName:
 		return true
-	// project may not be present in request.Issue.Name.
-	case
-		v1pb.IssueService_GetIssue_FullMethodName:
-		return true
 	// handled in the method because we need to consider branch.Creator.
 	case
 		v1pb.BranchService_UpdateBranch_FullMethodName,
@@ -271,8 +262,12 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
 		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
 		return true
-	// handled in the method because we need to consider issue.Creator.
+	// handled in the method because we need to consider issue.Creator and issue type.
+	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
 	case
+		v1pb.IssueService_GetIssue_FullMethodName,
+		v1pb.IssueService_CreateIssue_FullMethodName,
+		v1pb.IssueService_CreateIssueComment_FullMethodName,
 		v1pb.IssueService_UpdateIssue_FullMethodName,
 		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName,
 		v1pb.IssueService_UpdateIssueComment_FullMethodName:
@@ -569,28 +564,6 @@ func (*ACLInterceptor) getProjectIDsForProjectService(_ context.Context, req any
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
-	return uniq(projectIDs), nil
-}
-
-func (*ACLInterceptor) getProjectIDsForIssueService(_ context.Context, req any) ([]string, error) {
-	var issueNames []string
-
-	switch r := req.(type) {
-	case *v1pb.CreateIssueRequest:
-		issueNames = append(issueNames, r.GetIssue().GetName())
-	case *v1pb.CreateIssueCommentRequest:
-		issueNames = append(issueNames, r.GetParent())
-	}
-
-	var projectIDs []string
-	for _, issueName := range issueNames {
-		projectID, _, err := common.GetProjectIDIssueID(issueName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get projectID from %q", issueName)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-
 	return uniq(projectIDs), nil
 }
 
