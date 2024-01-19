@@ -130,7 +130,7 @@ export const allowUserToApplyTaskRolloutAction = (
   releaserCandidates: User[]
 ) => {
   // Special for workspace admins and DBAs
-  // Still using roll-based permission checks
+  // Still using role-based permission checks
   if (
     user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
     user.roles.includes(PresetRoleType.WORKSPACE_DBA)
