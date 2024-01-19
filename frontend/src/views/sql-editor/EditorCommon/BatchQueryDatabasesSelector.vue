@@ -101,6 +101,7 @@ import {
   NDataTable,
   DataTableRowKey,
   NTag,
+  DataTableColumn,
 } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
@@ -164,7 +165,7 @@ const filteredDatabaseList = computed(() => {
   );
 });
 
-const dataTableColumns = computed(() => {
+const dataTableColumns = computed((): DataTableColumn<ComposedDatabase>[] => {
   return [
     {
       type: "selection",

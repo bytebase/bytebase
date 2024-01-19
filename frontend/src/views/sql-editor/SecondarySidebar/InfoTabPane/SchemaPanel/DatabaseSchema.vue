@@ -12,13 +12,13 @@
       <div class="flex justify-end gap-x-0.5">
         <HideInStandaloneMode>
           <ExternalLinkButton
+            v-if="database.uid !== String(UNKNOWN_ID)"
             :link="databaseV1Url(database)"
             :tooltip="$t('common.detail')"
           />
         </HideInStandaloneMode>
         <HideInStandaloneMode>
           <AlterSchemaButton
-            v-if="instanceV1HasAlterSchema(database.instanceEntity)"
             :database="database"
             @click="
               editorEvents.emit('alter-schema', {
@@ -50,7 +50,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DatabaseMetadata,
@@ -58,11 +58,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  databaseV1Url,
-  instanceV1HasAlterSchema,
-  isTableQueryable,
-} from "@/utils";
+import { databaseV1Url, isTableQueryable } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ExternalLinkButton from "./ExternalLinkButton.vue";
