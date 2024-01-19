@@ -24,7 +24,6 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
-import { DATABASE_ROUTE_CHANGE_HISTORY_DETAIL } from "@/router/dashboard/database";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
@@ -51,6 +50,8 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
@@ -314,12 +315,12 @@ const getItemClass = (item: SidebarItem) => {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case DATABASE_ROUTE_CHANGE_HISTORY_DETAIL:
+    case PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL:
       if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
-    case "workspace.database.detail":
+    case PROJECT_V1_ROUTE_DATABASE_DETAIL:
       if (item.path === PROJECT_V1_ROUTE_DATABASES) {
         list.push("router-link-active", "bg-link-hover");
       }
