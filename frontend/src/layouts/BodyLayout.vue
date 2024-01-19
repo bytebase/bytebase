@@ -201,7 +201,7 @@
           </div>
         </HideInStandaloneMode>
         <!-- This area may scroll -->
-        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto pt-4">
+        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto py-4">
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
