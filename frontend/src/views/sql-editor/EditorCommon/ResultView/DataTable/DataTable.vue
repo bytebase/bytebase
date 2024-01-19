@@ -10,7 +10,7 @@
       <div
         ref="scrollerRef"
         class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
-        :class="data.length === 0 && 'border-b-0 border-r-0'"
+        :class="rows.length === 0 && 'border-b-0 border-r-0'"
       >
         <table
           ref="tableRef"
@@ -71,7 +71,7 @@
           </thead>
           <tbody>
             <tr
-              v-for="(row, rowIndex) of table.getRowModel().rows"
+              v-for="(row, rowIndex) of rows"
               :key="rowIndex"
               class="group"
               :data-row-index="offset + rowIndex"
@@ -94,7 +94,7 @@
           </tbody>
         </table>
         <div
-          v-if="data.length === 0"
+          v-if="rows.length === 0"
           class="text-center w-full my-12 textinfolabel"
         >
           {{ $t("sql-editor.no-rows-found") }}
@@ -105,8 +105,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ColumnDef, Table } from "@tanstack/vue-table";
-import { computed, nextTick, PropType, ref, watch } from "vue";
+import { Table } from "@tanstack/vue-table";
+import { computed, nextTick, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import { useSQLResultViewContext } from "../context";
 import ColumnSortedIcon from "./ColumnSortedIcon.vue";
@@ -119,36 +119,13 @@ export type DataTableColumn = {
   title: string;
 };
 
-const props = defineProps({
-  data: {
-    type: Array as PropType<string[][]>,
-    default: () => [],
-  },
-  columns: {
-    type: Array as PropType<ColumnDef<string[]>[]>,
-    default: () => [],
-  },
-  sensitive: {
-    type: Array as PropType<boolean[]>,
-    default: () => [],
-  },
-  masked: {
-    type: Array as PropType<boolean[]>,
-    default: () => [],
-  },
-  table: {
-    type: Object as PropType<Table<string[]>>,
-    required: true,
-  },
-  setIndex: {
-    type: Number,
-    default: 0,
-  },
-  offset: {
-    type: Number,
-    default: 0,
-  },
-});
+const props = defineProps<{
+  table: Table<string[]>;
+  setIndex: number;
+  offset: number;
+  isSensitiveColumn: (index: number) => boolean;
+  isColumnMissingSensitive: (index: number) => boolean;
+}>();
 
 const scrollerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
@@ -161,27 +138,24 @@ const tableResize = useTableColumnWidthLogic({
   maxWidth: 640, // 40rem
 });
 
-const data = computed(() => props.data);
 const { keyword } = useSQLResultViewContext();
 
 const hasSensitiveFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.sensitive-data");
 });
 
-const isSensitiveColumn = (index: number): boolean => {
-  return props.masked[index] ?? false;
-};
-
-const isColumnMissingSensitive = (index: number): boolean => {
-  return (props.sensitive[index] ?? false) && !isSensitiveColumn(index);
-};
-
 const scrollTo = (x: number, y: number) => {
   scrollerRef.value?.scroll(x, y);
 };
 
+const rows = computed(() => props.table.getRowModel().rows);
+
 watch(
-  () => props.columns.map((col) => col.header).join("|"),
+  () =>
+    props.table
+      .getFlatHeaders()
+      .map((header) => String(header.column.columnDef.header))
+      .join("|"),
   () => {
     nextTick(() => {
       // Re-calculate the column widths once the column definition changed.
