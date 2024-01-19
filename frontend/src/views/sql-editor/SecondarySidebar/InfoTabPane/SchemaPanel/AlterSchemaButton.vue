@@ -29,7 +29,10 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
+import {
+  hasPermissionToCreateChangeDatabaseIssue,
+  instanceV1HasAlterSchema,
+} from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -49,11 +52,7 @@ const allowAlterSchema = computed(() => {
   }
   return (
     instanceV1HasAlterSchema(props.database.instanceEntity) &&
-    hasProjectPermissionV2(
-      props.database.projectEntity,
-      me.value,
-      "bb.issues.create"
-    )
+    hasPermissionToCreateChangeDatabaseIssue(props.database, me.value)
   );
 });
 </script>

@@ -22,7 +22,7 @@ import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasPermissionToCreateChangeDatabaseIssue } from "@/utils";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
@@ -223,10 +223,9 @@ const useExecuteSQL = () => {
             // Show a tips to navigate to issue creation
             // if the user is allowed to create issue in the project.
             if (
-              hasProjectPermissionV2(
-                database.projectEntity,
-                currentUser.value,
-                "bb.issues.create"
+              hasPermissionToCreateChangeDatabaseIssue(
+                database,
+                currentUser.value
               )
             ) {
               sqlEditorStore.setSQLEditorState({

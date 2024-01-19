@@ -18,7 +18,7 @@ import { computed, ref } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import { useCurrentUserV1, useDatabaseV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID, unknownDatabase } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const tabStore = useTabStore();
 const me = useCurrentUserV1();
@@ -38,10 +38,6 @@ const available = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    database.value.projectEntity,
-    me.value,
-    "bb.issues.create"
-  );
+  return hasPermissionToCreateRequestGrantIssue(database.value, me.value);
 });
 </script>

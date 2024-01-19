@@ -175,7 +175,7 @@ import { QueryResult } from "@/types/proto/v1/sql_service";
 import {
   createExplainToken,
   extractSQLRowValue,
-  hasProjectPermissionV2,
+  hasPermissionToCreateRequestGrantIssue,
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
@@ -271,11 +271,7 @@ const allowToRequestExportData = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    database.projectEntity,
-    currentUserV1.value,
-    "bb.issues.create"
-  );
+  return hasPermissionToCreateRequestGrantIssue(database, currentUserV1.value);
 });
 
 // use a debounced value to improve performance when typing rapidly
