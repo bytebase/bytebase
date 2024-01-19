@@ -209,6 +209,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
@@ -233,6 +234,7 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
+import { DATABASE_ROUTE_DETAIL } from "@/router/dashboard/database";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -243,12 +245,15 @@ import {
   useDBSchemaV1Store,
   useEnvironmentV1Store,
 } from "@/store";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
-  idFromSlug,
   isPITRDatabaseV1,
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
@@ -277,12 +282,11 @@ interface LocalState {
   selectedTab: DatabaseHash;
 }
 
-const props = defineProps({
-  databaseSlug: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+  instanceId: string;
+  databaseName: string;
+}>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -333,7 +337,7 @@ watch(
   () => state.selectedTab,
   (tab) => {
     router.replace({
-      name: "workspace.database.detail",
+      name: DATABASE_ROUTE_DETAIL,
       hash: `#${tab}`,
       query: route.query,
     });
@@ -341,8 +345,8 @@ watch(
 );
 
 const database = computed(() => {
-  return databaseV1Store.getDatabaseByUID(
-    String(idFromSlug(props.databaseSlug))
+  return databaseV1Store.getDatabaseByName(
+    `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`
   );
 });
 const project = computed(() => database.value.projectEntity);
@@ -454,4 +458,6 @@ const environment = computed(() => {
     ) ?? unknownEnvironment()
   );
 });
+
+useTitle(database.value.databaseName);
 </script>

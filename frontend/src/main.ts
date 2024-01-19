@@ -25,14 +25,12 @@ import {
   PageMode,
 } from "./store";
 import {
-  databaseSlug,
   environmentName,
   humanizeTs,
   humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
   instanceName,
-  instanceSlug,
   connectionSlug,
   isDev,
   isRelease,
@@ -149,8 +147,6 @@ app.config.globalProperties.isEmpty = isEmpty;
 app.config.globalProperties.environmentName = environmentName;
 app.config.globalProperties.projectName = projectName;
 app.config.globalProperties.instanceName = instanceName;
-app.config.globalProperties.instanceSlug = instanceSlug;
-app.config.globalProperties.databaseSlug = databaseSlug;
 app.config.globalProperties.connectionSlug = connectionSlug;
 
 app

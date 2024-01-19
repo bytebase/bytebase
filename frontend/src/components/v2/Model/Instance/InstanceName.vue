@@ -24,7 +24,7 @@
 import { computed } from "vue";
 import InstanceEngineIcon from "@/components/InstanceEngineIcon.vue";
 import type { Instance } from "@/types";
-import { instanceName, instanceSlug } from "@/utils";
+import { instanceName } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -45,7 +45,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/instance/${instanceSlug(props.instance)}`,
+      to: `/${props.instance.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

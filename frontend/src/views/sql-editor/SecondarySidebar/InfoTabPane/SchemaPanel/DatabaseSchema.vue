@@ -12,7 +12,7 @@
       <div class="flex justify-end gap-x-0.5">
         <HideInStandaloneMode>
           <ExternalLinkButton
-            :link="`/db/${databaseV1Slug(database)}`"
+            :link="databaseV1Url(database)"
             :tooltip="$t('common.detail')"
           />
         </HideInStandaloneMode>
@@ -59,7 +59,7 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import {
-  databaseV1Slug,
+  databaseV1Url,
   instanceV1HasAlterSchema,
   isTableQueryable,
 } from "@/utils";

@@ -148,7 +148,7 @@
     "helpName": ""
   },
   {
-    "routeName": "workspace.database.history.detail",
+    "routeName": "workspace.instance.change-history.detail",
     "helpName": ""
   },
   {
