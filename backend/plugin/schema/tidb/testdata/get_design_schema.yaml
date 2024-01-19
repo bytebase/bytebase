@@ -288,7 +288,7 @@
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
       `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
-      `e` int DEFAULT 1 COMMENT 'col_e' NULL,
+      `e` int NULL DEFAULT 1 COMMENT 'col_e',
       `f` int,
       `g` blob,
       `b` char(10) NOT NULL,
@@ -334,16 +334,16 @@
 
 - baseline: |-
     CREATE TABLE `t1` (
-      `a` int primary key
+      `a` int
     );
     CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT primary key
+      `a` int AUTO_INCREMENT
     );
     CREATE TABLE `t3` (
-      `a` int default 1 primary key
+      `a` int default 1
     );
     CREATE TABLE `t4` (
-      `a` int AUTO_INCREMENT primary key
+      `a` int AUTO_INCREMENT
     );
   target: |-
     {
@@ -400,14 +400,14 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int primary key AUTO_INCREMENT
+      `a` int AUTO_INCREMENT
     );
     CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT primary key
+      `a` int AUTO_INCREMENT
     );
     CREATE TABLE `t3` (
-      `a` int primary key AUTO_INCREMENT
+      `a` int AUTO_INCREMENT
     );
     CREATE TABLE `t4` (
-      `a` int primary key DEFAULT 1
+      `a` int DEFAULT 1
     );
