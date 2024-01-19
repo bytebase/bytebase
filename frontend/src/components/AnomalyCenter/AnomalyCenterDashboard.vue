@@ -139,7 +139,7 @@ import {
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
 import {
-  databaseV1Slug,
+  databaseV1Url,
   instanceV1Slug,
   sortDatabaseV1List,
   sortInstanceV1List,
@@ -236,7 +236,7 @@ const databaseAnomalySectionList = computed(
       if (anomalyListOfDatabase.length > 0) {
         sectionList.push({
           title: `${database.databaseName} (${database.effectiveEnvironmentEntity.title})`,
-          link: `/db/${databaseV1Slug(database)}`,
+          link: databaseV1Url(database),
           list: anomalyListOfDatabase,
         });
       }

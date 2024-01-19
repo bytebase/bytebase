@@ -73,7 +73,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGrid, BBGridColumn, BBGridRow } from "@/bbkit";
 import { ComposedInstance } from "@/types";
-import { urlfy, instanceV1Slug, hostPortOfInstanceV1 } from "@/utils";
+import { urlfy, hostPortOfInstanceV1 } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 
 export type InstanceRow = BBGridRow<ComposedInstance>;
@@ -136,7 +136,7 @@ const clickInstance = (
   row: number,
   e: MouseEvent
 ) => {
-  const url = `/instance/${instanceV1Slug(instance)}`;
+  const url = `/${instance.name}`;
   if (e.ctrlKey || e.metaKey) {
     window.open(url, "_blank");
   } else {

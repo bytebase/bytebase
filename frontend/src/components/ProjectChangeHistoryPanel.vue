@@ -32,7 +32,7 @@ import { ChangeHistoryTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { databaseV1Slug } from "@/utils";
+import { databaseV1Url } from "@/utils";
 
 // Show at most 5 recent migration history for each database
 const MAX_MIGRATION_HISTORY_COUNT = 5;
@@ -75,7 +75,7 @@ const fetchChangeHistory = async (databaseList: ComposedDatabase[]) => {
       );
       const newItem = {
         title: title,
-        link: `/db/${databaseV1Slug(database)}#change-history`,
+        link: `${databaseV1Url(database)}#change-history`,
         list: changeHistoryList,
       };
       if (index >= 0) {
