@@ -1,6 +1,7 @@
 package tidb
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -187,11 +188,19 @@ func NewModifyColumnTypeAction(tableName string, columnName string, columnType s
 	}
 }
 
-type StringsManipulatorActionDropColumnOption struct {
+type StringsManipulatorActionColumnOptionBase struct {
 	StringsManipulatorActionBase
+	Type tidbast.ColumnOptionType
+}
+
+func (s *StringsManipulatorActionColumnOptionBase) GetOptionType() tidbast.ColumnOptionType {
+	return s.Type
+}
+
+type StringsManipulatorActionDropColumnOption struct {
+	StringsManipulatorActionColumnOptionBase
 	Table  string
 	Column string
-	Option tidbast.ColumnOptionType
 }
 
 func (s *StringsManipulatorActionDropColumnOption) GetTopLevelNaming() string {
@@ -204,20 +213,21 @@ func (s *StringsManipulatorActionDropColumnOption) GetSecondLevelNaming() string
 
 func NewDropColumnOptionAction(tableName string, columnName string, option tidbast.ColumnOptionType) *StringsManipulatorActionDropColumnOption {
 	return &StringsManipulatorActionDropColumnOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeDropColumnOption,
+		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
+			StringsManipulatorActionBase: StringsManipulatorActionBase{
+				Type: StringsManipulatorActionTypeDropColumnOption,
+			},
+			Type: option,
 		},
 		Table:  tableName,
 		Column: columnName,
-		Option: option,
 	}
 }
 
 type StringsManipulatorActionModifyColumnOption struct {
-	StringsManipulatorActionBase
+	StringsManipulatorActionColumnOptionBase
 	Table           string
 	Column          string
-	OldOption       tidbast.ColumnOptionType
 	NewOptionDefine string
 }
 
@@ -231,18 +241,20 @@ func (s *StringsManipulatorActionModifyColumnOption) GetSecondLevelNaming() stri
 
 func NewModifyColumnOptionAction(tableName string, columnName string, oldOption tidbast.ColumnOptionType, newOptionDefine string) *StringsManipulatorActionModifyColumnOption {
 	return &StringsManipulatorActionModifyColumnOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeModifyColumnOption,
+		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
+			StringsManipulatorActionBase: StringsManipulatorActionBase{
+				Type: StringsManipulatorActionTypeModifyColumnOption,
+			},
+			Type: oldOption,
 		},
 		Table:           tableName,
 		Column:          columnName,
-		OldOption:       oldOption,
 		NewOptionDefine: newOptionDefine,
 	}
 }
 
 type StringsManipulatorActionAddColumnOption struct {
-	StringsManipulatorActionBase
+	StringsManipulatorActionColumnOptionBase
 	Table           string
 	Column          string
 	NewOptionDefine string
@@ -256,10 +268,13 @@ func (s *StringsManipulatorActionAddColumnOption) GetSecondLevelNaming() string 
 	return s.Column
 }
 
-func NewAddColumnOptionAction(tableName string, columnName string, newOptionDefine string) *StringsManipulatorActionAddColumnOption {
+func NewAddColumnOptionAction(tableName string, columnName string, optionType tidbast.ColumnOptionType, newOptionDefine string) *StringsManipulatorActionAddColumnOption {
 	return &StringsManipulatorActionAddColumnOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeAddColumnOption,
+		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
+			StringsManipulatorActionBase: StringsManipulatorActionBase{
+				Type: StringsManipulatorActionTypeAddColumnOption,
+			},
+			Type: optionType,
 		},
 		Table:           tableName,
 		Column:          columnName,
@@ -811,49 +826,37 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		}
 	}
 
-	modifyOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionModifyColumnOption)
-	for _, action := range actionsMap[StringsManipulatorActionTypeModifyColumnOption] {
-		action, ok := action.(*StringsManipulatorActionModifyColumnOption)
-		if !ok {
-			r.err = errors.New("invalid modify column option action")
-			return
+	optionMap := make(map[tidbast.ColumnOptionType]parser.IColumnOptionContext)
+	if ctx.ColumnOptionList() != nil {
+		for _, option := range ctx.ColumnOptionList().AllColumnOption() {
+			optionType := convertColumnOptionType(option)
+			optionMap[optionType] = option
 		}
-		modifyOptionMap[action.OldOption] = action
 	}
-	dropOptionMap := make(map[tidbast.ColumnOptionType]*StringsManipulatorActionDropColumnOption)
+	stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
+	autoRand := extractAutoRand(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			ctx.GetStop().GetTokenIndex()+1,
+			stop,
+		),
+	))
+
+	optionActionMap := make(map[tidbast.ColumnOptionType]StringsManipulatorAction)
 	for _, action := range actionsMap[StringsManipulatorActionTypeDropColumnOption] {
 		action, ok := action.(*StringsManipulatorActionDropColumnOption)
 		if !ok {
 			r.err = errors.New("invalid drop column option action")
 			return
 		}
-		dropOptionMap[action.Option] = action
+		optionActionMap[action.GetOptionType()] = action
 	}
-	if ctx.ColumnOptionList() != nil {
-		for _, option := range ctx.ColumnOptionList().AllColumnOption() {
-			optionType := convertColumnOptionType(option)
-			if _, exists := dropOptionMap[optionType]; exists {
-				// Drop column option
-				continue
-			}
-			if err := buf.WriteByte(' '); err != nil {
-				r.err = errors.Wrap(err, "failed to write byte")
-				return
-			}
-			// Modify column option
-			if action, exists := modifyOptionMap[optionType]; exists {
-				if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
-					r.err = errors.Wrap(err, "failed to write string")
-					return
-				}
-				continue
-			}
-			// Original column option
-			if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
-				r.err = errors.Wrap(err, "failed to write string")
-				return
-			}
+	for _, action := range actionsMap[StringsManipulatorActionTypeModifyColumnOption] {
+		action, ok := action.(*StringsManipulatorActionModifyColumnOption)
+		if !ok {
+			r.err = errors.New("invalid modify column option action")
+			return
 		}
+		optionActionMap[action.GetOptionType()] = action
 	}
 	for _, action := range actionsMap[StringsManipulatorActionTypeAddColumnOption] {
 		action, ok := action.(*StringsManipulatorActionAddColumnOption)
@@ -861,27 +864,230 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 			r.err = errors.New("invalid add column option action")
 			return
 		}
-		if _, err := buf.WriteString(" "); err != nil {
-			r.err = errors.Wrap(err, "failed to write string")
+		optionActionMap[action.GetOptionType()] = action
+	}
+
+	// Generate column options.
+	// TODO: we don't support generated column for now.
+	if option, exists := optionMap[tidbast.ColumnOptionGenerated]; exists {
+		if err := buf.WriteByte(' '); err != nil {
+			r.err = errors.Wrap(err, "failed to write byte")
 			return
 		}
-		if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
 			r.err = errors.Wrap(err, "failed to write string")
 			return
 		}
 	}
-	// We need to remain the original column definition with comments.
-	stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
-	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
-		antlr.NewInterval(
-			ctx.GetStop().GetTokenIndex()+1,
-			stop,
-		),
-	)); err != nil {
-		r.err = errors.Wrap(err, "failed to write string")
+
+	// NULL and NOT NULL.
+	if err := writeNullableOption(&buf, optionMap, optionActionMap); err != nil {
+		r.err = err
 		return
 	}
+
+	// DEFAULT, AUTO_INCREMENT and AUTO_RANDOM.
+	if err := writeDefaultLikeOption(&buf, optionMap, optionActionMap, autoRand); err != nil {
+		r.err = err
+		return
+	}
+
+	// COMMENT.
+	if err := writeColumnCommentOption(&buf, optionMap, optionActionMap); err != nil {
+		r.err = err
+		return
+	}
+
 	r.columnDefines = append(r.columnDefines, buf.String())
+}
+
+func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+	needOrigin := true
+	if action, exists := optionActionMap[tidbast.ColumnOptionComment]; exists {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionComment]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+		needOrigin = false
+	}
+	return nil
+}
+
+func writeDefaultLikeOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction, autoRand string) error {
+	needOrigin := true
+	if action, exists := optionActionMap[tidbast.ColumnOptionDefaultValue]; exists {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+			needOrigin = false
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionDefaultValue]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+		needOrigin = false
+	}
+
+	if action, exists := optionActionMap[tidbast.ColumnOptionAutoIncrement]; exists {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			return errors.New("invalid modify column option action: modify auto_increment")
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionAutoIncrement]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+		needOrigin = false
+	}
+
+	if action, exists := optionActionMap[tidbast.ColumnOptionAutoRandom]; exists {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			return errors.New("invalid modify column option action: modify auto_random")
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if needOrigin && autoRand != "" {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(autoRand); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+	}
+	return nil
+}
+
+func writeNullableOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+	needOrigin := true
+	if action, exists := optionActionMap[tidbast.ColumnOptionNull]; exists {
+		switch action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			return errors.New("invalid modify column option action: modify null")
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if _, err := buf.WriteString(" NULL"); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionNull]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+		needOrigin = false
+	}
+	if action, exists := optionActionMap[tidbast.ColumnOptionNotNull]; exists {
+		switch action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			return errors.New("invalid modify column option action: modify not null")
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if _, err := buf.WriteString(" NOT NULL"); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionNotNull]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+	}
+	return nil
+}
+
+var (
+	autoRandPattern = regexp.MustCompile(`/\*T!\[auto_rand\] AUTO_RANDOM\((\d+(?:,\s*\d+)*)\) \*/`)
+)
+
+func extractAutoRand(s string) string {
+	match := autoRandPattern.FindStringSubmatch(s)
+	if len(match) > 0 {
+		return match[0]
+	}
+	return ""
 }
 
 func convertColumnOptionType(ctx parser.IColumnOptionContext) tidbast.ColumnOptionType {
