@@ -19,6 +19,7 @@
         />
         <HideInStandaloneMode>
           <ExternalLinkButton
+            v-if="db.uid !== String(UNKNOWN_ID)"
             :link="tableDetailLink"
             :tooltip="$t('common.detail')"
           />
@@ -51,14 +52,14 @@
 <script lang="ts" setup>
 import { stringify } from "qs";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { databaseV1Slug } from "@/utils";
+import { databaseV1Url } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import AlterSchemaButton from "./AlterSchemaButton.vue";
 import ColumnList from "./ColumnList.vue";
@@ -86,7 +87,7 @@ const tableDetailLink = computed((): string => {
   if (schema.name) {
     query.schema = schema.name;
   }
-  const url = `/db/${databaseV1Slug(database)}?${stringify(query)}`;
+  const url = `${databaseV1Url(database)}?${stringify(query)}`;
 
   return url;
 });

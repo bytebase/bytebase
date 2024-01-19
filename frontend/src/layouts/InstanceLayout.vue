@@ -2,8 +2,8 @@
   <!-- Suspense is experimental, be aware of the potential change -->
   <Suspense>
     <template #default>
-      <ProvideInstanceContext :instance-slug="instanceSlug">
-        <router-view :instance-slug="instanceSlug" />
+      <ProvideInstanceContext :instance-id="instanceId">
+        <router-view :instance-id="instanceId" />
       </ProvideInstanceContext>
     </template>
     <template #fallback>
@@ -16,15 +16,15 @@
 import { watchEffect } from "vue";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
 import { useInstanceV1Store } from "@/store";
-import { idFromSlug } from "@/utils";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 
 const props = defineProps<{
-  instanceSlug: string;
+  instanceId: string;
 }>();
 
 watchEffect(async () => {
-  await useInstanceV1Store().getOrFetchInstanceByUID(
-    idFromSlug(props.instanceSlug)
+  await useInstanceV1Store().getOrFetchInstanceByName(
+    `${instanceNamePrefix}${props.instanceId}`
   );
 });
 </script>

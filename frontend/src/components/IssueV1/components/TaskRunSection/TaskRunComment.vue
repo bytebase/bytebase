@@ -34,7 +34,7 @@ import {
   Task_Type,
 } from "@/types/proto/v1/rollout_service";
 import {
-  changeHistoryLinkRaw,
+  databaseV1Url,
   extractChangeHistoryUID,
   extractTaskUID,
   flattenTaskV1List,
@@ -134,11 +134,9 @@ const commentLink = computed((): CommentLink => {
       case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
       case Task_Type.DATABASE_DATA_UPDATE: {
         const db = databaseForTask(issue.value, task);
-        const link = changeHistoryLinkRaw(
-          db.name,
-          extractChangeHistoryUID(taskRun.changeHistory),
-          taskRun.schemaVersion
-        );
+        const link = `${databaseV1Url(
+          db
+        )}/change-histories/${extractChangeHistoryUID(taskRun.changeHistory)}`;
         return {
           title: t("task.view-change"),
           link,
@@ -146,23 +144,6 @@ const commentLink = computed((): CommentLink => {
       }
     }
   } else if (taskRun.status === TaskRun_Status.FAILED) {
-    // TBD: taskRun.code is not available
-    // if (taskRun.code == MigrationErrorCode.MIGRATION_SCHEMA_MISSING) {
-    //   return {
-    //     title: "Check instance",
-    //     link: `/instance/${instanceSlug(task.instance)}`,
-    //   };
-    // } else if (
-    //   task.database &&
-    //   (taskRun.code == MigrationErrorCode.MIGRATION_ALREADY_APPLIED ||
-    //     taskRun.code == MigrationErrorCode.MIGRATION_OUT_OF_ORDER ||
-    //     taskRun.code == MigrationErrorCode.MIGRATION_BASELINE_MISSING)
-    // ) {
-    //   return {
-    //     title: t("task.view-change-history"),
-    //     link: `/db/${databaseSlug(task.database!)}#change-history`,
-    //   };
-    // }
     const db = databaseForTask(issue.value, task);
     if (isPostgresFamily(db.instanceEntity.engine)) {
       return {

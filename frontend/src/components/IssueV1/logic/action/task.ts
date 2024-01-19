@@ -1,10 +1,9 @@
 import { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { ComposedIssue } from "@/types";
+import { ComposedIssue, PresetRoleType } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -130,23 +129,14 @@ export const allowUserToApplyTaskRolloutAction = (
   action: TaskRolloutAction,
   releaserCandidates: User[]
 ) => {
-  if (extractUserResourceName(issue.assignee) === user.email) {
-    return true;
-  }
-
-  if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
-    // Owners are always allowed to rollout issues.
-    return true;
-  }
-
-  // Otherwise anyone might to be assignee can rollout the issue.
-  // if the rollout policy is "auto rollout", anyone in the project is allowed.
+  // Special for workspace admins and DBAs
+  // Still using role-based permission checks
   if (
-    releaserCandidates.findIndex((candidate) => candidate.name === user.name) >=
-    0
+    user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
+    user.roles.includes(PresetRoleType.WORKSPACE_DBA)
   ) {
     return true;
   }
 
-  return false;
+  return releaserCandidates.some((candidate) => candidate.name === user.name);
 };

@@ -206,6 +206,9 @@ const prepareConnectionSlug = async () => {
   if (Number.isNaN(instanceId) && Number.isNaN(databaseId)) {
     return false;
   }
+  if (instanceId === 0 || databaseId === 0) {
+    return false;
+  }
 
   const connect = (connection: Connection) => {
     const tab = tabStore.currentTab;

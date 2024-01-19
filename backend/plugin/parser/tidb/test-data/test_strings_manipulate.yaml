@@ -5,6 +5,26 @@
         `name` varchar(10) NOT NULL,
         PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
      );
+  actions:
+    - type: modifyColumnType
+      arguments:
+        - t
+        - id
+        - varchar(10)
+  want: |
+    -- Table structure for `t`
+     CREATE TABLE `t` (
+      `id` varchar(10) /* this is comment */,
+      `name` varchar(10) NOT NULL,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+    );
+- input: |-
+    -- Table structure for `t`
+     CREATE TABLE `t` (
+        `id` int /* this is comment */,
+        `name` varchar(10) NOT NULL,
+        PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+     );
     -- Table structure for `t1`
      CREATE TABLE `t1` (
        `id` int

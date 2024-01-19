@@ -13,7 +13,7 @@
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useChangeHistoryStore } from "@/store";
-import { changeHistorySlug, extractDatabaseResourceName } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import ChangeHistoryDetail from "@/views/ChangeHistoryDetail.vue";
 
 const props = defineProps<{
@@ -36,15 +36,13 @@ const detailBindings = computed(() => {
   if (!changeHistory.value) {
     return undefined;
   }
-  const { instance, database } = extractDatabaseResourceName(
-    changeHistory.value.name
-  );
-  const { uid, version } = changeHistory.value;
-  const slug = changeHistorySlug(uid, version);
+  const { instance: instanceId, database: databaseName } =
+    extractDatabaseResourceName(changeHistory.value.name);
+  const { uid } = changeHistory.value;
   return {
-    instance,
-    database,
-    changeHistorySlug: slug,
+    instanceId,
+    databaseName,
+    changeHistoryId: uid,
   };
 });
 

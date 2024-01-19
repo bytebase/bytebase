@@ -18,19 +18,6 @@ export const useRouterStore = defineStore("router", {
     },
     routeSlug(currentRoute: RouteLocationNormalized): RouterSlug {
       {
-        // /users/:email
-        // Total 2 elements, 2nd element is the principal id
-        const profileComponents = currentRoute.path.match(
-          /\/users\/(\S+@\S+\.\S+)/
-        ) || ["/", undefined];
-        if (profileComponents[1]) {
-          return {
-            principalEmail: profileComponents[1],
-          };
-        }
-      }
-
-      {
         // /issue/:issueSlug
         // Total 2 elements, 2nd element is the issue slug
         const issueComponents = currentRoute.path.match(
@@ -39,19 +26,6 @@ export const useRouterStore = defineStore("router", {
         if (issueComponents[1]) {
           return {
             issueSlug: issueComponents[1],
-          };
-        }
-      }
-
-      {
-        // /db/:databaseSlug
-        // Total 2 elements, 2nd element is the database slug
-        const databaseComponents = currentRoute.path.match(
-          "/db/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined];
-        if (databaseComponents[1]) {
-          return {
-            databaseSlug: databaseComponents[1],
           };
         }
       }

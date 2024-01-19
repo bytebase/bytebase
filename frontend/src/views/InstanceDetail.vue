@@ -61,6 +61,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { ClientError } from "nice-grpc-web";
 import { computed, reactive, watchEffect } from "vue";
@@ -78,9 +79,9 @@ import {
   useEnvironmentV1Store,
   useDatabaseV1Store,
 } from "@/store";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
 import {
-  idFromSlug,
   instanceV1HasCreateDatabase,
   instanceV1Name,
   hasWorkspacePermissionV2,
@@ -93,7 +94,7 @@ interface LocalState {
 }
 
 const props = defineProps({
-  instanceSlug: {
+  instanceId: {
     required: true,
     type: String,
   },
@@ -110,11 +111,10 @@ const state = reactive<LocalState>({
   syncingSchema: false,
 });
 
-const instanceId = computed(() => {
-  return idFromSlug(props.instanceSlug);
-});
 const instance = computed(() => {
-  return instanceV1Store.getInstanceByUID(String(instanceId.value));
+  return instanceV1Store.getInstanceByName(
+    `${instanceNamePrefix}${props.instanceId}`
+  );
 });
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
@@ -194,4 +194,6 @@ const syncSchema = async () => {
 const createDatabase = () => {
   state.showCreateDatabaseModal = true;
 };
+
+useTitle(instance.value.title);
 </script>

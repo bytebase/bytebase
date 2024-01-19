@@ -72,10 +72,6 @@ export function databaseSlug(database: Database): string {
   return [slug(database.name), database.id].join("-");
 }
 
-export function fullDatabasePath(database: Database): string {
-  return `/db/${databaseSlug(database)}`;
-}
-
 export function vcsSlugV1(vcs: VCSV1): string {
   return [slug(vcs.title), getVCSUid(vcs.name)].join("-");
 }

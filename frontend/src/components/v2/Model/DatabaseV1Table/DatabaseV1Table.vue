@@ -134,30 +134,17 @@ import type { ColumnDef } from "@tanstack/vue-table";
 import { sortBy } from "lodash-es";
 import cloneDeep from "lodash-es/cloneDeep";
 import { NPagination } from "naive-ui";
-import {
-  computed,
-  nextTick,
-  PropType,
-  reactive,
-  ref,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn } from "@/bbkit/types";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
-import { usePolicyV1Store, usePageMode, useCurrentUserV1 } from "@/store";
+import { usePageMode, useCurrentUserV1 } from "@/store";
 import { getProjectNameAndDatabaseGroupName } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import {
-  Policy,
-  PolicyType,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
-import { getScrollParent } from "@/utils";
-import {
-  databaseV1Slug,
+  databaseV1Url,
+  getScrollParent,
   isDatabaseV1Queryable,
   isPITRDatabaseV1,
   VueClass,
@@ -245,7 +232,6 @@ const props = defineProps({
 const emit = defineEmits(["select-database"]);
 
 const router = useRouter();
-const policyStore = usePolicyV1Store();
 const currentUserV1 = useCurrentUserV1();
 const { t } = useI18n();
 const state = reactive<LocalState>({
@@ -283,19 +269,6 @@ const mixedDataList = computed(() => {
     }
   });
 });
-
-const policyList = ref<Policy[]>([]);
-
-const preparePolicyList = () => {
-  if (showSQLEditorLink.value) {
-    policyStore
-      .fetchPolicies({
-        policyType: PolicyType.WORKSPACE_IAM,
-        resourceType: PolicyResourceType.WORKSPACE,
-      })
-      .then((list) => (policyList.value = list));
-  }
-};
 
 const columnListMap = computed(() => {
   const NAME = {
@@ -434,17 +407,6 @@ const showReservedDatabaseList = () => {
   });
 };
 
-const showSQLEditorLink = computed(() => {
-  if (
-    props.mode === "ALL_SHORT" ||
-    props.mode === "ALL_TINY" ||
-    props.mode === "PROJECT_SHORT"
-  ) {
-    return false;
-  }
-  return true;
-});
-
 const allowQuery = (database: ComposedDatabase) => {
   return isDatabaseV1Queryable(database, currentUserV1.value);
 };
@@ -460,7 +422,7 @@ const handleGotoSQLEditorFailed = (database: ComposedDatabase) => {
 
 const handleIncorrectProjectModalConfirm = () => {
   if (state.warningDatabase) {
-    router.push(`/db/${databaseV1Slug(state.warningDatabase)}`);
+    router.push(databaseV1Url(state.warningDatabase));
   }
 };
 
@@ -481,7 +443,7 @@ const clickDatabase = (
     emit("select-database", database);
   } else {
     if (isDatabase(database)) {
-      const url = `/db/${databaseV1Slug(database as ComposedDatabase)}`;
+      const url = databaseV1Url(database as ComposedDatabase);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {
@@ -501,6 +463,4 @@ const clickDatabase = (
     }
   }
 };
-
-watchEffect(preparePolicyList);
 </script>

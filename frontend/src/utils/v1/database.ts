@@ -25,6 +25,10 @@ export const databaseV1Slug = (db: ComposedDatabase) => {
   return [slug(db.databaseName), db.uid].join("-");
 };
 
+export const databaseV1Url = (db: ComposedDatabase) => {
+  return `/${db.project}/${db.name}`;
+};
+
 export const extractDatabaseResourceName = (
   resource: string
 ): {

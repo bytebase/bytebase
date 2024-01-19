@@ -44,9 +44,7 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 
 // Router
 export type RouterSlug = {
-  principalEmail?: string;
   issueSlug?: string;
-  databaseSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
 };

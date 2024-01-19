@@ -2,34 +2,24 @@
   <slot />
 </template>
 
-<script lang="ts">
-import { defineComponent, watchEffect } from "vue";
+<script lang="ts" setup>
+import { watchEffect } from "vue";
 import { useInstanceV1Store } from "@/store";
-import { idFromSlug } from "../utils";
+import { instanceNamePrefix } from "@/store/modules/v1/common";
 
-export default defineComponent({
-  name: "ProvideInstanceContext",
-  props: {
-    instanceSlug: {
-      required: true,
-      type: String,
-    },
-  },
-  async setup(props) {
-    const prepareInstanceContext = async function () {
-      const uid = String(idFromSlug(props.instanceSlug));
-      await Promise.all([
-        useInstanceV1Store()
-          .getOrFetchInstanceByUID(uid)
-          .then((instance) => {
-            return useInstanceV1Store().fetchInstanceRoleListByName(
-              instance.name
-            );
-          }),
-      ]);
-    };
+const props = defineProps<{
+  instanceId: string;
+}>();
 
-    watchEffect(prepareInstanceContext);
-  },
-});
+const prepareInstanceContext = async function () {
+  await Promise.all([
+    useInstanceV1Store()
+      .getOrFetchInstanceByName(`${instanceNamePrefix}${props.instanceId}`)
+      .then((instance) => {
+        return useInstanceV1Store().fetchInstanceRoleListByName(instance.name);
+      }),
+  ]);
+};
+
+watchEffect(prepareInstanceContext);
 </script>

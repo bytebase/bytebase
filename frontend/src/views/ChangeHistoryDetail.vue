@@ -145,7 +145,7 @@
             </button>
           </a>
           <highlight-code-block
-            class="border p-2 whitespace-pre-wrap w-full"
+            class="border p-2 whitespace-pre-wrap w-full text-sm"
             :code="changeHistoryStatement"
           />
           <div
@@ -241,7 +241,7 @@
 
           <DiffEditor
             v-if="state.showDiff"
-            class="h-[64rem] max-h-full border rounded-md overflow-clip"
+            class="h-[64rem] max-h-full border rounded-md text-sm overflow-clip"
             :original="changeHistory.prevSchema"
             :modified="changeHistory.schema"
             :readonly="true"
@@ -249,7 +249,7 @@
           <template v-else>
             <div v-if="changeHistory.schema" class="space-y-2">
               <highlight-code-block
-                class="border p-2 whitespace-pre-wrap w-full"
+                class="border p-2 whitespace-pre-wrap w-full text-sm"
                 :code="changeHistorySchema"
                 data-label="bb-change-history-code-block"
               />
@@ -328,6 +328,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
 import { NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
@@ -345,6 +346,10 @@ import {
   useInstanceV1Store,
   useSettingV1Store,
 } from "@/store";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
 import {
@@ -360,7 +365,6 @@ import {
   changeHistoryLink,
   extractIssueUID,
   extractUserResourceName,
-  uidFromSlug,
   getAffectedTablesOfChangeHistory,
   toClipboard,
   getStatementSize,
@@ -375,9 +379,9 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  instance: string;
-  database: string;
-  changeHistorySlug: string;
+  instanceId: string;
+  databaseName: string;
+  changeHistoryId: string;
 }>();
 
 const state = reactive<LocalState>({
@@ -394,7 +398,9 @@ const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
 const v1Instance = computed(() => {
-  return instanceStore.getInstanceByName(`instances/${props.instance}`);
+  return instanceStore.getInstanceByName(
+    `${instanceNamePrefix}${props.instanceId}`
+  );
 });
 
 // eslint-disable-next-line vue/no-dupe-keys
@@ -417,13 +423,11 @@ const classificationConfig = computed(() => {
 });
 
 const changeHistoryParent = computed(() => {
-  return `instances/${props.instance}/databases/${props.database}`;
+  return `${instanceNamePrefix}${props.instanceId}/${databaseNamePrefix}${props.databaseName}`;
 });
-const changeHistoryUID = computed(() => {
-  return uidFromSlug(props.changeHistorySlug);
-});
+
 const changeHistoryName = computed(() => {
-  return `${changeHistoryParent.value}/changeHistories/${changeHistoryUID.value}`;
+  return `${changeHistoryParent.value}/changeHistories/${props.changeHistoryId}`;
 });
 
 const affectedTables = computed(() => {
@@ -448,9 +452,6 @@ watch(
         database: database.name,
         skipCache: false,
         view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-      }),
-      changeHistoryStore.fetchChangeHistoryList({
-        parent: changeHistoryParent.value,
       }),
       changeHistoryStore.fetchChangeHistory({
         name: changeHistoryName.value,
@@ -508,7 +509,7 @@ const prevChangeHistoryList = computed(() => {
   // The returned change history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
   // We can obtain prevChangeHistoryList by cutting up the array by the `changeHistoryId`.
   const idx = changeHistoryList.findIndex(
-    (history) => history.uid === changeHistoryUID.value
+    (history) => history.uid === props.changeHistoryId
   );
   if (idx === -1) {
     return [];
@@ -671,4 +672,6 @@ const copySchema = async () => {
     });
   });
 };
+
+useTitle(changeHistory.value?.version || "Change History");
 </script>

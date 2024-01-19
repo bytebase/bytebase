@@ -35,10 +35,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBGridColumn, BBGridRow, BBGrid } from "@/bbkit";
-import {
-  PROJECT_V1_ROUTE_DETAIL,
-  PROJECT_V1_ROUTE,
-} from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import { getProjectName } from "@/store/modules/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
 
@@ -82,8 +80,12 @@ const clickProject = function (
   e: MouseEvent
 ) {
   let routeName = PROJECT_V1_ROUTE_DETAIL;
-  if (router.currentRoute.value.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
-    routeName = router.currentRoute.value.name?.toString();
+  const currentRouteName = router.currentRoute.value.name?.toString();
+  if (
+    currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD) &&
+    currentRouteName !== PROJECT_V1_ROUTE_DASHBOARD
+  ) {
+    routeName = currentRouteName;
   }
 
   const route = router.resolve({

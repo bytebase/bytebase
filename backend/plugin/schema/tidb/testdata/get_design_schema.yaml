@@ -297,7 +297,7 @@
       UNIQUE KEY `uk_a` (`b`)
     );
     CREATE TABLE `users` (
-      `id` int(11) NOT NULL COMMENT 'ID',
+      `id` int NOT NULL COMMENT 'ID',
       `age` varbinary(500) NULL,
       `name` binary(10) NULL,
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
@@ -403,7 +403,7 @@
       `a` int primary key AUTO_INCREMENT
     );
     CREATE TABLE `t2` (
-      `a` int primary key AUTO_INCREMENT
+      `a` int AUTO_INCREMENT primary key
     );
     CREATE TABLE `t3` (
       `a` int primary key AUTO_INCREMENT
