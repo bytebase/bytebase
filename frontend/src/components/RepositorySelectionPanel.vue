@@ -40,14 +40,15 @@ export default { name: "RepositorySelectionPanel" };
 </script>
 
 <script setup lang="ts">
-import { reactive, computed, onMounted } from "vue";
-import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "../types";
-import { useVCSV1Store } from "@/store";
+import { reactive, computed, onMounted, nextTick } from "vue";
+import { ExternalRepositoryInfo, ProjectRepositoryConfig } from "@/types";
+import { pushNotification, useCurrentUserV1, useVCSV1Store } from "@/store";
 import {
   OAuthToken,
   ExternalVersionControl_Type,
   SearchExternalVersionControlProjectsResponse_Project,
 } from "@/types/proto/v1/externalvs_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
   repositoryList: SearchExternalVersionControlProjectsResponse_Project[];
@@ -62,6 +63,7 @@ const emit = defineEmits<{
   (event: "set-repository", payload: ExternalRepositoryInfo): void;
 }>();
 
+const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSV1Store();
 const state = reactive<LocalState>({
   repositoryList: [],
@@ -80,28 +82,33 @@ const prepareRepositoryList = () => {
     })
     .then((token: OAuthToken) => {
       emit("set-token", token);
-      vcsV1Store
-        .listVCSExternalProjects(
-          props.config.vcs.name,
-          token.accessToken,
-          token.refreshToken
-        )
-        .then((list) => {
-          state.repositoryList = list;
-        });
+      nextTick(() => {
+        refreshRepositoryList();
+      });
     });
 };
 
-const refreshRepositoryList = () => {
-  vcsV1Store
-    .listVCSExternalProjects(
-      props.config.vcs.name,
-      props.config.token.accessToken,
-      props.config.token.refreshToken
+const refreshRepositoryList = async () => {
+  if (
+    !hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.externalVersionControls.searchProjects"
     )
-    .then((list) => {
-      state.repositoryList = list;
+  ) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Permission denied for searching projects",
     });
+    return;
+  }
+
+  const projects = await vcsV1Store.listVCSExternalProjects(
+    props.config.vcs.name,
+    props.config.token.accessToken,
+    props.config.token.refreshToken
+  );
+  state.repositoryList = projects;
 };
 
 const repositoryList = computed(() => {
