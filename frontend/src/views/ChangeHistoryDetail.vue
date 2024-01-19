@@ -145,7 +145,7 @@
             </button>
           </a>
           <highlight-code-block
-            class="border p-2 whitespace-pre-wrap w-full"
+            class="border p-2 whitespace-pre-wrap w-full text-sm"
             :code="changeHistoryStatement"
           />
           <div
@@ -241,7 +241,7 @@
 
           <DiffEditor
             v-if="state.showDiff"
-            class="h-[64rem] max-h-full border rounded-md overflow-clip"
+            class="h-[64rem] max-h-full border rounded-md text-sm overflow-clip"
             :original="changeHistory.prevSchema"
             :modified="changeHistory.schema"
             :readonly="true"
@@ -249,7 +249,7 @@
           <template v-else>
             <div v-if="changeHistory.schema" class="space-y-2">
               <highlight-code-block
-                class="border p-2 whitespace-pre-wrap w-full"
+                class="border p-2 whitespace-pre-wrap w-full text-sm"
                 :code="changeHistorySchema"
                 data-label="bb-change-history-code-block"
               />
@@ -452,9 +452,6 @@ watch(
         database: database.name,
         skipCache: false,
         view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-      }),
-      changeHistoryStore.fetchChangeHistoryList({
-        parent: changeHistoryParent.value,
       }),
       changeHistoryStore.fetchChangeHistory({
         name: changeHistoryName.value,
