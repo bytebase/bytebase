@@ -29,6 +29,12 @@
         </span>
       </div>
       <div class="flex justify-between items-center gap-x-3 overflow-y-hidden">
+        <div class="flex items-center">
+          <NSwitch v-model:value="state.vertical" size="small" />
+          <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
+            {{ $t("sql-editor.vertical-display") }}
+          </span>
+        </div>
         <NPagination
           v-if="showPagination"
           :simple="true"
@@ -87,14 +93,21 @@
     </div>
 
     <div class="flex-1 w-full flex flex-col overflow-y-auto">
-      <DataTable
+      <DataBlock
+        v-if="state.vertical"
         :table="table"
-        :columns="columns"
-        :data="data"
-        :masked="props.result.masked"
-        :sensitive="props.result.sensitive"
         :set-index="setIndex"
         :offset="pageIndex * pageSize"
+        :is-sensitive-column="isSensitiveColumn"
+        :is-column-missing-sensitive="isColumnMissingSensitive"
+      />
+      <DataTable
+        v-else
+        :table="table"
+        :set-index="setIndex"
+        :offset="pageIndex * pageSize"
+        :is-sensitive-column="isSensitiveColumn"
+        :is-column-missing-sensitive="isColumnMissingSensitive"
       />
     </div>
 
@@ -145,7 +158,7 @@ import {
 } from "@tanstack/vue-table";
 import { useDebounceFn } from "@vueuse/core";
 import { isEmpty } from "lodash-es";
-import { NInput, NPagination, NTooltip } from "naive-ui";
+import { NInput, NSwitch, NPagination, NTooltip } from "naive-ui";
 import { BinaryLike } from "node:crypto";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -180,6 +193,7 @@ import {
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
 import { customTheme } from "@/utils/customTheme";
+import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView.vue";
@@ -187,6 +201,7 @@ import { useSQLResultViewContext } from "./context";
 
 type LocalState = {
   search: string;
+  vertical: boolean;
   showRequestExportPanel: boolean;
 };
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
@@ -207,6 +222,7 @@ const props = defineProps<{
 
 const state = reactive<LocalState>({
   search: "",
+  vertical: false,
   showRequestExportPanel: false,
 });
 
@@ -310,6 +326,17 @@ const data = computed(() => {
   }
   return temp;
 });
+
+const isSensitiveColumn = (columnIndex: number): boolean => {
+  return props.result.masked[columnIndex] ?? false;
+};
+
+const isColumnMissingSensitive = (columnIndex: number): boolean => {
+  return (
+    (props.result.sensitive[columnIndex] ?? false) &&
+    !isSensitiveColumn(columnIndex)
+  );
+};
 
 const table = useVueTable<string[]>({
   get data() {

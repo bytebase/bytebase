@@ -79,7 +79,7 @@ func convertActionsForTest(actions []testAction) []StringsManipulatorAction {
 		case "modifyColumnOption":
 			result = append(result, NewModifyColumnOptionAction(action.Arguments[0], action.Arguments[1], convertColumnOptionTypeForTest(action.Arguments[2]), action.Arguments[3]))
 		case "addColumnOption":
-			result = append(result, NewAddColumnOptionAction(action.Arguments[0], action.Arguments[1], action.Arguments[2]))
+			result = append(result, NewAddColumnOptionAction(action.Arguments[0], action.Arguments[1], convertColumnOptionTypeForTest(action.Arguments[2]), action.Arguments[3]))
 		case "dropTableConstraint":
 			result = append(result, NewDropTableConstraintAction(action.Arguments[0], action.Arguments[1]))
 		case "modifyTableConstraint":

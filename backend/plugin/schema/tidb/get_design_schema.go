@@ -134,10 +134,10 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			if oldNullable != stateColumn.nullable {
 				if stateColumn.nullable {
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNotNull))
-					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NULL"))
+					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNull, "NULL"))
 				} else {
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNull))
-					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NOT NULL"))
+					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNotNull, "NOT NULL"))
 				}
 			}
 
@@ -147,10 +147,10 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					switch {
 					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement, stateColumn.defaultValue.toString()))
 					case stateColumn.hasAutoRand():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
 					default:
 						expr, err := restoreExpr(option.Expr)
 						if err != nil {
@@ -171,10 +171,10 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					// Do nothing.
 					case stateColumn.hasAutoRand():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
 					default:
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 					}
 				} else {
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
@@ -184,12 +184,12 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					switch {
 					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement, stateColumn.defaultValue.toString()))
 					case stateColumn.hasAutoRand():
 					// Do nothing.
 					default:
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 					}
 				} else {
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
@@ -198,11 +198,11 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				if stateColumn.hasDefault {
 					switch {
 					case stateColumn.hasAutoIncrement():
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement, stateColumn.defaultValue.toString()))
 					case stateColumn.hasAutoRand():
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
 					default:
-						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 					}
 				}
 			}
@@ -222,7 +222,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					}
 				}
 			} else if stateColumn.comment != "" {
-				g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
+				g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
 			}
 		}
 

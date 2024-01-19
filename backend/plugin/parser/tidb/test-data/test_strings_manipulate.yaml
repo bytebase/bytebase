@@ -1,7 +1,7 @@
 - input: |-
     -- Table structure for `t`
      CREATE TABLE `t` (
-        `id` int /* this is comment */,
+        `id` int /*T![auto_rand] AUTO_RANDOM(6, 54) */,
         `name` varchar(10) NOT NULL,
         PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
      );
@@ -14,7 +14,7 @@
   want: |
     -- Table structure for `t`
      CREATE TABLE `t` (
-      `id` varchar(10) /* this is comment */,
+      `id` varchar(10) /*T![auto_rand] AUTO_RANDOM(6, 54) */,
       `name` varchar(10) NOT NULL,
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
     );
@@ -91,6 +91,7 @@
       arguments:
         - t
         - id
+        - notNull
         - NOT NULL
     - type: dropTableConstraint
       arguments:
@@ -148,16 +149,12 @@
       arguments:
         - t1
         - id
-        - PRIMARY KEY
-    - type: addColumnOption
-      arguments:
-        - t1
-        - id
+        - notNull
         - NOT NULL
   want: |
     -- Table structure for `t1`
     CREATE TABLE `t1` (
-      `id` int PRIMARY KEY NOT NULL
+      `id` int NOT NULL
     );
 - input: |-
     -- Table structure for `t`
