@@ -429,10 +429,11 @@ func (diff *diffNode) diffFunction(oldDatabase, newDatabase *databaseDef) error 
 
 		oldFunction, ok := oldDatabase.schemas[""].functions[functionName]
 		if ok {
-			if !isFunctionEqual(oldFunction, function) {
-				diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
-			}
 			delete(oldDatabase.schemas[""].functions, functionName)
+			if isFunctionEqual(oldFunction, function) {
+				continue
+			}
+			diff.dropFunctionList = append(diff.dropFunctionList, oldFunction)
 		}
 		diff.createFunctionList = append(diff.createFunctionList, function)
 	}
@@ -453,10 +454,11 @@ func (diff *diffNode) diffProcedure(oldDatabase, newDatabase *databaseDef) error
 
 		oldProcedure, ok := oldDatabase.schemas[""].procedures[procedureName]
 		if ok {
-			if !isProcedureEqual(oldProcedure, procedure) {
-				diff.dropProcedureList = append(diff.dropProcedureList, oldProcedure)
-			}
 			delete(oldDatabase.schemas[""].functions, procedureName)
+			if isProcedureEqual(oldProcedure, procedure) {
+				continue
+			}
+			diff.dropProcedureList = append(diff.dropProcedureList, oldProcedure)
 		}
 		diff.createProcedureList = append(diff.createProcedureList, procedure)
 	}
