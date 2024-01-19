@@ -1,6 +1,10 @@
 <template>
   <div class="space-y-5 m-2">
-    <div v-for="(row, rowIndex) of rows" :key="`rows-${rowIndex + offset}`">
+    <div
+      v-for="(row, rowIndex) of rows"
+      :key="`rows-${rowIndex + offset}`"
+      class="font-mono"
+    >
       <p
         class="font-medium text-gray-500 dark:text-gray-300 overflow-hidden whitespace-nowrap"
       >
