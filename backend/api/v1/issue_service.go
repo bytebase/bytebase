@@ -450,6 +450,20 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	}
 	_, loopback := ctx.Value(common.LoopbackContextKey).(bool)
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	if s.profile.DevelopmentIAM && !loopback {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesCreate, user, projectID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to create issue")
+		}
+	}
+
 	switch request.Issue.Type {
 	case v1pb.Issue_TYPE_UNSPECIFIED:
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
@@ -1565,17 +1579,37 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	if request.IssueComment.Comment == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "issue comment is empty")
 	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
 	issue, err := s.getIssueMessage(ctx, request.Parent)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue comment, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+	if s.profile.DevelopmentIAM {
+		ok, err := func() (bool, error) {
+			if issue.Creator.ID == user.ID {
+				return true, nil
+			}
+			return s.iamManager.CheckPermission(ctx, iam.PermissionIssueCommentsCreate, user, issue.Project.ResourceID)
+		}()
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to create issue comment")
+		}
+	} else {
+		ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can create issue comment, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
+		}
 	}
 
 	// TODO: migrate to store v2.

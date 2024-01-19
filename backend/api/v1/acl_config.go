@@ -86,17 +86,19 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.EnvironmentService_GetEnvironment_FullMethodName:      iam.PermissionEnvironmentsGet,
 	v1pb.EnvironmentService_ListEnvironments_FullMethodName:    iam.PermissionEnvironmentsList,
 	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: iam.PermissionEnvironmentsUpdate,
-	v1pb.IssueService_CreateIssue_FullMethodName:               iam.PermissionIssuesCreate,
-	v1pb.IssueService_SearchIssues_FullMethodName:              "", // handled in the method.
-	v1pb.IssueService_ListIssues_FullMethodName:                iam.PermissionIssuesList,
-	v1pb.IssueService_GetIssue_FullMethodName:                  iam.PermissionIssuesGet,
-	v1pb.IssueService_UpdateIssue_FullMethodName:               iam.PermissionIssuesUpdate,
-	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName:   iam.PermissionIssuesUpdate,
-	v1pb.IssueService_CreateIssueComment_FullMethodName:        iam.PermissionIssueCommentsCreate,
-	v1pb.IssueService_UpdateIssueComment_FullMethodName:        iam.PermissionIssueCommentsUpdate,
-	v1pb.IssueService_ApproveIssue_FullMethodName:              "", // controlled by org policy.
-	v1pb.IssueService_RejectIssue_FullMethodName:               "", // controlled by org policy.
-	v1pb.IssueService_RequestIssue_FullMethodName:              "", // controlled by org policy.
+
+	// XXX: issues.action needs respective plans.action and rollouts.action permissions if the issue type is change database.
+	v1pb.IssueService_CreateIssue_FullMethodName:             iam.PermissionIssuesCreate,
+	v1pb.IssueService_SearchIssues_FullMethodName:            iam.PermissionIssuesGet, // handled in the method.
+	v1pb.IssueService_ListIssues_FullMethodName:              iam.PermissionIssuesList,
+	v1pb.IssueService_GetIssue_FullMethodName:                iam.PermissionIssuesGet,
+	v1pb.IssueService_UpdateIssue_FullMethodName:             iam.PermissionIssuesUpdate,
+	v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName: iam.PermissionIssuesUpdate,
+	v1pb.IssueService_CreateIssueComment_FullMethodName:      iam.PermissionIssueCommentsCreate,
+	v1pb.IssueService_UpdateIssueComment_FullMethodName:      iam.PermissionIssueCommentsUpdate,
+	v1pb.IssueService_ApproveIssue_FullMethodName:            "", // controlled by org policy.
+	v1pb.IssueService_RejectIssue_FullMethodName:             "", // controlled by org policy.
+	v1pb.IssueService_RequestIssue_FullMethodName:            "", // controlled by org policy.
 
 	v1pb.ProjectService_ListProjects_FullMethodName:                 iam.PermissionProjectsList,
 	v1pb.ProjectService_SearchProjects_FullMethodName:               "", // handled in the method.
