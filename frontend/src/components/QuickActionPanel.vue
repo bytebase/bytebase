@@ -120,7 +120,7 @@ import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import { Drawer } from "@/components/v2";
-import { PROJECT_V1_ROUTE } from "@/router/dashboard/projectV1";
+import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useInstanceV1Store,
   useCommandStore,
@@ -175,7 +175,7 @@ const state = reactive<LocalState>({
 });
 
 const projectId = computed((): string | undefined => {
-  if (route.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
+  if (route.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
     return route.params.projectId as string;
   }
   return undefined;

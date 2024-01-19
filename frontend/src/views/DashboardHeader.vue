@@ -125,8 +125,6 @@ const params = computed(() => {
   return {
     projectId: route.params.projectId as string,
     issueSlug: route.params.issueSlug as string,
-    databaseSlug: route.params.databaseSlug as string,
-    changeHistorySlug: route.params.changeHistorySlug as string,
   };
 });
 

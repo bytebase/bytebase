@@ -12,12 +12,13 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import type { Database } from "@/types";
-import { databaseSlug } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
+import { databaseV1Url } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    database: Database;
+    database: ComposedDatabase;
     tag?: string;
     link?: boolean;
   }>(),
@@ -30,7 +31,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/db/${databaseSlug(props.database)}`,
+      to: databaseV1Url(props.database),
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {
@@ -43,8 +44,8 @@ const bindings = computed(() => {
 
 const prefix = computed(() => {
   const { database } = props;
-  if (database.instance.engine === "REDIS") {
-    return database.instance.name;
+  if (database.instanceEntity.engine === Engine.REDIS) {
+    return database.instanceEntity.title;
   }
   return "";
 });

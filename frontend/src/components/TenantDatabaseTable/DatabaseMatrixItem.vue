@@ -87,9 +87,9 @@ import { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   convertLabelsToKVList,
-  databaseV1Slug,
   isVirtualLabelKey,
   displayDeploymentMatchSelectorKey,
+  databaseV1Url,
 } from "@/utils";
 import { InstanceV1Name } from "../v2";
 
@@ -107,10 +107,10 @@ const displayLabelList = computed(() => {
 });
 
 const databaseDetailUrl = computed((): string => {
-  return `/db/${databaseV1Slug(props.database)}`;
+  return databaseV1Url(props.database);
 });
 
 const schemaVersionUrl = computed((): string => {
-  return `/db/${databaseV1Slug(props.database)}#change-history`;
+  return `${databaseV1Url(props.database)}#change-history`;
 });
 </script>

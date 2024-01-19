@@ -1,13 +1,15 @@
-import { InjectionKey, Ref, computed, inject, provide, unref } from "vue";
+import { InjectionKey, Ref, computed, inject, provide } from "vue";
 import { useDatabaseV1Store, useCurrentUserV1 } from "@/store";
 import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import {
   ComposedDatabase,
-  MaybeRef,
   ProjectPermission,
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
 import {
-  idFromSlug,
   hasProjectPermissionV2,
   instanceV1HasAlterSchema,
   instanceV1SupportSlowQuery,
@@ -44,14 +46,16 @@ export const useDatabaseDetailContext = () => {
 };
 
 export const provideDatabaseDetailContext = (
-  databaseSlug: MaybeRef<string>
+  projectId: string,
+  instanceId: string,
+  databaseName: string
 ) => {
   const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
 
   const database: Ref<ComposedDatabase> = computed(() => {
-    return databaseV1Store.getDatabaseByUID(
-      String(idFromSlug(unref(databaseSlug)))
+    return databaseV1Store.getDatabaseByName(
+      `${instanceNamePrefix}${instanceId}/${databaseNamePrefix}${databaseName}`
     );
   });
 

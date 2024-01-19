@@ -44,19 +44,6 @@ export const useRouterStore = defineStore("router", {
       }
 
       {
-        // /db/:databaseSlug
-        // Total 2 elements, 2nd element is the database slug
-        const databaseComponents = currentRoute.path.match(
-          "/db/([0-9a-zA-Z_-]+)"
-        ) || ["/", undefined];
-        if (databaseComponents[1]) {
-          return {
-            databaseSlug: databaseComponents[1],
-          };
-        }
-      }
-
-      {
         // /sql-editor/sheet/:sheetSlug
         // match this route first
         const sqlEditorComponents = currentRoute.path.match(
