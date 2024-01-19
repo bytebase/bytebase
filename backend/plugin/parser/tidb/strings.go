@@ -870,6 +870,17 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 			return
 		}
 	}
+	// We need to remain the original column definition with comments.
+	stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
+	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(
+		antlr.NewInterval(
+			ctx.GetStop().GetTokenIndex()+1,
+			stop,
+		),
+	)); err != nil {
+		r.err = errors.Wrap(err, "failed to write string")
+		return
+	}
 	r.columnDefines = append(r.columnDefines, buf.String())
 }
 
