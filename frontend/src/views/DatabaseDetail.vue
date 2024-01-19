@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex-1 overflow-auto focus:outline-none px-6 pb-6 space-y-4"
+    class="flex-1 overflow-auto focus:outline-none space-y-4"
     tabindex="0"
     v-bind="$attrs"
   >
@@ -234,7 +234,7 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
-import { DATABASE_ROUTE_DETAIL } from "@/router/dashboard/database";
+import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -337,7 +337,7 @@ watch(
   () => state.selectedTab,
   (tab) => {
     router.replace({
-      name: DATABASE_ROUTE_DETAIL,
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
       hash: `#${tab}`,
       query: route.query,
     });

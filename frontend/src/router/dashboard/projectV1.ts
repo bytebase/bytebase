@@ -6,6 +6,8 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
 export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE_DASHBOARD}.database.dashboard`;
+export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
+export const PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.change-history.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.dashboard`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUP_TABLE_GROUP_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group.table-group.detail`;
@@ -391,6 +393,43 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/project/ProjectSettingPanel.vue"),
         props: true,
+      },
+      {
+        path: "instances/:instanceId/databases/:databaseName",
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.databases.get",
+          ],
+        },
+        component: () => import("@/views/project/ProjectDatabaseLayout.vue"),
+        props: { content: true, leftSidebar: true },
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+            meta: {
+              overrideTitle: true,
+            },
+            component: () => import("@/views/DatabaseDetail.vue"),
+            props: true,
+          },
+          {
+            path: "change-histories/:changeHistoryId",
+            name: PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
+            meta: {
+              overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.databases.get",
+                "bb.changeHistories.get",
+              ],
+            },
+            component: () => import("@/views/ChangeHistoryDetail.vue"),
+            props: true,
+          },
+        ],
       },
     ],
   },
