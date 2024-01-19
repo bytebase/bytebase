@@ -5,6 +5,7 @@
   >
     <div class="textlabel flex items-center">
       {{ $t("task.prior-backup") }}
+      <BBBetaBadge class="scale-75" />
     </div>
     <div class="flex items-center gap-x-2">
       <PreBackupSwitch />
@@ -13,6 +14,7 @@
 </template>
 
 <script lang="ts" setup>
+import { BBBetaBadge } from "@/bbkit";
 import PreBackupSwitch from "./PreBackupSwitch.vue";
 import { usePreBackupContext } from "./common";
 
