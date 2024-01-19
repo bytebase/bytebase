@@ -75,6 +75,12 @@ type UpdateIssueMessage struct {
 	PipelineUID *int
 }
 
+type FindIssueMessagePermissionFilter struct {
+	ProjectIDs []string
+	IssueTypes []string
+	CreatorUID int
+}
+
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID        *int
@@ -101,6 +107,8 @@ type FindIssueMessage struct {
 	Offset *int
 
 	Query *string
+
+	PermissionFilter *FindIssueMessagePermissionFilter
 }
 
 // GetIssueV2 gets issue by issue UID.
@@ -388,10 +396,14 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
-		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM project WHERE project.id = issue.project_id AND project.resource_id = ANY($%d))", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.PermissionFilter; v != nil {
+		where = append(where, fmt.Sprintf("(issue.creator_id = $%d OR (project.resource_id, issue.type) = ANY(SELECT * FROM unnest($%d::TEXT[], $%d::TEXT[])))", len(args)+1, len(args)+2, len(args)+3))
+		args = append(args, v.CreatorUID, v.ProjectIDs, v.IssueTypes)
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)
@@ -467,6 +479,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.payload,
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
 	FROM %s
+	LEFT JOIN project ON issue.project_id = project.id
 	WHERE %s
 	%s
 	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
