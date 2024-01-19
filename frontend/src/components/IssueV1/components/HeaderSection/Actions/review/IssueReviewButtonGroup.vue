@@ -99,11 +99,12 @@ const issueStatusActionList = computed(() => {
   return getApplicableIssueStatusActionList(issue.value);
 });
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
+  // Still using role based permission checks
   if (
     currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
     currentUser.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
   ) {
-    // Only for workspace Owners and DBAs.
+    // Only for workspace admins and DBAs.
     return [];
   }
 
