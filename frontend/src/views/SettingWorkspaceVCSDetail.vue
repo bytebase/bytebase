@@ -279,7 +279,7 @@ watchEffect(async () => {
       pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: `You don't have permission to search projects in '${vcs.title}'`,
+        title: `You don't have permission to list projects in '${vcs.title}'`,
       });
       return;
     }
