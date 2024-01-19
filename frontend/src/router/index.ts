@@ -7,17 +7,13 @@ import {
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
-  useDBSchemaV1Store,
   useOnboardingStateStore,
   useTabStore,
   useUserStore,
   useCurrentUserV1,
-  useDatabaseV1Store,
-  useChangeHistoryStore,
   usePageMode,
 } from "@/store";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { uidFromSlug, sheetNameFromSlug, idFromSlug } from "@/utils";
+import { sheetNameFromSlug } from "@/utils";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -28,9 +24,8 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
-import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instance";
+import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instanceV1";
 import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
-import { PROJECT_V1_ROUTE } from "./dashboard/projectV1";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -85,7 +80,6 @@ router.beforeEach((to, from, next) => {
   }
 
   const authStore = useAuthStore();
-  const dbSchemaStore = useDBSchemaV1Store();
   const routerStore = useRouterStore();
   const isLoggedIn = authStore.isLoggedIn();
 
@@ -202,24 +196,15 @@ router.beforeEach((to, from, next) => {
     to.name === WORKSPACE_ROUTE_SLOW_QUERY ||
     to.name === WORKSPACE_ROUTE_EXPORT_CENTER ||
     to.name === WORKSPACE_ROUTE_ANOMALY_CENTER ||
-    to.name === PROJECT_V1_ROUTE_DASHBOARD ||
-    to.name === INSTANCE_ROUTE_DASHBOARD ||
-    to.name === DATABASE_ROUTE_DASHBOARD ||
+    to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD) ||
+    to.name?.toString().startsWith(INSTANCE_ROUTE_DASHBOARD) ||
+    to.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD) ||
+    to.name?.toString().startsWith(DATABASE_ROUTE_DASHBOARD) ||
+    to.name?.toString().startsWith(ISSUE_ROUTE_DASHBOARD) ||
     to.name === INSTANCE_ROUTE_DETAIL ||
-    to.name === ISSUE_ROUTE_DASHBOARD ||
     to.name === SQL_EDITOR_HOME_MODULE ||
     to.name?.toString().startsWith(SETTING_ROUTE)
   ) {
-    next();
-    return;
-  }
-
-  if (to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD)) {
-    next();
-    return;
-  }
-
-  if (to.name?.toString().startsWith(PROJECT_V1_ROUTE)) {
     next();
     return;
   }
@@ -231,32 +216,9 @@ router.beforeEach((to, from, next) => {
     return;
   }
 
-  if (to.name === "workspace.database.history.detail") {
-    const parent = `instances/${to.params.instance}/databases/${to.params.database}`;
-    const id = idFromSlug(to.params.changeHistorySlug as string);
-    Promise.all([
-      useDatabaseV1Store().getOrFetchDatabaseByName(parent),
-      useChangeHistoryStore().fetchChangeHistory({
-        name: `${parent}/changeHistories/${id}`,
-      }),
-    ])
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
-
   const routerSlug = routerStore.routeSlug(to);
   const principalEmail = routerSlug.principalEmail;
   const issueSlug = routerSlug.issueSlug;
-  const databaseSlug = routerSlug.databaseSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
 
@@ -280,34 +242,6 @@ router.beforeEach((to, from, next) => {
     // We've moved the preparation data fetch jobs into IssueDetail page
     // so just next() here.
     next();
-    return;
-  }
-
-  if (databaseSlug) {
-    if (databaseSlug.toLowerCase() == "grant") {
-      next();
-      return;
-    }
-    useDatabaseV1Store()
-      .fetchDatabaseByUID(String(uidFromSlug(databaseSlug)))
-      .then((database) => {
-        dbSchemaStore
-          .getOrFetchDatabaseMetadata({
-            database: database.name,
-            skipCache: false,
-            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-          })
-          .then(() => {
-            next();
-          });
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
     return;
   }
 

@@ -1,13 +1,10 @@
-import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
-import ProjectSidebarV1 from "@/components/Project/ProjectSidebarV1.vue";
-import DatabaseLayout from "@/layouts/DatabaseLayout.vue";
+import { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import { useDatabaseV1Store } from "@/store";
-import { uidFromSlug } from "@/utils";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import { DATABASE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const DATABASE_ROUTE_DETAIL = `${DATABASE_ROUTE_DASHBOARD}.detail`;
+export const DATABASE_ROUTE_CHANGE_HISTORY_DETAIL = `${DATABASE_ROUTE_DASHBOARD}.change-history.detail`;
 
 const databaseRoutes: RouteRecordRaw[] = [
   {
@@ -26,10 +23,10 @@ const databaseRoutes: RouteRecordRaw[] = [
     props: { content: true, leftSidebar: true },
   },
   {
-    path: "db/:databaseSlug",
+    path: "projects/:projectId/instances/:instanceId/databases/:databaseName",
     components: {
-      content: DatabaseLayout,
-      leftSidebar: ProjectSidebarV1,
+      content: () => import("@/layouts/DatabaseLayout.vue"),
+      leftSidebar: () => import("@/components/Project/ProjectSidebarV1.vue"),
     },
     props: { content: true, leftSidebar: true },
     children: [
@@ -37,17 +34,27 @@ const databaseRoutes: RouteRecordRaw[] = [
         path: "",
         name: DATABASE_ROUTE_DETAIL,
         meta: {
-          title: (route: RouteLocationNormalized) => {
-            const slug = route.params.databaseSlug as string;
-            if (slug.toLowerCase() == "new") {
-              return t("common.new");
-            }
-            return useDatabaseV1Store().getDatabaseByUID(
-              String(uidFromSlug(slug))
-            ).databaseName;
-          },
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.databases.get",
+          ],
         },
         component: () => import("@/views/DatabaseDetail.vue"),
+        props: true,
+      },
+      {
+        path: "change-histories/:changeHistoryId",
+        name: DATABASE_ROUTE_CHANGE_HISTORY_DETAIL,
+        meta: {
+          overrideTitle: true,
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.databases.get",
+            "bb.changeHistories.get",
+          ],
+        },
+        component: () => import("@/views/ChangeHistoryDetail.vue"),
         props: true,
       },
     ],

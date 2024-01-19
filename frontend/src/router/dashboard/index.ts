@@ -3,7 +3,7 @@ import BodyLayout from "@/layouts/BodyLayout.vue";
 import DashboardLayout from "@/layouts/DashboardLayout.vue";
 import databaseRoutes from "./database";
 import environmentV1Routes from "./environmentV1";
-import instanceRoutes from "./instance";
+import instanceV1Routes from "./instanceV1";
 import issueRoutes from "./issue";
 import projectV1Routes from "./projectV1";
 import workspaceRoutes from "./workspace";
@@ -21,7 +21,7 @@ const dashboardRoutes: RouteRecordRaw[] = [
           ...workspaceRoutes,
           ...workspaceSettingRoutes,
           ...environmentV1Routes,
-          ...instanceRoutes,
+          ...instanceV1Routes,
           ...projectV1Routes,
           ...issueRoutes,
           ...databaseRoutes,

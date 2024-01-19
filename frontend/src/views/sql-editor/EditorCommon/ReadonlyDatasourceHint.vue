@@ -26,17 +26,15 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router";
 import { useCurrentUserV1, useTabStore } from "@/store";
 import { ComposedInstance, TabMode, UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV2, instanceV1Slug } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
   instance: ComposedInstance;
 }>();
 
-const router = useRouter();
 const tabStore = useTabStore();
 const me = useCurrentUserV1();
 
@@ -65,12 +63,6 @@ const showReadonlyDatasourceHint = computed(() => {
 });
 
 const gotoInstanceDetailPage = () => {
-  const route = router.resolve({
-    name: "workspace.instance.detail",
-    params: {
-      instanceSlug: instanceV1Slug(props.instance),
-    },
-  });
-  window.open(route.href);
+  window.open(`/${props.instance.name}`);
 };
 </script>

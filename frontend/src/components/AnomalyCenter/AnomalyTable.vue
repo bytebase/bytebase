@@ -80,6 +80,7 @@ import { computed, PropType, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
+import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instanceV1";
 import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import { useEnvironmentV1Store } from "@/store";
 import { UNKNOWN_ENVIRONMENT_NAME } from "@/types";
@@ -90,9 +91,9 @@ import {
 } from "@/types/proto/v1/anomaly_service";
 import {
   databaseV1Slug,
-  instanceV1Slug,
   humanizeTs,
   extractDatabaseResourceName,
+  extractInstanceResourceName,
 } from "@/utils";
 import { DiffEditor } from "../MonacoEditor";
 
@@ -205,9 +206,9 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           router.push({
-            name: "workspace.instance.detail",
+            name: INSTANCE_ROUTE_DETAIL,
             params: {
-              instanceSlug: instanceV1Slug(instance),
+              instanceId: extractInstanceResourceName(instance.name),
             },
           });
         },
@@ -219,9 +220,9 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           router.push({
-            name: "workspace.instance.detail",
+            name: INSTANCE_ROUTE_DETAIL,
             params: {
-              instanceSlug: instanceV1Slug(instance),
+              instanceId: extractInstanceResourceName(instance.name),
             },
           });
         },
@@ -265,9 +266,9 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           router.push({
-            name: "workspace.instance.detail",
+            name: INSTANCE_ROUTE_DETAIL,
             params: {
-              instanceSlug: instanceV1Slug(instance),
+              instanceId: extractInstanceResourceName(instance.name),
             },
           });
         },

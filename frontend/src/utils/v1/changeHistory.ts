@@ -1,5 +1,4 @@
 import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
-import slug from "slug";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
@@ -9,7 +8,7 @@ import {
   ChangeHistory_Type,
   DatabaseSchema,
 } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName } from "./database";
+import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangeHistoryUID = (name: string) => {
   const pattern = /(?:^|\/)(?:changeHistories|migrations)\/([^/]+)(?:$|\/)/;
@@ -30,25 +29,17 @@ export const extractDatabaseNameAndChangeHistoryUID = (
   };
 };
 
-export const changeHistorySlug = (uid: string, version: string): string => {
-  return [slug(version), uid].join("-");
-};
-
 export const changeHistoryLinkRaw = (
   parent: string,
   uid: string,
   version: string
 ) => {
-  const { instance, database } = extractDatabaseResourceName(parent);
-  const path = [
-    "instances",
-    encodeURIComponent(instance),
-    "databases",
-    encodeURIComponent(database),
-    "change-histories",
-    changeHistorySlug(uid, version),
-  ].join("/");
-  return `/${path}`;
+  const { full } = extractDatabaseResourceName(parent);
+  const composedDatabase = useDatabaseV1Store().getDatabaseByName(full);
+  const path = [databaseV1Url(composedDatabase), "change-histories", uid].join(
+    "/"
+  );
+  return path;
 };
 
 export const changeHistoryLink = (changeHistory: ChangeHistory): string => {
