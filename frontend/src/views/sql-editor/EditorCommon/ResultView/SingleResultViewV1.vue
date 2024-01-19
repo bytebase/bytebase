@@ -30,7 +30,7 @@
       </div>
       <div class="flex justify-between items-center gap-x-3 overflow-y-hidden">
         <div class="flex items-center">
-          <NSwitch size="small" v-model:value="state.vertical" />
+          <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
             {{ $t("sql-editor.vertical-display") }}
           </span>

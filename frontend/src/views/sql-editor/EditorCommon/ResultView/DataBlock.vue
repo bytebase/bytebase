@@ -10,6 +10,7 @@
       <div class="space-y-2 py-2 px-3 bg-gray-50 dark:bg-gray-700 rounded-sm">
         <div
           v-for="header in table.getFlatHeaders()"
+          :key="header.index"
           class="flex items-center text-gray-500 dark:text-gray-300 text-sm"
         >
           <div class="w-28 text-left flex items-center font-medium">
