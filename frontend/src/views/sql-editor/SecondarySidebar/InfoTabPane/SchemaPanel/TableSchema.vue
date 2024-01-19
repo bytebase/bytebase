@@ -19,6 +19,7 @@
         />
         <HideInStandaloneMode>
           <ExternalLinkButton
+            v-if="db.uid !== String(UNKNOWN_ID)"
             :link="tableDetailLink"
             :tooltip="$t('common.detail')"
           />
@@ -51,7 +52,7 @@
 <script lang="ts" setup>
 import { stringify } from "qs";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
+import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,

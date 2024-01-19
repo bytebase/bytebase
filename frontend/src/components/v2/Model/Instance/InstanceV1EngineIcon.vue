@@ -1,5 +1,5 @@
 <template>
-  <NTooltip :disabled="!tooltip">
+  <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
       <div class="relative w-4 shrink-0" v-bind="$attrs">
         <EngineIcon :engine="instance.engine" />
