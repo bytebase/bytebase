@@ -2,7 +2,6 @@ package tidb
 
 import (
 	"fmt"
-	"log/slog"
 	"sort"
 	"strings"
 
@@ -11,7 +10,7 @@ import (
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
-	tidbmysql "github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -493,13 +492,23 @@ func (d *defaultValueExpression) toString() string {
 }
 
 type columnState struct {
-	id           int
-	name         string
-	tp           string
+	id   int
+	name string
+	tp   string
+	// hasDefault is true if the column has a default value, auto increment or auto random.
+	// These three cases are mutually exclusive.
 	hasDefault   bool
 	defaultValue defaultValue
 	comment      string
 	nullable     bool
+}
+
+func (c *columnState) hasAutoIncrement() bool {
+	return c.hasDefault && strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol)
+}
+
+func (c *columnState) hasAutoRand() bool {
+	return c.hasDefault && strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol)
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
@@ -638,7 +647,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 			for _, option := range column.Options {
 				switch option.Tp {
 				case tidbast.ColumnOptionDefaultValue:
-					defaultValue, err := columnDefaultValue(column)
+					defaultValue, err := restoreExpr(option.Expr)
 					if err != nil {
 						t.err = err
 						return in, true
@@ -657,7 +666,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 						}
 					}
 				case tidbast.ColumnOptionComment:
-					comment, err := columnComment(column)
+					comment, err := restoreComment(option.Expr)
 					if err != nil {
 						t.err = err
 						return in, true
@@ -789,23 +798,16 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 
 // columnTypeStr returns the type string of tp.
 func columnTypeStr(tp *tidbtypes.FieldType) string {
-	switch tp.GetType() {
-	// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLong
-	case tidbmysql.TypeLong:
-		// tp.String() return int(11)
-		return "int"
-		// https://pkg.go.dev/github.com/pingcap/tidb/pkg/parser/mysql#TypeLonglong
-	case tidbmysql.TypeLonglong:
-		// tp.String() return bigint(20)
-		return "bigint"
-	default:
-		text, err := tidbRestoreFieldType(tp)
-		if err != nil {
-			slog.Debug("tidbRestoreFieldType failed", "err", err, "type", tp.String())
-			return tp.String()
-		}
-		return text
+	// This logic is copy from tidb/pkg/parser/model/model.go:GetTypeDesc()
+	// DO NOT TOUCH!
+	desc := tp.CompactStr()
+	if mysql.HasUnsignedFlag(tp.GetFlag()) && tp.GetType() != mysql.TypeBit && tp.GetType() != mysql.TypeYear {
+		desc += " unsigned"
 	}
+	if mysql.HasZerofillFlag(tp.GetFlag()) && tp.GetType() != mysql.TypeYear {
+		desc += " zerofill"
+	}
+	return desc
 }
 
 func tidbColumnCanNull(column *tidbast.ColumnDef) bool {
@@ -817,36 +819,27 @@ func tidbColumnCanNull(column *tidbast.ColumnDef) bool {
 	return true
 }
 
-func columnDefaultValue(column *tidbast.ColumnDef) (*string, error) {
-	for _, option := range column.Options {
-		if option.Tp == tidbast.ColumnOptionDefaultValue {
-			defaultValue, err := tidbRestoreNode(option.Expr, tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreStringWithoutCharset)
-			if err != nil {
-				return nil, err
-			}
-			return &defaultValue, nil
-		}
+func restoreExpr(expr tidbast.ExprNode) (*string, error) {
+	if expr == nil {
+		return nil, nil
 	}
-	// no default value.
-	return nil, nil
+	result, err := tidbRestoreNode(expr, tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreStringWithoutCharset)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 func tableComment(option *tidbast.TableOption) string {
 	return option.StrValue
 }
 
-func columnComment(column *tidbast.ColumnDef) (string, error) {
-	for _, option := range column.Options {
-		if option.Tp == tidbast.ColumnOptionComment {
-			comment, err := tidbRestoreNode(option.Expr, tidbformat.RestoreStringWithoutCharset)
-			if err != nil {
-				return "", err
-			}
-			return comment, nil
-		}
+func restoreComment(expr tidbast.ExprNode) (string, error) {
+	comment, err := tidbRestoreNode(expr, tidbformat.RestoreStringWithoutCharset)
+	if err != nil {
+		return "", err
 	}
-
-	return "", nil
+	return comment, nil
 }
 
 type columnAttr struct {

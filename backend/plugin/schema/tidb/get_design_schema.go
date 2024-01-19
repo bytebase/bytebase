@@ -121,101 +121,106 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 			}
 
 			// Column attributes.
-			deleteSchemaAutoIncrement := false
-			deleteAutoRand := false
-			// Default value, auto increment and auto random are mutually exclusive.
+			optionMap := make(map[tidbast.ColumnOptionType]*tidbast.ColumnOption)
 			for _, option := range column.Options {
-				switch option.Tp {
-				case tidbast.ColumnOptionDefaultValue:
-					deleteAutoRand = stateColumn.hasDefault
-					deleteSchemaAutoIncrement = stateColumn.hasDefault
-				case tidbast.ColumnOptionAutoIncrement:
-					deleteSchemaAutoIncrement = stateColumn.hasDefault
-				case tidbast.ColumnOptionAutoRandom:
-					deleteAutoRand = stateColumn.hasDefault
+				optionMap[option.Tp] = option
+			}
+
+			// NULL and NOT NULL are mutually exclusive.
+			oldNullable := true
+			if _, exists := optionMap[tidbast.ColumnOptionNotNull]; exists {
+				oldNullable = false
+			}
+			if oldNullable != stateColumn.nullable {
+				if stateColumn.nullable {
+					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNotNull))
+					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NULL"))
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNull))
+					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NOT NULL"))
 				}
 			}
-			newAttr := tidbExtractNewAttrs(stateColumn, column.Options)
-			for _, option := range column.Options {
-				attrOrder := tidbGetAttrOrder(option)
-				for ; len(newAttr) > 0 && newAttr[0].order < attrOrder; newAttr = newAttr[1:] {
-					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, newAttr[0].text))
-				}
 
-				switch option.Tp {
-				case tidbast.ColumnOptionNull, tidbast.ColumnOptionNotNull:
-					sameNullable := option.Tp == tidbast.ColumnOptionNull && stateColumn.nullable
-					sameNullable = sameNullable || (option.Tp == tidbast.ColumnOptionNotNull && !stateColumn.nullable)
-
-					if !sameNullable {
-						if stateColumn.nullable {
-							g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NULL"))
-							if option.Tp == tidbast.ColumnOptionNotNull {
-								g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNotNull))
-							}
-						} else {
-							g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, "NOT NULL"))
-							if option.Tp == tidbast.ColumnOptionNull {
-								g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionNull))
-							}
-						}
-					}
-				case tidbast.ColumnOptionDefaultValue:
-					defaultValueText, err := columnDefaultValue(column)
-					if err != nil {
-						g.err = err
-						return in, true
-					}
-					var defaultValue defaultValue
+			// Default value, auto increment and auto random are mutually exclusive.
+			if option, exists := optionMap[tidbast.ColumnOptionDefaultValue]; exists {
+				if stateColumn.hasDefault {
 					switch {
-					case strings.EqualFold(*defaultValueText, "NULL"):
-						defaultValue = &defaultValueNull{}
-					case strings.HasPrefix(*defaultValueText, "'") && strings.HasSuffix(*defaultValueText, "'"):
-						defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValueText)[1:len(*defaultValueText)-1], "''", "'")}
+					case stateColumn.hasAutoIncrement():
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+					case stateColumn.hasAutoRand():
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
 					default:
-						defaultValue = &defaultValueExpression{value: *defaultValueText}
-					}
-					if stateColumn.hasDefault && stateColumn.defaultValue.toString() == defaultValue.toString() {
-						continue
-					}
-					if stateColumn.hasDefault {
-						if strings.EqualFold(stateColumn.defaultValue.toString(), autoIncrementSymbol) {
-							g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
-							g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
-						} else if strings.Contains(strings.ToUpper(stateColumn.defaultValue.toString()), autoRandSymbol) {
-							g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
-							g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
-						} else {
+						expr, err := restoreExpr(option.Expr)
+						if err != nil {
+							g.err = err
+							return in, true
+						}
+						if *expr != stateColumn.defaultValue.toString() {
 							g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 						}
 					}
-				case tidbast.ColumnOptionComment:
-					commentValue, err := columnComment(column)
-					if err != nil {
-						g.err = err
-						return in, true
-					}
-					if stateColumn.comment == commentValue {
-						continue
-					}
-					if stateColumn.comment != "" {
-						g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
-					} else {
-						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment))
-					}
-				case tidbast.ColumnOptionAutoIncrement:
-					if deleteSchemaAutoIncrement {
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
+				}
+			} else if _, exists := optionMap[tidbast.ColumnOptionAutoIncrement]; exists {
+				if stateColumn.hasDefault {
+					switch {
+					case stateColumn.hasAutoIncrement():
+					// Do nothing.
+					case stateColumn.hasAutoRand():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
+					default:
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 					}
-				case tidbast.ColumnOptionAutoRandom:
-					if deleteAutoRand {
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
+				}
+			} else if _, exists := optionMap[tidbast.ColumnOptionAutoRandom]; exists {
+				if stateColumn.hasDefault {
+					switch {
+					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+					case stateColumn.hasAutoRand():
+					// Do nothing.
+					default:
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
+					}
+				} else {
+					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
+				}
+			} else {
+				if stateColumn.hasDefault {
+					switch {
+					case stateColumn.hasAutoIncrement():
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, stateColumn.defaultValue.toString()))
+					case stateColumn.hasAutoRand():
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("/*T![auto_rand] %s */", stateColumn.defaultValue.toString())))
+					default:
+						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("DEFAULT %s", stateColumn.defaultValue.toString())))
 					}
 				}
 			}
 
-			for _, attr := range newAttr {
-				g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, attr.text))
+			// Comment.
+			if option, exists := optionMap[tidbast.ColumnOptionComment]; exists {
+				comment, err := restoreComment(option.Expr)
+				if err != nil {
+					g.err = err
+					return in, true
+				}
+				if comment != stateColumn.comment {
+					g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
+				}
+			} else {
+				if stateColumn.comment != "" {
+					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
+				}
 			}
 		}
 
@@ -471,7 +476,7 @@ func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) [
 		switch option.Tp {
 		case tidbast.ColumnOptionNull, tidbast.ColumnOptionNotNull:
 			nullExists = true
-		case tidbast.ColumnOptionDefaultValue:
+		case tidbast.ColumnOptionDefaultValue, tidbast.ColumnOptionAutoIncrement, tidbast.ColumnOptionAutoRandom:
 			defaultExists = true
 		case tidbast.ColumnOptionComment:
 			commentExists = true
@@ -514,18 +519,18 @@ func tidbExtractNewAttrs(column *columnState, options []*tidbast.ColumnOption) [
 
 func tidbGetAttrOrder(option *tidbast.ColumnOption) int {
 	switch option.Tp {
-	case tidbast.ColumnOptionDefaultValue:
-		return columnAttrOrder["DEFAULT"]
 	case tidbast.ColumnOptionNull, tidbast.ColumnOptionNotNull:
 		return columnAttrOrder["NULL"]
-	case tidbast.ColumnOptionUniqKey:
-		return columnAttrOrder["UNIQUE"]
-	case tidbast.ColumnOptionColumnFormat:
-		return columnAttrOrder["COLUMN_FORMAT"]
+	case tidbast.ColumnOptionDefaultValue:
+		return columnAttrOrder["DEFAULT"]
 	case tidbast.ColumnOptionAutoIncrement:
 		return columnAttrOrder["AUTO_INCREMENT"]
 	case tidbast.ColumnOptionAutoRandom:
 		return columnAttrOrder["AUTO_RANDOM"]
+	case tidbast.ColumnOptionUniqKey:
+		return columnAttrOrder["UNIQUE"]
+	case tidbast.ColumnOptionColumnFormat:
+		return columnAttrOrder["COLUMN_FORMAT"]
 	case tidbast.ColumnOptionComment:
 		return columnAttrOrder["COMMENT"]
 	case tidbast.ColumnOptionCollate:
