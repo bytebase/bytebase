@@ -454,7 +454,7 @@ func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssu
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if s.profile.DevelopmentIAM {
+	if s.profile.DevelopmentIAM && !loopback {
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesCreate, user, projectID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
