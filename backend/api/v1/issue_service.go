@@ -145,10 +145,10 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
-func (s *IssueService) getIssueFind(ctx context.Context, projectIDs *[]string, projectIDsAndIssueTypes *store.FindIssueMessagePermissionFilter, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
+func (s *IssueService) getIssueFind(ctx context.Context, projectIDs *[]string, permissionFilter *store.FindIssueMessagePermissionFilter, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
 		ProjectIDs:       projectIDs,
-		PermissionFilter: projectIDsAndIssueTypes,
+		PermissionFilter: permissionFilter,
 		Limit:            limit,
 		Offset:           offset,
 	}
@@ -300,7 +300,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project id filter, error: %v", err)
 	}
-	projectIDsAndIssueTypes, err := func() (*store.FindIssueMessagePermissionFilter, error) {
+	permissionFilter, err := func() (*store.FindIssueMessagePermissionFilter, error) {
 		if s.profile.DevelopmentIAM {
 			return getIssuePermissionFilter(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
 		}
@@ -327,7 +327,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, projectIDs, projectIDsAndIssueTypes, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, projectIDs, permissionFilter, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +378,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projectIDsAndIssueTypes, err := getIssuePermissionFilter(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
+	permissionFilter, err := getIssuePermissionFilter(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
@@ -400,7 +400,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, nil, projectIDsAndIssueTypes, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, nil, permissionFilter, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
