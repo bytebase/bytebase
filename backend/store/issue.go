@@ -396,7 +396,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		where, args = append(where, fmt.Sprintf("issue.plan_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectID; v != nil {
-		where, args = append(where, fmt.Sprintf("project.resource_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ProjectIDs; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
