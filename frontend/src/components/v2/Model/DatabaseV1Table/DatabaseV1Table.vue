@@ -155,13 +155,8 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { getScrollParent } from "@/utils";
-import {
-  databaseV1Slug,
-  isDatabaseV1Queryable,
-  isPITRDatabaseV1,
-  VueClass,
-} from "@/utils";
+import { databaseV1Url, getScrollParent } from "@/utils";
+import { isDatabaseV1Queryable, isPITRDatabaseV1, VueClass } from "@/utils";
 import DatabaseGroupTableRow from "./DatabaseGroupTableRow.vue";
 import DatabaseTableRow from "./DatabaseTableRow.vue";
 import { isDatabase, Mode } from "./utils";
@@ -460,7 +455,7 @@ const handleGotoSQLEditorFailed = (database: ComposedDatabase) => {
 
 const handleIncorrectProjectModalConfirm = () => {
   if (state.warningDatabase) {
-    router.push(`/db/${databaseV1Slug(state.warningDatabase)}`);
+    router.push(databaseV1Url(state.warningDatabase));
   }
 };
 
@@ -481,7 +476,7 @@ const clickDatabase = (
     emit("select-database", database);
   } else {
     if (isDatabase(database)) {
-      const url = `/db/${databaseV1Slug(database as ComposedDatabase)}`;
+      const url = databaseV1Url(database as ComposedDatabase);
       if (e.ctrlKey || e.metaKey) {
         window.open(url, "_blank");
       } else {

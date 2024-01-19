@@ -6,7 +6,11 @@ import {
   useDatabaseV1Store,
   experimentalFetchIssueByUID,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { unknownProject, unknownDatabase, UNKNOWN_ID, EMPTY_ID } from "@/types";
 import { uidFromSlug } from "@/utils";
 
@@ -14,8 +18,9 @@ export const useCurrentProject = (
   params: ComputedRef<{
     projectId?: string;
     issueSlug?: string;
-    databaseSlug?: string;
-    changeHistorySlug?: string;
+    instanceId?: string;
+    databaseName?: string;
+    changeHistoryId?: string;
   }>
 ) => {
   const route = useRoute();
@@ -31,12 +36,15 @@ export const useCurrentProject = (
   });
 
   const database = computed(() => {
-    if (unref(params).changeHistorySlug) {
-      const parent = `instances/${route.params.instance}/databases/${route.params.database}`;
+    if (unref(params).changeHistoryId) {
+      const parent = `${instanceNamePrefix}${route.params.instanceId}/${databaseNamePrefix}${route.params.databaseName}`;
       return useDatabaseV1Store().getDatabaseByName(parent);
-    } else if (unref(params).databaseSlug) {
-      return useDatabaseV1Store().getDatabaseByUID(
-        String(uidFromSlug(unref(params).databaseSlug!))
+    } else if (unref(params).databaseName) {
+      return useDatabaseV1Store().getDatabaseByName(
+        `${instanceNamePrefix}${
+          unref(params).instanceId
+        }/${databaseNamePrefix}${unref(params).databaseName}
+        )`
       );
     }
     return unknownDatabase();
@@ -47,7 +55,7 @@ export const useCurrentProject = (
       return useProjectV1Store().getProjectByName(
         `${projectNamePrefix}${unref(params).projectId}`
       );
-    } else if (unref(params).databaseSlug || unref(params).changeHistorySlug) {
+    } else if (unref(params).databaseName || unref(params).changeHistoryId) {
       return database.value.projectEntity;
     } else if (issueUID.value !== String(UNKNOWN_ID)) {
       if (issueUID.value === String(EMPTY_ID)) {

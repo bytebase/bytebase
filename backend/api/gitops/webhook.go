@@ -1581,6 +1581,11 @@ func sortFilesBySchemaVersion(fileInfoList []fileInfo) []fileInfo {
 }
 
 func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project *store.ProjectMessage, issueName, issueDescription string, pushEvent vcs.PushEvent, creatorID int, migrationDetailList []*migrationDetail) error {
+	user, err := s.store.GetUserByID(ctx, creatorID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get user %v", creatorID)
+	}
+
 	var steps []*v1pb.Plan_Step
 	if len(migrationDetailList) == 1 && migrationDetailList[0].databaseID == 0 {
 		migrationDetail := migrationDetailList[0]
@@ -1654,6 +1659,7 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 		}
 	}
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, creatorID)
+	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
 	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),

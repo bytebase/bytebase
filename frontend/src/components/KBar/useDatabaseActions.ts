@@ -17,8 +17,8 @@ import { State } from "@/types/proto/v1/common";
 import {
   groupBy,
   environmentV1Name,
-  databaseV1Slug,
   sortDatabaseV1List,
+  databaseV1Url,
 } from "@/utils";
 
 export const useDatabaseActions = (
@@ -55,7 +55,7 @@ export const useDatabaseActions = (
           children: databases.map((db) => ({
             id: `bb.database.${db.uid}`,
             name: `${db.databaseName} (${db.instanceEntity.title})`,
-            link: `/db/${databaseV1Slug(db)}`,
+            link: databaseV1Url(db),
           })),
         };
       });

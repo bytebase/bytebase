@@ -46,7 +46,6 @@ export type RowStatus = "NORMAL" | "ARCHIVED";
 export type RouterSlug = {
   principalEmail?: string;
   issueSlug?: string;
-  databaseSlug?: string;
   connectionSlug?: string;
   sheetSlug?: string;
 };

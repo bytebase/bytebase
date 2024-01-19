@@ -15,7 +15,7 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { databaseV1Slug } from "@/utils";
+import { databaseV1Url } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -32,7 +32,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/db/${databaseV1Slug(props.database)}`,
+      to: databaseV1Url(props.database),
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {
