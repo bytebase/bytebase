@@ -143,7 +143,7 @@ const disallowEditReasons = computed(() => {
     hasProjectPermissionV2(
       issue.value.projectEntity,
       currentUser.value,
-      "bb.issues.update"
+      "bb.plans.update"
     )
   ) {
     allow = true;

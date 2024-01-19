@@ -86,7 +86,7 @@ export const provideIssueGhostContext = () => {
         !hasProjectPermissionV2(
           issue.value.projectEntity,
           me.value,
-          "bb.issues.update"
+          "bb.plans.update"
         )
       ) {
         return [t("issue.error.you-don-have-privilege-to-edit-this-issue")];

@@ -1,3 +1,4 @@
+import { t } from "@/plugins/i18n";
 import { ComposedIssue } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
@@ -88,13 +89,15 @@ export const allowUserToEditStatementForTask = (
 
   // if not creating, we are allowed to edit sql statement only when:
   // - user is the creator
-  // - OR user has issues.update permission in the project
+  // - OR user has plans.update permission in the project
 
   denyReasons.push(...isTaskEditable(issue, task));
 
   if (extractUserResourceName(issue.creator) !== user.email) {
     if (!hasProjectPermissionV2(issue.projectEntity, user, "bb.plans.update")) {
-      denyReasons.push("You don't have the privilege to edit this issue");
+      denyReasons.push(
+        t("issue.error.you-don-have-privilege-to-edit-this-issue")
+      );
     }
   }
   return denyReasons;
