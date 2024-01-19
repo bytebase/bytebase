@@ -99,7 +99,7 @@ export const useRollbackContext = () => {
       return true;
     }
 
-    if (hasProjectPermissionV2(project.value, user, "bb.issues.update")) {
+    if (hasProjectPermissionV2(project.value, user, "bb.plans.update")) {
       return true;
     }
 

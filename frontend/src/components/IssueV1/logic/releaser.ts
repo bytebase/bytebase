@@ -19,8 +19,8 @@ export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
       );
       users.push(
         ...projectMembers
-          .filter((user) => user.roleList.includes(releaserRole))
-          .map((user) => user.user)
+          .filter((membership) => membership.roleList.includes(releaserRole))
+          .map((membership) => membership.user)
       );
     }
     if (releaserRole.startsWith("users/")) {

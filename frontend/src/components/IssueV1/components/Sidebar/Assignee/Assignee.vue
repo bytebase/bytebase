@@ -154,6 +154,8 @@ const changeAssigneeUID = async (uid: string | undefined) => {
 };
 
 const filterAssignee = (user: User): boolean => {
+  // Users can be assignee candidates only if they have permission to "See"
+  // the issue
   return hasProjectPermissionV2(
     issue.value.projectEntity,
     user,
