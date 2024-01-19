@@ -23,6 +23,10 @@ const (
 	IssueDatabaseGeneral IssueType = "bb.issue.database.general"
 )
 
+func (t IssueType) String() string {
+	return string(t)
+}
+
 // IssueFieldID is the field ID for an issue.
 // It has to be string type because the id for stage field contain multiple parts.
 type IssueFieldID string
