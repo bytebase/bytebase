@@ -80,12 +80,12 @@ const clickProject = function (
   e: MouseEvent
 ) {
   let routeName = PROJECT_V1_ROUTE_DETAIL;
+  const currentRouteName = router.currentRoute.value.name?.toString();
   if (
-    router.currentRoute.value.name
-      ?.toString()
-      .startsWith(PROJECT_V1_ROUTE_DASHBOARD)
+    currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD) &&
+    currentRouteName !== PROJECT_V1_ROUTE_DASHBOARD
   ) {
-    routeName = router.currentRoute.value.name?.toString();
+    routeName = currentRouteName;
   }
 
   const route = router.resolve({
