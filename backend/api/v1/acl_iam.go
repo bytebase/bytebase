@@ -146,7 +146,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.RolloutService_PreviewRollout_FullMethodName,
 		v1pb.RolloutService_GetPlan_FullMethodName,
 		v1pb.RolloutService_CreatePlan_FullMethodName,
-		v1pb.RolloutService_UpdatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
 		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
 		v1pb.RolloutService_RunPlanChecks_FullMethodName,
@@ -262,6 +261,10 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
 		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
 		return true
+	// handled in the method because we need to consider plan.Creator.
+	case
+		v1pb.RolloutService_UpdatePlan_FullMethodName:
+		return true
 	// handled in the method because we need to consider issue.Creator and issue type.
 	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
 	case
@@ -372,8 +375,6 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		plans = append(plans, r.GetName())
 	case *v1pb.CreatePlanRequest:
 		projects = append(projects, r.GetParent())
-	case *v1pb.UpdatePlanRequest:
-		plans = append(plans, r.GetPlan().GetName())
 	case *v1pb.ListTaskRunsRequest:
 		tasks = append(tasks, r.GetParent())
 	case *v1pb.ListPlanCheckRunsRequest:
