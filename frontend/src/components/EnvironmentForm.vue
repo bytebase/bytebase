@@ -459,7 +459,9 @@ const validateResourceId = async (
 };
 
 const allowArchive = computed(() => {
-  return allowEdit.value && environmentList.value.length > 1;
+  return (
+    hasPermission("bb.environments.delete") && environmentList.value.length > 1
+  );
 });
 
 const allowRestore = computed(() => {
