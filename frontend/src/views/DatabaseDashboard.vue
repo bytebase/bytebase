@@ -61,7 +61,7 @@
 
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
-import { computed, watchEffect, onMounted, reactive, ref } from "vue";
+import { computed, watchEffect, onMounted, reactive } from "vue";
 import { DatabaseV1Table } from "@/components/v2";
 import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
@@ -69,7 +69,6 @@ import {
   useDBGroupStore,
   useDatabaseV1Store,
   usePageMode,
-  usePolicyV1Store,
   useProjectV1ListByCurrentUser,
   useUIStateStore,
 } from "@/store";
@@ -80,11 +79,6 @@ import {
   ComposedDatabaseGroup,
   DEFAULT_PROJECT_V1_NAME,
 } from "@/types";
-import {
-  Policy,
-  PolicyResourceType,
-  PolicyType,
-} from "@/types/proto/v1/org_policy_service";
 import {
   SearchScopeId,
   SearchParams,
@@ -120,21 +114,8 @@ const state = reactive<LocalState>({
 });
 
 const currentUserV1 = useCurrentUserV1();
-const policyStore = usePolicyV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
-const policyList = ref<Policy[]>([]);
-
-const preparePolicyList = () => {
-  policyStore
-    .fetchPolicies({
-      policyType: PolicyType.WORKSPACE_IAM,
-      resourceType: PolicyResourceType.WORKSPACE,
-    })
-    .then((list) => (policyList.value = list));
-};
-
-watchEffect(preparePolicyList);
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
@@ -175,17 +156,6 @@ onMounted(() => {
   }
 });
 
-const prepareDatabaseList = async () => {
-  // It will also be called when user logout
-  if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    state.loading = true;
-    await databaseV1Store.fetchDatabaseList({
-      parent: "instances/-",
-    });
-    state.loading = false;
-  }
-};
-
 const databaseV1List = computed(() => {
   return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
     projectList.value.map((project) => project.name).includes(db.project)
@@ -206,7 +176,6 @@ const prepareDatabaseGroupList = async () => {
 
 watchEffect(async () => {
   state.loading = true;
-  await prepareDatabaseList();
   await prepareDatabaseGroupList();
   state.loading = false;
 });

@@ -1,8 +1,6 @@
 import { startCase } from "lodash-es";
-import { RouteLocationNormalized, RouteRecordRaw } from "vue-router";
+import { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import { useUserStore } from "@/store";
-import { unknownUser } from "@/types";
 import DashboardSidebar from "@/views/DashboardSidebar.vue";
 import Home from "@/views/Home.vue";
 import SettingSidebar from "@/views/SettingSidebar.vue";
@@ -11,6 +9,7 @@ import {
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
+  WORKSPACE_ROUTE_USER_PROFILE,
 } from "./workspaceRoutes";
 
 const workspaceRoutes: RouteRecordRaw[] = [
@@ -31,30 +30,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: Home,
-      leftSidebar: DashboardSidebar,
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
-  },
-  {
-    path: "403",
-    name: "error.403",
-    components: {
-      content: () => import("@/views/Page403.vue"),
-      leftSidebar: DashboardSidebar,
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
-  },
-  {
-    path: "404",
-    name: "error.404",
-    components: {
-      content: () => import("@/views/Page404.vue"),
       leftSidebar: DashboardSidebar,
     },
     props: {
@@ -109,20 +84,36 @@ const workspaceRoutes: RouteRecordRaw[] = [
     // accessed endpoint, and maybe in the future, we will further provide a
     // shortlink such as users/<<email>>
     path: "users/:principalEmail",
-    name: "workspace.profile",
-    meta: {
-      title: (route: RouteLocationNormalized) => {
-        const principalEmail = route.params.principalEmail as string;
-        const user =
-          useUserStore().getUserByEmail(principalEmail) ?? unknownUser();
-        return user.title;
-      },
-    },
+    name: WORKSPACE_ROUTE_USER_PROFILE,
     components: {
       content: () => import("@/views/ProfileDashboard.vue"),
       leftSidebar: SettingSidebar,
     },
-    props: { content: true },
+    props: true,
+  },
+  {
+    path: "403",
+    name: "error.403",
+    components: {
+      content: () => import("@/views/Page403.vue"),
+      leftSidebar: DashboardSidebar,
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
+  },
+  {
+    path: "404",
+    name: "error.404",
+    components: {
+      content: () => import("@/views/Page404.vue"),
+      leftSidebar: DashboardSidebar,
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
   },
 ];
 

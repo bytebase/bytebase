@@ -9,7 +9,6 @@ import {
   useRouterStore,
   useOnboardingStateStore,
   useTabStore,
-  useUserStore,
   useCurrentUserV1,
   usePageMode,
 } from "@/store";
@@ -35,6 +34,7 @@ import {
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
+  WORKSPACE_ROUTE_USER_PROFILE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
 import sqlEditorRoutes, {
@@ -196,6 +196,7 @@ router.beforeEach((to, from, next) => {
     to.name === WORKSPACE_ROUTE_SLOW_QUERY ||
     to.name === WORKSPACE_ROUTE_EXPORT_CENTER ||
     to.name === WORKSPACE_ROUTE_ANOMALY_CENTER ||
+    to.name === WORKSPACE_ROUTE_USER_PROFILE ||
     to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(INSTANCE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD) ||
@@ -217,26 +218,9 @@ router.beforeEach((to, from, next) => {
   }
 
   const routerSlug = routerStore.routeSlug(to);
-  const principalEmail = routerSlug.principalEmail;
   const issueSlug = routerSlug.issueSlug;
   const connectionSlug = routerSlug.connectionSlug;
   const sheetSlug = routerSlug.sheetSlug;
-
-  if (principalEmail) {
-    useUserStore()
-      .getOrFetchUserById(principalEmail)
-      .then(() => {
-        next();
-      })
-      .catch((error) => {
-        next({
-          name: "error.404",
-          replace: false,
-        });
-        throw error;
-      });
-    return;
-  }
 
   if (issueSlug) {
     // We've moved the preparation data fetch jobs into IssueDetail page
