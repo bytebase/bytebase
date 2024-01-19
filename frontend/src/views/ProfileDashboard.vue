@@ -241,6 +241,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { NButton, NInput, NDropdown, DropdownOption } from "naive-ui";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
@@ -250,6 +251,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import PhoneNumberInput from "@/components/v2/Form/PhoneNumberInput.vue";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_PROFILE_TWO_FACTOR } from "@/router/dashboard/workspaceSetting";
 import {
   featureToRef,
@@ -368,6 +370,12 @@ const allowSaveEdit = computed(() => {
   );
 });
 
+onMounted(async () => {
+  if (props.principalEmail) {
+    await useUserStore().getOrFetchUserById(props.principalEmail);
+  }
+});
+
 const updateUser = <K extends keyof User>(field: K, value: User[K]) => {
   if (!state.editingUser) return;
 
@@ -423,6 +431,16 @@ const saveEdit = async () => {
 
   state.editingUser = undefined;
   state.editing = false;
+
+  // If we update email, we need to redirect to the new email.
+  if (updateMask.includes("email") && props.principalEmail) {
+    router.replace({
+      name: WORKSPACE_ROUTE_USER_PROFILE,
+      params: {
+        principalEmail: userPatch.email,
+      },
+    });
+  }
 };
 
 const enable2FA = () => {
@@ -478,4 +496,6 @@ const dropDownOptions = computed((): DropdownOption[] => [
     },
   },
 ]);
+
+useTitle(user.value.title);
 </script>

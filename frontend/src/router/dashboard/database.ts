@@ -15,6 +15,8 @@ const databaseRoutes: RouteRecordRaw[] = [
       getQuickActionList: () => {
         return ["quickaction.bb.database.create"];
       },
+      // Workspace-level database list is accessible to all users.
+      requiredProjectPermissionList: () => [],
     },
     components: {
       content: () => import("@/views/DatabaseDashboard.vue"),
