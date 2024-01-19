@@ -24,7 +24,7 @@ import authRoutes, {
   AUTH_SIGNUP_MODULE,
 } from "./auth";
 import dashboardRoutes from "./dashboard";
-import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instanceV1";
+import { INSTANCE_ROUTE_DETAIL } from "./dashboard/instance";
 import { ISSUE_ROUTE_DASHBOARD } from "./dashboard/issue";
 import {
   DATABASE_ROUTE_DASHBOARD,

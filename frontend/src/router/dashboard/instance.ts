@@ -6,7 +6,7 @@ import { INSTANCE_ROUTE_DASHBOARD } from "./workspaceRoutes";
 
 export const INSTANCE_ROUTE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.detail`;
 
-const instanceV1Routes: RouteRecordRaw[] = [
+const instanceRoutes: RouteRecordRaw[] = [
   {
     path: "instances",
     name: INSTANCE_ROUTE_DASHBOARD,
@@ -40,4 +40,4 @@ const instanceV1Routes: RouteRecordRaw[] = [
   },
 ];
 
-export default instanceV1Routes;
+export default instanceRoutes;
