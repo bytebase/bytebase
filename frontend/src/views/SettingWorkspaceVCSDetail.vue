@@ -268,11 +268,23 @@ const eventListener = (event: Event) => {
 };
 
 watchEffect(async () => {
-  await vcsV1Store.fetchVCSByUid(uidFromSlug(props.vcsSlug)).then((vcs) => {
-    if (vcs) {
-      return repositoryV1Store.fetchRepositoryListByVCS(vcs.name);
+  const vcs = await vcsV1Store.fetchVCSByUid(uidFromSlug(props.vcsSlug));
+  if (vcs) {
+    if (
+      !hasWorkspacePermissionV2(
+        currentUser.value,
+        "bb.externalVersionControls.listProjects"
+      )
+    ) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `You don't have permission to search projects in '${vcs.title}'`,
+      });
+      return;
     }
-  });
+    await repositoryV1Store.fetchRepositoryListByVCS(vcs.name);
+  }
 });
 
 const adminApplicationUrl = computed(() => {
