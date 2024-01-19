@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-6">
+  <div class="px-4">
     <SlowQueryPanel />
   </div>
 </template>
