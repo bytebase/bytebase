@@ -16,10 +16,12 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { useDatabaseV1Store, useTabStore } from "@/store";
+import { useCurrentUserV1, useDatabaseV1Store, useTabStore } from "@/store";
 import { UNKNOWN_ID, unknownDatabase } from "@/types";
+import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const tabStore = useTabStore();
+const me = useCurrentUserV1();
 const connection = computed(() => tabStore.currentTab.connection);
 const showPanel = ref(false);
 
@@ -32,6 +34,10 @@ const database = computed(() => {
 });
 
 const available = computed(() => {
-  return database.value.uid !== String(UNKNOWN_ID);
+  if (database.value.uid !== String(UNKNOWN_ID)) {
+    return false;
+  }
+
+  return hasPermissionToCreateRequestGrantIssue(database.value, me.value);
 });
 </script>
