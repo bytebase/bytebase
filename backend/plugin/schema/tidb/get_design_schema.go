@@ -221,10 +221,8 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionComment))
 					}
 				}
-			} else {
-				if stateColumn.comment != "" {
-					g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
-				}
+			} else if stateColumn.comment != "" {
+				g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, fmt.Sprintf("COMMENT '%s'", stateColumn.comment)))
 			}
 		}
 
