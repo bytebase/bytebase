@@ -18,19 +18,6 @@ export const useRouterStore = defineStore("router", {
     },
     routeSlug(currentRoute: RouteLocationNormalized): RouterSlug {
       {
-        // /users/:email
-        // Total 2 elements, 2nd element is the principal id
-        const profileComponents = currentRoute.path.match(
-          /\/users\/(\S+@\S+\.\S+)/
-        ) || ["/", undefined];
-        if (profileComponents[1]) {
-          return {
-            principalEmail: profileComponents[1],
-          };
-        }
-      }
-
-      {
         // /issue/:issueSlug
         // Total 2 elements, 2nd element is the issue slug
         const issueComponents = currentRoute.path.match(
