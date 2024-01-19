@@ -4,7 +4,6 @@ import { ComposedIssue, PresetRoleType } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Task, Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
