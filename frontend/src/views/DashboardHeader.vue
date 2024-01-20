@@ -92,10 +92,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
-import {
-  SETTING_ROUTE_WORKSPACE_GENERAL,
-  SETTING_ROUTE_WORKSPACE_MEMBER,
-} from "@/router/dashboard/workspaceSetting";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -144,13 +141,16 @@ const hasGetSettingPermission = computed(() => {
 });
 
 const kbarActions = computed(() => {
+  if (!hasGetSettingPermission.value) {
+    return [];
+  }
   return [
     defineAction({
       id: "bb.navigation.global.settings",
       name: "Settings",
       section: t("kbar.navigation"),
       keywords: "navigation",
-      perform: () => router.push({ name: SETTING_ROUTE_WORKSPACE_MEMBER }),
+      perform: () => router.push({ name: SETTING_ROUTE_WORKSPACE_GENERAL }),
     }),
   ];
 });

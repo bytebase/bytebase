@@ -343,27 +343,23 @@ const availableQuickActionList = computed((): QuickAction[] => {
 });
 
 const kbarActions = computed(() => {
-  return (
-    availableQuickActionList.value
-      // .filter((qa) => qa in QuickActionMap)
-      .map((item) => {
-        // a QuickActionType starts with "quickaction.bb."
-        // it's already namespaced so we don't need prefix here
-        // just re-order the identifier to match other kbar action ids' format
-        // here `id` looks like "bb.quickaction.instance.create"
-        const id = item.type.replace(
-          /^quickaction\.bb\.(.+)$/,
-          "bb.quickaction.$1"
-        );
-        return defineAction({
-          id,
-          section: t("common.quick-action"),
-          keywords: "quick action",
-          name: item.title,
-          perform: item.action,
-        });
-      })
-  );
+  return availableQuickActionList.value.map((item) => {
+    // a QuickActionType starts with "quickaction.bb."
+    // it's already namespaced so we don't need prefix here
+    // just re-order the identifier to match other kbar action ids' format
+    // here `id` looks like "bb.quickaction.instance.create"
+    const id = item.type.replace(
+      /^quickaction\.bb\.(.+)$/,
+      "bb.quickaction.$1"
+    );
+    return defineAction({
+      id,
+      section: t("common.quick-action"),
+      keywords: "quick action",
+      name: item.title,
+      perform: item.action,
+    });
+  });
 });
 
 useRegisterActions(kbarActions, true);
