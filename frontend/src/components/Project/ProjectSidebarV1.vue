@@ -350,22 +350,27 @@ const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
 const flattenNavigationItems = computed(() => {
   return projectSidebarItemList.value.flatMap<ProjectSidebarItem>((item) => {
     if (item.children && item.children.length > 0) {
-      return item.children;
+      return item.children.map((child) => ({
+        ...child,
+        hide: item.hide || child.hide,
+      }));
     }
     return item;
   });
 });
 
 const navigationKbarActions = computed(() => {
-  const actions = flattenNavigationItems.value.map((item) =>
-    defineAction({
-      id: `bb.navigation.project.${project.value.uid}.${item.path}`,
-      name: item.title,
-      section: t("kbar.navigation"),
-      keywords: [item.title.toLowerCase(), item.path].join(" "),
-      perform: () => onSelect(item, undefined),
-    })
-  );
+  const actions = flattenNavigationItems.value
+    .filter((item) => !item.hide && item.path)
+    .map((item) =>
+      defineAction({
+        id: `bb.navigation.project.${project.value.uid}.${item.path}`,
+        name: item.title,
+        section: t("kbar.navigation"),
+        keywords: [item.title.toLowerCase(), item.path].join(" "),
+        perform: () => onSelect(item, undefined),
+      })
+    );
   return actions;
 });
 useRegisterActions(navigationKbarActions);
