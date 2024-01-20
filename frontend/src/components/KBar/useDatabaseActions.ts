@@ -21,9 +21,7 @@ import {
   databaseV1Url,
 } from "@/utils";
 
-export const useDatabaseActions = (
-  databaseList: MaybeRef<ComposedDatabase[]>
-) => {
+const useDatabaseActions = (databaseList: MaybeRef<ComposedDatabase[]>) => {
   const { t } = useI18n();
   const router = useRouter();
   const environmentList = useEnvironmentV1List();
