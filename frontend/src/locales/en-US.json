@@ -2207,6 +2207,7 @@
     "notify-invalid-sql-statement": "Invalid SQL statement.",
     "can-not-execute-query": "Cannot execute query when loading data.",
     "rows": "row | rows",
+    "vertical-display": "Vertical display",
     "no-history-found": "No history found",
     "no-sheet-found": "No sheet found",
     "search-history": "Search History",

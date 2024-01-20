@@ -2203,6 +2203,7 @@
     "notify-invalid-sql-statement": "Declaración SQL inválida.",
     "can-not-execute-query": "No se puede ejecutar la consulta al cargar datos.",
     "rows": "fila | filas",
+    "vertical-display": "Pantalla vertical",
     "no-history-found": "No se encontró historial",
     "no-sheet-found": "No se encontró hoja",
     "search-history": "Historial de búsqueda",

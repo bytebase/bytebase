@@ -223,6 +223,7 @@ roles:
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.get
+      - bb.plans.list
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.get

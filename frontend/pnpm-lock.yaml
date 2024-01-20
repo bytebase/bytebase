@@ -303,7 +303,7 @@ devDependencies:
     version: 0.12.0
   '@vitejs/plugin-vue':
     specifier: 4.3.4
-    version: 4.3.4(vite@4.4.12)(vue@3.3.12)
+    version: 4.3.4(vite@4.5.2)(vue@3.3.12)
   '@vue/compiler-sfc':
     specifier: 3.3.12
     version: 3.3.12
@@ -365,8 +365,8 @@ devDependencies:
     specifier: 0.25.2
     version: 0.25.2(rollup@4.9.2)(vue@3.3.12)
   vite:
-    specifier: 4.4.12
-    version: 4.4.12(@types/node@20.10.6)
+    specifier: 4.5.2
+    version: 4.5.2(@types/node@20.10.6)
   vite-bundle-visualizer:
     specifier: ^0.11.0
     version: 0.11.0(rollup@4.9.2)
@@ -1337,8 +1337,8 @@ packages:
       '@types/markdown-it': 12.2.3
     dev: false
 
-  /@mazui/cli@3.31.5(typescript@5.3.3):
-    resolution: {integrity: sha512-mB4BpM8kPcPUWATYHAW1WmXX37yMf6d3A4jVMiGINY7ryQ9TZ/szgbT/uX1MousAk2lHo06UEOEAyO9tUvUwFA==}
+  /@mazui/cli@3.31.6(typescript@5.3.3):
+    resolution: {integrity: sha512-lsdbAKr1n8yWpfwg09FpULPvYFysC8ksOuUqgLye6x8q+vz4KWI0v71Rc5BbLMfQPa5q6C1SIIyIE9K2OVOTFQ==}
     hasBin: true
     dependencies:
       '@clack/prompts': 0.7.0
@@ -2180,14 +2180,14 @@ packages:
     resolution: {integrity: sha512-Iy1EUVRpX0WWxeu1VIReR1zsZLMc4fqpt223czR+Rpnrwu7pt46nbnC2ycO7ItI/uqDLJxnbcMC7FujKs9IfFA==}
     dev: true
 
-  /@vitejs/plugin-vue@4.3.4(vite@4.4.12)(vue@3.3.12):
+  /@vitejs/plugin-vue@4.3.4(vite@4.5.2)(vue@3.3.12):
     resolution: {integrity: sha512-ciXNIHKPriERBisHFBvnTbfKa6r9SAesOYXeGDzgegcvy9Q4xdScSHAmKbNT0M3O0S9LKhIf5/G+UYG4NnnzYw==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: ^4.0.0
       vue: ^3.2.25
     dependencies:
-      vite: 4.4.12(@types/node@20.10.6)
+      vite: 4.5.2(@types/node@20.10.6)
       vue: 3.3.12(typescript@5.3.3)
     dev: true
 
@@ -4507,7 +4507,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      '@mazui/cli': 3.31.5(typescript@5.3.3)
+      '@mazui/cli': 3.31.6(typescript@5.3.3)
       dayjs: 1.11.10
       libphonenumber-js: 1.10.52
       unplugin-vue-components: 0.25.2(rollup@4.9.2)(vue@3.3.12)
@@ -6127,8 +6127,8 @@ packages:
       - terser
     dev: true
 
-  /vite@4.4.12(@types/node@20.10.6):
-    resolution: {integrity: sha512-KtPlUbWfxzGVul8Nut8Gw2Qe8sBzWY+8QVc5SL8iRFnpnrcoCaNlzO40c1R6hPmcdTwIPEDkq0Y9+27a5tVbdQ==}
+  /vite@4.5.2(@types/node@20.10.6):
+    resolution: {integrity: sha512-tBCZBNSBbHQkaGyhGCDUGqeo2ph8Fstyp6FMSvTtsXeZSPpSMGlviAOav2hxVTqFcx8Hj/twtWKsMJXNY0xI8w==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
