@@ -35,32 +35,20 @@ import {
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
 } from "@/router/dashboard/workspaceRoutes";
-import {
-  useCurrentUserV1,
-  useCurrentUserIamPolicy,
-  useProjectV1ListByCurrentUser,
-} from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "../utils";
+
+interface DashboardSidebarItem extends SidebarItem {
+  navigationId: string;
+  shortcuts: string[];
+  name: string;
+  type: "route" | "divider";
+}
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
-
-// Only show sync schema if the user has permission to alter schema of at least one project.
-const shouldShowSyncSchemaEntry = computed(() => {
-  const { projectList } = useProjectV1ListByCurrentUser();
-  const currentUserIamPolicy = useCurrentUserIamPolicy();
-  return projectList.value
-    .map((project) => {
-      return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
-    })
-    .includes(true);
-});
-
-const shouldShowInstanceEntry = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list");
-});
 
 const getItemClass = (item: SidebarItem): string[] => {
   const { name: current } = route;
@@ -74,134 +62,100 @@ const getItemClass = (item: SidebarItem): string[] => {
   return classes;
 };
 
-const dashboardSidebarItemList = computed((): SidebarItem[] => {
+const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
   return [
     {
+      navigationId: "bb.navigation.home",
       title: t("issue.my-issues"),
       icon: h(HomeIcon),
       name: WORKSPACE_HOME_MODULE,
       type: "route",
+      shortcuts: [],
     },
     {
+      navigationId: "bb.navigation.projects",
       title: t("common.projects"),
       icon: h(GalleryHorizontalEndIcon),
       name: PROJECT_V1_ROUTE_DASHBOARD,
       type: "route",
+      shortcuts: ["g", "p"],
+      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list"),
     },
     {
+      navigationId: "bb.navigation.instances",
       title: t("common.instances"),
       icon: h(LayersIcon),
       name: INSTANCE_ROUTE_DASHBOARD,
       type: "route",
-      hide: !shouldShowInstanceEntry.value,
+      shortcuts: ["g", "i"],
+      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list"),
     },
     {
+      navigationId: "bb.navigation.databases",
       title: t("common.databases"),
       icon: h(DatabaseIcon),
       name: DATABASE_ROUTE_DASHBOARD,
       type: "route",
+      shortcuts: ["g", "d"],
     },
     {
+      navigationId: "bb.navigation.environments",
       title: t("common.environments"),
       icon: h(SquareStackIcon),
       name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
       type: "route",
+      shortcuts: ["g", "e"],
+      hide: !hasWorkspacePermissionV2(
+        currentUserV1.value,
+        "bb.environments.list"
+      ),
     },
     {
+      navigationId: "",
       type: "divider",
+      name: "",
+      shortcuts: [],
     },
     {
+      navigationId: "bb.navigation.slow-query",
       title: t("slow-query.slow-queries"),
       icon: h(TurtleIcon),
       name: WORKSPACE_ROUTE_SLOW_QUERY,
       type: "route",
-      hide: !shouldShowSyncSchemaEntry.value,
+      shortcuts: ["g", "s", "q"],
     },
     {
+      navigationId: "bb.navigation.export-center",
       title: t("export-center.self"),
       icon: h(DownloadIcon),
       name: WORKSPACE_ROUTE_EXPORT_CENTER,
       type: "route",
+      shortcuts: ["g", "x", "c"],
     },
     {
+      navigationId: "bb.navigation.anomaly-center",
       title: t("anomaly-center"),
       icon: h(ShieldAlertIcon),
       name: WORKSPACE_ROUTE_ANOMALY_CENTER,
       type: "route",
+      shortcuts: ["g", "a", "c"],
     },
   ];
 });
 
-const navigationKbarActions = computed(() => {
-  const actions: Action[] = [];
-  actions.push(
-    defineAction({
-      id: "bb.navigation.projects",
-      name: "Projects",
-      shortcut: ["g", "p"],
-      section: t("kbar.navigation"),
-      keywords: "navigation",
-      perform: () => router.push({ name: PROJECT_V1_ROUTE_DASHBOARD }),
-    }),
-    defineAction({
-      id: "bb.navigation.databases",
-      name: "Databases",
-      shortcut: ["g", "d"],
-      section: t("kbar.navigation"),
-      keywords: "navigation db",
-      perform: () => router.push({ name: DATABASE_ROUTE_DASHBOARD }),
-    })
-  );
-
-  if (shouldShowInstanceEntry.value) {
-    actions.push(
-      defineAction({
-        id: "bb.navigation.instances",
-        name: "Instances",
-        shortcut: ["g", "i"],
+const navigationKbarActions = computed((): Action[] => {
+  return dashboardSidebarItemList.value
+    .filter((item) => item.navigationId && item.name && !item.hide)
+    .map((item) => {
+      return defineAction({
+        id: item.navigationId,
+        name: item.title,
         section: t("kbar.navigation"),
-        keywords: "navigation",
-        perform: () => router.push({ name: INSTANCE_ROUTE_DASHBOARD }),
-      })
-    );
-  }
-  actions.push(
-    defineAction({
-      id: "bb.navigation.environments",
-      name: "Environments",
-      shortcut: ["g", "e"],
-      section: t("kbar.navigation"),
-      keywords: "navigation",
-      perform: () => router.push({ name: ENVIRONMENT_V1_ROUTE_DASHBOARD }),
-    })
-  );
-  actions.push(
-    defineAction({
-      id: "bb.navigation.slow-query",
-      name: "Slow Query",
-      section: t("kbar.navigation"),
-      shortcut: ["g", "s", "q"],
-      keywords: "slow query",
-      perform: () => router.push({ name: WORKSPACE_ROUTE_SLOW_QUERY }),
-    }),
-    defineAction({
-      id: "bb.navigation.export-center",
-      name: "Export Center",
-      section: t("kbar.navigation"),
-      shortcut: ["g", "x", "c"],
-      keywords: "export center",
-      perform: () => router.push({ name: WORKSPACE_ROUTE_EXPORT_CENTER }),
-    }),
-    defineAction({
-      id: "bb.navigation.anomaly-center",
-      name: "Anomaly Center",
-      shortcut: ["g", "a", "c"],
-      section: t("kbar.navigation"),
-      keywords: "anomaly center",
-      perform: () => router.push({ name: WORKSPACE_ROUTE_ANOMALY_CENTER }),
-    })
-  );
-  return actions;
+        shortcut: item.shortcuts,
+        keywords: item.title?.toLocaleLowerCase(),
+        perform: () => router.push({ name: item.name }),
+      });
+    });
 });
 useRegisterActions(navigationKbarActions);
 
