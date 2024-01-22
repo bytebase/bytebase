@@ -7,7 +7,7 @@
         UNIQUE KEY `idx2` (`a`),
         KEY `idx_length` (`b`(10)),
         PRIMARY KEY (`a`)
-      ) COMMENT 'this is comment with '' escaped';
+      ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_bin COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
       "schemas": [
@@ -17,13 +17,15 @@
               "name": "t",
               "columns": [
                 {
-                  "name": "a",
-                  "type": "int(11)",
-                  "comment": "this is comment"
+                  "name":  "a",
+                  "position":  1,
+                  "type":  "int(11)",
+                  "comment":  "this is comment"
                 },
                 {
-                  "name": "b",
-                  "type": "varchar(20)"
+                  "name":  "b",
+                  "position":  2,
+                  "type":  "varchar(20)"
                 }
               ],
               "indexes": [
@@ -65,7 +67,9 @@
                   "visible": true
                 }
               ],
-              "comment": "this is comment with ' escaped"
+              "engine":  "InnoDB",
+              "collation":  "utf8mb4_bin",
+              "comment":  "this is comment with ' escaped"
             }
           ]
         }
@@ -101,62 +105,73 @@
               "name": "t",
               "columns": [
                 {
-                  "name": "c",
-                  "nullable": true,
-                  "type": "int(11)"
+                  "name":  "c",
+                  "position":  1,
+                  "nullable":  true,
+                  "type":  "int(11)"
                 },
                 {
-                  "name": "a",
-                  "defaultExpression": "1",
-                  "nullable": true,
-                  "type": "int(11)",
-                  "comment": "abcdefg"
+                  "name":  "a",
+                  "position":  2,
+                  "defaultExpression":  "1",
+                  "nullable":  true,
+                  "type":  "int(11)",
+                  "comment":  "abcdefg"
                 },
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "nullable": true,
-                  "type": "varchar(20)"
+                  "name":  "b",
+                  "position":  3,
+                  "defaultNull":  true,
+                  "nullable":  true,
+                  "type":  "varchar(20)"
                 },
                 {
-                  "name": "d",
-                  "nullable": true,
-                  "type": "varbinary(500)"
+                  "name":  "d",
+                  "position":  4,
+                  "nullable":  true,
+                  "type":  "varbinary(500)"
                 },
                 {
-                  "name": "e",
-                  "nullable": true,
-                  "type": "binary(20)"
+                  "name":  "e",
+                  "position":  5,
+                  "nullable":  true,
+                  "type":  "binary(20)"
                 },
                 {
-                  "name": "f",
-                  "nullable": true,
-                  "type": "blob"
+                  "name":  "f",
+                  "position":  6,
+                  "nullable":  true,
+                  "type":  "blob"
                 },
                 {
-                  "name": "g",
-                  "nullable": true,
-                  "type": "tinyblob"
+                  "name":  "g",
+                  "position":  7,
+                  "nullable":  true,
+                  "type":  "tinyblob"
                 },
                 {
-                  "name": "h",
-                  "nullable": true,
-                  "type": "mediumblob"
+                  "name":  "h",
+                  "position":  8,
+                  "nullable":  true,
+                  "type":  "mediumblob"
                 },
                 {
-                  "name": "i",
-                  "nullable": true,
-                  "type": "longblob"
+                  "name":  "i",
+                  "position":  9,
+                  "nullable":  true,
+                  "type":  "longblob"
                 },
                 {
-                  "name": "j",
-                  "nullable": true,
-                  "type": "text"
+                  "name":  "j",
+                  "position":  10,
+                  "nullable":  true,
+                  "type":  "text"
                 },
                 {
-                  "name": "k",
-                  "nullable": true,
-                  "type": "tinytext"
+                  "name":  "k",
+                  "position":  11,
+                  "nullable":  true,
+                  "type":  "tinytext"
                 }
               ],
               "indexes": [
@@ -188,9 +203,10 @@
               "name": "t2",
               "columns": [
                 {
-                  "name": "b",
-                  "defaultNull": true,
-                  "type": "int(11)"
+                  "name":  "b",
+                  "position":  1,
+                  "defaultNull":  true,
+                  "type":  "int(11)"
                 }
               ],
               "indexes": [
@@ -209,9 +225,10 @@
               "name": "t3",
               "columns": [
                 {
-                  "name": "a",
-                  "defaultExpression": "AUTO_RANDOM",
-                  "type": "bigint(20)"
+                  "name":  "a",
+                  "position":  1,
+                  "defaultExpression":  "AUTO_RANDOM",
+                  "type":  "bigint(20)"
                 }
               ],
               "indexes": [
@@ -230,9 +247,10 @@
               "name": "t4",
               "columns": [
                 {
-                  "name": "a",
-                  "defaultExpression": "AUTO_RANDOM(6)",
-                  "type": "bigint(20)"
+                  "name":  "a",
+                  "position":  1,
+                  "defaultExpression":  "AUTO_RANDOM(6)",
+                  "type":  "bigint(20)"
                 }
               ],
               "indexes": [
@@ -251,9 +269,10 @@
               "name": "t5",
               "columns": [
                 {
-                  "name": "a",
-                  "defaultExpression": "AUTO_RANDOM(6, 54)",
-                  "type": "bigint(20)"
+                  "name":  "a",
+                  "position":  1,
+                  "defaultExpression":  "AUTO_RANDOM(6, 54)",
+                  "type":  "bigint(20)"
                 }
               ],
               "indexes": [
