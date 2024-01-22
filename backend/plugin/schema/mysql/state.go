@@ -235,6 +235,10 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
+	// Backfill all the column positions.
+	for i, column := range columns {
+		column.Position = int32(i + 1)
+	}
 
 	indexStates := []*indexState{}
 	for _, index := range t.indexes {
