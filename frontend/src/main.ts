@@ -31,7 +31,6 @@ import {
   humanizeDurationV1,
   humanizeDate,
   instanceName,
-  connectionSlug,
   isDev,
   isRelease,
   projectName,
@@ -147,7 +146,6 @@ app.config.globalProperties.isEmpty = isEmpty;
 app.config.globalProperties.environmentName = environmentName;
 app.config.globalProperties.projectName = projectName;
 app.config.globalProperties.instanceName = instanceName;
-app.config.globalProperties.connectionSlug = connectionSlug;
 
 app
   // Need to use a directive on the element.
