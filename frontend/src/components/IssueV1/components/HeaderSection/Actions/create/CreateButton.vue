@@ -31,6 +31,7 @@
 import { NTooltip, NButton } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, nextTick, ref, toRaw } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/IssueV1/components/common";
 import {
@@ -45,7 +46,7 @@ import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { ComposedIssue, dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan_ChangeDatabaseConfig } from "@/types/proto/v1/rollout_service";
@@ -56,6 +57,7 @@ import {
   extractSheetUID,
   flattenTaskV1List,
   getSheetStatement,
+  hasPermissionToCreateChangeDatabaseIssueInProject,
   issueSlug,
   setSheetStatement,
   sheetNameOfTaskV1,
@@ -63,18 +65,28 @@ import {
 
 const MAX_FORMATTABLE_STATEMENT_SIZE = 10000; // 10K characters
 
+const { t } = useI18n();
 const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
 const { runSQLCheck } = useSQLCheckContext();
 const sheetStore = useSheetV1Store();
+const me = useCurrentUserV1();
 const loading = ref(false);
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
+  if (
+    !hasPermissionToCreateChangeDatabaseIssueInProject(
+      issue.value.projectEntity,
+      me.value
+    )
+  ) {
+    errorList.push(t("common.missing-permission"));
+  }
   if (!issue.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (issue.value.rolloutEntity.stages.some((stage) => !isValidStage(stage))) {
+  if (!issue.value.rolloutEntity.stages.every((stage) => isValidStage(stage))) {
     errorList.push("Missing SQL statement in some stages");
   }
   return errorList;
