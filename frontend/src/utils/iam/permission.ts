@@ -42,7 +42,7 @@ export const hasProjectPermissionV2 = (
       return true;
     }
   } else {
-    // TODO: Remove this block after fine-grained permissions are supported.
+    // TODO(steven): Remove this block after fine-grained permissions are supported.
     const privilegedRoles = [
       PresetRoleType.WORKSPACE_ADMIN,
       PresetRoleType.WORKSPACE_DBA,
