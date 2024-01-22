@@ -401,8 +401,6 @@ watch(
   () => [props.show, policy.value],
   () => {
     if (props.show) {
-      console.log("props.column.maskData");
-      console.log(props.column.maskData);
       state.maskingLevel = props.column.maskData.maskingLevel;
       state.fullMaskingAlgorithmId =
         props.column.maskData.fullMaskingAlgorithmId;
