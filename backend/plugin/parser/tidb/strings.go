@@ -693,7 +693,28 @@ func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext
 		case *StringsManipulatorActionDropTableConstraint:
 			return
 		case *StringsManipulatorActionModifyTableConstraint:
-			r.tableConstraints = append(r.tableConstraints, action.NewConstraintDefine)
+			var buf strings.Builder
+			if _, err := buf.WriteString(action.NewConstraintDefine); err != nil {
+				r.err = errors.Wrap(err, "failed to write string")
+				return
+			}
+			// Add following comments.
+			// TODO: we need to add comments for the constraint definition.
+			if ctx.AllIndexOption() != nil {
+				for _, option := range ctx.AllIndexOption() {
+					if option.CommonIndexOption() != nil && option.CommonIndexOption().COMMENT_SYMBOL() != nil {
+						if err := buf.WriteByte(' '); err != nil {
+							r.err = errors.Wrap(err, "failed to write byte")
+							return
+						}
+						if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+							r.err = errors.Wrap(err, "failed to write string")
+							return
+						}
+					}
+				}
+			}
+			r.tableConstraints = append(r.tableConstraints, buf.String())
 		}
 	}
 }
