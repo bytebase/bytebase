@@ -138,12 +138,7 @@ import {
   Anomaly,
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
-import {
-  databaseV1Url,
-  instanceV1Slug,
-  sortDatabaseV1List,
-  sortInstanceV1List,
-} from "@/utils";
+import { databaseV1Url, sortDatabaseV1List, sortInstanceV1List } from "@/utils";
 import AnomalyTable from "./AnomalyTable.vue";
 
 type Summary = {
@@ -276,7 +271,7 @@ const instanceAnomalySectionList = computed(
       if (anomalyListOfInstance.length > 0) {
         sectionList.push({
           title: `${instance.title} (${instance.environmentEntity.title})`,
-          link: `/instance/${instanceV1Slug(instance)}`,
+          link: `/${instance.name}`,
           list: anomalyListOfInstance,
         });
       }

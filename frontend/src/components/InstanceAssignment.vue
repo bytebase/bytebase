@@ -73,7 +73,7 @@
               <div class="flex items-center gap-x-1">
                 <InstanceV1EngineIcon :instance="instance" />
                 <router-link
-                  :to="`/instance/${instanceV1Slug(instance)}`"
+                  :to="`/${instance.name}`"
                   class="hover:underline"
                   active-class="link"
                   exact-active-class="link"
@@ -141,7 +141,6 @@ import {
 } from "@/store";
 import { ComposedInstance } from "@/types";
 import {
-  instanceV1Slug,
   instanceV1Name,
   hostPortOfInstanceV1,
   hasWorkspacePermissionV2,
