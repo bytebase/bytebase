@@ -4,7 +4,8 @@
         `id` int /*T![auto_rand] AUTO_RANDOM(6, 54) */,
         `name` varchar(10) NOT NULL,
         PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
-        KEY `idx_name` (`name`(5))
+        KEY `idx_name` (`name`(5)),
+        UNIQUE KEY `name` (`name`)
      );
   actions:
     - type: modifyColumnType
@@ -12,13 +13,20 @@
         - t
         - id
         - varchar(10)
+    - type: addColumnOption
+      arguments:
+        - t
+        - name
+        - comment
+        - COMMENT 'this is comment'
   want: |
     -- Table structure for `t`
      CREATE TABLE `t` (
       `id` varchar(10) /*T![auto_rand] AUTO_RANDOM(6, 54) */,
-      `name` varchar(10) NOT NULL,
+      `name` varchar(10) NOT NULL COMMENT 'this is comment',
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
-      KEY `idx_name` (`name`(5))
+      KEY `idx_name` (`name`(5)),
+      UNIQUE KEY `name` (`name`)
     );
 - input: |-
     -- Table structure for `t`
