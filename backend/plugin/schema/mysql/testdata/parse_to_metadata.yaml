@@ -12,7 +12,7 @@
         KEY `idx_c` (`c`),
         KEY `idx_d` (`d`(10)),
         FULLTEXT KEY `t_d_fulltext_idx` (`d`)
-      ) COMMENT 'this is comment with '' escaped';
+      ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
       "schemas": [
@@ -103,6 +103,8 @@
                   "visible": true
                 }
               ],
+              "engine": "InnoDB",
+              "collation": "utf8mb4_0900_ai_ci",
               "comment": "this is comment with ' escaped"
             }
           ]
