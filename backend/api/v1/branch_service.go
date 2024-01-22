@@ -970,6 +970,7 @@ func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.D
 					Unique:      index.Unique,
 					Comment:     index.Comment,
 					Expressions: index.Expressions,
+					KeyLength:   index.KeyLength,
 				}
 				filteredTable.Indexes = append(filteredTable.Indexes, filteredIndex)
 			}
