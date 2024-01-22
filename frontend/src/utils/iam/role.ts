@@ -27,3 +27,18 @@ export const isCustomRole = (role: string) => {
     !WorkspaceLevelRoles.includes(role) && !ProjectLevelRoles.includes(role)
   );
 };
+
+export const sortRoles = (roles: string[]) => {
+  return roles.sort((a, b) => {
+    const priority = (role: string) => {
+      if (isWorkspaceLevelRole(role)) {
+        return WorkspaceLevelRoles.indexOf(role);
+      }
+      if (isProjectLevelRole(role)) {
+        return ProjectLevelRoles.indexOf(role) + WorkspaceLevelRoles.length;
+      }
+      return roles.length;
+    };
+    return priority(a) - priority(b);
+  });
+};
