@@ -1,6 +1,63 @@
 - baseline: |-
     CREATE TABLE `t` (
       `a` int,
+      `b` varchar(255),
+      KEY `idx_t_b` (`b`(20)) COMMENT 'this is comment with',
+      KEY `delete_idx` (`b`(20)) COMMENT 'need to delete'
+    );
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "type": "varchar(255)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_t_b",
+                  "expressions": [
+                    "b"
+                  ],
+                  "keyLength": [
+                    "20"
+                  ],
+                  "comment": "this is comment with"
+                },
+                {
+                  "name": "idx_t_b2",
+                  "expressions": [
+                    "b"
+                  ],
+                  "keyLength": [
+                    "20"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    CREATE TABLE `t` (
+      `a` int NOT NULL,
+      `b` varchar(255) NOT NULL,
+      KEY `idx_t_b` (`b`(20)) COMMENT 'this is comment with',
+      KEY `idx_t_b2` (`b`(20))
+    );
+- baseline: |-
+    CREATE TABLE `t` (
+      `a` int,
       PRIMARY KEY (`a`),
       CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`),
       UNIQUE KEY `uk_a` (`a`),
