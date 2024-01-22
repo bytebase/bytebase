@@ -32,9 +32,11 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { SheetPayload } from "@/types/proto/v1/sheet_service";
 import {
+  extractProjectResourceName,
   extractSheetUID,
   generateSQLForChangeToDatabase,
   getSheetStatement,
+  hasProjectPermissionV2,
   setSheetNameForTask,
   setSheetStatement,
   sheetNameOfTaskV1,
@@ -369,10 +371,17 @@ export const buildSpecForTarget = async (
 };
 
 export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
-  const rollout = await rolloutServiceClient.previewRollout({
-    project: params.project.name,
-    plan,
-  });
+  const project = useProjectV1Store().getProjectByName(
+    `projects/${extractProjectResourceName(plan.name)}`
+  );
+  const me = useCurrentUserV1();
+  let rollout: Rollout = Rollout.fromPartial({});
+  if (hasProjectPermissionV2(project, me.value, "bb.rollouts.preview")) {
+    rollout = await rolloutServiceClient.previewRollout({
+      project: params.project.name,
+      plan,
+    });
+  }
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;
   rollout.uid = nextUID();
