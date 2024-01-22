@@ -540,7 +540,11 @@ const handleLoadSubTree = (option: TreeOption) => {
     const request = fetchDatabaseSubTree(node);
     request
       .then(() => nextTick())
-      .then(() => treeStore.expandNodes(type, target));
+      .then(() => {
+        if ((node.children?.length ?? 0) > 0) {
+          treeStore.expandNodes(type, target);
+        }
+      });
     return request;
   }
   return Promise.resolve();
