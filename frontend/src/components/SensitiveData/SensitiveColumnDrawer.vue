@@ -25,13 +25,45 @@
             <h1 class="mb-2 font-semibold">
               {{ $t("settings.sensitive-data.algorithms.self") }}
             </h1>
-            <div class="flex flex-col">
-              <span class="textlabel">
-                {{ $t("settings.sensitive-data.algorithms.default") }}
-              </span>
+            <div class="flex flex-col space-y-2">
               <span class="textinfolabel">
-                {{ $t("settings.sensitive-data.algorithms.default-desc") }}
+                {{
+                  $t(
+                    "settings.sensitive-data.semantic-types.table.full-masking-algorithm"
+                  )
+                }}
               </span>
+              <NSelect
+                v-model:value="state.fullMaskingAlgorithmId"
+                :options="algorithmList"
+                :consistent-menu-width="false"
+                :placeholder="$t('settings.sensitive-data.algorithms.default')"
+                :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+                clearable
+                size="small"
+                style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
+                @change="onMaskingAlgorithmChanged"
+              />
+            </div>
+            <div class="flex flex-col mt-4 space-y-2">
+              <span class="textinfolabel">
+                {{
+                  $t(
+                    "settings.sensitive-data.semantic-types.table.partial-masking-algorithm"
+                  )
+                }}
+              </span>
+              <NSelect
+                v-model:value="state.partialMaskingAlgorithmId"
+                :options="algorithmList"
+                :consistent-menu-width="false"
+                :placeholder="$t('settings.sensitive-data.algorithms.default')"
+                :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+                clearable
+                size="small"
+                style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
+                @change="onMaskingAlgorithmChanged"
+              />
             </div>
           </div>
         </div>
@@ -187,13 +219,21 @@
 
 <script lang="ts" setup>
 import { TrashIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NDatePicker, NPopconfirm } from "naive-ui";
+import {
+  NSelect,
+  NButton,
+  NCheckbox,
+  NDatePicker,
+  NPopconfirm,
+  SelectOption,
+} from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
+  useSettingV1Store,
   usePolicyV1Store,
   usePolicyByParentAndType,
   useUserStore,
@@ -209,6 +249,7 @@ import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import {
   Policy,
   PolicyType,
+  MaskData,
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException,
   MaskingExceptionPolicy_MaskingException_Action,
@@ -236,6 +277,8 @@ interface LocalState {
   processing: boolean;
   maskingLevel: MaskingLevel;
   showGrantAccessDrawer: boolean;
+  fullMaskingAlgorithmId: string;
+  partialMaskingAlgorithmId: string;
 }
 
 const props = defineProps<{
@@ -249,6 +292,8 @@ const state = reactive<LocalState>({
   dirty: false,
   processing: false,
   maskingLevel: props.column.maskData.maskingLevel,
+  fullMaskingAlgorithmId: props.column.maskData.fullMaskingAlgorithmId,
+  partialMaskingAlgorithmId: props.column.maskData.partialMaskingAlgorithmId,
   showGrantAccessDrawer: false,
 });
 
@@ -265,6 +310,7 @@ const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const settingStore = useSettingV1Store();
 
 const policy = usePolicyByParentAndType(
   computed(() => ({
@@ -356,6 +402,10 @@ watch(
   () => {
     if (props.show) {
       state.maskingLevel = props.column.maskData.maskingLevel;
+      state.fullMaskingAlgorithmId =
+        props.column.maskData.fullMaskingAlgorithmId;
+      state.partialMaskingAlgorithmId =
+        props.column.maskData.partialMaskingAlgorithmId;
     }
     if (props.show && policy.value) {
       updateAccessUserList(policy.value);
@@ -444,6 +494,10 @@ const onMaskingLevelUpdate = async (level: MaskingLevel) => {
   });
 };
 
+const onMaskingAlgorithmChanged = async () => {
+  await onColumnMaskingUpdate();
+};
+
 const onColumnMaskingUpdate = async () => {
   state.processing = true;
 
@@ -489,16 +543,16 @@ const upsertMaskingPolicy = async () => {
       getMaskDataIdentifier(data) ===
       getMaskDataIdentifier(props.column.maskData)
   );
+  const newData: MaskData = {
+    ...props.column.maskData,
+    maskingLevel: state.maskingLevel,
+    fullMaskingAlgorithmId: state.fullMaskingAlgorithmId,
+    partialMaskingAlgorithmId: state.partialMaskingAlgorithmId,
+  };
   if (existedIndex < 0) {
-    maskData.push({
-      ...props.column.maskData,
-      maskingLevel: state.maskingLevel,
-    });
+    maskData.push(newData);
   } else {
-    maskData[existedIndex] = {
-      ...props.column.maskData,
-      maskingLevel: state.maskingLevel,
-    };
+    maskData[existedIndex] = newData;
   }
 
   const upsert: Partial<Policy> = {
@@ -587,5 +641,22 @@ const columnMetadata = computed(() => {
   return table.columns.find(
     (column) => column.name === props.column.maskData.column
   );
+});
+
+const algorithmList = computed((): SelectOption[] => {
+  const list = (
+    settingStore.getSettingByName("bb.workspace.masking-algorithm")?.value
+      ?.maskingAlgorithmSettingValue?.algorithms ?? []
+  ).map((algorithm) => ({
+    label: algorithm.title,
+    value: algorithm.id,
+  }));
+
+  list.unshift({
+    label: t("settings.sensitive-data.algorithms.default"),
+    value: "",
+  });
+
+  return list;
 });
 </script>
