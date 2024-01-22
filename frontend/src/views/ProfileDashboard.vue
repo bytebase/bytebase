@@ -76,7 +76,7 @@
             <div
               class="flex flex-row justify-start items-start flex-wrap gap-2"
             >
-              <NTag v-for="role in user.roles" :key="role">
+              <NTag v-for="role in sortRoles(user.roles)" :key="role">
                 {{ displayRoleTitle(role) }}
               </NTag>
             </div>
@@ -261,13 +261,13 @@ import {
   useCurrentUserV1,
   useUserStore,
 } from "@/store";
+import { unknownUser } from "@/types";
 import {
   UpdateUserRequest,
   User,
   UserType,
 } from "@/types/proto/v1/auth_service";
-import { unknownUser } from "../types";
-import { displayRoleTitle, hasWorkspacePermissionV2 } from "../utils";
+import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {
   editing: boolean;
