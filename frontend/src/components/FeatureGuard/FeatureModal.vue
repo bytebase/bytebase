@@ -119,6 +119,7 @@ import { PropType, computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
+import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
 import {
   FeatureType,
@@ -185,7 +186,7 @@ const ok = () => {
     state.showInstanceAssignmentDrawer = true;
   } else {
     router.push({
-      name: "setting.workspace.subscription",
+      name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
     });
   }
   emit("cancel");

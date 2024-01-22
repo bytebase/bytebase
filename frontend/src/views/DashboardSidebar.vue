@@ -53,8 +53,8 @@ const router = useRouter();
 const getItemClass = (item: SidebarItem): string[] => {
   const { name: current } = route;
   const isActiveRoute =
-    item.name === current?.toString ||
-    current?.toString().startsWith(`${item.name}/`);
+    item.name === current?.toString() ||
+    current?.toString().startsWith(`${item.name}`);
   const classes: string[] = [];
   if (isActiveRoute) {
     classes.push("router-link-active", "bg-link-hover");
