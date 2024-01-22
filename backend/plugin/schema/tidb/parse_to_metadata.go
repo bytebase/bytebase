@@ -853,12 +853,23 @@ func restoreComment(expr tidbast.ExprNode) (string, error) {
 	return comment, nil
 }
 
-func equalKeys(a, b []string) bool {
+func equalKeys(a []string, aLength []int64, b []string, bLength []int64) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i, key := range a {
 		if key != b[i] {
+			return false
+		}
+		lenA := int64(-1)
+		lenB := int64(-1)
+		if len(aLength) > i {
+			lenA = aLength[i]
+		}
+		if len(bLength) > i {
+			lenB = bLength[i]
+		}
+		if lenA != lenB {
 			return false
 		}
 	}

@@ -235,7 +235,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					for _, key := range constraint.Keys {
 						keys = append(keys, key.Column.Name.String())
 					}
-					if equalKeys(keys, g.currentTable.indexes["PRIMARY"].keys) {
+					if equalKeys(keys, nil /* length */, g.currentTable.indexes["PRIMARY"].keys, nil /* length */) {
 						delete(g.currentTable.indexes, "PRIMARY")
 						continue
 					}
@@ -259,13 +259,16 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					index := g.currentTable.indexes[indexName]
 
 					var columns []string
+					var length []int64
 					for _, key := range constraint.Keys {
 						var keyString string
 						var err error
 						if key.Column != nil {
 							keyString = key.Column.Name.String()
 							if key.Length > 0 {
-								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
+								length = append(length, int64(key.Length))
+							} else {
+								length = append(length, -1)
 							}
 						} else {
 							keyString, err = tidbRestoreNode(key, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
@@ -277,7 +280,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						columns = append(columns, keyString)
 					}
 
-					if equalKeys(columns, index.keys) && !index.unique && !index.primary {
+					if equalKeys(columns, length, index.keys, index.length) && !index.unique && !index.primary {
 						delete(g.currentTable.indexes, indexName)
 						continue
 					}
@@ -301,13 +304,16 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					index := g.currentTable.indexes[indexName]
 
 					var columns []string
+					var length []int64
 					for _, key := range constraint.Keys {
 						var keyString string
 						var err error
 						if key.Column != nil {
 							keyString = key.Column.Name.String()
 							if key.Length > 0 {
-								keyString = fmt.Sprintf("`%s`(%d)", keyString, key.Length)
+								length = append(length, int64(key.Length))
+							} else {
+								length = append(length, -1)
 							}
 						} else {
 							keyString, err = tidbRestoreNode(key, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
@@ -319,7 +325,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						columns = append(columns, keyString)
 					}
 
-					if equalKeys(columns, index.keys) && index.unique && !index.primary {
+					if equalKeys(columns, length, index.keys, index.length) && index.unique && !index.primary {
 						delete(g.currentTable.indexes, indexName)
 						continue
 					}
@@ -352,7 +358,8 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 						referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
 					}
 					referencedTable := constraint.Refer.Table.Name.String()
-					if equalKeys(columns, fk.columns) && referencedTable == fk.referencedTable && equalKeys(referencedColumnList, fk.referencedColumns) {
+					if equalKeys(columns, nil /* length */, fk.columns, nil /* length */) && referencedTable == fk.referencedTable &&
+						equalKeys(referencedColumnList, nil /* length */, fk.referencedColumns, nil /* length */) {
 						delete(g.currentTable.foreignKeys, fkName)
 						continue
 					}
