@@ -81,6 +81,28 @@ func (t *mysqlTransformer) EnterCreateTableOption(ctx *mysql.CreateTableOptionCo
 		return
 	}
 
+	if ctx.ENGINE_SYMBOL() != nil {
+		engineString := ctx.EngineRef().TextOrIdentifier().GetParser().GetTokenStream().GetTextFromRuleContext(ctx.EngineRef().TextOrIdentifier())
+		schema := t.state.schemas[""]
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
+		}
+		table.engine = engineString
+	}
+
+	if defaultCollation := ctx.DefaultCollation(); defaultCollation != nil {
+		collationString := defaultCollation.CollationName().GetParser().GetTokenStream().GetTextFromRuleContext(defaultCollation.CollationName())
+		schema := t.state.schemas[""]
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
+		}
+		table.collation = collationString
+	}
+
 	if ctx.COMMENT_SYMBOL() != nil {
 		commentString := ctx.TextStringLiteral().GetText()
 		if len(commentString) > 2 {
