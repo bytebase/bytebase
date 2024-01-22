@@ -2988,6 +2988,7 @@ IndexMetadata is the metadata for indexes.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of an index. |
 | expressions | [string](#string) | repeated | The expressions are the ordered columns or expressions of an index. This could refer to a column or an expression. |
+| key_length | [int64](#int64) | repeated | The key_lengths are the ordered key lengths of an index. If the key length is not specified, it&#39;s -1. |
 | type | [string](#string) |  | The type is the type of an index. |
 | unique | [bool](#bool) |  | The unique is whether the index is unique. |
 | primary | [bool](#bool) |  | The primary is whether the index is a primary key index. |

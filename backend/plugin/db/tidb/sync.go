@@ -240,6 +240,46 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
 	}
 
+	// Query index key length info.
+	indexKeyLengthQuery := `
+		SELECT
+			TABLE_NAME,
+			KEY_NAME,
+			COLUMN_NAME,
+			SUB_PART
+		FROM information_schema.TIDB_INDEXES
+		WHERE TABLE_SCHEMA = ?
+		ORDER BY TABLE_NAME, KEY_NAME, SEQ_IN_INDEX`
+	indexKeyLengthRows, err := driver.db.QueryContext(ctx, indexKeyLengthQuery, driver.databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexKeyLengthQuery)
+	}
+	defer indexKeyLengthRows.Close()
+	for indexKeyLengthRows.Next() {
+		var tableName, keyName, columnName string
+		var subPart sql.NullInt64
+		if err := indexKeyLengthRows.Scan(
+			&tableName,
+			&keyName,
+			&columnName,
+			&subPart,
+		); err != nil {
+			return nil, err
+		}
+
+		key := db.TableKey{Schema: "", Table: tableName}
+		if _, ok := indexMap[key]; !ok {
+			slog.Debug("trying to sync key length but index not found", slog.String("tableName", tableName), slog.String("keyName", keyName))
+			continue
+		}
+		if subPart.Valid {
+			indexMap[key][keyName].KeyLength = append(indexMap[key][keyName].KeyLength, subPart.Int64)
+		} else {
+			// -1 means no key length limit.
+			indexMap[key][keyName].KeyLength = append(indexMap[key][keyName].KeyLength, -1)
+		}
+	}
+
 	// Query column info.
 	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
 	columnQuery := `

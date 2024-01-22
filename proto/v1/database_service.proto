@@ -714,6 +714,10 @@ message IndexMetadata {
   // This could refer to a column or an expression.
   repeated string expressions = 2;
 
+  // The key_lengths are the ordered key lengths of an index.
+  // If the key length is not specified, it's -1.
+  repeated int64 key_length = 9;
+
   // The type is the type of an index.
   string type = 3;
 
