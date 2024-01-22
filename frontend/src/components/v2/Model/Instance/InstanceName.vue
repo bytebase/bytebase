@@ -2,7 +2,7 @@
   <component
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
-    :to="link && `/instance/${instance.id}`"
+    :to="link && `/${instance.name}`"
     class="inline-flex items-center gap-x-1"
     :class="link && 'normal-link'"
   >
