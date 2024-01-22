@@ -381,7 +381,6 @@ import {
   isDev,
   isValidSpannerHost,
   extractInstanceResourceName,
-  instanceV1Slug,
   calcUpdateMask,
   onlyAllowNumber,
   hasWorkspacePermissionV2,
@@ -772,7 +771,7 @@ const doCreate = async () => {
       const createdInstance = await instanceV1Store.createInstance(
         instanceCreate
       );
-      router.push(`/instance/${instanceV1Slug(createdInstance)}`);
+      router.push(`/${createdInstance.name}`);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

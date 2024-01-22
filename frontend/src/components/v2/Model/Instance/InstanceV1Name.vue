@@ -27,7 +27,7 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { instanceV1Name, instanceV1Slug } from "@/utils";
+import { instanceV1Name } from "@/utils";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
@@ -55,7 +55,7 @@ const props = withDefaults(
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/instance/${instanceV1Slug(props.instance)}`,
+      to: `/${props.instance.name}`,
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {
