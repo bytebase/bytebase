@@ -383,6 +383,7 @@ type indexState struct {
 	id      int
 	name    string
 	keys    []string
+	length  []int64
 	primary bool
 	unique  bool
 }
@@ -391,6 +392,7 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 	return &storepb.IndexMetadata{
 		Name:        i.name,
 		Expressions: i.keys,
+		KeyLength:   i.length,
 		Primary:     i.primary,
 		Unique:      i.unique,
 		// Unsupported, for tests only.
@@ -403,6 +405,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		id:      id,
 		name:    index.Name,
 		keys:    index.Expressions,
+		length:  index.KeyLength,
 		primary: index.Primary,
 		unique:  index.Unique,
 	}
@@ -452,7 +455,11 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			} else {
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+				columnText := fmt.Sprintf("`%s`", key)
+				if len(i.length) > j && i.length[j] > 0 {
+					columnText = fmt.Sprintf("`%s`(%d)", key, i.length[j])
+				}
+				if _, err := buf.WriteString(columnText); err != nil {
 					return err
 				}
 			}
@@ -752,13 +759,16 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				table.foreignKeys[fkName] = fk
 			case tidbast.ConstraintIndex, tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex, tidbast.ConstraintKey:
 				var referencingColumnList []string
+				var lengthList []int64
 				for _, spec := range constraint.Keys {
 					var specString string
 					var err error
 					if spec.Column != nil {
 						specString = spec.Column.Name.String()
 						if spec.Length > 0 {
-							specString = fmt.Sprintf("`%s`(%d)", specString, spec.Length)
+							lengthList = append(lengthList, int64(spec.Length))
+						} else {
+							lengthList = append(lengthList, -1)
 						}
 					} else {
 						specString, err = tidbRestoreNode(spec, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
@@ -787,6 +797,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					id:      len(table.indexes),
 					name:    indexName,
 					keys:    referencingColumnList,
+					length:  lengthList,
 					primary: false,
 					unique:  constraintType == tidbast.ConstraintUniq || constraintType == tidbast.ConstraintUniqKey || constraintType == tidbast.ConstraintUniqIndex,
 				}
