@@ -103,6 +103,9 @@ type tableState struct {
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
 	comment     string
+	// engine and collation is only supported in ParseToMetadata.
+	engine    string
+	collation string
 }
 
 func (t *tableState) toString(buf io.StringWriter) error {
@@ -169,6 +172,18 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		return err
 	}
 
+	if t.engine != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" ENGINE=%s", t.engine)); err != nil {
+			return err
+		}
+	}
+
+	if t.collation != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COLLATE=%s", t.collation)); err != nil {
+			return err
+		}
+	}
+
 	if t.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(t.comment, "'", "''"))); err != nil {
 			return err
@@ -194,6 +209,8 @@ func newTableState(id int, name string) *tableState {
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	state.comment = table.Comment
+	state.engine = table.Engine
+	state.collation = table.Collation
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
 	}
@@ -249,6 +266,8 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Indexes:     indexes,
 		ForeignKeys: fks,
 		Comment:     t.comment,
+		Engine:      t.engine,
+		Collation:   t.collation,
 	}
 }
 
