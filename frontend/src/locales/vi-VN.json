@@ -1,0 +1,3432 @@
+{
+  "common": {
+    "view": "Xem",
+    "you": "Bạn",
+    "general": "Tổng quan",
+    "slack": "chùng xuống",
+    "discord": "Bất hòa",
+    "teams": "Đội",
+    "dingtalk": "DingTalk",
+    "feishu": "Feishu",
+    "wecom": "WeCom",
+    "system": "Hệ thống",
+    "custom": "Phong tục",
+    "im": "TÔI",
+    "overview": "Tổng quan",
+    "change-history": "thay đổi lịch sử",
+    "webhook": "Webhook",
+    "webhooks": "Webhook",
+    "key": "Chìa khóa",
+    "workflow": "Quy trình làm việc",
+    "unread": "Chưa đọc",
+    "read": "Đọc",
+    "activity": "Hoạt động",
+    "activities": "Các hoạt động",
+    "sign-in": "Đăng nhập",
+    "sign-up": "Đăng ký",
+    "email": "E-mail",
+    "username": "tên tài khoản",
+    "credentials": "Thông tin xác thực",
+    "password": "Mật khẩu",
+    "activate": "Kích hoạt",
+    "save": "Cứu",
+    "cancel": "Hủy bỏ",
+    "cancelled": "Đã hủy",
+    "comment": "Bình luận",
+    "home": "Trang chủ",
+    "setting": "Cài đặt",
+    "settings": "Cài đặt",
+    "project": "Dự án",
+    "projects": "Dự án",
+    "default-project": "Dự án mặc định",
+    "visit-default-project": "@:common.visit @:common.default-project",
+    "help": "Giúp đỡ",
+    "database": "Cơ sở dữ liệu",
+    "databases": "Cơ sở dữ liệu",
+    "description": "Sự miêu tả",
+    "instance": "Ví dụ",
+    "instances": "trường hợp",
+    "environment": "Môi trường",
+    "environments": "Môi trường",
+    "environment-name": "Tên môi trường",
+    "quick-action": "Hành động nhanh",
+    "archive": "Lưu trữ",
+    "archived": "Đã lưu trữ",
+    "no-license": "Không có giấy phép",
+    "logout": "Đăng xuất",
+    "close": "Đóng",
+    "latest": "Muộn nhất",
+    "error": "Lỗi",
+    "canceled": "Đã hủy",
+    "approval": "Sự chấp thuận",
+    "approve": "Chấp thuận",
+    "done": "Xong",
+    "create": "Tạo nên",
+    "run": "Chạy",
+    "retry": "Thử lại",
+    "skip": "Nhảy",
+    "reopen": "Mở lại",
+    "dismiss": "Miễn nhiệm",
+    "back": "Mặt sau",
+    "next": "Kế tiếp",
+    "edit": "Biên tập",
+    "update": "Cập nhật",
+    "updated": "Đã cập nhật",
+    "visit": "Thăm nom",
+    "role": {
+      "self": "Vai trò"
+    },
+    "assignee": "Người được chuyển nhượng",
+    "revert": "Hoàn nguyên",
+    "apply": "Áp dụng",
+    "reorder": "Sắp xếp lại",
+    "id": "NHẬN DẠNG",
+    "name": "Tên",
+    "creator": "Người sáng tạo",
+    "updater": "Trình cập nhật",
+    "version": "Phiên bản",
+    "issue": "Vấn đề",
+    "issues": "Vấn đề",
+    "duration": "Khoảng thời gian",
+    "created-at": "Tạo",
+    "updated-at": "Đã cập nhật",
+    "commit": "Làm",
+    "statement": "Tuyên bố",
+    "sql-statement": "Câu lệnh sql",
+    "snapshot": "Ảnh chụp nhanh",
+    "status": "Trạng thái",
+    "stage": "Sân khấu",
+    "task": "Nhiệm vụ",
+    "tasks": "Nhiệm vụ",
+    "sql": "SQL",
+    "unassigned": "Chưa được chỉ định",
+    "new": "Mới",
+    "add": "Thêm vào",
+    "confirm-and-add": "Xác nhận và thêm",
+    "confirm-and-update": "Xác nhận và cập nhật",
+    "query": "Truy vấn",
+    "transfer": "Chuyển khoản",
+    "migration": "Di chuyển",
+    "schema": "Lược đồ",
+    "anomalies": "dị thường",
+    "do-not-show-again": "Không hiển thị trở lại",
+    "backups": "Sao lưu",
+    "detail": "Chi tiết",
+    "type": "Kiểu",
+    "language": "Ngôn ngữ",
+    "repository": "Kho",
+    "change": "Thay đổi",
+    "branch": "Chi nhánh",
+    "required-placeholder": "phần giữ chỗ bắt buộc",
+    "optional-placeholder": "phần giữ chỗ tùy chọn",
+    "optional-directory-wildcard": "ký tự đại diện thư mục tùy chọn",
+    "sensitive-placeholder": "nhạy cảm - chỉ viết",
+    "enabled": "đã bật",
+    "default": "mặc định",
+    "gitops": "GitOps",
+    "restore": "Khôi phục",
+    "detailed-guide": "hướng dẫn chi tiết",
+    "workspace": "Không gian làm việc",
+    "application": "Ứng dụng",
+    "confirm": "Xác nhận",
+    "coming-later": "Đến sau",
+    "learn-more": "Tìm hiểu thêm",
+    "troubleshoot": "Khắc phục sự cố",
+    "schema-version": "Phiên bản lược đồ",
+    "time": "Thời gian",
+    "manual": "Thủ công",
+    "automatic": "Tự động",
+    "Default": "Mặc định",
+    "definition": "Sự định nghĩa",
+    "empty": "Trống",
+    "connecting": "Đang kết nối...",
+    "creating": "Đang tạo...",
+    "updating": "Đang cập nhật...",
+    "Address": "Địa chỉ",
+    "User": "Người dùng",
+    "assigned": "Giao",
+    "subscribed": "Đã đăng ký",
+    "created": "Tạo",
+    "label": "Nhãn",
+    "labels": "Nhãn",
+    "mode": "Cách thức",
+    "roletype": "Loại vai trò",
+    "readonly": "chỉ đọc",
+    "user": "Người dùng",
+    "added-time": "Đã thêm thời gian",
+    "data-source": "Nguồn dữ liệu",
+    "grant": "Khoản trợ cấp",
+    "admin": "Quản trị viên",
+    "read-only": "Chỉ đọc",
+    "connection-string": "Chuỗi kết nối",
+    "agents": "Đại lý",
+    "billings": "Hóa đơn",
+    "all": "Tất cả",
+    "recent": "Gần đây",
+    "deployment-config": "Cấu hình triển khai",
+    "by": "qua",
+    "ok": "ĐƯỢC RỒI",
+    "share": "Chia sẻ",
+    "others": "Người khác",
+    "or": "hoặc",
+    "export": "Xuất khẩu",
+    "tips": "Lời khuyên",
+    "template": "Bản mẫu",
+    "delete": "Xóa bỏ",
+    "history": "Lịch sử",
+    "loading": "Đang tải",
+    "from": "từ",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép",
+    "manage": "Quản lý",
+    "table": "Bàn",
+    "search": "Tìm kiếm",
+    "warning": "Cảnh báo",
+    "edited": "đã chỉnh sửa",
+    "preview": "Xem trước",
+    "file-selector": {
+      "type-limit": "Chỉ hỗ trợ {extension} tập tin",
+      "size-limit": "Kích thước tệp phải nhỏ hơn {size} MiB"
+    },
+    "no-data": "Không có dữ liệu",
+    "visibility": "Hiển thị",
+    "duplicate": "Nhân bản",
+    "clear-search": "Tìm kiếm rõ ràng",
+    "enable": "Cho phép",
+    "disable": "Vô hiệu hóa",
+    "view-doc": "Xem tài liệu",
+    "backup-and-restore": "Sao lưu và khôi phục",
+    "write-only": "chỉ viết",
+    "pitr": "PITR",
+    "fix": "Sửa chữa",
+    "go-now": "Đi ngay",
+    "sync": "Đồng bộ hóa",
+    "sync-now": "Đồng bộ hóa ngay bây giờ",
+    "show-help": "Hiển thị trợ giúp",
+    "success": "Thành công",
+    "failed": "Thất bại",
+    "load-more": "Tải thêm",
+    "access-denied": "Quyền truy cập bị từ chối",
+    "no": "KHÔNG",
+    "yes": "Đúng",
+    "advanced": "Trình độ cao",
+    "restart": "Khởi động lại",
+    "want-help": "Mong muốn giúp đỡ",
+    "operation": "Hoạt động",
+    "rollback": "Khôi phục",
+    "total": "Tổng cộng",
+    "discard-changes": "Loại bỏ những thay đổi",
+    "error-message": "Thông báo lỗi",
+    "resource-id": "ID tài nguyên",
+    "domain": "Lãnh địa",
+    "demo-mode": "Thử nghiệm",
+    "operations": "Hoạt động",
+    "on": "TRÊN",
+    "off": "Tắt",
+    "verify": "Xác minh",
+    "regenerate": "tái sinh",
+    "download": "Tải xuống",
+    "will-lose-unsaved-data": "Sẽ mất mọi dữ liệu chưa được lưu.",
+    "deleted": "Đã xóa",
+    "will-override-current-data": "Sẽ ghi đè dữ liệu hiện tại.",
+    "rollout": "Triển khai",
+    "uploading": "Đang tải lên",
+    "active": "Tích cực",
+    "added": "Thêm",
+    "revoke": "Thu hồi",
+    "cannot-undo-this-action": "Bạn không thể hoàn tác hành động này",
+    "expand": "Mở rộng",
+    "collapse": "Sụp đổ",
+    "select": "Lựa chọn",
+    "optional": "Không bắt buộc",
+    "reason": "Lý do",
+    "date": {
+      "days": "{days} ngày",
+      "months": "{months} tháng",
+      "years": "{years} năm"
+    },
+    "expiration": "Hết hạn",
+    "configure": "Cấu hình",
+    "groups": "Các nhóm",
+    "database-groups": "Nhóm cơ sở dữ liệu",
+    "members": "Các thành viên",
+    "warehouse": "Kho",
+    "schedule": "Lịch trình",
+    "state": "Tình trạng",
+    "condition": "Tình trạng",
+    "search-user": "Tìm kiếm người dùng",
+    "branches": "Chi nhánh",
+    "merge": "Hợp nhất",
+    "info": "Thông tin",
+    "minutes": "Phút",
+    "go-to-configure": "Cấu hình",
+    "updated-at-by": "Đã cập nhật {time} x {user}",
+    "created-at-by": "Tạo {time} x {user}",
+    "filter-by-name": "Lọc theo tên",
+    "tenant": "Người thuê nhà",
+    "license": "Giấy phép",
+    "show-all": "Hiển thị tất cả",
+    "view-details": "Xem chi tiết",
+    "force-verb": "Lực {verb}",
+    "nothing-changed": "không có gì thay đổi",
+    "untitled": "Không có tiêu đề",
+    "nickname": "Tên nick",
+    "missing-permission": "Thiếu quyền cần thiết",
+    "continue-anyway": "Vẫn tiếp tục"
+  },
+  "error-page": {
+    "go-back-home": "Trở về nhà"
+  },
+  "anomaly-center": "Trung tâm dị thường",
+  "kbar": {
+    "recently-visited": "Đã viếng thăm gần đây",
+    "navigation": "dẫn đường",
+    "help": {
+      "navigate": "để điều hướng",
+      "perform": "để thực hiện",
+      "close": "đóng",
+      "back": "trở lại"
+    },
+    "options": {
+      "placeholder": "Nhập lệnh hoặc tìm kiếm…"
+    },
+    "preferences": {
+      "common": "Sở thích",
+      "change-language": "Thay đổi ngôn ngữ…"
+    }
+  },
+  "task": {
+    "checking": "Đang kiểm tra...",
+    "run-task": "Chạy kiểm tra",
+    "check-result": {
+      "title": "Kiểm tra kết quả cho {name}",
+      "title-general": "Kiểm tra kết quả"
+    },
+    "check-type": {
+      "fake": "Giả mạo",
+      "syntax": "Cú pháp",
+      "compatibility": "Khả năng tương thích",
+      "connection": "Sự liên quan",
+      "sql-review": "Đánh giá SQL",
+      "earliest-allowed-time": "Thời gian cho phép sớm nhất",
+      "ghost-sync": "đồng bộ hóa gh-ost",
+      "statement-type": "Loại câu lệnh",
+      "lgtm": "LGTM",
+      "pitr": "PITR",
+      "affected-rows": "Hàng bị ảnh hưởng",
+      "sql-type": "kiểu SQL",
+      "summary-report": "Báo cáo tổng hợp"
+    },
+    "rollout-time": "Thời gian triển khai",
+    "earliest-allowed-time-hint": "@:{'task.rollout-time'} là khi bạn muốn một tác vụ được chạy; nếu không được chỉ định, nó sẽ chạy khi tất cả các tiêu chí được đáp ứng.",
+    "earliest-allowed-time-unset": "Bỏ đặt",
+    "comment": "Bình luận",
+    "invoker": "Người triệu hồi",
+    "started": "Đã bắt đầu",
+    "ended": "Đã kết thúc",
+    "view-change": "Xem thay đổi",
+    "view-change-history": "Xem lịch sử thay đổi",
+    "status": {
+      "running": "Đang chạy",
+      "failed": "Thất bại",
+      "canceled": "Đã hủy",
+      "success": "Thành công",
+      "warn": "Cảnh báo",
+      "error": "Lỗi"
+    },
+    "earliest-allowed-time-no-modify": "Bạn không thể sửa đổi trường này vì bạn không phải là người được chuyển nhượng vấn đề hoặc trường này không đang chờ chạy.",
+    "type": {
+      "bb-task-database-schema-update-ghost-sync": "Đồng bộ dữ liệu",
+      "bb-task-database-schema-update-ghost-cutover": "Đổi bàn",
+      "bb-task-database-schema-update-ghost-drop-original-table": "Bỏ bảng gốc"
+    },
+    "progress": {
+      "completed-units": "Đã hoàn thành {units}",
+      "total-units": "Tổng số {units}",
+      "eta": "ETA",
+      "units": {
+        "unit": "các đơn vị",
+        "row": "hàng"
+      },
+      "counting": "Đếm"
+    },
+    "n-similar-tasks": "({count} nhiệm vụ tương tự)",
+    "skip": "Nhảy",
+    "skip-modal-title": "Bỏ qua nhiệm vụ [{name}]?",
+    "task-checks": "Kiểm tra nhiệm vụ",
+    "prior-backup": "Sao lưu trước",
+    "rollback": {
+      "sql-rollback": "Khôi phục SQL",
+      "failed": "Thất bại",
+      "preview-rollback-issue": "Xem trước sự cố khôi phục",
+      "generating": "Đang tạo",
+      "empty-rollback-statement": "Câu lệnh rollback trống",
+      "cancel-generating": "Hủy việc tạo khôi phục SQL",
+      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}"
+    },
+    "skip-failed-in-current-stage": "Bỏ qua các nhiệm vụ thất bại trong giai đoạn hiện tại",
+    "apply-change-to-all-pending-tasks": {
+      "title": "Áp dụng thay đổi cho tất cả các nhiệm vụ đang chờ xử lý?",
+      "self": "Áp dụng thay đổi cho tất cả các nhiệm vụ đang chờ xử lý",
+      "current-only": "Chỉ áp dụng thay đổi cho tác vụ hiện tại"
+    },
+    "execution-time": "Thời gian thực hiện",
+    "run-checks": "Chạy kiểm tra",
+    "run-checks-in-current-stage": "Chạy kiểm tra trong giai đoạn hiện tại",
+    "database-create": {
+      "pending": "(đang chờ tạo)",
+      "created": "(tạo)"
+    },
+    "action-failed-in-current-stage": "{action} nhiệm vụ không thành công ở giai đoạn hiện tại",
+    "action-all-tasks-in-current-stage": "{action} tất cả nhiệm vụ trong giai đoạn hiện tại",
+    "cancel-task": "Hủy nhiệm vụ | Hủy nhiệm vụ",
+    "created": "Tạo",
+    "online-migration": {
+      "self": "Di chuyển trực tuyến",
+      "configure-ghost-parameters-for-db": "Định cấu hình tham số gh-ost cho cơ sở dữ liệu '{db}'",
+      "configure-ghost-parameters": "Cấu hình thông số gh-ost",
+      "ghost-parameters": "thông số gh-ost",
+      "configure": "Cấu hình",
+      "error": {
+        "some-tasks-are-not-editable-in-batch-mode": "Một số tác vụ không thể chỉnh sửa được ở chế độ hàng loạt",
+        "task-is-not-editable": "Nhiệm vụ này không thể chỉnh sửa được",
+        "x-status-task-is-not-editable": "tác vụ {status} không thể chỉnh sửa được",
+        "nothing-changed": "không có gì thay đổi",
+        "not-applicable": {
+          "some-tasks-dont-meet-ghost-requirement": "Một số nhiệm vụ không đáp ứng được yêu cầu của gh-ost"
+        }
+      },
+      "show-default-parameters": "Hiển thị thông số mặc định",
+      "hide-default-parameters": "Ẩn thông số mặc định"
+    }
+  },
+  "task-run": {
+    "status": {
+      "enqueued": "Đang chờ thi hành án.",
+      "enqueued-with-rollout-time": "Đang chờ thực thi sau {time}.",
+      "dumping-schema-before-executing-sql": "Đang chuẩn bị thực thi, kết xuất lược đồ.",
+      "executing-sql": "Thực thi SQL.",
+      "executing-sql-detail": "Thực thi SQL {current} của {total}, từ ({startLine}, {startColumn}) đến ({endLine}, {endColumn}).",
+      "dumping-schema-after-executing-sql": "Thực thi SQL đã hoàn thành, lược đồ kết xuất.",
+      "failed-sql-detail": "Thực thi không thành công từ ({startLine}, {startColumn}) đến ({endLine}, {endColumn}): {message}."
+    }
+  },
+  "banner": {
+    "update-license": "Cập nhật giấy phép",
+    "license-expires": "Giấy phép {plan} của bạn đã hết hạn vào {expireAt}.",
+    "trial-expires": "Bản dùng thử miễn phí {plan} của bạn sẽ hết hạn sau {days} ngày vào {expireAt}.",
+    "trial-expired": "Bản dùng thử miễn phí {plan} của bạn đã hết hạn.",
+    "extend-trial": "Kéo dài thời gian dùng thử",
+    "deploy": "Tự lưu trữ",
+    "cloud": "Đám mây",
+    "request-demo": "Đặt bản demo sản phẩm trong 30 phút.",
+    "readonly": "Bytebase ở chế độ chỉ đọc. Bạn vẫn có thể xem bảng điều khiển nhưng mọi nỗ lực thay đổi sẽ không thành công.",
+    "external-url": "Bytebase chưa được định cấu hình --external-url",
+    "configure-now": "Cấu hình ngay bây giờ"
+  },
+  "intro": {
+    "doc": "bác sĩ",
+    "issue": "vấn đề",
+    "quickstart": "bắt đầu nhanh"
+  },
+  "bbkit": {
+    "common": {
+      "ok": "ĐƯỢC RỒI",
+      "cancel": "Hủy bỏ",
+      "back": "Mặt sau",
+      "next": "Kế tiếp",
+      "finish": "Hoàn thành",
+      "step": "Bước chân"
+    },
+    "attention": {
+      "default": "Cần chú ý"
+    },
+    "confirm-button": {
+      "sure-to-delete": "Bạn có chắc chắn muốn xóa không?",
+      "cannot-undo": "Bạn không thể hoàn tác hành động này."
+    }
+  },
+  "settings": {
+    "sidebar": {
+      "account": "Tài khoản",
+      "profile": "Hồ sơ",
+      "workspace": "Không gian làm việc",
+      "security-and-policy": "Chính sách bảo mật",
+      "integration": "Hội nhập",
+      "general": "Tổng quan",
+      "members": "Các thành viên",
+      "im-integration": "TÔI",
+      "sso": "SSO",
+      "gitops": "GitOps",
+      "subscription": "Đăng ký",
+      "labels": "Nhãn",
+      "debug-log": "Nhật ký gỡ lỗi",
+      "sensitive-data": "Che giấu dữ liệu",
+      "access-control": "Kiểm soát truy cập dữ liệu",
+      "audit-log": "Sổ ghi chép đánh giá",
+      "custom-roles": "Vai trò tùy chỉnh",
+      "mail-delivery": "Chuyển phát thư"
+    },
+    "profile": {
+      "email": "E-mail",
+      "role": "Vai trò",
+      "phone": "Điện thoại",
+      "country-code": "Mã quốc gia",
+      "password": "Mật khẩu",
+      "password-confirm": "Xác nhận",
+      "password-confirm-placeholder": "Xác nhận mật khẩu mới",
+      "password-mismatch": "không khớp",
+      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)"
+    },
+    "members": {
+      "active": "Thành viên tích cực",
+      "inactive": "Thành viên không hoạt động",
+      "helper": "Thêm hoặc mời theo địa chỉ email",
+      "add-more": "+ Thêm nữa",
+      "add": "Thêm vào",
+      "invites": "Gửi những lời mời",
+      "invited": "Được mời",
+      "yourself": "Bạn",
+      "upgrade": "Nâng cấp để kích hoạt quản lý vai trò",
+      "select-role": "Chọn vai trò",
+      "not-assigned": "Không được chỉ định",
+      "table": {
+        "account": "Tài khoản",
+        "role": "Vai trò",
+        "update-time": "Thời gian cập nhật",
+        "granted-time": "Thời gian cấp",
+        "roles": "Vai trò"
+      },
+      "action": {
+        "deactivate": "Vô hiệu hóa",
+        "deactivate-confirm-title": "Bạn có chắc chắn tắt",
+        "deactivate-confirm-description": "Bạn vẫn có thể kích hoạt lại sau",
+        "reactivate": "Kích hoạt lại",
+        "reactivate-confirm-title": "Bạn có chắc chắn kích hoạt lại không"
+      },
+      "tooltip": {
+        "upgrade": "Nâng cấp để kích hoạt quản lý vai trò",
+        "not-allow-edit": "Chỉ quản trị viên mới có thể thay đổi vai trò",
+        "not-allow-remove": "Không thể xóa Quản trị viên cuối cùng",
+        "project-role-provider-gitlab": "Ánh xạ từ vai trò {rawRole} trong dự án GitLab tương ứng.",
+        "cannot-change-role-of-systembot-or-service-account": "Không thể thay đổi vai trò của bot hệ thống hoặc tài khoản dịch vụ"
+      },
+      "system-bot": "Bot hệ thống",
+      "service-account": "Tài khoản dịch vụ",
+      "copy-service-key": "Sao chép khóa dịch vụ",
+      "reset-service-key": "Đặt lại khóa dịch vụ",
+      "reset-service-key-alert": "Hành động này không thể được hoàn tác. Chìa khóa cũ sẽ ngừng hoạt động ngay lập tức. Bạn có chắc chắn muốn đặt lại khóa dịch vụ này không?",
+      "service-key-copied": "Khóa dịch vụ đã được sao chép vào bảng nhớ tạm, vui lòng giữ bí mật.",
+      "create-as-service-account": "Tạo dưới dạng tài khoản dịch vụ",
+      "show-inactive": "Hiển thị thành viên không hoạt động",
+      "remove-self-admin": {
+        "title": "Bạn có chắc chắn thu hồi @.low:role.workspace-admin.self khỏi chính mình không?",
+        "description": "Vui lòng đảm bảo rằng @.low:role.workspace-admin.self còn lại có thể đăng nhập, nếu không, không ai có thể quản lý người dùng."
+      },
+      "view-by-principals": "Xem bởi hiệu trưởng",
+      "view-by-roles": "Xem theo vai trò",
+      "add-member": "Thêm thành viên",
+      "update-member": "Cập nhật thành viên"
+    },
+    "im-integration": {
+      "enable": "Cho phép",
+      "description": "Cho phép người dùng phê duyệt trực tiếp các vấn đề từ IM.",
+      "feishu-updated-tip": "Cập nhật thành công tích hợp Feishu"
+    },
+    "sso": {
+      "create": "Tạo SSO",
+      "description": "Đăng nhập một lần (SSO) là phương thức xác thực cho phép người dùng xác thực bằng nhiều ứng dụng và trang web thông qua một bộ thông tin xác thực duy nhất.",
+      "archive": "Lưu trữ SSO này",
+      "archive-info": "SSO đã lưu trữ sẽ không được hiển thị.",
+      "restore": "Khôi phục SSO này",
+      "form": {
+        "type": "Kiểu",
+        "learn-more-with-user-doc": "Tìm hiểu thêm về cấu hình",
+        "redirect-url": "URL chuyển hướng ủy quyền",
+        "redirect-url-description": "Nó sẽ được sử dụng để điền vào trường thích hợp trong mẫu đơn đăng ký nhà cung cấp danh tính.",
+        "use-template": "Sử dụng mẫu",
+        "select-template": "Chọn mẫu",
+        "basic-information": "Thông tin cơ bản",
+        "name": "Tên",
+        "name-description": "Tên hiển thị sẽ được hiển thị cho người dùng",
+        "resource-id": "ID tài nguyên",
+        "resource-id-description": "Một chuỗi duy nhất và các ký tự hợp lệ là /[a-z][0-9]-/",
+        "domain": "Lãnh địa",
+        "domain-description": "Tên miền của nhà cung cấp danh tính",
+        "identity-provider-information": "Thông tin nhà cung cấp danh tính",
+        "identity-provider-information-description": "Thông tin được cung cấp bởi nhà cung cấp danh tính của bạn.",
+        "identity-provider-needed-information": "Tạo ứng dụng SSO của bạn với thông tin sau.",
+        "endpoints": "Điểm cuối",
+        "endpoints-description": "Các url liên quan do nhà cung cấp OAuth của bạn cung cấp.",
+        "auth-url-description": "Liên kết đến trang đăng nhập OAuth",
+        "scopes-description": "Danh sách phạm vi được phân tách bằng dấu cách sẽ được mang theo khi truy cập URL xác thực",
+        "token-url-description": "Địa chỉ API để lấy accessToken",
+        "user-info-url-description": "Địa chỉ API để lấy thông tin người dùng bằng accessToken",
+        "security-protocol": "Giao thức bảo mật",
+        "connection-security": "Bảo mật kết nối",
+        "connection-security-skip-tls-verify": "Bỏ qua xác minh TLS cho chứng chỉ tự ký",
+        "user-information-mapping": "Ánh xạ thông tin người dùng",
+        "user-information-mapping-description": "Ánh xạ tên trường từ API thông tin người dùng tới người dùng Bytebase.",
+        "identifier": "Email của người dùng Bytebase",
+        "identifier-tips": "Nó phải là một chuỗi duy nhất. Và nếu nó không ở định dạng email, nó sẽ được ghép với tên miền.",
+        "display-name": "Tên hiển thị của người dùng Bytebase",
+        "phone": "Số điện thoại của người dùng Bytebase",
+        "auth-style": {
+          "self": "Kiểu xác thực",
+          "in-params": {
+            "self": "Trong thông số"
+          },
+          "in-header": {
+            "self": "Trong tiêu đề"
+          }
+        }
+      },
+      "copy-redirect-url": "Đã sao chép URL chuyển hướng vào clipboard."
+    },
+    "general": {
+      "workspace": {
+        "branding": "Xây dựng thương hiệu",
+        "only-admin-can-edit": "Chỉ quản trị viên không gian làm việc mới có thể cập nhật cài đặt.",
+        "logo": "Logo",
+        "logo-aspect": "Kích thước biểu trưng được đề xuất phải là tỷ lệ khung hình 5:2, ví dụ: 100 x 40.",
+        "select-logo": "Tải lên một tài liệu",
+        "drag-logo": "hoặc kéo vào đây",
+        "logo-upload-tip": "{extension} lên đến {size} MiB",
+        "logo-upload-succeed": "Đã cập nhật logo thành công",
+        "security": "Bảo vệ",
+        "watermark": {
+          "self": "Chữ ký ảnh",
+          "update-success": "Đã cập nhật cài đặt hình mờ",
+          "description": "Hiển thị hình mờ trên các trang, bao gồm tên người dùng, ID và email.",
+          "only-admin-can-edit": "Chỉ quản trị viên không gian làm việc mới có thể cập nhật cài đặt hình mờ.",
+          "enable": "Bật hình mờ"
+        },
+        "disallow-signup": {
+          "enable": "Vô hiệu hóa đăng ký tự phục vụ",
+          "description": "Sau khi bị tắt, người dùng không thể tự đăng ký và chỉ có thể được quản trị viên không gian làm việc mời."
+        },
+        "require-2fa": {
+          "enable": "Yêu cầu xác thực hai yếu tố cho tất cả người dùng",
+          "description": "Khi được bật, người dùng chưa bật xác thực hai yếu tố cho tài khoản cá nhân của họ sẽ buộc phải định cấu hình.",
+          "need-all-user-2fa-enabled": "Yêu cầu tất cả người dùng kích hoạt 2FA trước. Vẫn còn {count} người dùng chưa kích hoạt 2FA: {users}"
+        },
+        "network": "Mạng",
+        "external-url": {
+          "self": "URL bên ngoài",
+          "description": "URL bên ngoài nơi người dùng truy cập Bytebase phải bắt đầu bằng http:// hoặc https://."
+        },
+        "gitops-webhook-url": {
+          "self": "URL webhook GitOps",
+          "description": "URL dùng để gửi webhooks GitOps tới phiên bản Bytebase.",
+          "default-to-external-url": "Mặc định là URL bên ngoài"
+        },
+        "sign-in-frequency": {
+          "self": "Tần suất đăng nhập",
+          "description": "Tần suất đăng nhập là khoảng thời gian trước khi người dùng phải đăng nhập lại.",
+          "hours": "Giờ)",
+          "days": "(Các) ngày",
+          "config-updated": "Cấu hình được cập nhật. Cần khởi động lại Bytebase và đăng nhập lại để có hiệu lực."
+        },
+        "config-updated": "Cấu hình được cập nhật.",
+        "plugin": {
+          "openai": {
+            "ai-augmentation": "Tăng cường AI",
+            "openai-key": {
+              "self": "Khóa API OpenAI",
+              "description": "Cung cấp Khóa API OpenAI để kích hoạt khả năng ChatSQL trong SQL Editor. {viewDoc}",
+              "find-my-key": "Tìm chìa khóa của tôi",
+              "placeholder": "Khóa API OpenAI thường bắt đầu bằng sk-*****"
+            },
+            "openai-endpoint": {
+              "self": "Điểm cuối API OpenAI",
+              "description": "Cung cấp triển khai riêng Điểm cuối API OpenAI."
+            }
+          }
+        },
+        "announcement": {
+          "self": "Thông báo",
+          "update-success": "Đã cập nhật cài đặt thông báo.",
+          "admin-or-dba-can-edit": "Chỉ quản trị viên không gian làm việc hoặc DBA mới có thể cập nhật cài đặt thông báo."
+        },
+        "announcement-alert-level": {
+          "description": "Mức độ",
+          "field": {
+            "info": "Bình thường",
+            "warning": "Cảnh báo",
+            "critical": "Phê bình"
+          }
+        },
+        "announcement-text": {
+          "self": "Tiêu đề",
+          "description": "Để ẩn thông báo, hãy để trống.",
+          "placeholder": "Tiêu đề thông báo đầu vào"
+        },
+        "extra-link": {
+          "self": "liên kết",
+          "placeholder": "Liên kết thông báo đầu vào"
+        },
+        "confirm-delete-custom-logo": "Xóa logo thương hiệu tùy chỉnh?",
+        "restrict-issue-creation-for-sql-review": {
+          "title": "Cấm tạo vấn đề để xem xét SQL có lỗi",
+          "description": "Sau khi được bật, người dùng chỉ được phép tạo sự cố nếu bản đánh giá SQL không có bất kỳ lỗi nào."
+        }
+      }
+    },
+    "sensitive-data": {
+      "description": "Các cột sau được chỉ định rõ ràng các mức độ che giấu và được ưu tiên hơn quy tắc che giấu chung.",
+      "remove-sensitive-column-tips": "Lộ cột này?",
+      "sensitive-column-list": "Cột được che giấu rõ ràng",
+      "global-masking-rule": "Quy tắc che giấu toàn cầu",
+      "grant-access": "Cấp phép truy cập",
+      "never-expires": "Không bao giờ hết hạn",
+      "global-rules": {
+        "self": "Quy tắc che giấu toàn cầu",
+        "description": "Sử dụng quy tắc chung để áp dụng các cấp độ che giấu hàng loạt, ví dụ: tất cả các cột có tên là \"email\" sẽ được che ở mức \"Một phần\".",
+        "condition-order": "Lệnh điều kiện",
+        "re-order": "Đặt hàng lại",
+        "delete-rule-tip": "Xóa quy tắc này?",
+        "check-rules": "Kiểm tra các quy tắc toàn cầu"
+      },
+      "semantic-types": {
+        "self": "Các loại ngữ nghĩa",
+        "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che giấu.",
+        "use-predefined-type": "Sử dụng loại được xác định trước",
+        "add-from-template": "Thêm từ mẫu",
+        "table": {
+          "semantic-type": "Loại ngữ nghĩa",
+          "description": "Sự miêu tả",
+          "full-masking-algorithm": "Thuật toán mặt nạ đầy đủ",
+          "partial-masking-algorithm": "Thuật toán che giấu một phần",
+          "delete": "Xóa loại ngữ nghĩa này?"
+        },
+        "template": {
+          "address": {
+            "title": "Địa chỉ",
+            "description": ""
+          },
+          "secret_key": {
+            "title": "Khóa mã hóa",
+            "description": ""
+          },
+          "card_number": {
+            "title": "Thẻ ngân hàng, thẻ tín dụng, v.v.",
+            "description": ""
+          },
+          "email": {
+            "title": "Địa chỉ email",
+            "description": ""
+          },
+          "id_number": {
+            "title": "Số ID cá nhân",
+            "description": ""
+          },
+          "ipv4_address": {
+            "title": "Địa chỉ IPv4",
+            "description": ""
+          },
+          "license_plate_number": {
+            "title": "Biển số",
+            "description": ""
+          },
+          "mac_address": {
+            "title": "Địa chỉ MAC",
+            "description": ""
+          },
+          "password": {
+            "title": "Mật khẩu",
+            "description": ""
+          },
+          "phone": {
+            "title": "Số điện thoại",
+            "description": ""
+          }
+        }
+      },
+      "column-detail": {
+        "masking-setting-for-column": "Cài đặt mặt nạ cho \"{column}\"",
+        "access-user-list": "Truy cập danh sách người dùng",
+        "access-user-list-desc": "Người dùng được cấp quyền truy cập vào dữ liệu đã được loại bỏ mặt nạ.",
+        "remove-user-permission": "Xóa quyền của người dùng?",
+        "remove-sensitive-warning": "Việc này sẽ làm lộ cột.",
+        "column-effective-masking-tips": "Cột này không định cấu hình mức độ che giấu của riêng nó.\nChúng tôi đang thể hiện mức độ che giấu hiệu quả của mình bằng các quy tắc che giấu toàn cầu. {link}"
+      },
+      "algorithms": {
+        "self": "Thuật toán che dấu",
+        "default": "Mặc định",
+        "default-desc": "Sử dụng *** làm mặt nạ dữ liệu",
+        "table": {
+          "title": "Tiêu đề",
+          "description": "Sự miêu tả",
+          "masking-type": "Loại mặt nạ",
+          "delete": "Xóa thuật toán này?"
+        },
+        "error": {
+          "title-required": "Tiêu đề là bắt buộc",
+          "substitution-required": "Cần phải thay thế",
+          "substitution-length": "Việc thay thế phải nhỏ hơn 16 byte",
+          "salt-required": "Cần có muối",
+          "slice-required": "Cần có lát cắt",
+          "slice-invalid-number": "Phần bắt đầu hoặc kết thúc không phải là số hợp lệ",
+          "slice-number-range": "Phần cuối của lát cắt phải nhỏ hơn phần đầu",
+          "slice-overlap": "Phạm vi lát cắt không thể chồng lên nhau"
+        },
+        "mask": "Mặt nạ",
+        "hash": "Băm",
+        "full-mask": {
+          "self": "Mặt nạ đầy đủ",
+          "substitution": "Thay thế",
+          "substitution-label": "Substitution là chuỗi dùng để thay thế giá trị ban đầu, độ dài tối đa của chuỗi là 16 byte."
+        },
+        "range-mask": {
+          "self": "Mặt nạ phạm vi",
+          "label": "Mặt nạ phạm vi sẽ thay thế giá trị ban đầu từ chỉ mục bắt đầu đến chỉ mục kết thúc (không bao gồm phần cuối) bằng giá trị thay thế.",
+          "slice-start": "Bắt đầu lát cắt",
+          "slice-start-label": "Bắt đầu lát cắt là chỉ số bắt đầu của giá trị ban đầu, bắt đầu từ 0 và phải nhỏ hơn điểm dừng.",
+          "slice-end": "Phần cuối",
+          "slice-end-label": "Điểm dừng lát cắt là chỉ số dừng của giá trị ban đầu, phải nhỏ hơn độ dài của giá trị ban đầu.",
+          "substitution": "Thay thế",
+          "substitution-label": "Thay thế là chuỗi được sử dụng để thay thế giá trị ban đầu [bắt đầu:kết thúc)."
+        },
+        "md5-mask": {
+          "self": "mặt nạ MD5",
+          "salt": "Muối",
+          "salt-label": "Muối được sử dụng để tạo ra hàm băm từ giá trị ban đầu."
+        }
+      },
+      "masking-level": {
+        "self": "Mức độ che giấu",
+        "selet-level": "Chọn cấp độ",
+        "masking_level_unspecified": "Tuân theo các quy tắc toàn cầu",
+        "none": "Không có",
+        "partial": "một phần",
+        "full": "Đầy"
+      },
+      "action": {
+        "self": "Hoạt động",
+        "query": "Truy vấn",
+        "export": "Xuất khẩu"
+      },
+      "classification": {
+        "self": "Phân loại dữ liệu",
+        "upload": "Phân loại tải lên",
+        "upload-succeed": "Tải lên thành công",
+        "search": "Phân loại tìm kiếm",
+        "label": "Bạn có thể tải lên tệp phân loại có định dạng JSON.",
+        "view-example": "Xem ví dụ",
+        "json-format-example": "Ví dụ về định dạng JSON phân loại",
+        "copy-succeed": "Sao chép ví dụ thành công",
+        "override-title": "Ghi đè dữ liệu phân loại",
+        "override-desc": "Dữ liệu phân loại hiện tại sẽ bị ghi đè và ảnh hưởng đến tất cả các dự án.",
+        "override-confirm": "Vẫn tải lên"
+      }
+    },
+    "access-control": {
+      "description": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu. {link}",
+      "skip-approval": "Bỏ qua phê duyệt",
+      "query-data": "Truy vấn dữ liệu",
+      "export-data": "Xuất dữ liệu",
+      "disallowed": "Không được phép",
+      "copy-data-from-sql-editor": "Sao chép dữ liệu từ SQL Editor"
+    },
+    "release": {
+      "new-version-available": "Phiên bản mới có sẵn",
+      "new-version-content": "Hiện đã có phiên bản mới {tag}! Vui lòng kiểm tra tài liệu của chúng tôi để cài đặt.",
+      "not-show-till-next-release": "Không hiển thị điều này cho đến phiên bản tiếp theo"
+    },
+    "mail-delivery": {
+      "description": "Việc định cấu hình thông tin SMTP sẽ cho phép người dùng nhận báo cáo cơ sở dữ liệu qua email, chẳng hạn như báo cáo hàng tuần truy vấn chậm.",
+      "field": {
+        "smtp-server-host": "Máy chủ máy chủ SMTP",
+        "smtp-server-port": "Cổng máy chủ SMTP",
+        "from": "Từ",
+        "smtp-username": "Tên người dùng SMTP",
+        "smtp-password": "Mật khẩu SMTP",
+        "send-test-email-to": "Gửi email kiểm tra tới",
+        "send": "Gửi",
+        "authentication-method": "Phương pháp xác thực",
+        "encryption": "Mã hóa"
+      },
+      "updated-tip": "Đã cập nhật thành công cài đặt gửi thư",
+      "tested-tip": "Gửi thành công, vui lòng kiểm tra hộp thư đến của {address}."
+    }
+  },
+  "activity": {
+    "name": "Tên",
+    "comment": "Bình luận",
+    "created": "Tạo",
+    "invoker": "Người triệu hồi",
+    "type": {
+      "issue-create": "Tạo vấn đề",
+      "comment-create": "Tạo bình luận",
+      "issue-field-update": "Cập nhật trường vấn đề",
+      "issue-status-update": "Cập nhật trạng thái sự cố",
+      "pipeline-stage-status-update": "Cập nhật trạng thái giai đoạn vấn đề",
+      "pipeline-task-status-update": "Cập nhật trạng thái nhiệm vụ sự cố",
+      "pipeline-task-file-commit": "Tệp cam kết",
+      "pipeline-task-statement-update": "Cập nhật SQL",
+      "pipeline-task-prior-backup": "Sao lưu dữ liệu trước",
+      "member-create": "Tạo thành viên",
+      "member-role-update": "Cập nhật vai trò",
+      "member-activate": "Kích hoạt thành viên",
+      "member-deactivate": "Vô hiệu hóa thành viên",
+      "project-repository-push": "Sự kiện đẩy kho lưu trữ",
+      "project-database-transfer": "Chuyển cơ sở dữ liệu",
+      "project-member-create": "Thêm thành viên dự án",
+      "project-member-delete": "Xóa thành viên dự án",
+      "project-member-role-update": "Thay đổi vai trò thành viên dự án",
+      "pipeline-task-earliest-allowed-time-update": "Cập nhật thời gian cho phép sớm nhất",
+      "database-recovery-pitr-done": "Khôi phục cơ sở dữ liệu về thời điểm",
+      "external-approval-rejected": "Phê duyệt bên ngoài bị từ chối"
+    },
+    "sentence": {
+      "created-issue": "vấn đề đã tạo",
+      "commented": "đã bình luận",
+      "reassigned-issue": "đã giao lại vấn đề từ {oldName} thành {newName}",
+      "assigned-issue": "vấn đề được giao cho {newName}",
+      "unassigned-issue": "vấn đề chưa được giao từ {oldName}",
+      "invalid-assignee-update": "cập nhật người được chuyển nhượng không hợp lệ",
+      "changed-description": "đã thay đổi mô tả",
+      "changed-from-to": "đã thay đổi {name} từ \"{oldValue}\" thành \"{newValue}\"",
+      "unset-from": "bỏ đặt {name} khỏi \"{oldValue}\"",
+      "set-to": "đặt {name} thành \"{newValue}\"",
+      "changed-update": "đã thay đổi bản cập nhật {name}",
+      "reopened-issue": "vấn đề đã mở lại",
+      "resolved-issue": "vấn đề đã được giải quyết",
+      "canceled-issue": "vấn đề bị hủy bỏ",
+      "empty": "",
+      "changed": "đã thay đổi",
+      "updated": "đã cập nhật",
+      "canceled": "đã hủy bỏ",
+      "approved": "tán thành",
+      "started": "đã bắt đầu",
+      "completed": "hoàn thành",
+      "failed": "thất bại",
+      "task-name": " {name} nhiệm vụ",
+      "committed-to-at": "đã cam kết {file} cho {branch}{'@'}{repo}",
+      "dismissed-stale-approval": "đã bác bỏ các phê duyệt cũ của {task}",
+      "external-approval-rejected": "đã từ chối phê duyệt từ bên ngoài từ {imName} của giai đoạn \"{stageName}\"",
+      "skipped": "bỏ qua",
+      "rolled-out": "lăn ra",
+      "schema-version": "phiên bản lược đồ {version}",
+      "xxx-automatically": "{verb} tự động",
+      "verb-type-target-by-people": "{verb} {type} {target}",
+      "verb-type-target-by-system-bot": "{type} {target} {verb}",
+      "changed-x-link": "đã thay đổi {name}. {link}",
+      "prior-back-table": "Sao lưu dữ liệu vào cơ sở dữ liệu {database} và bảng {tables}"
+    },
+    "subject-prefix": {
+      "task": "Nhiệm vụ",
+      "stage": "Sân khấu"
+    },
+    "n-similar-activities": "({count} hoạt động tương tự) | ({count} hoạt động tương tự)"
+  },
+  "issue": {
+    "my-issues": "Vấn đề của tôi",
+    "waiting-approval": "Chờ phê duyệt",
+    "waiting-rollout": "Đang chờ triển khai",
+    "opened-by-at": "được {creator} mở vào lúc {time}",
+    "commit-by-at": "cam kết {id} {title} của {author} vào {time}",
+    "status-transition": {
+      "modal": {
+        "resolve": "Giải quyết vấn đề?",
+        "cancel": "Hủy bỏ toàn bộ vấn đề này?",
+        "reopen": "Mở lại vấn đề?",
+        "title": "{action} {type} [{name}]?",
+        "action-to-stage": "giai đoạn {action} ({n} nhiệm vụ)"
+      },
+      "dropdown": {
+        "resolve": "Giải quyết vấn đề",
+        "cancel": "Hủy vấn đề",
+        "reopen": "Mở lại vấn đề"
+      },
+      "form": {
+        "note": "Ghi chú",
+        "placeholder": "(Tùy chọn) Thêm ghi chú..."
+      }
+    },
+    "subscribe": "Đặt mua",
+    "unsubscribe": "Hủy đăng ký",
+    "subscriber": "Không có người đăng ký | 1 người đăng ký | {n} người đăng ký",
+    "apply-to-other-tasks": "Áp dụng cho các nhiệm vụ khác",
+    "add-sql-statement": "Thêm câu lệnh SQL...",
+    "optional-add-sql-statement": "(Tùy chọn) Thêm câu lệnh SQL...",
+    "edit-description": "Chỉnh sửa Mô tả",
+    "add-some-description": "Thêm một số mô tả...",
+    "add-a-comment": "Thêm một bình luận",
+    "edit-comment": "Chỉnh sửa nhận xét",
+    "leave-a-comment": "Để lại bình luận...",
+    "comment-editor": {
+      "write": "Viết",
+      "preview": "Xem trước",
+      "nothing-to-preview": "Không có gì để xem trước",
+      "toolbar": {
+        "header": "Chèn văn bản tiêu đề",
+        "bold": "Chèn văn bản in đậm",
+        "code": "Chèn đoạn mã SQL",
+        "link": "Chèn một liên kết",
+        "hashtag": "Chèn liên kết của vấn đề theo id. Nhập id vấn đề sau hashtag \"#\""
+      }
+    },
+    "view-commit": "Xem cam kết",
+    "advanced-search": {
+      "self": "Tìm kiếm nâng cao",
+      "filter": "Lọc",
+      "scope": {
+        "project": {
+          "title": "Dự án",
+          "description": "Lọc theo dự án"
+        },
+        "instance": {
+          "title": "Ví dụ",
+          "description": "Lọc theo phiên bản"
+        },
+        "environment": {
+          "title": "Môi trường",
+          "description": "Lọc theo môi trường"
+        },
+        "database": {
+          "title": "Cơ sở dữ liệu",
+          "description": "Lọc theo cơ sở dữ liệu"
+        },
+        "type": {
+          "title": "Đổi loại",
+          "description": "Loại thay đổi cơ sở dữ liệu cho các vấn đề"
+        },
+        "creator": {
+          "title": "Người sáng tạo",
+          "description": "Tìm kiếm theo người tạo ra vấn đề"
+        },
+        "assignee": {
+          "title": "Người được chuyển nhượng",
+          "description": "Tìm kiếm theo người được giao vấn đề"
+        },
+        "subscriber": {
+          "title": "Người đăng kí",
+          "description": "Tìm kiếm theo người đăng ký phát hành"
+        },
+        "principal": {
+          "title": "Hiệu trưởng liên quan",
+          "description": "Tìm kiếm theo người tạo vấn đề, người được chuyển nhượng hoặc người đăng ký"
+        },
+        "approver": {
+          "title": "Người phê duyệt",
+          "description": "Tìm kiếm theo người phê duyệt vấn đề"
+        },
+        "approval": {
+          "value": {
+            "pending": "Chờ phê duyệt",
+            "approved": "Tán thành"
+          },
+          "description": "Tìm kiếm theo trạng thái phê duyệt vấn đề",
+          "title": "tình trạng chính"
+        },
+        "project-assigned": {
+          "title": "Dự án được giao",
+          "description": "Tìm kiếm theo cơ sở dữ liệu được gán cho một dự án.",
+          "value": {
+            "yes": "Đúng",
+            "no": "KHÔNG"
+          }
+        }
+      },
+      "hide": "Ẩn tìm kiếm nâng cao"
+    },
+    "table": {
+      "open": "Mở",
+      "closed": "Đã đóng",
+      "status": "Trạng thái",
+      "project": "Dự án",
+      "name": "Tên",
+      "environment": "Môi trường",
+      "db": "cơ sở dữ liệu",
+      "progress": "Tiến triển",
+      "updated": "Đã cập nhật",
+      "approver": "Người phê duyệt",
+      "creator": "Người sáng tạo",
+      "assignee": "Người được chuyển nhượng"
+    },
+    "stage-select": {
+      "active": "{name} (đang hoạt động)"
+    },
+    "not-allowed-to-operate-unassigned-database": "Không thể {operation} đối với cơ sở dữ liệu chưa được chỉ định.\nNó cần phải được chuyển giao cho một dự án đầu tiên.",
+    "migration-mode": {
+      "title": "Chế độ di chuyển",
+      "normal": {
+        "title": "Di chuyển bình thường (đối với bảng có kích thước bình thường)",
+        "description": "Thực hiện thay đổi lược đồ trực tiếp trên bảng mục tiêu. Một khóa sẽ được giữ trong toàn bộ quá trình di chuyển."
+      },
+      "online": {
+        "title": "Di chuyển trực tuyến (đối với bảng có kích thước lớn)",
+        "description": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời lượng khóa bảng từ vài giờ xuống còn vài giây {link}."
+      }
+    },
+    "new-issue": "@:common.new @:common.issue",
+    "format-on-save": "Định dạng khi lưu",
+    "action-to-current-stage": "{action} giai đoạn hiện tại",
+    "edit-sql-statement-in-vcs": "Dự án này đã kích hoạt kiểm soát phiên bản dựa trên VCS. Vui lòng sửa đổi tệp SQL trong kho Git tương ứng và cam kết nó sẽ tạo ra một vấn đề mới.",
+    "edit-sql-statement": "Chỉnh sửa câu lệnh SQL",
+    "upload-sql": "Tải lên SQL",
+    "upload-sql-as-sheet": "Tải SQL lên dưới dạng trang tính",
+    "statement-from-sheet-warning": "SQL có kích thước quá lớn và việc chỉnh sửa nội tuyến không được phép. Bạn có thể tải lên tệp SQL mới để ghi đè lên nó.",
+    "overwrite-current-statement": "Ghi đè câu lệnh SQL hiện tại",
+    "upload-sql-file-max-size-exceeded": "Đã vượt quá kích thước tệp tối đa ({size}).",
+    "waiting-earliest-allowed-time": "Sẽ chạy sau {time}",
+    "batch-transition": {
+      "not-allowed-tips": "Một số vấn đề đã chọn không thể {operation}",
+      "resolve": "Giải quyết",
+      "resolved": "đã giải quyết",
+      "cancel": "Hủy bỏ",
+      "cancelled": "đã hủy bỏ",
+      "reopen": "Mở lại",
+      "reopened": "đã mở lại",
+      "action-n-issues": "vấn đề {action} {n} | vấn đề về {action} {n}",
+      "successfully-updated-n-issues": "Đã cập nhật thành công vấn đề {n} | Đã cập nhật thành công {n} vấn đề"
+    },
+    "sql-hint": {
+      "change-will-apply-to-all-tasks-in-tenant-mode": "Thay đổi sẽ được áp dụng cho tất cả các nhiệm vụ",
+      "dont-apply-to-database-in-baseline-migration": "Đường cơ sở chỉ ghi lại lược đồ hiện tại trong lịch sử thay đổi và sẽ không áp dụng SQL vào cơ sở dữ liệu",
+      "snowflake": "Sử dụng &lt;<schema> &gt;.&lt;<table> &gt; để chỉ định bảng Bông tuyết"
+    },
+    "will-rollback": "Tác vụ này sẽ hoàn nguyên {link}",
+    "issue-link-with-task": "Vấn đề {issue} - nhiệm vụ {task}",
+    "assignee-attention": {
+      "send-approval-request-successfully": "Gửi yêu cầu phê duyệt {im} thành công",
+      "send-attention-request-successfully": "Yêu cầu sự chú ý của người được giao {im} thành công",
+      "needs-attention": "Cần chú ý",
+      "click-to-mark": "Bấm vào để yêu cầu sự chú ý của người được giao"
+    },
+    "sdl": {
+      "schema-change": "Thay đổi lược đồ",
+      "generated-ddl-statements": "Các câu lệnh DDL được tạo",
+      "full-schema": "Lược đồ đầy đủ",
+      "left-schema-may-change": "Lược đồ ở bên trái có thể thay đổi trước khi vấn đề được áp dụng."
+    },
+    "assignee-tooltip": "Người được giao là những người chịu trách nhiệm về một vấn đề và khi một vấn đề được giao cho họ, vấn đề đó sẽ hiển thị trong danh sách các vấn đề được giao của họ.",
+    "approval-flow": {
+      "self": "Luồng phê duyệt",
+      "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. Vấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. Bạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
+      "pre-issue-created-tips": "Sau khi sự cố được tạo, Bytebase sẽ tự động khớp quy trình phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của sự cố."
+    },
+    "waiting-to-rollout": "Đang chờ triển khai",
+    "waiting-for-review": "Đang chờ xem xét",
+    "issue-name": "Tên vấn đề",
+    "grant-request": {
+      "export-rows": "Hàng xuất tối đa",
+      "expire-days": "Ngày hết hạn",
+      "expired-at": "Hết hạn lúc",
+      "all-databases": "Tất cả",
+      "all-databases-tip": "Tất cả các cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
+      "manually-select": "Chọn thủ công",
+      "custom": "Phong tục",
+      "data-export-attention": "Dữ liệu sẽ được xuất thành tệp và tải xuống máy cục bộ của bạn. Và bạn chỉ có thể thực hiện hành động xuất một lần.",
+      "export-method": "Phương thức xuất",
+      "request-sent": "Đã gửi yêu cầu",
+      "please-select-database-first": "Vui lòng chọn cơ sở dữ liệu trước"
+    },
+    "review-sent-back": "Đánh giá được gửi lại",
+    "update-statement": {
+      "self": "Cập nhật {type}",
+      "apply-current-change-to": "Áp dụng thay đổi hiện tại cho",
+      "target": {
+        "selected-task": "Nhiệm vụ đã chọn",
+        "selected-stage": "Giai đoạn đã chọn",
+        "all-tasks": "Tất cả nhiệm vụ"
+      },
+      "current-change-will-apply-to-all-tasks-in-batch-mode": "Ở chế độ hàng loạt, thay đổi hiện tại sẽ được áp dụng cho tất cả các tác vụ."
+    },
+    "not-editable-legacy-issue": "Sự cố này không thể chỉnh sửa được vì nó được tạo trong phiên bản cũ của Bytebase",
+    "action-anyway": "dù sao cũng {action}",
+    "disallow-edit-reasons": {
+      "issue-is-done": "Vấn đề đã xong",
+      "issue-is-canceled": "Vấn đề bị hủy bỏ",
+      "task-is-x-status": "Nhiệm vụ là {status}",
+      "task-is-running-cancel-first": "Tác vụ đang chạy, hãy hủy tác vụ trước khi thay đổi giá trị này"
+    },
+    "you-are-not-allowed-to-change-this-value": "Bạn không được phép thay đổi giá trị này",
+    "sql-check": {
+      "sql-checks": "Kiểm tra SQL",
+      "not-executed-yet": "Chưa được thực thi",
+      "no-configured-sql-review-policy": {
+        "admin": "Môi trường {environment} chưa được định cấu hình Chính sách đánh giá SQL. {link}",
+        "developer": "Môi trường {environment} chưa được định cấu hình Chính sách đánh giá SQL. Vui lòng yêu cầu DBA của bạn cấu hình."
+      },
+      "statement-is-too-large": "Tuyên bố quá lớn",
+      "back-to-edit": "Quay lại chỉnh sửa",
+      "continue-anyway": "Vẫn tiếp tục",
+      "sql-review-violations": "Vi phạm đánh giá SQL"
+    },
+    "error": {
+      "issue-is-not-open": "Vấn đề chưa được mở",
+      "you-don-have-privilege-to-edit-this-issue": "Bạn không có đặc quyền để chỉnh sửa vấn đề này",
+      "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này"
+    },
+    "approval-requested": "Đã yêu cầu phê duyệt",
+    "assignee": {
+      "current-assignee": "Người được chuyển nhượng hiện tại",
+      "workspace-admins": "Quản trị viên không gian làm việc",
+      "workspace-dbas": "cơ sở dữ liệu",
+      "project-owners": "Chủ dự án",
+      "releasers-of-current-stage": "Người phát hành giai đoạn hiện tại",
+      "approvers-of-current-step": "Người phê duyệt bước hiện tại"
+    },
+    "unfinished-resolved-issue-tips": "Sự cố này được đánh dấu là \"Xong\" nhưng một số tác vụ của nó không được thực thi thành công.",
+    "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
+    "preview": "Vấn đề xem trước"
+  },
+  "alter-schema": {
+    "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
+    "vcs-info": "Đã bật VCS. Việc chọn tùy chọn này sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
+    "alter-single-db": "Thay đổi cơ sở dữ liệu đơn",
+    "alter-multiple-db": "Lựa chọn thủ công",
+    "alter-db-group": "Theo cấu hình triển khai",
+    "no-databases-in-project": "Không có cơ sở dữ liệu trong dự án này. Bấm vào DB mới hoặc Chuyển trong DB để thêm cơ sở dữ liệu."
+  },
+  "quick-action": {
+    "create-db": "Tạo nên cơ sở dữ liệu",
+    "new-db": "cơ sở dữ liệu mới",
+    "add-instance": "@:common.add @:common.instance",
+    "create-instance": "@:common.create @:common.instance",
+    "manage-user": "Quản lý người dùng",
+    "add-environment": "@:common.add @:common.environment",
+    "create-environment": "@:common.create @:common.environment",
+    "new-project": "@:common.new @:common.project",
+    "create-project": "@:common.create @:common.project",
+    "edit-data": "Chỉnh sửa dữ liệu",
+    "troubleshoot": "Khắc phục sự cố",
+    "transfer-in-db": "Chuyển trong DB",
+    "request-db": "Yêu cầu cơ sở dữ liệu",
+    "from-unassigned-databases": "Chuyển cơ sở dữ liệu chưa được chỉ định",
+    "from-projects": "Chuyển từ dự án khác",
+    "transfer-in-db-title": "Chuyển trong cơ sở dữ liệu",
+    "transfer-in-db-alert": "Bạn có chắc chắn chuyển \"{dbName }\" vào dự án của chúng tôi không?",
+    "unassigned-db-hint": "Cơ sở dữ liệu mới được đồng bộ hóa bắt đầu không được chỉ định và phải được chuyển sang dự án để sử dụng.",
+    "transfer-out-db": "Chuyển DB ra",
+    "transfer-out-db-title": "Chuyển cơ sở dữ liệu ra ngoài",
+    "request-query-permission": "Yêu cầu truy vấn",
+    "request-export-permission": "Yêu cầu xuất",
+    "request-export-data": "Yêu cầu xuất"
+  },
+  "create-db": {
+    "new-database-name": "Tên cơ sở dữ liệu mới",
+    "database-owner-name": "Tên chủ sở hữu cơ sở dữ liệu",
+    "cluster": "Cụm",
+    "reserved-db-error": "{databaseName} là tên dành riêng",
+    "generated-database-name": "Tên cơ sở dữ liệu đã tạo",
+    "db-name-generated-by-template": "Được tạo bởi mẫu \"{template}\"",
+    "input-label-value": "Nhập {key}",
+    "new-collection-name": "Tên bộ sưu tập mới"
+  },
+  "db": {
+    "encoding": "Mã hóa",
+    "character-set": "Bộ ký tự",
+    "collation": "đối chiếu",
+    "select": "Chọn cơ sở dữ liệu",
+    "select-instance-first": "Chọn phiên bản đầu tiên",
+    "select-environment-first": "Chọn môi trường trước",
+    "tables": "Những cái bàn",
+    "collections": "Bộ sưu tập",
+    "views": "Lượt xem",
+    "extensions": "Tiện ích mở rộng",
+    "foreign-tables": "Bàn nước ngoài",
+    "functions": "Chức năng",
+    "streams": "Dòng",
+    "tasks": "Nhiệm vụ",
+    "parent": "Cha mẹ",
+    "labels-for-resource": "Nhãn cho {resource}",
+    "last-successful-sync": "Đồng bộ hóa thành công lần cuối",
+    "sync-status": "Trạng thái đồng bộ hóa",
+    "failed-to-sync-schema-for-database-database-value-name": "Không thể đồng bộ hóa lược đồ cho cơ sở dữ liệu '{0}'.",
+    "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
+    "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
+    "failed-to-sync-schema": "Không thể đồng bộ hóa lược đồ",
+    "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công"
+  },
+  "instance": {
+    "select": "Chọn phiên bản",
+    "select-database-user": "Chọn người dùng cơ sở dữ liệu",
+    "new-database": "Cơ sở dữ liệu mới",
+    "syncing": "Đang đồng bộ hóa...",
+    "selected-n-instances": "{n} phiên bản được chọn | {n} trường hợp được chọn",
+    "create-migration-schema": "Tạo lược đồ di chuyển",
+    "missing-migration-schema": "Thiếu lược đồ di chuyển",
+    "unable-to-connect-instance-to-check-migration-schema": "Không thể kết nối phiên bản để kiểm tra lược đồ di chuyển",
+    "bytebase-relies-on-migration-schema-to-manage-gitops-based-schema-migration-for-databases-belonged-to-this-instance": "Bytebase dựa vào lược đồ di chuyển để ghi lại quá trình di chuyển lược đồ cơ sở dữ liệu trong trường hợp này. Nếu không thiết lập lược đồ di chuyển, bạn không thể chỉnh sửa lược đồ hoặc thay đổi dữ liệu cho bất kỳ cơ sở dữ liệu nào trên phiên bản.",
+    "please-contact-your-dba-to-configure-it": "Vui lòng liên hệ với DBA của bạn để định cấu hình nó.",
+    "please-check-the-instance-connection-info-is-correct": "Vui lòng kiểm tra thông tin kết nối phiên bản là chính xác.",
+    "users": "Người dùng",
+    "successfully-archived-instance-updatedinstance-name": "Đã lưu trữ thành công phiên bản '{0}'.",
+    "successfully-restored-instance-updatedinstance-name": "Đã khôi phục thành công phiên bản '{0}'.",
+    "failed-to-create-migration-schema-for-instance-instance-value-name": "Không tạo được lược đồ di chuyển ví dụ '{0}'.",
+    "successfully-created-migration-schema-for-instance-value-name": "Đã tạo thành công lược đồ di chuyển cho '{0}'.",
+    "failed-to-sync-schema-for-instance-instance-value-name": "Không thể đồng bộ hóa lược đồ ví dụ '{0}'.",
+    "successfully-synced-schema-for-instance-instance-value-name": "Đã đồng bộ hóa thành công lược đồ ví dụ '{0}'.",
+    "archive-this-instance": "Lưu trữ trường hợp này",
+    "archive-instance-instance-name": "Lưu trữ phiên bản '{0}'?",
+    "archived-instances-will-not-be-displayed": "Các trường hợp đã lưu trữ sẽ không được hiển thị.",
+    "restore-this-instance": "Khôi phục phiên bản này",
+    "restore": "Khôi phục",
+    "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{0}' về trạng thái bình thường?",
+    "account-name": "Tên tài khoản",
+    "account": "Tài khoản",
+    "name": "Tên",
+    "host-or-socket": "Máy chủ hoặc ổ cắm",
+    "project-id-and-instance-id": "ID dự án và ID phiên bản",
+    "project-id": "Mã dự án",
+    "instance-id": "ID phiên bản",
+    "your-snowflake-account-name": "tên tài khoản Bông tuyết của bạn",
+    "port": "Hải cảng",
+    "authentication-database": "Cơ sở dữ liệu xác thực",
+    "instance-name": "Tên phiên bản",
+    "snowflake-web-console": "Bảng điều khiển web bông tuyết",
+    "external-link": "Liên kết bên ngoài",
+    "web-console": "Bảng điều khiển web",
+    "connection-info": "Thông tin kết nối",
+    "show-how-to-create": "Hãy chỉ ra cách tạo",
+    "below-is-an-example-to-create-user-bytebase-with-password": "Dưới đây là ví dụ để tạo người dùng 'bytebase{'@'}%' bằng mật khẩu",
+    "your_db_pwd": "YOUR_DB_PWD",
+    "no-read-only-data-source-warn-for-admin-dba": "Phiên bản chưa được định cấu hình kết nối chỉ đọc, vui lòng xem xét thêm một kết nối.",
+    "no-read-only-data-source-warn-for-developer": "Phiên bản chưa được định cấu hình kết nối chỉ đọc, vui lòng yêu cầu DBA của bạn thêm một kết nối.",
+    "sentence": {
+      "host": {
+        "snowflake": "ví dụ. Host.docker.internal {'|'} <<ip>> {'|'} <<local socket>>"
+      },
+      "proxy": {
+        "snowflake": "Đối với máy chủ proxy, hãy thêm {'@'}PROXY_HOST và chỉ định PROXY_PORT trong cổng"
+      },
+      "console": {
+        "snowflake": "URL bảng điều khiển bên ngoài quản lý phiên bản này (ví dụ: bảng điều khiển AWS RDS, bảng điều khiển phiên bản DB nội bộ của bạn)"
+      },
+      "outbound-ip-list": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho phiên bản cơ sở dữ liệu của mình, vui lòng đưa các địa chỉ IP sau vào danh sách cho phép của phiên bản đó để cho phép Bytebase Cloud truy cập.",
+      "create-admin-user": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động DDL và DML (không CHỌN).",
+      "create-readonly-user": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc, chẳng hạn như truy vấn CHỌN.",
+      "create-admin-user-non-sql": "Đây là người dùng kết nối được Bytebase sử dụng để thực hiện các hoạt động ghi và quản trị.",
+      "create-readonly-user-non-sql": "Đây là kết nối được Bytebase sử dụng để thực hiện các hoạt động chỉ đọc.",
+      "create-user-example": {
+        "snowflake": {
+          "user": "cơ sở byte{'@'}%",
+          "password": "YOUR_DB_PWD",
+          "template": "Dưới đây là ví dụ để tạo người dùng 'bytebase' bằng mật khẩu {password} cho {warehouse} và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "mysql": {
+          "password": "YOUR_DB_PWD",
+          "user": "cơ sở byte{'@'}%",
+          "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
+        },
+        "clickhouse": {
+          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Trước tiên, bạn cần bật quy trình làm việc dựa trên SQL ClickHouse {link}, sau đó chạy truy vấn sau để tạo người dùng.",
+          "sql-driven-workflow": "Quy trình làm việc dựa trên SQL"
+        },
+        "postgresql": {
+          "warn": "Nếu phiên bản kết nối được quản lý bởi nhà cung cấp đám mây thì SUPERUSER sẽ không khả dụng và bạn nên tạo người dùng thông qua bảng điều khiển dành cho quản trị viên của nhà cung cấp đó. Người dùng đã tạo sẽ có các đặc quyền bán SIÊU NGƯỜI DÙNG cụ thể của nhà cung cấp. Bạn nên cấp đặc quyền Bytebase với 'GRANT role_name TO bytebase;' đối với tất cả các vai trò hiện có, nếu không Bytebase có thể không truy cập được cơ sở dữ liệu hoặc bảng hiện có.",
+          "template": "Dưới đây là ví dụ để tạo 'bytebase' người dùng bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết. Nếu phiên bản kết nối được tự lưu trữ thì bạn có thể cấp quyền SUPERUSER."
+        },
+        "redis": {
+          "password": "YOUR_DB_PWD",
+          "user": "cơ sở byte",
+          "template": "Dưới đây là ví dụ để tạo người dùng {user} bằng mật khẩu {password} và cấp cho người dùng các đặc quyền cần thiết."
+        }
+      }
+    },
+    "no-password": "Không mật khẩu",
+    "type-or-paste-credentials": "Nhập hoặc dán THÔNG TIN XÁC NHẬN",
+    "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC NHẬN - chỉ viết",
+    "password-write-only": "YOUR_DB_PWD - chỉ viết",
+    "secret-manager-tip": "Bạn cũng có thể chỉ định điểm cuối quản lý bí mật bên ngoài",
+    "test-connection": "Kiểm tra kết nối",
+    "ignore-and-create": "Bỏ qua và tạo",
+    "add-a-postgresql-sample-instance": "Thay vào đó, hãy thêm một phiên bản mẫu PostgreSQL",
+    "successfully-added-postgresql-instance": "Đã thêm thành công phiên bản mẫu PostgreSQL và điền thông tin kết nối.",
+    "connection-info-seems-to-be-incorrect": "Thông tin kết nối có vẻ không chính xác",
+    "new-instance": "Phiên bản mới",
+    "unable-to-connect": "Bytebase không thể kết nối phiên bản. Chúng tôi khuyên bạn nên xem lại thông tin kết nối. Nhưng bây giờ bạn có thể bỏ qua cảnh báo này. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {0}",
+    "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{0}'.",
+    "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{0}'.",
+    "copy-grant-statement": "TẠO câu lệnh NGƯỜI DÙNG và CẤP được sao chép vào khay nhớ tạm. Dán vào ứng dụng khách {engine} của bạn để áp dụng.",
+    "successfully-connected-instance": "Phiên bản được kết nối thành công.",
+    "failed-to-connect-instance": "Không thể kết nối phiên bản.",
+    "failed-to-connect-instance-localhost": "Không thể kết nối phiên bản.\nNếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" để biết địa chỉ máy chủ.",
+    "filter-instance-name": "Lọc tên phiên bản",
+    "grants": "tài trợ",
+    "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, hãy xem",
+    "create-gcp-credentials": "Để tạo Thông tin xác thực, hãy xem",
+    "used-for-testing-connection": "Chỉ được sử dụng để kiểm tra kết nối",
+    "all": "Tất cả các trường hợp",
+    "force-archive-description": "Buộc phải lưu trữ. Tất cả các vấn đề liên quan sẽ được giải quyết và tất cả các trang liên quan sẽ bị xóa.",
+    "sync-mode": {
+      "self": "Chế độ đồng bộ",
+      "database": {
+        "self": "Quản lý dựa trên cơ sở dữ liệu",
+        "description": "Toàn bộ cơ sở dữ liệu được coi là đối tượng được quản lý, trong đó CDB và PDB được coi là cơ sở dữ liệu riêng biệt. (Hỗ trợ chế độ CDB và không CDB)"
+      },
+      "schema": {
+        "self": "Quản lý dựa trên lược đồ",
+        "description": "Mỗi lược đồ được coi là một đối tượng được quản lý. (Chỉ hỗ trợ chế độ non-CDB)"
+      }
+    },
+    "scan-interval": {
+      "self": "Khoảng thời gian quét",
+      "default-never": "Mặc định (không bao giờ)",
+      "description": "Bytebase đồng bộ hóa lược đồ phiên bản theo định kỳ và phát hiện các điểm bất thường.",
+      "min-value": "Giá trị tối thiểu {value} phút"
+    },
+    "maximum-connections": {
+      "self": "Kết nối tối đa",
+      "default-value": "Mặc định (10)",
+      "description": "Việc hạn chế kết nối và sử dụng tài nguyên đạt được bằng cách đặt số lượng kết nối tối đa cho phiên bản.",
+      "max-value": "Kết nối {value} tối đa"
+    }
+  },
+  "environment": {
+    "all": "Tất cả môi trường",
+    "id": "ID môi trường",
+    "id-description": "ID môi trường là mã định danh duy nhất cho môi trường của bạn. Bạn không thể thay đổi nó sau khi tạo.",
+    "select": "Chọn môi trường",
+    "archive": "Lưu trữ môi trường này",
+    "archive-info": "Môi trường lưu trữ sẽ không được hiển thị.",
+    "create": "Tạo môi trường",
+    "restore": "Khôi phục môi trường này",
+    "successfully-updated-environment": "Đã cập nhật thành công môi trường '{name}'.",
+    "disable-auto-backup": {
+      "self": "Vô hiệu hóa sao lưu tự động cơ sở dữ liệu",
+      "content": "Việc tắt chính sách sao lưu tự động không được áp dụng trở về trước.\nBạn có chắc chắn về việc áp dụng cho tất cả cơ sở dữ liệu trong môi trường này không?"
+    },
+    "production-environment": "Môi trường sản xuất"
+  },
+  "quick-start": {
+    "self": "Bắt đầu nhanh",
+    "guide": "bấm vào bước này để thử",
+    "view-an-issue": "Xem một vấn đề",
+    "visit-project": "@:common.visit @:common.projects",
+    "visit-instance": "@:common.visit @:common.instances",
+    "visit-database": "@:common.visit @:common.databases",
+    "visit-environment": "@:common.visit @:common.environments",
+    "visit-member": "@:common.visit @:common.members",
+    "use-kbar": "Sử dụng kbar ({shortcut})",
+    "query-data": "Truy vấn dữ liệu",
+    "notice": {
+      "title": "Hướng dẫn bắt đầu nhanh đã bị loại bỏ",
+      "desc": "Bạn vẫn có thể mang nó trở lại sau từ menu trên cùng bên phải"
+    }
+  },
+  "auth": {
+    "sign-up": {
+      "title": "Đăng ký tài khoản của bạn",
+      "admin-title": "Thiết lập {account}",
+      "admin-account": "tài khoản quản trị",
+      "create-admin-account": "Tạo tài khoản quản trị",
+      "confirm-password": "Xác nhận mật khẩu",
+      "confirm-password-placeholder": "Xác nhận mật khẩu",
+      "password-mismatch": "không khớp",
+      "existing-user": "Bạn co săn san để tạo một tai khoản?",
+      "accept-terms-and-policy": "Tôi chấp nhận {terms} và {policy} của Bytebase",
+      "terms-of-service": "Điều khoản dịch vụ",
+      "privacy-policy": "Chính sách bảo mật"
+    },
+    "sign-in": {
+      "title": "đăng nhập vào tài khoản của bạn",
+      "forget-password": "Quên mật khẩu?",
+      "new-user": "Bạn mới sử dụng Bytebase?",
+      "demo-note": "Email:{username} Mật khẩu:{password}",
+      "gitlab": "Đăng nhập bằng GitLab",
+      "github": "Đăng nhập bằng GitHub",
+      "gitlab-oauth": "Hãy liên hệ với Quản trị viên của bạn để kích hoạt đăng nhập GitLab",
+      "sign-in-with-idp": "Đăng nhập bằng {idp}"
+    },
+    "password-forget": {
+      "title": "Quên mật khẩu?",
+      "selfhost": "Vui lòng liên hệ với Quản trị viên Bytebase của bạn để đặt lại mật khẩu của bạn.",
+      "cloud": "Vui lòng truy cập {link} và đặt lại mật khẩu của bạn.",
+      "return-to-sign-in": "Quay lại Đăng nhập"
+    },
+    "password-forgot": "Quên mật khẩu",
+    "password-reset": {
+      "title": "Đặt lại mật khẩu của bạn",
+      "content": "Nhập địa chỉ email của bạn và chúng tôi sẽ gửi cho bạn liên kết đặt lại mật khẩu",
+      "send-reset-link": "Gửi liên kết đặt lại",
+      "return-to-sign-in": "Quay lại Đăng nhập"
+    },
+    "activate": {
+      "title": "Kích hoạt tài khoản {type} của bạn"
+    }
+  },
+  "policy": {
+    "rollout": {
+      "name": "Chính sách triển khai",
+      "tip": "Chính sách này được áp dụng cho các vấn đề có hiệu lực hồi tố.",
+      "info": "Để triển khai thay đổi cơ sở dữ liệu, cài đặt này sẽ kiểm soát xem việc triển khai có cần phê duyệt thủ công hay không.",
+      "auto": "Tự động triển khai",
+      "auto-info": "Nếu tất cả đều vượt qua bước kiểm tra, thay đổi sẽ được triển khai và thực hiện tự động.",
+      "manual-by-project-owner": "Chủ dự án",
+      "manual-by-project-releaser": "Người phát hành dự án",
+      "manual-by-issue-creator": "Người tạo vấn đề",
+      "manual-by-last-approver": "Người phê duyệt cuối cùng triển khai thủ công từ quy trình phê duyệt tùy chỉnh",
+      "manual-by-dedicated-roles": "Triển khai thủ công theo vai trò chuyên dụng",
+      "manual-by-dedicated-roles-info": "Cho phép bất kỳ vai trò nào đã chọn sau đây nhấp vào nút \"Triển khai\" và sau đó thay đổi sẽ được thực thi.",
+      "manual-by-dba": "cơ sở dữ liệu",
+      "manual-by-workspace-admin": "Quản trị viên không gian làm việc",
+      "manual-by-custom-project-roles": "Vai trò dự án tùy chỉnh"
+    },
+    "backup": {
+      "name": "Chính sách lịch trình sao lưu cơ sở dữ liệu",
+      "tip": "Chính sách này không được áp dụng hồi tố.",
+      "not-enforced": "Không thực thi",
+      "not-enforced-info": "Không có lịch trình sao lưu nào được thực thi.",
+      "daily": "Sao lưu hàng ngày",
+      "daily-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng ngày.",
+      "weekly": "Sao lưu hàng tuần",
+      "weekly-info": "Thực thi mọi cơ sở dữ liệu để sao lưu hàng tuần."
+    },
+    "environment-tier": {
+      "name": "Cấp môi trường",
+      "description": "Môi trường sẽ xuất hiện khác với các môi trường khác.",
+      "mark-env-as-production": "Đánh dấu là môi trường sản xuất"
+    }
+  },
+  "change-history": {
+    "self": "thay đổi lịch sử",
+    "select": "Phiên bản lược đồ được ghi lại mỗi khi áp dụng thay đổi lược đồ thông qua Bytebase",
+    "workflow": "Quy trình làm việc",
+    "change-type": "Kiểu",
+    "commit-info": "bởi {author} vào lúc {time}",
+    "no-schema-change": "quá trình di chuyển này không có thay đổi lược đồ",
+    "schema-drift": "Lược đồ trôi dạt",
+    "schema-drift-detected": "Một sự trôi dạt lược đồ đã được phát hiện.",
+    "view-drift": "Xem trôi",
+    "before-left-schema-choice": "So sánh lược đồ",
+    "left-schema-choice-prev-history-schema": "sau lần thay đổi trước đó",
+    "left-schema-choice-current-history-schema-prev": "trước sự thay đổi này",
+    "after-left-schema-choice": "và sau sự thay đổi này",
+    "show-diff": "Hiển thị sự khác biệt",
+    "left-vs-right": "Trước {prevLink} so với phiên bản này",
+    "schema-snapshot-after-change": "Ảnh chụp nhanh lược đồ được ghi lại sau khi áp dụng thay đổi này",
+    "current-schema-empty": "Lược đồ hiện tại trống",
+    "list-limit": "Đối với cơ sở dữ liệu có lịch sử thay đổi, chúng tôi liệt kê tối đa 5 lịch sử gần đây nhất bên dưới. Bạn có thể nhấp vào tên cơ sở dữ liệu để xem tất cả lịch sử.",
+    "no-history-in-project": "Không tìm thấy lịch sử thay đổi từ bất kỳ cơ sở dữ liệu nào trong dự án này.",
+    "recording-info": "Lịch sử thay đổi được ghi lại bất cứ khi nào lược đồ cơ sở dữ liệu bị thay đổi.",
+    "establish-baseline": "Thiết lập đường cơ sở mới",
+    "refreshing-history": "Đang làm mới lịch sử...",
+    "config-instance": "Ví dụ cấu hình",
+    "establish-baseline-description": "Bytebase sẽ sử dụng lược đồ hiện tại làm đường cơ sở mới. Điều này sẽ điều hòa trạng thái lược đồ thực tế với trạng thái lược đồ được ghi lại trong Bytebase và khắc phục tình trạng lệch lược đồ được báo cáo. Bạn chỉ nên làm điều này nếu lược đồ hiện tại phản ánh trạng thái mong muốn.",
+    "establish-database-baseline": "Thiết lập đường cơ sở \"{name}\"",
+    "instance-missing-change-schema": "Thiếu lược đồ lịch sử thay đổi trên phiên bản \"{name}\".",
+    "instance-bad-connection": "Không thể kết nối phiên bản \"{name}\" để truy xuất lịch sử thay đổi.",
+    "contact-dba": "Vui lòng liên hệ với DBA của bạn để cấu hình nó",
+    "export": "Xuất lịch sử thay đổi",
+    "need-to-select-first": "Cần chọn lịch sử thay đổi trước",
+    "all-tables": "Tất cả các bảng",
+    "affected-tables": "Bảng bị ảnh hưởng",
+    "view-full": "Xem đầy đủ"
+  },
+  "database": {
+    "select": "Chọn cơ sở dữ liệu",
+    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "Danh sách có thể đã lỗi thời và được làm mới khoảng 10 phút một lần",
+    "no-anomalies-detected": "Không phát hiện bất thường",
+    "sync-status": "Trạng thái đồng bộ hóa",
+    "last-successful-sync": "Đồng bộ hóa thành công lần cuối",
+    "filter-database": "Lọc cơ sở dữ liệu",
+    "database-backup": "sao lưu cơ sở dữ liệu",
+    "transfer-project": "Dự án chuyển nhượng",
+    "unassign": "Bỏ chỉ định",
+    "unassign-alert-title": "Bỏ gán cơ sở dữ liệu",
+    "unassign-alert-description": "Cơ sở dữ liệu được chọn sẽ chuyển ra khỏi dự án của họ",
+    "edit-schema": "Chỉnh sửa lược đồ",
+    "edit-schema-in-vcs": "Chỉnh sửa lược đồ trong VCS",
+    "edit-labels": "Chỉnh sửa nhãn",
+    "mixed-values-for-label": "Nhãn đã chọn này có giá trị hỗn hợp",
+    "mixed-label-values-warning": "Một số tài nguyên được chọn có các giá trị hỗn hợp cho cùng một khóa",
+    "change-data": "Thay đổi dữ liệu",
+    "change-data-in-vcs": "Thay đổi dữ liệu trong VCS",
+    "branch": "Chi nhánh",
+    "branches": "Chi nhánh",
+    "branching": "Phân nhánh",
+    "new-branch": "Chi nhánh mới",
+    "branch-name": "Tên chi nhánh",
+    "select-branch": "Chọn một chi nhánh",
+    "delete-this-branch": "Xóa chi nhánh này",
+    "table-detail": "Chi tiết bảng",
+    "batch-action-not-support-alter-schema": "Một số cơ sở dữ liệu không hỗ trợ thay đổi lược đồ",
+    "batch-action-permission-denied": "Không có quyền {action} đối với cơ sở dữ liệu",
+    "batch-action-disabled": "Không thể {action} đối với cơ sở dữ liệu từ các dự án khác nhau",
+    "batch-action-disabled-for-unassigned": "Không thể {action} đối với cơ sở dữ liệu chưa được chỉ định",
+    "successfully-transferred-databases": "Đã chuyển cơ sở dữ liệu thành công",
+    "successfully-transferred-updateddatabase-name-to-project-updateddatabase-project-name": "Đã chuyển thành công '{0}' sang dự án '{1}'.",
+    "backup-name": "Tên dự phòng",
+    "create-backup": "Tạo bản sao",
+    "automatic-x-backup": "Tự động sao lưu {freq}",
+    "automatic-backup": "Tự động sao lưu",
+    "disable-automatic-backup": "Vô hiệu hóa sao lưu tự động",
+    "backuppolicy-backup-enforced-and-cant-be-disabled": "Sao lưu {0} đã được thực thi và không thể tắt được",
+    "backup-policy": {
+      "DAILY": "HẰNG NGÀY",
+      "WEEKLY": "HÀNG TUẦN"
+    },
+    "an-http-post-request-will-be-sent-to-it-after-a-successful-backup": "Một yêu cầu HTTP POST sẽ được gửi tới nó sau khi sao lưu thành công.",
+    "backup-info": {
+      "template": "Quá trình sao lưu sẽ được thực hiện vào {dayOrWeek} hàng tuần vào lúc {time}. Dữ liệu sao lưu sẽ được lưu giữ trong {retentionDays} ngày."
+    },
+    "week": {
+      "Sunday": "Chủ nhật",
+      "Monday": "Thứ hai",
+      "Tuesday": "Thứ ba",
+      "Wednesday": "Thứ Tư",
+      "Thursday": "Thứ năm",
+      "Friday": "Thứ sáu",
+      "Saturday": "Thứ bảy",
+      "day": "ngày"
+    },
+    "enable-backup": "Bật sao lưu",
+    "backup-now": "Sao lưu ngay bây giờ",
+    "create-a-manual-backup": "Tạo bản sao lưu thủ công",
+    "disabled": "Tàn tật",
+    "enabled": "Đã bật",
+    "action-automatic-backup-for-database-props-database-name": "{0} sao lưu tự động cho cơ sở dữ liệu '{1}'.",
+    "updated-backup-webhook-url-for-database-props-database-name": "Đã cập nhật URL webhook sao lưu cho cơ sở dữ liệu '{0}'.",
+    "last-sync-status": "Trạng thái đồng bộ hóa lần cuối",
+    "last-sync-status-long": "Trạng thái đồng bộ hóa lần cuối {0} lúc {1}",
+    "gitops-enabled": "Đã bật GitOps",
+    "restore-backup": "Khôi phục bản sao lưu '{0}' sang cơ sở dữ liệu mới",
+    "nullable": "Có thể rỗng",
+    "restore": "Khôi phục",
+    "backup": {
+      "enabled": "đã bật",
+      "disabled": "tàn tật"
+    },
+    "expression": "Sự biểu lộ",
+    "position": "Chức vụ",
+    "unique": "Độc nhất",
+    "visible": "Dễ thấy",
+    "comment": "Bình luận",
+    "engine": "Động cơ",
+    "row-count-estimate": "Ước tính số hàng",
+    "data-size": "Kích thước dữ liệu",
+    "index-size": "Kích thước chỉ mục",
+    "column": "Cột",
+    "columns": "Cột",
+    "data-type": "Loại dữ liệu",
+    "indexes": "Chỉ mục",
+    "row-count-est": "Ước tính số hàng",
+    "incorrect-project-warning": "Trình soạn thảo SQL chỉ có thể truy vấn cơ sở dữ liệu trong các dự án có sẵn cho người dùng. Trước tiên bạn nên chuyển cơ sở dữ liệu này vào một dự án.",
+    "go-to-transfer": "Đi tới chuyển khoản",
+    "pitr": {
+      "restore": "@:common.restore @:common.database",
+      "no-available-backup": "Không có bản sao lưu nào",
+      "point-in-time": "Thời điểm",
+      "help-info": "Khôi phục trạng thái cơ sở dữ liệu về một thời điểm. {link}.",
+      "minimum-supported-engine-and-version": "Cần có {engine} >= {min_version}",
+      "restore-to-point-in-time": "Khôi phục về thời điểm",
+      "no-earlier-than": "Thời điểm khôi phục không được sớm hơn [{earliest}] (bản sao lưu sớm nhất có sẵn).",
+      "no-later-than-now": "Thời điểm khôi phục không thể muộn hơn hiện tại.",
+      "will-overwrite-current-database": "Sẽ ghi đè lên cơ sở dữ liệu hiện tại",
+      "restore-before-last-migration": "Khôi phục về điểm trước lần di chuyển cuối cùng",
+      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-trước-cuối-di chuyển'}. {link}.",
+      "restore-to": "Khôi phục",
+      "restore-to-new-db": "Đến cơ sở dữ liệu mới",
+      "restore-to-in-place": "Tại chỗ"
+    },
+    "show-reserved-tables": "Hiển thị các bảng dành riêng của Bytebase",
+    "show-reserved-databases": "Hiển thị cơ sở dữ liệu dành riêng Bytebase",
+    "backup-setting": {
+      "schedule": {
+        "disabled": "Tàn tật",
+        "weekly": "Mỗi tuần",
+        "daily": "Hằng ngày"
+      },
+      "form": {
+        "schedule": "Lịch trình",
+        "day-of-week": "Ngày trong tuần",
+        "time-of-day": "Thời gian trong ngày",
+        "retention-period": "Thời gian lưu giữ (ngày)"
+      }
+    },
+    "backup-policy-violation": "Vi phạm chính sách sao lưu",
+    "synced-at": "Đã đồng bộ hóa lúc {time}",
+    "not-found-last-successful-sync-was": "Không tìm thấy, đồng bộ hóa thành công lần cuối là {time}",
+    "view-unassigned-databases": "Xem cơ sở dữ liệu chưa được chỉ định",
+    "unassigned-databases": "Cơ sở dữ liệu chưa được chỉ định",
+    "restore-database": "Khôi phục cơ sở dữ liệu",
+    "selected-n-databases": "{n} cơ sở dữ liệu được chọn | {n} cơ sở dữ liệu được chọn",
+    "n-databases": "{n} cơ sở dữ liệu | {n} cơ sở dữ liệu",
+    "select-databases-from-same-project": "Vui lòng chọn cơ sở dữ liệu từ cùng một dự án",
+    "sync-schema": {
+      "title": "Lược đồ đồng bộ hóa",
+      "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích.",
+      "schema-history-version": "Phiên bản lịch sử lược đồ",
+      "select-source-schema": "Chọn lược đồ nguồn",
+      "select-target-databases": "Chọn cơ sở dữ liệu đích",
+      "select-project": "Chọn dự án",
+      "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB, Oracle)",
+      "source-database": "Cơ sở dữ liệu nguồn",
+      "source-schema": "Lược đồ nguồn",
+      "schema-version": {
+        "self": "Phiên bản lược đồ",
+        "description": "Phiên bản lược đồ được ghi lại mỗi khi áp dụng thay đổi lược đồ thông qua Bytebase"
+      },
+      "target-databases": "Cơ sở dữ liệu mục tiêu",
+      "with-diff": "Với sự khác biệt",
+      "no-diff": "Không có sự khác biệt",
+      "message": {
+        "select-a-target-database-first": "Vui lòng chọn cơ sở dữ liệu đích trước tiên.",
+        "no-target-databases": "Không có cơ sở dữ liệu mục tiêu",
+        "no-diff-found": "Không tìm thấy sự khác biệt."
+      },
+      "to-database": "Áp dụng cho cơ sở dữ liệu",
+      "from-database": "Từ cơ sở dữ liệu",
+      "schema-change-preview": "Xem trước thay đổi lược đồ cho '{database}'",
+      "schema-change-preview-no-database": "Xem trước thay đổi lược đồ",
+      "synchronize-statements": "Các câu lệnh DDL được tạo tương ứng",
+      "synchronize-statements-description": "Bạn có thể chỉnh sửa thêm các câu lệnh DDL đã tạo",
+      "select-from-database-and-schema-tip": "Chọn phiên bản cơ sở dữ liệu và lược đồ sẽ được đồng bộ hóa từ đó",
+      "select-to-database-tip": "Chọn cơ sở dữ liệu để áp dụng",
+      "no-difference-tip": "Không tìm thấy sự khác biệt.",
+      "more-version": "hơn...",
+      "character-sets-diff-found": "Có sự khác biệt giữa các bộ ký tự.",
+      "preview-issue": "Vấn đề xem trước",
+      "schema-change": "Thay đổi lược đồ",
+      "generated-ddl-statement": "Câu lệnh DDL được tạo"
+    },
+    "sensitive": "Nhạy cảm",
+    "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",
+    "schema": {
+      "select": "Chọn lược đồ"
+    },
+    "show-missing-databases": "Hiển thị cơ sở dữ liệu bị thiếu",
+    "n-selected-m-in-total": "({selected} đã chọn, tổng cộng là {total})",
+    "doesnt-match-database-name-template": "Không khớp với mẫu tên cơ sở dữ liệu đối tượng thuê",
+    "doesnt-match-tenant-value": "Không khớp với giá trị nhãn",
+    "should-follow-database-name-template": "Nên làm theo mẫu tên cơ sở dữ liệu của người thuê",
+    "all": "Tất cả cơ sở dữ liệu",
+    "unassigned": "Chưa được chỉ định",
+    "show-schemaless-databases": "Hiển thị cơ sở dữ liệu không có lược đồ. (Chỉnh sửa lược đồ không áp dụng được cho cơ sở dữ liệu không có lược đồ.)",
+    "secret": {
+      "self": "Bí mật",
+      "new": "Bí mật mới",
+      "edit": "Chỉnh sửa bí mật",
+      "name-placeholder": "Nhập tên bí mật",
+      "validation": {
+        "cannot-be-changed-later": "Không thể thay đổi sau này",
+        "duplicated-name": "Tên bí mật trùng lặp",
+        "name-is-required": "Tên bí mật là bắt buộc",
+        "name-pattern-mismatch": "Tên bí mật chỉ được chứa chữ in hoa, chữ số hoặc _ (dấu gạch dưới)",
+        "name-cannot-prefix-with-bytebase": "Tên bí mật không thể có tiền tố 'BYTEBASE_'",
+        "name-cannot-start-with-number": "Tên bí mật không thể bắt đầu bằng số"
+      },
+      "description-placeholder": "Mô tả đầu vào",
+      "value": "Giá trị",
+      "value-placeholder": "Giá trị đầu vào (chỉ ghi)",
+      "delete-tips": "Xóa bí mật",
+      "description": "Bạn có thể sử dụng bí mật trong tập lệnh thay đổi để ẩn thông tin nhạy cảm, vui lòng tham khảo {guide}"
+    },
+    "transfer": {
+      "source-project": "Dự án nguồn",
+      "target-project": "Dự án mục tiêu",
+      "errors": {
+        "select-target-project": "Chọn dự án mục tiêu",
+        "select-at-least-one-database": "Chọn ít nhất một cơ sở dữ liệu"
+      },
+      "select-databases": "Chọn cơ sở dữ liệu",
+      "select-target-project": "Chọn dự án mục tiêu"
+    },
+    "transfer-database-to": "Chuyển cơ sở dữ liệu đến dự án mục tiêu",
+    "transfer-database-from-to": "Chuyển cơ sở dữ liệu từ dự án nguồn sang dự án đích",
+    "classification": {
+      "self": "Phân loại"
+    },
+    "recent": "Gần đây",
+    "partitioned": "Đã phân vùng",
+    "partition-tables": "Bảng phân vùng",
+    "external-server-name": "Tên máy chủ bên ngoài",
+    "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
+    "foreign-table-detail": "Chi tiết bảng nước ngoài"
+  },
+  "repository": {
+    "our-webhook-link": "Bạn có thể tìm thấy webhook do Bytebase tạo tại {webhookLink}.",
+    "branch-observe-file-change": "Nhánh nơi Bytebase quan sát sự thay đổi tập tin.",
+    "base-directory": "Thư mục cơ sở",
+    "base-directory-description": "Thư mục gốc nơi Bytebase quan sát sự thay đổi của tập tin. Nếu trống thì nó sẽ quan sát toàn bộ kho lưu trữ.",
+    "file-path-template": "Mẫu đường dẫn tệp",
+    "file-path-template-description": "Bytebase chỉ quan sát tên đường dẫn tệp khớp với mẫu mẫu liên quan đến thư mục cơ sở.",
+    "file-path-example-schema-migration": "Ví dụ về đường dẫn tệp cho kiểu di chuyển lược đồ",
+    "file-path-example-data-migration": "Ví dụ về đường dẫn tệp cho loại di chuyển dữ liệu",
+    "schema-path-template": "Mẫu đường dẫn lược đồ",
+    "schema-writeback-description": "Khi được chỉ định, sau mỗi lần di chuyển, Bytebase sẽ ghi lược đồ mới nhất vào đường dẫn lược đồ tương ứng với thư mục cơ sở trong cùng nhánh với cam kết ban đầu kích hoạt quá trình di chuyển. Để trống nếu bạn không muốn Bytebase thực hiện việc này.",
+    "schema-writeback-protected-branch": "Đảm bảo nhánh đã thay đổi không được bảo vệ hoặc cho phép người bảo trì kho lưu trữ đẩy tới nhánh được bảo vệ đó.",
+    "if-specified": "Nếu được chỉ định",
+    "schema-path-example": "Ví dụ về đường dẫn lược đồ",
+    "sheet-path-template": "Mẫu đường dẫn trang tính",
+    "sheet-path-template-description": "Bytebase chỉ quan sát các tệp có tên đường dẫn khớp với mẫu mẫu liên quan đến thư mục cơ sở. Các tệp phù hợp sẽ được đồng bộ hóa với SQL Editor để sử dụng ở đó.",
+    "sql-review-ci": "CI đánh giá SQL",
+    "sql-review-ci-enable": "Bật CI đánh giá SQL",
+    "sql-review-ci-enable-gitlab": "Kích hoạt CI đánh giá SQL thông qua GitLab CI",
+    "sql-review-ci-enable-github": "Kích hoạt CI đánh giá SQL thông qua hành động GitHub",
+    "sql-review-ci-enable-azure": "Kích hoạt CI đánh giá SQL thông qua Azure DevOps Pipeline",
+    "sql-review-ci-description": "Bytebase sẽ tạo một {pr} để thiết lập CI đánh giá SQL trong kho lưu trữ của bạn. Trong mọi {pr}, chính sách đánh giá SQL dựa trên môi trường sẽ kiểm tra các tệp đã thay đổi khớp với \"{pathTemplate}\".",
+    "sql-review-ci-setup": "Thiết lập CI đánh giá SQL",
+    "sql-review-ci-setup-failed": "Không thể thiết lập CI đánh giá SQL",
+    "sql-review-ci-setup-pr": "Xem lại {pr}",
+    "merge-request": "yêu cầu hợp nhất",
+    "pull-request": "yêu cầu kéo",
+    "sql-review-ci-loading-modal": "Chúng tôi đang chuẩn bị {pr} để thiết lập CI đánh giá SQL. Sau khi thiết lập, bạn sẽ được chuyển hướng đến trang {pr}.",
+    "sql-review-ci-setup-modal": "Chúng tôi đã tạo một {pr} cho kho lưu trữ của bạn để thiết lập CI đánh giá SQL. Vui lòng xem lại và hợp nhất {pr}.",
+    "sql-review-ci-remove": "Xóa CI đánh giá SQL",
+    "sql-review-ci-remove-modal": "CI đánh giá SQL bị vô hiệu hóa. Bạn có thể xóa tệp {vcs} khỏi {repository}.",
+    "sql-review-ci-restore-modal": "Sau khi bạn khôi phục về quy trình làm việc giao diện người dùng, CI đánh giá SQL sẽ bị vô hiệu hóa đối với kho lưu trữ của bạn. Bạn có thể xóa tệp {vcs} khỏi {repository}.",
+    "git-provider": "Nhà cung cấp Git",
+    "gitops-status": "@.capitalize:common.gitops là {status}",
+    "gitops-description-file-path": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {fullPathTemplate}.",
+    "gitops-description-branch": "Sau khi tập lệnh được phê duyệt xem xét và hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi lược đồ mới.",
+    "gitops-description-description-schema-path": "Sau khi áp dụng thay đổi lược đồ, Bytebase cũng sẽ ghi lược đồ mới nhất vào vị trí đường dẫn lược đồ đã chỉ định {schemaPathTemplate}.",
+    "gitops-description-sdl": "Tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong {fullPath}. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ sửa đổi tập lệnh lược đồ đầy đủ khớp với mẫu đường dẫn tệp {schemaPathTemplate}. Để thực hiện thay đổi dữ liệu, nhà phát triển sẽ tạo tập lệnh di chuyển khớp với mẫu đường dẫn tệp {filePathTemplate}. Sau khi tập lệnh được hợp nhất vào nhánh {branch}, Bytebase sẽ tự động khởi động quy trình để áp dụng thay đổi cơ sở dữ liệu mới.",
+    "restore-to-ui-workflow": "Khôi phục quy trình làm việc UI",
+    "restore-ui-workflow-description": "Khi sử dụng quy trình làm việc UI, nhà phát triển sẽ gửi phiếu đánh giá SQL trực tiếp từ bảng điều khiển Bytebase và đợi DBA được chỉ định hoặc nhà phát triển ngang hàng xem xét. Bytebase áp dụng thay đổi SQL sau khi phê duyệt đánh giá.",
+    "restore-ui-workflow-success": "Đã khôi phục thành công quy trình làm việc trên giao diện người dùng",
+    "update-gitops-config-success": "Đã cập nhật thành công cấu hình @:common.gitops",
+    "setup-wizard-guide": "Nếu bạn gặp lỗi trong quá trình này, vui lòng tham khảo {guide} của chúng tôi",
+    "add-git-provider": "Thêm nhà cung cấp Git",
+    "choose-git-provider": "Chọn nhà cung cấp Git",
+    "select-repository": "Chọn kho lưu trữ",
+    "configure-deploy": "Cấu hình triển khai",
+    "choose-git-provider-description": "Chọn nhà cung cấp Git nơi lưu trữ tập lệnh lược đồ cơ sở dữ liệu (.sql) của bạn. Khi bạn đẩy tập lệnh đã thay đổi vào kho lưu trữ Git, Bytebase sẽ tự động tạo một quy trình để áp dụng thay đổi lược đồ cho cơ sở dữ liệu.",
+    "choose-git-provider-visit-workspace": "Truy cập cài đặt {workspace} để thêm nhiều nhà cung cấp Git hơn.",
+    "choose-git-provider-contact-workspace-admin": "Hãy liên hệ với quản trị viên không gian làm việc Bytebase của bạn nếu bạn muốn các nhà cung cấp Git khác xuất hiện ở đây. Bytebase hiện hỗ trợ GitLab EE/CE tự lưu trữ và có kế hoạch bổ sung GitLab.com và GitHub Enterprise sau này.",
+    "select-repository-attention-gitlab": "Bytebase chỉ liệt kê các dự án GitLab cấp cho bạn ít nhất vai trò 'Người bảo trì', cho phép định cấu hình webhook của dự án để quan sát sự kiện đẩy mã.",
+    "select-repository-attention-github": "Bytebase chỉ liệt kê các kho lưu trữ GitHub mà bạn có quyền quản trị viên, cho phép định cấu hình webhook của kho lưu trữ để quan sát sự kiện đẩy mã.",
+    "select-repository-attention-bitbucket": "Bytebase chỉ liệt kê các kho lưu trữ Bitbucket mà bạn có quyền quản trị viên, cho phép định cấu hình webhook của kho lưu trữ để quan sát sự kiện đẩy mã.",
+    "select-repository-attention-azure-devops": "Bytebase chỉ liệt kê các kho lưu trữ Azure DevOps trong tổ chức được cấp quyền truy cập ứng dụng của bên thứ ba thông qua OAuth. Nếu bạn không thấy kho lưu trữ mình muốn, vui lòng đi tới Tổ chức -> Cài đặt tổ chức -> Chính sách để cho phép truy cập ứng dụng của bên thứ ba.",
+    "select-repository-search": "Kho tìm kiếm",
+    "linked": "Kho liên kết"
+  },
+  "workflow": {
+    "current-workflow": "Quy trình làm việc hiện tại",
+    "ui-workflow": "Quy trình làm việc giao diện người dùng",
+    "ui-workflow-description": "Quy trình đánh giá SQL cổ điển trong đó nhà phát triển gửi phiếu đánh giá SQL trực tiếp từ Bytebase và chờ DBA được chỉ định hoặc nhà phát triển ngang hàng xem xét. Bytebase áp dụng thay đổi lược đồ SQL sau khi phê duyệt đánh giá.",
+    "gitops-workflow": "Quy trình làm việc GitOps",
+    "gitops-workflow-description": "Các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong kho git. Để thực hiện thay đổi lược đồ, nhà phát triển sẽ tạo tập lệnh di chuyển và gửi để xem xét trong VCS tương ứng, chẳng hạn như GitLab. Sau khi tập lệnh được phê duyệt và hợp nhất vào nhánh đã định cấu hình, Bytebase sẽ tự động bắt đầu nhiệm vụ áp dụng thay đổi lược đồ mới.",
+    "configure-gitops": "Định cấu hình GitOps",
+    "configure-gitops-success": "Đã bật thành công quy trình làm việc GitOps cho {project}",
+    "change-gitops-success": "Đã thay đổi thành công kho lưu trữ cho {project}"
+  },
+  "anomaly": {
+    "attention-title": "Phát hiện bất thường",
+    "attention-desc": "Bytebase phát hiện định kỳ các điểm bất thường dựa trên khoảng thời gian quét phiên bản và hiển thị các phát hiện tại đây.",
+    "table-search-placeholder": "Tìm kiếm {type} hoặc môi trường",
+    "table-placeholder": "Hoan hô, không phát hiện thấy điều bất thường nào về {type}!",
+    "tooltip": "{env} có các điểm bất thường ở mức TIÊU CHUẨN, {highCount} CAO và {mediumCount} TRUNG BÌNH",
+    "types": {
+      "connection-failure": "Kết nối thất bại",
+      "missing-migration-schema": "Thiếu lược đồ di chuyển",
+      "backup-enforcement-violation": "Vi phạm thực thi sao lưu",
+      "missing-backup": "Thiếu bản sao lưu",
+      "schema-drift": "Lược đồ trôi dạt"
+    },
+    "action": {
+      "check-instance": "Kiểm tra phiên bản",
+      "view-backup": "Xem bản sao lưu",
+      "configure-backup": "Định cấu hình sao lưu",
+      "view-diff": "Xem khác biệt"
+    },
+    "last-seen": "Nhìn thấy lần cuối",
+    "first-seen": "Lần đầu tiên nhìn thấy"
+  },
+  "project": {
+    "dashboard": {
+      "modal": {
+        "title": "Làm cách nào để thiết lập '@:{'common.project'}'?",
+        "content": "Dự án Bytebase tương tự như khái niệm dự án trong các công cụ phát triển phổ biến khác.\n\nMột dự án có các thành viên riêng và mọi vấn đề cũng như cơ sở dữ liệu luôn thuộc về một dự án duy nhất.\n\nMột dự án cũng có thể được cấu hình để liên kết đến một kho lưu trữ nhằm kích hoạt quy trình làm việc GitOps.",
+        "cancel": "Miễn nhiệm",
+        "confirm": "Không hiển thị trở lại"
+      }
+    },
+    "table": {
+      "key": "@:common.key",
+      "name": "@:tên gọi chung"
+    },
+    "create-modal": {
+      "project-name": "@:common.project @:common.name",
+      "key": "@:common.key",
+      "cancel": "@:common.cancel",
+      "confirm": "@:common.create",
+      "success-prompt": "Đã tạo thành công dự án {name}."
+    },
+    "overview": {
+      "view-all": "Xem tất cả",
+      "view-all-closed": "Xem tất cả đã đóng",
+      "recent-activity": "Gần đây @.lower:{'common.activities'}",
+      "in-progress": "Trong tiến trình",
+      "recently-closed": "Đã đóng gần đây",
+      "info-slot-content": "Bytebase đồng bộ hóa lược đồ phiên bản theo định kỳ. Cơ sở dữ liệu mới được đồng bộ hóa lần đầu tiên được đặt ở đây. Người dùng nên chuyển chúng vào dự án ứng dụng thích hợp.",
+      "no-db-prompt": "Không có cơ sở dữ liệu thuộc về dự án này. Bạn có thể thêm cơ sở dữ liệu bằng cách nhấp vào {newDb} hoặc {transferInDb} từ thanh hành động trên cùng."
+    },
+    "webhook": {
+      "success-created-prompt": "Đã tạo thành công webhook {name}.",
+      "success-updated-prompt": "Đã cập nhật thành công webhook {name}.",
+      "success-deleted-prompt": "Đã xóa thành công webhook {name}.",
+      "success-tested-prompt": "Kiểm tra sự kiện webhook OK.",
+      "fail-tested-title": "Sự kiện thử nghiệm webhook không thành công.",
+      "add-a-webhook": "Thêm webhook",
+      "create-webhook": "Tạo webhook",
+      "last-updated-by": "cập nhật lần cuối bởi",
+      "destination": "Điểm đến",
+      "webhook-url": "Url webhook",
+      "triggering-activity": "Hoạt động kích hoạt",
+      "test-webhook": "Kiểm tra Webhook",
+      "no-webhook": {
+        "title": "Không có webhook nào được định cấu hình cho dự án này.",
+        "content": "Định cấu hình webhooks để cho phép Bytebase đăng thông báo lên hệ thống bên ngoài về các sự kiện khác nhau."
+      },
+      "creation": {
+        "title": "Tạo webhook",
+        "desc": "Tạo webhook tương ứng cho kênh {destination} nhận tin nhắn.",
+        "how-to-protect": "Nếu bạn muốn sử dụng danh sách từ khóa để bảo vệ webhook thì có thể thêm \"Bytebase\" vào danh sách đó.",
+        "view-doc": "Xem tài liệu của {destination}"
+      },
+      "deletion": {
+        "btn-text": "Xóa webhook này",
+        "confirm-title": "Xóa webhook '{title}' và tất cả lịch sử thực thi của nó?"
+      },
+      "activity-item": {
+        "issue-creation": {
+          "title": "Tạo vấn đề",
+          "label": "Khi vấn đề mới được tạo"
+        },
+        "issue-status-change": {
+          "title": "Thay đổi trạng thái vấn đề",
+          "label": "Khi trạng thái sự cố đã thay đổi"
+        },
+        "issue-stage-status-change": {
+          "title": "Thay đổi trạng thái giai đoạn phát hành",
+          "label": "Khi trạng thái giai đoạn kèm theo của vấn đề đã thay đổi"
+        },
+        "issue-task-status-change": {
+          "title": "Vấn đề thay đổi trạng thái nhiệm vụ",
+          "label": "Khi trạng thái nhiệm vụ kèm theo của vấn đề đã thay đổi"
+        },
+        "issue-info-change": {
+          "title": "Thay đổi thông tin vấn đề",
+          "label": "Khi thông tin vấn đề (ví dụ: người được giao, tiêu đề, mô tả) đã thay đổi"
+        },
+        "issue-comment-creation": {
+          "title": "Vấn đề tạo bình luận",
+          "label": "Khi bình luận vấn đề mới được tạo"
+        },
+        "issue-approval-notify": {
+          "title": "Cần phê duyệt vấn đề",
+          "label": "Khi vấn đề đang chờ phê duyệt"
+        },
+        "issue-task-run-status-change": {
+          "title": "Vấn đề thay đổi trạng thái chạy nhiệm vụ",
+          "label": "Khi trạng thái chạy tác vụ có vấn đề đã thay đổi"
+        },
+        "notify-issue-approved": {
+          "title": "Vấn đề đã được phê duyệt",
+          "label": "Khi vấn đề được phê duyệt"
+        },
+        "notify-pipeline-rollout": {
+          "title": "Cần triển khai vấn đề",
+          "label": "Khi sự cố đang chờ triển khai"
+        }
+      }
+    },
+    "settings": {
+      "success-updated": "Cài đặt dự án được cập nhật thành công.",
+      "success-member-added-prompt": "Đã thêm thành công vào dự án.",
+      "success-member-deleted-prompt": "Đã thu hồi thành công quyền truy cập của {name} khỏi dự án.",
+      "member-placeholder": "Chọn người dùng",
+      "manage-member": "Quản lý thành viên",
+      "owner": "@.upper:role.project-owner.self",
+      "developer": "@.upper:role.project-member.self",
+      "archive": {
+        "title": "Lưu trữ dự án",
+        "description": "Các dự án đã lưu trữ sẽ không được hiển thị.",
+        "btn-text": "Lưu trữ @.lower:{'common.project'}"
+      },
+      "restore": {
+        "title": "Khôi phục dự án",
+        "btn-text": "Khôi phục @.lower:{'common.project'}"
+      },
+      "schema-change-type": "Kiểu thay đổi lược đồ",
+      "select-schema-change-type-ddl": "Bắt buộc - Chỉ định thay đổi với bất kỳ câu lệnh DDL nào.",
+      "select-schema-change-type-sdl": "Khai báo - Chỉ định lược đồ mong muốn. Chỉ sử dụng TẠO BẢNG/CHỈ SỐ.",
+      "schema-path-template-sdl-description": "Tệp lược đồ mô tả lược đồ đầy đủ của cơ sở dữ liệu.",
+      "branch-protection-rules": {
+        "self": "Quy tắc bảo vệ chi nhánh",
+        "add-rule": "Thêm quy tắc",
+        "branch-name-pattern": {
+          "self": "Mẫu tên chi nhánh",
+          "description": "Hỗ trợ ký tự đại diện như tính năng/* hoặc *-ổn định"
+        },
+        "applies-to-n-branches": "Áp dụng cho chi nhánh {n} | Áp dụng cho {n} chi nhánh",
+        "only-allow-specified-roles-to-create-branch": "Chỉ cho phép các vai trò được chỉ định để tạo chi nhánh",
+        "no-protection-rule-configured": "Không có quy tắc bảo vệ nào được cấu hình."
+      }
+    },
+    "members": {
+      "description": "Các thành viên dự án xác định quyền vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ dự án, Quản trị viên Workspace và DBA Workspace đều có đầy đủ quyền đối với dự án.",
+      "add-member": "Thêm thành viên",
+      "revoke-member": "Thu hồi thành viên",
+      "revoke-access": "Thu hồi truy cập",
+      "grant-access": "Cấp phép truy cập",
+      "edit": "Chỉnh sửa thành viên - {member}",
+      "view-by-principals": "Xem bởi hiệu trưởng",
+      "view-by-roles": "Xem theo vai trò",
+      "cannot-remove-last-owner": "Không thể xóa chủ sở hữu cuối cùng của dự án",
+      "revoke-role-from-user": "Thu hồi '{role}' khỏi '{user}'",
+      "inactive-members": "Thành viên không hoạt động",
+      "show-inactive": "Hiển thị thành viên không hoạt động",
+      "select-users": "Chọn người dùng",
+      "assign-role": "Gán vai trò",
+      "never-expires": "Không bao giờ",
+      "expired": "Hết hạn",
+      "role-description": "Mô tả vai trò",
+      "role-never-expires": "Vai trò này không bao giờ hết hạn.",
+      "add-more": "Bổ sung thêm",
+      "role-name": "Tên vai trò",
+      "condition-name": "Tên điều kiện",
+      "users": "Người dùng",
+      "roles": "Vai trò",
+      "search-member": "Tìm kiếm thành viên",
+      "revoke-members": "Thu hồi các thành viên này",
+      "clean-up-expired-roles": "Dọn dẹp các vai trò đã hết hạn"
+    },
+    "mode": {
+      "standard": "Chế độ căn bản",
+      "batch": "Chế độ hàng loạt"
+    },
+    "db-name-template": "Mẫu tên cơ sở dữ liệu đối tượng thuê",
+    "select": "Chọn dự án",
+    "lgtm-check": {
+      "self": "Kiểm tra LGTM",
+      "disabled": "Bỏ qua kiểm tra LGTM",
+      "project-member": "Yêu cầu LGTM từ các thành viên dự án",
+      "project-owner": "Yêu cầu LGTM từ chủ dự án"
+    },
+    "successfully-updated-db-name-template": "Đã cập nhật thành công mẫu tên cơ sở dữ liệu.",
+    "all": "Tất cả dự án",
+    "key-hint": "Các chữ cái chữ và số mô tả ngắn để xác định dự án này."
+  },
+  "gitops": {
+    "setting": {
+      "description": "Bytebase hỗ trợ quy trình làm việc GitOps trong đó các tập lệnh di chuyển cơ sở dữ liệu được lưu trữ trong hệ thống kiểm soát phiên bản (VCS) và các tập lệnh di chuyển mới được tạo sẽ tự động kích hoạt thay đổi cơ sở dữ liệu tương ứng. Quản trị viên Bytebase quản lý tất cả các VCS hiện hành tại đây để chủ dự án có thể liên kết các dự án với kho Git của họ từ các VCS này.",
+      "description-highlight": "Nếu bạn muốn cho phép đăng nhập bên thứ ba thông qua các VCS đã định cấu hình của mình, vui lòng định cấu hình nó trong SSO.",
+      "add-git-provider": {
+        "self": "Thêm nhà cung cấp Git",
+        "description": "Trước khi bất kỳ dự án nào có thể kích hoạt quy trình làm việc GitOps, trước tiên Bytebase cần tích hợp với hệ thống kiểm soát phiên bản (VCS) tương ứng bằng cách đăng ký làm ứng dụng OAuth trong VCS đó. Dưới đây là các bước để định cấu hình tính năng này, bạn cũng có thể làm theo {guide} của chúng tôi.",
+        "gitlab-self-host": "GitLab tự lưu trữ",
+        "gitlab-self-host-admin-requirement": "Bạn cần phải là Quản trị viên của phiên bản GitLab đã chọn để định cấu hình phiên bản này. Nếu không, bạn cần yêu cầu Quản trị viên phiên bản GitLab của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn phiên bản GitLab, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "gitlab-com-admin-requirement": "Tài khoản của bạn cần có quyền truy cập Quản trị viên vào bất kỳ kho lưu trữ nào để được liên kết. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
+        "github-self-host-ee": "Phiên bản doanh nghiệp tự lưu trữ GitHub (EE)",
+        "github-com-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức GitHub đã chọn để định cấu hình tổ chức này. Nếu không, bạn cần yêu cầu quản trị viên tổ chức GitHub của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức GitHub, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "bitbucket-admin-requirement": "Bạn cần phải là quản trị viên của không gian làm việc Bitbucket đã chọn để định cấu hình điều này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn không gian làm việc Bitbucket, sau đó cung cấp cho bạn ID ứng dụng và Bí mật đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "azure-devops-service": "Dịch vụ Azure DevOps",
+        "azure-admin-requirement": "Bạn cần phải là quản trị viên của tổ chức Azure DevOps đã chọn để đặt cấu hình này. Nếu không, bạn cần yêu cầu quản trị viên không gian làm việc Bitbucket của mình đăng ký Bytebase làm ứng dụng OAuth trên toàn tổ chức Azure DevOps, sau đó cung cấp cho bạn ID ứng dụng và Bí mật ứng dụng khách đó để điền vào bước 'Thông tin ứng dụng OAuth'.",
+        "oauth-info-correct": "Thông tin OAuth đã được xác minh là chính xác",
+        "check-oauth-info-match": "Vui lòng đảm bảo Bí mật khớp với bí mật từ Ứng dụng phiên bản GitLab của bạn.",
+        "add-success": "Đã thêm thành công nhà cung cấp Git {vcs}",
+        "choose": "Chọn nhà cung cấp Git",
+        "basic-info": {
+          "self": "Thông tin cơ bản",
+          "gitlab-instance-url": "URL phiên bản GitLab",
+          "gitlab-instance-url-label": "URL phiên bản VCS. Đảm bảo phiên bản này và Bytebase có thể kết nối mạng với nhau.",
+          "github-instance-url": "URL phiên bản GitHub",
+          "bitbucket-instance-url": "URL phiên bản Bitbucket",
+          "azure-instance-url": "URL phiên bản Azure DevOps",
+          "instance-url-error": "URL phiên bản phải bắt đầu bằng https:// hoặc http://",
+          "display-name": "Tên hiển thị",
+          "display-name-label": "Tên hiển thị tùy chọn để giúp xác định giữa các cấu hình khác nhau bằng cách sử dụng cùng một nhà cung cấp Git."
+        },
+        "oauth-info": {
+          "self": "Thông tin ứng dụng OAuth",
+          "gitlab-self-host-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn phiên bản GitLab.",
+          "gitlab-self-host-login-as-admin": "Đăng nhập với tư cách người dùng Quản trị viên vào phiên bản GitLab. Tài khoản phải là Quản trị viên của toàn bộ phiên bản GitLab (tài khoản có biểu tượng cờ lê ở thanh trên cùng).",
+          "gitlab-self-host-visit-admin-page": "Đi tới trang Quản trị bằng cách nhấp vào biểu tượng cờ lê, sau đó điều hướng đến phần \"Ứng dụng\" và nhấp vào nút \"Ứng dụng mới\".",
+          "gitlab-com-register-oauth-application": "Đăng ký Bytebase làm ứng dụng OAuth của người dùng GitLab.",
+          "gitlab-com-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
+          "azure-devops-login": "Đăng nhập bằng bất kỳ tài khoản nào bạn muốn Bytebase hoạt động. Thông thường tài khoản này tương ứng với người dùng dịch vụ chuyên dụng thay vì người dùng con người.",
+          "gitlab-com-visit-application-page": "Chuyển đến trang Tùy chọn -> Ứng dụng. Bạn có thể tiếp cận nó thông qua ảnh hồ sơ của bạn ở góc trên bên phải.",
+          "azure-devops-visit-application-page": "Đi đến trang ứng dụng.",
+          "gitlab-paste-oauth-info": "Dán ID ứng dụng và Bí mật từ ứng dụng vừa tạo vào các trường bên dưới.",
+          "azure-paste-oauth-info": "Dán ID ứng dụng và Bí mật ứng dụng khách từ ứng dụng vừa tạo vào các trường bên dưới.",
+          "github-register-oauth-application": "Đăng ký Bytebase dưới dạng ứng dụng OAuth trên toàn tổ chức GitHub.",
+          "github-login-as-admin": "Đăng nhập với tư cách là người dùng quản trị viên tổ chức vào GitHub.com. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
+          "github-visit-admin-page": "Đi tới trang Cài đặt, sau đó điều hướng đến phần \"Cài đặt dành cho nhà phát triển > Ứng dụng OAuth\" và nhấp vào nút \"Đăng ký ứng dụng\".",
+          "github-paste-oauth-info": "Dán ID khách hàng và Bí mật khách hàng từ ứng dụng vừa tạo vào các trường bên dưới.",
+          "github-enterprise-login-as-admin": "Đăng nhập với tư cách người dùng quản trị tổ chức vào trang GitHub Enterprise được lưu trữ của bạn. Tài khoản phải là quản trị viên tổ chức của tổ chức GitHub (có thể truy cập trang Cài đặt của tổ chức).",
+          "bitbucket-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn không gian làm việc của Bitbucket.",
+          "azure-register-oauth-application": "Đăng ký Bytebase với tư cách là người tiêu dùng OAuth trên toàn tổ chức Azure DevOps.",
+          "bitbucket-login-as-admin": "Đăng nhập với tư cách người dùng quản trị không gian làm việc vào Bitbucket.org. Tài khoản phải là quản trị viên không gian làm việc của không gian làm việc Bitbucket (có thể truy cập trang Cài đặt không gian làm việc).",
+          "bitbucket-visit-admin-page": "Chuyển đến trang Cài đặt, sau đó điều hướng đến phần \"ỨNG DỤNG VÀ TÍNH NĂNG > Người tiêu dùng OAuth\" và nhấp vào nút \"Thêm người tiêu dùng\".",
+          "bitbucket-paste-oauth-info": "Dán Khóa và Bí mật từ người tiêu dùng vừa tạo vào các trường bên dưới.",
+          "copy-homepage-url": "Đã sao chép URL trang chủ vào khay nhớ tạm. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
+          "copy-redirect-uri": "URI chuyển hướng được sao chép vào clipboard. Dán vào trường tương ứng trên mẫu đơn đăng ký OAuth.",
+          "direct-link": "Đương dân trực tiêp",
+          "create-oauth-app": "Tạo ứng dụng Bytebase OAuth của bạn với thông tin sau.",
+          "gitlab-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 64 ký tự",
+          "gitlab-secret-error": "Bí mật phải là chuỗi chữ và số gồm 64 ký tự",
+          "github-application-id-error": "ID ứng dụng phải là chuỗi gồm 20 ký tự chữ và số. Vui lòng đảm bảo rằng đó là Ứng dụng OAuth thay vì Ứng dụng GitHub.",
+          "github-secret-error": "Bí mật phải là chuỗi chữ và số gồm 40 ký tự",
+          "bitbucket-application-id-error": "ID ứng dụng phải là chuỗi chữ và số gồm 18 ký tự",
+          "bitbucket-secret-error": "Bí mật phải là chuỗi chữ và số gồm 32 ký tự"
+        },
+        "confirm": {
+          "confirm-info": "Xác nhận thông tin",
+          "confirm-description": "Sau khi tạo, chủ sở hữu dự án có thể chọn nhà cung cấp Git này trong tab \"GitOps\" của bảng điều khiển dự án."
+        }
+      },
+      "git-provider": {
+        "gitlab-self-host-application-id-label": "ID ứng dụng cho ứng dụng OAuth trên toàn phiên bản GitLab đã đăng ký.",
+        "gitlab-com-application-id-label": "ID ứng dụng cho ứng dụng GitLab OAuth đã đăng ký.",
+        "view-in-gitlab": "Xem trong GitLab",
+        "view-in-azure": "Xem trong Azure",
+        "gitlab-self-host-secret-label": "Bí mật dành cho ứng dụng OAuth trên toàn phiên bản GitLab đã đăng ký.",
+        "gitlab-com-secret-label": "Bí mật cho ứng dụng GitLab OAuth đã đăng ký.",
+        "azure-secret-label": "Bí mật ứng dụng khách cho ứng dụng Azure OAuth đã đăng ký.",
+        "github-application-id-label": "ID khách hàng cho ứng dụng OAuth toàn tổ chức GitHub đã đăng ký.",
+        "azure-application-id-label": "ID khách hàng cho ứng dụng OAuth toàn tổ chức Azure đã đăng ký.",
+        "secret-label-github": "Bí mật ứng dụng khách cho ứng dụng OAuth toàn tổ chức GitHub đã đăng ký.",
+        "delete-forbidden": "Để xóa nhà cung cấp này, trước tiên hãy hủy liên kết tất cả các kho lưu trữ.",
+        "delete": "Xóa nhà cung cấp Git này",
+        "delete-confirm": "Xóa nhà cung cấp Git \"{name}\"?"
+      }
+    }
+  },
+  "deployment-config": {
+    "stage-n": "Giai đoạn {n}",
+    "add-selector": "Thêm bộ chọn",
+    "update-success": "Đã cập nhật thành công cấu hình triển khai.",
+    "this-is-example-deployment-config": "Đây là ví dụ về cấu hình triển khai. Bạn cần chỉnh sửa và lưu nó.",
+    "n-databases": "{n} cơ sở dữ liệu | {n} cơ sở dữ liệu",
+    "selectors": "Bộ chọn",
+    "add-stage": "Thêm sân khấu",
+    "confirm-to-revert": "Xác nhận hoàn nguyên chỉnh sửa của bạn?",
+    "name-placeholder": "Tên giai đoạn...",
+    "error": {
+      "at-least-one-stage": "Ít nhất 1 giai đoạn",
+      "stage-name-required": "Tên sân khấu là bắt buộc",
+      "at-least-one-selector": "Ít nhất 1 bộ chọn trong mỗi giai đoạn",
+      "env-in-selector-required": "“Môi trường” là cần thiết trong từng giai đoạn",
+      "env-selector-must-has-one-value": "\"ID môi trường\" phải có chính xác một giá trị",
+      "key-required": "Cần có chìa khóa",
+      "values-required": "Giá trị được yêu cầu"
+    },
+    "project-has-no-deployment-config": "Dự án này chưa có cấu hình triển khai. Vui lòng {go} trước.",
+    "go-and-config": "Đi và cấu hình",
+    "wont-be-deployed-explanation": "Những cơ sở dữ liệu này sẽ không được triển khai vì chúng không chạm tới bộ chọn nào.",
+    "wont-be-deployed": "Sẽ không được triển khai",
+    "pipeline-generated-from-deployment-config": "Quy trình triển khai được tạo theo {deployment_config} của dự án.",
+    "preview-deployment-pipeline": "Xem trước quy trình triển khai",
+    "select-database-group": "Chọn nhóm cơ sở dữ liệu"
+  },
+  "data-source": {
+    "role-type": "Loại vai trò",
+    "successfully-deleted-data-source-name": "Đã xóa thành công nguồn dữ liệu '{0}'.",
+    "create-data-source": "Tạo nguồn dữ liệu",
+    "data-source-list": "Danh sách nguồn dữ liệu",
+    "all-data-source": "Tất cả nguồn dữ liệu",
+    "search-name": "Tim kiêm tên",
+    "search-name-database": "Tìm kiếm tên, cơ sở dữ liệu",
+    "successfully-created-data-source-datasource-name": "Đã tạo thành công nguồn dữ liệu '{0}'.",
+    "select-database-first": "Chọn cơ sở dữ liệu đầu tiên",
+    "select-data-source": "Chọn nguồn dữ liệu",
+    "search-user": "Tìm kiếm người dùng",
+    "user-list": "Danh sách người dùng",
+    "revoke-access": "Bạn có chắc chắn thu hồi quyền truy cập '{0}' từ '{1}' không?",
+    "grant-data-source": "Cấp nguồn dữ liệu",
+    "grant-database": "Cấp cơ sở dữ liệu",
+    "requested-issue": "Vấn đề được yêu cầu",
+    "successfully-revoked-member-principal-name-access-from-props-datasource-name": "Đã thu hồi thành công quyền truy cập '{0}' từ '{1}'.",
+    "your-issue-id-e-g-1234": "Id vấn đề của bạn (ví dụ: 1234)",
+    "member-principal-name-already-exists": "{0} đã tồn tại",
+    "successfully-granted-datasource-name-to-addedmember-principal-name": "Đã cấp thành công '{0}' cho '{1}'.",
+    "we-also-linked-the-granted-database-to-the-requested-issue-linkedissue-name": "Chúng tôi cũng đã liên kết cơ sở dữ liệu được cấp với vấn đề được yêu cầu '{0}'.",
+    "new-data-source": "Nguồn dữ liệu mới",
+    "connection-name-string-copied-to-clipboard": "Đã sao chép chuỗi {0} vào bảng nhớ tạm.",
+    "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC không thể kết nối với ổ cắm {0}",
+    "ssl-type": {
+      "ca": "@:{'data-source.ssl.ca-cert'}",
+      "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
+      "none": "Không có"
+    },
+    "ssl": {
+      "ca-cert": "Chứng chỉ CA",
+      "client-key": "Khóa ứng dụng khách",
+      "client-cert": "Chứng chỉ khách hàng"
+    },
+    "ssh-type": {
+      "tunnel": "@:{'data-source.ssh.tunnel'}",
+      "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
+      "none": "Không có"
+    },
+    "ssh": {
+      "host": "Máy chủ",
+      "port": "Hải cảng",
+      "user": "Người dùng",
+      "password": "Mật khẩu",
+      "ssh-key": "Khóa SSH",
+      "tunnel": "Đường hầm",
+      "private-key": "Khóa riêng"
+    },
+    "ssl-connection": "Kết nối SSL",
+    "ssh-connection": "Kết nối SSH",
+    "read-replica-host": "Máy chủ đọc bản sao",
+    "read-replica-port": "Cổng đọc bản sao",
+    "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
+    "connection-string-schema": "Lược đồ chuỗi kết nối",
+    "admin": "Quản trị viên",
+    "read-only": "RO"
+  },
+  "setting": {
+    "project": {
+      "description": "Đây là bảng quản trị dự án liệt kê tất cả các dự án trong Bytebase.",
+      "show-archived": "Hiển thị các dự án đã lưu trữ"
+    },
+    "label": {
+      "key": "Chìa khóa",
+      "values": "Giá trị",
+      "value-placeholder": "Giá trị nhãn...",
+      "key-placeholder": "Chìa khóa nhãn..."
+    }
+  },
+  "sql-editor": {
+    "self": "Trình soạn thảo SQL",
+    "select-connection": "Vui lòng chọn kết nối",
+    "search-databases": "Tìm kiếm cơ sở dữ liệu",
+    "search-results": "kết quả tìm kiếm",
+    "loading-databases": "Đang tải cơ sở dữ liệu...",
+    "close-pane": "Đóng ngăn",
+    "loading-data": "Đang tải dữ liệu...",
+    "table-empty-placeholder": "Bấm vào Chạy để thực hiện truy vấn.",
+    "no-rows-found": "Không tìm thấy hàng nào",
+    "download-as-file": "Tải xuống dưới dạng {file}",
+    "only-select-allowed": "Chỉ các câu lệnh {select} mới được phép thực thi.",
+    "want-to-action": "Nếu bạn muốn {want}, hãy nhấp vào nút {action} {reaction}.",
+    "and-submit-an-issue": "và gửi một vấn đề",
+    "to-enable-admin-mode": "để bật chế độ quản trị viên",
+    "table-schema-placeholder": "Chọn một bảng để xem lược đồ của nó",
+    "notify-empty-statement": "Vui lòng nhập câu lệnh SQL của bạn vào trình chỉnh sửa",
+    "notify-multiple-statements": "Đã phát hiện nhiều câu lệnh SQL. SQL Editor chỉ thực thi câu lệnh đầu tiên. Bạn có thể chọn một câu lệnh khác và thực hiện nó một cách riêng lẻ.",
+    "goto-edit-schema-hint": "Vui lòng chọn kết nối cơ sở dữ liệu từ đầu trình chỉnh sửa",
+    "notify-invalid-sql-statement": "Câu lệnh SQL không hợp lệ.",
+    "can-not-execute-query": "Không thể thực hiện truy vấn khi tải dữ liệu.",
+    "rows": "hàng | hàng",
+    "vertical-display": "Hiển thị dọc",
+    "no-history-found": "Không tìm thấy lịch sử",
+    "no-sheet-found": "Không tìm thấy tờ nào",
+    "search-history": "Lịch sử tìm kiếm",
+    "search-sheets": "Trang tính tìm kiếm",
+    "hint-tips": {
+      "confirm-to-delete-this-history": "Xác nhận xóa lịch sử này?",
+      "confirm-to-close-unsaved-sheet": {
+        "title": "Đóng trang tính chưa lưu?",
+        "content": "Đóng trang tính và mất mọi dữ liệu chưa được lưu?"
+      }
+    },
+    "please-input-the-tab-label": "Vui lòng nhập nhãn tab!",
+    "copy-code": "Sao chép mã",
+    "notify": {
+      "copy-code-succeed": "Sao chép mã thành công",
+      "copy-share-link": "Liên kết chia sẻ đã được sao chép vào Clipboard.",
+      "sheet-is-read-only": "Trang tính được chia sẻ ở chế độ chỉ đọc."
+    },
+    "view-all-tabs": "Xem tất cả các Tab",
+    "sheets": "Trang tính",
+    "connection-holder": "Liên kết cơ sở dữ liệu trước tiên từ Bảng điều khiển cơ sở dữ liệu ở bên trái",
+    "link-access": "Truy cập liên kết",
+    "private": "Riêng tư",
+    "private-desc": "Chỉ bạn mới có thể truy cập trang tính này",
+    "project-desc": "Cả trang tính CHỦ SỞ HỮU và CHỦ SỞ HỮU dự án đều có thể đọc/ghi và NHÀ PHÁT TRIỂN dự án có thể đọc",
+    "public": "Công cộng",
+    "public-desc": "Trang tính CHỦ SỞ HỮU có thể đọc/ghi và tất cả những người khác có thể đọc",
+    "create-read-only-data-source": "Đi để tạo",
+    "go-back": "Quay lại",
+    "save-sheet": "Lưu trang tính",
+    "save-sheet-input-placeholder": "Vui lòng nhập tên trang tính",
+    "untitled-sheet": "Trang tính không có tiêu đề",
+    "format": "Định dạng",
+    "sql-review-result": "Kết quả xem xét SQL",
+    "alter-table": "Thay đổi bảng",
+    "visualize-explain": "Trực quan hóa Giải thích",
+    "sql-execute-in-production-environment": "Hãy cẩn thận, bạn đang truy cập cơ sở dữ liệu trong môi trường sản xuất.",
+    "rows-upper-limit": "đạt đến giới hạn kết quả truy vấn",
+    "tab-mode": {
+      "readonly": "Chỉ đọc",
+      "admin": "Quản trị viên"
+    },
+    "close-sheet": "Đóng trang tính",
+    "connect": "Kết nối",
+    "connect-in-admin-mode": "Kết nối ở chế độ quản trị viên",
+    "admin-mode": {
+      "self": "Chế độ quản trị viên"
+    },
+    "allow-admin-mode-only": "Phiên bản {instance} chỉ có thể truy cập được ở chế độ quản trị viên.",
+    "run-selected": "Chạy đã chọn",
+    "clear-screen": "Xóa màn hình",
+    "query-time": "thời gian truy vấn",
+    "request-query-permission": "Yêu cầu truy vấn",
+    "connection-lost": "Kết nối bị mất. Sẽ cố gắng kết nối lại khi thực hiện truy vấn tiếp theo.",
+    "sheet": {
+      "choose-sheet": "Chọn trang tính",
+      "self": "Tờ giấy",
+      "connection": "Sự liên quan"
+    },
+    "tab": {
+      "unsaved": "Chưa lưu",
+      "context-menu": {
+        "actions": {
+          "close": "Đóng",
+          "close-others": "Đóng người khác",
+          "close-to-the-right": "Gần bên phải",
+          "close-saved": "Đóng đã lưu",
+          "close-all": "Đóng tất cả",
+          "rename": "Đổi tên"
+        }
+      }
+    },
+    "batch-query": {
+      "batch": "Lô hàng",
+      "select-database": "Chọn cơ sở dữ liệu bên dưới",
+      "description": "Truy vấn hàng loạt {count} cơ sở dữ liệu bổ sung trong {project}."
+    },
+    "executing-query": "Thực hiện truy vấn",
+    "grouping": "Nhóm",
+    "previous-row": "Hàng trước",
+    "next-row": "Hàng tiếp theo",
+    "copy-success": "Sao chép thành công",
+    "missing-permission-to-load-db-metadata": "Thiếu quyền cần thiết để tải siêu dữ liệu của db {db}."
+  },
+  "schema-editor": {
+    "self": "Trình chỉnh sửa lược đồ",
+    "use-tips": "Nhấp vào cơ sở dữ liệu/bảng để bắt đầu.",
+    "preview-issue": "Vấn đề xem trước",
+    "sync-sql-from-schema-editor": "Đồng bộ hóa SQL từ Trình soạn thảo lược đồ",
+    "raw-sql": "SQL thô",
+    "search-database-and-table": "Tìm kiếm cơ sở dữ liệu và bảng",
+    "search-table": "Bảng tìm kiếm",
+    "search-column": "Cột tìm kiếm",
+    "actions": {
+      "create-schema": "Tạo lược đồ",
+      "drop-schema": "Bỏ lược đồ",
+      "create-table": "Bảng mới",
+      "rename": "Đổi tên",
+      "drop-table": "Bàn thả",
+      "restore": "Khôi phục",
+      "add-column": "Thêm cột",
+      "add-from-template": "Thêm từ mẫu",
+      "drop-column": "Cột thả",
+      "sql-preview": "Xem trước SQL",
+      "reset": "Cài lại",
+      "save": "Cứu"
+    },
+    "database": {
+      "name": "Tên",
+      "row-count": "Đếm số hàng",
+      "data-size": "Kích thước dữ liệu",
+      "engine": "Động cơ",
+      "collation": "đối chiếu",
+      "comment": "Bình luận"
+    },
+    "schema": {
+      "select": "Chọn lược đồ",
+      "name": "Tên lược đồ"
+    },
+    "tables": "Những cái bàn",
+    "table": {
+      "select": "Chọn bảng",
+      "name": "Tên bảng"
+    },
+    "columns": "Cột",
+    "column": {
+      "select": "Chọn cột",
+      "name": "Tên",
+      "type": "Kiểu",
+      "default": "Mặc định",
+      "comment": "Bình luận",
+      "not-null": "Có giá trị",
+      "primary": "Sơ đẳng",
+      "foreign-key": "Khóa ngoại",
+      "classification": "Phân loại"
+    },
+    "default": {
+      "no-default": "Không có mặc định",
+      "empty-string": "Chuỗi trống",
+      "expression": "Sự biểu lộ",
+      "zero": "0",
+      "true": "ĐÚNG VẬY",
+      "false": "SAI"
+    },
+    "nothing-changed-for-database": "Không có gì thay đổi đối với cơ sở dữ liệu {database}",
+    "message": {
+      "invalid-schema-name": "Tên lược đồ không hợp lệ",
+      "duplicated-schema-name": "Tên lược đồ trùng lặp",
+      "invalid-table-name": "Tên bảng không hợp lệ",
+      "duplicated-table-name": "Tên bảng trùng lặp",
+      "invalid-column-name": "Tên cột không hợp lệ",
+      "duplicated-column-name": "Tên cột trùng lặp",
+      "invalid-column-type": "Loại cột không hợp lệ",
+      "schema-not-found": "Không tìm thấy lược đồ",
+      "failed-to-fetch-database-schema": "Không tìm nạp được lược đồ cơ sở dữ liệu",
+      "invalid-schema": "Lược đồ không hợp lệ",
+      "cannot-drop-the-last-column": "Không thể bỏ cột cuối cùng",
+      "cannot-change-config": "Cấu hình cơ sở dữ liệu phải thay đổi với lược đồ"
+    },
+    "confirm-to-close": {
+      "title": "Xác nhận để đóng",
+      "description": "Bạn có chắc chắn muốn đóng bảng điều khiển này không? Những thay đổi của bạn sẽ bị mất."
+    },
+    "tenant-mode-tips": "Các thay đổi sẽ được áp dụng cho tất cả cơ sở dữ liệu của đối tượng thuê đã chọn sau khi nhấp vào \"Xem trước sự cố\".",
+    "edit-foreign-key": "Chỉnh sửa khóa ngoại",
+    "select-reference-schema": "Chọn một lược đồ để tham chiếu đến",
+    "select-reference-table": "Chọn một bảng để tham khảo",
+    "select-reference-column": "Chọn một cột để tham chiếu đến",
+    "index": {
+      "indexes": "Chỉ mục",
+      "edit-indexes": "Chỉnh sửa chỉ mục",
+      "unique": "Độc nhất"
+    },
+    "generated-ddl-is-empty": "DDL được tạo trống"
+  },
+  "label": {
+    "empty-label-value": "Trống",
+    "no-label": "Không nhãn hiệu",
+    "error": {
+      "key-necessary": "Cần có chìa khóa",
+      "value-necessary": "Giá trị là bắt buộc",
+      "key-duplicated": "Phím trùng lặp",
+      "value-duplicated": "Giá trị trùng lặp",
+      "max-length-exceeded": "Độ dài không được vượt quá {len} ký tự",
+      "max-label-count-exceeded": "Không thể vượt quá nhãn {count}",
+      "cannot-edit-reserved-label": "Không thể chỉnh sửa nhãn dành riêng \"{key}\"",
+      "max-value-length-exceeded": "Độ dài của giá trị không được vượt quá {length} ký tự",
+      "key-format": "Chỉ cho phép các ký tự chữ và số ([a-z0-9A-Z]), dấu gạch ngang (-), dấu gạch dưới (_) và dấu chấm (.). Và phải bắt đầu và kết thúc bằng các ký tự chữ và số.",
+      "x-is-reserved-key": "\"{key}\" là khóa dành riêng của hệ thống"
+    },
+    "placeholder": {
+      "select-key": "Chọn phím...",
+      "select-value": "Chọn giá trị...",
+      "select-values": "Chọn các giá trị..."
+    },
+    "setting": {
+      "description": "Nhãn là một cặp khóa-giá trị giúp bạn xác định đối tượng thuê cho cơ sở dữ liệu. {link}."
+    },
+    "db-name-template-tips": "Chỉ định một mẫu để thực thi việc đặt tên cơ sở dữ liệu. Ví dụ: nếu cơ sở dữ liệu db1 của bạn được phân chia địa lý thành Hoa Kỳ, Châu Á, Châu Âu và bạn muốn đặt các tên là db1__US, db1__ASIA, db1__EU thì mẫu có thể là {placeholder}. {link}.",
+    "confirm-change": "Bạn có chắc chắn thay đổi '{label}' không?",
+    "parsed-from-template": "Được phân tích cú pháp từ {name} theo mẫu {template}.",
+    "cannot-transfer-template-not-match": "Không thể chuyển cơ sở dữ liệu '{name}' sang dự án này. Vì tên của nó không khớp với mẫu {template}.",
+    "add-label": "Thêm nhãn",
+    "filter-by-label": "Lọc theo nhãn"
+  },
+  "oauth": {
+    "unknown-event": "Loại sự kiện không mong đợi, OAuth không thành công."
+  },
+  "subscription": {
+    "try-for-free": "Dùng thử miễn phí",
+    "inquire-enterprise-plan": "Hỏi kế hoạch doanh nghiệp",
+    "enterprise-free-trial": "Bản dùng thử Enterprise miễn phí {days} ngày",
+    "button": {
+      "free-trial": "dùng thử miễn phí {days} ngày",
+      "upgrade": "Nâng cấp",
+      "contact-us": "Liên hệ chúng tôi",
+      "view-subscription": "Xem đăng ký"
+    },
+    "trial-start-modal": {
+      "title": "Bắt đầu dùng thử {plan} của bạn",
+      "content": "Bản dùng thử {plan} của bạn đã bắt đầu! Bạn có thể truy cập các tính năng của {plan} trước {date}.",
+      "button": "Hiểu rồi",
+      "subscription-page": "trang đăng ký",
+      "subscription": "Hãy truy cập {page} để tìm hiểu các tính năng này và các gói của chúng tôi."
+    },
+    "description": "Bạn có thể tải giấy phép Bytebase của mình lên để mở khóa các tính năng chuyên nghiệp/doanh nghiệp.",
+    "upload-license": "Tải lên giấy phép",
+    "upgrade-trial-button": "Nâng cấp dùng thử",
+    "request-n-days-trial": "Yêu cầu dùng thử {days} ngày (không cần thẻ tín dụng)",
+    "request-with-qr": "Quét mã QR",
+    "successfully-start-trial": "Bắt đầu dùng thử miễn phí thành công trong {days} ngày",
+    "successfully-upgrade-trial": "Nâng cấp thành công bản dùng thử miễn phí lên {plan}",
+    "require-subscription": "Tính năng này yêu cầu đăng ký {requiredPlan}, vui lòng mua giấy phép Bytebase để mở khóa tính năng này.",
+    "feature-require-subscription": "{feature} yêu cầu đăng ký {requiredPlan}.",
+    "required-plan-with-trial": "Tính năng này yêu cầu {requiredPlan}. {startTrial}",
+    "trial-for-plan": "Bạn có thể bắt đầu dùng thử miễn phí {plan} trong {days} ngày - không cần thẻ tín dụng.",
+    "trial-for-days": "Bạn có thể bắt đầu dùng thử miễn phí trong {days} ngày - không cần thẻ tín dụng.",
+    "upgrade-trial": "Bạn có thể nâng cấp bản dùng thử miễn phí của mình lên gói này.",
+    "contact-to-upgrade": "Hãy liên hệ với quản trị viên Workspace của bạn để nâng cấp gói.",
+    "upgrade-now": "Nâng cấp ngay bây giờ",
+    "instance-assignment": {
+      "license": "Giấy phép",
+      "assign-license": "Gán giấy phép",
+      "require-license": "Yêu cầu giấy phép phiên bản",
+      "missing-license-attention": "Bạn cần gán giấy phép cho phiên bản để kích hoạt tính năng này.",
+      "n-license-remain": "ở lại {n}",
+      "manage-license": "Quản lý giấy phép phiên bản",
+      "used-and-total-license": "Giấy phép được chỉ định/Tổng số phiên bản",
+      "success-notification": "Cập nhật thành công chuyển nhượng giấy phép",
+      "missing-license-for-instances": "Bạn có {count} phiên bản ({name}) thiếu giấy phép bắt buộc để mở khóa tính năng này.",
+      "missing-license-for-feature": "Thiếu giấy phép phiên bản để bật {feature}. Bấm để giao việc ngay bây giờ."
+    },
+    "update": {
+      "success": {
+        "title": "Đã cập nhật giấy phép thành công",
+        "description": "Đã mở khóa các tính năng cao cấp trong gói đăng ký."
+      },
+      "failure": {
+        "title": "Không thể cập nhật giấy phép",
+        "description": "Vui lòng kiểm tra xem giấy phép của bạn có hợp lệ không."
+      }
+    },
+    "plan-features": "{plan} Tính năng",
+    "overuse-warning": "{NeedPlan} trên {currentPlan} sẽ bị hạn chế. Hãy nâng cấp ngay để đảm bảo quyền truy cập liên tục.",
+    "overuse-modal": {
+      "description": "Bạn đang sử dụng các tính năng không có trong {plan}. Nâng cấp ngay bây giờ để đảm bảo quyền truy cập liên tục:",
+      "instance-count-exceeds": "Số lượng phiên bản {count} vượt quá giới hạn {limit}"
+    },
+    "features": {
+      "bb-feature-task-schedule-time": {
+        "title": "Đặt thời gian thực hiện nhiệm vụ",
+        "desc": "Đặt thời gian lập lịch tác vụ cho phép bạn đặt thời gian cụ thể để thực hiện các tác vụ của mình."
+      },
+      "bb-feature-instance-count": {
+        "title": "Giới hạn số lượng phiên bản",
+        "desc": "Bạn đã đạt đến giới hạn số lượng phiên bản tối đa. Vui lòng nâng cấp để nhận thêm hạn ngạch phiên bản.",
+        "remaining": "Tổng hạn ngạch phiên bản của bạn là {total}, chỉ còn lại phiên bản {count}.",
+        "runoutof": "Bạn đã dùng hết hạn ngạch phiên bản {total} của mình.",
+        "upgrade": "@:{'subscription.upgrade'} để nhận thêm hạn mức phiên bản."
+      },
+      "bb-feature-user-count": {
+        "title": "Giới hạn số lượng người dùng",
+        "desc": "Bạn đã đạt đến giới hạn số lượng người dùng tối đa. Vui lòng nâng cấp để nhận hạn ngạch người dùng không giới hạn.",
+        "remaining": "Tổng hạn ngạch người dùng của bạn là {total}, chỉ còn lại {count} người dùng.",
+        "runoutof": "Bạn đã dùng hết hạn ngạch {total} người dùng.",
+        "upgrade": "@:{'subscription.upgrade'} để nhận được hạn ngạch người dùng không giới hạn."
+      },
+      "bb-feature-multi-tenancy": {
+        "title": "Chế độ hàng loạt",
+        "desc": "Thay đổi hàng loạt một nhóm cơ sở dữ liệu từ những người thuê hoặc phân vùng khác nhau."
+      },
+      "bb-feature-approval-policy": {
+        "title": "Chính sách triển khai",
+        "desc": "Chính sách triển khai kiểm soát xem tác vụ thay đổi lược đồ có yêu cầu triển khai thủ công hay không."
+      },
+      "bb-feature-backup-policy": {
+        "title": "Chính sách dự phòng",
+        "desc": "Chính sách sao lưu sẽ tự động sao lưu cơ sở dữ liệu của bạn theo lịch trình."
+      },
+      "bb-feature-environment-tier-policy": {
+        "title": "Cấp môi trường",
+        "desc": "Đánh dấu môi trường là sản xuất."
+      },
+      "bb-feature-sensitive-data": {
+        "title": "Dữ liệu nhạy cảm",
+        "desc": "Đánh dấu các cột trong bảng là dữ liệu nhạy cảm và kết quả truy vấn của chúng sẽ được hiển thị dưới dạng \"******\"."
+      },
+      "bb-feature-access-control": {
+        "title": "Kiểm soát truy cập dữ liệu",
+        "desc": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu."
+      },
+      "bb-feature-lgtm": {
+        "title": "Kiểm tra LGTM",
+        "desc": "Kiểm tra xem sự cố có nhận xét \"LGTM\" hay không."
+      },
+      "bb-feature-im-approval": {
+        "title": "Phê duyệt IM",
+        "desc": "Vấn đề phê duyệt với tích hợp IM."
+      },
+      "bb-feature-sql-review": {
+        "title": "Mở khóa hơn 100 lần kiểm tra đánh giá SQL",
+        "desc": "Chỉ định các quy tắc tìm lỗi mã nguồn SQL để áp dụng phương pháp hay nhất về SQL và thực thi tính nhất quán của lược đồ trong toàn bộ tổ chức kỹ thuật."
+      },
+      "bb-feature-custom-approval": {
+        "title": "Phê duyệt tùy chỉnh",
+        "desc": "Định cấu hình mức độ rủi ro và luồng phê duyệt cho các nhiệm vụ khác nhau."
+      },
+      "bb-feature-vcs-schema-write-back": {
+        "title": "Viết lại lược đồ",
+        "desc": "Sau khi thay đổi lược đồ thành công, việc ghi lại lược đồ cho phép Bytebase ghi lại ảnh chụp nhanh lược đồ đầy đủ mới nhất vào kho lưu trữ VCS của bạn."
+      },
+      "bb-feature-vcs-sheet-sync": {
+        "title": "Đồng bộ hóa tập lệnh SQL từ VCS",
+        "desc": "Đồng bộ hóa các tập lệnh SQL được lưu trữ trong VCS sang Trang tính."
+      },
+      "bb-feature-vcs-sql-review": {
+        "title": "Đánh giá SQL trong quy trình làm việc GitOps",
+        "desc": "Thêm CI đánh giá SQL vào quy trình kho lưu trữ VCS của bạn. Đánh giá SQL sẽ được kích hoạt trong yêu cầu kéo đối với các tệp SQL đã thay đổi."
+      },
+      "bb-feature-rbac": {
+        "title": "Quản lý vai trò",
+        "desc": "Quản lý vai trò có thể chỉ định một vai trò cụ thể (ví dụ: DBA) cho thành viên."
+      },
+      "bb-feature-custom-role": {
+        "title": "Vai trò tùy chỉnh",
+        "desc": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh."
+      },
+      "bb-feature-watermark": {
+        "title": "Chữ ký ảnh",
+        "desc": "Hiển thị hình mờ hiển thị trên các trang, bao gồm tên người dùng, ID và email."
+      },
+      "bb-feature-audit-log": {
+        "title": "Sổ ghi chép đánh giá",
+        "desc": "Ghi lại và truy vấn các hoạt động được thực hiện bởi người dùng trong không gian làm việc."
+      },
+      "bb-feature-schema-drift": {
+        "title": "Lược đồ trôi dạt",
+        "desc": "Phát hiện các thay đổi lược đồ ngoài băng tần và báo cáo sự trôi dạt lược đồ."
+      },
+      "bb-feature-branding": {
+        "title": "Xây dựng thương hiệu",
+        "desc": "Tùy chỉnh logo."
+      },
+      "bb-feature-online-migration": {
+        "title": "Di chuyển trực tuyến",
+        "desc": "Dựa trên gh-ost. Đối với các bảng lớn, nó có thể giảm thời gian khóa bảng từ vài giờ xuống còn vài giây."
+      },
+      "bb-feature-disaster-recovery-pitr": {
+        "title": "Phục hồi tại thời điểm (PITR)",
+        "desc": "Khôi phục trạng thái cơ sở dữ liệu về một thời điểm."
+      },
+      "bb-feature-sync-schema-all-versions": {
+        "title": "Đồng bộ hóa lược đồ tất cả các phiên bản",
+        "desc": "Chọn bất kỳ phiên bản di chuyển tùy ý nào từ cơ sở dữ liệu cơ sở và đồng bộ hóa nó với cơ sở dữ liệu đích."
+      },
+      "bb-feature-read-replica-connection": {
+        "title": "Đọc kết nối bản sao",
+        "desc": "Kết nối với bản sao chỉ đọc cho nguồn dữ liệu chỉ đọc."
+      },
+      "bb-feature-instance-ssh-connection": {
+        "title": "Kết nối SSH sơ thẩm",
+        "desc": "Kết nối với một phiên bản qua SSH."
+      },
+      "bb-feature-custom-instance-scan-interval": {
+        "title": "Khoảng thời gian quét phiên bản tùy chỉnh",
+        "desc": "Ví dụ: tùy chỉnh lược đồ và khoảng thời gian quét bất thường"
+      },
+      "bb-feature-index-advisor": {
+        "title": "Cố vấn chỉ số",
+        "desc": "Cố vấn chỉ mục có thể giúp bạn tìm các chỉ mục bị thiếu trong các truy vấn chậm."
+      },
+      "bb-feature-sso": {
+        "title": "Đăng nhập một lần (SSO)",
+        "desc": "Cho phép người dùng xác thực một cách an toàn với nhiều ứng dụng và trang web thông qua một bộ thông tin xác thực duy nhất."
+      },
+      "bb-feature-2fa": {
+        "title": "Xác thực hai yếu tố (2FA)",
+        "desc": "Xác thực hai yếu tố cung cấp thêm một lớp bảo mật cho tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng Authenticator của bạn tạo."
+      },
+      "bb-feature-plugin-openai": {
+        "title": "Tăng cường AI",
+        "desc": "Các tính năng cố vấn chỉ mục và SQL Editor tăng cường bằng AI được cung cấp bởi OpenAI."
+      },
+      "bb-feature-batch-query": {
+        "title": "Truy vấn hàng loạt",
+        "desc": "Truy vấn hàng loạt cơ sở dữ liệu bổ sung trong cùng một dự án trong SQL Editor."
+      },
+      "bb-feature-shared-sql-script": {
+        "title": "Tập lệnh SQL được chia sẻ",
+        "desc": "Chia sẻ tập lệnh SQL của bạn với các thành viên trong dự án hoặc công khai chúng với tất cả mọi người."
+      },
+      "bb-feature-announcement": {
+        "title": "Thông báo",
+        "desc": "Định cấu hình Biểu ngữ thông báo."
+      },
+      "bb-feature-encrypted-secrets": {
+        "title": "Bí mật được mã hóa",
+        "desc": "Lưu trữ bí mật cơ sở dữ liệu của bạn và sử dụng chúng trong các tập lệnh SQL phát hành của bạn."
+      },
+      "bb-feature-database-grouping": {
+        "title": "Nhóm cơ sở dữ liệu",
+        "desc": "Nhóm cơ sở dữ liệu cho phép bạn áp dụng các thao tác hàng loạt cho cơ sở dữ liệu từ nhóm cơ sở dữ liệu."
+      },
+      "bb-feature-disallow-signup": {
+        "title": "Vô hiệu hóa đăng ký tự phục vụ",
+        "desc": "Sau khi bị tắt, người dùng không thể tự đăng ký và chỉ có thể được quản trị viên không gian làm việc mời."
+      },
+      "bb-feature-schema-template": {
+        "title": "Mẫu lược đồ",
+        "desc": "Xác định trước mẫu trường, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
+      },
+      "bb-feature-secure-token": {
+        "title": "Tần suất đăng nhập",
+        "desc": "Tần suất đăng nhập là khoảng thời gian trước khi người dùng phải đăng nhập lại."
+      },
+      "bb-feature-issue-advanced-search": {
+        "title": "Tìm kiếm vấn đề nâng cao",
+        "desc": "Truy cập lịch sử vấn đề không giới hạn với tính năng tìm kiếm vấn đề nâng cao."
+      }
+    }
+  },
+  "sheet": {
+    "self": "Trang tính",
+    "my-sheets": "Trang tính của tôi",
+    "mine": "Của tôi",
+    "star": "Ngôi sao",
+    "unstar": "Bỏ dấu sao",
+    "starred": "Được gắn dấu sao",
+    "shared-with-me": "Chia sẻ với tôi",
+    "actions": {
+      "sync-from-vcs": "Đồng bộ hóa tập lệnh SQL từ VCS"
+    },
+    "notifications": {
+      "duplicate-success": "Sao chép thành công vào \"Trang tính của tôi\""
+    },
+    "hint-tips": {
+      "confirm-to-sync-sheet": "Xác nhận đồng bộ hóa trang tính?",
+      "confirm-to-delete-this-sheet": "Xác nhận xóa trang tính này?",
+      "confirm-to-duplicate-sheet": "Xác nhận sao chép trang tính này?"
+    },
+    "linked-issue": "Sự cố được liên kết",
+    "from-issue-warning": "Trang tính xuất phát từ vấn đề {issue} ở chế độ chỉ đọc. {oversize}",
+    "content-oversize-warning": "SQL có kích thước quá lớn và việc chỉnh sửa nội tuyến không được phép.",
+    "sheets": "Trang tính",
+    "search-sheets": "Trang tính tìm kiếm",
+    "sheet": "Tờ giấy",
+    "unconnected": "Chưa kết nối"
+  },
+  "engine": {
+    "mysql": "MySQL",
+    "common": "Chung"
+  },
+  "sql-review": {
+    "title": "Đánh giá SQL",
+    "description": "Chính sách đánh giá SQL có thể xác định các bộ quy tắc tìm lỗi mã nguồn SQL khác nhau cho các môi trường tương ứng. Nó giúp các nhóm áp dụng phương pháp hay nhất về SQL và thực thi tính nhất quán của lược đồ trên các cơ sở dữ liệu khác nhau. Bất cứ khi nào bạn cố gắng thay đổi DDL/DML hoặc sử dụng SQL Editor để truy vấn dữ liệu, truy vấn sẽ được kiểm tra theo chính sách xem xét SQL đã định cấu hình.",
+    "disabled": "Tàn tật",
+    "no-policy-set": "Không có chính sách đánh giá SQL",
+    "create-policy": "Tạo chính sách",
+    "duplicate-policy": "Chính sách đánh giá SQL trùng lặp",
+    "configure-policy": "Định cấu hình chính sách",
+    "policy-removed": "Đã xóa thành công chính sách đánh giá.",
+    "policy-created": "Đã tạo thành công chính sách đánh giá.",
+    "policy-updated": "Đã cập nhật thành công chính sách đánh giá.",
+    "policy-duplicated": "Đã sao chép thành công chính sách đánh giá.",
+    "rules": "Quy tắc",
+    "filter": "Lọc",
+    "no-permission": "Chỉ DBA hoặc Quản trị viên mới có quyền tạo hoặc cập nhật chính sách đánh giá.",
+    "disable": "Vô hiệu hóa",
+    "enable": "Cho phép",
+    "delete": "Xóa chính sách đánh giá SQL",
+    "input-then-press-enter": "Nhập giá trị rồi nhấn enter để thêm",
+    "not-available-for-free": "Quy tắc không có sẵn cho {plan}",
+    "unlock-full-feature": "Mở khóa hơn 100 quy tắc tìm lỗi mã nguồn SQL",
+    "create": {
+      "breadcrumb": "Tạo chính sách đánh giá SQL",
+      "basic-info": {
+        "name": "Thông tin cơ bản",
+        "display-name": "Tên hiển thị",
+        "display-name-placeholder": "Tên chính sách đánh giá",
+        "display-name-default": "Chính sách đánh giá SQL",
+        "display-name-label": "Tên hiển thị để giúp xác định giữa các chính sách đánh giá khác nhau.",
+        "environments": "Môi trường",
+        "environments-label": "Áp dụng chính sách đánh giá cho các môi trường đã chọn. Một môi trường chỉ có thể liên kết một chính sách.",
+        "environments-select": "Chọn môi trường",
+        "no-linked-environments": "Không có môi trường được liên kết",
+        "no-available-environment": "Không có môi trường có sẵn",
+        "no-available-environment-desc": "Không có môi trường có sẵn. Một môi trường chỉ có thể liên kết một chính sách đánh giá SQL.",
+        "choose-template": "Chọn mẫu"
+      },
+      "configure-rule": {
+        "name": "Định cấu hình quy tắc",
+        "change-template": "Thay đổi mẫu",
+        "confirm-override-title": "Xác nhận thay đổi",
+        "confirm-override-description": "Quy tắc của bạn sẽ bị ghi đè"
+      },
+      "preview": {
+        "name": "Xem trước"
+      }
+    },
+    "edit-rule": {
+      "self": "Chỉnh sửa quy tắc đánh giá SQL",
+      "readonly": "Quy tắc đánh giá SQL"
+    },
+    "rule": {
+      "active": "Tích cực"
+    },
+    "enabled-rules": "Quy tắc đã bật",
+    "rule-detail": "Chi tiết quy tắc",
+    "view-definition": "Xem định nghĩa",
+    "other-engines": "Động cơ khác"
+  },
+  "debug-log": {
+    "title": "Nhật ký gỡ lỗi",
+    "no-logs": "Không có nhật ký gỡ lỗi",
+    "count-of-logs": "Đã tìm nạp (các) nhật ký {count} mới nhất từ máy chủ.",
+    "debug-log-detail": "Chi tiết nhật ký gỡ lỗi",
+    "enabled": "Chế độ gỡ lỗi được bật.",
+    "open-debug-mode": "Bật gỡ lỗi",
+    "table": {
+      "record-ts": "Thời gian",
+      "method": "Phương pháp",
+      "request-path": "Đường dẫn yêu cầu",
+      "role": "Vai trò",
+      "error": "Lỗi",
+      "stack-trace": "Dấu vết ngăn xếp",
+      "empty": "<Trống>",
+      "operation": {
+        "operation": "Hoạt động",
+        "view-details": "Xem chi tiết",
+        "copy": "Sao chép",
+        "copy-all": "Sao chép tất cả",
+        "copied": "Đã sao chép!",
+        "export": "Xuất khẩu"
+      }
+    }
+  },
+  "audit-log": {
+    "no-logs": "Không có nhật ký kiểm tra",
+    "audit-log-detail": "Chi tiết nhật ký kiểm tra",
+    "table": {
+      "created-ts": "Thời gian",
+      "created-time": "Thời gian được tạo",
+      "updated-time": "Thời gian cập nhật",
+      "actor": "Diễn viên",
+      "type": "Loại kiểm toán",
+      "level": "Cấp độ kiểm toán",
+      "comment": "Bình luận",
+      "payload": "Khối hàng",
+      "empty": "<Trống>",
+      "view-details": "Xem chi tiết",
+      "select-type": "Lựa chọn đối tượng"
+    },
+    "type": {
+      "workspace": {
+        "member-create": "Tạo thành viên không gian làm việc",
+        "member-role-update": "Cập nhật vai trò thành viên Workspace",
+        "member-activate": "Kích hoạt thành viên Workspace",
+        "member-deactivate": "Vô hiệu hóa thành viên Workspace"
+      },
+      "project": {
+        "member-role-update": "Cập nhật vai trò thành viên dự án",
+        "database-transfer": "Chuyển cơ sở dữ liệu"
+      },
+      "sql-editor-query": "Truy vấn trình soạn thảo SQL",
+      "sql-export": "Xuất SQL"
+    }
+  },
+  "onboarding-guide": {
+    "create-database-guide": {
+      "let-add-a-instance": "Hãy thêm một ví dụ",
+      "go-to-project-list-page": "Tới trang danh sách dự án",
+      "click-new-project": "Nhấp vào \"Dự án mới\" để tạo dự án",
+      "click-new-database": "Nhấp vào \"Cơ sở dữ liệu mới\" để tạo cơ sở dữ liệu",
+      "click-approve": "Nhấp vào \"Chấp thuận\" để thực hiện thay đổi",
+      "wait-issue-finished": "Đang chờ quá trình thay đổi hoàn tất...",
+      "back-to-home": "Trở về nhà",
+      "finished-dialog": {
+        "you-have-done": "Bạn đã hoàn thành:",
+        "add-an-instance": "Thêm một phiên bản",
+        "create-a-project": "Tạo một dự án",
+        "create-an-issue": "Tạo một vấn đề",
+        "create-a-new-database": "Tạo cơ sở dữ liệu mới",
+        "keep-going-with-bytebase": "Hãy tiếp tục đồng hành cùng Bytebase!"
+      }
+    }
+  },
+  "schema-diagram": {
+    "self": "Sơ đồ lược đồ",
+    "fit-content-with-view": "Điều chỉnh nội dung trong chế độ xem"
+  },
+  "identity-provider": {
+    "test-connection": "Kiểm tra kết nối",
+    "test-modal": {
+      "title": "Kiểm tra kết nối OAuth2",
+      "start-test": "Bấm đăng nhập để bắt đầu thử nghiệm"
+    }
+  },
+  "sensitive-data": {
+    "self": "Dữ liệu nhạy cảm"
+  },
+  "resource": {
+    "environment": "Môi trường",
+    "instance": "Ví dụ",
+    "project": "Dự án",
+    "idp": "Nhà cung cấp danh tính",
+    "role": "Vai trò",
+    "database-group": "Nhóm cơ sở dữ liệu",
+    "schema-group": "Nhóm bảng",
+    "changelist": "Danh sách thay đổi"
+  },
+  "resource-id": {
+    "self": "ID {resource}",
+    "description": "ID {resource} là mã định danh duy nhất. Bạn không thể thay đổi nó sau khi tạo.",
+    "cannot-be-changed-later": "Nó không thể thay đổi sau này.",
+    "validation": {
+      "duplicated": "ID {resource} đã tồn tại. Vui lòng chọn cái khác.",
+      "pattern": "ID {resource} chỉ có thể chứa chữ cái viết thường, số và dấu gạch nối. Nó phải bắt đầu bằng một chữ cái viết thường.",
+      "minlength": "ID {resource} quá ngắn. Nó phải có ít nhất 1 ký tự.",
+      "overflow": "ID {resource} quá dài. Nó phải có ít hơn 64 ký tự."
+    }
+  },
+  "multi-factor": {
+    "self": "Xác thực đa yếu tố",
+    "auth-code": "Mã xác thực",
+    "recovery-code": "Mã khôi phục",
+    "other-methods": {
+      "self": "Các phương pháp khác",
+      "use-auth-app": {
+        "self": "Sử dụng ứng dụng xác thực của bạn",
+        "description": "Mở ứng dụng xác thực hai yếu tố (TOTP) trên thiết bị di động của bạn để xem mã xác thực."
+      },
+      "use-recovery-code": {
+        "self": "Sử dụng mã khôi phục",
+        "description": "Nếu bạn không thể truy cập thiết bị di động của mình, hãy nhập một trong các mã khôi phục để xác minh danh tính của bạn."
+      }
+    }
+  },
+  "two-factor": {
+    "self": "Xác thực hai yếu tố",
+    "description": "Xác thực hai yếu tố cung cấp thêm một lớp bảo mật cho tài khoản thành viên. Khi đăng nhập, bạn sẽ được yêu cầu nhập mã bảo mật do Ứng dụng Authenticator của bạn tạo.",
+    "enabled": "Đã bật 2FA",
+    "setup-steps": {
+      "setup-auth-app": {
+        "self": "Cài đặt ứng dụng xác thực",
+        "description": "Sử dụng ứng dụng điện thoại như Google Authenticator, Microsoft Authenticator hoặc Authy để nhận mã 2FA khi được nhắc trong quá trình đăng nhập.",
+        "scan-qr-code": {
+          "self": "Quét mã QR",
+          "description": "Sử dụng ứng dụng xác thực từ điện thoại của bạn để quét. Thay vào đó, nếu bạn không thể quét, hãy {action}.",
+          "enter-the-text": "nhập văn bản"
+        },
+        "verify-code": "Xác minh mã từ ứng dụng"
+      },
+      "download-recovery-codes": {
+        "self": "Tải xuống mã khôi phục của bạn",
+        "tips": "Giữ mã khôi phục của bạn an toàn như mật khẩu của bạn. Chúng tôi khuyên bạn nên lưu chúng bằng trình quản lý mật khẩu như Lastpass, 1Password hoặc Keeper.",
+        "keep-safe": {
+          "self": "Giữ mã khôi phục của bạn ở nơi an toàn.",
+          "description": "Những mã này là phương sách cuối cùng để truy cập vào tài khoản của bạn trong trường hợp bạn mất mã xác thực hai yếu tố. Nếu không tìm thấy những mã này, bạn sẽ mất quyền truy cập vào tài khoản của mình."
+        }
+      },
+      "recovery-codes-saved": "Tôi đã lưu mã khôi phục của mình"
+    },
+    "recovery-codes": {
+      "self": "Mã khôi phục",
+      "description": "Mã khôi phục có thể được sử dụng để truy cập vào tài khoản của bạn trong trường hợp bạn không thể nhận được mã xác thực hai yếu tố."
+    },
+    "disable": {
+      "self": "Tắt xác thực hai yếu tố",
+      "description": "Bạn sắp vô hiệu hóa xác thực hai yếu tố cho tài khoản của mình. Bạn sẽ không còn phải nhập mã bảo mật do Ứng dụng Authenticator tạo khi đăng nhập."
+    },
+    "your-two-factor-secret": {
+      "self": "Bí mật hai yếu tố của bạn",
+      "description": "Sao chép mã và nhập mã đó vào ứng dụng TOTP của bạn theo cách thủ công.",
+      "copy-succeed": "Đã sao chép bí mật vào clipboard. Dán nó vào ứng dụng của bạn."
+    },
+    "messages": {
+      "2fa-enabled": "Xác thực hai yếu tố được kích hoạt.",
+      "2fa-disabled": "Xác thực hai yếu tố bị vô hiệu hóa.",
+      "recovery-codes-regenerated": "Mã khôi phục được tạo lại.",
+      "2fa-required": "Xác thực hai yếu tố là bắt buộc trong không gian làm việc của bạn. Vui lòng kích hoạt nó trước khi bạn có thể tiếp tục.",
+      "cannot-disable": "Bạn không thể tắt xác thực hai yếu tố vì quản trị viên của bạn yêu cầu nó trong không gian làm việc."
+    }
+  },
+  "plugin": {
+    "ai": {
+      "examples": "Ví dụ",
+      "text-to-sql-placeholder": "Sử dụng ngôn ngữ tự nhiên và Bytebase sẽ chuyển đổi nó thành SQL",
+      "text-to-sql-disabled-placeholder": "Kích hoạt khả năng ChatSQL bằng cách cung cấp Khóa API OpenAI.",
+      "run-automatically": "Chạy tự động",
+      "conversation": {
+        "conversations": "Cuộc trò chuyện",
+        "untitled": "Cuộc trò chuyện không có tiêu đề",
+        "delete": "Xóa cuộc trò chuyện",
+        "rename": "Đổi tên cuộc trò chuyện",
+        "select-or-create": "Chọn hoặc {create} cuộc trò chuyện để bắt đầu.",
+        "exit-conversation-mode": "Thoát khỏi chế độ trò chuyện",
+        "history-conversations": "Cuộc trò chuyện lịch sử",
+        "view-history-conversations": "Xem lịch sử cuộc trò chuyện",
+        "new-conversation": "Bắt đầu cuộc trò chuyện mới",
+        "no-message": "Không có tin nhắn trong cuộc trò chuyện này",
+        "tips": {
+          "suggest-prompt": "Đề xuất lời nhắc...",
+          "more": "Hơn",
+          "no-more": "không còn nữa"
+        }
+      },
+      "preset-suggestion": {
+        "1": "Bộ phận nào có nhiều nhân viên nhất?",
+        "2": "Người quản lý nào có nhiều báo cáo trực tiếp nhất ở mỗi bộ phận?",
+        "3": "Tỷ lệ giới tính ở mỗi bộ phận là bao nhiêu?"
+      },
+      "statement-copied": "Đã sao chép câu lệnh vào bảng nhớ tạm",
+      "dont-show-again": "Không hiển thị lại",
+      "chat-sql": "ChatSQL",
+      "disable-chat-sql": "Tắt ChatSQL",
+      "enable-chat-sql": "Kích hoạt ChatSQL"
+    }
+  },
+  "custom-approval": {
+    "self": "Phê duyệt tùy chỉnh",
+    "risk-rule": {
+      "self": "Quy tắc rủi ro",
+      "risk-rules": "Quy tắc rủi ro",
+      "x-risk-rules": {
+        "low": "Quy tắc rủi ro thấp",
+        "moderate": "Quy tắc rủi ro vừa phải",
+        "high": "Quy tắc rủi ro cao"
+      },
+      "active": "Tích cực",
+      "edit-rule": "Chỉnh sửa quy tắc",
+      "delete": "Xóa quy tắc rủi ro",
+      "default-rules": {
+        "self": "Quy tắc mặc định",
+        "description": "Các quy tắc mặc định sẽ được thực thi khi một vấn đề không tuân thủ các quy tắc tùy chỉnh."
+      },
+      "risk": {
+        "self": "Rủi ro",
+        "select": "Chọn rủi ro",
+        "risk-level": {
+          "0": "Mặc định",
+          "100": "Thấp",
+          "200": "Vừa phải",
+          "300": "Cao"
+        },
+        "namespace": {
+          "dml": "DML",
+          "ddl": "DDL",
+          "create_database": "Tạo nên cơ sở dữ liệu",
+          "query": "Yêu cầu truy vấn",
+          "export": "Yêu cầu xuất"
+        }
+      },
+      "condition": {
+        "self": "Tình trạng",
+        "description-tips": "Điều kiện là một quy tắc có thể được cấu hình thông qua một biểu thức. Ví dụ: điều kiện \"Môi trường là sản phẩm\" sẽ khớp với các sự cố được thực thi trong môi trường \"prod\".",
+        "add": "Thêm điều kiện",
+        "add-group": "Thêm nhóm điều kiện",
+        "group": {
+          "or": {
+            "description": "Bất kỳ điều nào sau đây là đúng..."
+          },
+          "and": {
+            "description": "Tất cả những điều sau đây đều đúng..."
+          },
+          "tooltip": "Nhóm điều kiện là tập hợp các điều kiện được kết nối bởi các toán tử \"And\" và \"Or\"."
+        },
+        "input-value": "Giá trị đầu vào",
+        "add-condition-in-group-placeholder": "Thêm {plus} để thêm điều kiện",
+        "select-value": "Chọn giá trị",
+        "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
+        "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện"
+      },
+      "template": {
+        "templates": "Mẫu",
+        "load": "Trọng tải",
+        "presets": {
+          "environment-prod-high": "Rủi ro đối với môi trường sản xuất được coi là cao.",
+          "environment-dev-low": "Giá trị rủi ro cho môi trường phát triển được coi là thấp.",
+          "dml-in-environment-prod-10k-rows-high": "Trong môi trường sản xuất, nếu số lượng hàng cần cập nhật hoặc xóa vượt quá 10000 thì rủi ro được coi là cao.",
+          "create-database-in-environment-prod-moderate": "Việc tạo cơ sở dữ liệu trong môi trường sản xuất được coi là có rủi ro vừa phải."
+        },
+        "load-template": "Chạy bản mẫu",
+        "view": "Xem mẫu"
+      },
+      "rule-name": "Tên quy tắc",
+      "view-rule": "Xem quy tắc",
+      "source": {
+        "select": "Lựa chọn đối tượng",
+        "self": "Kiểu"
+      },
+      "input-rule-name": "Tên quy tắc đầu vào",
+      "search": "Quy tắc tìm kiếm"
+    },
+    "approval-flow": {
+      "self": "Luồng phê duyệt",
+      "description": "Đối với từng loại hoạt động, hãy định cấu hình điều kiện tùy chỉnh, rủi ro và quy trình phê duyệt.",
+      "approval-flows": "Luồng phê duyệt",
+      "approval-nodes": "Các nút phê duyệt",
+      "delete": "Xóa luồng phê duyệt",
+      "search": "Luồng phê duyệt tìm kiếm",
+      "select": "Chọn quy trình phê duyệt",
+      "create-approval-flow": "Tạo luồng phê duyệt",
+      "edit-approval-flow": "Chỉnh sửa quy trình phê duyệt",
+      "node": {
+        "nodes": "Các nút phê duyệt",
+        "description": "Chỉ cần một phê duyệt trên nút này khi có nhiều người phê duyệt.",
+        "order": "Đặt hàng",
+        "approver": "Người phê duyệt",
+        "group": {
+          "WORKSPACE_OWNER": "Quản trị viên không gian làm việc",
+          "WORKSPACE_DBA": "cơ sở dữ liệu",
+          "PROJECT_OWNER": "Chủ dự án",
+          "PROJECT_MEMBER": "Thành viên dự án"
+        },
+        "add": "Thêm nút",
+        "delete": "Xóa nút phê duyệt",
+        "select-approver": "Chọn người phê duyệt",
+        "roles": {
+          "system": "Vai trò hệ thống",
+          "custom": "Vai trò tùy chỉnh"
+        }
+      },
+      "presets": {
+        "owner-dba": "Hệ thống xác định quy trình phê duyệt, đầu tiên Chủ dự án phê duyệt, sau đó DBA phê duyệt.",
+        "owner": "Hệ thống xác định quy trình phê duyệt và chỉ cần Chủ dự án phê duyệt.",
+        "dba": "Hệ thống xác định quy trình phê duyệt và chỉ cần phê duyệt DBA.",
+        "admin": "Hệ thống xác định quy trình phê duyệt và chỉ cần sự phê duyệt của Quản trị viên.",
+        "owner-dba-admin": "Hệ thống xác định quy trình phê duyệt, đầu tiên là Chủ dự án phê duyệt, sau đó là DBA phê duyệt và cuối cùng là Quản trị viên phê duyệt."
+      },
+      "view-approval-flow": "Xem quy trình phê duyệt",
+      "skip": "Bỏ qua phê duyệt thủ công",
+      "risk-not-configured-tips": "Đảm bảo bạn đã xác định {link}.",
+      "the-related-risk-rules": "các quy tắc rủi ro liên quan",
+      "external-approval": {
+        "self": "Phê duyệt bên ngoài",
+        "delete": "Xóa nút phê duyệt bên ngoài?",
+        "endpoint": "Điểm cuối",
+        "view-node": "Xem nút phê duyệt bên ngoài",
+        "create-node": "Tạo nút phê duyệt bên ngoài",
+        "edit-node": "Chỉnh sửa nút phê duyệt bên ngoài"
+      }
+    },
+    "risk": {
+      "self": "Rủi ro",
+      "risk-center": "Trung tâm Rủi ro",
+      "description": "Trung tâm Rủi ro xác định mức độ rủi ro cho các hoạt động cơ sở dữ liệu khác nhau trong các điều kiện khác nhau. Và mức độ rủi ro xác định các luồng phê duyệt tùy chỉnh tương ứng."
+    },
+    "workflow-center": {
+      "workflow": "Quy trình làm việc"
+    },
+    "rule": {
+      "rules": "Quy tắc"
+    },
+    "issue-review": {
+      "approve-issue": "Phê duyệt vấn đề?",
+      "form": {
+        "placeholder": "(Tùy chọn) Thêm ghi chú...",
+        "note": "Ghi chú"
+      },
+      "you": "Bạn",
+      "generating-approval-flow": "Tạo luồng phê duyệt",
+      "approved-issue": "vấn đề đã được phê duyệt",
+      "disallow-approve-reason": {
+        "some-task-checks-didnt-pass": "Một số bước kiểm tra nhiệm vụ không vượt qua",
+        "some-task-checks-are-still-running": "Một số bước kiểm tra tác vụ vẫn đang chạy",
+        "x-field-is-required": "{field} là bắt buộc"
+      },
+      "send-back": "Gửi lại",
+      "send-back-issue": "Vấn đề gửi lại?",
+      "re-request-review": "Yêu cầu xem xét lại",
+      "re-request-review-issue": "Yêu cầu lại vấn đề xem xét?",
+      "sent-back-issue": "Vấn đề gửi lại",
+      "re-requested-review": "yêu cầu lại xem xét vấn đề",
+      "no-one-matches-role": "Không có ai phù hợp, hãy liên hệ với chủ dự án để phân công.",
+      "any-n-role-can-approve": "Mọi {role} đều có thể phê duyệt",
+      "approved-by-n": "Được phê duyệt bởi {approver}"
+    },
+    "send-back": "Gửi lại"
+  },
+  "slow-query": {
+    "self": "Truy vấn chậm",
+    "slow-queries": "Truy vấn chậm",
+    "report": "Báo cáo",
+    "last-query-time": "Lần truy vấn cuối cùng",
+    "database-name": "Tên cơ sở dữ liệu",
+    "sql-statement": "Câu lệnh sql",
+    "total-query-count": "Tổng số truy vấn",
+    "query-count-percent": "Số lượng truy vấn %",
+    "max-query-time": "Thời gian truy vấn tối đa",
+    "avg-query-time": "Thời gian truy vấn trung bình",
+    "query-time-percent": "% thời gian truy vấn",
+    "max-rows-examined": "Hàng tối đa được kiểm tra",
+    "avg-rows-examined": "Hàng trung bình được kiểm tra",
+    "max-rows-sent": "Số hàng tối đa đã được gửi",
+    "avg-rows-sent": "Đã gửi hàng trung bình",
+    "rows-sent-avg": "Số hàng được gửi trung bình",
+    "query-start-time": "Thời gian bắt đầu truy vấn",
+    "rows-examined": "Hàng được kiểm tra",
+    "rows-sent": "Hàng đã gửi",
+    "lock-time": "Thời gian khóa",
+    "query-time": "thời gian truy vấn",
+    "attention-description": "Bytebase đồng bộ hóa định kỳ nhật ký truy vấn chậm từ các phiên bản. Đối với phiên bản MySQL, Slow_query phải được bật trước tiên. Đối với phiên bản PostgreSQL, chỉ những cơ sở dữ liệu có bật pg_stat_statements mới thu thập các truy vấn chậm.",
+    "sync-job-started": "Công việc đồng bộ hóa đã bắt đầu. Vui lòng đợi công việc hoàn tất.",
+    "detail": "Chi tiết truy vấn chậm",
+    "filter": {
+      "from-date": "Từ ngày",
+      "to-date": "Đến nay"
+    },
+    "advise-index": {
+      "current-index": "Chỉ mục hiện tại",
+      "suggestion": "Gợi ý",
+      "create-index": "Tạo chỉ mục",
+      "setup-openai-key-to-enable": "Thiết lập khóa OpenAI để bật trình cố vấn chỉ mục"
+    },
+    "no-log-placeholder": {
+      "admin": "Nhấp vào nút \"Định cấu hình\" để tìm nạp các truy vấn chậm từ các phiên bản cơ sở dữ liệu hoặc nhấp vào nút \"Đồng bộ hóa ngay\" để đồng bộ hóa nhật ký truy vấn chậm ngay lập tức",
+      "developer": "Nhấp vào nút \"Đồng bộ hóa ngay\" để đồng bộ hóa nhật ký truy vấn chậm ngay lập tức hoặc liên hệ với quản trị viên/DBA Bytebase để định cấu hình truy vấn chậm"
+    }
+  },
+  "schema-template": {
+    "self": "Mẫu lược đồ",
+    "field-template": {
+      "self": "Mẫu trường",
+      "description": "Bạn có thể xác định trước mẫu trường, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
+    },
+    "column-type-restriction": {
+      "self": "Hạn chế loại cột",
+      "description": "Bạn có thể hạn chế các loại cột được phép cho mỗi công cụ cơ sở dữ liệu.",
+      "allow-all": "Chấp nhận tất cả",
+      "allow-limited-types": "Cho phép các loại hạn chế",
+      "back-to-edit": "Quay lại chỉnh sửa",
+      "add-and-save": "Thêm và lưu",
+      "messages": {
+        "unable-to-update": "Không thể cập nhật hạn chế",
+        "following-column-types-are-used": "Các loại cột sau vẫn được mẫu trường sử dụng",
+        "one-allowed-type-per-line": "Một loại dữ liệu được phép trên mỗi dòng"
+      }
+    },
+    "table-template": {
+      "self": "Mẫu bảng",
+      "description": "Bạn có thể xác định trước mẫu bảng, sau đó áp dụng mẫu trong quá trình thay đổi lược đồ."
+    },
+    "search-by-name-or-comment": "Tìm kiếm theo tên hoặc bình luận",
+    "form": {
+      "category": "Loại",
+      "category-desc": "Chọn một danh mục hiện có hoặc tạo một danh mục mới",
+      "unclassified": "Chưa được phân loại",
+      "column-name": "Tên cột dọc",
+      "column-type": "Kiểu cột",
+      "default-value": "Mặc định",
+      "comment": "Bình luận",
+      "nullable": "Có thể rỗng",
+      "table-name": "Tên bảng"
+    },
+    "classification": {
+      "self": "Phân loại dữ liệu",
+      "select": "Chọn phân loại",
+      "search": "Phân loại tìm kiếm"
+    }
+  },
+  "principal": {
+    "select": "Chọn người dùng"
+  },
+  "role": {
+    "self": "Vai trò",
+    "setting": {
+      "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh.",
+      "add": "Thêm vai trò",
+      "edit": "Chỉnh sửa vai trò",
+      "title-placeholder": "Tiêu đề vai trò đầu vào",
+      "name-placeholder": "Tên vai trò đầu vào",
+      "description-placeholder": "Mô tả vai trò đầu vào",
+      "validation": {
+        "duplicated": "{resource} bị trùng lặp",
+        "required": "{resource} là bắt buộc",
+        "pattern": "{resource} chỉ có thể chứa chữ thường, số và dấu gạch nối. Nó phải bắt đầu bằng một chữ cái viết thường.",
+        "max-length": "{resource} có thể chứa tối đa {length} ký tự"
+      },
+      "delete": "Xóa vai trò"
+    },
+    "select": "Chọn vai trò",
+    "select-roles": "Chọn vai trò",
+    "title": "Tiêu đề",
+    "select-role": "Chọn vai trò",
+    "expired-tip": "Vai trò này có thể đã hết hạn.",
+    "workspace-admin": {
+      "self": "Quản trị viên không gian làm việc",
+      "description": "Quản trị viên Workspace có tất cả các quyền trong không gian làm việc."
+    },
+    "workspace-dba": {
+      "self": "DBA không gian làm việc",
+      "description": "Workspace DBA có tất cả các quyền trong không gian làm việc ngoại trừ việc quản lý các thành viên của không gian làm việc."
+    },
+    "workspace-member": {
+      "self": "Thành viên không gian làm việc",
+      "description": "Thành viên Workspace có tất cả các quyền trong không gian làm việc ngoại trừ việc quản lý thành viên không gian làm việc."
+    },
+    "project-owner": {
+      "self": "Chủ dự án",
+      "description": "Tất cả các quyền trong dự án"
+    },
+    "project-developer": {
+      "self": "Nhà phát triển dự án",
+      "description": "Tất cả các quyền của người xem, cùng với các quyền yêu cầu thay đổi cơ sở dữ liệu."
+    },
+    "project-releaser": {
+      "self": "Người phát hành dự án",
+      "description": "Tất cả các quyền của người xem, cộng với quyền xem xét các yêu cầu thay đổi cơ sở dữ liệu cho mục đích phát hành."
+    },
+    "project-querier": {
+      "self": "Người truy vấn dự án",
+      "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu."
+    },
+    "project-exporter": {
+      "self": "Nhà xuất khẩu dự án",
+      "description": "Quyền xuất dữ liệu cơ sở dữ liệu."
+    },
+    "project-viewer": {
+      "self": "Trình xem dự án",
+      "description": "Quyền chỉ đọc để xem thông tin dự án cơ bản, truy cập cơ sở dữ liệu và bắt đầu các yêu cầu đặc quyền."
+    }
+  },
+  "database-group": {
+    "self": "Nhóm cơ sở dữ liệu",
+    "create": "Nhóm cơ sở dữ liệu mới",
+    "edit": "Chỉnh sửa nhóm cơ sở dữ liệu",
+    "matched-database": "Cơ sở dữ liệu phù hợp",
+    "unmatched-database": "Cơ sở dữ liệu chưa từng có",
+    "matched-table": "Bảng phù hợp",
+    "unmatched-table": "Bảng chưa khớp",
+    "table-group": {
+      "self": "Nhóm bảng",
+      "create": "Nhóm bảng mới",
+      "edit": "Chỉnh sửa nhóm bảng"
+    },
+    "factor": {
+      "resource_instance_id": "ID phiên bản",
+      "resource_database_name": "Tên cơ sở dữ liệu",
+      "resource_table_name": "Tên bảng"
+    },
+    "condition": {
+      "self": "Tình trạng"
+    },
+    "prev-editor": {
+      "description": "Để thay đổi hàng loạt bảng từ nhóm bảng, bạn có thể tham chiếu nhóm bảng đó trong SQL. Bytebase sẽ tạo một SQL riêng cho mỗi bảng trong nhóm bảng."
+    }
+  },
+  "export-center": {
+    "self": "Trung tâm xuất khẩu"
+  },
+  "schema-designer": {
+    "self": "Nhà thiết kế lược đồ",
+    "schema-design": "Thiết kế lược đồ",
+    "schema-design-list": "Danh sách thiết kế lược đồ",
+    "new-schema-design": "Thiết kế lược đồ mới",
+    "baseline-database": "Cơ sở dữ liệu cơ sở",
+    "schema-version": "Phiên bản lược đồ",
+    "personal-draft": "dự thảo cá nhân",
+    "baseline-version": "Đường cơ sở",
+    "baseline-version-from-parent": "Đường cơ sở từ chi nhánh mẹ",
+    "new-branch": "Chi nhánh mới",
+    "parent-branch": "Cha mẹ",
+    "save-draft": "Lưu bản nháp",
+    "merge-branch": "Hợp nhất chi nhánh",
+    "raw-sql-preview": "Xem trước SQL thô",
+    "diff-editor": {
+      "self": "Trình chỉnh sửa khác biệt",
+      "resolve": "Giải quyết",
+      "auto-merge-failed": "Tự động hợp nhất không thành công",
+      "need-to-resolve-conflicts": "Chi nhánh đã được cập nhật bởi những người khác. Bạn cần giải quyết xung đột trước khi có thể hợp nhất.",
+      "resolve-and-merge-again": "Giải quyết và hợp nhất lại",
+      "discard-changes": "Loại bỏ những thay đổi",
+      "action-confirm": "Xác nhận hành động",
+      "duplicated-branch-name-found": "Đã tìm thấy tên chi nhánh trùng lặp.",
+      "discard-changes-confirm": "Bạn có chắc chắn muốn hủy tất cả các sửa đổi không?"
+    },
+    "tables": "Những cái bàn",
+    "search-tables": "Tìm kiếm bảng",
+    "use-tips": "Bấm vào một bảng để bắt đầu.",
+    "apply-to-database": "Áp dụng thay đổi cho cơ sở dữ liệu",
+    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL và TiDB)",
+    "message": {
+      "created-succeed": "Chi nhánh được tạo thành công",
+      "updated-succeed": "Chi nhánh được cập nhật thành công",
+      "merge-to-main-successfully": "Hợp nhất vào chính thành công",
+      "updated-time-by-user": "Đã cập nhật {time} bởi {user}"
+    },
+    "action": {
+      "use-the-existing-branch": "Sử dụng chi nhánh hiện có",
+      "create-new-branch": "Tạo chi nhánh mới"
+    }
+  },
+  "cel": {
+    "factor": {
+      "affected_rows": "Hàng bị ảnh hưởng",
+      "environment_id": "ID môi trường",
+      "project_id": "Mã dự án",
+      "instance_id": "ID phiên bản",
+      "database_name": "Tên cơ sở dữ liệu",
+      "db_engine": "Động cơ DB",
+      "sql_type": "kiểu SQL",
+      "expiration_days": "Ngày hết hạn",
+      "export_rows": "Xuất hàng",
+      "table_name": "Tên bảng",
+      "column_name": "Tên cột dọc",
+      "classification_level": "Cấp độ phân loại"
+    }
+  },
+  "changelist": {
+    "self": "Danh sách thay đổi",
+    "changelists": "Danh sách thay đổi",
+    "change-center": "Trung tâm thay đổi",
+    "new": "Danh sách thay đổi mới",
+    "name": "Tên danh sách thay đổi",
+    "name-placeholder": "Danh sách thay đổi của tôi",
+    "error": {
+      "project-is-required": "Dự án là bắt buộc",
+      "name-is-required": "Tên danh sách thay đổi là bắt buộc",
+      "invalid-resource-id": "Id tài nguyên không hợp lệ",
+      "nothing-changed": "không có gì thay đổi",
+      "sql-cannot-be-empty": "SQL là bắt buộc",
+      "select-at-least-one-change": "Chọn ít nhất một thay đổi",
+      "select-at-least-one-change-to-export": "Chọn ít nhất một thay đổi để xuất",
+      "add-at-least-one-change": "Thêm ít nhất một thay đổi",
+      "select-at-least-one-database": "Chọn ít nhất một cơ sở dữ liệu",
+      "you-are-not-allowed-to-perform-this-action": "Bạn không được phép thực hiện hành động này"
+    },
+    "apply-to-database": "Áp dụng cho cơ sở dữ liệu",
+    "add-change": {
+      "self": "Thêm Thay đổi",
+      "change-history": {
+        "select-at-least-one-history-below": "Chọn ít nhất một lịch sử bên dưới"
+      },
+      "branch": {
+        "select-at-least-one-branch-below": "Chọn ít nhất một chi nhánh bên dưới"
+      }
+    },
+    "change-source": {
+      "self": "Thay đổi nguồn",
+      "raw-sql": "SQL thô",
+      "change-history": {
+        "tables": "Những cái bàn"
+      },
+      "source": "Nguồn"
+    },
+    "confirm-remove-change": "Xóa thay đổi này?",
+    "delete-this-changelist": "Xóa danh sách thay đổi này",
+    "confirm-delete-changelist": "Xóa danh sách thay đổi này?"
+  },
+  "export-data": {
+    "self": "Xuất dữ liệu",
+    "export-rows": "Xuất hàng",
+    "error": {
+      "export-rows-required": "Yêu cầu xuất hàng",
+      "export-rows-must-gt-zero": "Hàng xuất phải lớn hơn 0"
+    },
+    "export-format": "Định dạng xuất",
+    "password-optional": "Mã hóa bằng mật khẩu (Tùy chọn)",
+    "password-info": "Cung cấp mật khẩu để mã hóa tệp xuất."
+  },
+  "branch": {
+    "rollout": {
+      "select-target-database": "Chọn cơ sở dữ liệu đích"
+    },
+    "select-tables-to-rollout": "Chọn bảng để triển khai",
+    "branch-is-protected": "Chi nhánh này được bảo vệ bởi các quy tắc bảo vệ chi nhánh.",
+    "default-branches": "Mặc định",
+    "your-branches": "Chi nhánh của bạn",
+    "active-branches": "Các nhánh hoạt động",
+    "select-branch": "Chọn chi nhánh",
+    "merge-rebase": {
+      "select-branches-to-merge": "Chọn các nhánh để hợp nhất",
+      "select-branches-to-rebase": "Chọn các nhánh để rebase",
+      "validating-branch": "Xác thực các nhánh",
+      "able-to-merge": "Có thể hợp nhất",
+      "able-to-rebase": "Có khả năng nổi loạn",
+      "cannot-automatically-merge": "Không thể tự động hợp nhất, trước tiên vui lòng {rebase_branch}.",
+      "cannot-automatically-rebase": "Không thể tự động rebase. Vui lòng giải quyết xung đột theo cách thủ công.",
+      "go-rebase": "chi nhánh nổi dậy",
+      "changes-of-branch": "Những thay đổi của {branch}",
+      "merge-succeeded": "Hợp nhất thành công",
+      "rebase-succeeded": "Rebase đã thành công",
+      "delete-branch-after-merged": "Xóa chi nhánh sau khi sáp nhập",
+      "merge-branch": "Hợp nhất chi nhánh",
+      "rebase-branch": "nhánh nổi dậy",
+      "confirm-rebase": "Xác nhận rebase?",
+      "conflict-not-resolved": "Có vẻ như một số xung đột vẫn chưa được giải quyết.",
+      "resolve-conflicts-to-rebase": "Giải quyết xung đột để rebase",
+      "preview-merge-result": "Xem trước kết quả hợp nhất"
+    },
+    "source": {
+      "baseline-version": "Phiên bản cơ bản",
+      "parent-branch": "Chi nhánh mẹ",
+      "self": "Nguồn"
+    },
+    "index": {
+      "drop-index-confirm": "Bỏ chỉ số?"
+    },
+    "force-delete": "Buộc xóa",
+    "deleting-parent-branch": "Xóa một nhánh cha."
+  }
+}

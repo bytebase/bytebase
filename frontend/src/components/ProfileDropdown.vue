@@ -120,6 +120,10 @@ const languageOptions = computed((): DropdownOption[] => {
       label: "日本語",
       value: "ja-JP",
     },
+    {
+      label: "Tiếng Việt",
+      value: "vi-VN",
+    },
   ];
 
   return languages.map((item) => {
