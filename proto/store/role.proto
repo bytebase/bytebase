@@ -5,5 +5,5 @@ package bytebase.store;
 option go_package = "generated-go/store";
 
 message RolePermissions {
-  repeated string items = 1;
+  repeated string permissions = 1;
 }

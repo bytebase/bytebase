@@ -5,16 +5,16 @@ import _m0 from "protobufjs/minimal";
 export const protobufPackage = "bytebase.store";
 
 export interface RolePermissions {
-  items: string[];
+  permissions: string[];
 }
 
 function createBaseRolePermissions(): RolePermissions {
-  return { items: [] };
+  return { permissions: [] };
 }
 
 export const RolePermissions = {
   encode(message: RolePermissions, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.items) {
+    for (const v of message.permissions) {
       writer.uint32(10).string(v!);
     }
     return writer;
@@ -32,7 +32,7 @@ export const RolePermissions = {
             break;
           }
 
-          message.items.push(reader.string());
+          message.permissions.push(reader.string());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -44,13 +44,17 @@ export const RolePermissions = {
   },
 
   fromJSON(object: any): RolePermissions {
-    return { items: globalThis.Array.isArray(object?.items) ? object.items.map((e: any) => globalThis.String(e)) : [] };
+    return {
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => globalThis.String(e))
+        : [],
+    };
   },
 
   toJSON(message: RolePermissions): unknown {
     const obj: any = {};
-    if (message.items?.length) {
-      obj.items = message.items;
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions;
     }
     return obj;
   },
@@ -60,7 +64,7 @@ export const RolePermissions = {
   },
   fromPartial(object: DeepPartial<RolePermissions>): RolePermissions {
     const message = createBaseRolePermissions();
-    message.items = object.items?.map((e) => e) || [];
+    message.permissions = object.permissions?.map((e) => e) || [];
     return message;
   },
 };

@@ -2437,7 +2437,7 @@ The type of target.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| items | [string](#string) | repeated |  |
+| permissions | [string](#string) | repeated |  |
 
 
 
