@@ -23,11 +23,20 @@ export const hasWorkspacePermissionV2 = (
   return permissions.includes(permission);
 };
 
+// hasProjectPermissionV2 checks if the user has the given permission on the project.
 export const hasProjectPermissionV2 = (
-  project: ComposedProject,
+  project: ComposedProject | undefined,
   user: User,
   permission: ProjectPermission
 ): boolean => {
+  // If the project is not provided, then check if the user has the given permission on any project in the workspace.
+  if (!project) {
+    const { projectList } = useProjectV1ListByUser(user);
+    return projectList.value.some((project) =>
+      hasProjectPermissionV2(project, user, permission)
+    );
+  }
+
   const roleStore = useRoleStore();
   const actuatorStore = useActuatorV1Store();
   const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;

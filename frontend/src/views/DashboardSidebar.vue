@@ -36,7 +36,7 @@ import {
   WORKSPACE_ROUTE_ANOMALY_CENTER,
 } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
-import { hasWorkspacePermissionV2 } from "../utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "../utils";
 
 interface DashboardSidebarItem extends SidebarItem {
   navigationId: string;
@@ -131,6 +131,11 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: WORKSPACE_ROUTE_EXPORT_CENTER,
       type: "route",
       shortcuts: ["g", "x", "c"],
+      hide: !hasProjectPermissionV2(
+        undefined,
+        currentUserV1.value,
+        "bb.projects.getIamPolicy"
+      ),
     },
     {
       navigationId: "bb.navigation.anomaly-center",
