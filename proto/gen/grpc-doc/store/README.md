@@ -156,6 +156,9 @@
   
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
+- [store/role.proto](#store_role-proto)
+    - [RolePermissions](#bytebase-store-RolePermissions)
+  
 - [store/setting.proto](#store_setting-proto)
     - [AgentPluginSetting](#bytebase-store-AgentPluginSetting)
     - [Announcement](#bytebase-store-Announcement)
@@ -2410,6 +2413,37 @@ The type of target.
 | BRANCH | 1 |  |
 | CHANGELIST | 2 |  |
 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_role-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/role.proto
+
+
+
+<a name="bytebase-store-RolePermissions"></a>
+
+### RolePermissions
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| items | [string](#string) | repeated |  |
+
+
+
+
+
+ 
 
  
 

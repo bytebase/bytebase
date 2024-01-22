@@ -136,7 +136,7 @@ CREATE TABLE role (
     resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
+    permissions JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}' -- saved for future use
 );
 
