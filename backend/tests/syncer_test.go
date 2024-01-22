@@ -272,6 +272,9 @@ func TestSyncerForMySQL(t *testing.T) {
 							  "expressions":[
 								 "id"
 							  ],
+							  "keyLength": [
+								 "-1"
+							  ],
 							  "type":"BTREE",
 							  "unique":true,
 							  "primary":true,
@@ -317,6 +320,11 @@ func TestSyncerForMySQL(t *testing.T) {
 								 "a",
 								 "b",
 								 "c"
+							  ],
+							  "keyLength": [
+								-1,
+								-1,
+								-1
 							  ],
 							  "type":"BTREE",
 							  "visible":true
@@ -394,6 +402,11 @@ func TestSyncerForMySQL(t *testing.T) {
 								 "a",
 								 "b",
 								 "c"
+							  ],
+							  "keyLength": [
+								-1,
+								-1,
+								-1
 							  ],
 							  "type":"BTREE",
 							  "unique":true,
