@@ -2287,7 +2287,8 @@
     "grouping": "グループ化",
     "previous-row": "前の行",
     "next-row": "次の行",
-    "copy-success": "コピーが成功しました"
+    "copy-success": "コピーが成功しました",
+    "missing-permission-to-load-db-metadata": "データベース {db} のメタデータをロードするために必要な権限がありません。"
   },
   "schema-editor": {
     "self": "スキーマエディター",

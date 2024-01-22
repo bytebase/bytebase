@@ -2284,7 +2284,8 @@
     "grouping": "分组",
     "previous-row": "上一行",
     "next-row": "下一行",
-    "copy-success": "复制成功"
+    "copy-success": "复制成功",
+    "missing-permission-to-load-db-metadata": "缺少加载数据库 {db} 元数据所需的权限。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
