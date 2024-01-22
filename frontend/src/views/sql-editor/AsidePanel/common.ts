@@ -1,6 +1,10 @@
 import { RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
-import { useDBSchemaV1Store } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  useDBSchemaV1Store,
+} from "@/store";
 import { mapTreeNodeByType } from "@/store/modules/sqlEditorTree";
 import {
   ComposedDatabase,
@@ -14,6 +18,7 @@ import {
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
+import { hasProjectPermissionV2 } from "@/utils";
 
 const createDummyNode = (
   type: "table" | "view",
@@ -222,6 +227,26 @@ const buildSchemaNodeChildren = (
 export const fetchDatabaseSubTree = async (
   node: SQLEditorTreeNode<"database">
 ) => {
+  const me = useCurrentUserV1();
+  if (
+    !hasProjectPermissionV2(
+      node.meta.target.projectEntity,
+      me.value,
+      "bb.databases.getSchema"
+    )
+  ) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("sql-editor.missing-permission-to-load-db-metadata", {
+        db: node.meta.target.databaseName,
+      }),
+    });
+    node.children = [];
+    node.isLeaf = true;
+    return;
+  }
+
   try {
     const database = node.meta.target;
     const databaseMetadata =

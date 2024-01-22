@@ -31,14 +31,24 @@
 
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import { useInstanceV1Store, useTabStore } from "@/store";
+import {
+  useCurrentUserV1,
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useTabStore,
+} from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { instanceV1HasAlterSchema, isDisconnectedTab } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  instanceV1HasAlterSchema,
+  isDisconnectedTab,
+} from "@/utils";
 import { TabView, useSecondarySidebarContext } from "../context";
 import OpenAIButton from "./OpenAIButton.vue";
 
 const { show, tab } = useSecondarySidebarContext();
 
+const me = useCurrentUserV1();
 const activeTab = computed(() => {
   if (!show.value) {
     return undefined;
@@ -77,7 +87,16 @@ const showInfoPane = computed(() => {
     return false;
   }
 
-  return !isSchemalessInstance.value;
+  if (isSchemalessInstance.value) {
+    return false;
+  }
+
+  const database = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
+  return hasProjectPermissionV2(
+    database.projectEntity,
+    me.value,
+    "bb.databases.getSchema"
+  );
 });
 
 const handleClickTab = (target: TabView) => {

@@ -2289,7 +2289,8 @@
     "grouping": "Grouping",
     "previous-row": "Previous row",
     "next-row": "Next row",
-    "copy-success": "Copy success"
+    "copy-success": "Copy success",
+    "missing-permission-to-load-db-metadata": "Missing required permissions to load metadata of db {db}."
   },
   "schema-editor": {
     "self": "Schema Editor",

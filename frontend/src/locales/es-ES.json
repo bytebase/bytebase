@@ -2285,7 +2285,8 @@
     "grouping": "Agrupamiento",
     "previous-row": "Fila anterior",
     "next-row": "siguiente fila",
-    "copy-success": "Copiado al portapapeles"
+    "copy-success": "Copiado al portapapeles",
+    "missing-permission-to-load-db-metadata": "Faltan los permisos necesarios para cargar metadatos de db {db}."
   },
   "schema-editor": {
     "self": "Editor de esquema",

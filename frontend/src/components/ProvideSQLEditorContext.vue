@@ -56,6 +56,8 @@ import {
   isSheetReadableV1,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
+  hasProjectPermissionV2,
+  extractProjectResourceName,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -132,6 +134,15 @@ const prepareSheet = async () => {
   }
 
   const sheetName = sheetNameFromSlug(sheetSlug);
+  const project = await projectStore.getOrFetchProjectByName(
+    `projects/${extractProjectResourceName(sheetName)}`
+  );
+  if (
+    !hasProjectPermissionV2(project, currentUserV1.value, "bb.databases.query")
+  ) {
+    return false;
+  }
+
   const openingSheetTab = tabStore.tabList.find(
     (tab) => tab.sheetName == sheetName
   );
