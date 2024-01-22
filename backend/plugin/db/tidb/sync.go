@@ -279,6 +279,9 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			indexMap[key][keyName].KeyLength = append(indexMap[key][keyName].KeyLength, -1)
 		}
 	}
+	if err := indexKeyLengthRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, indexKeyLengthQuery)
+	}
 
 	// Query column info.
 	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
