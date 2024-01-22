@@ -176,6 +176,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata, view v1pb.DatabaseM
 		t.Indexes = append(t.Indexes, &v1pb.IndexMetadata{
 			Name:        index.Name,
 			Expressions: index.Expressions,
+			KeyLength:   index.KeyLength,
 			Type:        index.Type,
 			Unique:      index.Unique,
 			Primary:     index.Primary,
@@ -472,6 +473,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		t.Indexes = append(t.Indexes, &storepb.IndexMetadata{
 			Name:        index.GetName(),
 			Expressions: index.GetExpressions(),
+			KeyLength:   index.GetKeyLength(),
 			Type:        index.GetType(),
 			Unique:      index.GetUnique(),
 			Primary:     index.GetPrimary(),
