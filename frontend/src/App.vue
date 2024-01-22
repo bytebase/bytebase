@@ -72,15 +72,8 @@ onErrorCaptured((error: any /* , _, info */) => {
     (error instanceof ServerError || error instanceof ClientError) &&
     Object.values(Status).includes(error.code)
   ) {
-    notificationStore.pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: `Request error occurred`,
-      description: error.details,
-    });
+    // Ignored: we will handle request errors in the error handler middleware of nice-grpc-web.
   } else if (!error.response) {
-    // If error has response, then we assume it's an http error and has already been
-    // handled by the axios global handler.
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
