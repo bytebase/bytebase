@@ -27,13 +27,16 @@ export type IgnoreErrorsOptions = {
 export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
   async function* (call, options) {
     const handleError = async (error: unknown) => {
-      if (error instanceof ClientError || error instanceof ServerError) {
+      // If silent is set to true, will NOT show redirect to other pages(e.g., 403, sign in page).
+      if (
+        !options.silent &&
+        (error instanceof ClientError || error instanceof ServerError)
+      ) {
         const { code } = error;
         if (options.ignoredCodes?.includes(code)) {
           // omit specified errors
         } else {
           if (code === Status.UNAUTHENTICATED) {
-            if (options.silent) return;
             // "Kick out" sign in status if access token expires.
             try {
               await useAuthStore().logout();
@@ -41,7 +44,6 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
               router.push({ name: AUTH_SIGNIN_MODULE });
             }
           } else if (code === Status.PERMISSION_DENIED) {
-            if (options.silent) return;
             // Jump to 403 page
             router.push({ name: "error.403" });
           }
