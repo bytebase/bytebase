@@ -1,5 +1,6 @@
 import Emittery from "emittery";
 import { useDialog } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { InjectionKey, Ref, inject, provide } from "vue";
 import { ComposedIssue, ReviewFlow } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
@@ -68,7 +69,9 @@ export type IssueContext = {
   reInitialize: (overrides?: Record<string, string>) => Promise<void>;
 };
 
-const KEY = Symbol("bb.issue.context") as InjectionKey<IssueContext>;
+const KEY = Symbol(
+  `bb.issue.context.${uuidv4()}`
+) as InjectionKey<IssueContext>;
 
 export const useIssueContext = () => {
   return inject(KEY)!;
