@@ -136,6 +136,9 @@ type tableState struct {
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
 	comment     string
+	// Engine and collation are only supported in ParseToMetadata.
+	engine    string
+	collation string
 }
 
 const (
@@ -212,6 +215,18 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		return err
 	}
 
+	if t.engine != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" ENGINE=%s", t.engine)); err != nil {
+			return err
+		}
+	}
+
+	if t.collation != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COLLATE=%s", t.collation)); err != nil {
+			return err
+		}
+	}
+
 	if t.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(t.comment, "'", "''"))); err != nil {
 			return err
@@ -236,6 +251,8 @@ func newTableState(id int, name string) *tableState {
 
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
+	state.engine = table.Engine
+	state.collation = table.Collation
 	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
@@ -260,6 +277,10 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	columns := []*storepb.ColumnMetadata{}
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
+	}
+	// Backfill the column positions.
+	for i, column := range columns {
+		column.Position = int32(i + 1)
 	}
 
 	indexStates := []*indexState{}
@@ -292,6 +313,8 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Indexes:     indexes,
 		ForeignKeys: fks,
 		Comment:     t.comment,
+		Engine:      t.engine,
+		Collation:   t.collation,
 	}
 }
 
@@ -693,8 +716,13 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 			table.columns[columnName] = columnState
 		}
 		for _, tableOption := range node.Options {
-			if tableOption.Tp == tidbast.TableOptionComment {
+			switch tableOption.Tp {
+			case tidbast.TableOptionComment:
 				table.comment = tableComment(tableOption)
+			case tidbast.TableOptionEngine:
+				table.engine = tableOption.StrValue
+			case tidbast.TableOptionCollate:
+				table.collation = tableOption.StrValue
 			}
 		}
 
