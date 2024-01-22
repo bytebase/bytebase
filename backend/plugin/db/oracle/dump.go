@@ -1780,6 +1780,9 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	if err := tableRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpTableSQL, schema))
 	}
+	if err := tableRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	var fieldRows *sql.Rows
 	firstVersion, secondVersion, err := driver.getVersion(ctx)
@@ -1841,6 +1844,9 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	if err := fieldRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fieldSQL)
 	}
+	if err := fieldRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	constraintRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpConstraintSQL, schema))
 	if err != nil {
@@ -1883,6 +1889,9 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	}
 	if err := constraintRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpConstraintSQL, schema))
+	}
+	if err := constraintRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
 	}
 
 	var mergedConstraintList []*mergedConstraintMeta
