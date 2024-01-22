@@ -892,6 +892,19 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		return
 	}
 
+	// ON UPDATE.
+	// TODO: we don't support ON UPDATE for now.
+	if option, exists := optionMap[tidbast.ColumnOptionOnUpdate]; exists {
+		if err := buf.WriteByte(' '); err != nil {
+			r.err = errors.Wrap(err, "failed to write byte")
+			return
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			r.err = errors.Wrap(err, "failed to write string")
+			return
+		}
+	}
+
 	// COMMENT.
 	if err := writeColumnCommentOption(&buf, optionMap, optionActionMap); err != nil {
 		r.err = err
