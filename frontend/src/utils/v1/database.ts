@@ -1,5 +1,4 @@
 import { orderBy } from "lodash-es";
-import slug from "slug";
 import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
 import {
   hasFeature,
@@ -20,10 +19,6 @@ import {
 import { hasProjectPermissionV2 } from "../iam";
 import { isDev, semverCompare } from "../util";
 import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
-
-export const databaseV1Slug = (db: ComposedDatabase) => {
-  return [slug(db.databaseName), db.uid].join("-");
-};
 
 export const databaseV1Url = (db: ComposedDatabase) => {
   return `/${db.project}/${db.name}`;

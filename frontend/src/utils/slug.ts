@@ -7,13 +7,7 @@ import {
 } from "@/store/modules/v1/common";
 import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
 import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
-import {
-  Database,
-  Instance,
-  IssueId,
-  SQLReviewPolicy,
-  UNKNOWN_ID,
-} from "../types";
+import { IssueId, SQLReviewPolicy } from "../types";
 import { IdType } from "../types/id";
 import { extractEnvironmentResourceName } from "./v1";
 
@@ -52,24 +46,12 @@ export function issueSlug(issueName: string, issueId: IssueId): string {
   return [slug(issueName), issueId].join("-");
 }
 
-export function instanceSlug(instance: Instance): string {
-  return [
-    slug(instance.environment.name),
-    slug(instance.name),
-    instance.id,
-  ].join("-");
-}
-
 export function stageSlug(stageName: string, stageIndex: number): string {
   return [slug(stageName), stageIndex + 1].join("-");
 }
 
 export function taskSlug(name: string, id: IdType): string {
   return [slug(name), id].join("-");
-}
-
-export function databaseSlug(database: Database): string {
-  return [slug(database.name), database.id].join("-");
 }
 
 export function vcsSlugV1(vcs: VCSV1): string {
@@ -81,17 +63,6 @@ export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
     slug(reviewPolicy.name),
     extractEnvironmentResourceName(reviewPolicy.environment.name),
   ].join("-");
-}
-
-export function connectionSlug(
-  instance: Instance,
-  database?: Database
-): string {
-  const parts = [instanceSlug(instance)];
-  if (database && database.id !== UNKNOWN_ID) {
-    parts.push(databaseSlug(database));
-  }
-  return parts.join("_");
 }
 
 export function sheetSlugV1(sheet: SheetV1): string {
