@@ -128,8 +128,12 @@ import {
   useUIStateStore,
   useProjectV1Store,
 } from "@/store";
-import { WorkspacePermission, UNKNOWN_ID } from "@/types";
-import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
+import { WorkspacePermission, UNKNOWN_ID, PresetRoleType } from "@/types";
+import {
+  hasWorkspacePermissionV2,
+  hasProjectPermissionV2,
+  hasWorkspaceLevelProjectPermission,
+} from "@/utils";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -140,11 +144,10 @@ type IntroItem = {
   requiredPermissions?: WorkspacePermission[];
 };
 
+const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
-const { t } = useI18n();
 const kbarHandler = useKBarHandler();
-
 const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
@@ -160,7 +163,11 @@ const sampleProject = computed(() => {
 });
 
 watchEffect(async () => {
-  await projectStore.getOrFetchProjectByUID("101", true /* silent */);
+  if (
+    hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
+  ) {
+    await projectStore.getOrFetchProjectByUID("101", true /* silent */);
+  }
 });
 
 const introList = computed(() => {
@@ -263,6 +270,13 @@ const introList = computed(() => {
 });
 
 const showQuickstart = computed(() => {
+  // Only show quickstart for those who have workspace admin and project owner role.
+  if (
+    !currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
+    !currentUserV1.value.roles.includes(PresetRoleType.PROJECT_OWNER)
+  ) {
+    return false;
+  }
   if (!show.value) return false;
   if (introList.value.every((intro) => intro.done.value)) return false;
   return true;
