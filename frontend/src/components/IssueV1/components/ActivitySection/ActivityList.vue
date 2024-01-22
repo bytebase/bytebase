@@ -66,7 +66,7 @@
       </ActivityItem>
     </ul>
 
-    <div v-if="!state.editCommentMode">
+    <div v-if="!state.editCommentMode && allowCreateComment">
       <div class="flex">
         <div class="flex-shrink-0">
           <div class="relative">
@@ -113,16 +113,17 @@ import MarkdownEditor from "@/components/MarkdownEditor.vue";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { getLogId } from "@/store/modules/v1/common";
-import {
-  ActivityIssueCommentCreatePayload,
-  ActivityIssueFieldUpdatePayload,
-  UNKNOWN_PROJECT_NAME,
-} from "@/types";
+import { ActivityIssueFieldUpdatePayload, UNKNOWN_PROJECT_NAME } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { LogEntity, LogEntity_Action } from "@/types/proto/v1/logging_service";
-import { extractUserResourceName } from "@/utils";
+import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 import { doSubscribeIssue, useIssueContext } from "../../logic";
-import { ActivityItem, DistinctActivity, isSimilarActivity } from "./Activity";
+import {
+  ActivityItem,
+  DistinctActivity,
+  isSimilarActivity,
+  isUserEditableActivity,
+} from "./Activity";
 
 interface LocalState {
   editCommentMode: boolean;
@@ -203,6 +204,14 @@ const activityList = computed((): DistinctActivity[] => {
   return distinctActivityList;
 });
 
+const allowCreateComment = computed(() => {
+  return hasProjectPermissionV2(
+    issue.value.projectEntity,
+    currentUser.value,
+    "bb.issueComments.create"
+  );
+});
+
 const cancelEditComment = () => {
   state.activeActivity = undefined;
   state.editCommentMode = false;
@@ -228,19 +237,17 @@ const doCreateComment = async (comment: string) => {
 };
 
 const allowEditActivity = (activity: LogEntity) => {
-  if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
+  if (!isUserEditableActivity(activity)) {
     return false;
   }
-  if (currentUser.value.email !== extractUserResourceName(activity.creator)) {
-    return false;
+  if (currentUser.value.email === extractUserResourceName(activity.creator)) {
+    return true;
   }
-  const payload = JSON.parse(
-    activity.payload
-  ) as ActivityIssueCommentCreatePayload;
-  if (payload && payload.externalApprovalEvent) {
-    return false;
-  }
-  return true;
+  return hasProjectPermissionV2(
+    issue.value.projectEntity,
+    currentUser.value,
+    "bb.issueComments.update"
+  );
 };
 
 const onUpdateComment = (activity: LogEntity) => {

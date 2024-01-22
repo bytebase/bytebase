@@ -1,4 +1,5 @@
 import type {
+  ActivityIssueCommentCreatePayload,
   ActivityTaskStatementUpdatePayload,
   ActivityTaskStatusUpdatePayload,
 } from "@/types";
@@ -48,4 +49,18 @@ export const isSimilarActivity = (a: LogEntity, b: LogEntity): boolean => {
   }
 
   return false;
+};
+
+export const isUserEditableActivity = (activity: LogEntity) => {
+  if (activity.action !== LogEntity_Action.ACTION_ISSUE_COMMENT_CREATE) {
+    return false;
+  }
+  const payload = JSON.parse(
+    activity.payload
+  ) as ActivityIssueCommentCreatePayload;
+  if (payload && payload.externalApprovalEvent) {
+    return false;
+  }
+
+  return true;
 };

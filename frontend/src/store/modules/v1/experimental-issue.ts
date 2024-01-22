@@ -1,5 +1,5 @@
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
-import { useProjectV1Store, useUserStore } from "@/store";
+import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
 import {
   ComposedIssue,
   ComposedProject,
@@ -14,7 +14,11 @@ import {
 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
 import { Plan, Rollout } from "@/types/proto/v1/rollout_service";
-import { extractProjectResourceName, extractUserResourceName } from "@/utils";
+import {
+  extractProjectResourceName,
+  extractUserResourceName,
+  hasProjectPermissionV2,
+} from "@/utils";
 
 export const composeIssue = async (
   rawIssue: Issue,
@@ -22,6 +26,7 @@ export const composeIssue = async (
   withRollout = true
 ): Promise<ComposedIssue> => {
   const userStore = useUserStore();
+  const me = useCurrentUserV1();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
   const projectEntity = await useProjectV1Store().getOrFetchProjectByName(
@@ -45,25 +50,36 @@ export const composeIssue = async (
 
   if (withPlan && issue.plan) {
     if (issue.plan) {
-      const plan = await rolloutServiceClient.getPlan({
-        name: issue.plan,
-      });
-      issue.planEntity = plan;
-      const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
-        parent: plan.name,
-      });
-      issue.planCheckRunList = planCheckRuns;
+      if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
+        const plan = await rolloutServiceClient.getPlan({
+          name: issue.plan,
+        });
+        issue.planEntity = plan;
+      }
+      if (
+        hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
+      ) {
+        const { planCheckRuns } = await rolloutServiceClient.listPlanCheckRuns({
+          parent: issue.plan,
+        });
+        issue.planCheckRunList = planCheckRuns;
+      }
     }
   }
   if (withRollout && issue.rollout) {
-    issue.rolloutEntity = await rolloutServiceClient.getRollout({
-      name: issue.rollout,
-    });
-    const { taskRuns } = await rolloutServiceClient.listTaskRuns({
-      parent: `${issue.rollout}/stages/-/tasks/-`,
-      pageSize: 1000, // MAX
-    });
-    issue.rolloutTaskRunList = taskRuns;
+    if (hasProjectPermissionV2(projectEntity, me.value, "bb.rollouts.get")) {
+      issue.rolloutEntity = await rolloutServiceClient.getRollout({
+        name: issue.rollout,
+      });
+    }
+
+    if (hasProjectPermissionV2(projectEntity, me.value, "bb.taskRuns.list")) {
+      const { taskRuns } = await rolloutServiceClient.listTaskRuns({
+        parent: `${issue.rollout}/stages/-/tasks/-`,
+        pageSize: 1000, // MAX
+      });
+      issue.rolloutTaskRunList = taskRuns;
+    }
   }
 
   if (issue.assignee) {
@@ -72,8 +88,6 @@ export const composeIssue = async (
     );
     issue.assigneeEntity = assigneeEntity;
   }
-
-  await new Promise((r) => setTimeout(r, 500));
 
   return issue;
 };
