@@ -10,60 +10,66 @@
       ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_bin COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "a",
-                  "position":  1,
-                  "type":  "int(11)",
-                  "comment":  "this is comment"
+                  "name": "a",
+                  "position": 1,
+                  "type": "int(11)",
+                  "comment": "this is comment"
                 },
                 {
-                  "name":  "b",
-                  "position":  2,
-                  "type":  "varchar(20)"
+                  "name": "b",
+                  "position": 2,
+                  "type": "varchar(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "idx",
-                  "expressions":  [
+                  "name": "idx",
+                  "expressions": [
                     "((`a`+20))"
                   ],
-                  "visible":  true
+                  "visible": true
                 },
                 {
-                  "name":  "idx2",
-                  "expressions":  [
+                  "name": "idx2",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "visible":  true
-                },
-                {
-                  "name":  "idx_length",
-                  "expressions":  [
-                    "`b`(10)"
+                  "keyLength": [
+                    "-1"
                   ],
-                  "visible":  true
+                  "unique": true,
+                  "visible": true
                 },
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "idx_length",
+                  "expressions": [
+                    "b"
+                  ],
+                  "keyLength": [
+                    "10"
+                  ],
+                  "visible": true
+                },
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ],
-              "engine":  "InnoDB",
-              "collation":  "utf8mb4_bin",
-              "comment":  "this is comment with ' escaped"
+              "engine": "InnoDB",
+              "collation": "utf8mb4_bin",
+              "comment": "this is comment with ' escaped"
             }
           ]
         }
@@ -92,192 +98,192 @@
     create table t5(a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */, primary key (a));
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "c",
-                  "position":  1,
-                  "nullable":  true,
-                  "type":  "int(11)"
+                  "name": "c",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int(11)"
                 },
                 {
-                  "name":  "a",
-                  "position":  2,
-                  "defaultExpression":  "1",
-                  "nullable":  true,
-                  "type":  "int(11)",
-                  "comment":  "abcdefg"
+                  "name": "a",
+                  "position": 2,
+                  "defaultExpression": "1",
+                  "nullable": true,
+                  "type": "int(11)",
+                  "comment": "abcdefg"
                 },
                 {
-                  "name":  "b",
-                  "position":  3,
-                  "defaultNull":  true,
-                  "nullable":  true,
-                  "type":  "varchar(20)"
+                  "name": "b",
+                  "position": 3,
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "varchar(20)"
                 },
                 {
-                  "name":  "d",
-                  "position":  4,
-                  "nullable":  true,
-                  "type":  "varbinary(500)"
+                  "name": "d",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "varbinary(500)"
                 },
                 {
-                  "name":  "e",
-                  "position":  5,
-                  "nullable":  true,
-                  "type":  "binary(20)"
+                  "name": "e",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "binary(20)"
                 },
                 {
-                  "name":  "f",
-                  "position":  6,
-                  "nullable":  true,
-                  "type":  "blob"
+                  "name": "f",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "blob"
                 },
                 {
-                  "name":  "g",
-                  "position":  7,
-                  "nullable":  true,
-                  "type":  "tinyblob"
+                  "name": "g",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "tinyblob"
                 },
                 {
-                  "name":  "h",
-                  "position":  8,
-                  "nullable":  true,
-                  "type":  "mediumblob"
+                  "name": "h",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "mediumblob"
                 },
                 {
-                  "name":  "i",
-                  "position":  9,
-                  "nullable":  true,
-                  "type":  "longblob"
+                  "name": "i",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "longblob"
                 },
                 {
-                  "name":  "j",
-                  "position":  10,
-                  "nullable":  true,
-                  "type":  "text"
+                  "name": "j",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "text"
                 },
                 {
-                  "name":  "k",
-                  "position":  11,
-                  "nullable":  true,
-                  "type":  "tinytext"
+                  "name": "k",
+                  "position": 11,
+                  "nullable": true,
+                  "type": "tinytext"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a",
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ],
-              "foreignKeys":  [
+              "foreignKeys": [
                 {
-                  "name":  "fk1",
-                  "columns":  [
+                  "name": "fk1",
+                  "columns": [
                     "a"
                   ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
+                  "referencedTable": "t2",
+                  "referencedColumns": [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name":  "t2",
-              "columns":  [
+              "name": "t2",
+              "columns": [
                 {
-                  "name":  "b",
-                  "position":  1,
-                  "defaultNull":  true,
-                  "type":  "int(11)"
+                  "name": "b",
+                  "position": 1,
+                  "defaultNull": true,
+                  "type": "int(11)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "b"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             },
             {
-              "name":  "t3",
-              "columns":  [
+              "name": "t3",
+              "columns": [
                 {
-                  "name":  "a",
-                  "position":  1,
-                  "defaultExpression":  "AUTO_RANDOM",
-                  "type":  "bigint(20)"
+                  "name": "a",
+                  "position": 1,
+                  "defaultExpression": "AUTO_RANDOM",
+                  "type": "bigint(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             },
             {
-              "name":  "t4",
-              "columns":  [
+              "name": "t4",
+              "columns": [
                 {
-                  "name":  "a",
-                  "position":  1,
-                  "defaultExpression":  "AUTO_RANDOM(6)",
-                  "type":  "bigint(20)"
+                  "name": "a",
+                  "position": 1,
+                  "defaultExpression": "AUTO_RANDOM(6)",
+                  "type": "bigint(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             },
             {
-              "name":  "t5",
-              "columns":  [
+              "name": "t5",
+              "columns": [
                 {
-                  "name":  "a",
-                  "position":  1,
-                  "defaultExpression":  "AUTO_RANDOM(6, 54)",
-                  "type":  "bigint(20)"
+                  "name": "a",
+                  "position": 1,
+                  "defaultExpression": "AUTO_RANDOM(6, 54)",
+                  "type": "bigint(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             }
