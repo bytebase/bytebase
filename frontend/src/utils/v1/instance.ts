@@ -1,5 +1,4 @@
 import { keyBy, orderBy } from "lodash-es";
-import slug from "slug";
 import { useI18n } from "vue-i18n";
 import { useSubscriptionV1Store } from "@/store";
 import { ComposedInstance, UNKNOWN_ID } from "@/types";
@@ -7,10 +6,6 @@ import { Engine, State } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { DataSourceType, Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-
-export const instanceV1Slug = (instance: Instance): string => {
-  return [slug(instance.title), instance.uid].join("-");
-};
 
 export function instanceV1Name(instance: Instance) {
   const { t } = useI18n();

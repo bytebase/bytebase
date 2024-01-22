@@ -90,10 +90,10 @@ import {
   Anomaly_AnomalySeverity,
 } from "@/types/proto/v1/anomaly_service";
 import {
-  databaseV1Slug,
   humanizeTs,
   extractDatabaseResourceName,
   extractInstanceResourceName,
+  databaseV1Url,
 } from "@/utils";
 import { DiffEditor } from "../MonacoEditor";
 
@@ -234,10 +234,7 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           router.push({
-            name: "workspace.database.detail",
-            params: {
-              databaseSlug: databaseV1Slug(database),
-            },
+            path: databaseV1Url(database),
             hash: "#backup-and-restore",
           });
         },
@@ -249,10 +246,7 @@ const action = (anomaly: Anomaly): Action => {
       return {
         onClick: () => {
           router.push({
-            name: "workspace.database.detail",
-            params: {
-              databaseSlug: databaseV1Slug(database),
-            },
+            path: databaseV1Url(database),
             hash: "#backup-and-restore",
           });
         },

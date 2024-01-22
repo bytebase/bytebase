@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 space-y-2">
+  <div class="px-6 space-y-2">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
     <div class="flex items-center justify-between">

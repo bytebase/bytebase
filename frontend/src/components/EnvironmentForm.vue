@@ -253,6 +253,10 @@ import { useRouter } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+} from "@/router/dashboard/workspaceSetting";
+import {
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
@@ -290,8 +294,6 @@ interface LocalState {
   backupPolicy: Policy;
   environmentTier: EnvironmentTier;
 }
-
-const ROUTE_NAME = "setting.workspace.sql-review";
 
 const props = defineProps({
   create: {
@@ -381,14 +383,14 @@ const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
     router.push({
-      name: `${ROUTE_NAME}.detail`,
+      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
       params: {
         sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
       },
     });
   } else {
     router.push({
-      name: `${ROUTE_NAME}.create`,
+      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
       query: {
         environmentId: environmentId.value,
       },
