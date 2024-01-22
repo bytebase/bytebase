@@ -3,7 +3,8 @@
      CREATE TABLE `t` (
         `id` int /*T![auto_rand] AUTO_RANDOM(6, 54) */,
         `name` varchar(10) NOT NULL,
-        PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+        PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+        KEY `idx_name` (`name`(5))
      );
   actions:
     - type: modifyColumnType
@@ -16,7 +17,8 @@
      CREATE TABLE `t` (
       `id` varchar(10) /*T![auto_rand] AUTO_RANDOM(6, 54) */,
       `name` varchar(10) NOT NULL,
-      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+      KEY `idx_name` (`name`(5))
     );
 - input: |-
     -- Table structure for `t`
