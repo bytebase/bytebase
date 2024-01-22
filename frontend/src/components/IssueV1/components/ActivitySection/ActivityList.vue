@@ -114,7 +114,6 @@ import { IssueBuiltinFieldId } from "@/plugins";
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { getLogId } from "@/store/modules/v1/common";
 import {
-  ActivityIssueCommentCreatePayload,
   ActivityIssueFieldUpdatePayload,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";

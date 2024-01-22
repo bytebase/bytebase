@@ -29,7 +29,10 @@
       <StageInfo class="px-4 py-2" />
     </template>
     <template v-else>
-      <NoPermissionPlaceholder v-if="placeholder === 'PERMISSION_DENIED'" class="!border-0" />
+      <NoPermissionPlaceholder
+        v-if="placeholder === 'PERMISSION_DENIED'"
+        class="!border-0"
+      />
       <NoDataPlaceholder v-else class="!border-0" />
     </template>
   </div>
