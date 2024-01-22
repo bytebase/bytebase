@@ -76,6 +76,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	if err := cdbRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryDB)
 	}
+	if err := cdbRows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
 
 	// sync PDBs
 	query := `
@@ -104,6 +107,9 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
 	return &db.InstanceMetadata{
@@ -394,6 +400,10 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	if err := colRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryColumn)
 	}
+	if err := colRows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
 	queryExpression := ""
 	if schemaName == "" {
 		queryExpression = fmt.Sprintf(`
@@ -430,6 +440,10 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	if err := expRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryExpression)
 	}
+	if err := expRows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
+
 	query := ""
 	if schemaName == "" {
 		query = fmt.Sprintf(`
@@ -466,6 +480,9 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
 	return indexMap, nil
