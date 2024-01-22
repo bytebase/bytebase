@@ -893,10 +893,12 @@ func convertToV1PBMaskingPolicy(payloadStr string) (*v1pb.Policy_MaskingPolicy, 
 	var maskDataList []*v1pb.MaskData
 	for _, data := range maskingPolicy.MaskData {
 		maskDataList = append(maskDataList, &v1pb.MaskData{
-			Schema:       data.Schema,
-			Table:        data.Table,
-			Column:       data.Column,
-			MaskingLevel: convertToV1PBMaskingLevel(data.MaskingLevel),
+			Schema:                    data.Schema,
+			Table:                     data.Table,
+			Column:                    data.Column,
+			MaskingLevel:              convertToV1PBMaskingLevel(data.MaskingLevel),
+			FullMaskingAlgorithmId:    data.FullMaskingAlgorithmId,
+			PartialMaskingAlgorithmId: data.PartialMaskingAlgorithmId,
 		})
 	}
 
@@ -912,10 +914,12 @@ func convertToStorePBMaskingPolicyPayload(policy *v1pb.MaskingPolicy) (*storepb.
 
 	for _, data := range policy.MaskData {
 		maskData = append(maskData, &storepb.MaskData{
-			Schema:       data.Schema,
-			Table:        data.Table,
-			Column:       data.Column,
-			MaskingLevel: convertToStorePBMaskingLevel(data.MaskingLevel),
+			Schema:                    data.Schema,
+			Table:                     data.Table,
+			Column:                    data.Column,
+			MaskingLevel:              convertToStorePBMaskingLevel(data.MaskingLevel),
+			FullMaskingAlgorithmId:    data.FullMaskingAlgorithmId,
+			PartialMaskingAlgorithmId: data.PartialMaskingAlgorithmId,
 		})
 	}
 
