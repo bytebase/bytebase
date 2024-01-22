@@ -675,8 +675,17 @@ func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext
 		return
 	}
 
-	actions, exists := r.actions[secondName]
-	if !exists {
+	var constraintActions []StringsManipulatorAction
+	if actions, exists := r.actions[secondName]; exists {
+		// column name and constraint name are in the different namespace for tidb
+		for _, action := range actions {
+			switch action := action.(type) {
+			case *StringsManipulatorActionDropTableConstraint, *StringsManipulatorActionModifyTableConstraint:
+				constraintActions = append(constraintActions, action)
+			}
+		}
+	}
+	if len(constraintActions) == 0 {
 		// We need to remain the original constraint definition with comments.
 		stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
 		r.tableConstraints = append(r.tableConstraints, ctx.GetParser().GetTokenStream().GetTextFromInterval(
@@ -688,7 +697,7 @@ func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext
 		return
 	}
 	// column name and constraint name are in the different namespace for tidb
-	for _, action := range actions {
+	for _, action := range constraintActions {
 		switch action := action.(type) {
 		case *StringsManipulatorActionDropTableConstraint:
 			return
@@ -795,8 +804,21 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		return
 	}
 
-	actions, exists := r.actions[columnName]
-	if !exists {
+	var columnActions []StringsManipulatorAction
+	if actions, exists := r.actions[columnName]; exists {
+		// column name and constraint name are in the different namespace for tidb
+		for _, action := range actions {
+			switch action := action.(type) {
+			case *StringsManipulatorActionDropColumn,
+				*StringsManipulatorActionModifyColumnType,
+				*StringsManipulatorActionDropColumnOption,
+				*StringsManipulatorActionAddColumnOption,
+				*StringsManipulatorActionModifyColumnOption:
+				columnActions = append(columnActions, action)
+			}
+		}
+	}
+	if len(columnActions) == 0 {
 		// We need to remain the original column definition with comments.
 		stop := getIndexUntilNewLine(ctx.GetStop().GetTokenIndex()+1, ctx.GetParser().GetTokenStream())
 		r.columnDefines = append(r.columnDefines, ctx.GetParser().GetTokenStream().GetTextFromInterval(
@@ -808,7 +830,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		return
 	}
 	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
-	for _, action := range actions {
+	for _, action := range columnActions {
 		if action.GetType() == StringsManipulatorActionTypeDropColumn {
 			// drop column action is special, we need to handle it first
 			return
