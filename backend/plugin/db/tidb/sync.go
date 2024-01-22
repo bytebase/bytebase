@@ -287,7 +287,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		column.Nullable = nullableBool
 		if defaultStr.Valid {
 			if strings.Contains(extra, "DEFAULT_GENERATED") {
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+				if needPars(defaultStr.String) {
+					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+				} else {
+					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+				}
 			} else {
 				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
@@ -482,6 +486,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return databaseMetadata, err
+}
+
+func needPars(s string) bool {
+	if strings.EqualFold(s, "CURRENT_TIMESTAMP") {
+		return false
+	}
+	if strings.EqualFold(s, "CURRENT_DATE") {
+		return false
+	}
+	return true
 }
 
 func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
