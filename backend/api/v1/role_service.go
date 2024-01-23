@@ -167,13 +167,13 @@ func convertToRoles(iamManager *iam.Manager, roleMessages []*store.RoleMessage) 
 func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role {
 	name := convertToRoleName(role.ResourceID)
 	permissions := []string{}
+	// Add default permissions for workspace preset roles.
 	for _, permission := range iamManager.GetPermissions(name) {
 		permissions = append(permissions, string(permission))
 	}
+	// Add custom permissions for custom roles.
 	if role.Permissions != nil {
-		for _, permission := range role.Permissions.Permissions {
-			permissions = append(permissions, string(permission))
-		}
+		permissions = append(permissions, role.Permissions.Permissions...)
 	}
 	return &v1pb.Role{
 		Name:        name,
