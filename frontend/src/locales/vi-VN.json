@@ -398,7 +398,8 @@
       },
       "show-default-parameters": "Hiển thị thông số mặc định",
       "hide-default-parameters": "Ẩn thông số mặc định"
-    }
+    },
+    "prior-backup-tips": "Sao lưu trước dữ liệu bị ảnh hưởng"
   },
   "task-run": {
     "status": {

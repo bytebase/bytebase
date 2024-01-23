@@ -398,7 +398,8 @@
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
       "hide-default-parameters": "Ocultar parámetros predeterminados"
-    }
+    },
+    "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
   "task-run": {
     "status": {
