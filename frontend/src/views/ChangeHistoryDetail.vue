@@ -8,7 +8,7 @@
       >
         <div class="flex-1 min-w-0 space-y-3">
           <!-- Summary -->
-          <div class="pt-2 flex items-center space-x-2">
+          <div class="flex items-center space-x-2">
             <ChangeHistoryStatusIcon :status="changeHistory.status" />
             <h1 class="text-xl font-bold leading-6 text-main truncate">
               {{ $t("common.version") }} {{ changeHistory.version }}

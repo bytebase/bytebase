@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="availableQuickActionList.length"
-    class="pt-1 overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+    class="overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
     v-bind="$attrs"
   >
     <template

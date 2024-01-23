@@ -5,7 +5,7 @@
     :consistent-menu-width="false"
     :disabled="!allowAdmin"
     size="small"
-    style="width: auto; max-width: 9rem; flex-shrink: 0"
+    style="width: auto; min-width: 7rem; flex-shrink: 0"
   />
 </template>
 
