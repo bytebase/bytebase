@@ -4,129 +4,111 @@ type Permission string
 
 const (
 	// Workspace-level permissions.
-	// Instance service.
-	PermissionInstancesList         Permission = "bb.instances.list"
-	PermissionInstancesGet          Permission = "bb.instances.get"
-	PermissionInstancesCreate       Permission = "bb.instances.create"
-	PermissionInstancesUpdate       Permission = "bb.instances.update"
-	PermissionInstancesDelete       Permission = "bb.instances.delete"
-	PermissionInstancesUndelete     Permission = "bb.instances.undelete"
-	PermissionInstancesSync         Permission = "bb.instances.sync"
-	PermissionInstancesAdminExecute Permission = "bb.instances.adminExecute"
-	// Instance role service.
-	PermissionInstanceRolesList     Permission = "bb.instanceRoles.list"
-	PermissionInstanceRolesGet      Permission = "bb.instanceRoles.get"
-	PermissionInstanceRolesCreate   Permission = "bb.instanceRoles.create"
-	PermissionInstanceRolesUpdate   Permission = "bb.instanceRoles.update"
-	PermissionInstanceRolesDelete   Permission = "bb.instanceRoles.delete"
-	PermissionInstanceRolesUndelete Permission = "bb.instanceRoles.undelete"
-	// Environment service.
-	PermissionEnvironmentsList     Permission = "bb.environments.list"
-	PermissionEnvironmentsGet      Permission = "bb.environments.get"
-	PermissionEnvironmentsCreate   Permission = "bb.environments.create"
-	PermissionEnvironmentsUpdate   Permission = "bb.environments.update"
-	PermissionEnvironmentsDelete   Permission = "bb.environments.delete"
-	PermissionEnvironmentsUndelete Permission = "bb.environments.undelete"
-	// Risk service.
-	PermissionRisksList   Permission = "bb.risks.list"
-	PermissionRisksCreate Permission = "bb.risks.create"
-	PermissionRisksUpdate Permission = "bb.risks.update"
-	PermissionRisksDelete Permission = "bb.risks.delete"
-	// Role service.
-	PermissionRolesList   Permission = "bb.roles.list"
-	PermissionRolesCreate Permission = "bb.roles.create"
-	PermissionRolesUpdate Permission = "bb.roles.update"
-	PermissionRolesDelete Permission = "bb.roles.delete"
-	// Database service.
-	PermissionDatabasesList                Permission = "bb.databases.list"
-	PermissionDatabasesGet                 Permission = "bb.databases.get"
-	PermissionDatabasesUpdate              Permission = "bb.databases.update"
-	PermissionDatabasesSync                Permission = "bb.databases.sync"
-	PermissionDatabasesAdviseIndex         Permission = "bb.databases.adviseIndex"
-	PermissionDatabasesGetSchema           Permission = "bb.databases.getSchema"
-	PermissionDatabasesGetBackupSetting    Permission = "bb.databases.getBackupSetting"
-	PermissionDatabasesUpdateBackupSetting Permission = "bb.databases.updateBackupSetting"
-	PermissionDatabasesQuery               Permission = "bb.databases.query"
-	PermissionDatabasesExport              Permission = "bb.databases.export"
-	PermissionBackupsList                  Permission = "bb.backups.list"
-	PermissionBackupsCreate                Permission = "bb.backups.create"
-	PermissionChangeHistoriesList          Permission = "bb.changeHistories.list"
-	PermissionChangeHistoriesGet           Permission = "bb.changeHistories.get"
-	PermissionDatabaseSecretsList          Permission = "bb.databaseSecrets.list"
-	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
-	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
-	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
-	// External version control service.
+	PermissionEnvironmentsCreate                    Permission = "bb.environments.create"
+	PermissionEnvironmentsDelete                    Permission = "bb.environments.delete"
+	PermissionEnvironmentsGet                       Permission = "bb.environments.get"
+	PermissionEnvironmentsList                      Permission = "bb.environments.list"
+	PermissionEnvironmentsUndelete                  Permission = "bb.environments.undelete"
+	PermissionEnvironmentsUpdate                    Permission = "bb.environments.update"
+	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
+	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
 	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
 	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
-	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
-	PermissionExternalVersionControlsUpdate         Permission = "bb.externalVersionControls.update"
-	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
-	PermissionExternalVersionControlsSearchProjects Permission = "bb.externalVersionControls.searchProjects"
 	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
-	// Setting service.
-	PermissionSettingsList Permission = "bb.settings.list"
-	PermissionSettingsGet  Permission = "bb.settings.get"
-	PermissionSettingsSet  Permission = "bb.settings.set"
-	// Org policy service.
-	PermissionPoliciesList   Permission = "bb.policies.list"
-	PermissionPoliciesGet    Permission = "bb.policies.get"
-	PermissionPoliciesCreate Permission = "bb.policies.create"
-	PermissionPoliciesUpdate Permission = "bb.policies.update"
-	PermissionPoliciesDelete Permission = "bb.policies.delete"
-	// Identity provider service.
-	PermissionIdentityProvidersGet      Permission = "bb.identityProviders.get"
-	PermissionIdentityProvidersCreate   Permission = "bb.identityProviders.create"
-	PermissionIdentityProvidersUpdate   Permission = "bb.identityProviders.update"
-	PermissionIdentityProvidersDelete   Permission = "bb.identityProviders.delete"
-	PermissionIdentityProvidersUndelete Permission = "bb.identityProviders.undelete"
+	PermissionExternalVersionControlsSearchProjects Permission = "bb.externalVersionControls.searchProjects"
+	PermissionExternalVersionControlsUpdate         Permission = "bb.externalVersionControls.update"
+	PermissionIdentityProvidersCreate               Permission = "bb.identityProviders.create"
+	PermissionIdentityProvidersDelete               Permission = "bb.identityProviders.delete"
+	PermissionIdentityProvidersGet                  Permission = "bb.identityProviders.get"
+	PermissionIdentityProvidersUndelete             Permission = "bb.identityProviders.undelete"
+	PermissionIdentityProvidersUpdate               Permission = "bb.identityProviders.update"
+	PermissionInstanceRolesCreate                   Permission = "bb.instanceRoles.create"
+	PermissionInstanceRolesDelete                   Permission = "bb.instanceRoles.delete"
+	PermissionInstanceRolesGet                      Permission = "bb.instanceRoles.get"
+	PermissionInstanceRolesList                     Permission = "bb.instanceRoles.list"
+	PermissionInstanceRolesUndelete                 Permission = "bb.instanceRoles.undelete"
+	PermissionInstanceRolesUpdate                   Permission = "bb.instanceRoles.update"
+	PermissionInstancesAdminExecute                 Permission = "bb.instances.adminExecute"
+	PermissionInstancesCreate                       Permission = "bb.instances.create"
+	PermissionInstancesDelete                       Permission = "bb.instances.delete"
+	PermissionInstancesGet                          Permission = "bb.instances.get"
+	PermissionInstancesList                         Permission = "bb.instances.list"
+	PermissionInstancesSync                         Permission = "bb.instances.sync"
+	PermissionInstancesUndelete                     Permission = "bb.instances.undelete"
+	PermissionInstancesUpdate                       Permission = "bb.instances.update"
+	PermissionPoliciesCreate                        Permission = "bb.policies.create"
+	PermissionPoliciesDelete                        Permission = "bb.policies.delete"
+	PermissionPoliciesGet                           Permission = "bb.policies.get"
+	PermissionPoliciesList                          Permission = "bb.policies.list"
+	PermissionPoliciesUpdate                        Permission = "bb.policies.update"
+	PermissionProjectsCreate                        Permission = "bb.projects.create"
+	PermissionProjectsDelete                        Permission = "bb.projects.delete"
+	PermissionProjectsList                          Permission = "bb.projects.list"
+	PermissionProjectsUndelete                      Permission = "bb.projects.undelete"
+	PermissionRisksCreate                           Permission = "bb.risks.create"
+	PermissionRisksDelete                           Permission = "bb.risks.delete"
+	PermissionRisksList                             Permission = "bb.risks.list"
+	PermissionRisksUpdate                           Permission = "bb.risks.update"
+	PermissionRolesCreate                           Permission = "bb.roles.create"
+	PermissionRolesDelete                           Permission = "bb.roles.delete"
+	PermissionRolesList                             Permission = "bb.roles.list"
+	PermissionRolesUpdate                           Permission = "bb.roles.update"
+	PermissionSettingsGet                           Permission = "bb.settings.get"
+	PermissionSettingsList                          Permission = "bb.settings.list"
+	PermissionSettingsSet                           Permission = "bb.settings.set"
+
 	// Project-level permissions.
-	// Project Service.
-	PermissionProjectsList         Permission = "bb.projects.list"
-	PermissionProjectsGet          Permission = "bb.projects.get"
-	PermissionProjectsCreate       Permission = "bb.projects.create"
-	PermissionProjectsUpdate       Permission = "bb.projects.update"
-	PermissionProjectsDelete       Permission = "bb.projects.delete"
-	PermissionProjectsUndelete     Permission = "bb.projects.undelete"
-	PermissionProjectsGetIAMPolicy Permission = "bb.projects.getIamPolicy"
-	PermissionProjectsSetIAMPolicy Permission = "bb.projects.setIamPolicy"
-
-	// Issue service.
-	PermissionIssuesList          Permission = "bb.issues.list"
-	PermissionIssuesGet           Permission = "bb.issues.get"
-	PermissionIssuesCreate        Permission = "bb.issues.create"
-	PermissionIssuesUpdate        Permission = "bb.issues.update"
-	PermissionIssueCommentsCreate Permission = "bb.issueComments.create"
-	PermissionIssueCommentsUpdate Permission = "bb.issueComments.update"
-
-	// Changelist service.
-	PermissionChangelistsList   Permission = "bb.changelists.list"
-	PermissionChangelistsGet    Permission = "bb.changelists.get"
-	PermissionChangelistsUpdate Permission = "bb.changelists.update"
-	PermissionChangelistsCreate Permission = "bb.changelists.create"
-	PermissionChangelistsDelete Permission = "bb.changelists.delete"
-
-	// Rollout service.
-	PermissionPlansList         Permission = "bb.plans.list"
-	PermissionPlansGet          Permission = "bb.plans.get"
-	PermissionPlansCreate       Permission = "bb.plans.create"
-	PermissionPlansUpdate       Permission = "bb.plans.update"
-	PermissionRolloutsGet       Permission = "bb.rollouts.get"
-	PermissionRolloutsCreate    Permission = "bb.rollouts.create"
-	PermissionRolloutsPreview   Permission = "bb.rollouts.preview"
-	PermissionTaskRunsList      Permission = "bb.taskRuns.list"
-	PermissionPlanCheckRunsList Permission = "bb.planCheckRuns.list"
-	PermissionPlanCheckRunsRun  Permission = "bb.planCheckRuns.run"
-	PermissionTasksRun          Permission = "bb.tasks.run"
-	PermissionTasksSkip         Permission = "bb.tasks.skip"
-	PermissionTaskRunsCancel    Permission = "bb.taskRuns.cancel"
-
-	// Branch service.
-	PermissionBranchesList   Permission = "bb.branches.list"
-	PermissionBranchesGet    Permission = "bb.branches.get"
-	PermissionBranchesCreate Permission = "bb.branches.create"
-	PermissionBranchesUpdate Permission = "bb.branches.update"
-	PermissionBranchesDelete Permission = "bb.branches.delete"
+	PermissionBackupsCreate                Permission = "bb.backups.create"
+	PermissionBackupsList                  Permission = "bb.backups.list"
+	PermissionBranchesCreate               Permission = "bb.branches.create"
+	PermissionBranchesDelete               Permission = "bb.branches.delete"
+	PermissionBranchesGet                  Permission = "bb.branches.get"
+	PermissionBranchesList                 Permission = "bb.branches.list"
+	PermissionBranchesUpdate               Permission = "bb.branches.update"
+	PermissionChangeHistoriesGet           Permission = "bb.changeHistories.get"
+	PermissionChangeHistoriesList          Permission = "bb.changeHistories.list"
+	PermissionChangelistsCreate            Permission = "bb.changelists.create"
+	PermissionChangelistsDelete            Permission = "bb.changelists.delete"
+	PermissionChangelistsGet               Permission = "bb.changelists.get"
+	PermissionChangelistsList              Permission = "bb.changelists.list"
+	PermissionChangelistsUpdate            Permission = "bb.changelists.update"
+	PermissionDatabaseSecretsDelete        Permission = "bb.databaseSecrets.delete"
+	PermissionDatabaseSecretsList          Permission = "bb.databaseSecrets.list"
+	PermissionDatabaseSecretsUpdate        Permission = "bb.databaseSecrets.update"
+	PermissionDatabasesAdviseIndex         Permission = "bb.databases.adviseIndex"
+	PermissionDatabasesExport              Permission = "bb.databases.export"
+	PermissionDatabasesGet                 Permission = "bb.databases.get"
+	PermissionDatabasesGetBackupSetting    Permission = "bb.databases.getBackupSetting"
+	PermissionDatabasesGetSchema           Permission = "bb.databases.getSchema"
+	PermissionDatabasesList                Permission = "bb.databases.list"
+	PermissionDatabasesQuery               Permission = "bb.databases.query"
+	PermissionDatabasesSync                Permission = "bb.databases.sync"
+	PermissionDatabasesUpdate              Permission = "bb.databases.update"
+	PermissionDatabasesUpdateBackupSetting Permission = "bb.databases.updateBackupSetting"
+	PermissionIssueCommentsCreate          Permission = "bb.issueComments.create"
+	PermissionIssueCommentsUpdate          Permission = "bb.issueComments.update"
+	PermissionIssuesCreate                 Permission = "bb.issues.create"
+	PermissionIssuesGet                    Permission = "bb.issues.get"
+	PermissionIssuesList                   Permission = "bb.issues.list"
+	PermissionIssuesUpdate                 Permission = "bb.issues.update"
+	PermissionPlanCheckRunsList            Permission = "bb.planCheckRuns.list"
+	PermissionPlanCheckRunsRun             Permission = "bb.planCheckRuns.run"
+	PermissionPlansCreate                  Permission = "bb.plans.create"
+	PermissionPlansGet                     Permission = "bb.plans.get"
+	PermissionPlansList                    Permission = "bb.plans.list"
+	PermissionPlansUpdate                  Permission = "bb.plans.update"
+	PermissionProjectsGet                  Permission = "bb.projects.get"
+	PermissionProjectsGetIAMPolicy         Permission = "bb.projects.getIamPolicy"
+	PermissionProjectsSetIAMPolicy         Permission = "bb.projects.setIamPolicy"
+	PermissionProjectsUpdate               Permission = "bb.projects.update"
+	PermissionRolloutsCreate               Permission = "bb.rollouts.create"
+	PermissionRolloutsGet                  Permission = "bb.rollouts.get"
+	PermissionRolloutsPreview              Permission = "bb.rollouts.preview"
+	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
+	PermissionTaskRunsCancel               Permission = "bb.taskRuns.cancel"
+	PermissionTaskRunsList                 Permission = "bb.taskRuns.list"
+	PermissionTasksRun                     Permission = "bb.tasks.run"
+	PermissionTasksSkip                    Permission = "bb.tasks.skip"
 )
 
 func (p Permission) String() string {
@@ -259,111 +241,111 @@ func (p PermissionLevel) String() string {
 func GetPermissionLevel(permission Permission) PermissionLevel {
 	switch permission {
 	case
-		PermissionInstancesList,
-		PermissionInstancesGet,
-		PermissionInstancesCreate,
-		PermissionInstancesUpdate,
-		PermissionInstancesDelete,
-		PermissionInstancesUndelete,
-		PermissionInstancesSync,
-		PermissionInstancesAdminExecute,
-		PermissionInstanceRolesList,
-		PermissionInstanceRolesGet,
-		PermissionInstanceRolesCreate,
-		PermissionInstanceRolesUpdate,
-		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesUndelete,
-		PermissionEnvironmentsList,
-		PermissionEnvironmentsGet,
 		PermissionEnvironmentsCreate,
-		PermissionEnvironmentsUpdate,
 		PermissionEnvironmentsDelete,
+		PermissionEnvironmentsGet,
+		PermissionEnvironmentsList,
 		PermissionEnvironmentsUndelete,
-		PermissionRisksList,
-		PermissionRisksCreate,
-		PermissionRisksUpdate,
-		PermissionRisksDelete,
-		PermissionRolesList,
-		PermissionRolesCreate,
-		PermissionRolesUpdate,
-		PermissionRolesDelete,
-		PermissionDatabasesList,
-		PermissionDatabasesGet,
-		PermissionDatabasesUpdate,
-		PermissionDatabasesSync,
-		PermissionDatabasesAdviseIndex,
-		PermissionDatabasesGetSchema,
-		PermissionDatabasesGetBackupSetting,
-		PermissionDatabasesUpdateBackupSetting,
-		PermissionDatabasesQuery,
-		PermissionDatabasesExport,
-		PermissionBackupsList,
-		PermissionBackupsCreate,
-		PermissionChangeHistoriesList,
-		PermissionChangeHistoriesGet,
-		PermissionDatabaseSecretsList,
-		PermissionDatabaseSecretsUpdate,
-		PermissionDatabaseSecretsDelete,
-		PermissionSlowQueriesList,
+		PermissionEnvironmentsUpdate,
+		PermissionExternalVersionControlsCreate,
+		PermissionExternalVersionControlsDelete,
 		PermissionExternalVersionControlsGet,
 		PermissionExternalVersionControlsList,
-		PermissionExternalVersionControlsCreate,
-		PermissionExternalVersionControlsUpdate,
-		PermissionExternalVersionControlsDelete,
-		PermissionExternalVersionControlsSearchProjects,
 		PermissionExternalVersionControlsListProjects,
-		PermissionSettingsList,
-		PermissionSettingsGet,
-		PermissionSettingsSet,
-		PermissionPoliciesList,
-		PermissionPoliciesGet,
-		PermissionPoliciesCreate,
-		PermissionPoliciesUpdate,
-		PermissionPoliciesDelete,
-		PermissionIdentityProvidersGet,
+		PermissionExternalVersionControlsSearchProjects,
+		PermissionExternalVersionControlsUpdate,
 		PermissionIdentityProvidersCreate,
-		PermissionIdentityProvidersUpdate,
 		PermissionIdentityProvidersDelete,
-		PermissionIdentityProvidersUndelete:
+		PermissionIdentityProvidersGet,
+		PermissionIdentityProvidersUndelete,
+		PermissionIdentityProvidersUpdate,
+		PermissionInstanceRolesCreate,
+		PermissionInstanceRolesDelete,
+		PermissionInstanceRolesGet,
+		PermissionInstanceRolesList,
+		PermissionInstanceRolesUndelete,
+		PermissionInstanceRolesUpdate,
+		PermissionInstancesAdminExecute,
+		PermissionInstancesCreate,
+		PermissionInstancesDelete,
+		PermissionInstancesGet,
+		PermissionInstancesList,
+		PermissionInstancesSync,
+		PermissionInstancesUndelete,
+		PermissionInstancesUpdate,
+		PermissionPoliciesCreate,
+		PermissionPoliciesDelete,
+		PermissionPoliciesGet,
+		PermissionPoliciesList,
+		PermissionPoliciesUpdate,
+		PermissionProjectsCreate,
+		PermissionProjectsDelete,
+		PermissionProjectsList,
+		PermissionProjectsUndelete,
+		PermissionRisksCreate,
+		PermissionRisksDelete,
+		PermissionRisksList,
+		PermissionRisksUpdate,
+		PermissionRolesCreate,
+		PermissionRolesDelete,
+		PermissionRolesList,
+		PermissionRolesUpdate,
+		PermissionSettingsGet,
+		PermissionSettingsList,
+		PermissionSettingsSet:
 		return PermissionLevelWorkspace
 	case
-		PermissionProjectsList,
-		PermissionProjectsGet,
-		PermissionProjectsCreate,
-		PermissionProjectsUpdate,
-		PermissionProjectsDelete,
-		PermissionProjectsUndelete,
-		PermissionProjectsGetIAMPolicy,
-		PermissionProjectsSetIAMPolicy,
-		PermissionIssuesList,
-		PermissionIssuesGet,
-		PermissionIssuesCreate,
-		PermissionIssuesUpdate,
-		PermissionIssueCommentsCreate,
-		PermissionIssueCommentsUpdate,
-		PermissionChangelistsList,
-		PermissionChangelistsGet,
-		PermissionChangelistsUpdate,
+		PermissionBackupsCreate,
+		PermissionBackupsList,
+		PermissionBranchesCreate,
+		PermissionBranchesDelete,
+		PermissionBranchesGet,
+		PermissionBranchesList,
+		PermissionBranchesUpdate,
+		PermissionChangeHistoriesGet,
+		PermissionChangeHistoriesList,
 		PermissionChangelistsCreate,
 		PermissionChangelistsDelete,
-		PermissionPlansList,
-		PermissionPlansGet,
-		PermissionPlansCreate,
-		PermissionPlansUpdate,
-		PermissionRolloutsGet,
-		PermissionRolloutsCreate,
-		PermissionRolloutsPreview,
-		PermissionTaskRunsList,
+		PermissionChangelistsGet,
+		PermissionChangelistsList,
+		PermissionChangelistsUpdate,
+		PermissionDatabaseSecretsDelete,
+		PermissionDatabaseSecretsList,
+		PermissionDatabaseSecretsUpdate,
+		PermissionDatabasesAdviseIndex,
+		PermissionDatabasesExport,
+		PermissionDatabasesGet,
+		PermissionDatabasesGetBackupSetting,
+		PermissionDatabasesGetSchema,
+		PermissionDatabasesList,
+		PermissionDatabasesQuery,
+		PermissionDatabasesSync,
+		PermissionDatabasesUpdate,
+		PermissionDatabasesUpdateBackupSetting,
+		PermissionIssueCommentsCreate,
+		PermissionIssueCommentsUpdate,
+		PermissionIssuesCreate,
+		PermissionIssuesGet,
+		PermissionIssuesList,
+		PermissionIssuesUpdate,
 		PermissionPlanCheckRunsList,
 		PermissionPlanCheckRunsRun,
-		PermissionTasksRun,
-		PermissionTasksSkip,
+		PermissionPlansCreate,
+		PermissionPlansGet,
+		PermissionPlansList,
+		PermissionPlansUpdate,
+		PermissionProjectsGet,
+		PermissionProjectsGetIAMPolicy,
+		PermissionProjectsSetIAMPolicy,
+		PermissionProjectsUpdate,
+		PermissionRolloutsCreate,
+		PermissionRolloutsGet,
+		PermissionRolloutsPreview,
+		PermissionSlowQueriesList,
 		PermissionTaskRunsCancel,
-		PermissionBranchesList,
-		PermissionBranchesGet,
-		PermissionBranchesCreate,
-		PermissionBranchesUpdate,
-		PermissionBranchesDelete:
+		PermissionTaskRunsList,
+		PermissionTasksRun,
+		PermissionTasksSkip:
 		return PermissionLevelProject
 	default:
 		return ""
