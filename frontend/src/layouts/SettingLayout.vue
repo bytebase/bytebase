@@ -1,5 +1,5 @@
 <template>
-  <div class="px-6 pb-6 pt-2">
+  <div class="px-6">
     <router-view v-if="hasPermission" :allow-edit="allowEdit" v-bind="$attrs" />
     <NoPermissionPlaceholder v-else />
   </div>
