@@ -1,0 +1,12 @@
+updates:
+  - package-ecosystem: "gomod"
+    commit-message:
+      prefix: "Go Modules"
+    directory: "/" 
+    schedule:
+      day: "saturday"
+      interval: "weekly"
+      time: "03:00"
+    versioning-strategy: auto
+    
+version: 2
