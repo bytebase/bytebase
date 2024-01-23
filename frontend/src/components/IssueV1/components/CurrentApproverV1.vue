@@ -3,6 +3,29 @@
     <template v-if="issue.status !== IssueStatus.OPEN || done || !ready">
       <span>-</span>
     </template>
+    <template v-else-if="currentStep?.status === 'REJECTED'">
+      <NTooltip :disabled="!currentStep.approver">
+        <template #trigger>
+          <div class="flex flex-row items-center gap-x-2">
+            <div
+              class="w-6 h-6 rounded-full flex items-center justify-center text-sm shrink-0 bg-warning"
+            >
+              <heroicons:pause-solid class="w-5 h-5 text-white" />
+            </div>
+            <span class="text-warning">
+              {{ $t("custom-approval.approval-flow.issue-review.sent-back") }}
+            </span>
+          </div>
+        </template>
+        <template #default>
+          <i18n-t
+            keypath="custom-approval.approval-flow.issue-review.review-sent-back-by"
+          >
+            <template #user>{{ currentStep.approver?.title }}</template>
+          </i18n-t>
+        </template>
+      </NTooltip>
+    </template>
     <template v-else-if="currentApprover">
       <BBAvatar :size="'SMALL'" :username="currentApprover.title" />
       <span class="truncate">
@@ -34,7 +57,9 @@ const me = useCurrentUserV1();
 const wrappedSteps = useWrappedReviewStepsV1(toRef(props, "issue"), context);
 
 const currentStep = computed(() => {
-  return wrappedSteps.value?.find((step) => step.status === "CURRENT");
+  return wrappedSteps.value?.find(
+    (step) => step.status === "CURRENT" || step.status === "REJECTED"
+  );
 });
 
 const currentApprover = computed(() => {
