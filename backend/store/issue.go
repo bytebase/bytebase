@@ -428,7 +428,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.Query; v != nil && *v != "" {
 		if tsQuery := getTsQuery(*v); tsQuery != "" {
-			from += fmt.Sprintf(`, CAST($%d AS tsquery) AS query`, len(args)+1)
+			from += fmt.Sprintf(` LEFT JOIN CAST($%d AS tsquery) AS query ON TRUE`, len(args)+1)
 			args = append(args, tsQuery)
 			where = append(where, "issue.ts_vector @@ query")
 			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
