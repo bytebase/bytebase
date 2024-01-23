@@ -272,23 +272,30 @@ const handleRebaseBranch = async () => {
 
 watch(
   headBranch,
-  (head) => {
-    if (head) {
-      // Automatically set the sourceDatabase to the branch's baselineDatabase
-      // if sourceDatabase is empty
-      if (!state.sourceDatabaseUID) {
-        const db = useDatabaseV1Store().getDatabaseByName(
-          head.baselineDatabase
-        );
-        state.sourceDatabaseUID = db.uid;
-        state.sourceType = "DATABASE";
-      }
+  (head, prevValue) => {
+    console.log(prevValue);
+    if (head && !prevValue) {
+      if (
+        (state.sourceType === "BRANCH" && !state.sourceBranchName) ||
+        (state.sourceType === "DATABASE" && !state.sourceDatabaseUID)
+      ) {
+        // Initial head branch loaded
+        // Automatically set the sourceDatabase to the branch's baselineDatabase
+        // if sourceDatabase is empty
+        if (!state.sourceDatabaseUID) {
+          const db = useDatabaseV1Store().getDatabaseByName(
+            head.baselineDatabase
+          );
+          state.sourceDatabaseUID = db.uid;
+          state.sourceType = "DATABASE";
+        }
 
-      // Automatically select the branch's parent as rebase source branch
-      // if rebase source is empty
-      if (head.parentBranch && !state.sourceBranchName) {
-        state.sourceBranchName = head.parentBranch;
-        state.sourceType = "BRANCH";
+        // Automatically select the branch's parent as rebase source branch
+        // if rebase source is empty
+        if (head.parentBranch && !state.sourceBranchName) {
+          state.sourceBranchName = head.parentBranch;
+          state.sourceType = "BRANCH";
+        }
       }
     }
   },
