@@ -251,6 +251,12 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 				Text: table,
 			})
 		}
+		for _, fTable := range c.listForeignTables(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeForeignTable,
+				Text: fTable,
+			})
+		}
 	}
 }
 
@@ -260,6 +266,12 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeView,
 				Text: view,
+			})
+		}
+		for _, matView := range c.listMaterializedViews(schema) {
+			m.Insert(base.Candidate{
+				Type: base.CandidateTypeMaterializedView,
+				Text: matView,
 			})
 		}
 	}
@@ -1098,6 +1110,38 @@ func (c *Completer) listTables(schema string) []string {
 		return nil
 	}
 	return schemaMeta.ListTableNames()
+}
+
+func (c *Completer) listForeignTables(schema string) []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	if schemaMeta == nil {
+		return nil
+	}
+	return schemaMeta.ListForeignTableNames()
+}
+
+func (c *Completer) listMaterializedViews(schema string) []string {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return nil
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	schemaMeta := c.metadataCache[c.defaultDatabase].GetSchema(schema)
+	if schemaMeta == nil {
+		return nil
+	}
+	return schemaMeta.ListMaterializedViewNames()
 }
 
 func (c *Completer) listViews(schema string) []string {
