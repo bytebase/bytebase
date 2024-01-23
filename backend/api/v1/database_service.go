@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -239,6 +240,13 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
 	}
 
+	for _, role := range user.Roles {
+		permissions := iamManager.GetPermissions(common.FormatRole(role.String()))
+		if slices.Contains(permissions, needPermission) {
+			return databases, nil
+		}
+	}
+
 	for _, binding := range policy.Bindings {
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
@@ -248,10 +256,8 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 				continue
 			}
 			permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
-			for _, p := range permissions {
-				if p == needPermission {
-					return databases, nil
-				}
+			if slices.Contains(permissions, needPermission) {
+				return databases, nil
 			}
 		}
 	}
