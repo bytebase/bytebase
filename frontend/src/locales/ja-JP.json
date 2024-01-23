@@ -397,7 +397,8 @@
       },
       "show-default-parameters": "デフォルトのパラメータを表示する",
       "hide-default-parameters": "デフォルトパラメータを非表示にする"
-    }
+    },
+    "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
   },
   "task-run": {
     "status": {

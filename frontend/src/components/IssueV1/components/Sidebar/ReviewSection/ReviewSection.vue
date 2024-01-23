@@ -1,10 +1,16 @@
 <template>
   <div v-if="!isCreating" class="flex flex-col gap-y-1">
-    <NTooltip :disabled="!showApprovalTooltip">
+    <NTooltip
+      :disabled="!showApprovalTooltip"
+      placement="bottom"
+      :show-arrow="false"
+    >
       <template #trigger>
-        <div class="textlabel flex items-center gap-x-1">
-          {{ $t("issue.approval-flow.self") }}
-          <FeatureBadge feature="bb.feature.custom-approval" />
+        <div>
+          <div class="textlabel flex items-center gap-x-1">
+            {{ $t("issue.approval-flow.self") }}
+            <FeatureBadge feature="bb.feature.custom-approval" />
+          </div>
         </div>
       </template>
       <template #default>
