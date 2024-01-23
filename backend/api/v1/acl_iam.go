@@ -256,6 +256,9 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.BranchService_MergeBranch_FullMethodName,
 		v1pb.BranchService_RebaseBranch_FullMethodName:
 		return true
+	// no need to check.
+	case v1pb.BranchService_DiffMetadata_FullMethodName:
+		return true
 	// handled in the method because we need to consider changelist.Creator.
 	case
 		v1pb.ChangelistService_UpdateChangelist_FullMethodName,

@@ -194,6 +194,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.BranchService_DeleteBranch_FullMethodName: iam.PermissionBranchesDelete,
 	v1pb.BranchService_MergeBranch_FullMethodName:  iam.PermissionBranchesUpdate,
 	v1pb.BranchService_RebaseBranch_FullMethodName: iam.PermissionBranchesUpdate,
+	v1pb.BranchService_DiffMetadata_FullMethodName: "", // no need to check.
 
 	v1pb.IdentityProviderService_GetIdentityProvider_FullMethodName:      iam.PermissionIdentityProvidersGet,
 	v1pb.IdentityProviderService_CreateIdentityProvider_FullMethodName:   iam.PermissionIdentityProvidersCreate,
