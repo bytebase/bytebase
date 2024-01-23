@@ -136,7 +136,7 @@ CREATE TABLE role (
     resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
+    permissions JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}' -- saved for future use
 );
 
@@ -243,7 +243,7 @@ CREATE TABLE project (
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
-    setting  JSONB NOT NULL DEFAULT '{}'
+    setting JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
@@ -763,7 +763,7 @@ CREATE INDEX idx_issue_assignee_id ON issue(assignee_id);
 
 CREATE INDEX idx_issue_created_ts ON issue(created_ts);
 
-CREATE INDEX idx_issue_ts_vector ON issue USING gin(ts_vector);
+CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 
 ALTER SEQUENCE issue_id_seq RESTART WITH 101;
 
@@ -798,10 +798,10 @@ CREATE TABLE instance_change_history (
     database_id INTEGER REFERENCES db (id),
     -- issue_id is nullable because this field is backfilled and may not be present.
     issue_id INTEGER REFERENCES issue (id),
-    -- Record the client version creating this migration history. For Bytebase, we use its binary release version. Different Bytebase release might
+    -- Record the client version creating this change history. For Bytebase, we use its binary release version. Different Bytebase release might
     -- record different history info and this field helps to handle such situation properly. Moreover, it helps debugging.
     release_version TEXT NOT NULL,
-    -- Used to detect out of order migration together with 'namespace' and 'version' column.
+    -- Used to detect out of order change history together with 'namespace' and 'version' column.
     sequence BIGINT NOT NULL CONSTRAINT instance_change_history_sequence_check CHECK (sequence >= 0),
     -- We call it source because maybe we could load history from other migration tool.
     -- Currently allowed values are UI, VCS, LIBRARY.
@@ -809,20 +809,20 @@ CREATE TABLE instance_change_history (
     -- Currently allowed values are BASELINE, MIGRATE, MIGRATE_SDL, BRANCH, DATA.
     type TEXT NOT NULL CONSTRAINT instance_change_history_type_check CHECK (type IN ('BASELINE', 'MIGRATE', 'MIGRATE_SDL', 'BRANCH', 'DATA')),
     -- Currently allowed values are PENDING, DONE, FAILED.
-    -- PostgreSQL can't do cross database transaction, so we can't record DDL and migration_history into a single transaction.
+    -- PostgreSQL can't do cross database transaction, so we can't record DDL and change_history into a single transaction.
     -- Thus, we create a "PENDING" record before applying the DDL and update that record to "DONE" after applying the DDL.
     status TEXT NOT NULL CONSTRAINT instance_change_history_status_check CHECK (status IN ('PENDING', 'DONE', 'FAILED')),
-    -- Record the migration version.
+    -- Record the change version.
     version TEXT NOT NULL,
     description TEXT NOT NULL,
     -- Record the change statement in preview format.
     statement TEXT NOT NULL,
     -- Record the sheet for the change statement. Optional.
     sheet_id BIGINT NULL,
-    -- Record the schema after migration
+    -- Record the schema after change
     schema TEXT NOT NULL,
-    -- Record the schema before migration. Though we could also fetch it from the previous migration history, it would complicate fetching logic.
-    -- Besides, by storing the schema_prev, we can perform consistency check to see if the migration history has any gaps.
+    -- Record the schema before change. Though we could also fetch it from the previous change history, it would complicate fetching logic.
+    -- Besides, by storing the schema_prev, we can perform consistency check to see if the change history has any gaps.
     schema_prev TEXT NOT NULL,
     execution_duration_ns BIGINT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
