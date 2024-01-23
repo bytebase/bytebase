@@ -5,12 +5,14 @@
         `b` VARCHAR(20) NOT NULL,
         `c` int NOT NULL,
         `d` text NULL,
+        `e` varchar(20),
         PRIMARY KEY (`a`),
         UNIQUE KEY `t_c_uniq_idx` (`c` DESC),
         UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5)) DESC),
         UNIQUE KEY `t_c_plus_5_t_c_plus_3_uniq_idx` (((`c` + 5)) DESC,((`c` + 3))),
         KEY `idx_c` (`c`),
         KEY `idx_d` (`d`(10)),
+        KEY `idx_e` (`e`(10)),
         FULLTEXT KEY `t_d_fulltext_idx` (`d`)
       ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment with '' escaped';
   metadata: |-
@@ -42,6 +44,12 @@
                   "position":  4,
                   "nullable":  true,
                   "type":  "text"
+                },
+                {
+                  "name":  "e",
+                  "position":  5,
+                  "nullable":  true,
+                  "type":  "varchar(20)"
                 }
               ],
               "indexes":  [
@@ -49,6 +57,9 @@
                   "name":  "PRIMARY",
                   "expressions":  [
                     "a"
+                  ],
+                  "keyLength":  [
+                    "-1"
                   ],
                   "unique":  true,
                   "primary":  true,
@@ -59,6 +70,9 @@
                   "expressions":  [
                     "c"
                   ],
+                  "keyLength":  [
+                    "-1"
+                  ],
                   "type":  "BTREE",
                   "unique":  true,
                   "visible":  true
@@ -67,6 +81,9 @@
                   "name":  "t_c_plus_5_uniq_idx",
                   "expressions":  [
                     "((`c` + 5))"
+                  ],
+                  "keyLength":  [
+                    "-1"
                   ],
                   "type":  "BTREE",
                   "unique":  true,
@@ -78,6 +95,10 @@
                     "((`c` + 5))",
                     "((`c` + 3))"
                   ],
+                  "keyLength":  [
+                    "-1",
+                    "-1"
+                  ],
                   "type":  "BTREE",
                   "unique":  true,
                   "visible":  true
@@ -87,6 +108,9 @@
                   "expressions":  [
                     "c"
                   ],
+                  "keyLength":  [
+                    "-1"
+                  ],
                   "type":  "BTREE",
                   "visible":  true
                 },
@@ -95,6 +119,20 @@
                   "expressions":  [
                     "d"
                   ],
+                  "keyLength":  [
+                    "10"
+                  ],
+                  "type":  "BTREE",
+                  "visible":  true
+                },
+                {
+                  "name":  "idx_e",
+                  "expressions":  [
+                    "e"
+                  ],
+                  "keyLength":  [
+                    "10"
+                  ],
                   "type":  "BTREE",
                   "visible":  true
                 },
@@ -102,6 +140,9 @@
                   "name":  "t_d_fulltext_idx",
                   "expressions":  [
                     "d"
+                  ],
+                  "keyLength":  [
+                    "-1"
                   ],
                   "type":  "FULLTEXT",
                   "visible":  true
@@ -163,6 +204,10 @@
                     "a",
                     "b"
                   ],
+                  "keyLength":  [
+                    "-1",
+                    "-1"
+                  ],
                   "unique":  true,
                   "primary":  true,
                   "visible":  true
@@ -197,6 +242,9 @@
                   "name":  "PRIMARY",
                   "expressions":  [
                     "b"
+                  ],
+                  "keyLength":  [
+                    "-1"
                   ],
                   "unique":  true,
                   "primary":  true,
