@@ -13,6 +13,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -63,6 +64,9 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 		ResourceID:  request.RoleId,
 		Name:        request.Role.Title,
 		Description: request.Role.Description,
+		Permissions: &storepb.RolePermissions{
+			Permissions: request.Role.Permissions,
+		},
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
 	if err != nil {
@@ -104,6 +108,10 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 			patch.Name = &request.Role.Title
 		case "description":
 			patch.Description = &request.Role.Description
+		case "permissions":
+			patch.Permissions = &storepb.RolePermissions{
+				Permissions: request.Role.Permissions,
+			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path: %s", path)
 		}
@@ -154,6 +162,9 @@ func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role 
 	name := convertToRoleName(role.ResourceID)
 	permissions := []string{}
 	for _, permission := range iamManager.GetPermissions(name) {
+		permissions = append(permissions, string(permission))
+	}
+	for _, permission := range role.Permissions.Permissions {
 		permissions = append(permissions, string(permission))
 	}
 	return &v1pb.Role{
