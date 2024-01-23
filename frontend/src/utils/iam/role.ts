@@ -31,13 +31,13 @@ export const isCustomRole = (role: string) => {
 export const sortRoles = (roles: string[]) => {
   return roles.sort((a, b) => {
     const priority = (role: string) => {
-      if (isWorkspaceLevelRole(role)) {
+      if (WorkspaceLevelRoles.includes(role)) {
         return WorkspaceLevelRoles.indexOf(role);
       }
-      if (isProjectLevelRole(role)) {
+      if (ProjectLevelRoles.includes(role)) {
         return ProjectLevelRoles.indexOf(role) + WorkspaceLevelRoles.length;
       }
-      return roles.length;
+      return roles.length + roles.indexOf(role);
     };
     return priority(a) - priority(b);
   });
