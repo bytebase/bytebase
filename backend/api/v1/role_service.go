@@ -68,6 +68,9 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 			Permissions: request.Role.Permissions,
 		},
 	}
+	if valid := validatePermissions(request.Role.Permissions); !valid {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
+	}
 	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create role: %v", err)
@@ -111,6 +114,9 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		case "permissions":
 			patch.Permissions = &storepb.RolePermissions{
 				Permissions: request.Role.Permissions,
+			}
+			if valid := validatePermissions(request.Role.Permissions); !valid {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 			}
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path: %s", path)
@@ -177,4 +183,24 @@ func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role 
 
 func convertToRoleName(role string) string {
 	return fmt.Sprintf("%s%s", common.RolePrefix, role)
+}
+
+func validatePermissions(permissions []string) bool {
+	// Check if all permissions exist.
+	for _, permission := range permissions {
+		if !iam.PermissionExist(iam.Permission(permission)) {
+			return false
+		}
+	}
+	// Check if all permission levels are the same.
+	var permissionLevel iam.PermissionLevel
+	for _, permission := range permissions {
+		level := iam.GetPermissionLevel(iam.Permission(permission))
+		if permissionLevel == "" {
+			permissionLevel = level
+		} else if permissionLevel != level {
+			return false
+		}
+	}
+	return true
 }
