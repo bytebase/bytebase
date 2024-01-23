@@ -363,6 +363,7 @@ type indexState struct {
 	id      int
 	name    string
 	keys    []string
+	lengths []int64
 	primary bool
 	unique  bool
 	tp      string
@@ -376,6 +377,7 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 		Primary:     i.primary,
 		Unique:      i.unique,
 		Comment:     i.comment,
+		KeyLength:   i.lengths,
 		// Unsupported, for tests only.
 		Visible: true,
 		Type:    i.tp,
@@ -391,6 +393,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		unique:  index.Unique,
 		tp:      index.Type,
 		comment: index.Comment,
+		lengths: index.KeyLength,
 	}
 }
 
@@ -399,14 +402,19 @@ func (i *indexState) toString(buf io.StringWriter) error {
 		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
 			return err
 		}
-		for i, key := range i.keys {
-			if i > 0 {
+		for j, key := range i.keys {
+			if j > 0 {
 				if _, err := buf.WriteString(", "); err != nil {
 					return err
 				}
 			}
 			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
 				return err
+			}
+			if j < len(i.lengths) && i.lengths[j] > 0 {
+				if _, err := buf.WriteString(fmt.Sprintf("(%d)", i.lengths[j])); err != nil {
+					return err
+				}
 			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
@@ -448,6 +456,11 @@ func (i *indexState) toString(buf io.StringWriter) error {
 			} else {
 				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
 					return err
+				}
+				if j < len(i.lengths) && i.lengths[j] > 0 {
+					if _, err := buf.WriteString(fmt.Sprintf("(%d)", i.lengths[j])); err != nil {
+						return err
+					}
 				}
 			}
 		}
