@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -332,16 +332,21 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
-		case "role":
-			if role != api.WorkspaceAdmin {
-				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
-			}
-			userRole := convertUserRole(request.User.UserRole)
-			if userRole == api.UnknownRole {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
-			}
-			patch.Role = &userRole
 		case "roles":
+			// Check if the user is the only workspace admin.
+			if slices.Contains(user.Roles, api.WorkspaceAdmin) && !slices.Contains(request.User.Roles, common.FormatRole(api.WorkspaceAdmin.String())) {
+				workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
+				adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+					Role: &workspaceAdmin,
+					Type: &userType,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
+				}
+				if len(adminUser) == 1 && adminUser[0].ID == userID {
+					return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
+				}
+			}
 			var roles []api.Role
 			for _, r := range request.User.Roles {
 				roleID, err := common.GetRoleID(r)
@@ -469,6 +474,20 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	}
 	if role != api.WorkspaceAdmin {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
+	}
+	// Check if the user is the only workspace admin.
+	if slices.Contains(user.Roles, api.WorkspaceAdmin) {
+		workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
+		adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+			Role: &workspaceAdmin,
+			Type: &userType,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
+		}
+		if len(adminUser) == 1 && adminUser[0].ID == userID {
+			return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
+		}
 	}
 
 	if _, err := s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
