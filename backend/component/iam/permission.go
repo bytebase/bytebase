@@ -248,8 +248,8 @@ func PermissionExist(p Permission) bool {
 type PermissionLevel string
 
 const (
-	PermissionLevelWorkspace PermissionLevel = "workspace"
-	PermissionLevelProject   PermissionLevel = "project"
+	PermissionLevelWorkspace PermissionLevel = "WORKSPACE"
+	PermissionLevelProject   PermissionLevel = "PROJECT"
 )
 
 func (p PermissionLevel) String() string {
