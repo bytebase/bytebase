@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/protobuf/encoding/protojson"
+
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // RoleMessage is the message for roles.
@@ -14,6 +17,7 @@ type RoleMessage struct {
 	ResourceID  string
 	Name        string
 	Description string
+	Permissions *storepb.RolePermissions
 
 	// Output only
 	CreatorID int
@@ -26,16 +30,21 @@ type UpdateRoleMessage struct {
 
 	Name        *string
 	Description *string
+	Permissions *storepb.RolePermissions
 }
 
 // CreateRole creates a new role.
 func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID int) (*RoleMessage, error) {
 	query := `
 		INSERT INTO
-			role (creator_id, updater_id, resource_id, name, description)
-		VALUES ($1, $2, $3, $4, $5)
+			role (creator_id, updater_id, resource_id, name, description, permissions)
+		VALUES ($1, $2, $3, $4, $5, $6)
 	`
-	if _, err := s.db.db.ExecContext(ctx, query, creatorID, creatorID, create.ResourceID, create.Name, create.Description); err != nil {
+	permissionBytes, err := protojson.Marshal(create.Permissions)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := s.db.db.ExecContext(ctx, query, creatorID, creatorID, create.ResourceID, create.Name, create.Description, permissionBytes); err != nil {
 		return nil, err
 	}
 	return create, nil
@@ -45,17 +54,23 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID i
 func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
 	query := `
 		SELECT
-			creator_id, name, description
+			creator_id, name, description, permissions
 		FROM role
 		WHERE resource_id = $1
 	`
 	var role RoleMessage
-	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description); err != nil {
+	var permissions []byte
+	if err := s.db.db.QueryRowContext(ctx, query, resourceID).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
+	var rolePermissions storepb.RolePermissions
+	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+		return nil, err
+	}
+	role.Permissions = &rolePermissions
 	role.ResourceID = resourceID
 	return &role, nil
 }
@@ -64,7 +79,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 	query := `
 		SELECT
-			creator_id, resource_id, name, description
+			creator_id, resource_id, name, description, permissions
 		FROM role
 	`
 	rows, err := s.db.db.QueryContext(ctx, query)
@@ -133,9 +148,15 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 
 	for rows.Next() {
 		var role RoleMessage
-		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Name, &role.Description); err != nil {
+		var permissions []byte
+		if err := rows.Scan(&role.CreatorID, &role.ResourceID, &role.Name, &role.Description, &permissions); err != nil {
 			return nil, err
 		}
+		var rolePermissions storepb.RolePermissions
+		if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+			return nil, err
+		}
+		role.Permissions = &rolePermissions
 		roles = append(roles, &role)
 	}
 
@@ -155,22 +176,34 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := patch.Permissions; v != nil {
+		permissionBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		set, args = append(set, fmt.Sprintf("permissions = $%d", len(args)+1)), append(args, permissionBytes)
+	}
 	args = append(args, patch.ResourceID)
 
 	query := fmt.Sprintf(`
 		UPDATE role
 		SET `+strings.Join(set, ", ")+`
 		WHERE resource_id = $%d
-		RETURNING creator_id, name, description
+		RETURNING creator_id, name, description, permissions
 	`, len(args))
 
 	role := RoleMessage{
 		ResourceID: patch.ResourceID,
 	}
-	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description); err != nil {
+	var permissions []byte
+	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
 		return nil, err
 	}
-
+	var rolePermissions storepb.RolePermissions
+	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
+		return nil, err
+	}
+	role.Permissions = &rolePermissions
 	return &role, nil
 }
 
