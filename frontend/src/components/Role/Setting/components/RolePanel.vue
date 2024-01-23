@@ -53,7 +53,7 @@
             <span class="ml-0.5 text-error">*</span>
           </div>
           <div>
-            <span class="textinfolabel mr-2">{{ $t("common.type") }}</span>
+            <span class="textinfolabel mr-2">{{ $t("common.type") }}:</span>
             <NRadio
               :checked="state.permissionType === 'WORKSPACE'"
               value="WORKSPACE"
