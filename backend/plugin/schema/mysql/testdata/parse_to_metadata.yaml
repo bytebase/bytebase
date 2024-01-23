@@ -17,140 +17,141 @@
       ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment with '' escaped';
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "a",
-                  "position":  1,
-                  "type":  "int",
-                  "comment":  "this is comment"
+                  "name": "a",
+                  "position": 1,
+                  "type": "int",
+                  "comment": "this is comment"
                 },
                 {
-                  "name":  "b",
-                  "position":  2,
-                  "type":  "VARCHAR(20)"
+                  "name": "b",
+                  "position": 2,
+                  "type": "VARCHAR(20)"
                 },
                 {
-                  "name":  "c",
-                  "position":  3,
-                  "type":  "int"
+                  "name": "c",
+                  "position": 3,
+                  "type": "int"
                 },
                 {
-                  "name":  "d",
-                  "position":  4,
-                  "nullable":  true,
-                  "type":  "text"
+                  "name": "d",
+                  "position": 4,
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "text"
                 },
                 {
-                  "name":  "e",
-                  "position":  5,
-                  "nullable":  true,
-                  "type":  "varchar(20)"
+                  "name": "e",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 },
                 {
-                  "name":  "t_c_uniq_idx",
-                  "expressions":  [
+                  "name": "t_c_uniq_idx",
+                  "expressions": [
                     "c"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "type":  "BTREE",
-                  "unique":  true,
-                  "visible":  true
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
                 },
                 {
-                  "name":  "t_c_plus_5_uniq_idx",
-                  "expressions":  [
+                  "name": "t_c_plus_5_uniq_idx",
+                  "expressions": [
                     "((`c` + 5))"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "type":  "BTREE",
-                  "unique":  true,
-                  "visible":  true
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
                 },
                 {
-                  "name":  "t_c_plus_5_t_c_plus_3_uniq_idx",
-                  "expressions":  [
+                  "name": "t_c_plus_5_t_c_plus_3_uniq_idx",
+                  "expressions": [
                     "((`c` + 5))",
                     "((`c` + 3))"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1",
                     "-1"
                   ],
-                  "type":  "BTREE",
-                  "unique":  true,
-                  "visible":  true
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
                 },
                 {
-                  "name":  "idx_c",
-                  "expressions":  [
+                  "name": "idx_c",
+                  "expressions": [
                     "c"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "type":  "BTREE",
-                  "visible":  true
+                  "type": "BTREE",
+                  "visible": true
                 },
                 {
-                  "name":  "idx_d",
-                  "expressions":  [
+                  "name": "idx_d",
+                  "expressions": [
                     "d"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "10"
                   ],
-                  "type":  "BTREE",
-                  "visible":  true
+                  "type": "BTREE",
+                  "visible": true
                 },
                 {
-                  "name":  "idx_e",
-                  "expressions":  [
+                  "name": "idx_e",
+                  "expressions": [
                     "e"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "10"
                   ],
-                  "type":  "BTREE",
-                  "visible":  true
+                  "type": "BTREE",
+                  "visible": true
                 },
                 {
-                  "name":  "t_d_fulltext_idx",
-                  "expressions":  [
+                  "name": "t_d_fulltext_idx",
+                  "expressions": [
                     "d"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "type":  "FULLTEXT",
-                  "visible":  true
+                  "type": "FULLTEXT",
+                  "visible": true
                 }
               ],
-              "engine":  "InnoDB",
-              "collation":  "utf8mb4_0900_ai_ci",
-              "comment":  "this is comment with ' escaped"
+              "engine": "InnoDB",
+              "collation": "utf8mb4_0900_ai_ci",
+              "comment": "this is comment with ' escaped"
             }
           ]
         }
@@ -168,87 +169,87 @@
     create table t2(b int NOT NULL default NULL, primary key (b));
   metadata: |-
     {
-      "schemas":  [
+      "schemas": [
         {
-          "tables":  [
+          "tables": [
             {
-              "name":  "t",
-              "columns":  [
+              "name": "t",
+              "columns": [
                 {
-                  "name":  "c",
-                  "position":  1,
-                  "defaultExpression":  "AUTO_INCREMENT",
-                  "nullable":  true,
-                  "type":  "int"
+                  "name": "c",
+                  "position": 1,
+                  "defaultExpression": "AUTO_INCREMENT",
+                  "nullable": true,
+                  "type": "int"
                 },
                 {
-                  "name":  "a",
-                  "position":  2,
-                  "defaultExpression":  "1",
-                  "nullable":  true,
-                  "type":  "int",
-                  "comment":  "abcdefg"
+                  "name": "a",
+                  "position": 2,
+                  "defaultExpression": "1",
+                  "nullable": true,
+                  "type": "int",
+                  "comment": "abcdefg"
                 },
                 {
-                  "name":  "b",
-                  "position":  3,
-                  "defaultNull":  true,
-                  "nullable":  true,
-                  "type":  "varchar(20)"
+                  "name": "b",
+                  "position": 3,
+                  "defaultNull": true,
+                  "nullable": true,
+                  "type": "varchar(20)"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "a",
                     "b"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1",
                     "-1"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ],
-              "comment":  "this is comment with ' escaped",
-              "foreignKeys":  [
+              "comment": "this is comment with ' escaped",
+              "foreignKeys": [
                 {
-                  "name":  "fk1",
-                  "columns":  [
+                  "name": "fk1",
+                  "columns": [
                     "a"
                   ],
-                  "referencedTable":  "t2",
-                  "referencedColumns":  [
+                  "referencedTable": "t2",
+                  "referencedColumns": [
                     "b"
                   ]
                 }
               ]
             },
             {
-              "name":  "t2",
-              "columns":  [
+              "name": "t2",
+              "columns": [
                 {
-                  "name":  "b",
-                  "position":  1,
-                  "defaultNull":  true,
-                  "type":  "int"
+                  "name": "b",
+                  "position": 1,
+                  "defaultNull": true,
+                  "type": "int"
                 }
               ],
-              "indexes":  [
+              "indexes": [
                 {
-                  "name":  "PRIMARY",
-                  "expressions":  [
+                  "name": "PRIMARY",
+                  "expressions": [
                     "b"
                   ],
-                  "keyLength":  [
+                  "keyLength": [
                     "-1"
                   ],
-                  "unique":  true,
-                  "primary":  true,
-                  "visible":  true
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
                 }
               ]
             }
