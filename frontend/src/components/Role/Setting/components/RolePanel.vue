@@ -47,7 +47,7 @@
           </div>
         </div>
 
-        <div class="flex flex-col gap-y-2">
+        <div v-if="isDevelopmentIAM" class="flex flex-col gap-y-2">
           <div class="textlabel">
             {{ $t("common.permissions") }}
             <span class="ml-0.5 text-error">*</span>
@@ -110,7 +110,7 @@ import { NButton, NInput, NRadio, NTransfer } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
-import { pushNotification, useRoleStore } from "@/store";
+import { pushNotification, useActuatorV1Store, useRoleStore } from "@/store";
 import {
   PROJECT_PERMISSIONS,
   ValidatedMessage,
@@ -137,6 +137,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
@@ -147,6 +148,8 @@ const state = reactive<LocalState>({
   dirty: false,
   loading: false,
 });
+
+const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 
 const resourceId = computed({
   get() {
