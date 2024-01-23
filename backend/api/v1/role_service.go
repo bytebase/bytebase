@@ -170,8 +170,10 @@ func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role 
 	for _, permission := range iamManager.GetPermissions(name) {
 		permissions = append(permissions, string(permission))
 	}
-	for _, permission := range role.Permissions.Permissions {
-		permissions = append(permissions, string(permission))
+	if role.Permissions != nil {
+		for _, permission := range role.Permissions.Permissions {
+			permissions = append(permissions, string(permission))
+		}
 	}
 	return &v1pb.Role{
 		Name:        name,
