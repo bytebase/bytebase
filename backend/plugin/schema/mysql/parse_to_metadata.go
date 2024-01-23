@@ -182,6 +182,16 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		}
 	}
 
+	if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(columnState.tp)]; ok {
+		if columnState.defaultValue == nil {
+			columnState.defaultValue = &defaultValueNull{}
+			columnState.hasDefault = false
+		}
+		if _, isNull := columnState.defaultValue.(*defaultValueNull); !isNull {
+			columnState.hasDefault = true
+		}
+	}
+
 	table.columns[columnName] = columnState
 }
 
