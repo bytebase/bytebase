@@ -341,6 +341,15 @@
                   "primary": true,
                   "visible": true,
                   "comment": "primary key of multiple key fields"
+                },
+                {
+                  "name": "idx_b_5",
+                  "expressions": [
+                    "b"
+                  ],
+                  "keyLength": [
+                    5
+                  ]
                 }
               ],
               "foreignKeys": [
@@ -502,7 +511,8 @@
       `e` int ,
       `b` char(10) NOT NULL,
       PRIMARY KEY (`a`, `b`, `c`) COMMENT 'primary key of multiple key fields',
-      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`),
+      KEY `idx_b_5` (`b`(5))
     );
 
     --
