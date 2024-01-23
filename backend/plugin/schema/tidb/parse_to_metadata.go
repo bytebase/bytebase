@@ -136,6 +136,9 @@ type tableState struct {
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
 	comment     string
+	// Engine and collation are only supported in ParseToMetadata.
+	engine    string
+	collation string
 }
 
 const (
@@ -212,6 +215,18 @@ func (t *tableState) toString(buf *strings.Builder) error {
 		return err
 	}
 
+	if t.engine != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" ENGINE=%s", t.engine)); err != nil {
+			return err
+		}
+	}
+
+	if t.collation != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" COLLATE=%s", t.collation)); err != nil {
+			return err
+		}
+	}
+
 	if t.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(t.comment, "'", "''"))); err != nil {
 			return err
@@ -236,6 +251,8 @@ func newTableState(id int, name string) *tableState {
 
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
+	state.engine = table.Engine
+	state.collation = table.Collation
 	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
@@ -260,6 +277,10 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	columns := []*storepb.ColumnMetadata{}
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
+	}
+	// Backfill the column positions.
+	for i, column := range columns {
+		column.Position = int32(i + 1)
 	}
 
 	indexStates := []*indexState{}
@@ -292,6 +313,8 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Indexes:     indexes,
 		ForeignKeys: fks,
 		Comment:     t.comment,
+		Engine:      t.engine,
+		Collation:   t.collation,
 	}
 }
 
@@ -383,6 +406,7 @@ type indexState struct {
 	id      int
 	name    string
 	keys    []string
+	length  []int64
 	primary bool
 	unique  bool
 }
@@ -391,6 +415,7 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 	return &storepb.IndexMetadata{
 		Name:        i.name,
 		Expressions: i.keys,
+		KeyLength:   i.length,
 		Primary:     i.primary,
 		Unique:      i.unique,
 		// Unsupported, for tests only.
@@ -403,6 +428,7 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		id:      id,
 		name:    index.Name,
 		keys:    index.Expressions,
+		length:  index.KeyLength,
 		primary: index.Primary,
 		unique:  index.Unique,
 	}
@@ -452,7 +478,11 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			} else {
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
+				columnText := fmt.Sprintf("`%s`", key)
+				if len(i.length) > j && i.length[j] > 0 {
+					columnText = fmt.Sprintf("`%s`(%d)", key, i.length[j])
+				}
+				if _, err := buf.WriteString(columnText); err != nil {
 					return err
 				}
 			}
@@ -693,8 +723,13 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 			table.columns[columnName] = columnState
 		}
 		for _, tableOption := range node.Options {
-			if tableOption.Tp == tidbast.TableOptionComment {
+			switch tableOption.Tp {
+			case tidbast.TableOptionComment:
 				table.comment = tableComment(tableOption)
+			case tidbast.TableOptionEngine:
+				table.engine = tableOption.StrValue
+			case tidbast.TableOptionCollate:
+				table.collation = tableOption.StrValue
 			}
 		}
 
@@ -752,13 +787,16 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 				table.foreignKeys[fkName] = fk
 			case tidbast.ConstraintIndex, tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex, tidbast.ConstraintKey:
 				var referencingColumnList []string
+				var lengthList []int64
 				for _, spec := range constraint.Keys {
 					var specString string
 					var err error
 					if spec.Column != nil {
 						specString = spec.Column.Name.String()
 						if spec.Length > 0 {
-							specString = fmt.Sprintf("`%s`(%d)", specString, spec.Length)
+							lengthList = append(lengthList, int64(spec.Length))
+						} else {
+							lengthList = append(lengthList, -1)
 						}
 					} else {
 						specString, err = tidbRestoreNode(spec, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
@@ -787,6 +825,7 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 					id:      len(table.indexes),
 					name:    indexName,
 					keys:    referencingColumnList,
+					length:  lengthList,
 					primary: false,
 					unique:  constraintType == tidbast.ConstraintUniq || constraintType == tidbast.ConstraintUniqKey || constraintType == tidbast.ConstraintUniqIndex,
 				}
@@ -842,12 +881,23 @@ func restoreComment(expr tidbast.ExprNode) (string, error) {
 	return comment, nil
 }
 
-func equalKeys(a, b []string) bool {
+func equalKeys(a []string, aLength []int64, b []string, bLength []int64) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i, key := range a {
 		if key != b[i] {
+			return false
+		}
+		lenA := int64(-1)
+		lenB := int64(-1)
+		if len(aLength) > i {
+			lenA = aLength[i]
+		}
+		if len(bLength) > i {
+			lenB = bLength[i]
+		}
+		if lenA != lenB {
 			return false
 		}
 	}

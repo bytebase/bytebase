@@ -96,7 +96,13 @@ watch(helpId, async (id) => {
   if (id) {
     const res = await fetch(
       `/help/${
-        locale.value === "zh-CN" ? "zh" : locale.value === "ja-JP" ? "ja" : "en"
+        locale.value === "zh-CN"
+          ? "zh"
+          : locale.value === "ja-JP"
+          ? "ja"
+          : locale.value === "vi-VN"
+          ? "vi"
+          : "en"
       }/${id}.md`
     );
     const markdown = await res.text();
