@@ -272,7 +272,8 @@
     "untitled": "Untitled",
     "nickname": "Nickname",
     "missing-permission": "Missing required permissions",
-    "continue-anyway": "Continue anyway"
+    "continue-anyway": "Continue anyway",
+    "permissions": "Permissions"
   },
   "error-page": {
     "go-back-home": "Go back home"

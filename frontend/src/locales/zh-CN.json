@@ -270,7 +270,8 @@
     "untitled": "未命名",
     "nickname": "昵称",
     "missing-permission": "缺少必需的权限",
-    "continue-anyway": "仍要继续"
+    "continue-anyway": "仍要继续",
+    "permissions": "权限"
   },
   "error-page": {
     "go-back-home": "回到主页"

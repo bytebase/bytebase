@@ -24,7 +24,7 @@ export const useRoleStore = defineStore("role", () => {
       // update
       const updated = await roleServiceClient.updateRole({
         role,
-        updateMask: ["title", "description"],
+        updateMask: ["title", "description", "permissions"],
       });
       const index = roleList.value.findIndex((r) => r.name === role.name);
       if (index >= 0) {

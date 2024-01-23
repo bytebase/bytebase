@@ -272,7 +272,8 @@
     "untitled": "Không có tiêu đề",
     "nickname": "Tên nick",
     "missing-permission": "Thiếu quyền cần thiết",
-    "continue-anyway": "Vẫn tiếp tục"
+    "continue-anyway": "Vẫn tiếp tục",
+    "permissions": "Quyền"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"

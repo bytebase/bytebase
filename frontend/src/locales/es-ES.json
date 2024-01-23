@@ -272,7 +272,8 @@
     "untitled": "Intitulado",
     "nickname": "Apodo",
     "missing-permission": "Faltan permisos requeridos",
-    "continue-anyway": "De todas maneras, continúe"
+    "continue-anyway": "De todas maneras, continúe",
+    "permissions": "Permisos"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
