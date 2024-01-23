@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-full relative overflow-x-hidden">
+  <div class="-mx-4 h-full relative overflow-x-hidden">
     <template v-if="ready">
       <IssueDetailPage v-if="!isGrantRequestIssue(issue)" />
       <GrantRequestIssueDetailPage v-else />

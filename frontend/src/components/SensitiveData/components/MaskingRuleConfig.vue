@@ -35,7 +35,7 @@
         </h3>
         <NSelect
           v-model:value="state.maskingLevel"
-          style="width: 10rem"
+          style="min-width: 10rem"
           :options="options"
           :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
           :consistent-menu-width="false"
@@ -48,6 +48,7 @@
       <NPopconfirm v-if="allowDelete" @positive-click="$emit('delete')">
         <template #trigger>
           <NButton
+            quaternary
             tag="div"
             style="--n-padding: 0 6px; --n-icon-margin: 4px"
             :disabled="disabled"
