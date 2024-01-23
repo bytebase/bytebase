@@ -30,7 +30,7 @@ func TestGetPermissionLevels(t *testing.T) {
 	for _, permissions := range m.roles {
 		for _, p := range permissions {
 			level := GetPermissionLevel(p)
-			a.NotEqual("", level, "permission %s is not defined as a constant", p)
+			a.NotEqual("", level.String(), "permission %s is not defined as a constant", p)
 		}
 	}
 }
