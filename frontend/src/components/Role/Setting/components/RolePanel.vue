@@ -7,7 +7,7 @@
     <DrawerContent
       :title="mode === 'ADD' ? $t('role.setting.add') : $t('role.setting.edit')"
       :closable="true"
-      class="w-[30rem] max-w-[100vw] relative"
+      class="w-[44rem] max-w-[100vw] relative"
     >
       <div class="flex flex-col gap-y-4">
         <div class="flex flex-col gap-y-2">
@@ -41,10 +41,46 @@
             <NInput
               v-model:value="state.role.description"
               type="textarea"
-              :autosize="{ minRows: 3, maxRows: 10 }"
+              :autosize="{ minRows: 2, maxRows: 4 }"
               :placeholder="$t('role.setting.description-placeholder')"
             />
           </div>
+        </div>
+
+        <div v-if="isDevelopmentIAM" class="flex flex-col gap-y-2">
+          <div class="textlabel">
+            {{ $t("common.permissions") }}
+            <span class="ml-0.5 text-error">*</span>
+          </div>
+          <div>
+            <span class="textinfolabel mr-2">{{ $t("common.type") }}</span>
+            <NRadio
+              :checked="state.permissionType === 'WORKSPACE'"
+              value="WORKSPACE"
+              @change="state.permissionType = 'WORKSPACE'"
+            >
+              <div class="flex flex-row justify-start items-center">
+                <BuildingIcon class="w-4 h-auto mr-1" />
+                <span>{{ $t("common.workspace") }}</span>
+              </div>
+            </NRadio>
+            <NRadio
+              :checked="state.permissionType === 'PROJECT'"
+              value="PROJECT"
+              @change="state.permissionType = 'PROJECT'"
+            >
+              <div class="flex flex-row justify-start items-center">
+                <GalleryHorizontalEndIcon class="w-4 h-auto mr-1" />
+                <span>{{ $t("common.project") }}</span>
+              </div>
+            </NRadio>
+          </div>
+          <NTransfer
+            v-model:value="state.role.permissions"
+            class="!h-[24rem]"
+            source-filterable
+            :options="permissionOptions"
+          />
         </div>
       </div>
 
@@ -69,18 +105,24 @@
 
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
-import { NButton, NInput } from "naive-ui";
+import { BuildingIcon, GalleryHorizontalEndIcon } from "lucide-vue-next";
+import { NButton, NInput, NRadio, NTransfer } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
-import { pushNotification, useRoleStore } from "@/store";
-import { ValidatedMessage } from "@/types";
+import { pushNotification, useActuatorV1Store, useRoleStore } from "@/store";
+import {
+  PROJECT_PERMISSIONS,
+  ValidatedMessage,
+  WORKSPACE_PERMISSIONS,
+} from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 
 type LocalState = {
   role: Role;
+  permissionType: "WORKSPACE" | "PROJECT";
   dirty: boolean;
   loading: boolean;
 };
@@ -95,15 +137,19 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 const roleStore = useRoleStore();
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
   role: Role.fromJSON({}),
+  permissionType: "WORKSPACE",
   dirty: false,
   loading: false,
 });
+
+const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 
 const resourceId = computed({
   get() {
@@ -114,12 +160,37 @@ const resourceId = computed({
   },
 });
 
+const permissionOptions = computed(() => {
+  return state.permissionType === "WORKSPACE"
+    ? WORKSPACE_PERMISSIONS.map((p) => ({
+        label: p,
+        value: p,
+      }))
+    : PROJECT_PERMISSIONS.map((p) => ({
+        label: p,
+        value: p,
+      }));
+});
+
+const filteredPermissions = computed(() => {
+  return state.role.permissions.filter((p) => {
+    if (state.permissionType === "WORKSPACE") {
+      return WORKSPACE_PERMISSIONS.includes(p as any);
+    } else {
+      return PROJECT_PERMISSIONS.includes(p as any);
+    }
+  });
+});
+
 const allowSave = computed(() => {
   if (!state.dirty) return false;
   if (state.role.title?.length === 0) return false;
   if (resourceIdField.value) {
     if (!resourceIdField.value.resourceId) return false;
     if (!resourceIdField.value.isValidated) return false;
+  }
+  if (filteredPermissions.value.length === 0) {
+    return false;
   }
   return true;
 });
@@ -136,6 +207,7 @@ const handleSave = async () => {
 
   state.loading = true;
   try {
+    state.role.permissions = filteredPermissions.value;
     state.role = await roleStore.upsertRole(state.role);
     pushNotification({
       module: "bytebase",
@@ -172,6 +244,13 @@ watch(
       if (!state.role.title) {
         state.role.title = extractRoleResourceName(state.role.name);
       }
+      if (state.role.permissions.length > 0) {
+        state.permissionType = WORKSPACE_PERMISSIONS.includes(
+          state.role.permissions[0] as any
+        )
+          ? "WORKSPACE"
+          : "PROJECT";
+      }
     }
     nextTick(() => {
       state.dirty = false;
@@ -183,7 +262,7 @@ watch(
 );
 
 watch(
-  () => state.role,
+  () => [state.role, state.permissionType],
   () => {
     state.dirty = true;
   },

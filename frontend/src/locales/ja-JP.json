@@ -271,7 +271,8 @@
     "nothing-changed": "変更なし",
     "untitled": "無題",
     "nickname": "ニックネーム",
-    "missing-permission": "必要な権限が不足しています"
+    "missing-permission": "必要な権限が不足しています",
+    "permissions": "権限"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
