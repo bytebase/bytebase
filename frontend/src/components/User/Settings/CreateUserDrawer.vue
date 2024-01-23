@@ -46,8 +46,14 @@
               :placeholder="$t('role.select-roles')"
             />
           </NFormItem>
-          <NFormItem v-else path="userRole" :label="$t('common.role.self')">
-            <WorkspaceRoleSelect v-model:role="state.user.userRole" />
+          <!-- TODO(steven): remove this after IAM migrated -->
+          <NFormItem v-else path="roles" :label="$t('common.role.self')">
+            <NSelect
+              :value="state.user.roles[0]"
+              :options="availableRoles"
+              :placeholder="$t('role.select-role')"
+              @change="state.user.roles = [$event]"
+            />
           </NFormItem>
           <NFormItem
             v-if="!isCreating"
@@ -158,7 +164,6 @@ import { PresetRoleType, emptyUser } from "@/types";
 import {
   UpdateUserRequest,
   User,
-  UserRole,
   UserType,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -188,7 +193,14 @@ const state = reactive<LocalState>({
 });
 
 const availableRoles = computed(() => {
-  return Object.values(PresetRoleType).map((role) => ({
+  const roles = isDevelopmentIAM.value
+    ? Object.values(PresetRoleType)
+    : [
+        PresetRoleType.WORKSPACE_ADMIN,
+        PresetRoleType.WORKSPACE_DBA,
+        PresetRoleType.WORKSPACE_MEMBER,
+      ];
+  return roles.map((role) => ({
     label: displayRoleTitle(role),
     value: role,
   }));
@@ -256,33 +268,17 @@ const tryCreateOrUpdateUser = async () => {
   } else {
     // If the user is the only workspace admin, we need to make sure the user is not removing the
     // workspace admin role.
-    if (isDevelopmentIAM.value) {
-      if (props.user?.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
-        if (
-          !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
-          !hasMoreThanOneOwner.value
-        ) {
-          pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: t("settings.members.tooltip.not-allow-remove"),
-          });
-          return;
-        }
-      }
-    } else {
-      if (props.user?.userRole === UserRole.OWNER) {
-        if (
-          state.user.userRole !== UserRole.OWNER &&
-          !hasMoreThanOneOwner.value
-        ) {
-          pushNotification({
-            module: "bytebase",
-            style: "CRITICAL",
-            title: t("settings.members.remove-self-admin.description"),
-          });
-          return;
-        }
+    if (props.user?.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+      if (
+        !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+        !hasMoreThanOneOwner.value
+      ) {
+        pushNotification({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("settings.members.tooltip.not-allow-remove"),
+        });
+        return;
       }
     }
 
