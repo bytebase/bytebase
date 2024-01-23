@@ -577,6 +577,8 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		case *defaultValueExpression:
 			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
 		}
+	} else if expressionDefaultOnlyTypes[strings.ToUpper(c.tp)] {
+		result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
 	}
 	return result
 }
