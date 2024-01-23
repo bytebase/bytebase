@@ -244,7 +244,7 @@ CREATE TABLE project (
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
-    setting  JSONB NOT NULL DEFAULT '{}'
+    setting JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
