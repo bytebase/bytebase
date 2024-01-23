@@ -3068,6 +3068,10 @@
         "view-node": "外部承認ノードを表示",
         "create-node": "外部承認ノードを作成",
         "edit-node": "外部承認ノードを編集"
+      },
+      "issue-review": {
+        "sent-back": "返送されました",
+        "review-sent-back-by": "レビューは {user} から返送されました"
       }
     },
     "risk": {

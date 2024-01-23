@@ -3067,6 +3067,10 @@
         "view-node": "Ver nodo de aprobación externo",
         "create-node": "Crear nodo de aprobación externo",
         "edit-node": "Editar nodo de aprobación externo"
+      },
+      "issue-review": {
+        "sent-back": "Devuelto",
+        "review-sent-back-by": "Reseña enviada por {user}"
       }
     },
     "risk": {
