@@ -13,7 +13,7 @@
         :placeholder="$t('common.filter-by-name')"
       />
       <NButton
-        v-if="!allowCreate"
+        v-if="allowCreate"
         type="primary"
         @click="showCreatePanel = true"
       >
