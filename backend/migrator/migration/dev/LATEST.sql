@@ -136,7 +136,7 @@ CREATE TABLE role (
     resource_id TEXT NOT NULL, -- user-defined id, such as projectDBA
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    permissions JSONB NOT NULL DEFAULT '{}', -- saved for future use
+    permissions JSONB NOT NULL DEFAULT '{}',
     payload JSONB NOT NULL DEFAULT '{}' -- saved for future use
 );
 
@@ -244,7 +244,7 @@ CREATE TABLE project (
     schema_change_type TEXT NOT NULL CHECK (schema_change_type IN ('DDL', 'SDL')) DEFAULT 'DDL',
     resource_id TEXT NOT NULL,
     data_classification_config_id TEXT NOT NULL DEFAULT '',
-    setting  JSONB NOT NULL DEFAULT '{}'
+    setting JSONB NOT NULL DEFAULT '{}'
 );
 
 CREATE UNIQUE INDEX idx_project_unique_key ON project(key);
