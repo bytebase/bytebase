@@ -1,10 +1,7 @@
 <template>
   <div class="flex flex-row items-center gap-x-2 overflow-hidden">
-    <template v-if="issue.status !== IssueStatus.OPEN || done">
+    <template v-if="issue.status !== IssueStatus.OPEN || done || !ready">
       <span>-</span>
-    </template>
-    <template v-else-if="!ready">
-      <BBSpin />
     </template>
     <template v-else-if="currentApprover">
       <BBAvatar :size="'SMALL'" :username="currentApprover.title" />
