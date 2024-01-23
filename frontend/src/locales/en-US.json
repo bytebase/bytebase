@@ -398,7 +398,8 @@
       },
       "show-default-parameters": "Show default parameters",
       "hide-default-parameters": "Hide default parameters"
-    }
+    },
+    "prior-backup-tips": "Back up affected data ahead of time"
   },
   "task-run": {
     "status": {
