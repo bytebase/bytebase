@@ -1,21 +1,24 @@
 <template>
   <div v-if="!isCreating" class="flex flex-col gap-y-1">
-    <div class="textlabel flex items-center gap-x-1">
-      {{ $t("issue.approval-flow.self") }}
-
-      <NTooltip v-if="showApprovalTooltip">
-        <template #trigger>
-          <HelpCircleIcon class="w-4 h-4 text-control-placeholder" />
-        </template>
-        <template #default>
-          <div class="max-w-[22rem]">
-            {{ $t("issue.approval-flow.tooltip") }}
+    <NTooltip
+      :disabled="!showApprovalTooltip"
+      placement="bottom"
+      :show-arrow="false"
+    >
+      <template #trigger>
+        <div>
+          <div class="textlabel flex items-center gap-x-1">
+            {{ $t("issue.approval-flow.self") }}
+            <FeatureBadge feature="bb.feature.custom-approval" />
           </div>
-        </template>
-      </NTooltip>
-
-      <FeatureBadge feature="bb.feature.custom-approval" />
-    </div>
+        </div>
+      </template>
+      <template #default>
+        <div class="max-w-[22rem]">
+          {{ $t("issue.approval-flow.tooltip") }}
+        </div>
+      </template>
+    </NTooltip>
 
     <div class="flex-1" :class="showApprovalTooltip && 'min-w-[14rem]'">
       <div
@@ -72,7 +75,6 @@
 </template>
 
 <script lang="ts" setup>
-import { HelpCircleIcon } from "lucide-vue-next";
 import { NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
