@@ -402,8 +402,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 				}
 			}
 
-			keys := extractKeyListVariants(ctx.KeyListVariants())
-			if equalKeys(keys, g.currentTable.indexes["PRIMARY"].keys) {
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			if equalKeys(keys, g.currentTable.indexes["PRIMARY"].keys) && equalKeyLengths(keyLengths, g.currentTable.indexes["PRIMARY"].lengths) {
 				if _, err := g.tableConstraints.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
 					g.err = err
 					return
@@ -435,7 +435,7 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 
 			fk := g.currentTable.foreignKeys[name]
 
-			columns := extractKeyList(ctx.KeyList())
+			columns, _ := extractKeyList(ctx.KeyList())
 			referencedTable, referencedColumns := extractReference(ctx.References())
 			equal := equalKeys(columns, fk.columns) && referencedTable == fk.referencedTable && equalKeys(referencedColumns, fk.referencedColumns)
 			if equal {
@@ -470,8 +470,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 
 			idx := g.currentTable.indexes[name]
 
-			keys := extractKeyListVariants(ctx.KeyListVariants())
-			equal := equalKeys(keys, idx.keys)
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys) && equalKeyLengths(keyLengths, idx.lengths)
 
 			var comment string
 			for _, v := range ctx.AllIndexOption() {
@@ -537,8 +537,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			}
 
 			idx := g.currentTable.indexes[name]
-			keys := extractKeyListVariants(ctx.KeyListVariants())
-			equal := equalKeys(keys, idx.keys)
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys) && equalKeyLengths(keyLengths, idx.lengths)
 			equal = equal && (!idx.primary) && (idx.unique) && (idx.comment == comment)
 
 			if equal {
@@ -583,8 +583,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			}
 
 			idx := g.currentTable.indexes[name]
-			keys := extractKeyListVariants(ctx.KeyListVariants())
-			equal := equalKeys(keys, idx.keys)
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys) && equalKeyLengths(keyLengths, idx.lengths)
 			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
 
 			if equal {
@@ -628,8 +628,8 @@ func (g *mysqlDesignSchemaGenerator) EnterTableConstraintDef(ctx *mysql.TableCon
 			}
 
 			idx := g.currentTable.indexes[name]
-			keys := extractKeyListVariants(ctx.KeyListVariants())
-			equal := equalKeys(keys, idx.keys)
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			equal := equalKeys(keys, idx.keys) && equalKeyLengths(keyLengths, idx.lengths)
 			equal = equal && (!idx.primary) && (!idx.unique) && (idx.comment == comment)
 
 			if equal {

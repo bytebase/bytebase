@@ -195,12 +195,13 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 		symbol := strings.ToUpper(ctx.GetType_().GetText())
 		switch symbol {
 		case "PRIMARY":
-			list := extractKeyListVariants(ctx.KeyListVariants())
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
 			table := t.state.schemas[""].tables[t.currentTable]
 			table.indexes["PRIMARY"] = &indexState{
 				id:      len(table.indexes),
 				name:    "PRIMARY",
-				keys:    list,
+				keys:    keys,
+				lengths: keyLengths,
 				primary: true,
 				unique:  true,
 			}
@@ -211,7 +212,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			} else if ctx.IndexName() != nil {
 				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 			}
-			keys := extractKeyList(ctx.KeyList())
+			keys, _ := extractKeyList(ctx.KeyList())
 			table := t.state.schemas[""].tables[t.currentTable]
 			if table.foreignKeys[name] != nil {
 				t.err = errors.New("multiple foreign keys found: " + name)
@@ -231,7 +232,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			if ctx.IndexName() != nil {
 				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 			}
-			list := extractKeyListVariants(ctx.KeyListVariants())
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
 			table := t.state.schemas[""].tables[t.currentTable]
 			if table.indexes[name] != nil {
 				t.err = errors.New("multiple indexes found: " + name)
@@ -240,7 +241,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			idx := &indexState{
 				id:      len(table.indexes),
 				name:    name,
-				keys:    list,
+				keys:    keys,
+				lengths: keyLengths,
 				primary: false,
 				unique:  false,
 				tp:      symbol,
@@ -251,7 +253,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			if ctx.IndexName() != nil {
 				name = mysqlparser.NormalizeMySQLIdentifier(ctx.IndexName().Identifier())
 			}
-			list := extractKeyListVariants(ctx.KeyListVariants())
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
 			table := t.state.schemas[""].tables[t.currentTable]
 			if table.indexes[name] != nil {
 				t.err = errors.New("multiple indexes found: " + name)
@@ -260,7 +262,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			idx := &indexState{
 				id:      len(table.indexes),
 				name:    name,
-				keys:    list,
+				keys:    keys,
+				lengths: keyLengths,
 				primary: false,
 				unique:  false,
 				tp:      symbol,
@@ -273,7 +276,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			} else {
 				t.err = errors.New("index name not found")
 			}
-			list := extractKeyListVariants(ctx.KeyListVariants())
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
 			table := t.state.schemas[""].tables[t.currentTable]
 			if table.indexes[name] != nil {
 				t.err = errors.New("multiple indexes found: " + name)
@@ -286,7 +289,8 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			idx := &indexState{
 				id:      len(table.indexes),
 				name:    name,
-				keys:    list,
+				keys:    keys,
+				lengths: keyLengths,
 				primary: false,
 				unique:  symbol == "UNIQUE",
 				tp:      tp,

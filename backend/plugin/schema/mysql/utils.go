@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -66,40 +67,59 @@ func extractIdentifierList(ctx mysql.IIdentifierListContext) []string {
 	return result
 }
 
-func extractKeyListVariants(ctx mysql.IKeyListVariantsContext) []string {
+func extractKeyListVariants(ctx mysql.IKeyListVariantsContext) ([]string, []int64) {
 	if ctx.KeyList() != nil {
 		return extractKeyList(ctx.KeyList())
 	}
 	if ctx.KeyListWithExpression() != nil {
 		return extractKeyListWithExpression(ctx.KeyListWithExpression())
 	}
-	return nil
+	return nil, nil
 }
 
-func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) []string {
+func extractKeyListWithExpression(ctx mysql.IKeyListWithExpressionContext) ([]string, []int64) {
 	var result []string
+	var keyLengths []int64
 	for _, key := range ctx.AllKeyPartOrExpression() {
 		if key.KeyPart() != nil {
-			keyText := mysqlparser.NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+			keyText, keyLength := getKeyExpressionAndLengthFromKeyPart(key.KeyPart())
 			result = append(result, keyText)
+			keyLengths = append(keyLengths, keyLength)
 		} else if key.ExprWithParentheses() != nil {
 			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
 			result = append(result, keyText)
+			keyLengths = append(keyLengths, -1)
 		}
 	}
-	return result
+	return result, keyLengths
 }
 
-func extractKeyList(ctx mysql.IKeyListContext) []string {
+func extractKeyList(ctx mysql.IKeyListContext) ([]string, []int64) {
 	var result []string
+	var keyLengths []int64
 	for _, key := range ctx.AllKeyPart() {
-		keyText := mysqlparser.NormalizeMySQLIdentifier(key.Identifier())
-		if key.FieldLength() != nil || key.Direction() != nil {
-			keyText = key.GetParser().GetTokenStream().GetTextFromRuleContext(key)
-		}
+		keyText, keyLength := getKeyExpressionAndLengthFromKeyPart(key)
 		result = append(result, keyText)
+		keyLengths = append(keyLengths, keyLength)
 	}
-	return result
+	return result, keyLengths
+}
+
+func getKeyExpressionAndLengthFromKeyPart(ctx mysql.IKeyPartContext) (string, int64) {
+	keyText := mysqlparser.NormalizeMySQLIdentifier(ctx.Identifier())
+	keyLength := int64(-1)
+	if ctx.FieldLength() != nil {
+		l := ctx.FieldLength().GetText()
+		if len(l) > 2 && l[0] == '(' && l[len(l)-1] == ')' {
+			l = l[1 : len(l)-1]
+		}
+		length, err := strconv.ParseInt(l, 10, 64)
+		if err != nil {
+			length = -1
+		}
+		keyLength = length
+	}
+	return keyText, keyLength
 }
 
 type columnAttr struct {
@@ -205,6 +225,18 @@ func equalKeys(a, b []string) bool {
 	}
 	for i, key := range a {
 		if key != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func equalKeyLengths(a, b []int64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, length := range a {
+		if length != b[i] {
 			return false
 		}
 	}
