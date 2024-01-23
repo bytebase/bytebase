@@ -396,7 +396,8 @@
       },
       "show-default-parameters": "显示默认参数",
       "hide-default-parameters": "隐藏默认参数"
-    }
+    },
+    "prior-backup-tips": "提前备份受影响的数据"
   },
   "task-run": {
     "status": {
