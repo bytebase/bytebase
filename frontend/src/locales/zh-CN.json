@@ -3064,6 +3064,10 @@
         "view-node": "查看外部审批节点",
         "create-node": "新建外部审批节点",
         "edit-node": "编辑外部审批节点"
+      },
+      "issue-review": {
+        "sent-back": "被退回",
+        "review-sent-back-by": "审批被 {user} 退回"
       }
     },
     "risk": {

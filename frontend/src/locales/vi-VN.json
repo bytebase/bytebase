@@ -3070,6 +3070,10 @@
         "view-node": "Xem nút phê duyệt bên ngoài",
         "create-node": "Tạo nút phê duyệt bên ngoài",
         "edit-node": "Chỉnh sửa nút phê duyệt bên ngoài"
+      },
+      "issue-review": {
+        "sent-back": "Gửi lại",
+        "review-sent-back-by": "Bài đánh giá được gửi lại bởi {user}"
       }
     },
     "risk": {
