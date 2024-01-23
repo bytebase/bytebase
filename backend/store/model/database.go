@@ -338,6 +338,28 @@ func (s *SchemaMetadata) ListViewNames() []string {
 	return result
 }
 
+// ListForeignTableNames lists the foreign table names.
+func (s *SchemaMetadata) ListForeignTableNames() []string {
+	var result []string
+	for tableName := range s.internalExternalTable {
+		result = append(result, tableName)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+// ListMaterializedViewNames lists the materialized view names.
+func (s *SchemaMetadata) ListMaterializedViewNames() []string {
+	var result []string
+	for viewName := range s.internalMaterializedView {
+		result = append(result, viewName)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
 func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []string) {
 	if table == nil {
 		return nil, nil

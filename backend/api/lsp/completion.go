@@ -89,9 +89,9 @@ func generateSortTextAfterDot(candidate base.Candidate) string {
 		return "01" + candidate.Text
 	case base.CandidateTypeSchema:
 		return "02" + candidate.Text
-	case base.CandidateTypeTable:
+	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
 		return "03" + candidate.Text
-	case base.CandidateTypeView:
+	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
 		return "04" + candidate.Text
 	case base.CandidateTypeFunction:
 		return "05" + candidate.Text
@@ -104,13 +104,13 @@ func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind 
 	switch tp {
 	case base.CandidateTypeDatabase:
 		return lsp.CIKClass
-	case base.CandidateTypeTable:
+	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
 		return lsp.CIKField
 	case base.CandidateTypeColumn:
 		return lsp.CIKInterface
 	case base.CandidateTypeFunction:
 		return lsp.CIKFunction
-	case base.CandidateTypeView:
+	case base.CandidateTypeView, base.CandidateTypeMaterializedView:
 		return lsp.CIKVariable
 	default:
 		return lsp.CIKText
