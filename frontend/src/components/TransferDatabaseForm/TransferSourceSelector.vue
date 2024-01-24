@@ -1,6 +1,8 @@
 <template>
   <div class="textlabel">
-    <div class="flex items-center justify-between">
+    <div
+      class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
+    >
       <div
         v-if="project.name !== DEFAULT_PROJECT_V1_NAME"
         class="radio-set-row"
@@ -14,7 +16,7 @@
           </NRadio>
         </NRadioGroup>
       </div>
-      <NInputGroup style="width: auto; margin-left: auto">
+      <NInputGroup style="width: auto">
         <InstanceSelect
           v-if="state.transferSource == 'DEFAULT'"
           class="!w-48"

@@ -16,13 +16,15 @@ const props = withDefaults(
     expr: ConditionGroupExpr;
     allowAdmin?: boolean;
     factorList: Factor[];
-    factorSupportDropdown: Factor[];
-    factorOptionsMap: Map<Factor, SelectOption[]>;
+    factorSupportDropdown?: Factor[];
+    factorOptionsMap?: Map<Factor, SelectOption[]>;
     factorOperatorOverrideMap?: Map<Factor, Operator[]>;
   }>(),
   {
     allowAdmin: false,
     factorOperatorOverrideMap: undefined,
+    factorSupportDropdown: () => [],
+    factorOptionsMap: () => new Map(),
   }
 );
 

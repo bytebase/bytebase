@@ -21,6 +21,7 @@ import { RouteRecordRaw, useRoute, useRouter } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
+  SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_MEMBER,
   SETTING_ROUTE_WORKSPACE_ROLE,
@@ -80,6 +81,11 @@ const getItemClass = (item: SidebarItem) => {
     case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
     case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
       if (item.name === SETTING_ROUTE_WORKSPACE_GITOPS) {
+        list.push("router-link-active", "bg-link-hover");
+      }
+      break;
+    case SETTING_ROUTE_PROFILE_TWO_FACTOR:
+      if (item.name === SETTING_ROUTE_PROFILE) {
         list.push("router-link-active", "bg-link-hover");
       }
       break;
