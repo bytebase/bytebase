@@ -231,7 +231,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 // roles/projectQuerier and roles/projectExporter are too tedious to handle in the iam manager.
-// TODO(p0ny): eval cel time.
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
@@ -251,6 +250,13 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
+		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to eval binding condition")
+		}
+		if !ok {
+			continue
+		}
 		for _, member := range binding.Members {
 			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
@@ -265,6 +271,13 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
+			continue
+		}
+		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to eval binding condition")
+		}
+		if !ok {
 			continue
 		}
 		for _, member := range binding.Members {
