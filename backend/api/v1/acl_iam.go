@@ -311,8 +311,8 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		ShowDeleted: true,
 	}
 	databaseUID, isNumber := isNumber(databaseName)
-	if isNumber {
-		// Expected format: "instances/{ignored_value}/database/{uid}"
+	if instanceID == "-" && isNumber {
+		// Expected format: "instances/-/database/{uid}"
 		find.UID = &databaseUID
 	} else {
 		// Expected format: "instances/{instance}/database/{database}"

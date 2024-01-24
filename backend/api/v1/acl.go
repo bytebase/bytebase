@@ -58,7 +58,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
+	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user) {
 		return handler(ctx, request)
 	}
 
@@ -90,7 +90,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if user == nil {
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user.Role) {
+	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user) {
 		return handler(request, ss)
 	}
 
