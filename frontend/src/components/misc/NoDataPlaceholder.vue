@@ -1,6 +1,6 @@
 <template>
   <div
-    class="border-4 border-dashed border-gray-200 rounded-lg h-96 flex flex-col justify-center items-center"
+    class="border-4 border-dashed border-gray-200 rounded-lg flex flex-col justify-center items-center p-4"
   >
     <div class="text-center flex flex-col justify-center items-center">
       <slot name="image">

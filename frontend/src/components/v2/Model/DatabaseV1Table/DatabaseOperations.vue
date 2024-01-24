@@ -258,6 +258,17 @@ const allowEditLabels = computed(() => {
   });
 });
 
+const allowSyncDatabases = computed(() => {
+  return props.databases.every((db) => {
+    const project = db.projectEntity;
+    return hasProjectPermissionV2(
+      project,
+      currentUserV1.value,
+      "bb.databases.sync"
+    );
+  });
+});
+
 const selectedDatabaseUidList = computed(() => {
   return props.databases.map((db) => db.uid);
 });
@@ -374,7 +385,7 @@ const actions = computed((): DatabaseAction[] => {
       {
         icon: h(RefreshCcwIcon),
         text: t("common.sync"),
-        disabled: props.databases.length < 1,
+        disabled: !allowSyncDatabases.value || props.databases.length < 1,
         click: syncSchema,
         tooltip: (action) => getDisabledTooltip(action),
       },
@@ -399,6 +410,21 @@ const actions = computed((): DatabaseAction[] => {
         text: t("database.transfer-project"),
         disabled: !allowTransferProject.value || props.databases.length < 1,
         click: () => (state.showTransferOutDatabaseForm = true),
+        tooltip: (action) => {
+          if (!allowTransferProject.value) {
+            return t("database.batch-action-permission-denied", {
+              action,
+            });
+          }
+          return getDisabledTooltip(action);
+        },
+      });
+    } else {
+      resp.push({
+        icon: h(UnlinkIcon),
+        text: t("database.unassign"),
+        disabled: !allowTransferProject.value || props.databases.length < 1,
+        click: () => (state.showUnassignAlert = true),
         tooltip: (action) => {
           if (!allowTransferProject.value) {
             return t("database.batch-action-permission-denied", {
@@ -453,22 +479,6 @@ const actions = computed((): DatabaseAction[] => {
     }
   );
 
-  if (operationsInProjectDetail.value && !isStandaloneMode.value) {
-    resp.push({
-      icon: h(UnlinkIcon),
-      text: t("database.unassign"),
-      disabled: !allowTransferProject.value || props.databases.length < 1,
-      click: () => (state.showUnassignAlert = true),
-      tooltip: (action) => {
-        if (!allowTransferProject.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    });
-  }
   return resp;
 });
 

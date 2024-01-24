@@ -54,7 +54,7 @@
         <ExprEditor
           :expr="state.expr"
           :allow-admin="true"
-          :resource-type="resourceType"
+          :factor-list="FactorList.get(resourceType) ?? []"
         />
       </div>
       <div class="col-span-2">
@@ -82,6 +82,7 @@ import { NInput } from "naive-ui";
 import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import ExprEditor from "@/components/ExprEditor";
 import {
   ConditionGroupExpr,
   emptySimpleExpr,
@@ -110,8 +111,7 @@ import { EnvironmentSelect, ProjectSelect, ResourceIdField } from "../v2";
 import DatabaseGroupSelect from "./DatabaseGroupSelect.vue";
 import MatchedDatabaseView from "./MatchedDatabaseView.vue";
 import MatchedTableView from "./MatchedTableView.vue";
-import ExprEditor from "./common/ExprEditor";
-import { ResourceType } from "./common/ExprEditor/context";
+import { FactorList, ResourceType } from "./utils";
 
 const props = defineProps<{
   project: ComposedProject;

@@ -86,7 +86,7 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
-            :resource-type="'DATABASE_GROUP'"
+            :factor-list="FactorList.get('DATABASE_GROUP') ?? []"
           />
         </div>
         <div class="col-span-2">
@@ -139,8 +139,8 @@ import DatabaseGroupPrevEditorModal from "@/components/AlterSchemaPrepForm/Datab
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
 import SchemaGroupTable from "@/components/DatabaseGroup/SchemaGroupTable.vue";
-import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
-import { ResourceType } from "@/components/DatabaseGroup/common/ExprEditor/context";
+import { FactorList, ResourceType } from "@/components/DatabaseGroup/utils";
+import ExprEditor from "@/components/ExprEditor";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,

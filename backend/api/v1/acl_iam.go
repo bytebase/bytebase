@@ -148,10 +148,7 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.RolloutService_CreatePlan_FullMethodName,
 		v1pb.RolloutService_ListTaskRuns_FullMethodName,
 		v1pb.RolloutService_ListPlanCheckRuns_FullMethodName,
-		v1pb.RolloutService_RunPlanChecks_FullMethodName,
-		v1pb.RolloutService_BatchRunTasks_FullMethodName,
-		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
-		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName:
+		v1pb.RolloutService_RunPlanChecks_FullMethodName:
 
 		projectIDsGetter = in.getProjectIDsForRolloutService
 	case
@@ -311,8 +308,8 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		ShowDeleted: true,
 	}
 	databaseUID, isNumber := isNumber(databaseName)
-	if isNumber {
-		// Expected format: "instances/{ignored_value}/database/{uid}"
+	if instanceID == "-" && isNumber {
+		// Expected format: "instances/-/database/{uid}"
 		find.UID = &databaseUID
 	} else {
 		// Expected format: "instances/{instance}/database/{database}"

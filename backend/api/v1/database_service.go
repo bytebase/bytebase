@@ -93,8 +93,8 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	}
 	find := &store.FindDatabaseMessage{}
 	databaseUID, isNumber := isNumber(databaseName)
-	if isNumber {
-		// Expected format: "instances/{ignored_value}/database/{uid}"
+	if instanceID == "-" && isNumber {
+		// Expected format: "instances/-/database/{uid}"
 		find.UID = &databaseUID
 	} else {
 		// Expected format: "instances/{instance}/database/{database}"
@@ -231,7 +231,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 }
 
 // roles/projectQuerier and roles/projectExporter are too tedious to handle in the iam manager.
-// TODO(p0ny): eval cel time.
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
@@ -251,6 +250,13 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
+		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to eval binding condition")
+		}
+		if !ok {
+			continue
+		}
 		for _, member := range binding.Members {
 			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
@@ -265,6 +271,13 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
+			continue
+		}
+		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to eval binding condition")
+		}
+		if !ok {
 			continue
 		}
 		for _, member := range binding.Members {
@@ -296,7 +309,7 @@ func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*stor
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user) {
 		return databases, nil
 	}
 	var filteredDatabases []*store.DatabaseMessage
@@ -477,7 +490,7 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	}
 	find := &store.FindDatabaseMessage{}
 	databaseUID, isNumber := isNumber(databaseName)
-	if isNumber {
+	if instanceID == "-" && isNumber {
 		// Expected format: "instances/{ignored_value}/database/{uid}"
 		find.UID = &databaseUID
 	} else {
@@ -1737,11 +1750,11 @@ func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID
 		return nil
 	}
 
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return status.Errorf(codes.Internal, "role not found")
+		return status.Errorf(codes.Internal, "user not found")
 	}
-	if isOwnerOrDBA(role) {
+	if isOwnerOrDBA(user) {
 		return nil
 	}
 
