@@ -138,7 +138,6 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		id:           len(table.columns),
 		name:         columnName,
 		tp:           dataType,
-		hasDefault:   false,
 		defaultValue: nil,
 		comment:      "",
 		nullable:     true,
@@ -154,7 +153,6 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 				Start: defaultValueStart,
 				Stop:  attribute.GetStop().GetTokenIndex(),
 			})
-			columnState.hasDefault = true
 			switch {
 			case strings.EqualFold(defaultValue, "NULL"):
 				columnState.defaultValue = &defaultValueNull{}
@@ -177,19 +175,12 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		// todo(zp): refactor column attribute.
 		case attribute.AUTO_INCREMENT_SYMBOL() != nil:
 			defaultValue := autoIncrementSymbol
-			columnState.hasDefault = true
 			columnState.defaultValue = &defaultValueExpression{value: defaultValue}
 		}
 	}
 
-	if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(columnState.tp)]; ok {
-		if columnState.defaultValue == nil {
-			columnState.defaultValue = &defaultValueNull{}
-			columnState.hasDefault = false
-		}
-		if _, isNull := columnState.defaultValue.(*defaultValueNull); !isNull {
-			columnState.hasDefault = true
-		}
+	if columnState.defaultValue == nil && columnState.nullable {
+		columnState.defaultValue = &defaultValueNull{}
 	}
 
 	table.columns[columnName] = columnState
