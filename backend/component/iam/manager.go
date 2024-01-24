@@ -148,9 +148,9 @@ func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyM
 	conditionInput := getConditionInput()
 	var roles []string
 	for _, binding := range policy.Bindings {
-		ok, err := evalMemberCondition(binding.Condition.Expression, conditionInput)
+		ok, err := evalMemberCondition(binding.Condition.GetExpression(), conditionInput)
 		if err != nil {
-			slog.Error("failed to eval member condition", log.BBError(err))
+			slog.Error("failed to eval member condition", "expression", binding.Condition.GetExpression(), log.BBError(err))
 			continue
 		}
 		if !ok {
@@ -173,6 +173,10 @@ func getConditionInput() map[string]any {
 }
 
 func evalMemberCondition(expr string, input map[string]any) (bool, error) {
+	if expr == "" {
+		return true, nil
+	}
+
 	e, err := cel.NewEnv(common.ProjectMemberCELAttributes...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to new cel env")
