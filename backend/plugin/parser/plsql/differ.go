@@ -111,7 +111,7 @@ func (diff *diffNode) String() (string, error) {
 }
 
 // SchemaDiff implements the differ.SchemaDiffer interface.
-func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
+func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	oldSchemaInfo, err := buildSchemaInfo(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to build schema info for old statement")
