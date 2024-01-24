@@ -15,7 +15,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, reactive } from "vue";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
-import { useUIStateStore, useProjectV1ListByCurrentUser } from "@/store";
+import { useUIStateStore, useProjectV1List } from "@/store";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
 
@@ -26,7 +26,7 @@ interface LocalState {
 const state = reactive<LocalState>({
   searchText: "",
 });
-const { projectList } = useProjectV1ListByCurrentUser();
+const { projectList } = useProjectV1List();
 
 const filteredProjectList = computed(() => {
   const list = projectList.value.filter(
