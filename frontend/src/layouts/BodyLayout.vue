@@ -186,25 +186,24 @@
               </div>
             </div>
           </aside>
+        </HideInStandaloneMode>
 
-          <div class="w-full mx-auto md:flex">
-            <div class="md:min-w-0 md:flex-1">
-              <div
-                class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
-              >
-                <QuickActionPanel
-                  :quick-action-list="quickActionList"
-                  class="flex-1 pt-4 pb-2"
-                />
+        <!-- This area may scroll -->
+        <div id="bb-layout-main" class="md:min-w-0 flex-1 overflow-y-auto py-4">
+          <HideInStandaloneMode>
+            <div class="w-full mx-auto md:flex">
+              <div class="md:min-w-0 md:flex-1">
+                <div
+                  class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
+                >
+                  <QuickActionPanel
+                    :quick-action-list="quickActionList"
+                    class="flex-1 pb-4"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </HideInStandaloneMode>
-        <!-- This area may scroll -->
-        <div
-          id="bb-layout-main"
-          class="md:min-w-0 flex-1 overflow-y-auto pt-2 pb-4"
-        >
+          </HideInStandaloneMode>
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
