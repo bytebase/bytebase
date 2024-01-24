@@ -29,10 +29,10 @@ type SchemaDiffer struct {
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
+func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	// 1. Preprocessing Stage.
 	diff := &diffNode{
-		ignoreCaseSensitive: ignoreCaseSensitive,
+		ignoreCaseSensitive: ctx.IgnoreCaseSensitive,
 	}
 	if err := diff.diffStatement(oldStmt, newStmt); err != nil {
 		return "", err
