@@ -10,10 +10,8 @@
         :history-section-list="state.changeHistorySectionList"
       />
     </template>
-    <template v-else>
-      <!-- This example requires Tailwind CSS v2.0+ -->
+    <NoDataPlaceholder v-else>
       <div class="text-center">
-        <heroicons-outline:inbox class="mx-auto w-16 h-16 text-control-light" />
         <h3 class="mt-2 text-sm font-medium text-main">
           {{ $t("change-history.no-history-in-project") }}
         </h3>
@@ -21,7 +19,7 @@
           {{ $t("change-history.recording-info") }}
         </p>
       </div>
-    </template>
+    </NoDataPlaceholder>
   </div>
 </template>
 

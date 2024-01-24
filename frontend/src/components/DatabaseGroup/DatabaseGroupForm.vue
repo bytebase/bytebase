@@ -55,8 +55,6 @@
           :expr="state.expr"
           :allow-admin="true"
           :factor-list="FactorList.get(resourceType) ?? []"
-          :factor-support-dropdown="[]"
-          :factor-options-map="new Map()"
         />
       </div>
       <div class="col-span-2">
