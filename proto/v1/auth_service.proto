@@ -183,6 +183,8 @@ message LoginResponse {
 message LogoutRequest {}
 
 message User {
+  reserved 6;
+
   // The name of the user.
   // Format: users/{user}. {user} is a system-generated unique ID.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -194,10 +196,6 @@ message User {
   string title = 4;
 
   UserType user_type = 5;
-
-  // The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-  // TODO(p0ny): deprecate in favor of `roles`.
-  UserRole user_role = 6;
 
   string password = 7 [(google.api.field_behavior) = INPUT_ONLY];
 
@@ -226,11 +224,4 @@ enum UserType {
   USER = 1;
   SYSTEM_BOT = 2;
   SERVICE_ACCOUNT = 3;
-}
-
-enum UserRole {
-  USER_ROLE_UNSPECIFIED = 0;
-  OWNER = 1;
-  DBA = 2;
-  DEVELOPER = 3;
 }

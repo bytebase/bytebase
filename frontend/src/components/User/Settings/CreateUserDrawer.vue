@@ -213,11 +213,7 @@ const isCreating = computed(() => !props.user);
 
 const allowConfirm = computed(() => {
   if (isCreating.value) {
-    if (isDevelopmentIAM.value) {
-      return state.user.email && state.user.roles.length > 0;
-    } else {
-      return state.user.email;
-    }
+    return state.user.email && state.user.roles.length > 0;
   } else {
     return getUpdateMaskFromUsers(props.user!, state.user).length > 0;
   }
