@@ -19,7 +19,7 @@
             {{ $t("project.select") }}
           </div>
         </div>
-        <ChevronDownIcon class="h-5 text-gray-400" />
+        <ChevronDownIcon class="w-5 h-auto text-gray-400" />
       </NButton>
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
@@ -30,13 +30,16 @@
         </span>
         <span class="flex items-center space-x-1">
           <kbd
-            class="h-5 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
+            class="h-4 flex items-center justify-center bg-black bg-opacity-10 leading-none rounded px-1 text-control overflow-y-hidden"
           >
-            <span v-if="isMac" class="text-lg px-0.5">⌘</span>
-            <span v-else class="tracking-tighter transform scale-x-90">
+            <span v-if="isMac" class="text-base leading-none">⌘</span>
+            <span
+              v-else
+              class="tracking-tighter text-xs transform scale-x-90 leading-none"
+            >
               Ctrl
             </span>
-            <span class="ml-1 mr-0.5">K</span>
+            <span class="pl-1 text-xs leading-none">K</span>
           </kbd>
         </span>
       </NButton>
