@@ -75,8 +75,6 @@
             :expr="state.expr!"
             :allow-admin="false"
             :factor-list="FactorList.get('SCHEMA_GROUP') ?? []"
-            :factor-support-dropdown="[]"
-            :factor-options-map="new Map()"
           />
         </div>
         <div class="col-span-2">
