@@ -151,6 +151,10 @@ interface QuickAction {
   action: () => void;
 }
 
+defineOptions({
+  inheritAttrs: false,
+});
+
 const props = defineProps({
   quickActionList: {
     required: true,
