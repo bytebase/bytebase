@@ -30,7 +30,7 @@ type GetMaskedFieldsFunc func(string, string, *SensitiveSchemaInfo) ([]Sensitive
 type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
-type SchemaDiffFunc func(oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error)
+type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc) ([]Candidate, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
@@ -147,12 +147,12 @@ func RegisterSchemaDiffFunc(engine storepb.Engine, f SchemaDiffFunc) {
 	schemaDiffers[engine] = f
 }
 
-func SchemaDiff(engine storepb.Engine, oldStmt, newStmt string, ignoreCaseSensitivity bool) (string, error) {
+func SchemaDiff(engine storepb.Engine, ctx DiffContext, oldStmt, newStmt string) (string, error) {
 	f, ok := schemaDiffers[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(oldStmt, newStmt, ignoreCaseSensitivity)
+	return f(ctx, oldStmt, newStmt)
 }
 
 // RegisterCompleteFunc registers the completion function for the engine.

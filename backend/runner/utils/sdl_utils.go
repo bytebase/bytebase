@@ -48,7 +48,10 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to transform SDL format")
 	}
-	diff, err := base.SchemaDiff(engine, sdlFormat, newSchema, store.IgnoreDatabaseAndTableCaseSensitive(instance))
+	diff, err := base.SchemaDiff(engine, base.DiffContext{
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		StrictMode:          true,
+	}, sdlFormat, newSchema)
 	if err != nil {
 		return "", errors.Wrapf(err, "compute schema diff")
 	}

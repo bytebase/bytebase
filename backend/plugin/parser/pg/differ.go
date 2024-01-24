@@ -624,7 +624,7 @@ func mergeDefaultIntoColumn(nodeList []ast.Node) ([]ast.Node, error) {
 }
 
 // SchemaDiff computes the schema differences between old and new schema.
-func SchemaDiff(oldStmt, newStmt string, _ bool) (string, error) {
+func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 	oldNodes, oldPartitions, err := parseAndPreprocessStatement(oldStmt)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse and preprocess old statements %q", oldStmt)
