@@ -7,6 +7,7 @@
     --
     CREATE TABLE `u` (
       `t` text NOT NULL,
+
       `g` geometry NOT NULL,
       `j` json NOT NULL,
       `ti` tinyint(1) NOT NULL,
