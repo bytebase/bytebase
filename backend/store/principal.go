@@ -289,6 +289,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	// Grant the member Owner role if there is no existing member.
 	if firstMember {
 		roles = []api.Role{api.WorkspaceAdmin}
+		if s.profile.DevelopmentIAM {
+			roles = append(roles, api.ProjectOwner)
+		}
 	}
 	roles = uniq(roles)
 
