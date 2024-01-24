@@ -20,47 +20,52 @@
       </div>
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
-      <button
-        class="hidden w-full max-w-xs md:flex items-center justify-between rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
+      <NButton
+        class="hidden w-full md:flex items-center justify-between rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
+        size="small"
         @click="onClickSearchButton"
       >
-        <span class="text-control-placeholder text-sm">
+        <SearchIcon class="w-4 h-auto mr-1" />
+        <span class="text-control-placeholder text-sm mr-2">
           {{ $t("common.search") }}
         </span>
         <span class="flex items-center space-x-1">
           <kbd
-            class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
+            class="h-5 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
           >
-            <span v-if="isMac" class="text-xl px-0.5">⌘</span>
+            <span v-if="isMac" class="text-lg px-0.5">⌘</span>
             <span v-else class="tracking-tighter transform scale-x-90">
               Ctrl
             </span>
             <span class="ml-1 mr-0.5">K</span>
           </kbd>
         </span>
-      </button>
-      <div
+      </NButton>
+      <NButton
         v-if="currentPlan === PlanType.FREE"
         class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
+        size="small"
         @click="handleWantHelp"
       >
         <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
         <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
-      </div>
-      <a
-        href="/sql-editor"
-        target="_blank"
-        class="flex items-center text-sm gap-x-1 rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover py-0.5 px-2"
-      >
-        <heroicons-outline:terminal class="w-6 h-6" />
-        <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-      </a>
+      </NButton>
+      <NButton size="small">
+        <a
+          href="/sql-editor"
+          class="flex flex-row justify-center items-center"
+          target="_blank"
+        >
+          <heroicons-outline:terminal class="w-5 h-auto mr-1" />
+          <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
+        </a>
+      </NButton>
       <router-link
         v-if="hasGetSettingPermission"
         :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
         exact-active-class=""
       >
-        <Settings class="w-6 h-6" />
+        <SettingsIcon class="w-5 h-auto" />
       </router-link>
       <div class="ml-2">
         <ProfileBrandingLogo>
@@ -86,7 +91,8 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { Settings, ChevronDownIcon } from "lucide-vue-next";
+import { SettingsIcon, ChevronDownIcon, SearchIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
