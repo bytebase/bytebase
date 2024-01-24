@@ -143,7 +143,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 
 			// Default value, auto increment and auto random are mutually exclusive.
 			if option, exists := optionMap[tidbast.ColumnOptionDefaultValue]; exists {
-				if stateColumn.hasDefault {
+				if stateColumn.defaultValue != nil {
 					switch {
 					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
@@ -165,7 +165,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionDefaultValue))
 				}
 			} else if _, exists := optionMap[tidbast.ColumnOptionAutoIncrement]; exists {
-				if stateColumn.hasDefault {
+				if stateColumn.defaultValue != nil {
 					switch {
 					case stateColumn.hasAutoIncrement():
 					// Do nothing.
@@ -180,7 +180,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement))
 				}
 			} else if _, exists := optionMap[tidbast.ColumnOptionAutoRandom]; exists {
-				if stateColumn.hasDefault {
+				if stateColumn.defaultValue != nil {
 					switch {
 					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
@@ -195,7 +195,7 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 					g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoRandom))
 				}
 			} else {
-				if stateColumn.hasDefault {
+				if stateColumn.defaultValue != nil {
 					switch {
 					case stateColumn.hasAutoIncrement():
 						g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionAutoIncrement, stateColumn.defaultValue.toString()))
