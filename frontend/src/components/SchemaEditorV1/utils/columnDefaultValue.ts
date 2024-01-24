@@ -86,7 +86,14 @@ export const getColumnTypeDefaultValueOptions = (
       type.startsWith("CHAR")
     ) {
       return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
-    } else if (type === "INT" || type === "INTEGER") {
+    } else if (
+      type === "INTEGER" ||
+      type === "INT" ||
+      type === "SMALLINT" ||
+      type === "TINYINT" ||
+      type === "MEDIUMINT" ||
+      type === "BIGINT"
+    ) {
       return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, EXPRESSION_OPTION];
     } else if (type === "FLOAT" || type === "DOUBLE") {
       return [NO_DEFAULT_OPTION, INT_ZERO_OPTION];
@@ -100,7 +107,17 @@ export const getColumnTypeDefaultValueOptions = (
       type.startsWith("CHAR")
     ) {
       return [NO_DEFAULT_OPTION, EMPTY_STRING_OPTION, EXPRESSION_OPTION];
-    } else if (type === "INTEGER" || type === "BIGINT" || type === "SERIAL") {
+    } else if (
+      type === "SMALLINT" ||
+      type === "INTEGER" ||
+      type === "BIGINT" ||
+      type === "SERIAL" ||
+      type === "SMALLSERIAL" ||
+      type === "BIGSERIAL" ||
+      type === "INT2" ||
+      type === "INT4" ||
+      type === "INT8"
+    ) {
       return [NO_DEFAULT_OPTION, INT_ZERO_OPTION, EXPRESSION_OPTION];
     } else if (type === "BOOLEAN") {
       return [NO_DEFAULT_OPTION, BOOLEAN_TRUE_OPTION, BOOLEAN_FALSE_OPTION];
