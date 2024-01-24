@@ -68,5 +68,4 @@ func TestPartialEval(t *testing.T) {
 		a.NoError(err)
 		a.Equal(tc.want, res, tc.name)
 	}
-
 }
