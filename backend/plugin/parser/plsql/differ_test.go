@@ -19,7 +19,7 @@ type DifferTestData struct {
 	Diff      string `yaml:"diff"`
 }
 
-func runDifferTest(t *testing.T, file string, record bool) {
+func runDifferTest(t *testing.T, file string, record bool, strict bool) {
 	var tests []DifferTestData
 	filepath := filepath.Join("test-data", file)
 	yamlFile, err := os.Open(filepath)
@@ -34,7 +34,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	for i, test := range tests {
 		diff, err := SchemaDiff(base.DiffContext{
 			IgnoreCaseSensitive: false,
-			StrictMode:          true,
+			StrictMode:          strict,
 		}, test.OldSchema, test.NewSchema)
 		require.NoError(t, err)
 		if record {
@@ -59,6 +59,15 @@ func TestPLSQLDiffer(t *testing.T) {
 		"test_differ_data.yaml",
 	}
 	for _, file := range testFileList {
-		runDifferTest(t, file, false /* record */)
+		runDifferTest(t, file, false /* record */, true /* strict */)
+	}
+}
+
+func TestPlSQLDifferNonStrict(t *testing.T) {
+	testFileList := []string{
+		"test_differ_non_strict.yaml",
+	}
+	for _, file := range testFileList {
+		runDifferTest(t, file, false /* record */, false /* strict */)
 	}
 }
