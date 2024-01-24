@@ -46,7 +46,7 @@ import {
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceV1Store,
-  useProjectV1ListByCurrentUser,
+  useProjectV1List,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -70,7 +70,7 @@ const state = reactive<LocalState>({
 
 const currentUserV1 = useCurrentUserV1();
 
-const { projectList } = useProjectV1ListByCurrentUser(true /* showDeleted */);
+const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const prepareList = () => {
   if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {

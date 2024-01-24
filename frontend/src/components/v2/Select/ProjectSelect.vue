@@ -18,11 +18,7 @@ import { intersection } from "lodash-es";
 import { NSelect, SelectOption } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useCurrentUserV1,
-  useProjectV1Store,
-  useProjectV1ListByCurrentUser,
-} from "@/store";
+import { useCurrentUserV1, useProjectV1Store, useProjectV1List } from "@/store";
 import { DEFAULT_PROJECT_ID, UNKNOWN_ID, unknownProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -81,7 +77,7 @@ const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list")
 );
 
-const { projectList } = useProjectV1ListByCurrentUser();
+const { projectList } = useProjectV1List();
 
 const rawProjectList = computed(() => {
   return projectList.value.filter((project) => {
