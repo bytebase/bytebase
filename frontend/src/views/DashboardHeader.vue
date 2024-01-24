@@ -1,23 +1,26 @@
 <template>
-  <div class="flex items-center justify-between h-10 pl-2 pr-4 my-1 space-x-3">
+  <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
     <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
 
-      <div
-        class="hidden sm:flex max-w-full w-64 px-2 py-0.5 border border-control-border text-sm rounded-sm items-center justify-between hover:bg-control-bg-hover cursor-pointer ml-2 space-x-2"
+      <NButton
+        class="hidden sm:flex"
+        size="small"
         @click="state.showProjectModal = true"
       >
-        <ProjectCol
-          v-if="project.uid !== `${UNKNOWN_ID}`"
-          mode="ALL_SHORT"
-          :project="project"
-          :show-tenant-icon="true"
-        />
-        <div v-else class="text-control-placeholder text-sm">
-          {{ $t("project.select") }}
+        <div class="w-32 text-left">
+          <ProjectCol
+            v-if="project.uid !== `${UNKNOWN_ID}`"
+            mode="ALL_SHORT"
+            :project="project"
+            :show-tenant-icon="true"
+          />
+          <div v-else class="text-control-placeholder text-sm">
+            {{ $t("project.select") }}
+          </div>
         </div>
-        <ChevronDownIcon class="h-6 text-gray-400" />
-      </div>
+        <ChevronDownIcon class="h-5 text-gray-400" />
+      </NButton>
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
       <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
