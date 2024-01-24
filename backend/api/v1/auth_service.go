@@ -196,6 +196,20 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		}
 		userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 	}
+	// If no role is specified, we default to workspace member.
+	if len(userMessage.Roles) == 0 {
+		userMessage.Roles = append(userMessage.Roles, api.WorkspaceMember)
+	}
+	// If multiple roles are specified, checks if the current user is workspace admin.
+	if len(userMessage.Roles) > 1 {
+		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "user not found in context")
+		}
+		if !slices.Contains(user.Roles, api.WorkspaceAdmin) {
+			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with multiple roles")
+		}
+	}
 
 	user, err := s.store.CreateUser(ctx, userMessage, api.SystemBotID)
 	if err != nil {
