@@ -3,12 +3,17 @@ package iam
 import (
 	"context"
 	_ "embed"
+	"log/slog"
 	"strconv"
+	"time"
 
+	"github.com/google/cel-go/cel"
+	celtypes "github.com/google/cel-go/common/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -140,9 +145,17 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 }
 
 func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyMessage) []string {
+	conditionInput := getConditionInput()
 	var roles []string
 	for _, binding := range policy.Bindings {
-		// TODO(p0ny): eval binding.Condition
+		ok, err := evalMemberCondition(binding.Condition.Expression, conditionInput)
+		if err != nil {
+			slog.Error("failed to eval member condition", log.BBError(err))
+			continue
+		}
+		if !ok {
+			continue
+		}
 		for _, member := range binding.Members {
 			if member.ID == user.ID || member.Email == api.AllUsers {
 				roles = append(roles, common.FormatRole(binding.Role.String()))
@@ -151,6 +164,53 @@ func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyM
 		}
 	}
 	return roles
+}
+
+func getConditionInput() map[string]any {
+	return map[string]any{
+		"request.time": time.Now(),
+	}
+}
+
+func evalMemberCondition(expr string, input map[string]any) (bool, error) {
+	e, err := cel.NewEnv(common.ProjectMemberCELAttributes...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to new cel env")
+	}
+	ast, iss := e.Compile(expr)
+	if iss != nil && iss.Err() != nil {
+		return false, errors.Wrapf(iss.Err(), "failed to compile expr %q", expr)
+	}
+	// enable partial evaluation because the input only has request.time
+	// but the expression can have more.
+	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+	if err != nil {
+		return false, errors.Wrapf(iss.Err(), "failed to construct program")
+	}
+	vars, err := e.PartialVars(input)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get vars")
+	}
+	out, _, err := prg.Eval(vars)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval cel expr")
+	}
+	// `out` is one of
+	// - True
+	// - False
+	// - a residual expression.
+
+	// return true if the result is a residual expression
+	// which means that it passes "the request.time < xxx" check.
+	if !celtypes.IsBool(out) {
+		return true, nil
+	}
+
+	res, ok := out.Equal(celtypes.True).Value().(bool)
+	if !ok {
+		return false, errors.Errorf("failed to convert cel result to bool")
+	}
+	return res, nil
 }
 
 func isNumber(v string) (int, bool) {
