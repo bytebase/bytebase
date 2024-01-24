@@ -189,26 +189,12 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
 	}
-	if request.User.UserRole != v1pb.UserRole_USER_ROLE_UNSPECIFIED {
-		rolePtr := ctx.Value(common.RoleContextKey)
-		// Allow workspace owner to create user with role.
-		if rolePtr != nil && rolePtr.(api.Role) == api.WorkspaceAdmin {
-			userRole := convertUserRole(request.User.UserRole)
-			if userRole == api.UnknownRole {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
-			}
-			userMessage.Role = userRole
-			userMessage.Roles = append(userMessage.Roles, userRole)
-			for _, r := range request.User.GetRoles() {
-				role, err := common.GetRoleID(r)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid role %s", r)
-				}
-				userMessage.Roles = append(userMessage.Roles, api.Role(role))
-			}
-		} else {
-			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with role")
+	for _, role := range request.User.Roles {
+		roleID, err := common.GetRoleID(role)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
+		userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
 	}
 
 	user, err := s.store.CreateUser(ctx, userMessage, api.SystemBotID)
@@ -537,15 +523,6 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 }
 
 func convertToUser(user *store.UserMessage) *v1pb.User {
-	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
-	switch user.Role {
-	case api.WorkspaceAdmin:
-		role = v1pb.UserRole_OWNER
-	case api.WorkspaceDBA:
-		role = v1pb.UserRole_DBA
-	case api.WorkspaceMember:
-		role = v1pb.UserRole_DEVELOPER
-	}
 	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
 	switch user.Type {
 	case api.EndUser:
@@ -563,7 +540,6 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		Phone:    user.Phone,
 		Title:    user.Name,
 		UserType: userType,
-		UserRole: role,
 	}
 	for _, r := range user.Roles {
 		convertedUser.Roles = append(convertedUser.Roles, common.FormatRole(r.String()))
@@ -589,18 +565,6 @@ func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
 		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
 	}
 	return t, nil
-}
-
-func convertUserRole(userRole v1pb.UserRole) api.Role {
-	switch userRole {
-	case v1pb.UserRole_OWNER:
-		return api.WorkspaceAdmin
-	case v1pb.UserRole_DBA:
-		return api.WorkspaceDBA
-	case v1pb.UserRole_DEVELOPER:
-		return api.WorkspaceMember
-	}
-	return api.UnknownRole
 }
 
 // Login is the auth login method including SSO.

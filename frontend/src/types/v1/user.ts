@@ -1,6 +1,6 @@
 import { SYSTEM_BOT_ID } from "../common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import { User, UserRole, UserType } from "../proto/v1/auth_service";
+import { User, UserType } from "../proto/v1/auth_service";
 import { State } from "../proto/v1/common";
 
 export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
@@ -13,7 +13,6 @@ export const emptyUser = () => {
     email: "",
     title: "",
     userType: UserType.USER,
-    userRole: UserRole.DEVELOPER,
   });
 };
 
