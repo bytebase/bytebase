@@ -311,7 +311,6 @@ import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
-  useActuatorV1Store,
 } from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
