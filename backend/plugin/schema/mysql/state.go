@@ -518,7 +518,6 @@ type columnState struct {
 	id           int
 	name         string
 	tp           string
-	hasDefault   bool
 	defaultValue defaultValue
 	comment      string
 	nullable     bool
@@ -533,10 +532,11 @@ func (c *columnState) toString(buf io.StringWriter) error {
 			return err
 		}
 	}
-	if c.hasDefault {
+	if c.defaultValue != nil {
 		_, isDefaultNull := c.defaultValue.(*defaultValueNull)
+		dontWriteDefaultNull := isDefaultNull && c.nullable && expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]
 		// Some types do not default to NULL, but support default expressions.
-		if _, ok := expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]; !(isDefaultNull && ok) {
+		if !dontWriteDefaultNull {
 			// todo(zp): refactor column attribute.
 			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
 				if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
@@ -568,7 +568,7 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		Nullable: c.nullable,
 		Comment:  c.comment,
 	}
-	if c.hasDefault {
+	if c.defaultValue != nil {
 		switch value := c.defaultValue.(type) {
 		case *defaultValueNull:
 			result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
@@ -577,32 +577,22 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		case *defaultValueExpression:
 			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
 		}
-	} else if expressionDefaultOnlyTypes[strings.ToUpper(c.tp)] {
+	}
+	if result.DefaultValue == nil && c.nullable {
 		result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
 	}
 	return result
 }
 
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
-	hasDefault := column.GetDefaultValue() != nil
-	if hasDefault {
-		_, isDefaultNull := column.GetDefaultValue().(*storepb.ColumnMetadata_DefaultNull)
-		// Some types do not default to NULL, but support default expressions.
-		_, ok := expressionDefaultOnlyTypes[strings.ToUpper(column.Type)]
-		if isDefaultNull && ok {
-			hasDefault = false
-		}
-	}
-
 	result := &columnState{
-		id:         id,
-		name:       column.Name,
-		tp:         column.Type,
-		hasDefault: hasDefault,
-		nullable:   column.Nullable,
-		comment:    column.Comment,
+		id:       id,
+		name:     column.Name,
+		tp:       column.Type,
+		nullable: column.Nullable,
+		comment:  column.Comment,
 	}
-	if result.hasDefault {
+	if column.GetDefaultValue() != nil {
 		switch value := column.GetDefaultValue().(type) {
 		case *storepb.ColumnMetadata_DefaultNull:
 			result.defaultValue = &defaultValueNull{}

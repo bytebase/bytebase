@@ -171,7 +171,7 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 			order: columnAttrOrder["NULL"],
 		})
 	}
-	if !defaultExists && column.hasDefault {
+	if !defaultExists && column.defaultValue != nil {
 		// todo(zp): refactor column attribute.
 		if strings.EqualFold(column.defaultValue.toString(), "AUTO_INCREMENT") {
 			result = append(result, columnAttr{
@@ -179,10 +179,14 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 				order: columnAttrOrder["DEFAULT"],
 			})
 		} else {
-			result = append(result, columnAttr{
-				text:  "DEFAULT " + column.defaultValue.toString(),
-				order: columnAttrOrder["DEFAULT"],
-			})
+			_, isNull := column.defaultValue.(*defaultValueNull)
+			dontWriteDefaultNull := isNull && column.nullable && expressionDefaultOnlyTypes[strings.ToUpper(column.tp)]
+			if !dontWriteDefaultNull {
+				result = append(result, columnAttr{
+					text:  "DEFAULT " + column.defaultValue.toString(),
+					order: columnAttrOrder["DEFAULT"],
+				})
+			}
 		}
 	}
 	if !commentExists && column.comment != "" {
