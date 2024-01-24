@@ -22,7 +22,7 @@
     <div class="flex-1 flex justify-end items-center space-x-3">
       <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
         <SearchIcon class="w-4 h-auto mr-1" />
-        <span class="text-control-placeholder text-sm mr-2">
+        <span class="text-control-placeholder text-sm mr-4">
           {{ $t("common.search") }}
         </span>
         <span class="flex items-center space-x-1">
