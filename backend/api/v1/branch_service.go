@@ -746,7 +746,10 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, err
 	}
 
-	diff, err := base.SchemaDiff(convertEngine(request.Engine), sourceSchema, targetSchema, false /* ignoreCaseSensitive */)
+	diff, err := base.SchemaDiff(convertEngine(request.Engine), base.DiffContext{
+		IgnoreCaseSensitive: false,
+		StrictMode:          true,
+	}, sourceSchema, targetSchema)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
