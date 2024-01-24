@@ -20,8 +20,12 @@ export const useSelectOptions = (expr: Ref<ConditionExpr>) => {
   return options;
 };
 
+const stringifyFactor = (factor: Factor) => {
+  return factor.replace(/\./g, "_");
+};
+
 export const factorText = (factor: Factor) => {
-  const keypath = `cel.factor.${factor}`;
+  const keypath = `cel.factor.${stringifyFactor(factor)}`;
   if (te(keypath)) {
     return t(keypath);
   }

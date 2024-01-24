@@ -3267,11 +3267,6 @@
       "create": "新しいテーブルグループ",
       "edit": "テーブルグループを編集する"
     },
-    "factor": {
-      "resource_instance_id": "インスタンスID",
-      "resource_database_name": "データベース名",
-      "resource_table_name": "テーブル名"
-    },
     "condition": {
       "self": "条件"
     },
@@ -3337,7 +3332,10 @@
       "export_rows": "エクスポートする行数",
       "table_name": "テーブル名",
       "column_name": "カラム名",
-      "classification_level": "分類レベル"
+      "classification_level": "分類レベル",
+      "resource_instance_id": "インスタンスID",
+      "resource_database_name": "データベース名",
+      "resource_table_name": "テーブル名"
     }
   },
   "changelist": {
