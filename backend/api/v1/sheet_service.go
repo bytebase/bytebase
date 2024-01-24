@@ -88,7 +88,7 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		// For database v1 api, we should only use the /instance/{resource id}/databases/{name}
 		// We need to remove legacy code after the migration.
 		dbUID, isNumber := isNumber(databaseName)
-		if isNumber {
+		if instanceResourceID == "-" && isNumber {
 			find.UID = &dbUID
 		} else {
 			find.DatabaseName = &databaseName

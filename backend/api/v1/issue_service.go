@@ -2131,23 +2131,19 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 }
 
 func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	if isOwnerOrDBA(role) {
+	if isOwnerOrDBA(user) {
 		if requestProjectID == "-" {
 			return nil, nil
 		}
 		return &[]string{requestProjectID}, nil
 	}
 
-	userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s, principalID)
+	userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s, user.ID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get user belonging projects")
 	}

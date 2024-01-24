@@ -152,11 +152,11 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		return nil, status.Errorf(codes.FailedPrecondition, "branch %q has already existed", branchID)
 	}
 	// Branch protection check.
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if err := s.checkProtectionRules(ctx, project, branchID, principalID); err != nil {
+	if err := s.checkProtectionRules(ctx, project, branchID, user); err != nil {
 		return nil, err
 	}
 
@@ -185,7 +185,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 				SourceBranch:   request.Branch.ParentBranch,
 				SourceDatabase: parentBranch.Config.GetSourceDatabase(),
 			},
-			CreatorID: principalID,
+			CreatorID: user.ID,
 		})
 		if err != nil {
 			return nil, err
@@ -236,7 +236,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			Config: &storepb.BranchConfig{
 				SourceDatabase: request.Branch.BaselineDatabase,
 			},
-			CreatorID: principalID,
+			CreatorID: user.ID,
 		})
 		if err != nil {
 			return nil, err
@@ -789,18 +789,14 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 }
 
 func (s *BranchService) checkBranchPermission(ctx context.Context, projectID string) error {
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return status.Errorf(codes.Internal, "role not found")
+		return status.Errorf(codes.Internal, "user not found")
 	}
-	if isOwnerOrDBA(role) {
+	if isOwnerOrDBA(user) {
 		return nil
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return status.Errorf(codes.Internal, "principal ID not found")
-	}
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
 	if err != nil {
 		return status.Errorf(codes.Internal, err.Error())
@@ -808,7 +804,7 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 	for _, binding := range policy.Bindings {
 		if binding.Role == api.ProjectDeveloper || binding.Role == api.ProjectOwner {
 			for _, member := range binding.Members {
-				if member.ID == principalID || member.Email == api.AllUsers {
+				if member.ID == user.ID || member.Email == api.AllUsers {
 					return nil
 				}
 			}
@@ -817,20 +813,16 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 	return status.Errorf(codes.PermissionDenied, "permission denied")
 }
 
-func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, currentPrincipalID int) error {
+func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, user *store.UserMessage) error {
 	if project.Setting == nil {
 		return nil
-	}
-	user, err := s.store.GetUserByID(ctx, currentPrincipalID)
-	if err != nil {
-		return err
 	}
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return err
 	}
 	// Skip protection check for workspace owner and DBA.
-	if isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user) {
 		return nil
 	}
 

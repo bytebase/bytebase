@@ -75,13 +75,9 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
@@ -94,7 +90,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(role) && !isProjectMember(principalID, policy) {
+		if !isOwnerOrDBA(user) && !isProjectMember(user.ID, policy) {
 			continue
 		}
 		response.Projects = append(response.Projects, convertToProject(project))
@@ -1824,7 +1820,7 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
-			if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
+			if !isOwnerOrDBA(user) && !isProjectOwnerOrDeveloper(user.ID, policy) {
 				continue
 			}
 		}
@@ -2090,7 +2086,7 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(user.Role) && !isProjectOwnerOrDeveloper(user.ID, policy) {
+		if !isOwnerOrDBA(user) && !isProjectOwnerOrDeveloper(user.ID, policy) {
 			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
 		}
 	}
