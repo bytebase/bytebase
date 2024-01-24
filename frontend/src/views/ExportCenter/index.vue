@@ -59,7 +59,7 @@ import {
   useDatabaseV1Store,
   useInstanceV1Store,
   useProjectIamPolicyStore,
-  useProjectV1ListByCurrentUser,
+  useProjectV1List,
   useProjectV1Store,
 } from "@/store";
 import { UNKNOWN_ID, PresetRoleType } from "@/types";
@@ -84,7 +84,7 @@ const projectIamPolicyStore = useProjectIamPolicyStore();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const instanceStore = useInstanceV1Store();
-const { projectList } = useProjectV1ListByCurrentUser();
+const { projectList } = useProjectV1List();
 const state = reactive<LocalState>({
   exportRecords: [],
   showRequestExportPanel: false,

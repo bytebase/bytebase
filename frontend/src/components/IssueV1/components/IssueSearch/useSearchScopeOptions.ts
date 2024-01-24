@@ -15,10 +15,10 @@ import {
   useCurrentUserV1,
   useDatabaseV1Store,
   useInstanceV1List,
-  useProjectV1ListByCurrentUser,
   useSearchDatabaseV1List,
   useUserStore,
   useEnvironmentV1List,
+  useProjectV1List,
 } from "@/store";
 import { SYSTEM_BOT_EMAIL, UNKNOWN_ID } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
@@ -55,7 +55,7 @@ export const useSearchScopeOptions = (
   const userStore = useUserStore();
   const databaseV1Store = useDatabaseV1Store();
   const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-  const { projectList } = useProjectV1ListByCurrentUser();
+  const { projectList } = useProjectV1List();
   const { instanceList } = useInstanceV1List(false /* !showDeleted */);
   const { databaseList } = useSearchDatabaseV1List({
     parent: "instances/-",

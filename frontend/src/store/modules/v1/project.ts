@@ -12,7 +12,6 @@ import {
   UNKNOWN_ID,
   UNKNOWN_PROJECT_NAME,
 } from "@/types";
-import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -61,21 +60,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     return projectList.value.filter(
       (project) => project.state === State.ACTIVE
     );
-  };
-  const getProjectListByUser = (user: User, showDeleted = false) => {
-    const canManageProject = hasWorkspacePermissionV2(user, "bb.projects.list");
-    const projectList = getProjectList(showDeleted);
-    if (canManageProject) {
-      return projectList;
-    }
-
-    return projectList.filter((project) => {
-      return project.iamPolicy.bindings.some((binding) => {
-        return binding.members.some((email) => {
-          return email === `user:${unref(user).email}`;
-        });
-      });
-    });
   };
   const getProjectByName = (name: string) => {
     if (name === EMPTY_PROJECT_NAME) return emptyProject();
@@ -154,7 +138,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projectMapByName,
     projectList,
     getProjectList,
-    getProjectListByUser,
     upsertProjectMap,
     getProjectByUID,
     getProjectByName,
@@ -191,22 +174,6 @@ export const useProjectV1List = (
   });
   return { projectList, ready };
 };
-
-export const useProjectV1ListByUser = (
-  user: MaybeRef<User>,
-  showDeleted: MaybeRef<boolean> = false
-) => {
-  const store = useProjectV1Store();
-  const { ready } = useProjectV1List(showDeleted);
-  const projectList = computed(() => {
-    return store.getProjectListByUser(unref(user), unref(showDeleted));
-  });
-  return { projectList, ready };
-};
-
-export const useProjectV1ListByCurrentUser = (
-  showDeleted: MaybeRef<boolean> = false
-) => useProjectV1ListByUser(useCurrentUserV1(), showDeleted);
 
 export const useProjectV1ByUID = (uid: MaybeRef<string>) => {
   const store = useProjectV1Store();
