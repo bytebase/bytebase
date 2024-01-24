@@ -247,15 +247,12 @@ func (diff *diffNode) getConstraintID(ctx plsql.IRelational_propertyContext) str
 			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
 			return constraintName
 		}
-	} else {
-		switch {
-		case ctx.Out_of_line_constraint() != nil || ctx.Out_of_line_ref_constraint() != nil:
-			return EraseString(EraseContext{
-				eraseConstraintName: true,
-				eraseSchemaName:     true,
-				eraseIndexName:      true,
-			}, ctx, ctx.GetParser().GetTokenStream())
-		}
+	} else if ctx.Out_of_line_constraint() != nil || ctx.Out_of_line_ref_constraint() != nil {
+		return EraseString(EraseContext{
+			eraseConstraintName: true,
+			eraseSchemaName:     true,
+			eraseIndexName:      true,
+		}, ctx, ctx.GetParser().GetTokenStream())
 	}
 	return ""
 }
