@@ -1,22 +1,22 @@
 <template>
+  <div class="flex flex-row justify-end items-center gap-x-2 mb-2">
+    <SearchBox
+      v-model:value="state.searchKeyword"
+      :autofocus="true"
+      :placeholder="$t('common.filter-by-name')"
+    />
+    <NButton v-if="allowCreate" type="primary" @click="handleCreateBranch">
+      <PlusIcon class="w-4 h-auto mr-0.5" />
+      <span>{{ $t("database.new-branch") }}</span>
+    </NButton>
+  </div>
   <div class="space-y-6 w-full overflow-x-auto">
-    <div class="flex flex-row justify-end items-center gap-x-2 pt-0.5">
-      <SearchBox
-        v-model:value="state.searchKeyword"
-        :autofocus="true"
-        :placeholder="$t('common.filter-by-name')"
-      />
-      <NButton v-if="allowCreate" type="primary" @click="handleCreateBranch">
-        <PlusIcon class="w-4 h-auto mr-0.5" />
-        <span>{{ $t("database.new-branch") }}</span>
-      </NButton>
-    </div>
     <div class="w-full space-y-2">
-      <p class="textlabel">{{ $t("branch.default-branches") }}</p>
+      <p class="textlabel !text-base">{{ $t("branch.default-branches") }}</p>
       <BranchDataTable :branches="defaultBranches" :ready="ready" />
     </div>
     <div class="w-full space-y-2">
-      <p class="textlabel">{{ $t("branch.your-branches") }}</p>
+      <p class="textlabel !text-base">{{ $t("branch.your-branches") }}</p>
       <BranchDataTable
         :branches="currentUserBranches"
         :ready="ready"
@@ -24,7 +24,7 @@
       />
     </div>
     <div class="w-full space-y-2">
-      <p class="textlabel">{{ $t("branch.active-branches") }}</p>
+      <p class="textlabel !text-base">{{ $t("branch.active-branches") }}</p>
       <BranchDataTable
         :branches="activeBranches"
         :ready="ready"
