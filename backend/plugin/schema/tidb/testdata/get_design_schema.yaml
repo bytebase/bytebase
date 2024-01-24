@@ -355,15 +355,15 @@
     );
     CREATE TABLE `users` (
       `id` int NOT NULL COMMENT 'ID',
-      `age` varbinary(500) NULL,
-      `name` binary(10) NULL,
+      `age` varbinary(500),
+      `name` binary(10),
       PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT 'hello';
     CREATE TABLE `rds` (
       `id` bigint(20) NOT NULL COMMENT 'ID',
       `binlog_format` enum('ROW','MIXED','STATEMENT',''),
       `c1` int AUTO_INCREMENT,
-      `x1` blob NULL
+      `x1` blob
     ) COMMENT 'hello' ;
     create table t5(
       a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */,
@@ -383,8 +383,8 @@
     -- Table structure for `t2`
     --
     CREATE TABLE `t2` (
-      `b` int NULL,
-      `a` int NULL,
+      `b` int,
+      `a` int,
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
