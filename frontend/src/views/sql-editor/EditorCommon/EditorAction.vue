@@ -117,7 +117,7 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
-import { computed, defineEmits, reactive, ref } from "vue";
+import { computed, reactive, ref, unref } from "vue";
 import {
   useTabStore,
   useSQLEditorStore,
@@ -222,8 +222,9 @@ const showClearScreen = computed(() => {
 
 const queryList = computed(() => {
   return (
-    webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
-      .value || []
+    unref(
+      webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
+    ) || []
   );
 });
 
