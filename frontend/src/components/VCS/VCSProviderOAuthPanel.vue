@@ -530,7 +530,7 @@
         {{ applicationIdErrorDescription }}
       </p>
       <div class="mt-4 textlabel">
-        Secret <span class="text-red-600">*</span>
+        {{ secretField }} <span class="text-red-600">*</span>
       </div>
       <BBTextField
         class="mt-2 w-full"
@@ -545,15 +545,9 @@
   </div>
 </template>
 
-<script lang="ts">
+<script lang="ts" setup>
 import { isEmpty } from "lodash-es";
-import {
-  computed,
-  defineComponent,
-  onUnmounted,
-  PropType,
-  reactive,
-} from "vue";
+import { computed, onUnmounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import {
@@ -572,196 +566,171 @@ interface LocalState {
   showSecretError: boolean;
 }
 
-export default defineComponent({
-  name: "VCSProviderOAuthPanel",
-  props: {
-    config: {
-      required: true,
-      type: Object as PropType<VCSConfig>,
-    },
-  },
-  setup(props) {
-    const { t } = useI18n();
-    const state = reactive<LocalState>({
-      showApplicationIdError:
-        !isEmpty(props.config.applicationId) &&
-        !isValidVCSApplicationIdOrSecret(
+const props = defineProps<{
+  config: VCSConfig;
+}>();
+
+const { t } = useI18n();
+const state = reactive<LocalState>({
+  showApplicationIdError:
+    !isEmpty(props.config.applicationId) &&
+    !isValidVCSApplicationIdOrSecret(
+      props.config.type,
+      props.config.applicationId
+    ),
+  showSecretError:
+    !isEmpty(props.config.secret) &&
+    !isValidVCSApplicationIdOrSecret(props.config.type, props.config.secret),
+});
+
+onUnmounted(() => {
+  if (state.applicationIdValidationTimer) {
+    clearInterval(state.applicationIdValidationTimer);
+  }
+  if (state.secretValidationTimer) {
+    clearInterval(state.secretValidationTimer);
+  }
+});
+
+const createOAuthApplicationUrl = computed((): string => {
+  if (props.config.uiType == "GITLAB_SELF_HOST") {
+    return `${props.config.instanceUrl}/admin/applications/new`;
+  } else if (props.config.uiType == "GITLAB_COM") {
+    return `https://gitlab.com/-/profile/applications`;
+  } else if (props.config.uiType == "GITHUB_COM") {
+    return `https://github.com/settings/applications/new`;
+  } else if (props.config.uiType == "AZURE_DEVOPS") {
+    return `https://app.vsaex.visualstudio.com/app/register`;
+  }
+  return "";
+});
+
+const copyHomepageURL = () => {
+  toClipboard("https://bytebase.com").then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("gitops.setting.add-git-provider.oauth-info.copy-homepage-url"),
+    });
+  });
+};
+
+const copyRedirectURI = () => {
+  toClipboard(redirectUrl()).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "INFO",
+      title: t("gitops.setting.add-git-provider.oauth-info.copy-redirect-uri"),
+    });
+  });
+};
+
+const changeApplicationId = (value: string) => {
+  // eslint-disable-next-line vue/no-mutating-props
+  props.config.applicationId = value;
+
+  if (state.applicationIdValidationTimer) {
+    clearInterval(state.applicationIdValidationTimer);
+  }
+  // If text becomes valid, we immediately clear the error.
+  // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
+  if (
+    isValidVCSApplicationIdOrSecret(
+      props.config.type,
+      props.config.applicationId
+    )
+  ) {
+    state.showApplicationIdError = false;
+  } else {
+    state.applicationIdValidationTimer = setTimeout(() => {
+      // If error is already displayed, we hide the error only if there is valid input.
+      // Otherwise, we hide the error if input is either empty or valid.
+      if (state.showApplicationIdError) {
+        state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
           props.config.type,
           props.config.applicationId
-        ),
-      showSecretError:
-        !isEmpty(props.config.secret) &&
-        !isValidVCSApplicationIdOrSecret(
+        );
+      } else {
+        state.showApplicationIdError =
+          !isValidVCSApplicationIdOrSecret(
+            props.config.type,
+            props.config.applicationId
+          ) &&
+          !isValidVCSApplicationIdOrSecret(
+            props.config.type,
+            props.config.applicationId
+          );
+      }
+    }, TEXT_VALIDATION_DELAY);
+  }
+};
+
+const changeSecret = (value: string) => {
+  // eslint-disable-next-line vue/no-mutating-props
+  props.config.secret = value;
+
+  if (state.secretValidationTimer) {
+    clearInterval(state.secretValidationTimer);
+  }
+  // If text becomes valid, we immediately clear the error.
+  // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
+  if (isValidVCSApplicationIdOrSecret(props.config.type, props.config.secret)) {
+    state.showSecretError = false;
+  } else {
+    state.secretValidationTimer = setTimeout(() => {
+      // If error is already displayed, we hide the error only if there is valid input.
+      // Otherwise, we hide the error if input is either empty or valid.
+      if (state.showSecretError) {
+        state.showSecretError = !isValidVCSApplicationIdOrSecret(
           props.config.type,
           props.config.secret
-        ),
-    });
-
-    onUnmounted(() => {
-      if (state.applicationIdValidationTimer) {
-        clearInterval(state.applicationIdValidationTimer);
-      }
-      if (state.secretValidationTimer) {
-        clearInterval(state.secretValidationTimer);
-      }
-    });
-
-    const createOAuthApplicationUrl = computed((): string => {
-      if (props.config.uiType == "GITLAB_SELF_HOST") {
-        return `${props.config.instanceUrl}/admin/applications/new`;
-      } else if (props.config.uiType == "GITLAB_COM") {
-        return `https://gitlab.com/-/profile/applications`;
-      } else if (props.config.uiType == "GITHUB_COM") {
-        return `https://github.com/settings/applications/new`;
-      } else if (props.config.uiType == "AZURE_DEVOPS") {
-        return `https://app.vsaex.visualstudio.com/app/register`;
-      }
-      return "";
-    });
-
-    const copyHomepageURL = () => {
-      toClipboard("https://bytebase.com").then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t(
-            "gitops.setting.add-git-provider.oauth-info.copy-homepage-url"
-          ),
-        });
-      });
-    };
-
-    const copyRedirectURI = () => {
-      toClipboard(redirectUrl()).then(() => {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t(
-            "gitops.setting.add-git-provider.oauth-info.copy-redirect-uri"
-          ),
-        });
-      });
-    };
-
-    const changeApplicationId = (value: string) => {
-      // eslint-disable-next-line vue/no-mutating-props
-      props.config.applicationId = value;
-
-      if (state.applicationIdValidationTimer) {
-        clearInterval(state.applicationIdValidationTimer);
-      }
-      // If text becomes valid, we immediately clear the error.
-      // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (
-        isValidVCSApplicationIdOrSecret(
-          props.config.type,
-          props.config.applicationId
-        )
-      ) {
-        state.showApplicationIdError = false;
+        );
       } else {
-        state.applicationIdValidationTimer = setTimeout(() => {
-          // If error is already displayed, we hide the error only if there is valid input.
-          // Otherwise, we hide the error if input is either empty or valid.
-          if (state.showApplicationIdError) {
-            state.showApplicationIdError = !isValidVCSApplicationIdOrSecret(
-              props.config.type,
-              props.config.applicationId
-            );
-          } else {
-            state.showApplicationIdError =
-              !isValidVCSApplicationIdOrSecret(
-                props.config.type,
-                props.config.applicationId
-              ) &&
-              !isValidVCSApplicationIdOrSecret(
-                props.config.type,
-                props.config.applicationId
-              );
-          }
-        }, TEXT_VALIDATION_DELAY);
+        state.showSecretError =
+          !isEmpty(props.config.secret) &&
+          !isValidVCSApplicationIdOrSecret(
+            props.config.type,
+            props.config.secret
+          );
       }
-    };
+    }, TEXT_VALIDATION_DELAY);
+  }
+};
 
-    const changeSecret = (value: string) => {
-      // eslint-disable-next-line vue/no-mutating-props
-      props.config.secret = value;
+const applicationIdErrorDescription = computed((): string => {
+  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+    return t(
+      "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
+    );
+  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+    return t(
+      "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
+    );
+  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+    return t(
+      "gitops.setting.add-git-provider.oauth-info.bitbucket-application-id-error"
+    );
+  }
+  return "";
+});
 
-      if (state.secretValidationTimer) {
-        clearInterval(state.secretValidationTimer);
-      }
-      // If text becomes valid, we immediately clear the error.
-      // otherwise, we delay TEXT_VALIDATION_DELAY to do the validation in case there is continous keystroke.
-      if (
-        isValidVCSApplicationIdOrSecret(props.config.type, props.config.secret)
-      ) {
-        state.showSecretError = false;
-      } else {
-        state.secretValidationTimer = setTimeout(() => {
-          // If error is already displayed, we hide the error only if there is valid input.
-          // Otherwise, we hide the error if input is either empty or valid.
-          if (state.showSecretError) {
-            state.showSecretError = !isValidVCSApplicationIdOrSecret(
-              props.config.type,
-              props.config.secret
-            );
-          } else {
-            state.showSecretError =
-              !isEmpty(props.config.secret) &&
-              !isValidVCSApplicationIdOrSecret(
-                props.config.type,
-                props.config.secret
-              );
-          }
-        }, TEXT_VALIDATION_DELAY);
-      }
-    };
+const secretErrorDescription = computed((): string => {
+  if (props.config.type === ExternalVersionControl_Type.GITLAB) {
+    return t("gitops.setting.add-git-provider.oauth-info.gitlab-secret-error");
+  } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
+    return t("gitops.setting.add-git-provider.oauth-info.github-secret-error");
+  } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
+    return t(
+      "gitops.setting.add-git-provider.oauth-info.bitbucket-secret-error"
+    );
+  }
+  return "";
+});
 
-    const applicationIdErrorDescription = computed((): string => {
-      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.gitlab-application-id-error"
-        );
-      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.github-application-id-error"
-        );
-      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.bitbucket-application-id-error"
-        );
-      }
-      return "";
-    });
-
-    const secretErrorDescription = computed((): string => {
-      if (props.config.type === ExternalVersionControl_Type.GITLAB) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.gitlab-secret-error"
-        );
-      } else if (props.config.type === ExternalVersionControl_Type.GITHUB) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.github-secret-error"
-        );
-      } else if (props.config.type === ExternalVersionControl_Type.BITBUCKET) {
-        return t(
-          "gitops.setting.add-git-provider.oauth-info.bitbucket-secret-error"
-        );
-      }
-      return "";
-    });
-
-    return {
-      redirectUrl,
-      state,
-      createOAuthApplicationUrl,
-      copyHomepageURL,
-      copyRedirectURI,
-      changeApplicationId,
-      changeSecret,
-      applicationIdErrorDescription,
-      secretErrorDescription,
-    };
-  },
+const secretField = computed(() => {
+  if (props.config.type === ExternalVersionControl_Type.AZURE_DEVOPS) {
+    return "Client Secret";
+  }
+  return "Secret";
 });
 </script>

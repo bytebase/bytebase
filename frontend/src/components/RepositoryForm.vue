@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4">
     <div>
-      <div v-if="isDebug && getWebhookLink !== ''">
+      <div v-if="getWebhookLink !== ''" class="mb-2">
         <label class="textlabel mt-2">
           <i18n-t keypath="repository.our-webhook-link">
             <template #webhookLink>
@@ -539,8 +539,6 @@ const onSQLReviewCIToggle = (on: boolean) => {
 };
 
 const actuatorStore = useActuatorV1Store();
-
-const isDebug = storeToRefs(actuatorStore).isDebug;
 
 const renderLabel = (option: SelectOption) => {
   const value = option.value as SchemaChange;
