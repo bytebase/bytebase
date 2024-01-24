@@ -21,6 +21,11 @@ func init() {
 }
 
 type diffNode struct {
+	// The different between the strict mode and non-strict mode is that the non-strict mode:
+	// 1. does not compare the index or constraint name, use the definition instead.
+	// 2. does not compare the storage option.
+	strictMode bool
+
 	schemaName     string
 	dropConstraint []string
 	dropIndex      []string
@@ -111,17 +116,18 @@ func (diff *diffNode) String() (string, error) {
 }
 
 // SchemaDiff implements the differ.SchemaDiffer interface.
-func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
-	oldSchemaInfo, err := buildSchemaInfo(oldStmt)
+func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
+	oldSchemaInfo, err := buildSchemaInfo(oldStmt, ctx.StrictMode)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to build schema info for old statement")
 	}
-	newSchemaInfo, err := buildSchemaInfo(newStmt)
+	newSchemaInfo, err := buildSchemaInfo(newStmt, ctx.StrictMode)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to build schema info for new statement")
 	}
 
 	diff := &diffNode{
+		strictMode: ctx.StrictMode,
 		schemaName: oldSchemaInfo.name,
 	}
 	var newTables []*tableInfo
@@ -160,19 +166,21 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 		newIndexes = append(newIndexes, index)
 	}
 	sort.Slice(newIndexes, func(i, j int) bool {
-		return newIndexes[i].id < newIndexes[j].id
+		return newIndexes[i].pos < newIndexes[j].pos
 	})
 	for _, newIndex := range newIndexes {
-		indexName := newIndex.name
-		oldIndex, exists := oldSchemaInfo.indexMap[indexName]
+		id := newIndex.id
+		oldIndex, exists := oldSchemaInfo.indexMap[id]
 		if !exists {
 			diff.addIndex = append(diff.addIndex, newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex))
 			continue
 		}
-		if err := diff.diffIndex(oldIndex, newIndex); err != nil {
-			return "", err
+		if ctx.StrictMode {
+			if err := diff.diffIndex(oldIndex, newIndex); err != nil {
+				return "", err
+			}
 		}
-		delete(oldSchemaInfo.indexMap, indexName)
+		delete(oldSchemaInfo.indexMap, id)
 	}
 
 	var remainingIndexes []*indexInfo
@@ -180,7 +188,7 @@ func SchemaDiff(_ base.DiffContext, oldStmt, newStmt string) (string, error) {
 		remainingIndexes = append(remainingIndexes, index)
 	}
 	sort.Slice(remainingIndexes, func(i, j int) bool {
-		return remainingIndexes[i].id < remainingIndexes[j].id
+		return remainingIndexes[i].pos < remainingIndexes[j].pos
 	})
 	for _, index := range remainingIndexes {
 		diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, oldSchemaInfo.name, index.name))
@@ -207,36 +215,46 @@ func (diff *diffNode) diffTable(oldTable, newTable *tableInfo) error {
 	return diff.diffConstraint(oldTable, newTable)
 }
 
-func buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyContext {
+func (diff *diffNode) buildConstraintMap(table *tableInfo) map[string]plsql.IRelational_propertyContext {
 	constraintMap := make(map[string]plsql.IRelational_propertyContext)
 	if table.createTable.Relational_table() == nil {
 		return constraintMap
 	}
 	for _, item := range table.createTable.Relational_table().AllRelational_property() {
-		switch {
-		case item.Out_of_line_constraint() != nil:
-			constraint := item.Out_of_line_constraint()
-			if constraint.Constraint_name() == nil {
-				continue
-			}
-			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			if constraintName == "" {
-				continue
-			}
-			constraintMap[constraintName] = item
-		case item.Out_of_line_ref_constraint() != nil:
-			constraint := item.Out_of_line_ref_constraint()
-			if constraint.Constraint_name() == nil {
-				continue
-			}
-			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			if constraintName == "" {
-				continue
-			}
-			constraintMap[constraintName] = item
+		id := diff.getConstraintID(item)
+		if id != "" {
+			constraintMap[id] = item
 		}
 	}
 	return constraintMap
+}
+
+func (diff *diffNode) getConstraintID(ctx plsql.IRelational_propertyContext) string {
+	if diff.strictMode {
+		switch {
+		case ctx.Out_of_line_constraint() != nil:
+			constraint := ctx.Out_of_line_constraint()
+			if constraint.Constraint_name() == nil {
+				return ""
+			}
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
+			return constraintName
+		case ctx.Out_of_line_ref_constraint() != nil:
+			constraint := ctx.Out_of_line_ref_constraint()
+			if constraint.Constraint_name() == nil {
+				return ""
+			}
+			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
+			return constraintName
+		}
+	} else if ctx.Out_of_line_constraint() != nil || ctx.Out_of_line_ref_constraint() != nil {
+		return EraseString(EraseContext{
+			eraseConstraintName: true,
+			eraseSchemaName:     true,
+			eraseIndexName:      true,
+		}, ctx, ctx.GetParser().GetTokenStream())
+	}
+	return ""
 }
 
 func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
@@ -247,52 +265,45 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 
 	var addConstraints []plsql.IRelational_propertyContext
 	var dropConstraints []string
-	oldConstraintMap := buildConstraintMap(oldTable)
+	oldConstraintMap := diff.buildConstraintMap(oldTable)
 	for _, item := range newTable.createTable.Relational_table().AllRelational_property() {
 		switch {
 		case item.Out_of_line_constraint() != nil:
-			constraint := item.Out_of_line_constraint()
-			if constraint.Constraint_name() == nil {
+			id := diff.getConstraintID(item)
+			if id == "" {
 				continue
 			}
-			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			if constraintName == "" {
-				continue
-			}
-			oldConstraint, ok := oldConstraintMap[constraintName]
+			oldConstraint, ok := oldConstraintMap[id]
 			if !ok {
 				addConstraints = append(addConstraints, item)
 				continue
 			}
 			// Compare the constraint definition.
-			if !isConstraintEqual(oldConstraint, item) {
+			if diff.strictMode && !isConstraintEqual(oldConstraint, item) {
 				addConstraints = append(addConstraints, item)
-				dropConstraints = append(dropConstraints, constraintName)
+				dropConstraints = append(dropConstraints, id)
 			}
-			delete(oldConstraintMap, constraintName)
+			delete(oldConstraintMap, id)
 		case item.Out_of_line_ref_constraint() != nil:
-			constraint := item.Out_of_line_ref_constraint()
-			if constraint.Constraint_name() == nil {
-				continue
-			}
-			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			if constraintName == "" {
-				continue
-			}
-			oldConstraint, ok := oldConstraintMap[constraintName]
+			id := diff.getConstraintID(item)
+			oldConstraint, ok := oldConstraintMap[id]
 			if !ok {
 				addConstraints = append(addConstraints, item)
 				continue
 			}
 			// Compare the constraint definition.
-			if !isConstraintEqual(oldConstraint, item) {
+			if diff.strictMode && !isConstraintEqual(oldConstraint, item) {
 				addConstraints = append(addConstraints, item)
-				dropConstraints = append(dropConstraints, constraintName)
+				dropConstraints = append(dropConstraints, id)
 			}
-			delete(oldConstraintMap, constraintName)
+			delete(oldConstraintMap, id)
 		}
 	}
-	for constraintName := range oldConstraintMap {
+	for _, item := range oldConstraintMap {
+		constraintName := getConstraintName(item)
+		if constraintName == "" {
+			continue
+		}
 		dropConstraints = append(dropConstraints, constraintName)
 	}
 
@@ -301,6 +312,26 @@ func (diff *diffNode) diffConstraint(oldTable, newTable *tableInfo) error {
 	})
 
 	return diff.appendConstraintDiff(newTable.name, addConstraints, dropConstraints)
+}
+
+func getConstraintName(ctx plsql.IRelational_propertyContext) string {
+	switch {
+	case ctx.Out_of_line_constraint() != nil:
+		constraint := ctx.Out_of_line_constraint()
+		if constraint.Constraint_name() == nil {
+			return ""
+		}
+		_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
+		return constraintName
+	case ctx.Out_of_line_ref_constraint() != nil:
+		constraint := ctx.Out_of_line_ref_constraint()
+		if constraint.Constraint_name() == nil {
+			return ""
+		}
+		_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
+		return constraintName
+	}
+	return ""
 }
 
 func (diff *diffNode) appendConstraintDiff(tableName string, addConstraints []plsql.IRelational_propertyContext, dropConstraints []string) error {
@@ -580,13 +611,14 @@ func isColumnEqual(oldColumn, newColumn plsql.IColumn_definitionContext) bool {
 	return oldString == newString
 }
 
-func buildSchemaInfo(statement string) (*schemaInfo, error) {
+func buildSchemaInfo(statement string, strictMode bool) (*schemaInfo, error) {
 	node, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
 	listener := &buildSchemaInfoListener{
+		strictMode: strictMode,
 		schemaInfo: &schemaInfo{
 			name:     "",
 			tableMap: make(tableMap),
@@ -606,6 +638,7 @@ func buildSchemaInfo(statement string) (*schemaInfo, error) {
 type buildSchemaInfoListener struct {
 	*plsql.BasePlSqlParserListener
 
+	strictMode bool
 	schemaInfo *schemaInfo
 	err        error
 }
@@ -646,6 +679,7 @@ func (l *buildSchemaInfoListener) EnterCreate_index(ctx *plsql.Create_indexConte
 		return
 	}
 
+	id := getIndexID(ctx, l.strictMode)
 	schema, index := NormalizeIndexName(ctx.Index_name())
 	if schema != "" && l.schemaInfo.name == "" {
 		l.schemaInfo.name = schema
@@ -654,12 +688,25 @@ func (l *buildSchemaInfoListener) EnterCreate_index(ctx *plsql.Create_indexConte
 		l.err = errors.Errorf("schema name mismatch: %s != %s", schema, l.schemaInfo.name)
 		return
 	}
-	l.schemaInfo.indexMap[index] = &indexInfo{
-		id:          len(l.schemaInfo.indexMap),
+	l.schemaInfo.indexMap[id] = &indexInfo{
+		pos:         len(l.schemaInfo.indexMap),
+		id:          id,
 		name:        index,
 		existsInNew: false,
 		createIndex: ctx,
 	}
+}
+
+func getIndexID(ctx plsql.ICreate_indexContext, strictMode bool) string {
+	if strictMode {
+		_, indexName := NormalizeIndexName(ctx.Index_name())
+		return indexName
+	}
+	return EraseString(EraseContext{
+		eraseIndexName:      true,
+		eraseSchemaName:     true,
+		eraseConstraintName: true,
+	}, ctx, ctx.GetParser().GetTokenStream())
 }
 
 type tableMap map[string]*tableInfo
@@ -679,7 +726,8 @@ type tableInfo struct {
 }
 
 type indexInfo struct {
-	id          int
+	pos         int
+	id          string
 	name        string
 	existsInNew bool
 	createIndex plsql.ICreate_indexContext
