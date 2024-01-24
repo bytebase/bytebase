@@ -64,7 +64,7 @@ func TestPartialEval(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		res, err := evalMemberCondition(tc.expr, tc.input)
+		res, err := doEvalBindingCondition(tc.expr, tc.input)
 		a.NoError(err)
 		a.Equal(tc.want, res, tc.name)
 	}
