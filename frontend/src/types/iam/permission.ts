@@ -100,8 +100,6 @@ export type ProjectPermission =
   | "bb.rollouts.get"
   | "bb.rollouts.preview"
   | "bb.slowQueries.list"
-  | "bb.taskRuns.list"
-  | "bb.tasks.run"
-  | "bb.tasks.skip";
+  | "bb.taskRuns.list";
 
 export type Permission = WorkspacePermission | ProjectPermission;
