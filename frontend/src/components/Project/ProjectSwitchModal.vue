@@ -54,7 +54,7 @@ import { useI18n } from "vue-i18n";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
-import { useProjectV1ListByCurrentUser } from "@/store";
+import { useProjectV1List } from "@/store";
 import {
   DEFAULT_PROJECT_ID,
   UNKNOWN_PROJECT_NAME,
@@ -83,7 +83,7 @@ const state = reactive<LocalState>({
   showCreateDrawer: false,
   selectedTab: "all",
 });
-const { projectList } = useProjectV1ListByCurrentUser();
+const { projectList } = useProjectV1List();
 const { recentViewProjects } = useRecentProjects();
 
 onMounted(() => {

@@ -1,66 +1,73 @@
 <template>
-  <div class="flex items-center justify-between h-10 pl-2 pr-4 my-1 space-x-3">
+  <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
     <div class="flex items-center">
       <BytebaseLogo class="block md:hidden" />
 
-      <div
-        class="hidden sm:flex max-w-full w-64 px-2 py-0.5 border border-control-border text-sm rounded-sm items-center justify-between hover:bg-control-bg-hover cursor-pointer ml-2 space-x-2"
+      <NButton
+        class="hidden sm:flex"
+        size="small"
         @click="state.showProjectModal = true"
       >
-        <ProjectCol
-          v-if="project.uid !== `${UNKNOWN_ID}`"
-          mode="ALL_SHORT"
-          :project="project"
-          :show-tenant-icon="true"
-        />
-        <div v-else class="text-control-placeholder text-sm">
-          {{ $t("project.select") }}
+        <div class="w-32 text-left">
+          <ProjectCol
+            v-if="project.uid !== `${UNKNOWN_ID}`"
+            mode="ALL_SHORT"
+            :project="project"
+            :show-tenant-icon="true"
+          />
+          <div v-else class="text-control-placeholder text-sm">
+            {{ $t("project.select") }}
+          </div>
         </div>
-        <ChevronDownIcon class="h-6 text-gray-400" />
-      </div>
+        <ChevronDownIcon class="w-5 h-auto text-gray-400" />
+      </NButton>
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
-      <button
-        class="hidden w-full max-w-xs md:flex items-center justify-between rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
-        @click="onClickSearchButton"
-      >
-        <span class="text-control-placeholder text-sm">
+      <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
+        <SearchIcon class="w-4 h-auto mr-1" />
+        <span class="text-control-placeholder text-sm mr-4">
           {{ $t("common.search") }}
         </span>
         <span class="flex items-center space-x-1">
           <kbd
-            class="h-6 flex items-center justify-center bg-black bg-opacity-10 rounded text-sm px-1 text-control overflow-y-hidden"
+            class="h-4 flex items-center justify-center bg-black bg-opacity-10 leading-none rounded px-1 text-control overflow-y-hidden"
           >
-            <span v-if="isMac" class="text-xl px-0.5">⌘</span>
-            <span v-else class="tracking-tighter transform scale-x-90">
+            <span v-if="isMac" class="text-base leading-none">⌘</span>
+            <span
+              v-else
+              class="tracking-tighter text-xs transform scale-x-90 leading-none"
+            >
               Ctrl
             </span>
-            <span class="ml-1 mr-0.5">K</span>
+            <span class="pl-1 text-xs leading-none">K</span>
           </kbd>
         </span>
-      </button>
-      <div
+      </NButton>
+      <NButton
         v-if="currentPlan === PlanType.FREE"
-        class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
+        size="small"
+        type="success"
         @click="handleWantHelp"
       >
         <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
         <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
-      </div>
-      <a
-        href="/sql-editor"
-        target="_blank"
-        class="flex items-center text-sm gap-x-1 rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover py-0.5 px-2"
-      >
-        <heroicons-outline:terminal class="w-6 h-6" />
-        <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-      </a>
+      </NButton>
+      <NButton size="small">
+        <a
+          href="/sql-editor"
+          class="flex flex-row justify-center items-center"
+          target="_blank"
+        >
+          <heroicons-outline:terminal class="w-5 h-auto mr-1" />
+          <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
+        </a>
+      </NButton>
       <router-link
         v-if="hasGetSettingPermission"
         :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
         exact-active-class=""
       >
-        <Settings class="w-6 h-6" />
+        <SettingsIcon class="w-5 h-auto" />
       </router-link>
       <div class="ml-2">
         <ProfileBrandingLogo>
@@ -86,7 +93,8 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { Settings, ChevronDownIcon } from "lucide-vue-next";
+import { SettingsIcon, ChevronDownIcon, SearchIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";

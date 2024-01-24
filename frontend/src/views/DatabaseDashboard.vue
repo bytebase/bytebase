@@ -69,7 +69,7 @@ import {
   useDBGroupStore,
   useDatabaseV1Store,
   usePageMode,
-  useProjectV1ListByCurrentUser,
+  useProjectV1List,
   useUIStateStore,
 } from "@/store";
 import {
@@ -99,7 +99,7 @@ interface LocalState {
 }
 
 const uiStateStore = useUIStateStore();
-const { projectList } = useProjectV1ListByCurrentUser();
+const { projectList } = useProjectV1List();
 const pageMode = usePageMode();
 
 const state = reactive<LocalState>({

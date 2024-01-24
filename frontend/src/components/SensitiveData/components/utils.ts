@@ -9,7 +9,7 @@ import {
 import {
   useEnvironmentV1Store,
   useInstanceV1List,
-  useProjectV1ListByCurrentUser,
+  useProjectV1List,
   useSettingV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME } from "@/types";
@@ -62,7 +62,7 @@ export const getInstanceIdOptions = () => {
 };
 
 export const getProjectIdOptions = () => {
-  const { projectList } = useProjectV1ListByCurrentUser();
+  const { projectList } = useProjectV1List();
   return projectList.value
     .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
     .map<SelectOption>((proj) => {
