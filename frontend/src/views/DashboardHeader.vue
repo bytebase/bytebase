@@ -20,11 +20,7 @@
       </div>
     </div>
     <div class="flex-1 flex justify-end items-center space-x-3">
-      <NButton
-        class="hidden w-full md:flex items-center justify-between rounded-sm border border-control-border bg-gray-100 hover:bg-control-bg-hover pl-2 pr-1 py-0.5 outline-none"
-        size="small"
-        @click="onClickSearchButton"
-      >
+      <NButton class="hidden md:flex" size="small" @click="onClickSearchButton">
         <SearchIcon class="w-4 h-auto mr-1" />
         <span class="text-control-placeholder text-sm mr-2">
           {{ $t("common.search") }}
@@ -43,8 +39,8 @@
       </NButton>
       <NButton
         v-if="currentPlan === PlanType.FREE"
-        class="flex justify-between items-center min-w-fit px-4 py-1 bg-emerald-500 text-sm font-medium text-white rounded-md cursor-pointer"
         size="small"
+        type="success"
         @click="handleWantHelp"
       >
         <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
