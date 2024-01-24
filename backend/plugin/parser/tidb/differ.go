@@ -472,9 +472,9 @@ type constraintMap map[string]*ast.Constraint
 
 // SchemaDiff returns the schema diff.
 // It only supports schema information from mysqldump.
-func SchemaDiff(oldStmt, newStmt string, ignoreCaseSensitive bool) (string, error) {
+func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	diff := &diffNode{
-		ignoreCaseSensitive: ignoreCaseSensitive,
+		ignoreCaseSensitive: ctx.IgnoreCaseSensitive,
 	}
 	if err := diff.diffSupportedStatement(oldStmt, newStmt); err != nil {
 		return "", err

@@ -1219,7 +1219,10 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
-	diff, err := base.SchemaDiff(engine, source, target, false /* ignoreCaseSensitive */)
+	diff, err := base.SchemaDiff(engine, base.DiffContext{
+		IgnoreCaseSensitive: false,
+		StrictMode:          true,
+	}, source, target)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)
 	}
