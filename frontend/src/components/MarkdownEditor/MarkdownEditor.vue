@@ -58,7 +58,6 @@
       ref="contentPreviewArea"
       :srcdoc="renderedContent"
       class="rounded-md w-full overflow-hidden"
-      @load="adjustIframe"
     />
     <div v-else-if="mode === 'editor'" class="relative">
       <textarea
@@ -154,48 +153,12 @@ watch(
   (mode) => (state.showPreview = mode === "preview")
 );
 
-// const markdownPlaceholder = t("issue.comment-editor.nothing-to-preview");
-// const markdownContent = computed(() => {
-//   if (!state.content) {
-//     return `<span>${markdownPlaceholder}</span>`;
-//   }
-
-//   // we met a valid #{issue_id} in which issue_id is an integer and >= 0
-//   // render a link to the issue
-//   const format = state.content
-//     .split(/(#\d+)\b/)
-//     .map((part) => {
-//       if (!part.startsWith("#")) {
-//         return part;
-//       }
-//       const id = parseInt(part.slice(1), 10);
-//       if (!Number.isNaN(id) && id > 0) {
-//         if (props.project) {
-//           // Here we assume that the referenced issue and the current issue are always
-//           // in the same project
-//           // if props.project is specified
-//           const path = `projects/${extractProjectResourceName(
-//             props.project.name
-//           )}/issues/${id}`;
-//           const url = `${window.location.origin}/${path}`;
-//           return `[${t("common.issue")} #${id}](${url})`;
-//         } else {
-//           return `[${t("common.issue")} #${id}](${
-//             window.location.origin
-//           }/issue/${id})`;
-//         }
-//       }
-//       return part;
-//     })
-//     .join("");
-//   return DOMPurify.sanitize(md.render(format));
-// });
 const contentTextArea = ref<HTMLTextAreaElement>();
 const contentPreviewArea = ref<HTMLIFrameElement>();
 const issuePanel = ref<HTMLDivElement>();
 const filterIssueList = ref<ComposedIssue[]>([]);
 
-const { adjustIframe, renderedContent } = useRenderMarkdown(
+const { renderedContent } = useRenderMarkdown(
   toRef(state, "content"),
   contentPreviewArea,
   toRef(props, "project"),
@@ -230,35 +193,6 @@ watch(
     }
   }
 );
-
-// const adjustIframe = () => {
-//   if (!contentPreviewArea.value) return;
-//   if (contentPreviewArea.value.contentWindow) {
-//     contentPreviewArea.value.contentWindow.document.body.style.overflow =
-//       "hidden";
-//   }
-
-//   if (contentPreviewArea.value.contentDocument) {
-//     const cssLink = document.createElement("style");
-//     cssLink.append(codeStyle, markdownStyle);
-//     contentPreviewArea.value.contentDocument.head.append(cssLink);
-//     contentPreviewArea.value.contentDocument.body.className = "markdown-body";
-
-//     const links =
-//       contentPreviewArea.value.contentDocument.querySelectorAll("a");
-//     for (let i = 0; i < links.length; i++) {
-//       links[i].setAttribute("target", "_blank");
-//     }
-//   }
-
-//   nextTick(() => {
-//     if (!contentPreviewArea.value) return;
-//     const height =
-//       contentPreviewArea.value.contentDocument?.documentElement.offsetHeight ??
-//       0;
-//     contentPreviewArea.value.style.height = `${height + 2}px`;
-//   });
-// };
 
 const keyboardHandler = (e: KeyboardEvent) => {
   if (!contentTextArea.value) {

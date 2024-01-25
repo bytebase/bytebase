@@ -56,7 +56,6 @@
             ref="contentPreviewArea"
             :srcdoc="renderedContent"
             class="rounded-md w-full overflow-hidden"
-            @load="adjustIframe"
           />
         </template>
         <span v-else class="text-control-placeholder">
@@ -180,7 +179,7 @@ const cancelEdit = () => {
   state.isEditing = false;
 };
 
-const { adjustIframe, renderedContent } = useRenderMarkdown(
+const { renderedContent } = useRenderMarkdown(
   computed(() => issue.value.description),
   contentPreviewArea,
   computed(() => issue.value.projectEntity)

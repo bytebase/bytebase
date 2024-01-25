@@ -1,4 +1,6 @@
-import { Ref, computed, nextTick, ref, unref } from "vue";
+import { useEventListener } from "@vueuse/core";
+import { v1 as uuidv1 } from "uuid";
+import { Ref, computed, ref, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { ComposedProject, MaybeRef } from "@/types";
 import {
@@ -25,6 +27,7 @@ export const useRenderMarkdown = (
   projectRef: MaybeRef<ComposedProject | undefined> = ref(),
   options: Partial<UseRenderMarkdownOptions> | undefined = undefined
 ) => {
+  const windowName = uuidv1();
   const mergedOptions = Object.assign(defaultOptions(), options);
   const { t } = useI18n();
   const request = Promise.all([
@@ -33,6 +36,7 @@ export const useRenderMarkdown = (
     import("@/assets/css/github-markdown-style.css?raw"),
     import("markdown-it"),
     import("dompurify"),
+    import("./resize-observer?raw"),
   ]);
   const modules = ref<ExtractPromiseType<typeof request>>();
   request.then((dep) => {
@@ -46,6 +50,7 @@ export const useRenderMarkdown = (
       { default: markdownStyle },
       { default: MarkdownIt },
       { default: DOMPurify },
+      { default: resizeObserverScript },
     ] = modules.value;
     const md = new MarkdownIt({
       html: true,
@@ -83,11 +88,13 @@ export const useRenderMarkdown = (
       codeStyle,
       markdownStyle,
       DOMPurify,
+      resizeObserverScript,
     };
   });
 
-  const renderedContent = computed(() => {
-    if (!deps.value) return mergedOptions.placeholder;
+  const rawRenderedContent = computed(() => {
+    if (!deps.value) return "";
+    if (!unref(markdown)) return mergedOptions.placeholder;
 
     // we met a valid #{issue_id} in which issue_id is an integer and >= 0
     // render a link to the issue
@@ -118,9 +125,17 @@ export const useRenderMarkdown = (
         return part;
       })
       .join("");
-    const { md, DOMPurify, codeStyle, markdownStyle } = deps.value;
+    const { md, DOMPurify } = deps.value;
     const rendered = md.render(formatted);
     const html = DOMPurify.sanitize(rendered);
+    return html;
+  });
+
+  const renderedContent = computed(() => {
+    if (!deps.value) return "";
+    const content = rawRenderedContent.value;
+
+    const { codeStyle, markdownStyle, resizeObserverScript } = deps.value;
 
     return [
       `<head>`,
@@ -128,29 +143,39 @@ export const useRenderMarkdown = (
       `<style>${markdownStyle}</style>`,
       `</head>`,
       `<body style="overflow: auto;" class="markdown-body">`,
-      html,
+      content,
       `</body>`,
+      `<script>${resizeObserverScript}</script>`,
     ].join("\n");
   });
 
-  const adjustIframe = () => {
-    if (!iframeRef.value) return;
+  watchEffect(() => {
+    const iframe = iframeRef.value;
+    if (!iframe) return;
+    const win = iframe.contentWindow;
+    if (!win) return;
+    win.name = windowName;
+  });
 
-    nextTick(() => {
-      if (!iframeRef.value) return;
-      const height =
-        iframeRef.value.contentDocument?.documentElement.offsetHeight ?? 0;
-      const normalizedHeight = minmax(
-        height,
-        mergedOptions.minHeight,
-        mergedOptions.maxHeight
-      );
-      iframeRef.value.style.height = `${normalizedHeight + 2}px`;
-    });
-  };
+  useEventListener("message", (e: MessageEvent) => {
+    if (e.data?.source !== "bb.markdown.renderer") return;
+    if (e.data.key !== windowName) return;
+    const iframe = iframeRef.value;
+    if (!iframe) return;
+    const win = iframe.contentWindow;
+    if (!win) return;
+    const height = (e.data.height as number) ?? 0;
+    const normalizedHeight = minmax(
+      height,
+      mergedOptions.minHeight,
+      mergedOptions.maxHeight
+    );
+    console.log(windowName, height, normalizedHeight);
+    iframe.style.height = `${normalizedHeight + 2}px`;
+  });
 
   const ready = computed(() => {
     return !!deps.value;
   });
-  return { adjustIframe, ready, renderedContent };
+  return { ready, renderedContent };
 };
