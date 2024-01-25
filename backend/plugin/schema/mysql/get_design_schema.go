@@ -1027,5 +1027,4 @@ func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
 		Start: begin,
 		Stop:  end,
 	})
-
 }
