@@ -4,7 +4,7 @@
       <BytebaseLogo class="block md:hidden" />
 
       <NButton
-        class="hidden sm:flex"
+        class="hidden sm:inline"
         size="small"
         @click="state.showProjectModal = true"
       >
@@ -15,9 +15,9 @@
             :project="project"
             :show-tenant-icon="true"
           />
-          <div v-else class="text-control-placeholder text-sm">
+          <span v-else class="text-control-placeholder text-sm">
             {{ $t("project.select") }}
-          </div>
+          </span>
         </div>
         <ChevronDownIcon class="w-5 h-auto text-gray-400" />
       </NButton>
