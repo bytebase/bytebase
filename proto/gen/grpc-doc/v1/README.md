@@ -197,6 +197,7 @@
     - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
+    - [GetDatabaseSchemaRequest.Format](#bytebase-v1-GetDatabaseSchemaRequest-Format)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -2955,8 +2956,7 @@ FunctionMetadata is the metadata for functions.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the database to retrieve schema. Format: instances/{instance}/databases/{database}/schema |
-| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
-| concise_format | [bool](#bool) |  | Format the schema dump into concise format. |
+| format | [GetDatabaseSchemaRequest.Format](#bytebase-v1-GetDatabaseSchemaRequest-Format) |  |  |
 
 
 
@@ -3657,6 +3657,20 @@ The type of the backup.
 | DATABASE_METADATA_VIEW_UNSPECIFIED | 0 | The default and unset value. The API will default to the BASIC view. |
 | DATABASE_METADATA_VIEW_BASIC | 1 | Include basic information of schema object names such as schema, table, view, function names. |
 | DATABASE_METADATA_VIEW_FULL | 2 | Include everything such as columns and column masking level. |
+
+
+
+<a name="bytebase-v1-GetDatabaseSchemaRequest-Format"></a>
+
+### GetDatabaseSchemaRequest.Format
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 |  |
+| FORMAT_BASIC | 1 |  |
+| FORMAT_SDL | 2 |  |
+| FORMAT_CONCISE | 3 |  |
 
 
 
