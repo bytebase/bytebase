@@ -1356,6 +1356,7 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
+// TODO(p0ny): renovate this function to respect allUsers and CEL.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// the workspace owner and DBA roles can always run tasks.
 	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {

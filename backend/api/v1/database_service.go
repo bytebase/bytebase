@@ -304,6 +304,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	return filteredDatabases, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
@@ -1744,7 +1745,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	return &emptypb.Empty{}, nil
 }
 
-// TODO(p0ny): delete this func.
+// TODO(p0ny): remove this function after iam migration.
 func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
 	if s.profile.DevelopmentIAM {
 		return nil

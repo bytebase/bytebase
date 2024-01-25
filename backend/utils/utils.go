@@ -535,7 +535,7 @@ func handleApprovalNodeExternalNode(ctx context.Context, s *store.Store, relayCl
 }
 
 // UpdateProjectPolicyFromGrantIssue updates the project policy from grant issue.
-func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
+func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store, activityManager *activity.Manager, issue *store.IssueMessage, grantRequest *storepb.GrantRequest) error {
 	policy, err := stores.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
 	if err != nil {
 		return err
@@ -585,6 +585,16 @@ func UpdateProjectPolicyFromGrantIssue(ctx context.Context, stores *store.Store,
 	}
 	if _, err := stores.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
 		return err
+	}
+	// Post project IAM policy update activity.
+	if _, err := activityManager.CreateActivity(ctx, &store.ActivityMessage{
+		CreatorUID:   api.SystemBotID,
+		ContainerUID: issue.Project.UID,
+		Type:         api.ActivityProjectMemberCreate,
+		Level:        api.ActivityInfo,
+		Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, roleID),
+	}, &activity.Metadata{}); err != nil {
+		slog.Warn("Failed to create project activity", log.BBError(err))
 	}
 	return nil
 }

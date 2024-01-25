@@ -565,6 +565,7 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 	return false, nil
 }
 
+// TODO(p0ny): renovate this function to respect allUsers and CEL.
 func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, principalUID int) (map[api.Role]bool, error) {
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
