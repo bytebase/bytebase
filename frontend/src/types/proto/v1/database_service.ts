@@ -263,6 +263,11 @@ export interface GetDatabaseSchemaRequest {
   name: string;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
+  /**
+   * When true, the schema dump will be concise.
+   * For Oracle, there will be tables and indexes only for Sync Schema.
+   */
+  concise: boolean;
 }
 
 export interface DiffSchemaRequest {
@@ -2404,7 +2409,7 @@ export const UpdateDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "", sdlFormat: false };
+  return { name: "", sdlFormat: false, concise: false };
 }
 
 export const GetDatabaseSchemaRequest = {
@@ -2414,6 +2419,9 @@ export const GetDatabaseSchemaRequest = {
     }
     if (message.sdlFormat === true) {
       writer.uint32(16).bool(message.sdlFormat);
+    }
+    if (message.concise === true) {
+      writer.uint32(24).bool(message.concise);
     }
     return writer;
   },
@@ -2439,6 +2447,13 @@ export const GetDatabaseSchemaRequest = {
 
           message.sdlFormat = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.concise = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2452,6 +2467,7 @@ export const GetDatabaseSchemaRequest = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
   },
 
@@ -2463,6 +2479,9 @@ export const GetDatabaseSchemaRequest = {
     if (message.sdlFormat === true) {
       obj.sdlFormat = message.sdlFormat;
     }
+    if (message.concise === true) {
+      obj.concise = message.concise;
+    }
     return obj;
   },
 
@@ -2473,6 +2492,7 @@ export const GetDatabaseSchemaRequest = {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
     message.sdlFormat = object.sdlFormat ?? false;
+    message.concise = object.concise ?? false;
     return message;
   },
 };
