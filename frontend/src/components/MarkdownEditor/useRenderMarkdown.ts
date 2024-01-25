@@ -170,7 +170,6 @@ export const useRenderMarkdown = (
       mergedOptions.minHeight,
       mergedOptions.maxHeight
     );
-    console.log(windowName, height, normalizedHeight);
     iframe.style.height = `${normalizedHeight + 2}px`;
   });
 
