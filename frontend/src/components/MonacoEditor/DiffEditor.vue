@@ -154,6 +154,12 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   editorRef.value?.dispose();
 });
+
+defineExpose({
+  get editor() {
+    return editorRef.value;
+  },
+});
 </script>
 
 <style lang="postcss" scoped>
