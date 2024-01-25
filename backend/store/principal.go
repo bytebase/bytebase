@@ -32,7 +32,6 @@ type UpdateUserMessage struct {
 	Email        *string
 	Name         *string
 	PasswordHash *string
-	Role         *api.Role
 	Roles        *[]api.Role
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
@@ -377,10 +376,6 @@ func (s *Store) UpdateUser(ctx context.Context, userID int, patch *UpdateUserMes
 
 	var patchRoles []api.Role
 	doPatchRoles := false
-	if v := patch.Role; v != nil {
-		doPatchRoles = true
-		patchRoles = []api.Role{*v}
-	}
 	// patch.Roles overrides patch.Role
 	if v := patch.Roles; v != nil {
 		doPatchRoles = true
