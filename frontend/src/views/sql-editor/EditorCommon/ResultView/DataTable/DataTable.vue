@@ -83,6 +83,7 @@
                 :data-col-index="cellIndex"
               >
                 <TableCell
+                  :table="table"
                   :value="cell.getValue()"
                   :keyword="keyword"
                   :set-index="setIndex"
