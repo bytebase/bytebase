@@ -1,9 +1,12 @@
 <template>
   <div class="flex-1 flex flex-col gap-y-1 text-sm">
     <template v-if="validationState.branch">
-      <div class="flex flex-row items-center gap-x-1">
-        <CheckIcon class="w-4 h-4 text-success" />
-        <span>{{ $t("branch.merge-rebase.able-to-rebase") }}</span>
+      <div>
+        {{
+          $t("branch.merge-rebase.preview-rebase-result", {
+            branch: baseBranch.branchId,
+          })
+        }}
       </div>
       <!-- BranchService.RebaseBranch now returns empty schema and metadata -->
       <!-- so we have nothing to show by now -->
@@ -57,7 +60,6 @@
 </template>
 
 <script setup lang="ts">
-import { CheckIcon } from "lucide-vue-next";
 import { computed, reactive, ref, watch } from "vue";
 import {
   LineHighlightOption,
@@ -98,6 +100,7 @@ const ConflictMarkers = [
 const props = defineProps<{
   project: ComposedProject;
   validationState: RebaseBranchValidationState;
+  baseBranch: Branch;
 }>();
 
 const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();

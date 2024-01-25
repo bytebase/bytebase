@@ -3418,7 +3418,8 @@
       "confirm-rebase": "リベースを確認しますか？",
       "conflict-not-resolved": "まだ解決されていない衝突があるようです",
       "resolve-conflicts-to-rebase": "リベースするために衝突を解決してください",
-      "preview-merge-result": "マージ結果のプレビュー"
+      "preview-merge-result": "merge 後に {branch} の変更をプレビューする",
+      "preview-rebase-result": "rebase 後に {branch} の変更をプレビューする"
     },
     "source": {
       "baseline-version": "ベースラインバージョン",
