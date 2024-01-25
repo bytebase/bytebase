@@ -62,6 +62,22 @@ export const useRenderMarkdown = (
         return ""; // use external default escaping
       },
     });
+
+    // See: https://github.com/cure53/DOMPurify/tree/main/demos#hook-to-open-all-links-in-a-new-window-link
+    // Add a hook to make all links open a new window
+    DOMPurify.addHook("afterSanitizeAttributes", function (node) {
+      // set all elements owning target to target=_blank
+      if ("target" in node) {
+        node.setAttribute("target", "_blank");
+      }
+      // set non-HTML/MathML links to xlink:show=new
+      if (
+        !node.hasAttribute("target") &&
+        (node.hasAttribute("xlink:href") || node.hasAttribute("href"))
+      ) {
+        node.setAttribute("xlink:show", "new");
+      }
+    });
     return {
       md,
       codeStyle,
@@ -75,7 +91,7 @@ export const useRenderMarkdown = (
 
     // we met a valid #{issue_id} in which issue_id is an integer and >= 0
     // render a link to the issue
-    const format = unref(markdown)
+    const formatted = unref(markdown)
       .split(/(#\d+)\b/)
       .map((part) => {
         if (!part.startsWith("#")) {
@@ -103,7 +119,8 @@ export const useRenderMarkdown = (
       })
       .join("");
     const { md, DOMPurify, codeStyle, markdownStyle } = deps.value;
-    const html = DOMPurify.sanitize(md.render(format));
+    const rendered = md.render(formatted);
+    const html = DOMPurify.sanitize(rendered);
 
     return [
       `<head>`,
@@ -118,12 +135,6 @@ export const useRenderMarkdown = (
 
   const adjustIframe = () => {
     if (!iframeRef.value) return;
-    if (iframeRef.value.contentDocument) {
-      const links = iframeRef.value.contentDocument.querySelectorAll("a");
-      for (let i = 0; i < links.length; i++) {
-        links[i].setAttribute("target", "_blank");
-      }
-    }
 
     nextTick(() => {
       if (!iframeRef.value) return;
