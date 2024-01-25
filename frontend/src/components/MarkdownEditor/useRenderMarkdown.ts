@@ -129,13 +129,11 @@ export const useRenderMarkdown = (
       if (!iframeRef.value) return;
       const height =
         iframeRef.value.contentDocument?.documentElement.offsetHeight ?? 0;
-      console.log("rendered height", height);
       const normalizedHeight = minmax(
         height,
         mergedOptions.minHeight,
         mergedOptions.maxHeight
       );
-      console.log("normalized height", normalizedHeight);
       iframeRef.value.style.height = `${normalizedHeight + 2}px`;
     });
   };

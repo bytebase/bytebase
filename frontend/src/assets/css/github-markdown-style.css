@@ -551,7 +551,7 @@
 .markdown-body pre,
 .markdown-body details {
   margin-top: 0;
-  margin-bottom: 0.25em;
+  margin-bottom: 16px;
 }
 
 .markdown-body p {
