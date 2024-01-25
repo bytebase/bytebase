@@ -840,7 +840,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	}
 	// We only support MySQL engine for now.
 	schema := string(dbSchema.GetSchema())
-	if request.SdlFormat {
+	if request.GetSdlFormat() {
 		switch instance.Engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			sdlSchema, err := transform.SchemaTransform(storepb.Engine_MYSQL, schema)
@@ -1258,10 +1258,13 @@ func (s *DatabaseService) getSourceSchema(ctx context.Context, request *v1pb.Dif
 		return changeHistory.Schema, nil
 	}
 
-	databaseSchema, err := s.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
-		Name:      fmt.Sprintf("%s/schema", request.Name),
-		SdlFormat: request.SdlFormat,
-	})
+	getSchemaRequest := &v1pb.GetDatabaseSchemaRequest{
+		Name: fmt.Sprintf("%s/schema", request.Name),
+	}
+	if request.SdlFormat {
+		getSchemaRequest.Format = &v1pb.GetDatabaseSchemaRequest_SdlFormat{SdlFormat: true}
+	}
+	databaseSchema, err := s.GetDatabaseSchema(ctx, getSchemaRequest)
 	if err != nil {
 		return "", err
 	}

@@ -262,7 +262,11 @@ export interface GetDatabaseSchemaRequest {
    */
   name: string;
   /** Format the schema dump into SDL format. */
-  sdlFormat: boolean;
+  sdlFormat?:
+    | boolean
+    | undefined;
+  /** Format the schema dump into concise format. */
+  conciseFormat?: boolean | undefined;
 }
 
 export interface DiffSchemaRequest {
@@ -2404,7 +2408,7 @@ export const UpdateDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "", sdlFormat: false };
+  return { name: "", sdlFormat: undefined, conciseFormat: undefined };
 }
 
 export const GetDatabaseSchemaRequest = {
@@ -2412,8 +2416,11 @@ export const GetDatabaseSchemaRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.sdlFormat === true) {
+    if (message.sdlFormat !== undefined) {
       writer.uint32(16).bool(message.sdlFormat);
+    }
+    if (message.conciseFormat !== undefined) {
+      writer.uint32(24).bool(message.conciseFormat);
     }
     return writer;
   },
@@ -2439,6 +2446,13 @@ export const GetDatabaseSchemaRequest = {
 
           message.sdlFormat = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.conciseFormat = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2451,7 +2465,8 @@ export const GetDatabaseSchemaRequest = {
   fromJSON(object: any): GetDatabaseSchemaRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : undefined,
+      conciseFormat: isSet(object.conciseFormat) ? globalThis.Boolean(object.conciseFormat) : undefined,
     };
   },
 
@@ -2460,8 +2475,11 @@ export const GetDatabaseSchemaRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.sdlFormat === true) {
+    if (message.sdlFormat !== undefined) {
       obj.sdlFormat = message.sdlFormat;
+    }
+    if (message.conciseFormat !== undefined) {
+      obj.conciseFormat = message.conciseFormat;
     }
     return obj;
   },
@@ -2472,7 +2490,8 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
-    message.sdlFormat = object.sdlFormat ?? false;
+    message.sdlFormat = object.sdlFormat ?? undefined;
+    message.conciseFormat = object.conciseFormat ?? undefined;
     return message;
   },
 };

@@ -285,8 +285,13 @@ message GetDatabaseSchemaRequest {
   // Format: instances/{instance}/databases/{database}/schema
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // Format the schema dump into SDL format.
-  bool sdl_format = 2;
+  oneof format {
+    // Format the schema dump into SDL format.
+    bool sdl_format = 2;
+
+    // Format the schema dump into concise format.
+    bool concise_format = 3;
+  }
 }
 
 message DiffSchemaRequest {
