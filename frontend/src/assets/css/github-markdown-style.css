@@ -551,7 +551,11 @@
 .markdown-body pre,
 .markdown-body details {
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 0.25em;
+}
+
+.markdown-body p {
+  white-space: pre-wrap;
 }
 
 .markdown-body blockquote > :first-child {

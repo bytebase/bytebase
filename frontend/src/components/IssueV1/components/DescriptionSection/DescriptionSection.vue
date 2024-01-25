@@ -71,16 +71,15 @@
 import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentUserV1 } from "@/store";
 import { Issue, IssueStatus } from "@/types/proto/v1/issue_service";
 import {
-  extractProjectResourceName,
   extractUserResourceName,
   hasProjectPermissionV2,
   isGrantRequestIssue,
-  minmax,
 } from "@/utils";
 import { useIssueContext } from "../../logic";
 
@@ -89,35 +88,6 @@ type LocalState = {
   isUpdating: boolean;
   description: string;
 };
-const [
-  { default: hljs },
-  { default: codeStyle },
-  { default: markdownStyle },
-  { default: MarkdownIt },
-  { default: DOMPurify },
-] = await Promise.all([
-  import("highlight.js/lib/core"),
-  import("highlight.js/styles/github.css?raw"),
-  import("@/assets/css/github-markdown-style.css?raw"),
-  import("markdown-it"),
-  import("dompurify"),
-]);
-
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  highlight: function (code, lang) {
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(code, { language: lang }).value;
-      } catch {
-        return "";
-      }
-    }
-
-    return ""; // use external default escaping
-  },
-});
 
 const { t } = useI18n();
 const { isCreating, issue } = useIssueContext();
@@ -210,60 +180,11 @@ const cancelEdit = () => {
   state.isEditing = false;
 };
 
-const renderedContent = computed(() => {
-  // we met a valid #{issue_id} in which issue_id is an integer and >= 0
-  // render a link to the issue
-  const format = issue.value.description
-    .split(/(#\d+)\b/)
-    .map((part) => {
-      if (!part.startsWith("#")) {
-        return part;
-      }
-      const id = parseInt(part.slice(1), 10);
-      if (!Number.isNaN(id) && id > 0) {
-        // Here we assume that the referenced issue and the current issue are always
-        // in the same project
-        const path = `projects/${extractProjectResourceName(
-          issue.value.projectEntity.name
-        )}/issues/${id}`;
-        const url = `${window.location.origin}/${path}`;
-        return `[${t("common.issue")} #${id}](${url})`;
-      }
-      return part;
-    })
-    .join("");
-  return DOMPurify.sanitize(md.render(format));
-});
-
-const adjustIframe = () => {
-  if (!contentPreviewArea.value) return;
-  if (contentPreviewArea.value.contentWindow) {
-    contentPreviewArea.value.contentWindow.document.body.style.overflow =
-      "auto";
-  }
-
-  if (contentPreviewArea.value.contentDocument) {
-    const cssLink = document.createElement("style");
-    cssLink.append(codeStyle, markdownStyle);
-    contentPreviewArea.value.contentDocument.head.append(cssLink);
-    contentPreviewArea.value.contentDocument.body.className = "markdown-body";
-
-    const links =
-      contentPreviewArea.value.contentDocument.querySelectorAll("a");
-    for (let i = 0; i < links.length; i++) {
-      links[i].setAttribute("target", "_blank");
-    }
-  }
-
-  nextTick(() => {
-    if (!contentPreviewArea.value) return;
-    const height =
-      contentPreviewArea.value.contentDocument?.documentElement.offsetHeight ??
-      0;
-    const normalizedHeight = minmax(height, 48 /* 3rem */, 192 /* 12rem */);
-    contentPreviewArea.value.style.height = `${normalizedHeight + 2}px`;
-  });
-};
+const { adjustIframe, renderedContent } = useRenderMarkdown(
+  computed(() => issue.value.description),
+  contentPreviewArea,
+  computed(() => issue.value.projectEntity)
+);
 
 // Reset the edit state after creating the issue.
 watch(isCreating, (curr, prev) => {
