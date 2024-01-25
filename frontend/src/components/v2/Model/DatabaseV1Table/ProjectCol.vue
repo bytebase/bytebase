@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+import { NTooltip } from "naive-ui";
 import { State } from "@/types/proto/v1/common";
 import {
   Project,
