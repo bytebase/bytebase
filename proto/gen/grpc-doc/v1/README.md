@@ -85,7 +85,6 @@
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
   
-    - [UserRole](#bytebase-v1-UserRole)
     - [UserType](#bytebase-v1-UserType)
   
     - [AuthService](#bytebase-v1-AuthService)
@@ -1799,7 +1798,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  |  |
 | title | [string](#string) |  |  |
 | user_type | [UserType](#bytebase-v1-UserType) |  |  |
-| user_role | [UserRole](#bytebase-v1-UserRole) |  | The user role will not be respected in the create user request, because the role is controlled by workspace owner. TODO(p0ny): deprecate in favor of `roles`. |
 | password | [string](#string) |  |  |
 | service_key | [string](#string) |  |  |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
@@ -1813,20 +1811,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 
  
-
-
-<a name="bytebase-v1-UserRole"></a>
-
-### UserRole
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| USER_ROLE_UNSPECIFIED | 0 |  |
-| OWNER | 1 |  |
-| DBA | 2 |  |
-| DEVELOPER | 3 |  |
-
 
 
 <a name="bytebase-v1-UserType"></a>

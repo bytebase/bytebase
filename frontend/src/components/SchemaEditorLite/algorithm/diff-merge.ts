@@ -11,7 +11,7 @@ import {
   TableConfig,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { TinyTimer } from "@/utils";
+import { TinyTimer, keyBy } from "@/utils";
 import {
   ComparableColumnFields,
   ComparableForeignKeyFields,
@@ -251,9 +251,13 @@ export class DiffMerge {
     if (sourceIndexes.length !== targetIndexes.length) {
       return false;
     }
+    const targetIndexesByName = keyBy(targetIndexes, (idx) => idx.name);
+
     for (let i = 0; i < sourceIndexes.length; i++) {
       const sourceIndex = sourceIndexes[i];
-      const targetIndex = targetIndexes[i];
+      const targetIndex = targetIndexesByName.get(sourceIndex.name);
+      // targetIndex not found
+      if (!targetIndex) return false;
       if (
         !isEqual(
           pick(sourceIndex, ComparableIndexFields),

@@ -2,7 +2,7 @@ import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { useCurrentUserV1, useProjectV1ListByCurrentUser } from "@/store";
+import { useCurrentUserV1, useProjectV1List } from "@/store";
 import { DEFAULT_PROJECT_ID } from "@/types";
 import { isMemberOfProjectV1 } from "@/utils";
 
@@ -10,7 +10,7 @@ export const useProjectActions = () => {
   const { t } = useI18n();
   const router = useRouter();
   const me = useCurrentUserV1();
-  const { projectList } = useProjectV1ListByCurrentUser();
+  const { projectList } = useProjectV1List();
 
   const accessibleProjectList = computed(() => {
     return projectList.value.filter((project) => {

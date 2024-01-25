@@ -101,8 +101,8 @@ const issueStatusActionList = computed(() => {
 const forceRolloutActionList = computed((): ExtraActionOption[] => {
   // Still using role based permission checks
   if (
-    currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
-    currentUser.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+    !currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+    !currentUser.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
   ) {
     // Only for workspace admins and DBAs.
     return [];

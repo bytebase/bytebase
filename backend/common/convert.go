@@ -134,7 +134,7 @@ func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	ast, issues := e.Parse(expr)
+	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
 		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
@@ -153,7 +153,7 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	ast, issues := e.Parse(expr)
+	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
 		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
@@ -172,7 +172,7 @@ func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	ast, issues := e.Parse(expr)
+	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
 		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
@@ -193,7 +193,7 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	ast, issues := e.Parse(expression.Expression)
+	ast, issues := e.Compile(expression.Expression)
 	if issues != nil && issues.Err() != nil {
 		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}

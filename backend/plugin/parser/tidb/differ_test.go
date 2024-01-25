@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type testCase struct {
@@ -15,7 +17,10 @@ type testCase struct {
 func testDiffWithoutDisableForeignKeyCheck(t *testing.T, testCases []testCase) {
 	a := require.New(t)
 	for _, test := range testCases {
-		out, err := SchemaDiff(test.old, test.new, true /* ignoreCaseSensitive */)
+		out, err := SchemaDiff(base.DiffContext{
+			IgnoreCaseSensitive: true,
+			StrictMode:          true,
+		}, test.old, test.new)
 		a.NoError(err)
 		if len(out) > 0 {
 			a.Equal(disableFKCheckStmt, out[:len(disableFKCheckStmt)])

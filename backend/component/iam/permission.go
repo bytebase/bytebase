@@ -105,10 +105,7 @@ const (
 	PermissionRolloutsGet                  Permission = "bb.rollouts.get"
 	PermissionRolloutsPreview              Permission = "bb.rollouts.preview"
 	PermissionSlowQueriesList              Permission = "bb.slowQueries.list"
-	PermissionTaskRunsCancel               Permission = "bb.taskRuns.cancel"
 	PermissionTaskRunsList                 Permission = "bb.taskRuns.list"
-	PermissionTasksRun                     Permission = "bb.tasks.run"
-	PermissionTasksSkip                    Permission = "bb.tasks.skip"
 )
 
 func (p Permission) String() string {
@@ -217,10 +214,7 @@ func PermissionExist(p Permission) bool {
 		PermissionSettingsList,
 		PermissionSettingsSet,
 		PermissionSlowQueriesList,
-		PermissionTaskRunsCancel,
-		PermissionTaskRunsList,
-		PermissionTasksRun,
-		PermissionTasksSkip:
+		PermissionTaskRunsList:
 		return true
 	default:
 		return false
@@ -342,10 +336,7 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionRolloutsGet,
 		PermissionRolloutsPreview,
 		PermissionSlowQueriesList,
-		PermissionTaskRunsCancel,
-		PermissionTaskRunsList,
-		PermissionTasksRun,
-		PermissionTasksSkip:
+		PermissionTaskRunsList:
 		return PermissionLevelProject
 	default:
 		return ""

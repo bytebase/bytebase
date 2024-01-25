@@ -2,7 +2,7 @@ import { uniq, without } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
-import { useEnvironmentV1Store, useProjectV1ListByCurrentUser } from "@/store";
+import { useEnvironmentV1Store, useProjectV1List } from "@/store";
 import {
   engineName,
   PresetRiskLevelList,
@@ -140,7 +140,7 @@ const getEnvironmentIdOptions = () => {
 };
 
 const getProjectIdOptions = () => {
-  const { projectList } = useProjectV1ListByCurrentUser();
+  const { projectList } = useProjectV1List();
   return projectList.value
     .filter((proj) => proj.name != DEFAULT_PROJECT_V1_NAME)
     .map<SelectOption>((proj) => {

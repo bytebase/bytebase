@@ -3269,11 +3269,6 @@
       "create": "Nhóm bảng mới",
       "edit": "Chỉnh sửa nhóm bảng"
     },
-    "factor": {
-      "resource_instance_id": "ID phiên bản",
-      "resource_database_name": "Tên cơ sở dữ liệu",
-      "resource_table_name": "Tên bảng"
-    },
     "condition": {
       "self": "Tình trạng"
     },
@@ -3339,7 +3334,10 @@
       "export_rows": "Xuất hàng",
       "table_name": "Tên bảng",
       "column_name": "Tên cột dọc",
-      "classification_level": "Cấp độ phân loại"
+      "classification_level": "Cấp độ phân loại",
+      "resource_instance_id": "ID phiên bản",
+      "resource_database_name": "Tên cơ sở dữ liệu",
+      "resource_table_name": "Tên bảng"
     }
   },
   "changelist": {

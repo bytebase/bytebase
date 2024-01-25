@@ -227,10 +227,7 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.get
-      - bb.taskRuns.cancel
       - bb.taskRuns.list
-      - bb.tasks.run
-      - bb.tasks.skip
   - name: roles/projectViewer
     permissions:
       - bb.databases.get

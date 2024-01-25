@@ -66,7 +66,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump functions")
 	}
-	if err := dumpIndexTxn(ctx, txn, schema, out); err != nil {
+	if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump indexes")
 	}
 	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
@@ -78,7 +78,7 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	return nil
 }
 
-func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) error {
+func assembleTableStatement(tableMap map[string]*tableSchema, schemaTenantMode bool, out io.Writer) error {
 	var tableList []*tableSchema
 	for _, table := range tableMap {
 		switch {
@@ -93,7 +93,7 @@ func assembleTableStatement(tableMap map[string]*tableSchema, out io.Writer) err
 	})
 
 	for _, table := range tableList {
-		if err := table.assembleStatement(out); err != nil {
+		if err := table.assembleStatement(schemaTenantMode, out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n")); err != nil {
@@ -109,15 +109,17 @@ type tableSchema struct {
 	constraints []*mergedConstraintMeta
 }
 
-func (t *tableSchema) assembleStatement(out io.Writer) error {
+func (t *tableSchema) assembleStatement(schemaTenantMode bool, out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE TABLE "`)); err != nil {
 		return err
 	}
-	if _, err := out.Write([]byte(t.meta.Owner.String)); err != nil {
-		return err
-	}
-	if _, err := out.Write([]byte(`"."`)); err != nil {
-		return err
+	if !schemaTenantMode {
+		if _, err := out.Write([]byte(t.meta.Owner.String)); err != nil {
+			return err
+		}
+		if _, err := out.Write([]byte(`"."`)); err != nil {
+			return err
+		}
 	}
 	if _, err := out.Write([]byte(t.meta.TableName.String)); err != nil {
 		return err
@@ -778,9 +780,9 @@ type functionMeta struct {
 	Text          sql.NullString
 }
 
-func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
+func assembleIndexes(indexes []*mergedIndexMeta, schemaTenantMode bool, out io.Writer) error {
 	for _, index := range indexes {
-		if err := assembleIndexStatement(index, out); err != nil {
+		if err := assembleIndexStatement(index, schemaTenantMode, out); err != nil {
 			return err
 		}
 		if _, err := out.Write([]byte("\n;\n\n")); err != nil {
@@ -790,7 +792,7 @@ func assembleIndexes(indexes []*mergedIndexMeta, out io.Writer) error {
 	return nil
 }
 
-func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
+func assembleIndexStatement(index *mergedIndexMeta, schemaTenantMode bool, out io.Writer) error {
 	if _, err := out.Write([]byte(`CREATE`)); err != nil {
 		return err
 	}
@@ -812,14 +814,15 @@ func assembleIndexStatement(index *mergedIndexMeta, out io.Writer) error {
 		return err
 	}
 
-	if _, err := out.Write([]byte(index.Owner.String)); err != nil {
-		return err
-	}
+	if !schemaTenantMode {
+		if _, err := out.Write([]byte(index.Owner.String)); err != nil {
+			return err
+		}
 
-	if _, err := out.Write([]byte(`"."`)); err != nil {
-		return err
+		if _, err := out.Write([]byte(`"."`)); err != nil {
+			return err
+		}
 	}
-
 	if _, err := out.Write([]byte(index.IndexName.String)); err != nil {
 		return err
 	}
@@ -1930,7 +1933,7 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
 	}
 
-	return assembleTableStatement(tableMap, out)
+	return assembleTableStatement(tableMap, driver.schemaTenantMode, out)
 }
 
 func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
@@ -2027,7 +2030,7 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 	return nil
 }
 
-func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantMode bool, out io.Writer) error {
 	indexes := []*indexMeta{}
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
 	if err != nil {
@@ -2188,7 +2191,7 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer
 		}
 	}
 
-	return assembleIndexes(mergedIndexList, out)
+	return assembleIndexes(mergedIndexList, schemaTenantMode, out)
 }
 
 func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {

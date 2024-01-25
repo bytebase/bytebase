@@ -14,19 +14,25 @@
           <ProjectWebhookCard :project-webhook="projectWebhook" />
         </template>
       </div>
-      <template v-else>
+      <NoDataPlaceholder v-else>
         <div class="text-center">
-          <heroicons-outline:inbox
-            class="mx-auto w-16 h-16 text-control-light"
-          />
           <h3 class="mt-2 text-sm font-medium text-main">
             {{ $t("project.webhook.no-webhook.title") }}
           </h3>
           <p class="mt-1 text-sm text-control-light">
             {{ $t("project.webhook.no-webhook.content") }}
           </p>
+          <div class="mt-4">
+            <NButton
+              size="small"
+              type="primary"
+              @click.prevent="addProjectWebhook"
+            >
+              {{ $t("project.webhook.add-a-webhook") }}
+            </NButton>
+          </div>
         </div>
-      </template>
+      </NoDataPlaceholder>
     </div>
   </div>
 </template>

@@ -8,6 +8,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type DifferTestData struct {
@@ -29,7 +31,7 @@ func runDifferTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, test := range tests {
-		diff, err := SchemaDiff(test.OldSchema, test.NewSchema, false /* ignoreCaseSensitive */)
+		diff, err := SchemaDiff(base.DiffContext{IgnoreCaseSensitive: false, StrictMode: true}, test.OldSchema, test.NewSchema)
 		require.NoError(t, err)
 		if len(diff) > 0 {
 			require.Equal(t, disableFKCheckStmt, diff[:len(disableFKCheckStmt)])
