@@ -128,7 +128,7 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 	}
 
 	_, _, columnName := mysqlparser.NormalizeMySQLColumnName(ctx.ColumnName())
-	dataType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.FieldDefinition().DataType())
+	dataType := getDataTypePlainText(ctx.FieldDefinition().DataType())
 	table := t.state.schemas[""].tables[t.currentTable]
 	if _, ok := table.columns[columnName]; ok {
 		t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
