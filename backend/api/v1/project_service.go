@@ -90,7 +90,7 @@ func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListPro
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, err.Error())
 		}
-		if !isOwnerOrDBA(user) && !isProjectMember(user.ID, policy) {
+		if !s.profile.DevelopmentIAM && !isOwnerOrDBA(user) && !isProjectMember(user.ID, policy) {
 			continue
 		}
 		response.Projects = append(response.Projects, convertToProject(project))
@@ -3059,6 +3059,7 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
 	for _, binding := range policy.Bindings {
 		for _, member := range binding.Members {

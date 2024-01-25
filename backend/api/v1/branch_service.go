@@ -788,6 +788,7 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 	return project, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func (s *BranchService) checkBranchPermission(ctx context.Context, projectID string) error {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
@@ -817,6 +818,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if project.Setting == nil {
 		return nil
 	}
+	// TODO(p0ny): eval CEL.
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return err

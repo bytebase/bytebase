@@ -208,6 +208,7 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
+		// TODO(p0ny): renovate this function to respect allUsers and CEL.
 		for _, binding := range projectPolicy.Bindings {
 			if binding.Role == api.ProjectOwner {
 				for _, member := range binding.Members {
