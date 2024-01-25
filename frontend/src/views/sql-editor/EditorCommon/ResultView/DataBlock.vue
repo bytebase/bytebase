@@ -40,6 +40,7 @@
           </div>
           <div class="flex-1">
             <TableCell
+              :table="table"
               :value="row.getVisibleCells()[header.index].getValue()"
               :keyword="keyword"
               :set-index="setIndex"
