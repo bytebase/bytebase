@@ -3420,7 +3420,8 @@
       "confirm-rebase": "Xác nhận rebase?",
       "conflict-not-resolved": "Có vẻ như một số xung đột vẫn chưa được giải quyết.",
       "resolve-conflicts-to-rebase": "Giải quyết xung đột để rebase",
-      "preview-merge-result": "Xem trước kết quả hợp nhất"
+      "preview-merge-result": "Xem trước các thay đổi trên {branch} sau khi hợp nhất",
+      "preview-rebase-result": "Xem trước các thay đổi trên {branch} sau rebase"
     },
     "source": {
       "baseline-version": "Phiên bản cơ bản",
