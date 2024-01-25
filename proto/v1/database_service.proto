@@ -287,6 +287,10 @@ message GetDatabaseSchemaRequest {
 
   // Format the schema dump into SDL format.
   bool sdl_format = 2;
+
+  // When true, the schema dump will be concise.
+  // For Oracle, there will be tables and indexes only for Sync Schema.
+  bool concise = 3;
 }
 
 message DiffSchemaRequest {
