@@ -71,7 +71,7 @@
     </div>
 
     <Drawer v-model:show="detail.show" @close="detail.show = false">
-      <DetailPanel v-if="detail.show" :result-set="resultSet" />
+      <DetailPanel v-if="detail.show" />
     </Drawer>
   </NConfigProvider>
 </template>
@@ -139,6 +139,7 @@ const detail: SQLResultViewContext["detail"] = ref({
   set: 0,
   row: 0,
   col: 0,
+  table: undefined,
 });
 
 const viewMode = computed((): ViewMode => {

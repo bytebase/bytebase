@@ -76,44 +76,38 @@
 
 <script setup lang="ts">
 import { onKeyStroke, useClipboard } from "@vueuse/core";
-import { escape, get } from "lodash-es";
+import { escape } from "lodash-es";
 import { ChevronDownIcon, ChevronUpIcon, ClipboardIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
-import { SQLResultSetV1 } from "@/types";
-import { QueryResult, RowValue } from "@/types/proto/v1/sql_service";
-import { extractSQLRowValue } from "@/utils";
 import { useSQLResultViewContext } from "./context";
-
-const props = defineProps<{
-  resultSet?: SQLResultSetV1;
-}>();
 
 const { t } = useI18n();
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 
-const value = computed(() => {
-  const { resultSet } = props;
-  const { set, row, col } = detail.value;
-  const cell: RowValue =
-    get(resultSet, `results.${set}.rows.${row}.values.${col}`) ??
-    RowValue.fromJSON({});
-  return extractSQLRowValue(cell);
+const detailValue = computed(() => {
+  const { row, col, table } = detail.value;
+  if (!table) return undefined;
+
+  const value = table
+    .getPrePaginationRowModel()
+    .rows[row]?.getVisibleCells()
+    [col]?.getValue<string>();
+  return value;
 });
 
 const totalCount = computed(() => {
-  const result: QueryResult =
-    get(props.resultSet, `results.${detail.value.set}`) ??
-    QueryResult.fromJSON({});
-  return result.rows.length;
+  const { table } = detail.value;
+  if (!table) return 0;
+  return table.getPrePaginationRowModel().rows.length;
 });
 
 const html = computed(() => {
-  const str = String(value.value);
-  if (str.length === 0) {
+  const str = detailValue.value;
+  if (!str || str.length === 0) {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
 
@@ -122,7 +116,7 @@ const html = computed(() => {
 
 const { copy, copied } = useClipboard({
   source: computed(() => {
-    return String(value.value);
+    return detailValue.value ?? "";
   }),
 });
 const handleCopy = () => {

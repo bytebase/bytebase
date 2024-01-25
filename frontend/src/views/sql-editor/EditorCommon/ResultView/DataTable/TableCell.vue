@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { type Table } from "@tanstack/vue-table";
 import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
@@ -32,6 +33,7 @@ import { getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 
 const props = defineProps<{
+  table: Table<string[]>;
   value: unknown;
   setIndex: number;
   rowIndex: number;
@@ -116,6 +118,7 @@ const showDetail = () => {
     set: props.setIndex,
     row: props.rowIndex,
     col: props.colIndex,
+    table: props.table,
   };
 };
 </script>
