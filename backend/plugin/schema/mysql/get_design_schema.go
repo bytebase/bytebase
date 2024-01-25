@@ -1011,7 +1011,7 @@ func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
 	if typeCtx.CharsetWithOptBinary() != nil {
 		end = typeCtx.CharsetWithOptBinary().GetStart().GetTokenIndex() - 1
 	}
-	// To skip the tailing space, we iterate the token stream reversely and find the first default channel token index.
+	// To skip the trailing spaces, we iterate the token stream reversely and find the first default channel token index.
 	for i := end; i >= begin; i-- {
 		if typeCtx.GetParser().GetTokenStream().Get(i).GetChannel() == antlr.TokenDefaultChannel {
 			end = i
