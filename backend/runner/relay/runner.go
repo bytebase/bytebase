@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -353,65 +351,8 @@ func (r *Runner) ApproveExternalApprovalNode(ctx context.Context, issueUID int) 
 
 	// Grant the privilege if the issue is approved.
 	if approved && issue.Type == api.IssueGrantRequest {
-		policy, err := r.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &issue.Project.ResourceID})
-		if err != nil {
-			return err
-		}
-		var newConditionExpr string
-		if payload.GrantRequest.Condition != nil {
-			newConditionExpr = payload.GrantRequest.Condition.Expression
-		}
-		updated := false
-
-		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
-		if err != nil {
-			return err
-		}
-		newUser, err := r.store.GetUserByID(ctx, userID)
-		if err != nil {
-			return err
-		}
-		if newUser == nil {
-			return errors.Errorf("user %v not found", userID)
-		}
-		for _, binding := range policy.Bindings {
-			if binding.Role != api.Role(payload.GrantRequest.Role) {
-				continue
-			}
-			var oldConditionExpr string
-			if binding.Condition != nil {
-				oldConditionExpr = binding.Condition.Expression
-			}
-			if oldConditionExpr != newConditionExpr {
-				continue
-			}
-			// Append
-			binding.Members = append(binding.Members, newUser)
-			updated = true
-			break
-		}
-		role := api.Role(strings.TrimPrefix(payload.GrantRequest.Role, "roles/"))
-		if !updated {
-			condition := payload.GrantRequest.Condition
-			condition.Description = fmt.Sprintf("#%d", issue.UID)
-			policy.Bindings = append(policy.Bindings, &store.PolicyBinding{
-				Role:      role,
-				Members:   []*store.UserMessage{newUser},
-				Condition: condition,
-			})
-		}
-		if _, err := r.store.SetProjectIAMPolicy(ctx, policy, api.SystemBotID, issue.Project.UID); err != nil {
-			return err
-		}
-		// Post project IAM policy update activity.
-		if _, err := r.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.Project.UID,
-			Type:         api.ActivityProjectMemberCreate,
-			Level:        api.ActivityInfo,
-			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, role),
-		}, &activity.Metadata{}); err != nil {
-			slog.Warn("Failed to create project activity", log.BBError(err))
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, r.activityManager, issue, payload.GrantRequest); err != nil {
+			return errors.Wrapf(err, "failed to update project iam policy for grant request issue %q", issue.Title)
 		}
 	}
 	if issue.Type == api.IssueGrantRequest {

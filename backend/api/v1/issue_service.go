@@ -840,7 +840,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 
 	// Grant the privilege if the issue is approved.
 	if approved && issue.Type == api.IssueGrantRequest {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, issue, payload.GrantRequest); err != nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, s.store, s.activityManager, issue, payload.GrantRequest); err != nil {
 			return nil, err
 		}
 		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
@@ -1795,6 +1795,7 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
+// TODO(p0ny): renovate this function, respect allUsers & CEL.
 func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
@@ -2130,6 +2131,7 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 	}, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {

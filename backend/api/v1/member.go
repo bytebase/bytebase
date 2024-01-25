@@ -18,6 +18,7 @@ func isOwnerOrDBA(user *store.UserMessage) bool {
 }
 
 // isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
+// TODO(p0ny): remove this function after iam migration.
 func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
 	for _, binding := range projectPolicy.Bindings {
 		if binding.Role != api.ProjectOwner && binding.Role != api.ProjectDeveloper {
@@ -32,6 +33,7 @@ func isProjectOwnerOrDeveloper(principalID int, projectPolicy *store.IAMPolicyMe
 	return false
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) (map[string]bool, error) {
 	projects, err := s.ListProjectV2(ctx, &store.FindProjectMessage{})
 	if err != nil {
@@ -51,6 +53,7 @@ func getUserBelongingProjects(ctx context.Context, s *store.Store, userUID int) 
 	return projectIDs, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func isUserAtLeastProjectViewer(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -77,6 +80,7 @@ func isUserAtLeastProjectViewer(ctx context.Context, s *store.Store, requestProj
 }
 
 // isProjectOwnerDeveloperOrViewer returns whether a principal is a project owner or developer in the project.
+// TODO(p0ny): remove this function after iam migration.
 func isProjectOwnerDeveloperOrViewer(principalID int, projectPolicy *store.IAMPolicyMessage) bool {
 	for _, binding := range projectPolicy.Bindings {
 		if binding.Role != api.ProjectOwner && binding.Role != api.ProjectDeveloper && binding.Role != api.ProjectViewer {
@@ -91,6 +95,7 @@ func isProjectOwnerDeveloperOrViewer(principalID int, projectPolicy *store.IAMPo
 	return false
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -116,6 +121,7 @@ func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestP
 	return false, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProjectID string) (bool, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
