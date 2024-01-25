@@ -34,6 +34,7 @@
           ref="rebaseBranchStepRef"
           :project="project"
           :validation-state="validationState"
+          :base-branch="headBranch"
         />
       </template>
     </StepTab>
