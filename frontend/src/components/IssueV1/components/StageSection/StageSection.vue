@@ -2,21 +2,23 @@
   <div class="w-full flex flex-col divide-y">
     <template v-if="stageList.length > 0">
       <div class="px-0">
-        <NScrollbar :x-scrollable="true">
-          <div class="flex flex-col lg:flex-row justify-between">
+        <NScrollbar :x-scrollable="true" class="max-h-[180px] sm:max-h-max">
+          <div
+            class="flex flex-col sm:flex-row justify-between divide-y sm:divide-y-0"
+          >
             <template v-for="(stage, index) in stageList" :key="stage.uid">
               <StageCard
                 :stage="stage"
                 :index="index"
-                class="h-[54px]"
+                class="h-[54px] px-2 sm:px-0"
                 :class="[
-                  index === 0 && 'pl-4',
-                  index === stageList.length - 1 && 'pr-4',
+                  index === 0 && 'sm:pl-4',
+                  index === stageList.length - 1 && 'sm:pr-4',
                 ]"
               />
               <div
                 v-if="index < stageList.length - 1"
-                class="hidden lg:block w-3.5 h-[54px] mr-2 pointer-events-none shrink-0"
+                class="hidden sm:block w-3.5 h-[54px] mr-2 pointer-events-none shrink-0"
                 aria-hidden="true"
               >
                 <svg
