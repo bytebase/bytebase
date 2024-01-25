@@ -74,7 +74,7 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
-            :resource-type="'SCHEMA_GROUP'"
+            :factor-list="FactorList.get('SCHEMA_GROUP') ?? []"
           />
         </div>
         <div class="col-span-2">
@@ -102,7 +102,8 @@ import { useDebounceFn } from "@vueuse/core";
 import { reactive, computed, watch, ref } from "vue";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedTableView from "@/components/DatabaseGroup/MatchedTableView.vue";
-import ExprEditor from "@/components/DatabaseGroup/common/ExprEditor";
+import { FactorList } from "@/components/DatabaseGroup/utils";
+import ExprEditor from "@/components/ExprEditor";
 import DatabaseGroupName from "@/components/v2/Model/DatabaseGroupName.vue";
 import { ConditionGroupExpr } from "@/plugins/cel";
 import {

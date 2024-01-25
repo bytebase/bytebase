@@ -3064,6 +3064,10 @@
         "view-node": "查看外部审批节点",
         "create-node": "新建外部审批节点",
         "edit-node": "编辑外部审批节点"
+      },
+      "issue-review": {
+        "sent-back": "被退回",
+        "review-sent-back-by": "审批被 {user} 退回"
       }
     },
     "risk": {
@@ -3258,11 +3262,6 @@
       "create": "新建表分组",
       "edit": "编辑表分组"
     },
-    "factor": {
-      "resource_instance_id": "实例 ID",
-      "resource_database_name": "数据库名",
-      "resource_table_name": "表名"
-    },
     "condition": {
       "self": "条件"
     },
@@ -3328,7 +3327,10 @@
       "export_rows": "导出行数",
       "table_name": "表名称",
       "column_name": "字段名称",
-      "classification_level": "数据分级"
+      "classification_level": "数据分级",
+      "resource_instance_id": "实例 ID",
+      "resource_database_name": "数据库名",
+      "resource_table_name": "表名"
     }
   },
   "changelist": {

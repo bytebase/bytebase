@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"slices"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
@@ -12,8 +13,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func isOwnerOrDBA(role api.Role) bool {
-	return role == api.WorkspaceAdmin || role == api.WorkspaceDBA
+func isOwnerOrDBA(user *store.UserMessage) bool {
+	return slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA)
 }
 
 // isProjectOwnerOrDeveloper returns whether a principal is a project owner or developer in the project.
@@ -60,7 +61,7 @@ func isUserAtLeastProjectViewer(ctx context.Context, s *store.Store, requestProj
 		return false, errors.Wrapf(err, "failed to get user %d", principalID)
 	}
 
-	if isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user) {
 		return true, nil
 	}
 
@@ -100,7 +101,7 @@ func isUserAtLeastProjectDeveloper(ctx context.Context, s *store.Store, requestP
 		return false, errors.Wrapf(err, "failed to get user %d", principalID)
 	}
 
-	if isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user) {
 		return true, nil
 	}
 
@@ -125,7 +126,7 @@ func isUserAtLeastProjectMember(ctx context.Context, s *store.Store, requestProj
 		return false, errors.Wrapf(err, "failed to get user %d", principalID)
 	}
 
-	if isOwnerOrDBA(user.Role) {
+	if isOwnerOrDBA(user) {
 		return true, nil
 	}
 

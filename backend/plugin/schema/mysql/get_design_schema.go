@@ -718,7 +718,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			// if schema string has default value or auto_increment.
 			// and metdata has default value.
 			// we skip the schema auto_increment and only compare default value.
-			skipSchemaAutoIncrement = column.hasDefault
+			skipSchemaAutoIncrement = column.defaultValue != nil
 			break
 		}
 	}
@@ -779,7 +779,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 			default:
 				defaultValue = &defaultValueExpression{value: defaultValueText}
 			}
-			if column.hasDefault && column.defaultValue.toString() == defaultValue.toString() {
+			if column.defaultValue != nil && column.defaultValue.toString() == defaultValue.toString() {
 				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 					Start: startPos,
 					Stop:  attribute.GetStop().GetTokenIndex(),
@@ -787,7 +787,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					g.err = err
 					return
 				}
-			} else if column.hasDefault {
+			} else if column.defaultValue != nil {
 				// todo(zp): refactor column attribute.
 				if strings.EqualFold(column.defaultValue.toString(), autoIncrementSymbol) {
 					if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -806,9 +806,13 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 						return
 					}
 				}
-				if _, err := g.columnDefine.WriteString(column.defaultValue.toString()); err != nil {
-					g.err = err
-					return
+				_, isNull := column.defaultValue.(*defaultValueNull)
+				dontWriteDefaultNull := isNull && column.nullable && expressionDefaultOnlyTypes[strings.ToUpper(column.tp)]
+				if !dontWriteDefaultNull {
+					if _, err := g.columnDefine.WriteString(column.defaultValue.toString()); err != nil {
+						g.err = err
+						return
+					}
 				}
 			}
 		case attribute.COMMENT_SYMBOL() != nil:

@@ -3070,6 +3070,10 @@
         "view-node": "View external approval node",
         "create-node": "Create external approval node",
         "edit-node": "Edit external approval node"
+      },
+      "issue-review": {
+        "sent-back": "Sent back",
+        "review-sent-back-by": "Review sent back by {user}"
       }
     },
     "risk": {
@@ -3265,11 +3269,6 @@
       "create": "New table group",
       "edit": "Edit table group"
     },
-    "factor": {
-      "resource_instance_id": "Instance ID",
-      "resource_database_name": "Database name",
-      "resource_table_name": "Table name"
-    },
     "condition": {
       "self": "Condition"
     },
@@ -3335,7 +3334,10 @@
       "export_rows": "Export rows",
       "table_name": "Table name",
       "column_name": "Column name",
-      "classification_level": "Classification level"
+      "classification_level": "Classification level",
+      "resource_instance_id": "Instance ID",
+      "resource_database_name": "Database name",
+      "resource_table_name": "Table name"
     }
   },
   "changelist": {

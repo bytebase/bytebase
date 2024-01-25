@@ -52,51 +52,6 @@ export function userTypeToJSON(object: UserType): string {
   }
 }
 
-export enum UserRole {
-  USER_ROLE_UNSPECIFIED = 0,
-  OWNER = 1,
-  DBA = 2,
-  DEVELOPER = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function userRoleFromJSON(object: any): UserRole {
-  switch (object) {
-    case 0:
-    case "USER_ROLE_UNSPECIFIED":
-      return UserRole.USER_ROLE_UNSPECIFIED;
-    case 1:
-    case "OWNER":
-      return UserRole.OWNER;
-    case 2:
-    case "DBA":
-      return UserRole.DBA;
-    case 3:
-    case "DEVELOPER":
-      return UserRole.DEVELOPER;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return UserRole.UNRECOGNIZED;
-  }
-}
-
-export function userRoleToJSON(object: UserRole): string {
-  switch (object) {
-    case UserRole.USER_ROLE_UNSPECIFIED:
-      return "USER_ROLE_UNSPECIFIED";
-    case UserRole.OWNER:
-      return "OWNER";
-    case UserRole.DBA:
-      return "DBA";
-    case UserRole.DEVELOPER:
-      return "DEVELOPER";
-    case UserRole.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
 export interface GetUserRequest {
   /**
    * The name of the user to retrieve.
@@ -239,11 +194,6 @@ export interface User {
   email: string;
   title: string;
   userType: UserType;
-  /**
-   * The user role will not be respected in the create user request, because the role is controlled by workspace owner.
-   * TODO(p0ny): deprecate in favor of `roles`.
-   */
-  userRole: UserRole;
   password: string;
   serviceKey: string;
   /** The mfa_enabled flag means if the user has enabled MFA. */
@@ -1263,7 +1213,6 @@ function createBaseUser(): User {
     email: "",
     title: "",
     userType: 0,
-    userRole: 0,
     password: "",
     serviceKey: "",
     mfaEnabled: false,
@@ -1290,9 +1239,6 @@ export const User = {
     }
     if (message.userType !== 0) {
       writer.uint32(40).int32(message.userType);
-    }
-    if (message.userRole !== 0) {
-      writer.uint32(48).int32(message.userRole);
     }
     if (message.password !== "") {
       writer.uint32(58).string(message.password);
@@ -1360,13 +1306,6 @@ export const User = {
 
           message.userType = reader.int32() as any;
           continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.userRole = reader.int32() as any;
-          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -1432,7 +1371,6 @@ export const User = {
       email: isSet(object.email) ? globalThis.String(object.email) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       userType: isSet(object.userType) ? userTypeFromJSON(object.userType) : 0,
-      userRole: isSet(object.userRole) ? userRoleFromJSON(object.userRole) : 0,
       password: isSet(object.password) ? globalThis.String(object.password) : "",
       serviceKey: isSet(object.serviceKey) ? globalThis.String(object.serviceKey) : "",
       mfaEnabled: isSet(object.mfaEnabled) ? globalThis.Boolean(object.mfaEnabled) : false,
@@ -1461,9 +1399,6 @@ export const User = {
     }
     if (message.userType !== 0) {
       obj.userType = userTypeToJSON(message.userType);
-    }
-    if (message.userRole !== 0) {
-      obj.userRole = userRoleToJSON(message.userRole);
     }
     if (message.password !== "") {
       obj.password = message.password;
@@ -1499,7 +1434,6 @@ export const User = {
     message.email = object.email ?? "";
     message.title = object.title ?? "";
     message.userType = object.userType ?? 0;
-    message.userRole = object.userRole ?? 0;
     message.password = object.password ?? "";
     message.serviceKey = object.serviceKey ?? "";
     message.mfaEnabled = object.mfaEnabled ?? false;

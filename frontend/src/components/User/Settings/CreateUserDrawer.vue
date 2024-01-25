@@ -158,6 +158,7 @@ import {
   getUpdateMaskFromUsers,
   pushNotification,
   useActuatorV1Store,
+  useRoleStore,
   useUserStore,
 } from "@/store";
 import { PresetRoleType, emptyUser } from "@/types";
@@ -194,7 +195,7 @@ const state = reactive<LocalState>({
 
 const availableRoles = computed(() => {
   const roles = isDevelopmentIAM.value
-    ? Object.values(PresetRoleType)
+    ? useRoleStore().roleList.map((role) => role.name)
     : [
         PresetRoleType.WORKSPACE_ADMIN,
         PresetRoleType.WORKSPACE_DBA,
@@ -212,11 +213,7 @@ const isCreating = computed(() => !props.user);
 
 const allowConfirm = computed(() => {
   if (isCreating.value) {
-    if (isDevelopmentIAM.value) {
-      return state.user.email && state.user.roles.length > 0;
-    } else {
-      return state.user.email;
-    }
+    return state.user.email && state.user.roles.length > 0;
   } else {
     return getUpdateMaskFromUsers(props.user!, state.user).length > 0;
   }

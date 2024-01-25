@@ -7,19 +7,15 @@ import {
 } from "@/types";
 
 export const isWorkspaceLevelRole = (role: string) => {
-  const roleStore = useRoleStore();
-  return (
-    WorkspaceLevelRoles.includes(role) &&
-    roleStore
-      .getRoleByName(role)
-      ?.permissions.every((permission) =>
-        WORKSPACE_PERMISSIONS.includes(permission as WorkspacePermission)
-      )
-  );
+  return useRoleStore()
+    .getRoleByName(role)
+    ?.permissions.every((permission) =>
+      WORKSPACE_PERMISSIONS.includes(permission as WorkspacePermission)
+    );
 };
 
 export const isProjectLevelRole = (role: string) => {
-  return ProjectLevelRoles.includes(role) || !isWorkspaceLevelRole(role);
+  return !isWorkspaceLevelRole(role);
 };
 
 export const isCustomRole = (role: string) => {
@@ -31,13 +27,13 @@ export const isCustomRole = (role: string) => {
 export const sortRoles = (roles: string[]) => {
   return roles.sort((a, b) => {
     const priority = (role: string) => {
-      if (isWorkspaceLevelRole(role)) {
+      if (WorkspaceLevelRoles.includes(role)) {
         return WorkspaceLevelRoles.indexOf(role);
       }
-      if (isProjectLevelRole(role)) {
+      if (ProjectLevelRoles.includes(role)) {
         return ProjectLevelRoles.indexOf(role) + WorkspaceLevelRoles.length;
       }
-      return roles.length;
+      return roles.length + roles.indexOf(role);
     };
     return priority(a) - priority(b);
   });

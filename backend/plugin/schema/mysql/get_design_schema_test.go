@@ -51,7 +51,7 @@ func TestGetDesignSchema(t *testing.T) {
 		if record {
 			tests[i].Result = result
 		} else {
-			a.Equal(t.Result, result)
+			a.Equalf(t.Result, result, "test case %d: %s", i, t.Description)
 		}
 	}
 

@@ -8,7 +8,9 @@
     />
 
     <div class="text" @click="handleClickStage">
-      <div class="text-sm min-w-32 lg:min-w-fit with-underline space-x-1">
+      <div
+        class="text-sm min-w-32 lg:min-w-fit with-underline space-x-1 whitespace-nowrap"
+      >
         <heroicons:arrow-small-right
           v-if="isActiveStage"
           class="w-5 h-5 inline-block mb-0.5"
@@ -18,8 +20,8 @@
         <span>{{ stageTitle }}</span>
       </div>
       <div class="text-xs flex gap-1 flex-row items-center">
-        <div class="whitespace-pre-wrap break-all with-underline">
-          {{ taskTitle }}
+        <div class="whitespace-no-wrap with-underline">
+          {{ $t("common.tasks") }}
         </div>
         <StageSummary :stage="(stage as Stage)" />
       </div>
@@ -73,7 +75,7 @@ import {
   planCheckRunSummaryForCheckRunList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { EMPTY_TASK_NAME, emptyTask } from "@/types";
+import { EMPTY_TASK_NAME } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   Stage,
@@ -143,11 +145,6 @@ const stageTitle = computed(() => {
     : stage.title;
 });
 
-const taskTitle = computed(() => {
-  const task = isCreating ? first(props.stage.tasks) : activeTaskInStage.value;
-  return (task ?? emptyTask()).title;
-});
-
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
   const planCheckList = uniqBy(
@@ -194,9 +191,6 @@ const handleClickStage = () => {
 .stage {
   @apply cursor-default flex items-center justify-start w-full text-sm font-medium relative;
   @apply lg:flex-1;
-}
-.stage.invalid {
-  @apply pr-10;
 }
 .stage.selected .text .with-underline {
   @apply underline;

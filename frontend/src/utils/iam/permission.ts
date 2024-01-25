@@ -1,8 +1,4 @@
-import {
-  useActuatorV1Store,
-  useProjectV1ListByUser,
-  useRoleStore,
-} from "@/store";
+import { useActuatorV1Store, useProjectV1List, useRoleStore } from "@/store";
 import {
   ComposedProject,
   PresetRoleType,
@@ -31,7 +27,7 @@ export const hasProjectPermissionV2 = (
 ): boolean => {
   // If the project is not provided, then check if the user has the given permission on any project in the workspace.
   if (!project) {
-    const { projectList } = useProjectV1ListByUser(user);
+    const { projectList } = useProjectV1List();
     return projectList.value.some((project) =>
       hasProjectPermissionV2(project, user, permission)
     );
@@ -74,7 +70,7 @@ export const hasWorkspaceLevelProjectPermission = (
   user: User,
   permission: ProjectPermission
 ): boolean => {
-  const { projectList } = useProjectV1ListByUser(user);
+  const { projectList } = useProjectV1List();
   return projectList.value.some((project) =>
     hasProjectPermissionV2(project, user, permission)
   );

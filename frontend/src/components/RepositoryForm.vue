@@ -2,7 +2,7 @@
 <template>
   <div class="space-y-4">
     <div>
-      <div v-if="isDebug && getWebhookLink !== ''">
+      <div v-if="getWebhookLink !== ''" class="mb-2">
         <label class="textlabel mt-2">
           <i18n-t keypath="repository.our-webhook-link">
             <template #webhookLink>
@@ -304,7 +304,6 @@
 
 <script lang="ts" setup>
 import { NCheckbox, NSelect, SelectOption } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { reactive, computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBBetaBadge } from "@/bbkit";
@@ -312,7 +311,6 @@ import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
-  useActuatorV1Store,
 } from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
@@ -537,10 +535,6 @@ const onSQLReviewCIToggle = (on: boolean) => {
     state.showFeatureModal = true;
   }
 };
-
-const actuatorStore = useActuatorV1Store();
-
-const isDebug = storeToRefs(actuatorStore).isDebug;
 
 const renderLabel = (option: SelectOption) => {
   const value = option.value as SchemaChange;

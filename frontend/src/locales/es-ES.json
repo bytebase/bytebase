@@ -3067,6 +3067,10 @@
         "view-node": "Ver nodo de aprobación externo",
         "create-node": "Crear nodo de aprobación externo",
         "edit-node": "Editar nodo de aprobación externo"
+      },
+      "issue-review": {
+        "sent-back": "Devuelto",
+        "review-sent-back-by": "Reseña enviada por {user}"
       }
     },
     "risk": {
@@ -3262,11 +3266,6 @@
       "create": "Crear grupo de tablas",
       "edit": "Editar grupo de tablas"
     },
-    "factor": {
-      "resource_instance_id": "ID de instancia",
-      "resource_database_name": "Nombre de la base de datos",
-      "resource_table_name": "Nombre de la tabla"
-    },
     "condition": {
       "self": "Condición"
     },
@@ -3333,7 +3332,10 @@
       "export_rows": "Exportar filas",
       "table_name": "Nombre de la tabla",
       "column_name": "Nombre de columna",
-      "classification_level": "Nivel de clasificación"
+      "classification_level": "Nivel de clasificación",
+      "resource_instance_id": "ID de instancia",
+      "resource_database_name": "Nombre de la base de datos",
+      "resource_table_name": "Nombre de la tabla"
     }
   },
   "changelist": {

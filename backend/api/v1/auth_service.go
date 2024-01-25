@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/exp/slices"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -189,25 +189,25 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		Type:         principalType,
 		PasswordHash: string(passwordHash),
 	}
-	if request.User.UserRole != v1pb.UserRole_USER_ROLE_UNSPECIFIED {
-		rolePtr := ctx.Value(common.RoleContextKey)
-		// Allow workspace owner to create user with role.
-		if rolePtr != nil && rolePtr.(api.Role) == api.WorkspaceAdmin {
-			userRole := convertUserRole(request.User.UserRole)
-			if userRole == api.UnknownRole {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
-			}
-			userMessage.Role = userRole
-			userMessage.Roles = append(userMessage.Roles, userRole)
-			for _, r := range request.User.GetRoles() {
-				role, err := common.GetRoleID(r)
-				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, "invalid role %s", r)
-				}
-				userMessage.Roles = append(userMessage.Roles, api.Role(role))
-			}
-		} else {
-			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with role")
+	for _, role := range request.User.Roles {
+		roleID, err := common.GetRoleID(role)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		}
+		userMessage.Roles = append(userMessage.Roles, api.Role(roleID))
+	}
+	// If no role is specified, we default to workspace member.
+	if len(userMessage.Roles) == 0 {
+		userMessage.Roles = append(userMessage.Roles, api.WorkspaceMember)
+	}
+	// If multiple roles are specified, checks if the current user is workspace admin.
+	if len(userMessage.Roles) > 1 {
+		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if !ok {
+			return nil, status.Error(codes.PermissionDenied, "user not found in context")
+		}
+		if !slices.Contains(user.Roles, api.WorkspaceAdmin) {
+			return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can create user with multiple roles")
 		}
 	}
 
@@ -332,16 +332,21 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			}
 			password := fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, val)
 			passwordPatch = &password
-		case "role":
-			if role != api.WorkspaceAdmin {
-				return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can update user role")
-			}
-			userRole := convertUserRole(request.User.UserRole)
-			if userRole == api.UnknownRole {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid user role %s", request.User.UserRole)
-			}
-			patch.Role = &userRole
 		case "roles":
+			// Check if the user is the only workspace admin.
+			if slices.Contains(user.Roles, api.WorkspaceAdmin) && !slices.Contains(request.User.Roles, common.FormatRole(api.WorkspaceAdmin.String())) {
+				workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
+				adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+					Role: &workspaceAdmin,
+					Type: &userType,
+				})
+				if err != nil {
+					return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
+				}
+				if len(adminUser) == 1 && adminUser[0].ID == userID {
+					return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
+				}
+			}
 			var roles []api.Role
 			for _, r := range request.User.Roles {
 				roleID, err := common.GetRoleID(r)
@@ -470,6 +475,20 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	if role != api.WorkspaceAdmin {
 		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
 	}
+	// Check if the user is the only workspace admin.
+	if slices.Contains(user.Roles, api.WorkspaceAdmin) {
+		workspaceAdmin, userType := api.WorkspaceAdmin, api.EndUser
+		adminUser, err := s.store.ListUsers(ctx, &store.FindUserMessage{
+			Role: &workspaceAdmin,
+			Type: &userType,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
+		}
+		if len(adminUser) == 1 && adminUser[0].ID == userID {
+			return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
+		}
+	}
 
 	if _, err := s.store.UpdateUser(ctx, userID, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -518,15 +537,6 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 }
 
 func convertToUser(user *store.UserMessage) *v1pb.User {
-	role := v1pb.UserRole_USER_ROLE_UNSPECIFIED
-	switch user.Role {
-	case api.WorkspaceAdmin:
-		role = v1pb.UserRole_OWNER
-	case api.WorkspaceDBA:
-		role = v1pb.UserRole_DBA
-	case api.WorkspaceMember:
-		role = v1pb.UserRole_DEVELOPER
-	}
 	userType := v1pb.UserType_USER_TYPE_UNSPECIFIED
 	switch user.Type {
 	case api.EndUser:
@@ -544,7 +554,6 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		Phone:    user.Phone,
 		Title:    user.Name,
 		UserType: userType,
-		UserRole: role,
 	}
 	for _, r := range user.Roles {
 		convertedUser.Roles = append(convertedUser.Roles, common.FormatRole(r.String()))
@@ -570,18 +579,6 @@ func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
 		return t, status.Errorf(codes.InvalidArgument, "invalid user type %s", userType)
 	}
 	return t, nil
-}
-
-func convertUserRole(userRole v1pb.UserRole) api.Role {
-	switch userRole {
-	case v1pb.UserRole_OWNER:
-		return api.WorkspaceAdmin
-	case v1pb.UserRole_DBA:
-		return api.WorkspaceDBA
-	case v1pb.UserRole_DEVELOPER:
-		return api.WorkspaceMember
-	}
-	return api.UnknownRole
 }
 
 // Login is the auth login method including SSO.

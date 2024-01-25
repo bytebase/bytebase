@@ -1,8 +1,7 @@
-package mysql
+package tidb
 
 import (
 	"fmt"
-	"io"
 	"sort"
 	"strings"
 
@@ -103,12 +102,22 @@ type tableState struct {
 	indexes     map[string]*indexState
 	foreignKeys map[string]*foreignKeyState
 	comment     string
-	// engine and collation is only supported in ParseToMetadata.
+	// Engine and collation are only supported in ParseToMetadata.
 	engine    string
 	collation string
 }
 
-func (t *tableState) toString(buf io.StringWriter) error {
+const (
+	tableStmtFmt = "" +
+		"--\n" +
+		"-- Table structure for `%s`\n" +
+		"--\n"
+)
+
+func (t *tableState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(fmt.Sprintf(tableStmtFmt, t.name)); err != nil {
+		return err
+	}
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -208,9 +217,9 @@ func newTableState(id int, name string) *tableState {
 
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
-	state.comment = table.Comment
 	state.engine = table.Engine
 	state.collation = table.Collation
+	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
 	}
@@ -235,7 +244,7 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
-	// Backfill all the column positions.
+	// Backfill the column positions.
 	for i, column := range columns {
 		column.Position = int32(i + 1)
 	}
@@ -302,7 +311,7 @@ func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *f
 	}
 }
 
-func (f *foreignKeyState) toString(buf io.StringWriter) error {
+func (f *foreignKeyState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString("CONSTRAINT `"); err != nil {
 		return err
 	}
@@ -363,24 +372,20 @@ type indexState struct {
 	id      int
 	name    string
 	keys    []string
-	lengths []int64
+	length  []int64
 	primary bool
 	unique  bool
-	tp      string
-	comment string
 }
 
 func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 	return &storepb.IndexMetadata{
 		Name:        i.name,
 		Expressions: i.keys,
+		KeyLength:   i.length,
 		Primary:     i.primary,
 		Unique:      i.unique,
-		Comment:     i.comment,
-		KeyLength:   i.lengths,
 		// Unsupported, for tests only.
 		Visible: true,
-		Type:    i.tp,
 	}
 }
 
@@ -389,21 +394,19 @@ func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 		id:      id,
 		name:    index.Name,
 		keys:    index.Expressions,
+		length:  index.KeyLength,
 		primary: index.Primary,
 		unique:  index.Unique,
-		tp:      index.Type,
-		comment: index.Comment,
-		lengths: index.KeyLength,
 	}
 }
 
-func (i *indexState) toString(buf io.StringWriter) error {
+func (i *indexState) toString(buf *strings.Builder) error {
 	if i.primary {
 		if _, err := buf.WriteString("PRIMARY KEY ("); err != nil {
 			return err
 		}
-		for j, key := range i.keys {
-			if j > 0 {
+		for i, key := range i.keys {
+			if i > 0 {
 				if _, err := buf.WriteString(", "); err != nil {
 					return err
 				}
@@ -411,25 +414,12 @@ func (i *indexState) toString(buf io.StringWriter) error {
 			if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
 				return err
 			}
-			if j < len(i.lengths) && i.lengths[j] > 0 {
-				if _, err := buf.WriteString(fmt.Sprintf("(%d)", i.lengths[j])); err != nil {
-					return err
-				}
-			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
 			return err
 		}
 	} else {
-		if strings.ToUpper(i.tp) == "FULLTEXT" {
-			if _, err := buf.WriteString("FULLTEXT KEY "); err != nil {
-				return err
-			}
-		} else if strings.ToUpper(i.tp) == "SPATIAL" {
-			if _, err := buf.WriteString("SPATIAL KEY "); err != nil {
-				return err
-			}
-		} else if i.unique {
+		if i.unique {
 			if _, err := buf.WriteString("UNIQUE KEY "); err != nil {
 				return err
 			}
@@ -454,33 +444,16 @@ func (i *indexState) toString(buf io.StringWriter) error {
 					return err
 				}
 			} else {
-				if _, err := buf.WriteString(fmt.Sprintf("`%s`", key)); err != nil {
-					return err
+				columnText := fmt.Sprintf("`%s`", key)
+				if len(i.length) > j && i.length[j] > 0 {
+					columnText = fmt.Sprintf("`%s`(%d)", key, i.length[j])
 				}
-				if j < len(i.lengths) && i.lengths[j] > 0 {
-					if _, err := buf.WriteString(fmt.Sprintf("(%d)", i.lengths[j])); err != nil {
-						return err
-					}
+				if _, err := buf.WriteString(columnText); err != nil {
+					return err
 				}
 			}
 		}
 		if _, err := buf.WriteString(")"); err != nil {
-			return err
-		}
-
-		if strings.ToUpper(i.tp) == "BTREE" {
-			if _, err := buf.WriteString(" USING BTREE"); err != nil {
-				return err
-			}
-		} else if strings.ToUpper(i.tp) == "HASH" {
-			if _, err := buf.WriteString(" USING HASH"); err != nil {
-				return err
-			}
-		}
-	}
-
-	if i.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", i.comment)); err != nil {
 			return err
 		}
 	}
@@ -523,7 +496,15 @@ type columnState struct {
 	nullable     bool
 }
 
-func (c *columnState) toString(buf io.StringWriter) error {
+func (c *columnState) hasAutoIncrement() bool {
+	return strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol)
+}
+
+func (c *columnState) hasAutoRand() bool {
+	return strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol)
+}
+
+func (c *columnState) toString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, c.tp)); err != nil {
 		return err
 	}
@@ -533,23 +514,18 @@ func (c *columnState) toString(buf io.StringWriter) error {
 		}
 	}
 	if c.defaultValue != nil {
-		_, isDefaultNull := c.defaultValue.(*defaultValueNull)
-		dontWriteDefaultNull := isDefaultNull && c.nullable && expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]
-		// Some types do not default to NULL, but support default expressions.
-		if !dontWriteDefaultNull {
-			// todo(zp): refactor column attribute.
-			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
-				if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
-					return err
-				}
-			} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
-				if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
-					return err
-				}
-			} else {
-				if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
-					return err
-				}
+		// todo(zp): refactor column attribute.
+		if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
+			if _, err := buf.WriteString(fmt.Sprintf(" %s", c.defaultValue.toString())); err != nil {
+				return err
+			}
+		} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
+			if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+				return err
 			}
 		}
 	}
@@ -577,9 +553,6 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		case *defaultValueExpression:
 			result.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: value.value}
 		}
-	}
-	if result.DefaultValue == nil && c.nullable {
-		result.DefaultValue = &storepb.ColumnMetadata_DefaultNull{DefaultNull: true}
 	}
 	return result
 }
