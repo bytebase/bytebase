@@ -2,10 +2,10 @@
   <component
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
-    class="inline-flex items-center gap-x-1"
+    class="w-full inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
-    <NPerformantEllipsis :line-clamp="1">
+    <NPerformantEllipsis>
       {{ projectV1Name(project) }}
     </NPerformantEllipsis>
   </component>
