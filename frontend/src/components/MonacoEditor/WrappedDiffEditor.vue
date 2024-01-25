@@ -1,6 +1,6 @@
 <template>
   <Suspense>
-    <DiffEditor v-bind="($attrs as any)" />
+    <DiffEditor ref="diffEditorRef" v-bind="($attrs as any)" />
     <template #fallback>
       <div ref="spinnerWrapperElRef" :class="classes">
         <BBSpin />
@@ -15,6 +15,7 @@ import { computed, defineAsyncComponent, ref } from "vue";
 
 const DiffEditor = defineAsyncComponent(() => import("./DiffEditor.vue"));
 
+const diffEditorRef = ref<InstanceType<typeof DiffEditor>>();
 const spinnerWrapperElRef = ref<HTMLElement>();
 const parentElRef = useParentElement(spinnerWrapperElRef);
 
@@ -40,5 +41,11 @@ const classes = computed(() => {
 
   classes.push("w-full", "h-full");
   return classes;
+});
+
+defineExpose({
+  get diffEditor() {
+    return diffEditorRef.value;
+  },
 });
 </script>
