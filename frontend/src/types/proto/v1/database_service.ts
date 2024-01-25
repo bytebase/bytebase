@@ -261,52 +261,13 @@ export interface GetDatabaseSchemaRequest {
    * Format: instances/{instance}/databases/{database}/schema
    */
   name: string;
-  format: GetDatabaseSchemaRequest_Format;
-}
-
-export enum GetDatabaseSchemaRequest_Format {
-  FORMAT_UNSPECIFIED = 0,
-  FORMAT_BASIC = 1,
-  FORMAT_SDL = 2,
-  FORMAT_CONCISE = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function getDatabaseSchemaRequest_FormatFromJSON(object: any): GetDatabaseSchemaRequest_Format {
-  switch (object) {
-    case 0:
-    case "FORMAT_UNSPECIFIED":
-      return GetDatabaseSchemaRequest_Format.FORMAT_UNSPECIFIED;
-    case 1:
-    case "FORMAT_BASIC":
-      return GetDatabaseSchemaRequest_Format.FORMAT_BASIC;
-    case 2:
-    case "FORMAT_SDL":
-      return GetDatabaseSchemaRequest_Format.FORMAT_SDL;
-    case 3:
-    case "FORMAT_CONCISE":
-      return GetDatabaseSchemaRequest_Format.FORMAT_CONCISE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return GetDatabaseSchemaRequest_Format.UNRECOGNIZED;
-  }
-}
-
-export function getDatabaseSchemaRequest_FormatToJSON(object: GetDatabaseSchemaRequest_Format): string {
-  switch (object) {
-    case GetDatabaseSchemaRequest_Format.FORMAT_UNSPECIFIED:
-      return "FORMAT_UNSPECIFIED";
-    case GetDatabaseSchemaRequest_Format.FORMAT_BASIC:
-      return "FORMAT_BASIC";
-    case GetDatabaseSchemaRequest_Format.FORMAT_SDL:
-      return "FORMAT_SDL";
-    case GetDatabaseSchemaRequest_Format.FORMAT_CONCISE:
-      return "FORMAT_CONCISE";
-    case GetDatabaseSchemaRequest_Format.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
+  /**
+   * When true, the schema dump will be concise.
+   * For Oracle, there will be tables and indexes only for Sync Schema.
+   */
+  concise: boolean;
 }
 
 export interface DiffSchemaRequest {
@@ -2448,7 +2409,7 @@ export const UpdateDatabaseMetadataRequest = {
 };
 
 function createBaseGetDatabaseSchemaRequest(): GetDatabaseSchemaRequest {
-  return { name: "", format: 0 };
+  return { name: "", sdlFormat: false, concise: false };
 }
 
 export const GetDatabaseSchemaRequest = {
@@ -2456,8 +2417,11 @@ export const GetDatabaseSchemaRequest = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.format !== 0) {
-      writer.uint32(16).int32(message.format);
+    if (message.sdlFormat === true) {
+      writer.uint32(16).bool(message.sdlFormat);
+    }
+    if (message.concise === true) {
+      writer.uint32(24).bool(message.concise);
     }
     return writer;
   },
@@ -2481,7 +2445,14 @@ export const GetDatabaseSchemaRequest = {
             break;
           }
 
-          message.format = reader.int32() as any;
+          message.sdlFormat = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.concise = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2495,7 +2466,8 @@ export const GetDatabaseSchemaRequest = {
   fromJSON(object: any): GetDatabaseSchemaRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      format: isSet(object.format) ? getDatabaseSchemaRequest_FormatFromJSON(object.format) : 0,
+      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
   },
 
@@ -2504,8 +2476,11 @@ export const GetDatabaseSchemaRequest = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.format !== 0) {
-      obj.format = getDatabaseSchemaRequest_FormatToJSON(message.format);
+    if (message.sdlFormat === true) {
+      obj.sdlFormat = message.sdlFormat;
+    }
+    if (message.concise === true) {
+      obj.concise = message.concise;
     }
     return obj;
   },
@@ -2516,7 +2491,8 @@ export const GetDatabaseSchemaRequest = {
   fromPartial(object: DeepPartial<GetDatabaseSchemaRequest>): GetDatabaseSchemaRequest {
     const message = createBaseGetDatabaseSchemaRequest();
     message.name = object.name ?? "";
-    message.format = object.format ?? 0;
+    message.sdlFormat = object.sdlFormat ?? false;
+    message.concise = object.concise ?? false;
     return message;
   },
 };

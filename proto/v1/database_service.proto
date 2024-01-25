@@ -285,13 +285,12 @@ message GetDatabaseSchemaRequest {
   // Format: instances/{instance}/databases/{database}/schema
   string name = 1 [(google.api.field_behavior) = REQUIRED];
 
-  enum Format {
-    FORMAT_UNSPECIFIED = 0;
-    FORMAT_BASIC = 1;
-    FORMAT_SDL = 2;
-    FORMAT_CONCISE = 3;
-  }
-  Format format = 2;
+  // Format the schema dump into SDL format.
+  bool sdl_format = 2;
+
+  // When true, the schema dump will be concise.
+  // For Oracle, there will be tables and indexes only for Sync Schema.
+  bool concise = 3;
 }
 
 message DiffSchemaRequest {

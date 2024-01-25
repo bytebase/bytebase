@@ -1992,8 +1992,8 @@ CREATE TABLE public.book (
 			a.Equal(test.wantRawSchema, latestSchema.Schema)
 			if test.dbType == storepb.Engine_MYSQL {
 				latestSchemaSDL, err := ctl.databaseServiceClient.GetDatabaseSchema(ctx, &v1pb.GetDatabaseSchemaRequest{
-					Name:   fmt.Sprintf("%s/schema", database.Name),
-					Format: v1pb.GetDatabaseSchemaRequest_FORMAT_SDL,
+					Name:      fmt.Sprintf("%s/schema", database.Name),
+					SdlFormat: true,
 				})
 				a.NoError(err)
 				a.Equal(test.wantSDL, latestSchemaSDL.Schema)
