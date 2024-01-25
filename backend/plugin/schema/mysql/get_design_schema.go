@@ -685,7 +685,7 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 
 	// compare column type
 	typeCtx := ctx.FieldDefinition().DataType()
-	columnType := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(typeCtx)
+	columnType := getDataTypePlainText(typeCtx)
 	if !strings.EqualFold(columnType, column.tp) {
 		if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 			Start: ctx.GetStart().GetTokenIndex(),
@@ -999,4 +999,32 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 
 func getTableAnnouncement(name string) string {
 	return fmt.Sprintf("\n--\n-- Table structure for table `%s`\n--\n", name)
+}
+
+// getDataTypePlainText returns the plain text of the data type,
+// which excludes the charset candidate.
+// For example, for "varchar(10) CHARACTER SET utf8mb4",
+// it returns "varchar(10)".
+func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
+	begin := typeCtx.GetStart().GetTokenIndex()
+	end := typeCtx.GetStop().GetTokenIndex()
+	if typeCtx.CharsetWithOptBinary() != nil {
+		end = typeCtx.CharsetWithOptBinary().GetStart().GetTokenIndex() - 1
+	}
+	// To skip the trailing spaces, we iterate the token stream reversely and find the first default channel token index.
+	for i := end; i >= begin; i-- {
+		if typeCtx.GetParser().GetTokenStream().Get(i).GetChannel() == antlr.TokenDefaultChannel {
+			end = i
+			break
+		}
+	}
+
+	if end < begin {
+		return ""
+	}
+
+	return typeCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: begin,
+		Stop:  end,
+	})
 }
