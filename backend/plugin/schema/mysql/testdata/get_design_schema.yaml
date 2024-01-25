@@ -10,7 +10,8 @@
       `g` geometry NOT NULL,
       `j` json NOT NULL,
       `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob
+      `tb` tinyblob,
+      `vc` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
     --
@@ -63,6 +64,11 @@
                   "nullable": true,
                   "position": 5,
                   "defaultNull": true
+                },
+                {
+                  "name": "vc",
+                  "type": "varchar(10)",
+                  "position": 6
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci"
@@ -100,7 +106,8 @@
       `g` geometry NOT NULL,
       `j` json NOT NULL,
       `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob
+      `tb` tinyblob,
+      `vc` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
     --
