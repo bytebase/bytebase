@@ -468,6 +468,52 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 			}
 			return "", err
 		}
+		// MySQL version before 8.0.11 doesn't includes the table collation and column collation
+		// in the SHOW CREATE TABLE statement if they are the same as the database/table collation.
+		// https://bugs.mysql.com/bug.php?id=46239
+		// It causes the schema string is not consistent with the schema metadata. For example,
+		// it will cause table colored as yello because we cannot get the table collation from the schema string.
+		if dbType == storepb.Engine_MYSQL {
+			lines := strings.Split(stmt, "\n")
+			for i := len(lines) - 1; i >= 0; i-- {
+				if strings.TrimSpace(lines[i]) == "" {
+					continue
+				}
+				if strings.Contains(lines[i], "COLLATE=") {
+					// We do not need to backfill the collation if it's already included in the statement.
+					break
+				}
+				// We always append the collation after the CHARSET options, so we do not
+				// append the collation if the CHARSET option is not included.
+				charsetPos := strings.Index(lines[i], "CHARSET=")
+				if charsetPos == -1 {
+					break
+				}
+				query := fmt.Sprintf("SELECT TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';", dbName, tblName)
+				var tableCollation string
+				if err := txn.QueryRow(query).Scan(&tableCollation); err != nil {
+					if err == sql.ErrNoRows {
+						return "", common.FormatDBErrorEmptyRowWithQuery(query)
+					}
+					return "", errors.Wrapf(err, "failed to get table collation for %q.%q", dbName, tblName)
+				}
+				for pos, r := range lines[i] {
+					if pos < charsetPos+len("CHARSET=") {
+						continue
+					}
+					if (pos == len(lines[i])-1 && r == ';') || r == ' ' {
+						lines[i] = fmt.Sprintf("%s COLLATE=%s%s", lines[i][:pos], tableCollation, lines[i][pos:])
+						break
+					}
+					if pos == len(lines[i])-1 {
+						lines[i] = fmt.Sprintf("%s COLLATE=%s", lines[i], tableCollation)
+						break
+					}
+				}
+				break
+			}
+			stmt = strings.Join(lines, "\n")
+		}
 		if dbType == storepb.Engine_OCEANBASE {
 			stmt = trimAfterLastParenthesis(stmt)
 		}
