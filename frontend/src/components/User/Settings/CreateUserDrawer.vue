@@ -212,11 +212,17 @@ const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 const isCreating = computed(() => !props.user);
 
 const allowConfirm = computed(() => {
-  if (isCreating.value) {
-    return state.user.email && state.user.roles.length > 0;
-  } else {
-    return getUpdateMaskFromUsers(props.user!, state.user).length > 0;
+  if (!state.user.email || state.user.roles.length === 0) {
+    return false;
   }
+  if (
+    !isCreating.value &&
+    getUpdateMaskFromUsers(props.user!, state.user).length == 0
+  ) {
+    return false;
+  }
+
+  return true;
 });
 
 const allowDeactivate = computed(() => {

@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="[link && !plain && 'normal-link', link && 'hover:underline']"
   >
-    <span v-if="prefix" class="ml-1 text-gray-400">{{ prefix }}</span>
+    <span v-if="prefix" class="mr-1 text-gray-400">{{ prefix }}</span>
     <span>{{ database.databaseName }}</span>
   </component>
 </template>
