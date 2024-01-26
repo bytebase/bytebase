@@ -52,32 +52,9 @@
             {{ $t("common.permissions") }}
             <span class="ml-0.5 text-error">*</span>
           </div>
-          <div>
-            <span class="textinfolabel mr-2">{{ $t("common.type") }}:</span>
-            <NRadio
-              :checked="state.permissionType === 'WORKSPACE'"
-              value="WORKSPACE"
-              @change="state.permissionType = 'WORKSPACE'"
-            >
-              <div class="flex flex-row justify-start items-center">
-                <BuildingIcon class="w-4 h-auto mr-1" />
-                <span>{{ $t("common.workspace") }}</span>
-              </div>
-            </NRadio>
-            <NRadio
-              :checked="state.permissionType === 'PROJECT'"
-              value="PROJECT"
-              @change="state.permissionType = 'PROJECT'"
-            >
-              <div class="flex flex-row justify-start items-center">
-                <GalleryHorizontalEndIcon class="w-4 h-auto mr-1" />
-                <span>{{ $t("common.project") }}</span>
-              </div>
-            </NRadio>
-          </div>
           <NTransfer
             v-model:value="state.role.permissions"
-            class="!h-[24rem]"
+            class="!h-[32rem]"
             source-filterable
             :options="permissionOptions"
           />
@@ -105,8 +82,7 @@
 
 <script setup lang="ts">
 import { cloneDeep } from "lodash-es";
-import { BuildingIcon, GalleryHorizontalEndIcon } from "lucide-vue-next";
-import { NButton, NInput, NRadio, NTransfer } from "naive-ui";
+import { NButton, NInput, NTransfer } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
@@ -122,7 +98,6 @@ import { useCustomRoleSettingContext } from "../context";
 
 type LocalState = {
   role: Role;
-  permissionType: "WORKSPACE" | "PROJECT";
   dirty: boolean;
   loading: boolean;
 };
@@ -144,7 +119,6 @@ const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const state = reactive<LocalState>({
   role: Role.fromJSON({}),
-  permissionType: "WORKSPACE",
   dirty: false,
   loading: false,
 });
@@ -161,25 +135,10 @@ const resourceId = computed({
 });
 
 const permissionOptions = computed(() => {
-  return state.permissionType === "WORKSPACE"
-    ? WORKSPACE_PERMISSIONS.map((p) => ({
-        label: p,
-        value: p,
-      }))
-    : PROJECT_PERMISSIONS.map((p) => ({
-        label: p,
-        value: p,
-      }));
-});
-
-const filteredPermissions = computed(() => {
-  return state.role.permissions.filter((p) => {
-    if (state.permissionType === "WORKSPACE") {
-      return WORKSPACE_PERMISSIONS.includes(p as any);
-    } else {
-      return PROJECT_PERMISSIONS.includes(p as any);
-    }
-  });
+  return [...WORKSPACE_PERMISSIONS, ...PROJECT_PERMISSIONS].sort().map((p) => ({
+    label: p,
+    value: p,
+  }));
 });
 
 const allowSave = computed(() => {
@@ -189,7 +148,7 @@ const allowSave = computed(() => {
     if (!resourceIdField.value.resourceId) return false;
     if (!resourceIdField.value.isValidated) return false;
   }
-  if (filteredPermissions.value.length === 0) {
+  if (state.role.permissions.length === 0) {
     return false;
   }
   return true;
@@ -207,7 +166,6 @@ const handleSave = async () => {
 
   state.loading = true;
   try {
-    state.role.permissions = filteredPermissions.value;
     state.role = await roleStore.upsertRole(state.role);
     pushNotification({
       module: "bytebase",
@@ -244,13 +202,6 @@ watch(
       if (!state.role.title) {
         state.role.title = extractRoleResourceName(state.role.name);
       }
-      if (state.role.permissions.length > 0) {
-        state.permissionType = WORKSPACE_PERMISSIONS.includes(
-          state.role.permissions[0] as any
-        )
-          ? "WORKSPACE"
-          : "PROJECT";
-      }
     }
     nextTick(() => {
       state.dirty = false;
@@ -262,7 +213,7 @@ watch(
 );
 
 watch(
-  () => [state.role, state.permissionType],
+  () => [state.role],
   () => {
     state.dirty = true;
   },
