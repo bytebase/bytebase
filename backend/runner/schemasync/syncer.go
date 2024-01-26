@@ -408,7 +408,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		rawDump = dbSchema.GetSchema()
 	}
 
-	if !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
+	if force || !cmp.Equal(oldDatabaseMetadata, databaseMetadata, protocmp.Transform()) {
 		// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
 		// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
 		if force || !equalDatabaseMetadata(oldDatabaseMetadata, databaseMetadata) {
