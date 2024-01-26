@@ -1,0 +1,41 @@
+- input: |-
+    -- Create a table for departments
+    CREATE TABLE BYTEBASE.departments (
+        department_id NUMBER(3) PRIMARY KEY,
+        department_name VARCHAR2(50) UNIQUE
+    );
+    -- Create a table for employees with a foreign key constraint
+    CREATE TABLE BYTEBASE.employees (
+        employee_id NUMBER(5) PRIMARY KEY,
+        first_name VARCHAR2(50),
+        last_name VARCHAR2(50),
+        job_title VARCHAR2(100),
+        hire_date DATE,
+        salary NUMBER(10,2),
+        department_id NUMBER(3),
+        CONSTRAINT fk_employee_department FOREIGN KEY (department_id) REFERENCES BYTEBASE.departments(department_id)
+    );
+    -- Create an index on the combination of columns in the employees table
+    CREATE INDEX idx_employee_name_department ON BYTEBASE.employees(last_name, first_name, department_id);
+    CREATE INDEX idx_employee_name ON BYTEBASE.employees(last_name, first_name);
+  want: |+
+    CREATE TABLE departments (
+        department_id NUMBER(3) PRIMARY KEY,
+        department_name VARCHAR2(50) UNIQUE
+    );
+
+    CREATE TABLE employees (
+        employee_id NUMBER(5) PRIMARY KEY,
+        first_name VARCHAR2(50),
+        last_name VARCHAR2(50),
+        job_title VARCHAR2(100),
+        hire_date DATE,
+        salary NUMBER(10,2),
+        department_id NUMBER(3),
+         FOREIGN KEY (department_id) REFERENCES departments(department_id)
+    );
+
+    CREATE INDEX "0230+nLPI/Au6JBLxCB5PEGWRY1uxl89iPGop" ON employees(last_name, first_name, department_id);
+
+    CREATE INDEX "0220RevQ8VSXVrlUftDTCIKWRm6uR5UvakJHG" ON employees(last_name, first_name);
+

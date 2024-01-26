@@ -55,11 +55,29 @@ func (l *eraseListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
 
 func (l *eraseListener) EnterSchema_name(ctx *parser.Schema_nameContext) {
 	if l.ctx.eraseSchemaName {
+		stop := getPeriodIdx(ctx)
+		if stop == -1 {
+			stop = ctx.Identifier().GetStop().GetTokenIndex()
+		}
 		l.rewriter.DeleteDefault(
 			ctx.Identifier().GetStart().GetTokenIndex(),
-			ctx.Identifier().GetStop().GetTokenIndex(),
+			stop,
 		)
 	}
+}
+
+func getPeriodIdx(ctx *parser.Schema_nameContext) int {
+	for i := ctx.GetStop().GetTokenIndex() + 1; i < ctx.GetParser().GetTokenStream().Size(); i++ {
+		token := ctx.GetParser().GetTokenStream().Get(i)
+		if token.GetTokenType() == parser.PlSqlParserPERIOD {
+			return i
+		}
+		if token.GetChannel() == antlr.TokenDefaultChannel || token.GetTokenType() == parser.PlSqlParserEOF {
+			return -1
+		}
+	}
+
+	return -1
 }
 
 func (l *eraseListener) EnterCreate_index(ctx *parser.Create_indexContext) {
@@ -72,7 +90,7 @@ func (l *eraseListener) EnterCreate_index(ctx *parser.Create_indexContext) {
 		l.rewriter.ReplaceDefault(
 			ctx.Index_name().GetStart().GetTokenIndex(),
 			ctx.Index_name().GetStop().GetTokenIndex(),
-			getNormalizeIndexName(ctx),
+			"\""+getNormalizeIndexName(ctx)+"\"",
 		)
 	}
 }
@@ -160,9 +178,27 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 
 func (l *eraseListener) EnterConstraint_name(ctx *parser.Constraint_nameContext) {
 	if l.ctx.eraseConstraintName {
+		start := getConstraintKeywordIdx(ctx)
+		if start == -1 {
+			start = ctx.Identifier().GetStart().GetTokenIndex()
+		}
 		l.rewriter.DeleteDefault(
-			ctx.Identifier().GetStart().GetTokenIndex(),
+			start,
 			ctx.Identifier().GetStop().GetTokenIndex(),
 		)
 	}
+}
+
+func getConstraintKeywordIdx(ctx *parser.Constraint_nameContext) int {
+	for i := ctx.GetStart().GetTokenIndex() - 1; i >= 0; i-- {
+		token := ctx.GetParser().GetTokenStream().Get(i)
+		if token.GetTokenType() == parser.PlSqlParserCONSTRAINT {
+			return i
+		}
+		if token.GetChannel() == antlr.TokenDefaultChannel {
+			return -1
+		}
+	}
+
+	return -1
 }

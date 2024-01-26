@@ -39,7 +39,7 @@ func (l *ConciseListener) EnterUnit_statement(ctx *plsql.Unit_statementContext) 
 			l.err = err
 			return
 		}
-		if _, err := l.buf.WriteString(";\n\n"); err != nil {
+		if _, err := l.buf.WriteString("\n\n"); err != nil {
 			l.err = err
 			return
 		}
@@ -53,7 +53,7 @@ func (l *ConciseListener) EnterUnit_statement(ctx *plsql.Unit_statementContext) 
 			l.err = err
 			return
 		}
-		if _, err := l.buf.WriteString(";\n\n"); err != nil {
+		if _, err := l.buf.WriteString("\n\n"); err != nil {
 			l.err = err
 			return
 		}
