@@ -11,7 +11,7 @@ export const sortRoles = (roles: string[]) => {
       if (presetRoleIndex !== -1) {
         return presetRoleIndex;
       }
-      return roles.length + roles.indexOf(role);
+      return PRESET_ROLES.length + roles.indexOf(role);
     };
     return priority(a) - priority(b);
   });
