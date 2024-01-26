@@ -1298,3 +1298,19 @@ func normalizeTableViewName(currentSchema string, ctx plsql.ITableview_nameConte
 
 	return identifier, idExpression
 }
+
+func normalizeClusterName(ctx plsql.ICluster_nameContext) (string, string) {
+	var list []string
+	for _, idExpression := range ctx.AllId_expression() {
+		list = append(list, NormalizeIDExpression(idExpression))
+	}
+
+	switch len(list) {
+	case 1:
+		return "", list[0]
+	case 2:
+		return list[0], list[1]
+	default:
+		return "", ""
+	}
+}
