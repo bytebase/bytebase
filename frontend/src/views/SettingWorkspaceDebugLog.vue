@@ -108,8 +108,9 @@ const logString = computed(() => {
 });
 
 const { t } = useI18n();
-const { copy } = useClipboard({
+const { copy, isSupported } = useClipboard({
   source: logString,
+  legacy: true,
 });
 const notificationStore = useNotificationStore();
 const debugLogList = useDebugLogList();
@@ -149,6 +150,15 @@ const handleExport = () => {
 };
 
 const handleCopy = () => {
+  if (!isSupported.value) {
+    notificationStore.pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Copy to clipboard is not enabled in your browser.",
+    });
+    return false;
+  }
+
   copy();
   notificationStore.pushNotification({
     module: "bytebase",
