@@ -90,7 +90,9 @@ const state = reactive<State>({
   currentActionHistory: null,
 });
 
-const { copy: copyTextToClipboard } = useClipboard();
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
 
 const isLoading = computed(() => {
   return sqlEditorStore.isFetchingQueryHistory;
@@ -140,6 +142,15 @@ const notifyMessage = computed(() => {
 });
 
 const handleCopy = (history: QueryHistory) => {
+  if (!isSupported.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Copy to clipboard is not enabled in your browser.",
+    });
+    return;
+  }
+
   state.currentActionHistory = history;
   copyTextToClipboard(history.statement);
   pushNotification({
