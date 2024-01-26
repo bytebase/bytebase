@@ -109,7 +109,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import MarkdownEditor from "@/components/MarkdownEditor.vue";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import { IssueBuiltinFieldId } from "@/plugins";
 import { useActivityV1Store, useCurrentUserV1, useIssueV1Store } from "@/store";
 import { getLogId } from "@/store/modules/v1/common";
