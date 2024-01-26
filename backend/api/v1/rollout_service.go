@@ -616,7 +616,6 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
-
 	}
 	var taskUIDs []int
 	var tasksToSkip []*store.TaskMessage
