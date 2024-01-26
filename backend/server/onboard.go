@@ -224,6 +224,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 
 	// Use new CI/CD API.
 	childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
+	childCtx = context.WithValue(childCtx, common.UserContextKey, user)
 	plan, err := s.rolloutService.CreatePlan(childCtx, &v1pb.CreatePlanRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
 		Plan: &v1pb.Plan{

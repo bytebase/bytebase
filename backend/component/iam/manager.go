@@ -21,6 +21,26 @@ import (
 //go:embed acl.yaml
 var aclYaml []byte
 
+// TODO(p0ny): stop hardcoding custom role permissions once we allow editing it.
+var customRolePermissions = []Permission{
+	PermissionChangeHistoriesGet,
+	PermissionChangeHistoriesList,
+	PermissionDatabasesGet,
+	PermissionDatabasesGetSchema,
+	PermissionDatabasesList,
+	PermissionIssueCommentsCreate,
+	PermissionIssuesGet,
+	PermissionIssuesList,
+	PermissionPlanCheckRunsList,
+	PermissionPlanCheckRunsRun,
+	PermissionPlansGet,
+	PermissionPlansList,
+	PermissionProjectsGet,
+	PermissionProjectsGetIAMPolicy,
+	PermissionRolloutsGet,
+	PermissionTaskRunsList,
+}
+
 type acl struct {
 	Roles []struct {
 		Name        string   `yaml:"name"`
@@ -67,7 +87,10 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
 func (m *Manager) GetPermissions(role string) []Permission {
-	return m.roles[role]
+	if permissions, ok := m.roles[role]; ok {
+		return permissions
+	}
+	return customRolePermissions
 }
 
 func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) bool {

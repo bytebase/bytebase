@@ -92,9 +92,7 @@
     <div class="w-80">
       <span class="textinfolabel">{{ $t("export-data.password-info") }}</span>
       <BBTextField
-        v-model:value="formData.password"
-        type="password"
-        :input-props="{ autocomplete: 'off' }"
+        v-modal:value="formData.password"
         class="my-2"
         :focus-on-mount="true"
       />
@@ -265,7 +263,7 @@ const doExport = async () => {
   state.isRequesting = true;
 
   try {
-    await emit("export", formData.value, doDownload);
+    await emit("export", { ...formData.value }, doDownload);
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -318,8 +316,10 @@ const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
 watch(
   () => [state.showDrawer, state.showModal],
   ([showDrawer, showModal]) => {
-    if (showDrawer || showModal) {
+    if (showDrawer) {
       formData.value = defaultFormData();
+    } else if (showModal) {
+      formData.value.password = "";
     }
   },
   { immediate: true }

@@ -118,6 +118,7 @@ const { copy, copied } = useClipboard({
   source: computed(() => {
     return detailValue.value ?? "";
   }),
+  legacy: true,
 });
 const handleCopy = () => {
   copy().then(() => {

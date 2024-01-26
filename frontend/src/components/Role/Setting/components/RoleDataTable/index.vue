@@ -15,7 +15,6 @@ import { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription } from "@/utils";
 import RoleOperationsCell from "./cells/RoleOperationsCell.vue";
 import RoleTitleCell from "./cells/RoleTitleCell.vue";
-import RoleTypeCell from "./cells/RoleTypeCell.vue";
 
 defineProps<{
   roleList: Role[];
@@ -29,16 +28,6 @@ const { t } = useI18n();
 
 const columns = computed(() => {
   return [
-    {
-      key: "type",
-      title: t("common.type"),
-      width: "4rem",
-      render: (role: Role) => {
-        return h(RoleTypeCell, {
-          role,
-        });
-      },
-    },
     {
       key: "title",
       title: t("role.title"),
