@@ -613,14 +613,15 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		taskByID[task.ID] = task
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 	var taskUIDs []int
 	var tasksToSkip []*store.TaskMessage
+	stageIDSet := map[int]struct{}{}
 	for _, task := range request.Tasks {
-		_, _, _, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
+		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, err.Error())
 		}
@@ -629,9 +630,33 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		}
 		taskUIDs = append(taskUIDs, taskID)
 		tasksToSkip = append(tasksToSkip, taskByID[taskID])
+		stageIDSet[stageID] = struct{}{}
 	}
 
-	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, principalID); err != nil {
+	stages, err := s.store.ListStageV2(ctx, rolloutID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list stages, error: %v", err)
+	}
+	stageMap := map[int]*store.StageMessage{}
+	for _, stage := range stages {
+		stageMap[stage.ID] = stage
+	}
+
+	for stageID := range stageIDSet {
+		stage, ok := stageMap[stageID]
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "stage ID %v not found in stages of rollout %v", stageID, rolloutID)
+		}
+		ok, err = canUserSkipStageTasks(ctx, s.store, user, issue, stage.EnvironmentID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "not allowed to skip tasks in stage %q", stage.Name)
+		}
+	}
+
+	if err := s.store.BatchSkipTasks(ctx, taskUIDs, request.Reason, user.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to skip tasks, error: %v", err)
 	}
 
@@ -639,7 +664,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
-	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, principalID); err != nil {
+	if err := s.activityManager.BatchCreateActivitiesForSkipTasks(ctx, tasksToSkip, issue, request.Reason, user.ID); err != nil {
 		slog.Error("failed to batch create activities for skipping tasks", log.BBError(err))
 	}
 
@@ -720,7 +745,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
+		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to cancel tasks")
 	}
 
 	var taskRunIDs []int
@@ -1414,10 +1439,10 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 
 // canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
 func canUserCancelStageTaskRun(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
-	// The creator can cancel task runs.
-	if user.ID == issue.Creator.ID {
-		return true, nil
-	}
+	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
+}
+
+func canUserSkipStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	return canUserRunStageTasks(ctx, s, user, issue, stageEnvironmentID)
 }
 
