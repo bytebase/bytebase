@@ -3420,7 +3420,8 @@
       "confirm-rebase": "Confirm rebase?",
       "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
       "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
-      "preview-merge-result": "Preview merge result"
+      "preview-merge-result": "Preview changes on {branch} after merge",
+      "preview-rebase-result": "Preview changes on {branch} after rebase"
     },
     "source": {
       "baseline-version": "Baseline version",

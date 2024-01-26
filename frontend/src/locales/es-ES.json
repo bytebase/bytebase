@@ -3418,7 +3418,8 @@
       "confirm-rebase": "¿Confirmar rebase?",
       "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
       "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
-      "preview-merge-result": "Vista previa del resultado de la fusión"
+      "preview-merge-result": "Vista previa de los cambios en {branch} después de la fusión",
+      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase"
     },
     "source": {
       "baseline-version": "Versión básica",

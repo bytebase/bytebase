@@ -146,11 +146,7 @@ import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
-import {
-  ALL_USERS_USER_EMAIL,
-  ComposedProject,
-  ProjectLevelRoles,
-} from "@/types";
+import { ALL_USERS_USER_EMAIL, ComposedProject, PRESET_ROLES } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
 import {
@@ -223,9 +219,9 @@ const getSortedBindingList = (bindingList: Binding[]) => {
   // Sort by role type.
   roleMap = new Map(
     [...roleMap].sort((a, b) => {
-      if (!ProjectLevelRoles.includes(a[0])) return -1;
-      if (!ProjectLevelRoles.includes(b[0])) return 1;
-      return ProjectLevelRoles.indexOf(a[0]) - ProjectLevelRoles.indexOf(b[0]);
+      if (!PRESET_ROLES.includes(a[0])) return -1;
+      if (!PRESET_ROLES.includes(b[0])) return 1;
+      return PRESET_ROLES.indexOf(a[0]) - PRESET_ROLES.indexOf(b[0]);
     })
   );
   // Sort by expiration time.
