@@ -30,6 +30,7 @@
           v-if="targetBranch && headBranch && validationState?.branch"
           :project="project"
           :merged-branch="validationState.branch"
+          :base-branch="targetBranch"
         />
       </template>
     </StepTab>

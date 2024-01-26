@@ -9,8 +9,6 @@ import (
 	"math"
 	"reflect"
 	"sort"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -182,26 +180,8 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	// Grant privilege and close issue similar to actions on issue approval.
 	if issue.Type == api.IssueGrantRequest && approvalTemplate == nil {
-		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, issue, payload.GrantRequest); err != nil {
+		if err := utils.UpdateProjectPolicyFromGrantIssue(ctx, r.store, r.activityManager, issue, payload.GrantRequest); err != nil {
 			return false, err
-		}
-		userID, err := strconv.Atoi(strings.TrimPrefix(payload.GrantRequest.User, "users/"))
-		if err != nil {
-			return false, err
-		}
-		newUser, err := r.store.GetUserByID(ctx, userID)
-		if err != nil {
-			return false, err
-		}
-		// Post project IAM policy update activity.
-		if _, err := r.activityManager.CreateActivity(ctx, &store.ActivityMessage{
-			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.Project.UID,
-			Type:         api.ActivityProjectMemberCreate,
-			Level:        api.ActivityInfo,
-			Comment:      fmt.Sprintf("Granted %s to %s (%s).", newUser.Name, newUser.Email, payload.GrantRequest.Role),
-		}, &activity.Metadata{}); err != nil {
-			slog.Warn("Failed to create project activity", log.BBError(err))
 		}
 		if err := utils.ChangeIssueStatus(ctx, r.store, r.activityManager, issue, api.IssueDone, api.SystemBotID, ""); err != nil {
 			return false, errors.Wrap(err, "failed to update issue status")

@@ -185,6 +185,7 @@ func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, erro
 	return user, nil
 }
 
+// TODO(p0ny): remove this function after iam migration.
 func (in *ACLInterceptor) getProjectRoles(ctx context.Context, user *store.UserMessage, projectID string) (map[api.Role]bool, error) {
 	projectPolicy, err := in.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
 	if err != nil {
