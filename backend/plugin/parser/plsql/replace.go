@@ -1,12 +1,9 @@
 package plsql
 
 import (
-	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"strings"
-
-	"golang.org/x/crypto/sha3"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
@@ -97,6 +94,32 @@ func (l *eraseListener) EnterCreate_index(ctx *parser.Create_indexContext) {
 
 func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 	var buf strings.Builder
+	// table name as prefix
+	switch {
+	case ctx.Table_index_clause() != nil:
+		_, tableName := normalizeTableViewName("", ctx.Table_index_clause().Tableview_name())
+		if _, err := buf.WriteString(tableName); err != nil {
+			slog.Debug("Failed to write byte", log.BBError(err))
+			return ""
+		}
+	case ctx.Bitmap_join_index_clause() != nil:
+		_, tableName := normalizeTableViewName("", ctx.Bitmap_join_index_clause().Tableview_name(0))
+		if _, err := buf.WriteString(tableName); err != nil {
+			slog.Debug("Failed to write byte", log.BBError(err))
+			return ""
+		}
+	case ctx.Cluster_index_clause() != nil:
+		_, clusterName := normalizeClusterName(ctx.Cluster_index_clause().Cluster_name())
+		if _, err := buf.WriteString(clusterName); err != nil {
+			slog.Debug("Failed to write byte", log.BBError(err))
+			return ""
+		}
+	}
+	if err := buf.WriteByte('_'); err != nil {
+		slog.Debug("Failed to write byte", log.BBError(err))
+		return ""
+	}
+
 	// UNIQUE, BITMAP OR NON
 	switch {
 	case ctx.UNIQUE() != nil:
@@ -158,21 +181,6 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 		}
 	}
 
-	text := EraseString(EraseContext{
-		eraseSchemaName: true,
-		eraseIndexName:  true,
-	}, ctx, ctx.GetParser().GetTokenStream())
-	sum := sha3.Sum224([]byte(text))
-	s := base64.StdEncoding.EncodeToString(sum[:])
-	for i, c := range s {
-		if i > 32 {
-			break
-		}
-		if _, err := buf.WriteRune(c); err != nil {
-			slog.Debug("Failed to write byte", log.BBError(err))
-			return ""
-		}
-	}
 	return buf.String()
 }
 

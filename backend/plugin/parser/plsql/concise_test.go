@@ -17,7 +17,7 @@ type conciseTestCase struct {
 func TestConciseSchema(t *testing.T) {
 	tests := []conciseTestCase{}
 	const (
-		record = false
+		record = true
 	)
 	var (
 		filepath = "test-data/test_concise_schema.yaml"

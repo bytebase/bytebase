@@ -35,7 +35,7 @@
          FOREIGN KEY (department_id) REFERENCES departments(department_id)
     );
 
-    CREATE INDEX "0230+nLPI/Au6JBLxCB5PEGWRY1uxl89iPGop" ON employees(last_name, first_name, department_id);
+    CREATE INDEX "EMPLOYEES_0230" ON employees(last_name, first_name, department_id);
 
-    CREATE INDEX "0220RevQ8VSXVrlUftDTCIKWRm6uR5UvakJHG" ON employees(last_name, first_name);
+    CREATE INDEX "EMPLOYEES_0220" ON employees(last_name, first_name);
 
