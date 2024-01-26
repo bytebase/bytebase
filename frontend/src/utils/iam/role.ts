@@ -1,39 +1,17 @@
-import { useRoleStore } from "@/store";
-import {
-  WorkspaceLevelRoles,
-  ProjectLevelRoles,
-  WORKSPACE_PERMISSIONS,
-  WorkspacePermission,
-} from "@/types";
-
-export const isWorkspaceLevelRole = (role: string) => {
-  return useRoleStore()
-    .getRoleByName(role)
-    ?.permissions.every((permission) =>
-      WORKSPACE_PERMISSIONS.includes(permission as WorkspacePermission)
-    );
-};
-
-export const isProjectLevelRole = (role: string) => {
-  return !isWorkspaceLevelRole(role);
-};
+import { PresetRoleType, PRESET_ROLES } from "@/types";
 
 export const isCustomRole = (role: string) => {
-  return (
-    !WorkspaceLevelRoles.includes(role) && !ProjectLevelRoles.includes(role)
-  );
+  return !Object.values(PresetRoleType).includes(role);
 };
 
 export const sortRoles = (roles: string[]) => {
   return roles.sort((a, b) => {
     const priority = (role: string) => {
-      if (WorkspaceLevelRoles.includes(role)) {
-        return WorkspaceLevelRoles.indexOf(role);
+      const presetRoleIndex = PRESET_ROLES.indexOf(role);
+      if (presetRoleIndex !== -1) {
+        return presetRoleIndex;
       }
-      if (ProjectLevelRoles.includes(role)) {
-        return ProjectLevelRoles.indexOf(role) + WorkspaceLevelRoles.length;
-      }
-      return roles.length + roles.indexOf(role);
+      return PRESET_ROLES.length + roles.indexOf(role);
     };
     return priority(a) - priority(b);
   });

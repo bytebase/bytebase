@@ -176,7 +176,7 @@ import {
   DatabaseResource,
   getUserEmailInBinding,
   PresetRoleType,
-  ProjectLevelRoles,
+  PRESET_ROLES,
 } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -556,11 +556,9 @@ watch(
 
     // Sort by role type.
     tempRoleList.sort((a, b) => {
-      if (!ProjectLevelRoles.includes(a.role)) return -1;
-      if (!ProjectLevelRoles.includes(b.role)) return 1;
-      return (
-        ProjectLevelRoles.indexOf(a.role) - ProjectLevelRoles.indexOf(b.role)
-      );
+      if (!PRESET_ROLES.includes(a.role)) return -1;
+      if (!PRESET_ROLES.includes(b.role)) return 1;
+      return PRESET_ROLES.indexOf(a.role) - PRESET_ROLES.indexOf(b.role);
     });
     roleList.value = tempRoleList;
   },
