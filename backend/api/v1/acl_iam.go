@@ -281,6 +281,13 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.IssueService_RejectIssue_FullMethodName,
 		v1pb.IssueService_RequestIssue_FullMethodName:
 		return true
+	// skip checking for the rollout-related.
+	// these are determined by the rollout policy.
+	case
+		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName,
+		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
+		v1pb.RolloutService_BatchRunTasks_FullMethodName:
+		return true
 	// handled in the method because checking is complex.
 	case
 		v1pb.InstanceService_SearchInstances_FullMethodName,
@@ -363,7 +370,7 @@ func (*ACLInterceptor) getProjectIDsForChangelistService(_ context.Context, req 
 }
 
 func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any) ([]string, error) {
-	var projects, rollouts, plans, tasks, stages []string
+	var projects, rollouts, plans, tasks []string
 	switch r := req.(type) {
 	case *v1pb.GetRolloutRequest:
 		rollouts = append(rollouts, r.GetName())
@@ -381,12 +388,6 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		plans = append(plans, r.GetParent())
 	case *v1pb.RunPlanChecksRequest:
 		plans = append(plans, r.GetName())
-	case *v1pb.BatchRunTasksRequest:
-		stages = append(stages, r.GetParent())
-	case *v1pb.BatchSkipTasksRequest:
-		stages = append(stages, r.GetParent())
-	case *v1pb.BatchCancelTaskRunsRequest:
-		tasks = append(tasks, r.GetParent())
 	}
 
 	var projectIDs []string
@@ -408,13 +409,6 @@ func (*ACLInterceptor) getProjectIDsForRolloutService(_ context.Context, req any
 		projectID, _, err := common.GetProjectIDRolloutID(rollout)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse rollout %q", rollout)
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	for _, stage := range stages {
-		projectID, _, _, err := common.GetProjectIDRolloutIDMaybeStageID(stage)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse stage %q", stage)
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
