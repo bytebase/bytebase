@@ -86,7 +86,7 @@ import {
   useProjectIamPolicy,
   useUserStore,
 } from "@/store";
-import { ComposedProject, PresetRoleType, ProjectLevelRoles } from "@/types";
+import { ComposedProject, PRESET_ROLES, PresetRoleType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
@@ -176,9 +176,9 @@ const roleGroup = computed(() => {
   // Sort by role type.
   roleMap = new Map(
     [...roleMap].sort((a, b) => {
-      if (!ProjectLevelRoles.includes(a[0])) return -1;
-      if (!ProjectLevelRoles.includes(b[0])) return 1;
-      return ProjectLevelRoles.indexOf(a[0]) - ProjectLevelRoles.indexOf(b[0]);
+      if (!PRESET_ROLES.includes(a[0])) return -1;
+      if (!PRESET_ROLES.includes(b[0])) return 1;
+      return PRESET_ROLES.indexOf(a[0]) - PRESET_ROLES.indexOf(b[0]);
     })
   );
   // Sort by expiration time.
