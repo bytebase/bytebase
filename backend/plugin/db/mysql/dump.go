@@ -411,6 +411,10 @@ type triggerSchema struct {
 
 // getTablesTx gets all tables of a database using the provided transaction.
 func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSchema, error) {
+	collations, err := getTableCollation(txn, dbType, dbName)
+	if err != nil {
+		slog.Error("failed to get table collations", log.BBError(err))
+	}
 	var tables []*TableSchema
 	query := fmt.Sprintf("SHOW FULL TABLES FROM `%s`;", dbName)
 	rows, err := txn.Query(query)
@@ -430,7 +434,7 @@ func getTablesTx(txn *sql.Tx, dbType storepb.Engine, dbName string) ([]*TableSch
 		return nil, err
 	}
 	for _, tbl := range tables {
-		stmt, err := getTableStmt(txn, dbType, dbName, tbl.Name, tbl.TableType)
+		stmt, err := getTableStmt(txn, dbType, dbName, tbl.Name, tbl.TableType, collations)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to call getTableStmt(%q, %q, %q)", dbName, tbl.Name, tbl.TableType)
 		}
@@ -456,8 +460,38 @@ func trimAfterLastParenthesis(sql string) string {
 	return sql
 }
 
+func getTableCollation(txn *sql.Tx, dbType storepb.Engine, dbName string) (map[string]string, error) {
+	if dbType != storepb.Engine_MYSQL {
+		return nil, nil
+	}
+	query := "SELECT TABLE_NAME, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = 'BASE TABLE';"
+	collations := make(map[string]string)
+	rows, err := txn.Query(query, dbName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var tableName, collation sql.NullString
+		if err := rows.Scan(
+			&tableName,
+			&collation,
+		); err != nil {
+			return nil, err
+		}
+		if tableName.Valid && collation.Valid {
+			collations[tableName.String] = collation.String
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return collations, nil
+}
+
 // getTableStmt gets the create statement of a table.
-func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType string) (string, error) {
+func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType string, collations map[string]string) (string, error) {
 	switch tblType {
 	case baseTableType:
 		query := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`;", dbName, tblName)
@@ -468,12 +502,14 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 			}
 			return "", err
 		}
+
+		tableCollation, collationOk := collations[tblName]
 		// MySQL version before 8.0.11 doesn't includes the table collation and column collation
 		// in the SHOW CREATE TABLE statement if they are the same as the database/table collation.
 		// https://bugs.mysql.com/bug.php?id=46239
 		// It causes the schema string is not consistent with the schema metadata. For example,
 		// it will cause table colored as yello because we cannot get the table collation from the schema string.
-		if dbType == storepb.Engine_MYSQL {
+		if dbType == storepb.Engine_MYSQL && collationOk {
 			lines := strings.Split(stmt, "\n")
 			for i := len(lines) - 1; i >= 0; i-- {
 				if strings.TrimSpace(lines[i]) == "" {
@@ -488,14 +524,6 @@ func getTableStmt(txn *sql.Tx, dbType storepb.Engine, dbName, tblName, tblType s
 				charsetPos := strings.Index(lines[i], "CHARSET=")
 				if charsetPos == -1 {
 					break
-				}
-				query := fmt.Sprintf("SELECT TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s';", dbName, tblName)
-				var tableCollation string
-				if err := txn.QueryRow(query).Scan(&tableCollation); err != nil {
-					if err == sql.ErrNoRows {
-						return "", common.FormatDBErrorEmptyRowWithQuery(query)
-					}
-					return "", errors.Wrapf(err, "failed to get table collation for %q.%q", dbName, tblName)
 				}
 				for pos, r := range lines[i] {
 					if pos < charsetPos+len("CHARSET=") {
