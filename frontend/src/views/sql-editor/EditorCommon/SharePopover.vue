@@ -170,6 +170,7 @@ const sharedTabLink = computed(() => {
 
 const { copy, copied } = useClipboard({
   source: sharedTabLink.value,
+  legacy: true,
 });
 
 const handleCopy = async () => {

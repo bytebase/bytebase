@@ -70,7 +70,9 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const dbSchemaStore = useDBSchemaV1Store();
-const { copy: copyTextToClipboard } = useClipboard();
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
 const schemaString = ref<string | null>(null);
 const isFetching = ref<boolean>(false);
 
@@ -112,6 +114,15 @@ onMounted(async () => {
 });
 
 const handleCopySchemaString = () => {
+  if (!isSupported.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Copy to clipboard is not enabled in your browser.",
+    });
+    return;
+  }
+
   copyTextToClipboard(schemaString.value || "");
   pushNotification({
     module: "bytebase",
