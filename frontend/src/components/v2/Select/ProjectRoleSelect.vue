@@ -26,9 +26,16 @@ import { computed, h, ref, VNode } from "vue";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import { featureToRef, useRoleStore } from "@/store";
-import { PresetRoleType, WorkspaceLevelRoles } from "@/types";
+import { PresetRoleType } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription, displayRoleTitle } from "@/utils";
+
+// UNALLOWED_ROLES_IN_PROJECT are roles that are not allowed to be assigned to
+// project members.
+const UNALLOWED_ROLES_IN_PROJECT = [
+  PresetRoleType.WORKSPACE_ADMIN,
+  PresetRoleType.WORKSPACE_MEMBER,
+];
 
 type ProjectRoleSelectOption = SelectOption & {
   value: string;
@@ -65,9 +72,9 @@ const roleList = computed(() => {
 });
 
 const roleOptions = computed(() => {
-  let roles = roleList.value
-    // Exclude workspace level roles.
-    .filter((role) => !WorkspaceLevelRoles.includes(role.name));
+  let roles = roleList.value.filter(
+    (role) => !UNALLOWED_ROLES_IN_PROJECT.includes(role.name)
+  );
   if (props.filter) {
     roles = roles.filter(props.filter);
   }

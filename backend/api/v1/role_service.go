@@ -194,15 +194,5 @@ func validatePermissions(permissions []string) bool {
 			return false
 		}
 	}
-	// Check if all permission levels are the same.
-	var permissionLevel iam.PermissionLevel
-	for _, permission := range permissions {
-		level := iam.GetPermissionLevel(iam.Permission(permission))
-		if permissionLevel == "" {
-			permissionLevel = level
-		} else if permissionLevel != level {
-			return false
-		}
-	}
 	return true
 }
