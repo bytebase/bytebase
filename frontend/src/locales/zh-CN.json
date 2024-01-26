@@ -2294,7 +2294,7 @@
     "use-tips": "选择需要编辑的数据库或者表",
     "preview-issue": "预览工单",
     "sync-sql-from-schema-editor": "从 Schema 编辑器中同步 SQL",
-    "raw-sql": "SQL 语句",
+    "raw-sql": "粘贴 Schema 文本",
     "search-database-and-table": "搜索数据库和表",
     "search-table": "搜索表",
     "search-column": "搜索列",
@@ -3364,7 +3364,7 @@
     },
     "change-source": {
       "self": "变更来源",
-      "raw-sql": "SQL 语句",
+      "raw-sql": "粘贴 Schema 文本",
       "change-history": {
         "tables": "表"
       },
