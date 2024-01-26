@@ -859,6 +859,8 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
 			}
 			schema = conciseSchema
+		default:
+			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
 		}
 	}
 	return &v1pb.DatabaseSchema{Schema: schema}, nil
