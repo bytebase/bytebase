@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.5
 
 require (
-	cloud.google.com/go/spanner v1.54.0
+	cloud.google.com/go/spanner v1.55.0
 	gitee.com/chunanyong/dm v1.8.13
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -78,12 +78,12 @@ require (
 	golang.org/x/oauth2 v0.15.0
 	golang.org/x/sys v0.16.0
 	golang.org/x/text v0.14.0
-	google.golang.org/api v0.154.0
+	google.golang.org/api v0.155.0
 	google.golang.org/genproto v0.0.0-20231212172506-995d672761c0
-	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240102182953-50ed04b92917
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240102182953-50ed04b92917
 	google.golang.org/grpc v1.61.0
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
