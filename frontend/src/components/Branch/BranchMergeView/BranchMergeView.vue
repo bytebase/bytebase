@@ -49,7 +49,7 @@ import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { getErrorCode } from "@/utils/grpcweb";
+import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import MergeBranchStep from "./MergeBranchStep.vue";
 import SelectBranchStep from "./SelectBranchStep.vue";
 import { MergeBranchValidationState } from "./types";
@@ -153,8 +153,10 @@ const validationState = computedAsync(
       };
     } catch (err) {
       const status = getErrorCode(err);
+      const errmsg = extractGrpcErrorMessage(err);
       return {
         status,
+        errmsg,
       };
     }
   },
