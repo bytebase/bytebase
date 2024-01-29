@@ -84,7 +84,7 @@ type Server struct {
 
 	licenseService enterprise.LicenseService
 
-	profile         config.Profile
+	profile         *config.Profile
 	e               *echo.Echo
 	grpcServer      *grpc.Server
 	lspServer       *lsp.Server
@@ -119,7 +119,7 @@ type Server struct {
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	s := &Server{
-		profile:         profile,
+		profile:         &profile,
 		startedTs:       time.Now().Unix(),
 		errorRecordRing: api.NewErrorRecordRing(),
 	}
@@ -265,7 +265,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		s.s3Client = s3Client
 	}
 
-	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, &s.profile, false)
+	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
 	if !profile.Readonly {
 		s.slowQuerySyncer = slowquerysync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile)
@@ -307,9 +307,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	}
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, profile.Mode)
-	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, &profile)
-	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, &profile, s.metricReporter)
+	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
+	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.licenseService, s.iamManager, s.profile)
+	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
@@ -355,7 +355,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, &s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	rolloutService, issueService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.activityManager, s.iamManager, s.backupRunner, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
