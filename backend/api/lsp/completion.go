@@ -9,6 +9,7 @@ import (
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -65,6 +66,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 			Kind:          convertLSPCompletionItemKind(candidate.Type),
 			Documentation: candidate.Comment,
 			SortText:      generateSortText(params, candidate),
+			InsertText:    generateInsertText(engine, candidate),
 		})
 	}
 
@@ -98,6 +100,23 @@ func generateSortTextAfterDot(candidate base.Candidate) string {
 	default:
 		return "10" + string(candidate.Type) + candidate.Text
 	}
+}
+
+func generateInsertText(engine storepb.Engine, candidate base.Candidate) string {
+	// For non-postgres engine, we return the candidate text as the insert text.
+	if engine != storepb.Engine_POSTGRES {
+		return candidate.Text
+	}
+
+	insertText := candidate.Text
+	// If the candidate is a column and it's a camel case, we need to quote it.
+	//
+	// TODO(rebelice): there are some special cases that we don't need to add quotes.
+	// For example, if the previous token is a quote, we don't need to quote the column name.
+	if candidate.Type == base.CandidateTypeColumn && common.IsCamelCase(insertText) {
+		insertText = fmt.Sprintf(`"%s"`, insertText)
+	}
+	return insertText
 }
 
 func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
