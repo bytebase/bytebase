@@ -563,7 +563,8 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", worksheet.ProjectUID))
 	}
 	return &v1pb.Worksheet{
-		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.WorksheetIDPrefix, worksheet.UID),
+		Name:        fmt.Sprintf("%s%d", common.WorksheetIDPrefix, worksheet.UID),
+		Project:     fmt.Sprintf("%s%s", common.ProjectNamePrefix, project.ResourceID),
 		Database:    databaseParent,
 		Title:       worksheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
