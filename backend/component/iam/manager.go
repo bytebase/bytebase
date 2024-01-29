@@ -114,6 +114,9 @@ func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string
 }
 
 func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
+	if GetPermissionLevel(p) == PermissionLevelWorkspace {
+		return false
+	}
 	if len(projectRoles) == 0 {
 		return false
 	}
