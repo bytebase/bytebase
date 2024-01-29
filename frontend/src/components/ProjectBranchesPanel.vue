@@ -7,7 +7,7 @@
     />
     <NButton v-if="allowCreate" type="primary" @click="handleCreateBranch">
       <PlusIcon class="w-4 h-auto mr-0.5" />
-      <span>{{ $t("database.new-branch") }}</span>
+      <span class="capitalize">{{ $t("database.new-branch") }}</span>
     </NButton>
   </div>
   <div class="space-y-6 w-full overflow-x-auto">
