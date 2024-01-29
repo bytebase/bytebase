@@ -243,18 +243,19 @@
 
           <DiffEditor
             v-if="state.showDiff"
-            class="h-[64rem] max-h-full border rounded-md text-sm overflow-clip"
+            class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip"
             :original="changeHistory.prevSchema"
             :modified="changeHistory.schema"
             :readonly="true"
+            :auto-height="{ min: 120, max: 600 }"
           />
           <template v-else>
             <div v-if="changeHistory.schema" class="space-y-2">
               <MonacoEditor
-                class="h-auto max-h-[1024px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
+                class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
                 :content="changeHistorySchema"
                 :readonly="true"
-                :auto-height="{ min: 120, max: 1024 }"
+                :auto-height="{ min: 120, max: 600 }"
               />
               <div
                 v-if="
@@ -337,7 +338,7 @@ import { NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
-import { MonacoEditor } from "@/components/MonacoEditor";
+import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
