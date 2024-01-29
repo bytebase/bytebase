@@ -2908,6 +2908,7 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
+| concise | [bool](#bool) |  | When true, the schema dump will be concise. |
 
 
 
