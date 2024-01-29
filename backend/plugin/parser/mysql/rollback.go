@@ -15,6 +15,7 @@ import (
 
 func init() {
 	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
+	base.RegisterTransformDMLToSelect(store.Engine_TIDB, TransformDMLToSelect)
 }
 
 func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.RollbackStatement, error) {
