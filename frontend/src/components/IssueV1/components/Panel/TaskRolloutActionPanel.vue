@@ -33,24 +33,22 @@
           </label>
           <div class="flex-1 overflow-y-auto">
             <NScrollbar>
-              <ul class="textinfolabel space-y-2">
+              <ul class="text-sm space-y-2">
                 <li
                   v-for="task in taskList"
                   :key="task.uid"
-                  class="flex flex-wrap items-start"
+                  class="flex items-center"
                 >
                   <NTag
                     v-if="semanticTaskType(task.type)"
-                    class="mr-1"
+                    class="mr-2"
                     size="small"
                   >
-                    <span class="inline-block w-[30px] text-center">
+                    <span class="inline-block text-center">
                       {{ semanticTaskType(task.type) }}
                     </span>
                   </NTag>
-                  <span class="break-all flex-1 mt-[-3px] leading-[28px]">
-                    {{ databaseForTask(issue, task).databaseName }}
-                  </span>
+                  <RolloutTaskDatabaseName :task="task" />
                 </li>
               </ul>
             </NScrollbar>
@@ -133,7 +131,6 @@ import { useI18n } from "vue-i18n";
 import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
 import {
   TaskRolloutAction,
-  databaseForTask,
   planCheckRunListForTask,
   planCheckRunSummaryForCheckRunList,
   semanticTaskType,
@@ -153,6 +150,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
+import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
 
 type LocalState = {
   loading: boolean;
