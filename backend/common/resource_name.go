@@ -34,6 +34,7 @@ const (
 	SecretNamePrefix             = "secrets/"
 	WebhookIDPrefix              = "webhooks/"
 	SheetIDPrefix                = "sheets/"
+	WorksheetIDPrefix            = "worksheets/"
 	DatabaseGroupNamePrefix      = "databaseGroups/"
 	SchemaGroupNamePrefix        = "schemaGroups/"
 	SchemaNamePrefix             = "schemas/"
@@ -482,6 +483,19 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 		return "", 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
 	}
 	return tokens[0], sheetUID, nil
+}
+
+// GetWorksheetUID returns the worksheet UID from a resource name.
+func GetWorksheetUID(name string) (int, error) {
+	tokens, err := GetNameParentTokens(name, SheetIDPrefix)
+	if err != nil {
+		return 0, err
+	}
+	sheetUID, err := strconv.Atoi(tokens[0])
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert sheet uid %q to int", tokens[1])
+	}
+	return sheetUID, nil
 }
 
 var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")
