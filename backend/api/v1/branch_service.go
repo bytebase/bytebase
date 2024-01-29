@@ -544,6 +544,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to read conflict schema, %v", err)
 			}
+			if strings.HasSuffix(newBaseSchema, "\n") && bytes.HasSuffix(baseBranch.BaseSchema, []byte("\n")) && bytes.HasSuffix(baseBranch.HeadSchema, []byte("\n")) {
+				sb = append(sb, []byte("\n")...)
+			}
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
 		}
