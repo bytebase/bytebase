@@ -273,7 +273,10 @@
     "nickname": "Tên nick",
     "missing-permission": "Thiếu quyền cần thiết",
     "continue-anyway": "Vẫn tiếp tục",
-    "permissions": "Quyền"
+    "permissions": "Quyền",
+    "backup": "Hỗ trợ",
+    "cutover": "Chuyển đổi",
+    "baseline": "Đường cơ sở"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -1241,7 +1244,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Đã đồng bộ hóa thành công lược đồ cho cơ sở dữ liệu '{0}'.",
     "start-to-sync-schema": "Bắt đầu đồng bộ hóa lược đồ",
     "failed-to-sync-schema": "Không thể đồng bộ hóa lược đồ",
-    "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công"
+    "successfully-synced-schema": "Đã đồng bộ hóa lược đồ thành công",
+    "create": "Tạo nên cơ sở dữ liệu"
   },
   "instance": {
     "select": "Chọn phiên bản",

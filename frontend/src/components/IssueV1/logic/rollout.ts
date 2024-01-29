@@ -138,3 +138,32 @@ export const isTaskV1TriggeredByVCS = (
 ): boolean => {
   return false; // TODO
 };
+
+export const semanticTaskType = (type: Task_Type) => {
+  switch (type) {
+    case Task_Type.DATABASE_BACKUP:
+      return t("common.backup");
+    case Task_Type.DATABASE_CREATE:
+      return t("db.create");
+    case Task_Type.DATABASE_DATA_UPDATE:
+      return "DML";
+    case Task_Type.DATABASE_RESTORE_RESTORE:
+      return `PITR ${t("common.restore")}`;
+    case Task_Type.DATABASE_RESTORE_CUTOVER:
+      return `PITR ${t("common.cutover")}`;
+    case Task_Type.DATABASE_SCHEMA_BASELINE:
+      return t("common.baseline");
+    case Task_Type.DATABASE_SCHEMA_UPDATE:
+    case Task_Type.DATABASE_SCHEMA_UPDATE_SDL:
+      return "DDL";
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC:
+      return `gh-ost ${t(
+        "task.type.bb-task-database-schema-update-ghost-sync"
+      )}`;
+    case Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER:
+      return `gh-ost ${t(
+        "task.type.bb-task-database-schema-update-ghost-cutover"
+      )}`;
+  }
+  return "";
+};
