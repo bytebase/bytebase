@@ -25,6 +25,7 @@
         <NButton
           secondary
           type="primary"
+          class="capitalize"
           :disabled="
             !hasPermission ||
             !hasSensitiveDataFeature ||
