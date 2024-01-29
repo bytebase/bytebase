@@ -147,7 +147,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			INDEX_NAME,
 			COLUMN_NAME,
-			'',
+			EXPRESSION,
 			SEQ_IN_INDEX,
 			INDEX_TYPE,
 			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
@@ -180,12 +180,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
-		if columnName.Valid {
+		// TiDB use string "NULL" instead of NULL, so we check expression first which is
+		// different between TiDB and MySQL.
+		if expressionName.Valid {
+			expression = expressionName.String
+		} else if columnName.Valid {
 			expression = columnName.String
-		} else if expressionName.Valid {
-			// It's a bit late or not necessary to differentiate the column name or expression.
-			// We add parentheses around expression.
-			expression = fmt.Sprintf("(%s)", expressionName.String)
 		}
 
 		key := db.TableKey{Schema: "", Table: tableName}
