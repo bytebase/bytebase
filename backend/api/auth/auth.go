@@ -19,6 +19,7 @@ import (
 	errs "github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
@@ -55,18 +56,25 @@ type APIAuthInterceptor struct {
 	tokenDuration  time.Duration
 	licenseService enterprise.LicenseService
 	stateCfg       *state.State
-	mode           common.ReleaseMode
+	profile        *config.Profile
 }
 
 // New returns a new API auth interceptor.
-func New(store *store.Store, secret string, tokenDuration time.Duration, licenseService enterprise.LicenseService, stateCfg *state.State, mode common.ReleaseMode) *APIAuthInterceptor {
+func New(
+	store *store.Store,
+	secret string,
+	tokenDuration time.Duration,
+	licenseService enterprise.LicenseService,
+	stateCfg *state.State,
+	profile *config.Profile,
+) *APIAuthInterceptor {
 	return &APIAuthInterceptor{
 		store:          store,
 		secret:         secret,
 		tokenDuration:  tokenDuration,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
-		mode:           mode,
+		profile:        profile,
 	}
 }
 
@@ -81,7 +89,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
-	principalID, err := in.authenticate(ctx, accessTokenStr)
+	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
 	if err != nil {
 		if IsAuthenticationAllowed(serverInfo.FullMethod) {
 			return handler(ctx, request)
@@ -106,7 +114,7 @@ func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss gr
 		return status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
-	principalID, err := in.authenticate(ctx, accessTokenStr)
+	principalID, err := in.getPrincipalID(ctx, accessTokenStr)
 	if err != nil {
 		if IsAuthenticationAllowed(serverInfo.FullMethod) {
 			return handler(request, ss)
@@ -153,11 +161,11 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		}
 		return 0, status.Errorf(codes.Unauthenticated, "failed to parse claim")
 	}
-	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.mode)) {
+	if !audienceContains(claims.Audience, fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode)) {
 		return 0, status.Errorf(codes.Unauthenticated,
 			"invalid access token, audience mismatch, got %q, expected %q. you may send request to the wrong environment",
 			claims.Audience,
-			fmt.Sprintf(AccessTokenAudienceFmt, in.mode),
+			fmt.Sprintf(AccessTokenAudienceFmt, in.profile.Mode),
 		)
 	}
 
@@ -176,6 +184,17 @@ func (in *APIAuthInterceptor) authenticate(ctx context.Context, accessTokenStr s
 		return 0, status.Errorf(codes.Unauthenticated, "user ID %q has been deactivated by administrators", principalID)
 	}
 
+	return principalID, nil
+}
+
+func (in *APIAuthInterceptor) getPrincipalID(ctx context.Context, accessTokenStr string) (int, error) {
+	principalID, err := in.authenticate(ctx, accessTokenStr)
+	if err != nil {
+		return 0, err
+	}
+
+	// Only update for authorized request.
+	in.profile.LastActiveTs = time.Now().Unix()
 	return principalID, nil
 }
 
