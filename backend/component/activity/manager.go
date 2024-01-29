@@ -106,6 +106,7 @@ func (m *Manager) BatchCreateActivitiesForRunTasks(ctx context.Context, tasks []
 		Level:        webhook.WebhookInfo,
 		ActivityType: string(activityType),
 		Title:        fmt.Sprintf("Issue task runs start - %s", issue.Title),
+		TitleZh:      fmt.Sprintf("工单任务发布 - %s", issue.Title),
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
@@ -190,6 +191,7 @@ func (m *Manager) BatchCreateActivitiesForSkipTasks(ctx context.Context, tasks [
 		Level:        webhook.WebhookInfo,
 		ActivityType: string(activityType),
 		Title:        fmt.Sprintf("Issue tasks skipped - %s", issue.Title),
+		TitleZh:      fmt.Sprintf("工单任务跳过 - %s", issue.Title),
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
@@ -274,7 +276,8 @@ func (m *Manager) BatchCreateActivitiesForCancelTaskRuns(ctx context.Context, ta
 	webhookCtx := webhook.Context{
 		Level:        webhook.WebhookInfo,
 		ActivityType: string(activityType),
-		Title:        fmt.Sprintf("Issue task runs start - %s", issue.Title),
+		Title:        fmt.Sprintf("Issue task runs cancelled - %s", issue.Title),
+		TitleZh:      fmt.Sprintf("工单任务取消 - %s", issue.Title),
 		Issue: &webhook.Issue{
 			ID:          issue.UID,
 			Name:        issue.Title,
