@@ -9,6 +9,7 @@
     :filterable="true"
     :virtual-scroll="true"
     :fallback-option="false"
+    :consistent-menu-width="false"
     class="bb-instance-select"
     @update:value="$emit('update:instance', $event)"
   />
