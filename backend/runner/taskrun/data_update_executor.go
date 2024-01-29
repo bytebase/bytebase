@@ -146,7 +146,7 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 		activityCreate := &store.ActivityMessage{
 			CreatorUID:   api.SystemBotID,
-			ContainerUID: issue.UID,
+			ContainerUID: task.PipelineID,
 			Type:         api.ActivityPipelineTaskPriorBackup,
 			Level:        api.ActivityInfo,
 			Payload:      string(bytes),
