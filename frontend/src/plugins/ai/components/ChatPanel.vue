@@ -103,9 +103,7 @@ const requestAI = async (query: string) => {
     }
     prompts.push(`### Write a SQL statement to solve the question below`);
     prompts.push(`### ${query}`);
-    prompts.push(
-      `### PLEASE ADD NECESSARY QUOTES FOR EACH COLUMNS IN YOUR RESPONSE STATEMENT.`
-    );
+    prompts.push(`### PLEASE ADD NECESSARY QUOTES IN YOUR RESPONSE STATEMENT.`);
     const prompt = prompts.join("\n");
     await store.createMessage({
       conversation_id: conversation.id,
