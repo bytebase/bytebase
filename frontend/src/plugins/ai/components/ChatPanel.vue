@@ -74,7 +74,9 @@ const requestAI = async (query: string) => {
     const databaseMetadata = context.databaseMetadata.value;
     const prompts: string[] = [];
     prompts.push(`### You are a db and SQL expert.`);
-    prompts.push(`### Your responses should be informative and terse.`);
+    prompts.push(
+      `### Your responses should be informative and terse. For example, "Find all the data in the table", you should only return query statements.`
+    );
     if (engine) {
       if (databaseMetadata) {
         prompts.push(
@@ -101,6 +103,7 @@ const requestAI = async (query: string) => {
     }
     prompts.push(`### Write a SQL statement to solve the question below`);
     prompts.push(`### ${query}`);
+    prompts.push(`### PLEASE ADD NECESSARY QUOTES IN YOUR RESPONSE STATEMENT.`);
     const prompt = prompts.join("\n");
     await store.createMessage({
       conversation_id: conversation.id,
