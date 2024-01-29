@@ -183,7 +183,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		// TiDB use string "NULL" instead of NULL, so we check expression first which is
 		// different between TiDB and MySQL.
 		if expressionName.Valid {
-			expression = expressionName.String
+			expression = fmt.Sprintf("(%s)", expressionName.String)
 		} else if columnName.Valid {
 			expression = columnName.String
 		}
