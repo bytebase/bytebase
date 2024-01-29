@@ -273,7 +273,10 @@
     "nickname": "Apodo",
     "missing-permission": "Faltan permisos requeridos",
     "continue-anyway": "De todas maneras, continúe",
-    "permissions": "Permisos"
+    "permissions": "Permisos",
+    "backup": "Respaldo",
+    "cutover": "transición",
+    "baseline": "Base"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1240,7 +1243,8 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "foreign-tables": "tabla externa"
+    "foreign-tables": "tabla externa",
+    "create": "Crear base de datos"
   },
   "instance": {
     "select": "Seleccionar instancia",
