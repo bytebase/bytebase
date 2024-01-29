@@ -12,7 +12,12 @@
           <heroicons-outline:external-link class="w-4 h-4" />
         </a>
       </div>
-      <NButton type="primary" :disabled="!allowCreateRole" @click="addRole">
+      <NButton
+        type="primary"
+        class="capitalize"
+        :disabled="!allowCreateRole"
+        @click="addRole"
+      >
         {{ $t("role.setting.add") }}
       </NButton>
     </div>

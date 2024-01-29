@@ -1,7 +1,11 @@
 <template>
   <div class="space-y-4 divide-y divide-block-border">
     <div v-if="allowEdit" class="flex items-center justify-end">
-      <NButton type="primary" @click.prevent="addProjectWebhook">
+      <NButton
+        type="primary"
+        class="capitalize"
+        @click.prevent="addProjectWebhook"
+      >
         {{ $t("project.webhook.add-a-webhook") }}
       </NButton>
     </div>
