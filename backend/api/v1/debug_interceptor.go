@@ -14,7 +14,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/component/config"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
 	metricplugin "github.com/bytebase/bytebase/backend/plugin/metric"
@@ -25,15 +24,13 @@ import (
 // DebugInterceptor is the v1 debug interceptor for gRPC server.
 type DebugInterceptor struct {
 	errorRecordRing *api.ErrorRecordRing
-	profile         *config.Profile
 	metricReporter  *metricreport.Reporter
 }
 
 // NewDebugInterceptor returns a new v1 API debug interceptor.
-func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing, profile *config.Profile, metricReporter *metricreport.Reporter) *DebugInterceptor {
+func NewDebugInterceptor(errorRecordRing *api.ErrorRecordRing, metricReporter *metricreport.Reporter) *DebugInterceptor {
 	return &DebugInterceptor{
 		errorRecordRing: errorRecordRing,
-		profile:         profile,
 		metricReporter:  metricReporter,
 	}
 }
@@ -101,10 +98,6 @@ func (in *DebugInterceptor) debugInterceptorDo(ctx context.Context, fullMethod s
 			StackTrace:  string(debug.Stack()),
 		}
 		in.errorRecordRing.Ring = in.errorRecordRing.Ring.Next()
-	}
-	if _, ok := ctx.Value(common.PrincipalIDContextKey).(int); ok {
-		// Only update for authorized request.
-		in.profile.LastActiveTs = time.Now().Unix()
 	}
 	in.metricReporter.Report(ctx, &metricplugin.Metric{
 		Name:  metric.APIRequestMetricName,
