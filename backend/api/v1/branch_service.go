@@ -416,7 +416,14 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
-	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, headBranch.Head.Metadata, headBranch.Base.Metadata)
+
+	// The first crazy night in 2024.
+	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
+	if err != nil {
+		slog.Info("cannot merge branches", log.BBError(err))
+		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
+	}
+	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, adHead, baseBranch.Head.Metadata)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
