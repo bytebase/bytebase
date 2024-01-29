@@ -1226,6 +1226,18 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 			converted.PrevSchema = sdlSchema
 		}
 	}
+	if request.Concise {
+		switch instance.Engine {
+		case storepb.Engine_ORACLE:
+			conciseSchema, err := plsql.GetConciseSchema(converted.Schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
+			}
+			converted.Schema = conciseSchema
+		default:
+			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
+		}
+	}
 	return converted, nil
 }
 
