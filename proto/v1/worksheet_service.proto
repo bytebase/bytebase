@@ -1,0 +1,202 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "generated-go/v1";
+
+service WorksheetService {
+  rpc CreateWorksheet(CreateWorksheetRequest) returns (Worksheet) {
+    option (google.api.http) = {
+      post: "/v1/worksheets"
+      body: "worksheet"
+    };
+    option (google.api.method_signature) = "parent,worksheet";
+  }
+
+  rpc GetWorksheet(GetWorksheetRequest) returns (Worksheet) {
+    option (google.api.http) = {get: "/v1/{name=worksheets/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
+    option (google.api.http) = {get: "/v1/worksheets:search"};
+  }
+
+  rpc UpdateWorksheet(UpdateWorksheetRequest) returns (Worksheet) {
+    option (google.api.http) = {
+      patch: "/v1/{worksheet.name=worksheets/*}"
+      body: "worksheet"
+    };
+    option (google.api.method_signature) = "worksheet,update_mask";
+  }
+
+  rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
+    option (google.api.http) = {
+      put: "/v1/{organizer.worksheet=worksheets/*}/organizer"
+      body: "organizer"
+    };
+    option (google.api.method_signature) = "organizer,update_mask";
+  }
+
+  rpc DeleteWorksheet(DeleteWorksheetRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=worksheets/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}
+
+message CreateWorksheetRequest {
+  // The worksheet to create.
+  Worksheet worksheet = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message GetWorksheetRequest {
+  // The name of the worksheet to retrieve.
+  // Format: worksheets/{worksheet}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content.
+  bool raw = 2;
+}
+
+message UpdateWorksheetRequest {
+  // The worksheet to update.
+  //
+  // The worksheet's `name` field is used to identify the worksheet to update.
+  // Format: worksheets/{worksheet}
+  Worksheet worksheet = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  // Fields are specified relative to the worksheet.
+  // (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`)
+  // Only support update the following fields for now:
+  // - `title`
+  // - `statement`
+  // - `starred`
+  // - `visibility`
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message UpdateWorksheetOrganizerRequest {
+  // The organizer to update.
+  //
+  // The organizer's `worksheet` field is used to identify the worksheet.
+  // Format: worksheets/{worksheet}
+  WorksheetOrganizer organizer = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  // Fields are specified relative to the worksheet organizer.
+  // Only support update the following fields for now:
+  // - `starred`
+  // - `pinned`
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message WorksheetOrganizer {
+  // The name of the worksheet.
+  // Format: worksheets/{worksheet}
+  string worksheet = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // starred means if the worksheet is starred.
+  bool starred = 2;
+
+  // pinned means if the worksheet is pinned.
+  bool pinned = 3;
+}
+
+message DeleteWorksheetRequest {
+  // The name of the worksheet to delete.
+  // Format: worksheets/{worksheet}
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message SearchWorksheetsRequest {
+  // To filter the search result.
+  // Format: only support the following spec for now:
+  // - `creator = users/{email}`, `creator != users/{email}`
+  // - `starred = true`, `starred = false`.
+  // Not support empty filter for now.
+  string filter = 1;
+
+  // Not used. The maximum number of worksheets to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 50 worksheets will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // Not used. A page token, received from a previous `SearchWorksheets` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `SearchWorksheets` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message SearchWorksheetsResponse {
+  // The worksheets that matched the search criteria.
+  repeated Worksheet worksheets = 1;
+
+  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message Worksheet {
+  // The name of the worksheet resource, generated by the server.
+  // Canonical parent is project.
+  // Format: worksheets/{worksheet}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // The project resource name.
+  // Format: projects/{project}
+  string project = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The database resource name.
+  // Format: instances/{instance}/databases/{database}
+  // If the database parent doesn't exist, the database field is empty.
+  string database = 3;
+
+  // The title of the worksheet.
+  string title = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // The creator of the Worksheet.
+  // Format: users/{email}
+  string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The create time of the worksheet.
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last update time of the worksheet.
+  google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The content of the worksheet.
+  // By default, it will be cut off, if it doesn't match the `content_size`, you can
+  // set the `raw` to true in GetWorksheet request to retrieve the full content.
+  bytes content = 8 [(google.api.field_behavior) = REQUIRED];
+
+  // content_size is the full size of the content, may not match the size of the `content` field.
+  int64 content_size = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  enum Visibility {
+    VISIBILITY_UNSPECIFIED = 0;
+    // Public, worksheet OWNER can read/write, and all others can read.
+    VISIBILITY_PUBLIC = 1;
+    // Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+    VISIBILITY_PROJECT = 2;
+    // Private, only worksheet OWNER can read/write.
+    VISIBILITY_PRIVATE = 3;
+  }
+  Visibility visibility = 10 [(google.api.field_behavior) = REQUIRED];
+
+  // starred indicates whether the worksheet is starred by the current authenticated user.
+  bool starred = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
