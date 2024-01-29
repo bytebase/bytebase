@@ -111,7 +111,7 @@ func generateInsertText(engine storepb.Engine, candidate base.Candidate) string 
 	insertText := candidate.Text
 	// If the candidate is a column and it's a camel case, we need to quote it.
 	//
-	// TODO(rebelice): there are some special cases that we don't need to add quotes.
+	// TODO(rebelice): there are lots of special cases that we don't need to add quotes.
 	// For example, if the previous token is a quote, we don't need to quote the column name.
 	if candidate.Type == base.CandidateTypeColumn && common.IsCamelCase(insertText) {
 		insertText = fmt.Sprintf(`"%s"`, insertText)
