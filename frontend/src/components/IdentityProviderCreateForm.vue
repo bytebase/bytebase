@@ -605,7 +605,7 @@
           <span class="text-red-600">*</span>
         </p>
         <BBTextField
-          v-model="configForLDAP.baseDn"
+          v-model:value="configForLDAP.baseDn"
           required
           :disabled="!allowEdit"
           class="mt-1 w-full"
@@ -618,7 +618,7 @@
           <span class="text-red-600">*</span>
         </p>
         <BBTextField
-          v-model="configForLDAP.userFilter"
+          v-model:value="configForLDAP.userFilter"
           required
           :disabled="!allowEdit"
           class="mt-1 w-full"

@@ -94,10 +94,21 @@ const example = {
   ],
 };
 
-const { copy: copyTextToClipboard } = useClipboard();
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
 const { t } = useI18n();
 
 const handleCopy = () => {
+  if (!isSupported.value) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "Copy to clipboard is not enabled in your browser.",
+    });
+    return;
+  }
+
   copyTextToClipboard(JSON.stringify(example, null, 2));
   pushNotification({
     module: "bytebase",
