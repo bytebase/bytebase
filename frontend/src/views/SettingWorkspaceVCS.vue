@@ -12,6 +12,7 @@
       <NButton
         type="primary"
         :disabled="!hasCreateVCSPermission"
+        class="capitalize"
         @click.prevent="addVCSProvider"
       >
         {{ $t("gitops.setting.add-git-provider.self") }}

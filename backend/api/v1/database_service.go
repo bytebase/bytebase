@@ -34,6 +34,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/transform"
@@ -851,6 +852,18 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 			schema = sdlSchema
 		}
 	}
+	if request.Concise {
+		switch instance.Engine {
+		case storepb.Engine_ORACLE:
+			conciseSchema, err := plsql.GetConciseSchema(schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
+			}
+			schema = conciseSchema
+		default:
+			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
+		}
+	}
 	return &v1pb.DatabaseSchema{Schema: schema}, nil
 }
 
@@ -1211,6 +1224,18 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 				return nil, status.Errorf(codes.Internal, "failed to convert previous schema to sdl format, error %v", err.Error())
 			}
 			converted.PrevSchema = sdlSchema
+		}
+	}
+	if request.Concise {
+		switch instance.Engine {
+		case storepb.Engine_ORACLE:
+			conciseSchema, err := plsql.GetConciseSchema(converted.Schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
+			}
+			converted.Schema = conciseSchema
+		default:
+			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
 		}
 	}
 	return converted, nil

@@ -115,7 +115,12 @@
         :placeholder="$t('subscription.sensitive-placeholder')"
       />
       <div class="ml-auto mt-3">
-        <NButton type="primary" :disabled="disabled" @click="uploadLicense">
+        <NButton
+          type="primary"
+          class="capitalize"
+          :disabled="disabled"
+          @click="uploadLicense"
+        >
           {{ $t("subscription.upload-license") }}
         </NButton>
       </div>

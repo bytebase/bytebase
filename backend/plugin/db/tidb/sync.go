@@ -16,7 +16,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/blang/semver/v4"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -141,17 +140,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name: "",
 	}
 
-	// Query MySQL version
-	version, rest, err := driver.getVersion(ctx)
-	if err != nil {
-		return nil, err
-	}
-	semVersion, err := semver.Make(version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse MySQL version %s to semantic version", version)
-	}
-	atLeast8_0_13 := semVersion.GE(semver.MustParse("8.0.13"))
-
 	// Query index info.
 	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
 	indexQuery := `
@@ -159,7 +147,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			TABLE_NAME,
 			INDEX_NAME,
 			COLUMN_NAME,
-			'',
+			EXPRESSION,
 			SEQ_IN_INDEX,
 			INDEX_TYPE,
 			CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
@@ -168,26 +156,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		FROM information_schema.STATISTICS
 		WHERE TABLE_SCHEMA = ?
 		ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
-	// MySQL 8.0.13 introduced the EXPRESSION column in the INFORMATION_SCHEMA.STATISTICS table.
-	// https://dev.mysql.com/doc/refman/8.0/en/information-schema-statistics-table.html
-	// MariaDB doesn't have the EXPRESSION column.
-	// https://mariadb.com/docs/server/ref/mdb/information-schema/STATISTICS
-	if atLeast8_0_13 && !strings.Contains(rest, "MariaDB") {
-		indexQuery = `
-			SELECT
-				TABLE_NAME,
-				INDEX_NAME,
-				COLUMN_NAME,
-				EXPRESSION,
-				SEQ_IN_INDEX,
-				INDEX_TYPE,
-				CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END AS IS_UNIQUE,
-				CASE IS_VISIBLE WHEN 'YES' THEN 1 ELSE 0 END,
-				INDEX_COMMENT
-			FROM information_schema.STATISTICS
-			WHERE TABLE_SCHEMA = ?
-			ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX`
-	}
 	indexRows, err := driver.db.QueryContext(ctx, indexQuery, driver.databaseName)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, indexQuery)
@@ -212,12 +180,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		); err != nil {
 			return nil, err
 		}
-		if columnName.Valid {
-			expression = columnName.String
-		} else if expressionName.Valid {
-			// It's a bit late or not necessary to differentiate the column name or expression.
-			// We add parentheses around expression.
+		// TiDB use string "NULL" instead of NULL, so we check expression first which is
+		// different between TiDB and MySQL.
+		if expressionName.Valid {
 			expression = fmt.Sprintf("(%s)", expressionName.String)
+		} else if columnName.Valid {
+			expression = columnName.String
 		}
 
 		key := db.TableKey{Schema: "", Table: tableName}

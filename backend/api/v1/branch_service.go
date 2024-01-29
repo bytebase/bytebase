@@ -416,7 +416,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
-	mergedMetadata, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
+	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, headBranch.Head.Metadata, headBranch.Base.Metadata)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
@@ -543,6 +543,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			sb, err := io.ReadAll(conflictSchema.Result)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to read conflict schema, %v", err)
+			}
+			if strings.HasSuffix(newBaseSchema, "\n") && bytes.HasSuffix(baseBranch.BaseSchema, []byte("\n")) && bytes.HasSuffix(baseBranch.HeadSchema, []byte("\n")) {
+				sb = append(sb, []byte("\n")...)
 			}
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil

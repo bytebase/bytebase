@@ -30,6 +30,7 @@
         <NButton
           type="primary"
           :disabled="!allowCreateUser"
+          class="capitalize"
           @click="handleCreateUser"
         >
           <template #icon>

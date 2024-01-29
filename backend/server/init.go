@@ -213,7 +213,7 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 
 // initMetricReporter will initial the metric scheduler.
 func (s *Server) initMetricReporter() {
-	metricReporter := metricreport.NewReporter(s.store, s.licenseService, &s.profile, s.profile.EnableMetric)
+	metricReporter := metricreport.NewReporter(s.store, s.licenseService, s.profile, s.profile.EnableMetric)
 	metricReporter.Register(metric.InstanceCountMetricName, metriccollector.NewInstanceCountCollector(s.store))
 	metricReporter.Register(metric.IssueCountMetricName, metriccollector.NewIssueCountCollector(s.store))
 	metricReporter.Register(metric.ProjectCountMetricName, metriccollector.NewProjectCountCollector(s.store))

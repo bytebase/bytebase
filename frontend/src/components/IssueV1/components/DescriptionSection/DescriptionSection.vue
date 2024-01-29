@@ -51,7 +51,12 @@
         class="min-h-[3rem] max-h-[12rem] whitespace-pre-wrap px-[10px] py-[4.5px] text-sm"
       >
         <template v-if="issue.description">
-          {{ issue.description }}
+          <iframe
+            v-if="issue.description"
+            ref="contentPreviewArea"
+            :srcdoc="renderedContent"
+            class="rounded-md w-full overflow-hidden"
+          />
         </template>
         <span v-else class="text-control-placeholder">
           {{ $t("issue.add-some-description") }}
@@ -65,6 +70,7 @@
 import { NInput, NButton } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRenderMarkdown } from "@/components/MarkdownEditor";
 import { issueServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { pushNotification, useCurrentUserV1 } from "@/store";
@@ -85,6 +91,7 @@ type LocalState = {
 const { t } = useI18n();
 const { isCreating, issue } = useIssueContext();
 const currentUser = useCurrentUserV1();
+const contentPreviewArea = ref<HTMLIFrameElement>();
 
 const state = reactive<LocalState>({
   isEditing: false,
@@ -171,6 +178,12 @@ const cancelEdit = () => {
   state.description = issue.value.description;
   state.isEditing = false;
 };
+
+const { renderedContent } = useRenderMarkdown(
+  computed(() => issue.value.description),
+  contentPreviewArea,
+  computed(() => issue.value.projectEntity)
+);
 
 // Reset the edit state after creating the issue.
 watch(isCreating, (curr, prev) => {

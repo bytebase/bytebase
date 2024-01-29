@@ -149,12 +149,12 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.ChangelistService_UpdateChangelist_FullMethodName: iam.PermissionChangelistsUpdate,
 	v1pb.ChangelistService_DeleteChangelist_FullMethodName: iam.PermissionChangelistsDelete,
 
-	v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:    iam.PermissionInstanceRolesList,
-	v1pb.InstanceRoleService_GetInstanceRole_FullMethodName:      iam.PermissionInstanceRolesGet,
-	v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesCreate,
-	v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName:   iam.PermissionInstanceRolesUpdate,
-	v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName:   iam.PermissionInstanceRolesDelete,
-	v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName: iam.PermissionInstanceRolesUndelete,
+	v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:    iam.PermissionInstancesGet,
+	v1pb.InstanceRoleService_GetInstanceRole_FullMethodName:      iam.PermissionInstancesGet,
+	v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName:   iam.PermissionInstancesUpdate,
+	v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName:   iam.PermissionInstancesUpdate,
+	v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName:   iam.PermissionInstancesUpdate,
+	v1pb.InstanceRoleService_UndeleteInstanceRole_FullMethodName: iam.PermissionInstancesUpdate,
 
 	v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName:          iam.PermissionExternalVersionControlsList,
 	v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName:            iam.PermissionExternalVersionControlsGet,

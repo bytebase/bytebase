@@ -47,21 +47,35 @@
             <span>{{ $t("branch.merge-rebase.able-to-merge") }}</span>
           </template>
           <template v-else>
-            <XCircleIcon class="w-4 h-4 text-error" />
-            <i18n-t
-              keypath="branch.merge-rebase.cannot-automatically-merge"
-              tag="span"
-              class="text-error"
+            <NTooltip
+              :disabled="!validationState.errmsg"
+              placement="bottom-start"
             >
-              <template #rebase_branch>
-                <router-link
-                  :to="rebaseLink(headBranch, targetBranch)"
-                  class="normal-link"
-                >
-                  {{ $t("branch.merge-rebase.go-rebase") }}
-                </router-link>
+              <template #trigger>
+                <div class="flex flex-row items-center gap-x-1">
+                  <XCircleIcon class="w-4 h-4 text-error" />
+                  <i18n-t
+                    keypath="branch.merge-rebase.cannot-automatically-merge"
+                    tag="span"
+                    class="text-error"
+                  >
+                    <template #rebase_branch>
+                      <router-link
+                        :to="rebaseLink(headBranch, targetBranch)"
+                        class="normal-link"
+                      >
+                        {{ $t("branch.merge-rebase.go-rebase") }}
+                      </router-link>
+                    </template>
+                  </i18n-t>
+                </div>
               </template>
-            </i18n-t>
+              <template #default>
+                <div class="max-w-[24rem]">
+                  {{ validationState.errmsg }}
+                </div>
+              </template>
+            </NTooltip>
           </template>
         </template>
       </template>

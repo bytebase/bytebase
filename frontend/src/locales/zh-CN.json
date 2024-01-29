@@ -3364,7 +3364,7 @@
     },
     "change-source": {
       "self": "变更来源",
-      "raw-sql": "SQL 语句",
+      "raw-sql": "粘贴 Schema 文本",
       "change-history": {
         "tables": "表"
       },

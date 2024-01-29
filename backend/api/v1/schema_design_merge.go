@@ -503,8 +503,8 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode) (bool, 
 		if n.head.Type != other.head.Type {
 			return true, fmt.Sprintf("conflict column type, one is %s, the other is %s", n.head.Type, other.head.Type)
 		}
-		if n.head.DefaultValue != other.head.DefaultValue {
-			return true, fmt.Sprintf("conflict column default value, one is %s, the other is %s", n.head.DefaultValue, other.head.DefaultValue)
+		if cmp.Diff(n.head.DefaultValue, other.head.DefaultValue, protocmp.Transform()) != "" {
+			return true, fmt.Sprintf("conflict column default value, one is %v, the other is %v", n.head.DefaultValue, other.head.DefaultValue)
 		}
 		if n.head.Nullable != other.head.Nullable {
 			return true, fmt.Sprintf("conflict column nullable, one is %t, the other is %t", n.head.Nullable, other.head.Nullable)

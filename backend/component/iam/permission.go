@@ -22,12 +22,6 @@ const (
 	PermissionIdentityProvidersGet                  Permission = "bb.identityProviders.get"
 	PermissionIdentityProvidersUndelete             Permission = "bb.identityProviders.undelete"
 	PermissionIdentityProvidersUpdate               Permission = "bb.identityProviders.update"
-	PermissionInstanceRolesCreate                   Permission = "bb.instanceRoles.create"
-	PermissionInstanceRolesDelete                   Permission = "bb.instanceRoles.delete"
-	PermissionInstanceRolesGet                      Permission = "bb.instanceRoles.get"
-	PermissionInstanceRolesList                     Permission = "bb.instanceRoles.list"
-	PermissionInstanceRolesUndelete                 Permission = "bb.instanceRoles.undelete"
-	PermissionInstanceRolesUpdate                   Permission = "bb.instanceRoles.update"
 	PermissionInstancesAdminExecute                 Permission = "bb.instances.adminExecute"
 	PermissionInstancesCreate                       Permission = "bb.instances.create"
 	PermissionInstancesDelete                       Permission = "bb.instances.delete"
@@ -160,12 +154,6 @@ func PermissionExist(p Permission) bool {
 		PermissionIdentityProvidersGet,
 		PermissionIdentityProvidersUndelete,
 		PermissionIdentityProvidersUpdate,
-		PermissionInstanceRolesCreate,
-		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesGet,
-		PermissionInstanceRolesList,
-		PermissionInstanceRolesUndelete,
-		PermissionInstanceRolesUpdate,
 		PermissionInstancesCreate,
 		PermissionInstancesDelete,
 		PermissionInstancesGet,
@@ -253,12 +241,6 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionIdentityProvidersGet,
 		PermissionIdentityProvidersUndelete,
 		PermissionIdentityProvidersUpdate,
-		PermissionInstanceRolesCreate,
-		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesGet,
-		PermissionInstanceRolesList,
-		PermissionInstanceRolesUndelete,
-		PermissionInstanceRolesUpdate,
 		PermissionInstancesAdminExecute,
 		PermissionInstancesCreate,
 		PermissionInstancesDelete,
