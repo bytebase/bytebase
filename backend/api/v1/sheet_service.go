@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"log/slog"
@@ -14,6 +15,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
@@ -26,13 +29,17 @@ type SheetService struct {
 	v1pb.UnimplementedSheetServiceServer
 	store          *store.Store
 	licenseService enterprise.LicenseService
+	iamManager     *iam.Manager
+	profile        *config.Profile
 }
 
 // NewSheetService creates a new SheetService.
-func NewSheetService(store *store.Store, licenseService enterprise.LicenseService) *SheetService {
+func NewSheetService(store *store.Store, licenseService enterprise.LicenseService, iamManager *iam.Manager, profile *config.Profile) *SheetService {
 	return &SheetService{
 		store:          store,
 		licenseService: licenseService,
+		iamManager:     iamManager,
+		profile:        profile,
 	}
 }
 
@@ -158,12 +165,36 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, err
 	}
 
-	canAccess, err := s.canReadSheet(ctx, sheet)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
-	}
-	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
+	// For issue sheets, check the bb.issues.get permission.
+	if sheet.Source == store.SheetFromBytebaseArtifact {
+		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "user not found")
+		}
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &sheet.ProjectUID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
+		}
+		if project == nil {
+			return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
+		}
+		ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
+		}
+	} else {
+		canAccess, err := s.canReadSheet(ctx, sheet)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
+		}
+		if !canAccess {
+			return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
+		}
 	}
 
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
@@ -509,17 +540,17 @@ func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessa
 // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA.
 // PUBLIC: the creator only.
 func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return false, status.Errorf(codes.Internal, "principal ID not found")
+		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
-	if sheet.CreatorID == principalID {
+	if sheet.CreatorID == user.ID {
 		return true, nil
 	}
 
 	if sheet.Visibility == store.ProjectSheet {
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, principalID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user.ID)
 		if err != nil {
 			return false, err
 		}
@@ -538,25 +569,21 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 // PROJECT: the creator and members in the project.
 // PUBLIC: everyone in the workspace.
 func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return false, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return false, status.Errorf(codes.Internal, "role not found")
+		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
 	switch sheet.Visibility {
 	case store.PrivateSheet:
-		return sheet.CreatorID == principalID, nil
+		return sheet.CreatorID == user.ID, nil
 	case store.PublicSheet:
 		return true, nil
 	case store.ProjectSheet:
-		if role == api.WorkspaceAdmin || role == api.WorkspaceDBA {
+		if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 			return true, nil
 		}
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, principalID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user.ID)
 		if err != nil {
 			return false, err
 		}
