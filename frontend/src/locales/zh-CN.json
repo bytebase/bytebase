@@ -271,7 +271,10 @@
     "nickname": "昵称",
     "missing-permission": "缺少必需的权限",
     "continue-anyway": "仍要继续",
-    "permissions": "权限"
+    "permissions": "权限",
+    "backup": "备份",
+    "cutover": "切换",
+    "baseline": "基线"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1238,7 +1241,8 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "foreign-tables": "外部表"
+    "foreign-tables": "外部表",
+    "create": "创建数据库"
   },
   "instance": {
     "select": "选择实例",
