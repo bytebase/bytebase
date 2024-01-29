@@ -144,9 +144,11 @@
               <heroicons-outline:clipboard class="w-6 h-6" />
             </button>
           </a>
-          <highlight-code-block
-            class="border p-2 whitespace-pre-wrap w-full text-sm"
-            :code="changeHistoryStatement"
+          <MonacoEditor
+            class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
+            :content="changeHistoryStatement"
+            :readonly="true"
+            :auto-height="{ min: 120, max: 480 }"
           />
           <div
             v-if="
@@ -241,17 +243,19 @@
 
           <DiffEditor
             v-if="state.showDiff"
-            class="h-[64rem] max-h-full border rounded-md text-sm overflow-clip"
+            class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip"
             :original="changeHistory.prevSchema"
             :modified="changeHistory.schema"
             :readonly="true"
+            :auto-height="{ min: 120, max: 600 }"
           />
           <template v-else>
             <div v-if="changeHistory.schema" class="space-y-2">
-              <highlight-code-block
-                class="border p-2 whitespace-pre-wrap w-full text-sm"
-                :code="changeHistorySchema"
-                data-label="bb-change-history-code-block"
+              <MonacoEditor
+                class="h-auto max-h-[600px] min-h-[120px] border rounded-md text-sm overflow-clip relative"
+                :content="changeHistorySchema"
+                :readonly="true"
+                :auto-height="{ min: 120, max: 600 }"
               />
               <div
                 v-if="
@@ -334,6 +338,7 @@ import { NSwitch } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
+import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
 import TableDetailDrawer from "@/components/TableDetailDrawer.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
