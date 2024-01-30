@@ -12,7 +12,6 @@ export const useSuggestOptionByLanguage = (
 
   const defaultSuggestOption: ISuggestOptions = {
     ...editor.getOption(monaco.editor.EditorOption.suggest),
-    showStatusBar: true,
     preview: true,
   };
 
