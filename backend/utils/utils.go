@@ -845,6 +845,20 @@ func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMe
 	return roles, nil
 }
 
+// See GetUserRoles.
+func GetUserRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[api.Role]bool, error) {
+	roles, err := GetUserRoles(user, projectPolicies...)
+	if err != nil {
+		return nil, err
+	}
+
+	rolesMap := make(map[api.Role]bool)
+	for _, role := range roles {
+		rolesMap[role] = true
+	}
+	return rolesMap, nil
+}
+
 // See GetUserRoles. The returned map key format is roles/{role}.
 func GetUserFormattedRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[string]bool, error) {
 	roles, err := GetUserRoles(user, projectPolicies...)
