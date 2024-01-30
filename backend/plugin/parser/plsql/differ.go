@@ -158,7 +158,11 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 		return remainingTables[i].id < remainingTables[j].id
 	})
 	for _, table := range remainingTables {
-		diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s"."%s";`, oldSchemaInfo.name, table.name))
+		if ctx.StrictMode {
+			diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s"."%s";`, oldSchemaInfo.name, table.name))
+		} else {
+			diff.dropTable = append(diff.dropTable, fmt.Sprintf(`DROP TABLE "%s";`, table.name))
+		}
 	}
 
 	var newIndexes []*indexInfo
@@ -191,7 +195,11 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 		return remainingIndexes[i].pos < remainingIndexes[j].pos
 	})
 	for _, index := range remainingIndexes {
-		diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, oldSchemaInfo.name, index.name))
+		if ctx.StrictMode {
+			diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, oldSchemaInfo.name, index.name))
+		} else {
+			diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s";`, index.name))
+		}
 	}
 
 	return diff.String()
@@ -202,7 +210,11 @@ func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) error {
 	oldString := oldIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(oldIndex.createIndex)
 	newString := newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex)
 	if oldString != newString {
-		diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, diff.schemaName, oldIndex.name))
+		if diff.strictMode {
+			diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s"."%s";`, diff.schemaName, oldIndex.name))
+		} else {
+			diff.dropIndex = append(diff.dropIndex, fmt.Sprintf(`DROP INDEX "%s";`, oldIndex.name))
+		}
 		diff.addIndex = append(diff.addIndex, newIndex.createIndex.GetParser().GetTokenStream().GetTextFromRuleContext(newIndex.createIndex))
 	}
 	return nil
@@ -238,21 +250,21 @@ func (diff *diffNode) getConstraintID(ctx plsql.IRelational_propertyContext) str
 				return ""
 			}
 			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			return constraintName
+			return strings.TrimSpace(constraintName)
 		case ctx.Out_of_line_ref_constraint() != nil:
 			constraint := ctx.Out_of_line_ref_constraint()
 			if constraint.Constraint_name() == nil {
 				return ""
 			}
 			_, constraintName := NormalizeConstraintName(constraint.Constraint_name())
-			return constraintName
+			return strings.TrimSpace(constraintName)
 		}
 	} else if ctx.Out_of_line_constraint() != nil || ctx.Out_of_line_ref_constraint() != nil {
-		return EraseString(EraseContext{
+		return strings.TrimSpace(EraseString(EraseContext{
 			eraseConstraintName: true,
 			eraseSchemaName:     true,
 			eraseIndexName:      true,
-		}, ctx, ctx.GetParser().GetTokenStream())
+		}, ctx, ctx.GetParser().GetTokenStream()))
 	}
 	return ""
 }
@@ -354,11 +366,13 @@ func (diff *diffNode) appendDropConstraint(tableName string, constraint string) 
 	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(tableName); err != nil {
 		return err
@@ -366,11 +380,13 @@ func (diff *diffNode) appendDropConstraint(tableName string, constraint string) 
 	if _, err := buf.WriteString(`" DROP CONSTRAINT "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(constraint); err != nil {
 		return err
@@ -388,11 +404,13 @@ func (diff *diffNode) appendAddConstraint(tableName string, constraint plsql.IRe
 	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(tableName); err != nil {
 		return err
@@ -496,11 +514,13 @@ func (diff *diffNode) appendDropColumn(tableName string, dropColumns []string) e
 	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(tableName); err != nil {
 		return err
@@ -534,11 +554,13 @@ func (diff *diffNode) appendModifyColumn(tableName string, modifyColumns []plsql
 	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(tableName); err != nil {
 		return err
@@ -572,11 +594,13 @@ func (diff *diffNode) appendAddColumn(tableName string, addColumns []plsql.IColu
 	if _, err := buf.WriteString(`ALTER TABLE "`); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(diff.schemaName); err != nil {
-		return err
-	}
-	if _, err := buf.WriteString(`"."`); err != nil {
-		return err
+	if diff.strictMode {
+		if _, err := buf.WriteString(diff.schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
 	}
 	if _, err := buf.WriteString(tableName); err != nil {
 		return err
@@ -700,13 +724,13 @@ func (l *buildSchemaInfoListener) EnterCreate_index(ctx *plsql.Create_indexConte
 func getIndexID(ctx plsql.ICreate_indexContext, strictMode bool) string {
 	if strictMode {
 		_, indexName := NormalizeIndexName(ctx.Index_name())
-		return indexName
+		return strings.TrimSpace(indexName)
 	}
-	return EraseString(EraseContext{
+	return strings.TrimSpace(EraseString(EraseContext{
 		eraseIndexName:      true,
 		eraseSchemaName:     true,
 		eraseConstraintName: true,
-	}, ctx, ctx.GetParser().GetTokenStream())
+	}, ctx, ctx.GetParser().GetTokenStream()))
 }
 
 type tableMap map[string]*tableInfo
