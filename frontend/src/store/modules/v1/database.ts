@@ -167,10 +167,15 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  const fetchDatabaseSchema = async (name: string, sdlFormat = false) => {
+  const fetchDatabaseSchema = async (
+    name: string,
+    sdlFormat = false,
+    concise = false
+  ) => {
     const schema = await databaseServiceClient.getDatabaseSchema({
       name,
       sdlFormat,
+      concise,
     });
     return schema;
   };
