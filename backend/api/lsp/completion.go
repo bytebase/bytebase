@@ -66,7 +66,6 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 				Description: candidate.Definition,
 			},
 			Kind:          convertLSPCompletionItemKind(candidate.Type),
-			Detail:        fmt.Sprintf("<%s> %s", string(candidate.Type), candidate.Definition),
 			Documentation: candidate.Comment,
 			SortText:      generateSortText(params, candidate),
 		}
