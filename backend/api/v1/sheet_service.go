@@ -166,7 +166,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	}
 
 	// For issue sheets, check the bb.issues.get permission.
-	if sheet.Source == store.SheetFromBytebaseArtifact {
+	if s.profile.DevelopmentIAM && sheet.Source == store.SheetFromBytebaseArtifact {
 		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "user not found")
