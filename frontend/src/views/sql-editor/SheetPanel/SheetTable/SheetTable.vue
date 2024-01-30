@@ -7,7 +7,7 @@
     row-key="name"
     @click-row="handleSheetClick"
   >
-    <template #item="{ item: sheet }: BBGridRow<Sheet>">
+    <template #item="{ item: sheet }: BBGridRow<Worksheet>">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div class="bb-grid-cell" v-html="titleHTML(sheet)"></div>
       <div class="bb-grid-cell">
@@ -40,9 +40,11 @@ import { BBGrid, BBGridRow, BBGridColumn } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { useUserStore, useProjectV1Store } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
-import { extractProjectResourceName, getHighlightHTMLByRegExp } from "@/utils";
+import {
+  Worksheet,
+  Worksheet_Visibility,
+} from "@/types/proto/v1/worksheet_service";
+import { getHighlightHTMLByRegExp } from "@/utils";
 import { SheetViewMode, useSheetContextByView, Dropdown } from "../../Sheet";
 import SheetConnection from "./SheetConnection.vue";
 
@@ -52,7 +54,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "select-sheet", sheet: Sheet): void;
+  (event: "select-sheet", sheet: Worksheet): void;
 }>();
 
 const { t } = useI18n();
@@ -65,7 +67,7 @@ const showCreator = computed(() => {
   return props.view === "shared" || props.view === "starred";
 });
 
-const handleSheetClick = (sheet: Sheet) => {
+const handleSheetClick = (sheet: Worksheet) => {
   emit("select-sheet", sheet);
 };
 
@@ -115,32 +117,35 @@ const filteredList = computed(() => {
 });
 
 const sortedSheetList = computed(() => {
-  return orderBy<Sheet>(filteredList.value, [(sheet) => sheet.title], ["asc"]);
+  return orderBy<Worksheet>(
+    filteredList.value,
+    [(sheet) => sheet.title],
+    ["asc"]
+  );
 });
 
-const projectForSheet = (sheet: Sheet) => {
-  const project = extractProjectResourceName(sheet.name);
-  return projectStore.getProjectByName(`projects/${project}`);
+const projectForSheet = (sheet: Worksheet) => {
+  return projectStore.getProjectByName(sheet.project);
 };
 
-const creatorForSheet = (sheet: Sheet) => {
+const creatorForSheet = (sheet: Worksheet) => {
   return userStore.getUserByIdentifier(sheet.creator)?.title ?? sheet.creator;
 };
 
-const visibilityDisplayName = (visibility: Sheet_Visibility) => {
+const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
   switch (visibility) {
-    case Sheet_Visibility.VISIBILITY_PRIVATE:
+    case Worksheet_Visibility.VISIBILITY_PRIVATE:
       return t("sql-editor.private");
-    case Sheet_Visibility.VISIBILITY_PROJECT:
+    case Worksheet_Visibility.VISIBILITY_PROJECT:
       return t("common.project");
-    case Sheet_Visibility.VISIBILITY_PUBLIC:
+    case Worksheet_Visibility.VISIBILITY_PUBLIC:
       return t("sql-editor.public");
     default:
       return "";
   }
 };
 
-const titleHTML = (sheet: Sheet) => {
+const titleHTML = (sheet: Worksheet) => {
   const kw = props.keyword?.toLowerCase().trim();
   const { title } = sheet;
 

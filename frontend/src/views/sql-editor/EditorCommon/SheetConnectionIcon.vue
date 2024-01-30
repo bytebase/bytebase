@@ -10,11 +10,11 @@ import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";
 import { TabInfo } from "@/types";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { connectionForTab } from "@/utils";
 
 const props = defineProps<{
-  sheet?: Sheet;
+  sheet?: Worksheet;
   tab?: TabInfo;
 }>();
 

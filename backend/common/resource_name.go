@@ -487,7 +487,7 @@ func GetProjectResourceIDSheetUID(name string) (string, int, error) {
 
 // GetWorksheetUID returns the worksheet UID from a resource name.
 func GetWorksheetUID(name string) (int, error) {
-	tokens, err := GetNameParentTokens(name, SheetIDPrefix)
+	tokens, err := GetNameParentTokens(name, WorksheetIDPrefix)
 	if err != nil {
 		return 0, err
 	}

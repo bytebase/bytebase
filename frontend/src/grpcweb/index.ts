@@ -28,6 +28,7 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
+import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import {
   authInterceptorMiddleware,
   errorNotificationMiddleware,
@@ -119,6 +120,11 @@ export const settingServiceClient = clientFactory.create(
 );
 export const sheetServiceClient = clientFactory.create(
   SheetServiceDefinition,
+  channel
+);
+
+export const worksheetServiceClient = clientFactory.create(
+  WorksheetServiceDefinition,
   channel
 );
 

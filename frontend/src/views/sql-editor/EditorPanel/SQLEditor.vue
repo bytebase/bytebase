@@ -39,7 +39,7 @@ import {
   useSQLEditorStore,
   useUIStateStore,
   useInstanceV1ByUID,
-  useSheetAndTabStore,
+  useWorkSheetAndTabStore,
   useDatabaseV1ByUID,
 } from "@/store";
 import {
@@ -62,7 +62,7 @@ const emit = defineEmits<{
 
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
-const sheetAndTabStore = useSheetAndTabStore();
+const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
 

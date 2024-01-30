@@ -579,12 +579,8 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
-    - [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest)
-    - [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse)
     - [Sheet](#bytebase-v1-Sheet)
-    - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SheetPayload](#bytebase-v1-SheetPayload)
-    - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
     - [Sheet.Source](#bytebase-v1-Sheet-Source)
@@ -9400,42 +9396,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-v1-SearchSheetsRequest"></a>
-
-### SearchSheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the sheet. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
-| page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchSheets` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchSheetsResponse"></a>
-
-### SearchSheetsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheets | [Sheet](#bytebase-v1-Sheet) | repeated | The sheets that matched the search criteria. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-Sheet"></a>
 
 ### Sheet
@@ -9464,23 +9424,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 
 
 
-<a name="bytebase-v1-SheetOrganizer"></a>
-
-### SheetOrganizer
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| starred | [bool](#bool) |  | starred means if the sheet is starred. |
-| pinned | [bool](#bool) |  | pinned means if the sheet is pinned. |
-
-
-
-
-
-
 <a name="bytebase-v1-SheetPayload"></a>
 
 ### SheetPayload
@@ -9492,24 +9435,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
 | database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
-
-### UpdateSheetOrganizerRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| organizer | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  | The organizer to update.
-
-The organizer&#39;s `sheet` field is used to identify the sheet. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
 
 
 
@@ -9600,9 +9525,7 @@ Type of the SheetPayload.
 | ----------- | ------------ | ------------- | ------------|
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| SearchSheets | [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest) | [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
