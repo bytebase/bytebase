@@ -170,12 +170,6 @@ const getUpdateMaskForSheet = (
   ) {
     updateMask.push("content");
   }
-  if (
-    !isUndefined(update.visibility) &&
-    !isEqual(origin.visibility, update.visibility)
-  ) {
-    updateMask.push("visibility");
-  }
   return updateMask;
 };
 

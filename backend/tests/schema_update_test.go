@@ -104,11 +104,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet",
-			Content:    []byte(migrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet",
+			Content: []byte(migrationStatement),
 		},
 	})
 	a.NoError(err)
@@ -125,11 +122,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	sheet, err = ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "dataUpdateStatement",
-			Content:    []byte(dataUpdateStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "dataUpdateStatement",
+			Content: []byte(dataUpdateStatement),
 		},
 	})
 	a.NoError(err)
@@ -554,11 +548,8 @@ func TestVCS(t *testing.T) {
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
-					Title:      "migration statement 4 sheet",
-					Content:    []byte(migrationStatement4),
-					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-					Type:       v1pb.Sheet_TYPE_SQL,
+					Title:   "migration statement 4 sheet",
+					Content: []byte(migrationStatement4),
 				},
 			})
 			a.NoError(err)
@@ -1966,11 +1957,8 @@ CREATE TABLE public.book (
 			ddlSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
-					Title:      "test ddl",
-					Content:    []byte(test.ddl),
-					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-					Type:       v1pb.Sheet_TYPE_SQL,
+					Title:   "test ddl",
+					Content: []byte(test.ddl),
 				},
 			})
 			a.NoError(err)
@@ -2048,11 +2036,8 @@ func TestMarkTaskAsDone(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet",
-			Content:    []byte(migrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet",
+			Content: []byte(migrationStatement),
 		},
 	})
 	a.NoError(err)

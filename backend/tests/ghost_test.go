@@ -124,11 +124,8 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet 1",
-			Content:    []byte(mysqlMigrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet 1",
+			Content: []byte(mysqlMigrationStatement),
 		},
 	})
 	a.NoError(err)
@@ -143,11 +140,8 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet 2",
-			Content:    []byte(mysqlGhostMigrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet 2",
+			Content: []byte(mysqlGhostMigrationStatement),
 		},
 	})
 	a.NoError(err)
@@ -272,11 +266,8 @@ func TestGhostTenant(t *testing.T) {
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet 1",
-			Content:    []byte(mysqlMigrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet 1",
+			Content: []byte(mysqlMigrationStatement),
 		},
 	})
 	a.NoError(err)
@@ -312,11 +303,8 @@ func TestGhostTenant(t *testing.T) {
 	sheet2, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet 2",
-			Content:    []byte(mysqlGhostMigrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet 2",
+			Content: []byte(mysqlGhostMigrationStatement),
 		},
 	})
 	a.NoError(err)

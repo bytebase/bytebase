@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"slices"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -162,8 +161,8 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		return nil, err
 	}
 
-	// For issue sheets, check the bb.issues.get permission.
-	if s.profile.DevelopmentIAM && sheet.Source == store.SheetFromBytebaseArtifact {
+	// Check the bb.issues.get permission.
+	if s.profile.DevelopmentIAM {
 		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "user not found")
@@ -184,16 +183,7 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
 		}
-	} else {
-		canAccess, err := s.canReadSheet(ctx, sheet)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
-		}
-		if !canAccess {
-			return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
-		}
 	}
-
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
 		return nil, err
@@ -268,13 +258,6 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		case "content":
 			statement := string(request.Sheet.Content)
 			sheetPatch.Statement = &statement
-		case "visibility":
-			visibility, err := convertToStoreSheetVisibility(request.Sheet.Visibility)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", request.Sheet.Visibility))
-			}
-			stringVisibility := string(visibility)
-			sheetPatch.Visibility = &stringVisibility
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
@@ -323,13 +306,6 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 	}
 	if sheet == nil {
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetUID))
-	}
-	canAccess, err := s.canWriteSheet(ctx, sheet)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
-	}
-	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot write sheet %s", sheet.Title)
 	}
 
 	if err := s.store.DeleteSheet(ctx, sheetUID); err != nil {
@@ -383,35 +359,6 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 	return false, nil
 }
 
-// canReadSheet check if the principal can read the sheet.
-// sheet is readable when:
-// PRIVATE: the creator only.
-// PROJECT: the creator and members in the project.
-// PUBLIC: everyone in the workspace.
-func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessage) (bool, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return false, status.Errorf(codes.Internal, "user not found")
-	}
-
-	switch sheet.Visibility {
-	case store.PrivateSheet:
-		return sheet.CreatorID == user.ID, nil
-	case store.PublicSheet:
-		return true, nil
-	case store.ProjectSheet:
-		if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
-			return true, nil
-		}
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
-		if err != nil {
-			return false, err
-		}
-		return len(projectRoles) > 0, nil
-	}
-	return false, nil
-}
-
 func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
@@ -433,31 +380,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with id %d not found", *sheet.DatabaseUID))
 		}
 		databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	}
-
-	visibility := v1pb.Sheet_VISIBILITY_UNSPECIFIED
-	switch sheet.Visibility {
-	case store.PublicSheet:
-		visibility = v1pb.Sheet_VISIBILITY_PUBLIC
-	case store.ProjectSheet:
-		visibility = v1pb.Sheet_VISIBILITY_PROJECT
-	case store.PrivateSheet:
-		visibility = v1pb.Sheet_VISIBILITY_PRIVATE
-	}
-
-	source := v1pb.Sheet_SOURCE_UNSPECIFIED
-	switch sheet.Source {
-	case store.SheetFromBytebase:
-		source = v1pb.Sheet_SOURCE_BYTEBASE
-	case store.SheetFromBytebaseArtifact:
-		source = v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT
-	}
-
-	tp := v1pb.Sheet_TYPE_UNSPECIFIED
-	switch sheet.Type {
-	case store.SheetForSQL:
-		tp = v1pb.Sheet_TYPE_SQL
-	default:
 	}
 
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
@@ -498,50 +420,21 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 		UpdateTime:  timestamppb.New(sheet.UpdatedTime),
 		Content:     []byte(sheet.Statement),
 		ContentSize: sheet.Size,
-		Visibility:  visibility,
-		Source:      source,
-		Type:        tp,
-		Starred:     sheet.Starred,
 		PushEvent:   v1PushEvent,
 		Payload:     v1SheetPayload,
 	}, nil
 }
 
 func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
-	visibility, err := convertToStoreSheetVisibility(sheet.Visibility)
-	if err != nil {
-		return nil, err
-	}
-	var source store.SheetSource
-	switch sheet.Source {
-	case v1pb.Sheet_SOURCE_UNSPECIFIED:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid source %q", sheet.Source))
-	case v1pb.Sheet_SOURCE_BYTEBASE:
-		source = store.SheetFromBytebase
-	case v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT:
-		source = store.SheetFromBytebaseArtifact
-	default:
-		source = store.SheetFromBytebaseArtifact
-	}
-	var tp store.SheetType
-	switch sheet.Type {
-	case v1pb.Sheet_TYPE_UNSPECIFIED:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid type %q", sheet.Type))
-	case v1pb.Sheet_TYPE_SQL:
-		tp = store.SheetForSQL
-	default:
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid type %q", sheet.Type))
-	}
-
 	sheetMessage := &store.SheetMessage{
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
 		CreatorID:   creatorID,
 		Title:       sheet.Title,
 		Statement:   string(sheet.Content),
-		Visibility:  visibility,
-		Source:      source,
-		Type:        tp,
+		Visibility:  store.ProjectSheet,
+		Source:      store.SheetFromBytebaseArtifact,
+		Type:        store.SheetForSQL,
 	}
 	if sheet.Payload != nil {
 		sheetMessage.Payload = &storepb.SheetPayload{
@@ -551,19 +444,4 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 	}
 
 	return sheetMessage, nil
-}
-
-func convertToStoreSheetVisibility(visibility v1pb.Sheet_Visibility) (store.SheetVisibility, error) {
-	switch visibility {
-	case v1pb.Sheet_VISIBILITY_UNSPECIFIED:
-		return store.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
-	case v1pb.Sheet_VISIBILITY_PUBLIC:
-		return store.PublicSheet, nil
-	case v1pb.Sheet_VISIBILITY_PROJECT:
-		return store.ProjectSheet, nil
-	case v1pb.Sheet_VISIBILITY_PRIVATE:
-		return store.PrivateSheet, nil
-	default:
-		return store.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
-	}
 }

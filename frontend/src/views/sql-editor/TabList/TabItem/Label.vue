@@ -54,7 +54,7 @@ const state = reactive<LocalState>({
 });
 
 const tabStore = useTabStore();
-const sheetV1Store = useWorkSheetStore();
+const worksheetV1Store = useWorkSheetStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
 
@@ -85,7 +85,7 @@ const confirmEdit = () => {
 
   tab.name = name;
   if (tab.sheetName) {
-    sheetV1Store.patchSheet({
+    worksheetV1Store.patchSheet({
       name: tab.sheetName,
       title: name,
     });

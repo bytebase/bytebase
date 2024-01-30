@@ -1,12 +1,6 @@
 import { defineStore } from "pinia";
 import { reactive } from "vue";
-import {
-  Sheet,
-  Sheet_Source,
-  Sheet_Type,
-  Sheet_Visibility,
-  DeepPartial,
-} from "@/types/proto/v1/sheet_service";
+import { Sheet, DeepPartial } from "@/types/proto/v1/sheet_service";
 import { extractProjectResourceName } from "@/utils";
 import { useSheetV1Store } from "./sheet";
 
@@ -32,9 +26,6 @@ export const useLocalSheetStore = defineStore("local_sheet", () => {
     return reactive(
       Sheet.fromPartial({
         name,
-        source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-        visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-        type: Sheet_Type.TYPE_SQL,
         ...defaults,
       })
     );
