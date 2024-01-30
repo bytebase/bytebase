@@ -61,14 +61,16 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     async fetchPolicies({
       resourceType,
       policyType,
+      parent,
       showDeleted = false,
     }: {
       resourceType: PolicyResourceType;
       policyType?: PolicyType;
+      parent?: string;
       showDeleted?: boolean;
     }) {
       const { policies } = await policyServiceClient.listPolicies({
-        parent: getPolicyParentByResourceType(resourceType),
+        parent: parent ?? getPolicyParentByResourceType(resourceType),
         policyType,
         showDeleted,
       });
