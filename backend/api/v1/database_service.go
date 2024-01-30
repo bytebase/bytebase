@@ -1258,9 +1258,14 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
+	strictMode := true
+	if engine == storepb.Engine_ORACLE {
+		strictMode = false
+	}
+
 	diff, err := base.SchemaDiff(engine, base.DiffContext{
 		IgnoreCaseSensitive: false,
-		StrictMode:          true,
+		StrictMode:          strictMode,
 	}, source, target)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)

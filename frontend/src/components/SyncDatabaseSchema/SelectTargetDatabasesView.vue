@@ -186,6 +186,7 @@
           :engine="engine"
           :target-database-schema="targetDatabaseSchema"
           :source-database-schema="sourceDatabaseSchema"
+          :display-only-source-database-schema="displayOnlySourceDatabaseSchema"
           :should-show-diff="shouldShowDiff"
           :preview-schema-change-message="previewSchemaChangeMessage"
           @statement-change="onStatementChange"
@@ -300,11 +301,17 @@ const project = computed(() => {
   return useProjectV1Store().getProjectByUID(props.projectId);
 });
 
-const sourceDatabaseSchema = computed(() => {
+const displayOnlySourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     if (engine.value === Engine.ORACLE) {
       return props.databaseSourceSchema?.conciseHistory || "";
     }
+  }
+  return sourceDatabaseSchema.value;
+});
+
+const sourceDatabaseSchema = computed(() => {
+  if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
