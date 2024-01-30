@@ -90,6 +90,7 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistoryView,
@@ -118,6 +119,8 @@ interface LocalState {
   environmentId?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
+  // conciseHistory is used for Oracle only.
+  conciseHistory?: string;
 }
 
 const state = reactive<LocalState>({
@@ -354,7 +357,10 @@ const fallbackSchemaVersionOption = (value: string): SelectOption => {
   };
 };
 
-const handleSchemaVersionSelect = (name: string, option: SelectOption) => {
+const handleSchemaVersionSelect = async (
+  name: string,
+  option: SelectOption
+) => {
   const changeHistory = option.changeHistory as ChangeHistory;
   const index = databaseChangeHistoryList(state.databaseId as string).findIndex(
     (history) => history.uid === changeHistory.uid
@@ -362,6 +368,14 @@ const handleSchemaVersionSelect = (name: string, option: SelectOption) => {
   if (index > 0 && !hasSyncSchemaFeature.value) {
     state.showFeatureModal = true;
     return;
+  }
+  if (database.value?.instanceEntity.engine === Engine.ORACLE) {
+    const conciseHistory = await changeHistoryStore.fetchChangeHistory({
+      name: changeHistory.name,
+      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+      concise: true,
+    });
+    state.conciseHistory = conciseHistory.schema;
   }
   state.changeHistory = changeHistory;
 };
@@ -394,6 +408,12 @@ watch(
           `${database.name}/schema`
         );
         state.changeHistory = mockLatestSchemaChangeHistory(database, schema);
+        const conciseSchema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`,
+          false,
+          true
+        );
+        state.conciseHistory = conciseSchema.schema;
       }
     } else {
       state.changeHistory = undefined;
@@ -410,6 +430,7 @@ watch(
     emit("update", {
       ...state,
       changeHistory: fullViewChangeHistory || state.changeHistory,
+      conciseHistory: state.conciseHistory,
     });
   },
   { deep: true }

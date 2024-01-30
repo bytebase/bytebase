@@ -8,6 +8,7 @@ export interface ChangeHistorySourceSchema {
   environmentId?: string;
   databaseId?: string;
   changeHistory?: ChangeHistory;
+  conciseHistory?: string;
 }
 
 export interface RawSQLState {
