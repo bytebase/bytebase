@@ -59,8 +59,8 @@ func TestCanUserApproveStep(t *testing.T) {
 				},
 			},
 			user: &store.UserMessage{
-				ID:   1,
-				Role: api.WorkspaceMember,
+				ID:    1,
+				Roles: []api.Role{api.WorkspaceMember},
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
@@ -90,8 +90,8 @@ func TestCanUserApproveStep(t *testing.T) {
 				},
 			},
 			user: &store.UserMessage{
-				ID:   1,
-				Role: api.WorkspaceDBA,
+				ID:    1,
+				Roles: []api.Role{api.WorkspaceDBA},
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
@@ -121,8 +121,8 @@ func TestCanUserApproveStep(t *testing.T) {
 				},
 			},
 			user: &store.UserMessage{
-				ID:   1,
-				Role: api.WorkspaceDBA,
+				ID:    1,
+				Roles: []api.Role{api.WorkspaceDBA},
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{
@@ -152,8 +152,8 @@ func TestCanUserApproveStep(t *testing.T) {
 				},
 			},
 			user: &store.UserMessage{
-				ID:   1,
-				Role: api.WorkspaceDBA,
+				ID:    1,
+				Roles: []api.Role{api.WorkspaceDBA},
 			},
 			policy: &store.IAMPolicyMessage{
 				Bindings: []*store.PolicyBinding{

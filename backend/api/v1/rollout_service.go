@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -1381,10 +1381,9 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
 func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserMessage, issue *store.IssueMessage, stageEnvironmentID int) (bool, error) {
 	// the workspace owner and DBA roles can always run tasks.
-	if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
+	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 		return true, nil
 	}
 
@@ -1397,23 +1396,18 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 	if err != nil {
 		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
 	}
-	userProjectRoles := map[api.Role]bool{}
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == user.ID {
-				userProjectRoles[binding.Role] = true
-				break
-			}
-		}
+
+	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get roles")
 	}
 
-	if p.Automatic && len(userProjectRoles) > 0 {
+	if p.Automatic {
 		return true, nil
 	}
 
 	for _, role := range p.ProjectRoles {
-		apiRole := api.Role(strings.TrimPrefix(role, "roles/"))
-		if userProjectRoles[apiRole] {
+		if roles[role] {
 			return true, nil
 		}
 	}

@@ -2556,7 +2556,7 @@ func evaluateQueryExportPolicyCondition(expression string, attributes map[string
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+	env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 	if err != nil {
 		return false, err
 	}
