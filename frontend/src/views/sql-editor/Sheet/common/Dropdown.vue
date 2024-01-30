@@ -40,7 +40,7 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const sheetV1Store = useWorkSheetStore();
+const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
 const { events } = useSheetContext();
 
@@ -90,7 +90,7 @@ const handleAction = async (key: string) => {
       async onPositiveClick() {
         try {
           dialogInstance.loading = true;
-          await sheetV1Store.deleteSheetByName(sheet.name);
+          await worksheetV1Store.deleteSheetByName(sheet.name);
           events.emit("refresh", { views: ["my", "shared", "starred"] });
           turnSheetToUnsavedTab(sheet);
         } finally {
@@ -106,7 +106,7 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    await sheetV1Store.upsertSheetOrganizer({
+    await worksheetV1Store.upsertSheetOrganizer({
       worksheet: sheet.name,
       starred: key === "star",
     });
@@ -120,7 +120,7 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await sheetV1Store.createSheet(
+        await worksheetV1Store.createSheet(
           Worksheet.fromPartial({
             title: sheet.title,
             project: sheet.project,

@@ -792,11 +792,8 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 			sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 				Parent: ctl.project.Name,
 				Sheet: &v1pb.Sheet{
-					Title:      "migration statement sheet",
-					Content:    []byte(tc.statement),
-					Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-					Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-					Type:       v1pb.Sheet_TYPE_SQL,
+					Title:   "migration statement sheet",
+					Content: []byte(tc.statement),
 				},
 			})
 			a.NoError(err)

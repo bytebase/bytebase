@@ -96,137 +96,8 @@ export interface Sheet {
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
   contentSize: Long;
-  visibility: Sheet_Visibility;
-  /** The source of the sheet. */
-  source: Sheet_Source;
-  /** The type of the sheet. */
-  type: Sheet_Type;
-  /** starred indicates whether the sheet is starred by the current authenticated user. */
-  starred: boolean;
   payload: SheetPayload | undefined;
   pushEvent: PushEvent | undefined;
-}
-
-export enum Sheet_Visibility {
-  VISIBILITY_UNSPECIFIED = 0,
-  /** VISIBILITY_PUBLIC - Public, sheet OWNER can read/write, and all others can read. */
-  VISIBILITY_PUBLIC = 1,
-  /** VISIBILITY_PROJECT - Project, sheet OWNER and project OWNER can read/write, and project DEVELOPER can read. */
-  VISIBILITY_PROJECT = 2,
-  /** VISIBILITY_PRIVATE - Private, only sheet OWNER can read/write. */
-  VISIBILITY_PRIVATE = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_VisibilityFromJSON(object: any): Sheet_Visibility {
-  switch (object) {
-    case 0:
-    case "VISIBILITY_UNSPECIFIED":
-      return Sheet_Visibility.VISIBILITY_UNSPECIFIED;
-    case 1:
-    case "VISIBILITY_PUBLIC":
-      return Sheet_Visibility.VISIBILITY_PUBLIC;
-    case 2:
-    case "VISIBILITY_PROJECT":
-      return Sheet_Visibility.VISIBILITY_PROJECT;
-    case 3:
-    case "VISIBILITY_PRIVATE":
-      return Sheet_Visibility.VISIBILITY_PRIVATE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Visibility.UNRECOGNIZED;
-  }
-}
-
-export function sheet_VisibilityToJSON(object: Sheet_Visibility): string {
-  switch (object) {
-    case Sheet_Visibility.VISIBILITY_UNSPECIFIED:
-      return "VISIBILITY_UNSPECIFIED";
-    case Sheet_Visibility.VISIBILITY_PUBLIC:
-      return "VISIBILITY_PUBLIC";
-    case Sheet_Visibility.VISIBILITY_PROJECT:
-      return "VISIBILITY_PROJECT";
-    case Sheet_Visibility.VISIBILITY_PRIVATE:
-      return "VISIBILITY_PRIVATE";
-    case Sheet_Visibility.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum Sheet_Source {
-  SOURCE_UNSPECIFIED = 0,
-  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created in SQL Editor. */
-  SOURCE_BYTEBASE = 1,
-  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. */
-  SOURCE_BYTEBASE_ARTIFACT = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_SourceFromJSON(object: any): Sheet_Source {
-  switch (object) {
-    case 0:
-    case "SOURCE_UNSPECIFIED":
-      return Sheet_Source.SOURCE_UNSPECIFIED;
-    case 1:
-    case "SOURCE_BYTEBASE":
-      return Sheet_Source.SOURCE_BYTEBASE;
-    case 2:
-    case "SOURCE_BYTEBASE_ARTIFACT":
-      return Sheet_Source.SOURCE_BYTEBASE_ARTIFACT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Source.UNRECOGNIZED;
-  }
-}
-
-export function sheet_SourceToJSON(object: Sheet_Source): string {
-  switch (object) {
-    case Sheet_Source.SOURCE_UNSPECIFIED:
-      return "SOURCE_UNSPECIFIED";
-    case Sheet_Source.SOURCE_BYTEBASE:
-      return "SOURCE_BYTEBASE";
-    case Sheet_Source.SOURCE_BYTEBASE_ARTIFACT:
-      return "SOURCE_BYTEBASE_ARTIFACT";
-    case Sheet_Source.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum Sheet_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_SQL = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_TypeFromJSON(object: any): Sheet_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return Sheet_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "TYPE_SQL":
-      return Sheet_Type.TYPE_SQL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Type.UNRECOGNIZED;
-  }
-}
-
-export function sheet_TypeToJSON(object: Sheet_Type): string {
-  switch (object) {
-    case Sheet_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case Sheet_Type.TYPE_SQL:
-      return "TYPE_SQL";
-    case Sheet_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 export interface SheetPayload {
@@ -562,10 +433,6 @@ function createBaseSheet(): Sheet {
     updateTime: undefined,
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
-    visibility: 0,
-    source: 0,
-    type: 0,
-    starred: false,
     payload: undefined,
     pushEvent: undefined,
   };
@@ -596,18 +463,6 @@ export const Sheet = {
     }
     if (!message.contentSize.isZero()) {
       writer.uint32(64).int64(message.contentSize);
-    }
-    if (message.visibility !== 0) {
-      writer.uint32(72).int32(message.visibility);
-    }
-    if (message.source !== 0) {
-      writer.uint32(80).int32(message.source);
-    }
-    if (message.type !== 0) {
-      writer.uint32(88).int32(message.type);
-    }
-    if (message.starred === true) {
-      writer.uint32(96).bool(message.starred);
     }
     if (message.payload !== undefined) {
       SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
@@ -681,34 +536,6 @@ export const Sheet = {
 
           message.contentSize = reader.int64() as Long;
           continue;
-        case 9:
-          if (tag !== 72) {
-            break;
-          }
-
-          message.visibility = reader.int32() as any;
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.source = reader.int32() as any;
-          continue;
-        case 11:
-          if (tag !== 88) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 12:
-          if (tag !== 96) {
-            break;
-          }
-
-          message.starred = reader.bool();
-          continue;
         case 13:
           if (tag !== 106) {
             break;
@@ -742,10 +569,6 @@ export const Sheet = {
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
-      visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
-      source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
-      type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
-      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
@@ -777,18 +600,6 @@ export const Sheet = {
     if (!message.contentSize.isZero()) {
       obj.contentSize = (message.contentSize || Long.ZERO).toString();
     }
-    if (message.visibility !== 0) {
-      obj.visibility = sheet_VisibilityToJSON(message.visibility);
-    }
-    if (message.source !== 0) {
-      obj.source = sheet_SourceToJSON(message.source);
-    }
-    if (message.type !== 0) {
-      obj.type = sheet_TypeToJSON(message.type);
-    }
-    if (message.starred === true) {
-      obj.starred = message.starred;
-    }
     if (message.payload !== undefined) {
       obj.payload = SheetPayload.toJSON(message.payload);
     }
@@ -813,10 +624,6 @@ export const Sheet = {
     message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
       ? Long.fromValue(object.contentSize)
       : Long.ZERO;
-    message.visibility = object.visibility ?? 0;
-    message.source = object.source ?? 0;
-    message.type = object.type ?? 0;
-    message.starred = object.starred ?? false;
     message.payload = (object.payload !== undefined && object.payload !== null)
       ? SheetPayload.fromPartial(object.payload)
       : undefined;

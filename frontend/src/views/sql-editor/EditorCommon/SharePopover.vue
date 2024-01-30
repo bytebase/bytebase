@@ -108,7 +108,7 @@ import { worksheetSlugV1 } from "@/utils";
 const { t } = useI18n();
 
 const tabStore = useTabStore();
-const sheetV1Store = useWorkSheetStore();
+const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
@@ -143,7 +143,7 @@ const isShowAccessPopover = ref(false);
 
 const updateSheet = () => {
   if (sheet.value) {
-    sheetV1Store.patchSheet({
+    worksheetV1Store.patchSheet({
       name: sheet.value.name,
       visibility: currentAccess.value.value,
     });

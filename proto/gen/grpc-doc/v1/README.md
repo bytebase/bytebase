@@ -583,9 +583,6 @@
     - [SheetPayload](#bytebase-v1-SheetPayload)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
-    - [Sheet.Source](#bytebase-v1-Sheet-Source)
-    - [Sheet.Type](#bytebase-v1-Sheet-Type)
-    - [Sheet.Visibility](#bytebase-v1-Sheet-Visibility)
     - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
@@ -9412,10 +9409,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| visibility | [Sheet.Visibility](#bytebase-v1-Sheet-Visibility) |  |  |
-| source | [Sheet.Source](#bytebase-v1-Sheet-Source) |  | The source of the sheet. |
-| type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
-| starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
 
@@ -9459,45 +9452,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-Sheet-Source"></a>
-
-### Sheet.Source
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SOURCE_UNSPECIFIED | 0 |  |
-| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created in SQL Editor. |
-| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. |
-
-
-
-<a name="bytebase-v1-Sheet-Type"></a>
-
-### Sheet.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_SQL | 1 |  |
-
-
-
-<a name="bytebase-v1-Sheet-Visibility"></a>
-
-### Sheet.Visibility
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 | Public, sheet OWNER can read/write, and all others can read. |
-| VISIBILITY_PROJECT | 2 | Project, sheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
-| VISIBILITY_PRIVATE | 3 | Private, only sheet OWNER can read/write. |
-
 
 
 <a name="bytebase-v1-SheetPayload-Type"></a>

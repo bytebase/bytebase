@@ -450,11 +450,8 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "statement",
-			Content:    []byte(statement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "statement",
+			Content: []byte(statement),
 		},
 	})
 	a.NoError(err)

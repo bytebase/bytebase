@@ -114,11 +114,8 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 			Parent: ctl.project.Name,
 			Sheet: &v1pb.Sheet{
-				Title:      fmt.Sprintf("migration statement sheet %d", i+1),
-				Content:    []byte(stmt),
-				Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-				Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-				Type:       v1pb.Sheet_TYPE_SQL,
+				Title:   fmt.Sprintf("migration statement sheet %d", i+1),
+				Content: []byte(stmt),
 			},
 		})
 		a.NoError(err)
