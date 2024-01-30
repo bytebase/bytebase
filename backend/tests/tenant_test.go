@@ -155,11 +155,8 @@ func TestTenant(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "migration statement sheet",
-			Content:    []byte(migrationStatement),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "migration statement sheet",
+			Content: []byte(migrationStatement),
 		},
 	})
 	a.NoError(err)

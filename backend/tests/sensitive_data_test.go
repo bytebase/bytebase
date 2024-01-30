@@ -165,11 +165,8 @@ func TestSensitiveData(t *testing.T) {
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "createTable",
-			Content:    []byte(createTable),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "createTable",
+			Content: []byte(createTable),
 		},
 	})
 	a.NoError(err)
@@ -206,11 +203,8 @@ func TestSensitiveData(t *testing.T) {
 	insertDataSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{
-			Title:      "insertData",
-			Content:    []byte(insertData),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
+			Title:   "insertData",
+			Content: []byte(insertData),
 		},
 	})
 	a.NoError(err)

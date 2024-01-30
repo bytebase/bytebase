@@ -200,9 +200,6 @@
     <div>sheetName: {{ sheetName }}</div>
     <div>sheetReady: {{ sheetReady }}</div>
     <div>sheetStatement.length: {{ sheetStatement.length }}</div>
-    <div>sheet.source: {{ sheet?.source }}</div>
-    <div>sheet.type: {{ sheet?.type }}</div>
-    <div>sheet.visibility: {{ sheet?.visibility }}</div>
     <div>sheet.title: {{ sheet?.title }}</div>
     <div>sheet.content.length: {{ sheet?.content?.length }}</div>
     <div>isTaskSheetOversize: {{ isTaskSheetOversize }}</div>
