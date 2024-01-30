@@ -143,13 +143,7 @@ import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { Environment } from "@/types/proto/v1/environment_service";
-import {
-  Sheet,
-  SheetPayload_Type,
-  Sheet_Source,
-  Sheet_Type,
-  Sheet_Visibility,
-} from "@/types/proto/v1/sheet_service";
+import { Sheet, SheetPayload_Type } from "@/types/proto/v1/sheet_service";
 import {
   defer,
   extractProjectResourceName,
@@ -341,9 +335,6 @@ const handlePreviewIssue = async () => {
   }
   const sheet = Sheet.fromPartial({
     database: db.name,
-    visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-    type: Sheet_Type.TYPE_SQL,
-    source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
     payload: {
       type: SheetPayload_Type.SCHEMA_DESIGN,
       baselineDatabaseConfig: {

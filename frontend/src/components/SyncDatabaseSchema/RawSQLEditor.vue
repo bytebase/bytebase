@@ -89,11 +89,6 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import {
-  Sheet_Source,
-  Sheet_Type,
-  Sheet_Visibility,
-} from "@/types/proto/v1/sheet_service";
-import {
   engineNameV1,
   extractSheetUID,
   getStatementSize,
@@ -209,9 +204,6 @@ const handleUploadFile = (e: Event) => {
     const sheet = await sheetStore.createSheet(DEFAULT_PROJECT_V1_NAME, {
       title: file.name,
       content: new TextEncoder().encode(statement),
-      visibility: Sheet_Visibility.VISIBILITY_PROJECT,
-      source: Sheet_Source.SOURCE_BYTEBASE_ARTIFACT,
-      type: Sheet_Type.TYPE_SQL,
     });
     const sheetId = Number(extractSheetUID(sheet.name));
     await handleStatementChange(statement);

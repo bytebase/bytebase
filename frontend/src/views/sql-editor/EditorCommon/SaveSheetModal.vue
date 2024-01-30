@@ -28,7 +28,7 @@ type LocalState = {
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
-const sheetV1Store = useWorkSheetStore();
+const worksheetV1Store = useWorkSheetStore();
 const { events: sheetEvents } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
 
@@ -66,14 +66,14 @@ const doSaveSheet = async (title: string) => {
 
   let sheet: Worksheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
-    sheet = await sheetV1Store.patchSheet({
+    sheet = await worksheetV1Store.patchSheet({
       name: sheetName,
       database: database.name,
       title: title,
       content: new TextEncoder().encode(statement),
     });
   } else {
-    sheet = await sheetV1Store.createSheet(
+    sheet = await worksheetV1Store.createSheet(
       Worksheet.fromPartial({
         title: title,
         project: database.project,

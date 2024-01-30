@@ -79,9 +79,6 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 			DELETE FROM t WHERE id = 1;
 			UPDATE t SET name = 'unknown\nunknown';
 		`),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
 		},
 	})
 	a.NoError(err)
@@ -229,9 +226,6 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 			DELETE FROM t WHERE id = 1;
 			UPDATE t SET name = 'unknown\nunknown';
 		`),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
 		},
 	})
 	a.NoError(err)
@@ -390,9 +384,6 @@ func TestRollbackCanceled(t *testing.T) {
 			DELETE FROM t WHERE id = 1;
 			UPDATE t SET name = 'unknown\nunknown';
 		`),
-			Visibility: v1pb.Sheet_VISIBILITY_PROJECT,
-			Source:     v1pb.Sheet_SOURCE_BYTEBASE_ARTIFACT,
-			Type:       v1pb.Sheet_TYPE_SQL,
 		},
 	})
 	a.NoError(err)
