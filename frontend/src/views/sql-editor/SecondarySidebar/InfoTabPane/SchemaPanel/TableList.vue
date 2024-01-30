@@ -27,10 +27,12 @@
               class="w-4 h-4 mr-1 shrink-0"
             />
             <ViewIcon v-if="item.view" class="w-4 h-4 mr-1 shrink-0" />
-            <NEllipsis class="grow">
-              <!-- eslint-disable-next-line vue/no-v-html -->
-              <span v-html="renderItem(item)" />
-            </NEllipsis>
+            <!-- eslint-disable vue/no-v-html -->
+            <div
+              class="flex-1 truncate"
+              :title="renderItemLabel(item)"
+              v-html="renderItem(item)"
+            />
           </div>
         </div>
       </template>
@@ -40,7 +42,6 @@
 
 <script setup lang="ts">
 import { escape } from "lodash-es";
-import { NEllipsis } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { VirtualList } from "vueuc";
 import { TableIcon, ViewIcon } from "@/components/Icon";
@@ -144,6 +145,18 @@ const handleClickItem = (item: SchemaAndTableOrExternalTableOrView) => {
   } else if (externalTable) {
     emit("select-external-table", schema, externalTable);
   }
+};
+
+const renderItemLabel = (item: SchemaAndTableOrExternalTableOrView) => {
+  const parts: string[] = [];
+  const { schema, table, externalTable, view } = item;
+  const name = table?.name ?? externalTable?.name ?? view?.name ?? "";
+  if (!name) return undefined;
+  if (schema.name) {
+    parts.push(`${schema.name}.`);
+  }
+  parts.push(name);
+  return parts.join("");
 };
 
 const renderItem = (item: SchemaAndTableOrExternalTableOrView) => {
