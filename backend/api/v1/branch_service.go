@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/epiclabs-io/diff3"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -828,14 +829,18 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if project.Setting == nil {
 		return nil
 	}
-	// TODO(p0ny): eval CEL.
+	// Skip protection check for workspace owner and DBA.
+	if isOwnerOrDBA(user) {
+		return nil
+	}
+
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
 		return err
 	}
-	// Skip protection check for workspace owner and DBA.
-	if isOwnerOrDBA(user) {
-		return nil
+	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get user roles")
 	}
 
 	for _, rule := range project.Setting.ProtectionRules {
@@ -849,33 +854,14 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		if !ok {
 			continue
 		}
-		pass := false
-		for _, binding := range policy.Bindings {
-			matchUser := false
-			for _, member := range binding.Members {
-				if member.Email == user.Email {
-					matchUser = true
-					break
-				}
+
+		for _, role := range rule.CreateAllowedRoles {
+			if _, ok := roles[role]; ok {
+				return nil
 			}
-			if matchUser {
-				for _, role := range rule.CreateAllowedRoles {
-					// Convert role format.
-					if role == common.FormatRole(binding.Role.String()) {
-						pass = true
-						break
-					}
-				}
-			}
-			if pass {
-				break
-			}
-		}
-		if !pass {
-			return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
 		}
 	}
-	return nil
+	return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
 }
 
 func (s *BranchService) convertBranchToBranch(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.BranchView) (*v1pb.Branch, error) {

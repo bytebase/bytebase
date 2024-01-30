@@ -251,7 +251,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
-		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to eval binding condition")
 		}
@@ -274,7 +274,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
 			continue
 		}
-		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to eval binding condition")
 		}

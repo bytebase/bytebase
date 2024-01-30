@@ -2648,7 +2648,7 @@ func convertToIamPolicy(iamPolicy *store.IAMPolicyMessage) (*v1pb.IamPolicy, err
 			Condition: binding.Condition,
 		}
 		if binding.Condition.Expression != "" {
-			e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create cel environment")
 			}

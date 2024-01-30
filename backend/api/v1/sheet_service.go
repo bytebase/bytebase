@@ -16,6 +16,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -369,7 +370,7 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 	}
 
 	if sheet.Visibility == store.ProjectSheet {
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user.ID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
 		if err != nil {
 			return false, err
 		}
@@ -402,7 +403,7 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 		if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 			return true, nil
 		}
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user.ID)
+		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
 		if err != nil {
 			return false, err
 		}
@@ -411,22 +412,12 @@ func (s *SheetService) canReadSheet(ctx context.Context, sheet *store.SheetMessa
 	return false, nil
 }
 
-// TODO(p0ny): renovate this function to respect allUsers and CEL.
-func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, principalUID int) (map[api.Role]bool, error) {
+func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
 	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{UID: &projectUID})
 	if err != nil {
 		return nil, err
 	}
-	projectRoles := make(map[api.Role]bool)
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == principalUID {
-				projectRoles[api.Role(binding.Role)] = true
-				break
-			}
-		}
-	}
-	return projectRoles, nil
+	return utils.GetUserRolesMap(user, policy)
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
