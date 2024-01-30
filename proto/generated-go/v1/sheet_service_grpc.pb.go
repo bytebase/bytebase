@@ -20,12 +20,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SheetService_CreateSheet_FullMethodName          = "/bytebase.v1.SheetService/CreateSheet"
-	SheetService_GetSheet_FullMethodName             = "/bytebase.v1.SheetService/GetSheet"
-	SheetService_SearchSheets_FullMethodName         = "/bytebase.v1.SheetService/SearchSheets"
-	SheetService_UpdateSheet_FullMethodName          = "/bytebase.v1.SheetService/UpdateSheet"
-	SheetService_UpdateSheetOrganizer_FullMethodName = "/bytebase.v1.SheetService/UpdateSheetOrganizer"
-	SheetService_DeleteSheet_FullMethodName          = "/bytebase.v1.SheetService/DeleteSheet"
+	SheetService_CreateSheet_FullMethodName = "/bytebase.v1.SheetService/CreateSheet"
+	SheetService_GetSheet_FullMethodName    = "/bytebase.v1.SheetService/GetSheet"
+	SheetService_UpdateSheet_FullMethodName = "/bytebase.v1.SheetService/UpdateSheet"
+	SheetService_DeleteSheet_FullMethodName = "/bytebase.v1.SheetService/DeleteSheet"
 )
 
 // SheetServiceClient is the client API for SheetService service.
@@ -34,9 +32,7 @@ const (
 type SheetServiceClient interface {
 	CreateSheet(ctx context.Context, in *CreateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
-	SearchSheets(ctx context.Context, in *SearchSheetsRequest, opts ...grpc.CallOption) (*SearchSheetsResponse, error)
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
-	UpdateSheetOrganizer(ctx context.Context, in *UpdateSheetOrganizerRequest, opts ...grpc.CallOption) (*SheetOrganizer, error)
 	DeleteSheet(ctx context.Context, in *DeleteSheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -66,27 +62,9 @@ func (c *sheetServiceClient) GetSheet(ctx context.Context, in *GetSheetRequest, 
 	return out, nil
 }
 
-func (c *sheetServiceClient) SearchSheets(ctx context.Context, in *SearchSheetsRequest, opts ...grpc.CallOption) (*SearchSheetsResponse, error) {
-	out := new(SearchSheetsResponse)
-	err := c.cc.Invoke(ctx, SheetService_SearchSheets_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error) {
 	out := new(Sheet)
 	err := c.cc.Invoke(ctx, SheetService_UpdateSheet_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sheetServiceClient) UpdateSheetOrganizer(ctx context.Context, in *UpdateSheetOrganizerRequest, opts ...grpc.CallOption) (*SheetOrganizer, error) {
-	out := new(SheetOrganizer)
-	err := c.cc.Invoke(ctx, SheetService_UpdateSheetOrganizer_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -108,9 +86,7 @@ func (c *sheetServiceClient) DeleteSheet(ctx context.Context, in *DeleteSheetReq
 type SheetServiceServer interface {
 	CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error)
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
-	SearchSheets(context.Context, *SearchSheetsRequest) (*SearchSheetsResponse, error)
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
-	UpdateSheetOrganizer(context.Context, *UpdateSheetOrganizerRequest) (*SheetOrganizer, error)
 	DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSheetServiceServer()
 }
@@ -125,14 +101,8 @@ func (UnimplementedSheetServiceServer) CreateSheet(context.Context, *CreateSheet
 func (UnimplementedSheetServiceServer) GetSheet(context.Context, *GetSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSheet not implemented")
 }
-func (UnimplementedSheetServiceServer) SearchSheets(context.Context, *SearchSheetsRequest) (*SearchSheetsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchSheets not implemented")
-}
 func (UnimplementedSheetServiceServer) UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheet not implemented")
-}
-func (UnimplementedSheetServiceServer) UpdateSheetOrganizer(context.Context, *UpdateSheetOrganizerRequest) (*SheetOrganizer, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheetOrganizer not implemented")
 }
 func (UnimplementedSheetServiceServer) DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteSheet not implemented")
@@ -186,24 +156,6 @@ func _SheetService_GetSheet_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SheetService_SearchSheets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchSheetsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SheetServiceServer).SearchSheets(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SheetService_SearchSheets_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SheetServiceServer).SearchSheets(ctx, req.(*SearchSheetsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SheetService_UpdateSheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateSheetRequest)
 	if err := dec(in); err != nil {
@@ -218,24 +170,6 @@ func _SheetService_UpdateSheet_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SheetServiceServer).UpdateSheet(ctx, req.(*UpdateSheetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SheetService_UpdateSheetOrganizer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateSheetOrganizerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SheetServiceServer).UpdateSheetOrganizer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SheetService_UpdateSheetOrganizer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SheetServiceServer).UpdateSheetOrganizer(ctx, req.(*UpdateSheetOrganizerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -274,16 +208,8 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SheetService_GetSheet_Handler,
 		},
 		{
-			MethodName: "SearchSheets",
-			Handler:    _SheetService_SearchSheets_Handler,
-		},
-		{
 			MethodName: "UpdateSheet",
 			Handler:    _SheetService_UpdateSheet_Handler,
-		},
-		{
-			MethodName: "UpdateSheetOrganizer",
-			Handler:    _SheetService_UpdateSheetOrganizer_Handler,
 		},
 		{
 			MethodName: "DeleteSheet",

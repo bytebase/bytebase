@@ -1,6 +1,6 @@
 import { escape } from "lodash-es";
 import { TabInfo } from "@/types";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";
 
 export type TabItem = {
@@ -9,7 +9,7 @@ export type TabItem = {
 };
 export type SheetItem = {
   type: "SHEET";
-  target: Sheet;
+  target: Worksheet;
 };
 export type MergedItem = TabItem | SheetItem;
 export const isTabItem = (item: MergedItem): item is TabItem => {

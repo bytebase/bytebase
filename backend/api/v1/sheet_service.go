@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
-
-	"log/slog"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,7 +11,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -204,128 +200,6 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	return v1pbSheet, nil
 }
 
-// SearchSheets returns a list of sheets based on the search filters.
-func (s *SheetService) SearchSheets(ctx context.Context, request *v1pb.SearchSheetsRequest) (*v1pb.SearchSheetsResponse, error) {
-	projectResourceID, err := common.GetProjectID(request.Parent)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-
-	sheetFind := &store.FindSheetMessage{}
-	if projectResourceID != "-" {
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectResourceID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
-		}
-		if project.Deleted {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-		}
-		sheetFind.ProjectUID = &project.UID
-	}
-
-	// TODO(zp): It is difficult to find all the sheets visible to a principal atomically
-	// without adding a new store layer method, which has two parts:
-	// 1. creator = principal && visibility in (PROJECT, PUBLIC, PRIVATE)
-	// 2. creator ! = principal && visibility in (PROJECT, PUBLIC)
-	// So we don't allow empty filter for now.
-	if request.Filter == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "filter should not be empty")
-	}
-
-	specs, err := parseFilter(request.Filter)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	for _, spec := range specs {
-		switch spec.key {
-		case "creator":
-			creatorEmail := strings.TrimPrefix(spec.value, "users/")
-			if creatorEmail == "" {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
-			}
-			user, err := s.store.GetUser(ctx, &store.FindUserMessage{
-				Email: &creatorEmail,
-			})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get user: %s", err.Error()))
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, fmt.Sprintf("user with email %s not found", creatorEmail))
-			}
-			switch spec.operator {
-			case comparatorTypeEqual:
-				sheetFind.CreatorID = &user.ID
-				sheetFind.Visibilities = []store.SheetVisibility{store.ProjectSheet, store.PublicSheet, store.PrivateSheet}
-			case comparatorTypeNotEqual:
-				sheetFind.ExcludedCreatorID = &user.ID
-				sheetFind.Visibilities = []store.SheetVisibility{store.ProjectSheet, store.PublicSheet}
-				sheetFind.PrincipalID = &user.ID
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
-			}
-		case "starred":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for starred", spec.operator))
-			}
-			switch spec.value {
-			case "true":
-				sheetFind.OrganizerPrincipalIDStarred = &principalID
-			case "false":
-				sheetFind.OrganizerPrincipalIDNotStarred = &principalID
-			default:
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
-			}
-		case "source":
-			switch spec.operator {
-			case comparatorTypeEqual:
-				source := store.SheetSource(spec.value)
-				sheetFind.Source = &source
-			case comparatorTypeNotEqual:
-				source := store.SheetSource(spec.value)
-				sheetFind.NotSource = &source
-			}
-
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
-		}
-	}
-	sheetList, err := s.store.ListSheets(ctx, sheetFind, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list sheets: %v", err))
-	}
-
-	var v1pbSheets []*v1pb.Sheet
-	for _, sheet := range sheetList {
-		canAccess, err := s.canReadSheet(ctx, sheet)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
-		}
-		if !canAccess {
-			slog.Warn("cannot access sheet", slog.String("name", sheet.Title))
-			continue
-		}
-		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
-		if err != nil {
-			st := status.Convert(err)
-			if st.Code() == codes.NotFound {
-				slog.Debug("failed to found resource for sheet", log.BBError(err), slog.Int("id", sheet.UID), slog.Int("project", sheet.ProjectUID))
-				continue
-			}
-			return nil, err
-		}
-		v1pbSheets = append(v1pbSheets, v1pbSheet)
-	}
-	return &v1pb.SearchSheetsResponse{
-		Sheets: v1pbSheets,
-	}, nil
-}
-
 // UpdateSheet updates a sheet.
 func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateSheetRequest) (*v1pb.Sheet, error) {
 	if request.Sheet == nil {
@@ -462,61 +336,6 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 	}
 
 	return &emptypb.Empty{}, nil
-}
-
-// UpdateSheetOrganizer upsert the sheet organizer.
-func (s *SheetService) UpdateSheetOrganizer(ctx context.Context, request *v1pb.UpdateSheetOrganizerRequest) (*v1pb.SheetOrganizer, error) {
-	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Organizer.Sheet)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	if sheetUID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
-	}
-
-	sheet, err := s.findSheet(ctx, &store.FindSheetMessage{
-		UID: &sheetUID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	canAccess, err := s.canReadSheet(ctx, sheet)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to check access with error: %v", err))
-	}
-	if !canAccess {
-		return nil, status.Errorf(codes.PermissionDenied, "cannot access sheet %s", sheet.Title)
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	sheetOrganizerUpsert := &store.SheetOrganizerMessage{
-		SheetUID:     sheetUID,
-		PrincipalUID: principalID,
-	}
-
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "starred":
-			sheetOrganizerUpsert.Starred = request.Organizer.Starred
-		case "pinned":
-			sheetOrganizerUpsert.Pinned = request.Organizer.Pinned
-		}
-	}
-
-	organizer, err := s.store.UpsertSheetOrganizerV2(ctx, sheetOrganizerUpsert)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to upsert organizer for sheet %s with error: %v", request.Organizer.Sheet, err)
-	}
-
-	return &v1pb.SheetOrganizer{
-		Sheet:   request.Organizer.Sheet,
-		Starred: organizer.Starred,
-		Pinned:  organizer.Pinned,
-	}, nil
 }
 
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {

@@ -1,22 +1,10 @@
 import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, unref, watch, watchEffect } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
 import { UNKNOWN_ID, MaybeRef } from "@/types";
-import {
-  Sheet,
-  SheetOrganizer,
-  Sheet_Source,
-} from "@/types/proto/v1/sheet_service";
-import {
-  extractSheetUID,
-  getSheetStatement,
-  isSheetReadableV1,
-  getStatementSize,
-} from "@/utils";
-import { useCurrentUserV1 } from "../auth";
-import { useTabStore } from "../tab";
-import { getUserEmailFromIdentifier } from "./common";
+import { Sheet } from "@/types/proto/v1/sheet_service";
+import { extractSheetUID, getSheetStatement } from "@/utils";
 
 const REQUEST_CACHE_BY_UID = new Map<
   string /* uid */,
@@ -25,31 +13,6 @@ const REQUEST_CACHE_BY_UID = new Map<
 
 export const useSheetV1Store = defineStore("sheet_v1", () => {
   const sheetsByName = ref(new Map<string, Sheet>());
-
-  // Getters
-  const sheetListWithoutIssueArtifact = computed(() => {
-    // Hide those sheets from issue.
-    return Array.from(sheetsByName.value.values()).filter(
-      (sheet) => sheet.source !== Sheet_Source.SOURCE_BYTEBASE_ARTIFACT
-    );
-  });
-  const mySheetList = computed(() => {
-    const me = useCurrentUserV1();
-    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
-      return sheet.creator === `users/${me.value.email}`;
-    });
-  });
-  const sharedSheetList = computed(() => {
-    const me = useCurrentUserV1();
-    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
-      return sheet.creator !== `users/${me.value.email}`;
-    });
-  });
-  const starredSheetList = computed(() => {
-    return sheetListWithoutIssueArtifact.value.filter((sheet) => {
-      return sheet.starred;
-    });
-  });
 
   // Utilities
   const removeLocalSheet = (name: string) => {
@@ -132,22 +95,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
       }
     }
   };
-  const fetchSheetByUID = async (uid: string, raw = false) => {
-    if (uid.startsWith("-") || !uid) {
-      return undefined;
-    }
-    try {
-      const name = `projects/-/sheets/${uid}`;
-      const sheet = await sheetServiceClient.getSheet({
-        name,
-        raw,
-      });
-      setSheetList([sheet]);
-      return sheet;
-    } catch {
-      return undefined;
-    }
-  };
   const getOrFetchSheetByUID = async (uid: string) => {
     if (uid.startsWith("-") || !uid) {
       return undefined;
@@ -176,32 +123,6 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     });
     return request;
   };
-  const fetchMySheetList = async () => {
-    const me = useCurrentUserV1();
-    const { sheets } = await sheetServiceClient.searchSheets({
-      parent: "projects/-",
-      filter: `creator = users/${me.value.email} && source != BYTEBASE_ARTIFACT`,
-    });
-    setSheetList(sheets);
-    return sheets;
-  };
-  const fetchSharedSheetList = async () => {
-    const me = useCurrentUserV1();
-    const { sheets } = await sheetServiceClient.searchSheets({
-      parent: "projects/-",
-      filter: `creator != users/${me.value.email} && source != BYTEBASE_ARTIFACT`,
-    });
-    setSheetList(sheets);
-    return sheets;
-  };
-  const fetchStarredSheetList = async () => {
-    const { sheets } = await sheetServiceClient.searchSheets({
-      parent: "projects/-",
-      filter: `starred = true && source != BYTEBASE_ARTIFACT`,
-    });
-    setSheetList(sheets);
-    return sheets;
-  };
 
   const patchSheet = async (
     sheet: Partial<Sheet>,
@@ -224,85 +145,15 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     return updated;
   };
 
-  const deleteSheetByName = async (name: string) => {
-    await sheetServiceClient.deleteSheet({ name });
-    sheetsByName.value.delete(name);
-  };
-
-  const upsertSheetOrganizer = async (
-    organizer: Pick<SheetOrganizer, "sheet" | "starred">
-  ) => {
-    await sheetServiceClient.updateSheetOrganizer({
-      organizer,
-      // for now we only support change the `starred` field.
-      updateMask: ["starred"],
-    });
-
-    // Update local sheet values
-    const sheet = getSheetByName(organizer.sheet);
-    if (sheet) {
-      sheet.starred = organizer.starred;
-    }
-  };
-
   return {
-    mySheetList,
-    sharedSheetList,
-    starredSheetList,
     createSheet,
     getSheetByName,
     fetchSheetByName,
     getOrFetchSheetByName,
     getSheetByUID,
-    fetchSheetByUID,
     getOrFetchSheetByUID,
-    fetchMySheetList,
-    fetchSharedSheetList,
-    fetchStarredSheetList,
     patchSheet,
-    deleteSheetByName,
-    upsertSheetOrganizer,
   };
-});
-
-export const useSheetAndTabStore = defineStore("sheet_and_tab", () => {
-  const tabStore = useTabStore();
-  const sheetStore = useSheetV1Store();
-  const me = useCurrentUserV1();
-
-  const currentSheet = computed(() => {
-    const tab = tabStore.currentTab;
-    const name = tab.sheetName;
-    if (!name) {
-      return undefined;
-    }
-    return sheetStore.getSheetByName(name);
-  });
-
-  const isCreator = computed(() => {
-    const sheet = currentSheet.value;
-    if (!sheet) return false;
-    return getUserEmailFromIdentifier(sheet.creator) === me.value.email;
-  });
-
-  const isReadOnly = computed(() => {
-    const sheet = currentSheet.value;
-
-    // We don't have a selected sheet, we've got nothing to edit.
-    if (!sheet) {
-      return false;
-    }
-
-    // Incomplete sheets should be read-only. e.g. 100MB sheet from issue task.、
-    const statement = getSheetStatement(sheet);
-    if (getStatementSize(statement).ne(sheet.contentSize)) {
-      return true;
-    }
-
-    return !isSheetReadableV1(sheet);
-  });
-
-  return { currentSheet, isCreator, isReadOnly };
 });
 
 const getUpdateMaskForSheet = (
@@ -339,24 +190,4 @@ export const useSheetStatementByUID = (uid: MaybeRef<string>) => {
     if (!sheet) return "";
     return getSheetStatement(sheet);
   });
-};
-
-export const useSheetByName = (name: MaybeRef<string>) => {
-  const store = useSheetV1Store();
-  const ready = ref(false);
-  const sheet = computed(() => store.getSheetByName(unref(name)));
-  watch(
-    () => unref(name),
-    (name) => {
-      if (!name) return;
-      if (extractSheetUID(name) === String(UNKNOWN_ID)) return;
-
-      ready.value = false;
-      store.getOrFetchSheetByName(name).finally(() => {
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
-  return { ready, sheet };
 };

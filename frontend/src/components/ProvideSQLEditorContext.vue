@@ -29,7 +29,7 @@ import {
   useTabStore,
   pushNotification,
   useCurrentUserV1,
-  useSheetV1Store,
+  useWorkSheetStore,
   useDatabaseV1Store,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
@@ -50,14 +50,14 @@ import {
 import {
   emptyConnection,
   idFromSlug,
-  sheetNameFromSlug,
-  sheetSlugV1,
+  worksheetNameFromSlug,
+  projectNameFromSheetSlug,
+  worksheetSlugV1,
   connectionV1Slug as makeConnectionV1Slug,
-  isSheetReadableV1,
+  isWorksheetReadableV1,
   getSuggestedTabNameFromConnection,
   isSimilarTab,
   hasProjectPermissionV2,
-  extractProjectResourceName,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -73,7 +73,7 @@ const policyV1Store = usePolicyV1Store();
 const sqlEditorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
-const sheetV1Store = useSheetV1Store();
+const worksheetStore = useWorkSheetStore();
 
 const prepareDatabases = async () => {
   // It will also be called when user logout
@@ -133,22 +133,21 @@ const prepareSheet = async () => {
     return false;
   }
 
-  const sheetName = sheetNameFromSlug(sheetSlug);
-  const project = await projectStore.getOrFetchProjectByName(
-    `projects/${extractProjectResourceName(sheetName)}`
-  );
+  const projectName = projectNameFromSheetSlug(sheetSlug);
+  const project = await projectStore.getOrFetchProjectByName(projectName);
   if (
     !hasProjectPermissionV2(project, currentUserV1.value, "bb.databases.query")
   ) {
     return false;
   }
 
+  const sheetName = worksheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
     (tab) => tab.sheetName == sheetName
   );
 
   sqlEditorStore.isFetchingSheet = true;
-  const sheet = await sheetV1Store.getOrFetchSheetByName(sheetName);
+  const sheet = await worksheetStore.getOrFetchSheetByName(sheetName);
   sqlEditorStore.isFetchingSheet = false;
 
   if (!sheet) {
@@ -161,7 +160,7 @@ const prepareSheet = async () => {
     }
     return false;
   }
-  if (!isSheetReadableV1(sheet)) {
+  if (!isWorksheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -297,12 +296,12 @@ const syncURLWithConnection = () => {
     ],
     ([instanceId, databaseId, sheetName]) => {
       if (sheetName) {
-        const sheet = sheetV1Store.getSheetByName(sheetName);
+        const sheet = worksheetStore.getSheetByName(sheetName);
         if (sheet) {
           router.replace({
             name: SQL_EDITOR_SHARE_MODULE,
             params: {
-              sheetSlug: sheetSlugV1(sheet),
+              sheetSlug: worksheetSlugV1(sheet),
             },
           });
         } else {
