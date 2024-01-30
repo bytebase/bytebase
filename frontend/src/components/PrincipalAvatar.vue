@@ -12,14 +12,14 @@
 import { computed, PropType } from "vue";
 import { BBAvatar } from "@/bbkit";
 import { BBAvatarSizeType } from "@/bbkit/types";
-import { unknown, UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, unknownUser } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { extractUserUID, VueClass } from "@/utils";
 
 const props = defineProps({
   user: {
     type: Object as PropType<User>,
-    default: () => unknown("PRINCIPAL"),
+    default: () => unknownUser(),
   },
   username: {
     type: String,
@@ -44,7 +44,7 @@ const name = computed((): string => {
   if (uid === String(UNKNOWN_ID)) {
     return props.username;
   }
-  return props.user.name;
+  return props.user.title;
 });
 const email = computed((): string => {
   const uid = extractUserUID(props.user.name);
