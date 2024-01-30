@@ -14,10 +14,29 @@
         salary NUMBER(10,2),
         department_id NUMBER(3),
         CONSTRAINT fk_employee_department FOREIGN KEY (department_id) REFERENCES BYTEBASE.departments(department_id)
-    );
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    DISABLE ROW MOVEMENT
+    ;
     -- Create an index on the combination of columns in the employees table
     CREATE INDEX idx_employee_name_department ON BYTEBASE.employees(last_name, first_name, department_id);
-    CREATE INDEX idx_employee_name ON BYTEBASE.employees(last_name, first_name);
+    CREATE INDEX idx_employee_name ON BYTEBASE.employees(last_name, first_name)
+    LOGGING
+    VISIBLE
+    PCTFREE 10
+    INITRANS 2
+    STORAGE (
+      INITIAL 65536
+    )
+    USABLE
+    ;
   want: |+
     CREATE TABLE departments (
         department_id NUMBER(3) PRIMARY KEY,
@@ -33,9 +52,13 @@
         salary NUMBER(10,2),
         department_id NUMBER(3),
          FOREIGN KEY (department_id) REFERENCES departments(department_id)
-    );
+    )
+    ;
 
     CREATE INDEX "EMPLOYEES_0230" ON employees(last_name, first_name, department_id);
 
-    CREATE INDEX "EMPLOYEES_0220" ON employees(last_name, first_name);
+    CREATE INDEX "EMPLOYEES_0221" ON employees(last_name, first_name)
+
+    USABLE
+    ;
 
