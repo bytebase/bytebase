@@ -146,6 +146,8 @@ github.com/bytebase/antlr/v4 v4.0.0-20231103101006-5fe1a93b199f h1:5O8DZOEloYvnA
 github.com/bytebase/antlr/v4 v4.0.0-20231103101006-5fe1a93b199f/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/bytebase/gh-ost2 v0.0.0-20240105023521-266224952c72 h1:6cSsGXPhm4/N4xoMc+yHaria2925wjzJ3mr9B6txF9I=
 github.com/bytebase/gh-ost2 v0.0.0-20240105023521-266224952c72/go.mod h1:VRPqaDM7UYxJbcCtQkjBcNkxW17p6LJJdkM/nYwQhqg=
+github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c h1:W832GNANCst4C6TgYbQnKKxbuMZKQxTD4++b3HOuzBo=
+github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c/go.mod h1:SULmZY7YNBsvNiQbrb/BEDdEJ84TGnfyUQxaHt8t8rY=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP9GfJiuhO8KkYcHmePvy5BfiYxwNk=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2/go.mod h1:wjDx6Xm9q7dFtHJvIlrI99JytznLw5wQ4R+9mNXJwGI=
 github.com/bytebase/mysql-parser v0.0.0-20240112100339-e0b6f27b07cf h1:ZZbr1xKiqlGbWtOzCbJVIoQ+ZU+ohrSirYgVYZDcqhE=
@@ -962,8 +964,6 @@ github.com/snowflakedb/gosnowflake v1.7.2 h1:HRSwva8YXC64WUppfmHcMNVVzSE1+EwXXaJ
 github.com/snowflakedb/gosnowflake v1.7.2/go.mod h1:03tW856vc3ceM4rJuj7KO4dzqN7qoezTm+xw7aPIIFo=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
-github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d h1:afLbh+ltiygTOB37ymZVwKlJwWZn+86syPTbrrOAydY=
-github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d/go.mod h1:SULmZY7YNBsvNiQbrb/BEDdEJ84TGnfyUQxaHt8t8rY=
 github.com/sourcegraph/jsonrpc2 v0.2.0 h1:KjN/dC4fP6aN9030MZCJs9WQbTOjWHhrtKVpzzSrr/U=
 github.com/sourcegraph/jsonrpc2 v0.2.0/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
