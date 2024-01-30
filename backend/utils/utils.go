@@ -811,7 +811,7 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager
 
 // GetUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
 // the condition of role binding is respected and evaluated with request.time=time.Now().
-func GetUserRoles(ctx context.Context, user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) ([]api.Role, error) {
+func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) ([]api.Role, error) {
 	var roles []api.Role
 	roles = append(roles, user.Roles...)
 
@@ -843,6 +843,20 @@ func GetUserRoles(ctx context.Context, user *store.UserMessage, projectPolicies 
 	roles = uniq(roles)
 
 	return roles, nil
+}
+
+// See GetUserRoles. The returned map key format is roles/{role}.
+func GetUserFormattedRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[string]bool, error) {
+	roles, err := GetUserRoles(user, projectPolicies...)
+	if err != nil {
+		return nil, err
+	}
+
+	rolesMap := make(map[string]bool)
+	for _, role := range roles {
+		rolesMap[common.FormatRole(role.String())] = true
+	}
+	return rolesMap, nil
 }
 
 func uniq[T comparable](array []T) []T {

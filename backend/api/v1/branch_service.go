@@ -838,14 +838,9 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 	if err != nil {
 		return err
 	}
-	roles, err := utils.GetUserRoles(ctx, user, policy)
+	roles, err := utils.GetUserFormattedRolesMap(user, policy)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get user roles")
-	}
-	formattedRoles := map[string]struct{}{}
-	for _, role := range roles {
-		formattedRole := common.FormatRole(role.String())
-		formattedRoles[formattedRole] = struct{}{}
 	}
 
 	for _, rule := range project.Setting.ProtectionRules {
@@ -861,7 +856,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		}
 
 		for _, role := range rule.CreateAllowedRoles {
-			if _, ok := formattedRoles[role]; ok {
+			if _, ok := roles[role]; ok {
 				return nil
 			}
 		}
