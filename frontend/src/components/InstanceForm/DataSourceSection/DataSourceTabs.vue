@@ -16,7 +16,7 @@
         v-if="hasReadOnlyDataSource"
         class="!ml-1"
         :style="'DELETE'"
-        :disabled="!hasPermission('bb.instanceRoles.delete')"
+        :disabled="!hasPermission('bb.instances.update')"
         :require-confirm="!ds.pendingCreate"
         :ok-text="$t('common.delete')"
         :confirm-title="$t('data-source.delete-read-only-data-source') + '?'"
@@ -34,7 +34,7 @@
       <NButton
         quaternary
         size="small"
-        :disabled="!hasPermission('bb.instanceRoles.create')"
+        :disabled="!hasPermission('bb.instances.update')"
         style="--n-padding: 0 4px"
         @click.stop="$emit('add-readonly-datasource')"
       >

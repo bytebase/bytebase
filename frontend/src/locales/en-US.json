@@ -273,7 +273,10 @@
     "nickname": "Nickname",
     "missing-permission": "Missing required permissions",
     "continue-anyway": "Continue anyway",
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "backup": "Backup",
+    "cutover": "Cutover",
+    "baseline": "Baseline"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1241,7 +1244,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
-    "successfully-synced-schema": "Successfully synced schema"
+    "successfully-synced-schema": "Successfully synced schema",
+    "create": "Create database"
   },
   "instance": {
     "select": "Select instance",

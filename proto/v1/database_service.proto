@@ -1248,4 +1248,7 @@ message GetChangeHistoryRequest {
 
   // Format the schema dump into SDL format.
   bool sdl_format = 3;
+
+  // When true, the schema dump will be concise.
+  bool concise = 4;
 }
