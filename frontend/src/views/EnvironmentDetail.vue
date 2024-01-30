@@ -128,6 +128,7 @@ watch(() => props.environmentId, prepareEnvironment, {
 const preparePolicy = () => {
   policyV1Store
     .fetchPolicies({
+      parent: state.environment.name,
       resourceType: PolicyResourceType.ENVIRONMENT,
     })
     .then((policies) => {
