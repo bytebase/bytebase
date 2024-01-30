@@ -136,9 +136,9 @@ export function hasProjectPermission(
     ]);
 
   switch (role) {
-    case "DEVELOPER":
+    case "projectDeveloper":
       return PROJECT_PERMISSION_MATRIX.get(permission)![0];
-    case "OWNER":
+    case "projectOwner":
       return PROJECT_PERMISSION_MATRIX.get(permission)![1];
   }
   return false;
