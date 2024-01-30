@@ -3226,7 +3226,7 @@
     },
     "workspace-member": {
       "self": "工作空间成员",
-      "description": ""
+      "description": "工作空间中的普通用户"
     },
     "project-owner": {
       "self": "项目所有者",

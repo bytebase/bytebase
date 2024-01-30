@@ -3230,7 +3230,7 @@
     },
     "workspace-member": {
       "self": "Miembro del espacio de trabajo",
-      "description": "El miembro del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
+      "description": "El miembro del espacio de trabajo es un usuario normal sin privilegios especiales dentro del espacio de trabajo."
     },
     "project-owner": {
       "self": "Propietario del proyecto",

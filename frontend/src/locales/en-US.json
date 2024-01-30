@@ -3233,7 +3233,7 @@
     },
     "workspace-member": {
       "self": "Workspace Member",
-      "description": "Workspace Member has all permissions within the workspace except for managing workspace members."
+      "description": "Workspace Member is the most basic role within the workspace."
     },
     "project-owner": {
       "self": "Project Owner",
