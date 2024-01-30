@@ -654,7 +654,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 	// Validate CEL expression if it's not empty.
 	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
-		e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+		e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
 		}

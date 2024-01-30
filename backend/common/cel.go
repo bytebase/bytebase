@@ -2,8 +2,10 @@ package common
 
 import (
 	"encoding/base64"
+	"time"
 
 	"github.com/google/cel-go/cel"
+	celtypes "github.com/google/cel-go/common/types"
 	"github.com/pkg/errors"
 	exprproto "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -37,8 +39,8 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// QueryExportPolicyCELAttributes are the variables when evaluating query and export permissions.
-var QueryExportPolicyCELAttributes = []cel.EnvOption{
+// IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
+var IAMPolicyConditionCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.environment_name", cel.StringType),
 	cel.Variable("resource.database", cel.StringType),
 	cel.Variable("resource.schema", cel.StringType),
@@ -69,17 +71,6 @@ var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("resource.table_name", cel.StringType),
 	cel.Variable("resource.schema_name", cel.StringType),
 	cel.Variable("resource.column_name", cel.StringType),
-	cel.Variable("request.time", cel.TimestampType),
-	cel.ParserExpressionSizeLimit(celLimit),
-}
-
-var ProjectMemberCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_name", cel.StringType),
-	cel.Variable("resource.database", cel.StringType),
-	cel.Variable("resource.schema", cel.StringType),
-	cel.Variable("resource.table", cel.StringType),
-	cel.Variable("request.statement", cel.StringType),
-	cel.Variable("request.row_limit", cel.IntType),
 	cel.Variable("request.time", cel.TimestampType),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
@@ -188,7 +179,7 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 		return nil, nil
 	}
 	e, err := cel.NewEnv(
-		ProjectMemberCELAttributes...,
+		IAMPolicyConditionCELAttributes...,
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -215,7 +206,7 @@ type QueryExportFactors struct {
 func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 	factors := &QueryExportFactors{}
 
-	e, err := cel.NewEnv(QueryExportPolicyCELAttributes...)
+	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -266,4 +257,56 @@ func findField(callExpr *exprproto.Expr_Call, factors *QueryExportFactors) {
 		callExpr := arg.GetCallExpr()
 		findField(callExpr, factors)
 	}
+}
+
+func EvalBindingCondition(expr string, requestTime time.Time) (bool, error) {
+	input := map[string]any{
+		"request.time": requestTime,
+	}
+	return doEvalBindingCondition(expr, input)
+}
+
+func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
+	if expr == "" {
+		return true, nil
+	}
+
+	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to new cel env")
+	}
+	ast, iss := e.Compile(expr)
+	if iss != nil && iss.Err() != nil {
+		return false, errors.Wrapf(iss.Err(), "failed to compile expr %q", expr)
+	}
+	// enable partial evaluation because the input only has request.time
+	// but the expression can have more.
+	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
+	if err != nil {
+		return false, errors.Wrapf(iss.Err(), "failed to construct program")
+	}
+	vars, err := e.PartialVars(input)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get vars")
+	}
+	out, _, err := prg.Eval(vars)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to eval cel expr")
+	}
+	// `out` is one of
+	// - True
+	// - False
+	// - a residual expression.
+
+	// return true if the result is a residual expression
+	// which means that it passes "the request.time < xxx" check.
+	if !celtypes.IsBool(out) {
+		return true, nil
+	}
+
+	res, ok := out.Equal(celtypes.True).Value().(bool)
+	if !ok {
+		return false, errors.Errorf("failed to convert cel result to bool")
+	}
+	return res, nil
 }
