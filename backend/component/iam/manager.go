@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 
@@ -100,14 +101,9 @@ func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRo
 
 func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) bool {
 	for _, role := range workspaceRoles {
-		permissions, ok := m.roles[role]
-		if !ok {
-			continue
-		}
-		for _, permission := range permissions {
-			if permission == p {
-				return true
-			}
+		permissions := m.GetPermissions(role)
+		if slices.Contains(permissions, p) {
+			return true
 		}
 	}
 	return false
@@ -123,15 +119,10 @@ func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]str
 	for _, projectRole := range projectRoles {
 		has := false
 		for _, role := range projectRole {
-			permissions, ok := m.roles[role]
-			if !ok {
-				continue
-			}
-			for _, permission := range permissions {
-				if permission == p {
-					has = true
-					break
-				}
+			permissions := m.GetPermissions(role)
+			if slices.Contains(permissions, p) {
+				has = true
+				break
 			}
 		}
 		if !has {
