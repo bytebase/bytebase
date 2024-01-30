@@ -547,7 +547,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	statement := strings.Trim(singleSQL.Text, " \n\t;")
 
 	stmt := statement
-	if !strings.HasPrefix(stmt, "EXPLAIN") && queryContext.Limit > 0 {
+	if !strings.HasPrefix(stmt, "EXPLAIN") && !strings.HasPrefix(stmt, "SET") && queryContext.Limit > 0 {
 		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 

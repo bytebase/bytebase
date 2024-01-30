@@ -107,8 +107,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
 		}, nil
+	case *pgquery.Node_VariableSetStmt:
+		// Skip the SET statement.
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
 	default:
-		return nil, errors.Wrapf(err, "expect a query statement but found %T", ast.Stmt.Node)
+		return nil, errors.Errorf("expect a query statement but found %T", ast.Stmt.Node)
 	}
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
@@ -117,7 +123,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		content := tableNotFound.FindStringSubmatch(err.Error())
 		if len(content) == 3 && IsSystemSchema(content[1]) {
 			// skip for system schema
-			return nil, nil
+			return &base.QuerySpan{
+				Results:       []base.QuerySpanResult{},
+				SourceColumns: base.SourceColumnSet{},
+			}, nil
 		}
 		return nil, err
 	}
