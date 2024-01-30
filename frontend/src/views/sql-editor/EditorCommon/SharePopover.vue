@@ -98,34 +98,34 @@ import { useI18n } from "vue-i18n";
 import {
   pushNotification,
   useTabStore,
-  useSheetV1Store,
-  useSheetAndTabStore,
+  useWorkSheetStore,
+  useWorkSheetAndTabStore,
 } from "@/store";
 import { AccessOption } from "@/types";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
-import { sheetSlugV1 } from "@/utils";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
+import { worksheetSlugV1 } from "@/utils";
 
 const { t } = useI18n();
 
 const tabStore = useTabStore();
-const sheetV1Store = useSheetV1Store();
-const sheetAndTabStore = useSheetAndTabStore();
+const sheetV1Store = useWorkSheetStore();
+const sheetAndTabStore = useWorkSheetAndTabStore();
 
 const accessOptions = computed<AccessOption[]>(() => {
   return [
     {
       label: t("sql-editor.private"),
-      value: Sheet_Visibility.VISIBILITY_PRIVATE,
+      value: Worksheet_Visibility.VISIBILITY_PRIVATE,
       description: t("sql-editor.private-desc"),
     },
     {
       label: t("common.project"),
-      value: Sheet_Visibility.VISIBILITY_PROJECT,
+      value: Worksheet_Visibility.VISIBILITY_PROJECT,
       description: t("sql-editor.project-desc"),
     },
     {
       label: t("sql-editor.public"),
-      value: Sheet_Visibility.VISIBILITY_PUBLIC,
+      value: Worksheet_Visibility.VISIBILITY_PUBLIC,
       description: t("sql-editor.public-desc"),
     },
   ];
@@ -163,7 +163,7 @@ const sharedTabLink = computed(() => {
   if (!sheet.value) {
     return "";
   }
-  return `${window.location.origin}/sql-editor/sheet/${sheetSlugV1(
+  return `${window.location.origin}/sql-editor/sheet/${worksheetSlugV1(
     sheet.value
   )}`;
 });

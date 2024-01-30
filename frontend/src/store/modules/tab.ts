@@ -12,7 +12,7 @@ import {
   isDisconnectedTab,
 } from "@/utils";
 import { useWebTerminalV1Store } from "./v1";
-import { useSheetV1Store } from "./v1/sheet";
+import { useWorkSheetStore } from "./v1/worksheet";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
 const KEYS = {
@@ -211,7 +211,7 @@ export const useTabStore = defineStore("tab", () => {
     });
 
     // Fetch opening sheets if needed
-    const sheetV1Store = useSheetV1Store();
+    const sheetV1Store = useWorkSheetStore();
     tabList.value.forEach((tab) => {
       if (tab.sheetName) {
         sheetV1Store.getOrFetchSheetByName(tab.sheetName);

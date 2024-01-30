@@ -231,12 +231,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 		want := wantCloneHistories[i]
 		a.True(proto.Equal(got, want))
 	}
-
-	_, err = ctl.sheetServiceClient.SearchSheets(ctx, &v1pb.SearchSheetsRequest{
-		Parent: "projects/-",
-		Filter: "creator = users/demo@example.com",
-	})
-	a.NoError(err)
 }
 
 func TestVCS(t *testing.T) {

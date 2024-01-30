@@ -47,7 +47,7 @@ import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, ref } from "vue";
 import { SearchBox } from "@/components/v2";
 import { usePageMode } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
 
@@ -61,7 +61,7 @@ const keyword = ref("");
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
-const handleSelectSheet = async (sheet: Sheet) => {
+const handleSelectSheet = async (sheet: Worksheet) => {
   if (await openSheet(sheet)) {
     emit("close");
   }

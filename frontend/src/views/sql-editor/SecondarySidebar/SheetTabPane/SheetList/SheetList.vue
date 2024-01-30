@@ -78,14 +78,10 @@ import {
 } from "@/components/v2";
 import {
   useProjectV1Store,
-  useSheetAndTabStore,
+  useWorkSheetAndTabStore,
   useDatabaseV1Store,
   useTabStore,
 } from "@/store";
-import {
-  getProjectAndSheetId,
-  projectNamePrefix,
-} from "@/store/modules/v1/common";
 import { ComposedProject, ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { connectionForTab } from "@/utils";
 import {
@@ -136,7 +132,7 @@ const { showPanel } = useSheetContext();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
-const { currentSheet } = storeToRefs(useSheetAndTabStore());
+const { currentSheet } = storeToRefs(useWorkSheetAndTabStore());
 const dropdown = ref<DropdownState>();
 
 const mergedItemList = computed(() => {
@@ -190,10 +186,7 @@ const treeData = computed((): TreeNode[] => {
       project = database?.projectEntity;
     } else {
       database = databaseStore.getDatabaseByName(item.target.database);
-      const [projectId, _] = getProjectAndSheetId(item.target.name);
-      project = projectStore.getProjectByName(
-        `${projectNamePrefix}${projectId}`
-      );
+      project = projectStore.getProjectByName(item.target.project);
     }
 
     project = project ?? projectStore.getProjectByUID(String(UNKNOWN_ID));

@@ -590,6 +590,8 @@ func convertToStoreWorksheetMessage(projectUID int, databaseUID *int, creatorID 
 		Title:       worksheet.Title,
 		Statement:   string(worksheet.Content),
 		Visibility:  visibility,
+		Source:      store.SheetFromBytebase,
+		Type:        store.SheetForSQL,
 	}
 
 	return worksheetMessage, nil
