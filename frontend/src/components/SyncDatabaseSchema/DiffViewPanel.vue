@@ -34,7 +34,7 @@
             ref="diffEditorRef"
             class="h-full"
             :original="targetDatabaseSchema"
-            :modified="sourceDatabaseSchema"
+            :modified="displayOnlySourceDatabaseSchema"
             :readonly="true"
           />
         </div>
@@ -89,6 +89,9 @@ defineProps<{
   engine: Engine;
   targetDatabaseSchema: string;
   sourceDatabaseSchema: string;
+  // The source database schema that is displayed in the diff editor.
+  // It's different from `sourceDatabaseSchema` when for Oracle.
+  displayOnlySourceDatabaseSchema: string;
   shouldShowDiff: boolean;
   previewSchemaChangeMessage: string;
 }>();
