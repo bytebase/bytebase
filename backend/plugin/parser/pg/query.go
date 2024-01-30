@@ -38,7 +38,7 @@ func validateQuery(statement string) (bool, error) {
 	}
 	for _, stmt := range stmtList {
 		switch stmt.(type) {
-		case *ast.SelectStmt, *ast.ExplainStmt:
+		case *ast.SelectStmt, *ast.ExplainStmt, *ast.VariableSetStmt:
 		default:
 			return false, nil
 		}
@@ -64,6 +64,10 @@ func validateQuery(statement string) (bool, error) {
 		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
 			return false, nil
 		}
+		return true, nil
+	}
+
+	if isVariableSet, _ := regexp.MatchString(`^SET\s+?`, formattedStr); isVariableSet {
 		return true, nil
 	}
 
