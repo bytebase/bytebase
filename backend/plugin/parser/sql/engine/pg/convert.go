@@ -820,6 +820,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 		if in.TransactionStmt.Kind == pgquery.TransactionStmtKind_TRANS_STMT_COMMIT {
 			return &ast.CommitStmt{}, nil
 		}
+	case *pgquery.Node_VariableSetStmt:
+		return &ast.VariableSetStmt{}, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
