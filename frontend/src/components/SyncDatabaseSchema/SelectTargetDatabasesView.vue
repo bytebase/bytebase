@@ -253,6 +253,7 @@ interface DatabaseSourceSchema {
   environmentId: string;
   databaseId: string;
   changeHistory: ChangeHistory;
+  conciseHistory?: string;
 }
 
 interface LocalState {
@@ -285,6 +286,7 @@ const state = reactive<LocalState>({
   showViewRawSQLPanel: false,
 });
 const databaseSchemaCache = reactive<Record<string, string>>({});
+const conciseSchemaCache = reactive<Record<string, string>>({});
 const databaseDiffCache = reactive<
   Record<
     string,
@@ -300,6 +302,9 @@ const project = computed(() => {
 
 const sourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
+    if (engine.value === Engine.ORACLE) {
+      return props.databaseSourceSchema?.conciseHistory || "";
+    }
     return props.databaseSourceSchema?.changeHistory.schema || "";
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
@@ -331,6 +336,11 @@ const targetDatabaseList = computed(() => {
   });
 });
 const targetDatabaseSchema = computed(() => {
+  if (engine.value === Engine.ORACLE) {
+    return state.selectedDatabaseId
+      ? conciseSchemaCache[state.selectedDatabaseId]
+      : "";
+  }
   return state.selectedDatabaseId
     ? databaseSchemaCache[state.selectedDatabaseId]
     : "";
@@ -470,6 +480,14 @@ watch(
         `${db.name}/schema`
       );
       databaseSchemaCache[id] = schema.schema;
+      if (engine.value === Engine.ORACLE) {
+        const conciseSchema = await databaseStore.fetchDatabaseSchema(
+          `${db.name}/schema`,
+          false /* sdlFormat */,
+          true /* concise */
+        );
+        conciseSchemaCache[id] = conciseSchema.schema;
+      }
       if (databaseDiffCache[id] && !skipCache) {
         continue;
       } else {
