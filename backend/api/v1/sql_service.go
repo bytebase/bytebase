@@ -1849,7 +1849,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 // 1. Check if the instance exists.
 // 2. Check connection_database if the instance is postgres.
 // 3. Parse statement for Postgres, MySQL, TiDB, Oracle.
-// 4. Check if all statements are (EXPLAIN) SELECT statements.
+// 4. Check if all statements are SELECT/EXPLAIN/SET statements.
 func validateQueryRequest(instance *store.InstanceMessage, databaseName string, statement string) error {
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_REDSHIFT, storepb.Engine_RISINGWAVE:

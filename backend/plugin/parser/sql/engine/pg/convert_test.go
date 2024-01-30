@@ -3305,3 +3305,22 @@ func TestPGCreateTableSetLine(t *testing.T) {
 		}
 	}
 }
+
+// TestVariableSetStmt is a helper test to help us to determine the statement whether is a variable set statement.
+func TestVariableSetStmt(t *testing.T) {
+	stmt := []string{
+		"SET max_execution_time = 1000",
+		"SET search_path TO my_schema, public;",
+		"SET datestyle TO postgres, dmy;",
+		"SET TIME ZONE 'PST8PDT';",
+		"SET TIME ZONE 'Europe/Rome';",
+	}
+
+	for _, s := range stmt {
+		nodeList, err := Parse(ParseContext{}, s)
+		require.NoError(t, err)
+		require.Len(t, nodeList, 1)
+		_, ok := nodeList[0].(*ast.VariableSetStmt)
+		require.True(t, ok)
+	}
+}
