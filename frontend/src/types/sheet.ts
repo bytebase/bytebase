@@ -1,4 +1,4 @@
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 
 interface SheetVCSPayload {
   fileName: string;
@@ -17,5 +17,5 @@ export type SheetPayload = SheetVCSPayload | SheetEmptyPayload;
 export type AccessOption = {
   label: string;
   description: string;
-  value: Sheet_Visibility;
+  value: Worksheet_Visibility;
 };

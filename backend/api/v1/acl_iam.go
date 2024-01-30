@@ -84,10 +84,19 @@ func isSkippedMethod(fullMethod string) bool {
 	case
 		v1pb.SheetService_CreateSheet_FullMethodName,
 		v1pb.SheetService_GetSheet_FullMethodName,
-		v1pb.SheetService_SearchSheets_FullMethodName,
 		v1pb.SheetService_UpdateSheet_FullMethodName,
-		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
 		v1pb.SheetService_DeleteSheet_FullMethodName:
+		return true
+	// skip checking for sheet service because we want to
+	// discriminate bytebase artifact sheets and user sheets first.
+	// TODO(p0ny): implement
+	case
+		v1pb.WorksheetService_CreateWorksheet_FullMethodName,
+		v1pb.WorksheetService_GetWorksheet_FullMethodName,
+		v1pb.WorksheetService_SearchWorksheets_FullMethodName,
+		v1pb.WorksheetService_UpdateWorksheet_FullMethodName,
+		v1pb.WorksheetService_UpdateWorksheetOrganizer_FullMethodName,
+		v1pb.WorksheetService_DeleteWorksheet_FullMethodName:
 		return true
 	// handled in the method because we need to consider branch.Creator.
 	case

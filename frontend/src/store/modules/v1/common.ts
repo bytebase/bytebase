@@ -9,6 +9,7 @@ export const idpNamePrefix = "idps/";
 export const policyNamePrefix = "policies/";
 export const settingNamePrefix = "settings/";
 export const sheetNamePrefix = "sheets/";
+export const worksheetNamePrefix = "worksheets/";
 export const databaseGroupNamePrefix = "databaseGroups/";
 export const schemaGroupNamePrefix = "schemaGroups/";
 export const externalVersionControlPrefix = "externalVersionControls/";
@@ -66,17 +67,9 @@ export const getProjectName = (name: string): string => {
   return projectId;
 };
 
-export const getProjectAndSheetId = (name: string): string[] => {
-  const tokens = getNameParentTokens(name, [
-    projectNamePrefix,
-    sheetNamePrefix,
-  ]);
-
-  if (tokens.length != 2) {
-    return ["", ""];
-  }
-
-  return tokens;
+export const getWorksheetId = (name: string): string => {
+  const tokens = getNameParentTokens(name, [worksheetNamePrefix]);
+  return tokens[0];
 };
 
 export const getProjectAndBranchId = (name: string): string[] => {

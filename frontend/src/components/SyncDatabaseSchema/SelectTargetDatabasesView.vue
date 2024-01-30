@@ -404,7 +404,7 @@ onMounted(async () => {
 
   // Prepare raw sql statement from sheet.
   if (props.rawSqlState?.sheetId) {
-    await sheetStore.fetchSheetByUID(String(props.rawSqlState.sheetId));
+    await sheetStore.getOrFetchSheetByUID(String(props.rawSqlState.sheetId));
   }
 });
 

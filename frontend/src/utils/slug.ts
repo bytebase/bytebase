@@ -1,12 +1,13 @@
 import slug from "slug";
 import {
-  getProjectAndSheetId,
-  projectNamePrefix,
-  sheetNamePrefix,
+  getProjectName,
+  getWorksheetId,
+  worksheetNamePrefix,
   getVCSUid,
+  projectNamePrefix,
 } from "@/store/modules/v1/common";
 import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_service";
-import { Sheet as SheetV1 } from "@/types/proto/v1/sheet_service";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { IssueId, SQLReviewPolicy } from "../types";
 import { IdType } from "../types/id";
 import { extractEnvironmentResourceName } from "./v1";
@@ -30,11 +31,15 @@ export const idFromSlug = (slug: string): string => {
   return parts[parts.length - 1];
 };
 
-export function sheetNameFromSlug(slug: string): string {
+export function projectNameFromSheetSlug(slug: string): string {
   const parts = slug.split("-");
-  return `${projectNamePrefix}${parts
-    .slice(0, -1)
-    .join("-")}/${sheetNamePrefix}${parts[parts.length - 1]}`;
+  parts.pop();
+  return `${projectNamePrefix}${parts.join("-")}`;
+}
+
+export function worksheetNameFromSlug(slug: string): string {
+  const parts = slug.split("-");
+  return `${worksheetNamePrefix}${parts[parts.length - 1]}`;
 }
 
 export function indexFromSlug(slug: string): number {
@@ -65,7 +70,8 @@ export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
   ].join("-");
 }
 
-export function sheetSlugV1(sheet: SheetV1): string {
-  const [projectName, uid] = getProjectAndSheetId(sheet.name);
+export function worksheetSlugV1(sheet: Worksheet): string {
+  const uid = getWorksheetId(sheet.name);
+  const projectName = getProjectName(sheet.project);
   return [projectName, uid].join("-");
 }
