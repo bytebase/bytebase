@@ -826,7 +826,7 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 }
 
 func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, user *store.UserMessage) error {
-	if project.Setting == nil {
+	if len(project.Setting.GetProtectionRules()) == 0 {
 		return nil
 	}
 	// Skip protection check for workspace owner and DBA.
