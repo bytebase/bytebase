@@ -659,3 +659,57 @@
     CREATE TABLE `t4` (
       `a` int DEFAULT 1 primary key
     );
+- description: ""
+  baseline: |-
+    CREATE TABLE `t` (
+      `c` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+      `d` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `e` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
+    );
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "type": "int"
+                },
+                {
+                  "name": "b",
+                  "type": "varchar(255)"
+                },
+                {
+                  "name": "c",
+                  "type": "timestamp(3)",
+                  "defaultExpression": "CURRENT_TIMESTAMP(3)",
+                  "onUpdate": "CURRENT_TIMESTAMP(3)"
+                },
+                {
+                  "name": "d",
+                  "type": "timestamp",
+                  "defaultExpression": "CURRENT_TIMESTAMP",
+                  "onUpdate": "CURRENT_TIMESTAMP"
+                },
+                {
+                  "name": "e",
+                  "type": "timestamp",
+                  "defaultExpression": "CURRENT_TIMESTAMP"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    CREATE TABLE `t` (
+      `c` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+      `d` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `e` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      `a` int NOT NULL,
+      `b` varchar(255) NOT NULL
+    );

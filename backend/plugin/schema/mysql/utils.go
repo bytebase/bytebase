@@ -130,19 +130,19 @@ type columnAttr struct {
 var columnAttrOrder = map[string]int{
 	"NULL":           1,
 	"DEFAULT":        2,
-	"VISIBLE":        3,
-	"AUTO_INCREMENT": 4,
-	"AUTO_RAND":      4,
-	"UNIQUE":         5,
-	"KEY":            6,
-	"COMMENT":        7,
-	"COLLATE":        8,
-	"COLUMN_FORMAT":  9,
-	"SECONDARY":      10,
-	"STORAGE":        11,
-	"SERIAL":         12,
-	"SRID":           13,
-	"ON":             14,
+	"ON":             3,
+	"VISIBLE":        4,
+	"AUTO_INCREMENT": 5,
+	"AUTO_RAND":      5,
+	"UNIQUE":         6,
+	"KEY":            7,
+	"COMMENT":        8,
+	"COLLATE":        9,
+	"COLUMN_FORMAT":  10,
+	"SECONDARY":      11,
+	"STORAGE":        12,
+	"SERIAL":         13,
+	"SRID":           14,
 	"CHECK":          15,
 	"ENFORCED":       16,
 }
@@ -151,6 +151,7 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 	var result []columnAttr
 	nullExists := false
 	defaultExists := false
+	onUpdateExists := false
 	commentExists := false
 	for _, attr := range attrs {
 		if attr.GetValue() != nil {
@@ -159,6 +160,8 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 				defaultExists = true
 			case "COMMENT":
 				commentExists = true
+			case "ON":
+				onUpdateExists = true
 			}
 		} else if attr.NullLiteral() != nil {
 			nullExists = true
@@ -193,6 +196,12 @@ func extractNewAttrs(column *columnState, attrs []mysql.IColumnAttributeContext)
 		result = append(result, columnAttr{
 			text:  "COMMENT '" + column.comment + "'",
 			order: columnAttrOrder["COMMENT"],
+		})
+	}
+	if !onUpdateExists && column.onUpdate != "" {
+		result = append(result, columnAttr{
+			text:  "ON UPDATE " + column.onUpdate,
+			order: columnAttrOrder["ON"],
 		})
 	}
 	return result

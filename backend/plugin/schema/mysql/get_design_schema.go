@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -815,6 +816,33 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 					}
 				}
 			}
+		case attribute.ON_SYMBOL() != nil && attribute.UPDATE_SYMBOL() != nil:
+			attOnUpdate := "CURRENT_TIMESTAMP"
+			if attribute.TimeFunctionParameters() != nil && attribute.TimeFunctionParameters().FractionalPrecision() != nil {
+				attOnUpdate += fmt.Sprintf("(%s)", attribute.TimeFunctionParameters().FractionalPrecision().GetText())
+			}
+			onUpdate := normalizeOnUpdate(column.onUpdate)
+			if onUpdate == attOnUpdate {
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})); err != nil {
+					g.err = err
+					return
+				}
+			} else if onUpdate != "" {
+				if _, err := g.columnDefine.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: startPos,
+					Stop:  attribute.GetStart().GetTokenIndex() - 1,
+				})); err != nil {
+					g.err = err
+					return
+				}
+				if _, err := g.columnDefine.WriteString(fmt.Sprintf("ON UPDATE %s", onUpdate)); err != nil {
+					g.err = err
+					return
+				}
+			}
 		case attribute.COMMENT_SYMBOL() != nil:
 			commentStart := nextDefaultChannelTokenIndex(attribute.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
 			commentValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
@@ -870,6 +898,28 @@ func (g *mysqlDesignSchemaGenerator) EnterColumnDefinition(ctx *mysql.ColumnDefi
 	})); err != nil {
 		g.err = err
 		return
+	}
+}
+
+func normalizeOnUpdate(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	lowerS := strings.ToLower(s)
+	re := regexp.MustCompile(`(current_timestamp|now|localtime|localtimestamp)(?:\((\d+)\))?`)
+	match := re.FindStringSubmatch(lowerS)
+	if len(match) > 0 {
+		if len(match) > 1 && match[1] != "" {
+			// has precision
+			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
+		} else {
+			// no precision
+			return "CURRENT_TIMESTAMP"
+		}
+	} else {
+		// not a current_timestamp family function
+		return s
 	}
 }
 

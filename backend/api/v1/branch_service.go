@@ -945,6 +945,7 @@ func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.D
 			for _, column := range table.Columns {
 				filteredColumn := &storepb.ColumnMetadata{
 					Name:           column.Name,
+					OnUpdate:       column.OnUpdate,
 					Comment:        column.Comment,
 					UserComment:    column.UserComment,
 					Classification: column.Classification,
@@ -1059,6 +1060,9 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 	for i := 0; i < len(s.GetColumns()); i++ {
 		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
 		if sc.Name != tc.Name {
+			return false
+		}
+		if sc.OnUpdate != tc.OnUpdate {
 			return false
 		}
 		if sc.Comment != tc.Comment {

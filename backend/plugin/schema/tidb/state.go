@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -492,6 +493,7 @@ type columnState struct {
 	name         string
 	tp           string
 	defaultValue defaultValue
+	onUpdate     string
 	comment      string
 	nullable     bool
 }
@@ -529,6 +531,11 @@ func (c *columnState) toString(buf *strings.Builder) error {
 			}
 		}
 	}
+	if c.onUpdate != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" ON UPDATE %s", c.onUpdate)); err != nil {
+			return err
+		}
+	}
 	if c.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
 			return err
@@ -542,6 +549,7 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		Name:     c.name,
 		Type:     c.tp,
 		Nullable: c.nullable,
+		OnUpdate: c.onUpdate,
 		Comment:  c.comment,
 	}
 	if c.defaultValue != nil {
@@ -563,6 +571,7 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		name:     column.Name,
 		tp:       column.Type,
 		nullable: column.Nullable,
+		onUpdate: normalizeOnUpdate(column.OnUpdate),
 		comment:  column.Comment,
 	}
 	if column.GetDefaultValue() != nil {
@@ -580,4 +589,26 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		}
 	}
 	return result
+}
+
+func normalizeOnUpdate(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	lowerS := strings.ToLower(s)
+	re := regexp.MustCompile(`(current_timestamp|now|localtime|localtimestamp)(?:\((\d+)\))?`)
+	match := re.FindStringSubmatch(lowerS)
+	if len(match) > 0 {
+		if len(match) > 1 && match[1] != "" {
+			// has precision
+			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
+		} else {
+			// no precision
+			return "CURRENT_TIMESTAMP"
+		}
+	} else {
+		// not a current_timestamp family function
+		return s
+	}
 }

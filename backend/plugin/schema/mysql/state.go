@@ -519,6 +519,7 @@ type columnState struct {
 	name         string
 	tp           string
 	defaultValue defaultValue
+	onUpdate     string
 	comment      string
 	nullable     bool
 }
@@ -553,6 +554,11 @@ func (c *columnState) toString(buf io.StringWriter) error {
 			}
 		}
 	}
+	if len(c.onUpdate) > 0 {
+		if _, err := buf.WriteString(fmt.Sprintf(" ON UPDATE %s", c.onUpdate)); err != nil {
+			return err
+		}
+	}
 	if c.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", c.comment)); err != nil {
 			return err
@@ -566,6 +572,7 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 		Name:     c.name,
 		Type:     c.tp,
 		Nullable: c.nullable,
+		OnUpdate: c.onUpdate,
 		Comment:  c.comment,
 	}
 	if c.defaultValue != nil {
@@ -590,6 +597,7 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		name:     column.Name,
 		tp:       column.Type,
 		nullable: column.Nullable,
+		onUpdate: normalizeOnUpdate(column.OnUpdate),
 		comment:  column.Comment,
 	}
 	if column.GetDefaultValue() != nil {
