@@ -176,6 +176,7 @@ import {
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
+  ComposedDatabase,
   ExecuteConfig,
   ExecuteOption,
   SQLResultSetV1,
@@ -215,6 +216,7 @@ const props = defineProps<{
     config: ExecuteConfig;
     option?: Partial<ExecuteOption> | undefined;
   };
+  database?: ComposedDatabase;
   sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
@@ -363,12 +365,16 @@ const handleExportBtnClick = async (
   options: ExportOption,
   callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
-  const { instanceId, databaseId } = tabStore.currentTab.connection;
-  const instance = instanceStore.getInstanceByUID(instanceId).name;
   const database =
-    databaseId === String(UNKNOWN_ID)
-      ? ""
-      : databaseStore.getDatabaseByUID(databaseId).name;
+    props.database && props.database.uid !== String(UNKNOWN_ID)
+      ? props.database.name
+      : "";
+  const instance =
+    props.database && props.database.uid !== String(UNKNOWN_ID)
+      ? props.database.instance
+      : instanceStore.getInstanceByUID(
+          tabStore.currentTab.connection.instanceId
+        ).name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab.mode === TabMode.Admin;
   const limit = options.limit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
