@@ -207,6 +207,24 @@ func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) 
 				}
 			}
 
+			// On update.
+			if option, exists := optionMap[tidbast.ColumnOptionOnUpdate]; exists {
+				onUpdate, err := restoreExpr(option.Expr)
+				if err != nil {
+					g.err = err
+					return in, true
+				}
+				if *onUpdate != stateColumn.onUpdate {
+					if stateColumn.onUpdate != "" {
+						g.actions = append(g.actions, tidbparser.NewModifyColumnOptionAction(tableName, columnName, tidbast.ColumnOptionOnUpdate, fmt.Sprintf("ON UPDATE %s", stateColumn.onUpdate)))
+					} else {
+						g.actions = append(g.actions, tidbparser.NewDropColumnOptionAction(tableName, columnName, tidbast.ColumnOptionOnUpdate))
+					}
+				}
+			} else if stateColumn.onUpdate != "" {
+				g.actions = append(g.actions, tidbparser.NewAddColumnOptionAction(tableName, columnName, tidbast.ColumnOptionOnUpdate, fmt.Sprintf("ON UPDATE %s", stateColumn.onUpdate)))
+			}
+
 			// Comment.
 			if option, exists := optionMap[tidbast.ColumnOptionComment]; exists {
 				comment, err := restoreComment(option.Expr)

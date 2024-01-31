@@ -2348,7 +2348,8 @@
       "not-null": "Not Null",
       "primary": "Primary",
       "foreign-key": "Foreign Key",
-      "classification": "Classification"
+      "classification": "Classification",
+      "on-update": "On Update"
     },
     "default": {
       "no-default": "No default",

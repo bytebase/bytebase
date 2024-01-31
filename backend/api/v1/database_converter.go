@@ -248,6 +248,7 @@ func convertStoreColumnMetadata(column *storepb.ColumnMetadata) *v1pb.ColumnMeta
 		Name:           column.GetName(),
 		Position:       column.GetPosition(),
 		HasDefault:     column.GetDefaultValue() != nil,
+		OnUpdate:       column.GetOnUpdate(),
 		Nullable:       column.GetNullable(),
 		Type:           column.GetType(),
 		CharacterSet:   column.GetCharacterSet(),
@@ -511,6 +512,7 @@ func convertV1ColumnMetadata(column *v1pb.ColumnMetadata) *storepb.ColumnMetadat
 		Comment:        column.GetComment(),
 		Classification: column.GetClassification(),
 		UserComment:    column.GetUserComment(),
+		OnUpdate:       column.GetOnUpdate(),
 	}
 
 	if column.HasDefault {

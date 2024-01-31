@@ -936,16 +936,9 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	}
 
 	// ON UPDATE.
-	// TODO: we don't support ON UPDATE for now.
-	if option, exists := optionMap[tidbast.ColumnOptionOnUpdate]; exists {
-		if err := buf.WriteByte(' '); err != nil {
-			r.err = errors.Wrap(err, "failed to write byte")
-			return
-		}
-		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
-			r.err = errors.Wrap(err, "failed to write string")
-			return
-		}
+	if err := writeOnUpdateOption(&buf, optionMap, optionActionMap); err != nil {
+		r.err = err
+		return
 	}
 
 	// COMMENT.
@@ -955,6 +948,42 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	}
 
 	r.columnDefines = append(r.columnDefines, buf.String())
+}
+
+func writeOnUpdateOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+	needOrigin := true
+	if action, exists := optionActionMap[tidbast.ColumnOptionOnUpdate]; exists {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropColumnOption:
+			// Drop column option
+			needOrigin = false
+		case *StringsManipulatorActionModifyColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		case *StringsManipulatorActionAddColumnOption:
+			needOrigin = false
+			if err := buf.WriteByte(' '); err != nil {
+				return errors.Wrap(err, "failed to write byte")
+			}
+			if _, err := buf.WriteString(action.NewOptionDefine); err != nil {
+				return errors.Wrap(err, "failed to write string")
+			}
+		}
+	}
+	if option, exists := optionMap[tidbast.ColumnOptionOnUpdate]; exists && needOrigin {
+		if err := buf.WriteByte(' '); err != nil {
+			return errors.Wrap(err, "failed to write byte")
+		}
+		if _, err := buf.WriteString(option.GetParser().GetTokenStream().GetTextFromRuleContext(option)); err != nil {
+			return errors.Wrap(err, "failed to write string")
+		}
+	}
+	return nil
 }
 
 func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
