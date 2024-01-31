@@ -114,7 +114,8 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	if s.profile.DevelopmentIAM {
+	// allow creator to get issue.
+	if s.profile.DevelopmentIAM && issue.Creator.ID != user.ID {
 		needPermissions := []iam.Permission{iam.PermissionIssuesGet}
 		if issue.Type == api.IssueDatabaseGeneral {
 			needPermissions = append(needPermissions, iam.PermissionPlansGet)
