@@ -107,6 +107,7 @@ export const defaultEditorOptions =
       fontSize: 14,
       lineHeight: 24,
       scrollBeyondLastLine: false,
+      suggestFontSize: 12,
       padding: {
         top: 8,
         bottom: 8,
