@@ -18,10 +18,20 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "../iam";
 import { isDev, semverCompare } from "../util";
-import { isDeveloperOfProjectV1, isOwnerOfProjectV1 } from "./project";
+import {
+  extractProjectResourceName,
+  isDeveloperOfProjectV1,
+  isOwnerOfProjectV1,
+} from "./project";
 
 export const databaseV1Url = (db: ComposedDatabase) => {
-  return `/${db.project}/${db.name}`;
+  const project = extractProjectResourceName(db.project);
+  const { instance, database } = extractDatabaseResourceName(db.name);
+  return `/projects/${encodeURIComponent(
+    project
+  )}/instances/${encodeURIComponent(instance)}/databases/${encodeURIComponent(
+    database
+  )}`;
 };
 
 export const extractDatabaseResourceName = (
