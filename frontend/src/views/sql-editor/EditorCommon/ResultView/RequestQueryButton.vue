@@ -34,7 +34,7 @@ const database = computed(() => {
 });
 
 const available = computed(() => {
-  if (database.value.uid !== String(UNKNOWN_ID)) {
+  if (database.value.uid === String(UNKNOWN_ID)) {
     return false;
   }
 
