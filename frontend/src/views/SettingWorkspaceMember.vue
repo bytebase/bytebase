@@ -28,8 +28,8 @@
 
       <div>
         <NButton
+          v-if="allowCreateUser"
           type="primary"
-          :disabled="!allowCreateUser"
           class="capitalize"
           @click="handleCreateUser"
         >
@@ -144,10 +144,7 @@ const hasRBACFeature = computed(() =>
 );
 
 const allowCreateUser = computed(() => {
-  return (
-    hasRBACFeature.value ||
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
-  );
+  return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
 });
 
 onMounted(() => {

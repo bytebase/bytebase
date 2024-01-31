@@ -31,10 +31,9 @@ import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1, useUserStore } from "@/store";
-import { SYSTEM_BOT_USER_NAME } from "@/types";
-import { User, UserType } from "@/types/proto/v1/auth_service";
+import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   user: User;
@@ -48,18 +47,14 @@ const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 
 const allowEdit = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  // Only allow workspace admin to manage user.
+  return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
 });
 
 const allowUpdateUser = (user: User) => {
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return false;
   }
-  // Always allow deactivating service accounts.
-  if (user.userType === UserType.SERVICE_ACCOUNT) {
-    return true;
-  }
-
   return allowEdit.value && user.state === State.ACTIVE;
 };
 
