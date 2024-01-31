@@ -346,8 +346,8 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 	}
 	for streamMetaRows.Next() {
 		cols := make([]any, len(columns))
-		var taskName, taskID, schemaName, owner, comment, warehouse, state string
-		var nullSchedule, nullCondition sql.NullString
+		var taskName, taskID, schemaName, owner, comment, state string
+		var nullSchedule, nullCondition, nullWarehouse sql.NullString
 		var predecessors ArrayString
 		var unused any
 		cols[taskNameIndex] = &taskName
@@ -355,7 +355,7 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 		cols[schemaNameIndex] = &schemaName
 		cols[ownerIndex] = &owner
 		cols[commentIndex] = &comment
-		cols[warehouseIndex] = &warehouse
+		cols[warehouseIndex] = &nullWarehouse
 		cols[nullScheduleIndex] = &nullSchedule
 		cols[predecessorsIndex] = &predecessors
 		cols[stateIndex] = &state
@@ -375,12 +375,15 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 		case "suspended":
 			storePbState = storepb.TaskMetadata_STATE_SUSPENDED
 		}
-		var schedule, condition string
+		var schedule, condition, warehouse string
 		if nullSchedule.Valid {
 			schedule = nullSchedule.String
 		}
 		if nullCondition.Valid {
 			condition = nullCondition.String
+		}
+		if nullWarehouse.Valid {
+			warehouse = nullWarehouse.String
 		}
 		taskMetadata := &storepb.TaskMetadata{
 			Name:         taskName,
