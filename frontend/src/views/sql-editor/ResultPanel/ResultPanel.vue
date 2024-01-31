@@ -70,6 +70,7 @@
         v-else
         class="w-full h-auto grow"
         :execute-params="executeParams"
+        :database="selectedDatabase"
         :result-set="selectedResultSet"
       />
     </template>
