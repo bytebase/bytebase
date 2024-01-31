@@ -730,6 +730,7 @@ func getIndexID(ctx plsql.ICreate_indexContext, strictMode bool) string {
 		eraseIndexName:      true,
 		eraseSchemaName:     true,
 		eraseConstraintName: true,
+		eraseStoreOption:    true,
 	}, ctx, ctx.GetParser().GetTokenStream()))
 }
 
