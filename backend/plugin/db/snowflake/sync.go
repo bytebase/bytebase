@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/snowflakedb/gosnowflake"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -190,11 +189,53 @@ func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map
 		return nil, util.FormatErrorWithQuery(err, streamQuery)
 	}
 	defer streamMetaRows.Close()
+	columns, err := streamMetaRows.Columns()
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get streams from %q query", streamQuery)
+	}
+	var streamNameIndex, schemaNameIndex, ownerIndex, commentIndex, tableNameIndex, tpIndex, staleIndex, modeIndex int
+	// https://docs.snowflake.com/en/sql-reference/sql/show-streams#output
+	for i, n := range columns {
+		switch strings.ToLower(n) {
+		case "name":
+			streamNameIndex = i
+		case "schema_name":
+			schemaNameIndex = i
+		case "owner":
+			ownerIndex = i
+		case "comment":
+			commentIndex = i
+		case "table_name":
+			tableNameIndex = i
+		case "type":
+			tpIndex = i
+		case "stale":
+			staleIndex = i
+		case "mode":
+			modeIndex = i
+		}
+	}
+
 	for streamMetaRows.Next() {
-		var schemaName, streamName, tableName, owner, comment, tp, mode string
+		cols := make([]any, len(columns))
+		var streamName, schemaName, owner, comment, tableName, tp, mode string
 		var stale bool
 		var unused any
-		if err := streamMetaRows.Scan(&unused, &streamName, &unused, &schemaName, &owner, &comment, &tableName, &unused, &unused, &tp, &stale, &mode, &unused, &unused); err != nil {
+		cols[streamNameIndex] = &streamName
+		cols[schemaNameIndex] = &schemaName
+		cols[ownerIndex] = &owner
+		cols[commentIndex] = &comment
+		cols[tableNameIndex] = &tableName
+		cols[tpIndex] = &tp
+		cols[staleIndex] = &stale
+		cols[modeIndex] = &mode
+		for i, v := range cols {
+			if v == nil {
+				cols[i] = &unused
+			}
+		}
+
+		if err := streamMetaRows.Scan(cols...); err != nil {
 			return nil, err
 		}
 		storePbStreamType := storepb.StreamMetadata_TYPE_UNSPECIFIED
@@ -273,12 +314,58 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 		return nil, util.FormatErrorWithQuery(err, taskQuery)
 	}
 	defer streamMetaRows.Close()
+	columns, err := streamMetaRows.Columns()
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get tasks from %q query", taskQuery)
+	}
+	var taskNameIndex, taskIDIndex, schemaNameIndex, ownerIndex, commentIndex, warehouseIndex, nullScheduleIndex, predecessorsIndex, stateIndex, nullConditionIndex int
+	// https://docs.snowflake.com/en/sql-reference/sql/show-tasks#output
+	for i, n := range columns {
+		switch strings.ToLower(n) {
+		case "name":
+			taskNameIndex = i
+		case "id":
+			taskIDIndex = i
+		case "schema_name":
+			schemaNameIndex = i
+		case "owner":
+			ownerIndex = i
+		case "comment":
+			commentIndex = i
+		case "warehouse":
+			warehouseIndex = i
+		case "schedule":
+			nullScheduleIndex = i
+		case "predecessors":
+			predecessorsIndex = i
+		case "state":
+			stateIndex = i
+		case "condition":
+			nullConditionIndex = i
+		}
+	}
 	for streamMetaRows.Next() {
-		var schemaName, taskName, id, owner, comment, warehouse, state string
-		var nullSchedule, nullCondition sql.NullString
+		cols := make([]any, len(columns))
+		var taskName, taskID, schemaName, owner, comment, state string
+		var nullSchedule, nullCondition, nullWarehouse sql.NullString
 		var predecessors ArrayString
 		var unused any
-		if err := streamMetaRows.Scan(&unused, &taskName, &id, &unused, &schemaName, &owner, &comment, &warehouse, &nullSchedule, &gosnowflake.DataTypeArray, &state, &unused, &nullCondition, &unused, &unused, &unused, &unused); err != nil {
+		cols[taskNameIndex] = &taskName
+		cols[taskIDIndex] = &taskID
+		cols[schemaNameIndex] = &schemaName
+		cols[ownerIndex] = &owner
+		cols[commentIndex] = &comment
+		cols[warehouseIndex] = &nullWarehouse
+		cols[nullScheduleIndex] = &nullSchedule
+		cols[predecessorsIndex] = &predecessors
+		cols[stateIndex] = &state
+		cols[nullConditionIndex] = &nullCondition
+		for i, v := range cols {
+			if v == nil {
+				cols[i] = &unused
+			}
+		}
+		if err := streamMetaRows.Scan(cols...); err != nil {
 			return nil, err
 		}
 		storePbState := storepb.TaskMetadata_STATE_UNSPECIFIED
@@ -288,16 +375,19 @@ func (driver *Driver) getTaskSchema(ctx context.Context, database string) (map[s
 		case "suspended":
 			storePbState = storepb.TaskMetadata_STATE_SUSPENDED
 		}
-		var schedule, condition string
+		var schedule, condition, warehouse string
 		if nullSchedule.Valid {
 			schedule = nullSchedule.String
 		}
 		if nullCondition.Valid {
 			condition = nullCondition.String
 		}
+		if nullWarehouse.Valid {
+			warehouse = nullWarehouse.String
+		}
 		taskMetadata := &storepb.TaskMetadata{
 			Name:         taskName,
-			Id:           id,
+			Id:           taskID,
 			Owner:        owner,
 			Comment:      comment,
 			Warehouse:    warehouse,
