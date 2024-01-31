@@ -1406,6 +1406,11 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 		return true, nil
 	}
 
+	for _, role := range p.WorkspaceRoles {
+		if roles[role] {
+			return true, nil
+		}
+	}
 	for _, role := range p.ProjectRoles {
 		if roles[role] {
 			return true, nil
