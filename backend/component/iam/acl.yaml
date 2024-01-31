@@ -36,6 +36,7 @@ roles:
       - bb.environments.update
       - bb.externalVersionControls.create
       - bb.externalVersionControls.delete
+      - bb.externalVersionControls.exchangeToken
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
       - bb.externalVersionControls.listProjects
@@ -132,6 +133,7 @@ roles:
       - bb.environments.update
       - bb.externalVersionControls.create
       - bb.externalVersionControls.delete
+      - bb.externalVersionControls.exchangeToken
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
       - bb.externalVersionControls.listProjects
@@ -195,6 +197,10 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
+      - bb.externalVersionControls.exchangeToken
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.searchProjects
       - bb.policies.list
       - bb.risks.list
       - bb.roles.list
