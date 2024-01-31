@@ -12,6 +12,7 @@ const (
 	PermissionEnvironmentsUpdate                    Permission = "bb.environments.update"
 	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
 	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
+	PermissionExternalVersionControlsExchangeToken  Permission = "bb.externalVersionControls.exchangeToken"
 	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
 	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
 	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
@@ -107,6 +108,7 @@ func (p Permission) String() string {
 }
 
 func PermissionExist(p Permission) bool {
+	//exhaustive:enforce
 	switch p {
 	case
 		PermissionBackupsCreate,
@@ -144,6 +146,7 @@ func PermissionExist(p Permission) bool {
 		PermissionEnvironmentsUpdate,
 		PermissionExternalVersionControlsCreate,
 		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsExchangeToken,
 		PermissionExternalVersionControlsGet,
 		PermissionExternalVersionControlsList,
 		PermissionExternalVersionControlsListProjects,
@@ -221,6 +224,7 @@ func (p PermissionLevel) String() string {
 }
 
 func GetPermissionLevel(permission Permission) PermissionLevel {
+	//exhaustive:enforce
 	switch permission {
 	case
 		PermissionEnvironmentsCreate,
@@ -231,6 +235,7 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionEnvironmentsUpdate,
 		PermissionExternalVersionControlsCreate,
 		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsExchangeToken,
 		PermissionExternalVersionControlsGet,
 		PermissionExternalVersionControlsList,
 		PermissionExternalVersionControlsListProjects,
