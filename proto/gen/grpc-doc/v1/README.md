@@ -2628,6 +2628,7 @@ ColumnMetadata is the metadata for columns.
 | default_null | [bool](#bool) |  |  |
 | default_string | [string](#string) |  |  |
 | default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
