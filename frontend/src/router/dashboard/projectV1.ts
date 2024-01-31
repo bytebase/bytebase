@@ -228,10 +228,7 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.issues.get",
-          ],
+          requiredProjectPermissionList: () => ["bb.projects.get"],
         },
         component: () => import("@/views/project/ProjectIssueDetail.vue"),
         props: true,
