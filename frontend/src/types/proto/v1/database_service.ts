@@ -560,6 +560,11 @@ export interface ColumnMetadata {
   defaultExpression?:
     | string
     | undefined;
+  /**
+   * The on_update is the on update action of a column.
+   * For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+   */
+  onUpdate: string;
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
@@ -4157,6 +4162,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     defaultNull: undefined,
     defaultString: undefined,
     defaultExpression: undefined,
+    onUpdate: "",
     nullable: false,
     type: "",
     characterSet: "",
@@ -4187,6 +4193,9 @@ export const ColumnMetadata = {
     }
     if (message.defaultExpression !== undefined) {
       writer.uint32(50).string(message.defaultExpression);
+    }
+    if (message.onUpdate !== "") {
+      writer.uint32(122).string(message.onUpdate);
     }
     if (message.nullable === true) {
       writer.uint32(56).bool(message.nullable);
@@ -4264,6 +4273,13 @@ export const ColumnMetadata = {
 
           message.defaultExpression = reader.string();
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.onUpdate = reader.string();
+          continue;
         case 7:
           if (tag !== 56) {
             break;
@@ -4337,6 +4353,7 @@ export const ColumnMetadata = {
       defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
       defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
       defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
       type: isSet(object.type) ? globalThis.String(object.type) : "",
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
@@ -4369,6 +4386,9 @@ export const ColumnMetadata = {
     }
     if (message.defaultExpression !== undefined) {
       obj.defaultExpression = message.defaultExpression;
+    }
+    if (message.onUpdate !== "") {
+      obj.onUpdate = message.onUpdate;
     }
     if (message.nullable === true) {
       obj.nullable = message.nullable;
@@ -4408,6 +4428,7 @@ export const ColumnMetadata = {
     message.defaultNull = object.defaultNull ?? undefined;
     message.defaultString = object.defaultString ?? undefined;
     message.defaultExpression = object.defaultExpression ?? undefined;
+    message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
     message.characterSet = object.characterSet ?? "";
