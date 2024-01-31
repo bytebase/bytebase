@@ -913,14 +913,12 @@ func normalizeOnUpdate(s string) string {
 		if len(match) > 1 && match[1] != "" {
 			// has precision
 			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
-		} else {
-			// no precision
-			return "CURRENT_TIMESTAMP"
 		}
-	} else {
-		// not a current_timestamp family function
-		return s
+		// no precision
+		return "CURRENT_TIMESTAMP"
 	}
+	// not a current_timestamp family function
+	return s
 }
 
 // DropViewStatement is called when production dropViewStatement is entered.
