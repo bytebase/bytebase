@@ -8,6 +8,7 @@
       <template v-if="viewMode === 'SINGLE-RESULT'">
         <SingleResultViewV1
           :params="executeParams"
+          :database="database"
           :sql-result-set="resultSet"
           :result="resultSet.results[0]"
           :set-index="0"
@@ -90,7 +91,12 @@ import {
   usePolicyV1Store,
   useTabStore,
 } from "@/store";
-import { ExecuteConfig, ExecuteOption, SQLResultSetV1 } from "@/types";
+import {
+  ComposedDatabase,
+  ExecuteConfig,
+  ExecuteOption,
+  SQLResultSetV1,
+} from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -113,6 +119,10 @@ const props = defineProps({
       config: ExecuteConfig;
       option?: Partial<ExecuteOption> | undefined;
     }>,
+    default: undefined,
+  },
+  database: {
+    type: Object as PropType<ComposedDatabase>,
     default: undefined,
   },
   resultSet: {
