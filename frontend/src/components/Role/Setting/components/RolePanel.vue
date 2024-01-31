@@ -148,7 +148,7 @@ const allowSave = computed(() => {
     if (!resourceIdField.value.resourceId) return false;
     if (!resourceIdField.value.isValidated) return false;
   }
-  if (state.role.permissions.length === 0) {
+  if (isDevelopmentIAM.value && state.role.permissions.length === 0) {
     return false;
   }
   return true;
