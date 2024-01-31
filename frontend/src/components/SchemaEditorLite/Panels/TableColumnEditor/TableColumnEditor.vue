@@ -434,6 +434,31 @@ const columns = computed(() => {
       },
     },
     {
+      key: "on-update",
+      title: t("schema-editor.column.on-update"),
+      resizable: true,
+      minWidth: 140,
+      maxWidth: 320,
+      hide: props.engine !== Engine.MYSQL && props.engine !== Engine.TIDB,
+      className: "input-cell",
+      render: (column) => {
+        return h(InlineInput, {
+          value: column.onUpdate,
+          disabled: props.readonly || props.disableAlterColumn(column),
+          placeholder: "on update",
+          style: {
+            "--n-padding-left": "6px",
+            "--n-padding-right": "4px",
+            "--n-text-color-disabled": "rgb(var(--color-main))",
+          },
+          "onUpdate:value": (value) => {
+            column.onUpdate = value;
+            markColumnStatus(column, "updated");
+          },
+        });
+      },
+    },
+    {
       key: "comment",
       title: t("schema-editor.column.comment"),
       resizable: true,

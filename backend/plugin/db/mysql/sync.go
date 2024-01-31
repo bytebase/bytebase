@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -294,6 +295,17 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
 			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
 				DefaultNull: true,
+			}
+		}
+
+		if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
+			re := regexp.MustCompile(`CURRENT_TIMESTAMP\((\d+)\)`)
+			match := re.FindStringSubmatch(extra)
+			if len(match) > 0 {
+				digits := match[1]
+				column.OnUpdate = fmt.Sprintf("CURRENT_TIMESTAMP(%s)", digits)
+			} else {
+				column.OnUpdate = "CURRENT_TIMESTAMP"
 			}
 		}
 
