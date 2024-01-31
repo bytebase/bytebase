@@ -34,6 +34,7 @@ import { displayRoleDescription, displayRoleTitle } from "@/utils";
 // project members.
 const UNALLOWED_ROLES_IN_PROJECT = [
   PresetRoleType.WORKSPACE_ADMIN,
+  PresetRoleType.WORKSPACE_DBA,
   PresetRoleType.WORKSPACE_MEMBER,
 ];
 
