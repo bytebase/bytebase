@@ -365,6 +365,10 @@ const handleExportBtnClick = async (
   options: ExportOption,
   callback: (content: BinaryLike | Blob, options: ExportOption) => void
 ) => {
+  // If props.database is specified and it's not unknown database
+  // the query is executed on database level
+  // otherwise the query is executed on instance level, we should use the
+  // `instanceId` from the tab's connection attributes
   const database =
     props.database && props.database.uid !== String(UNKNOWN_ID)
       ? props.database.name
