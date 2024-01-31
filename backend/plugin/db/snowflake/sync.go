@@ -190,11 +190,53 @@ func (driver *Driver) getStreamSchema(ctx context.Context, database string) (map
 		return nil, util.FormatErrorWithQuery(err, streamQuery)
 	}
 	defer streamMetaRows.Close()
+	columns, err := streamMetaRows.Columns()
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot get streams from %q query", streamQuery)
+	}
+	var streamNameIndex, schemaNameIndex, ownerIndex, commentIndex, tableNameIndex, tpIndex, staleIndex, modeIndex int
+	// https://docs.snowflake.com/en/sql-reference/sql/show-streams#output
+	for i, n := range columns {
+		switch strings.ToLower(n) {
+		case "name":
+			streamNameIndex = i
+		case "schema_name":
+			schemaNameIndex = i
+		case "owner":
+			ownerIndex = i
+		case "comment":
+			commentIndex = i
+		case "table_name":
+			tableNameIndex = i
+		case "type":
+			tpIndex = i
+		case "stale":
+			staleIndex = i
+		case "mode":
+			modeIndex = i
+		}
+	}
+
 	for streamMetaRows.Next() {
-		var schemaName, streamName, tableName, owner, comment, tp, mode string
+		cols := make([]any, len(columns))
+		var streamName, schemaName, owner, comment, tableName, tp, mode string
 		var stale bool
 		var unused any
-		if err := streamMetaRows.Scan(&unused, &streamName, &unused, &schemaName, &owner, &comment, &tableName, &unused, &unused, &tp, &stale, &mode, &unused, &unused); err != nil {
+		cols[streamNameIndex] = &streamName
+		cols[schemaNameIndex] = &schemaName
+		cols[ownerIndex] = &owner
+		cols[commentIndex] = &comment
+		cols[tableNameIndex] = &tableName
+		cols[tpIndex] = &tp
+		cols[staleIndex] = &stale
+		cols[modeIndex] = &mode
+		for i, v := range cols {
+			if v == nil {
+				cols[i] = &unused
+			}
+		}
+
+		if err := streamMetaRows.Scan(cols...); err != nil {
 			return nil, err
 		}
 		storePbStreamType := storepb.StreamMetadata_TYPE_UNSPECIFIED
