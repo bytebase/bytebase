@@ -73,7 +73,7 @@
       `a` int NOT NULL,
       `b` varchar(255) NOT NULL,
       `c` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-      `d` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `d` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP(),
       `e` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       KEY `idx_t_b` (`b`(20)) COMMENT 'this is comment with',
       KEY `idx_t_b2` (`b`(20))
