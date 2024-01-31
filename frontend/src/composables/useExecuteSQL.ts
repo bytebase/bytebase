@@ -233,6 +233,7 @@ const useExecuteSQL = () => {
               });
               cleanup();
             }
+            fail(database, sqlResultSet);
           } else {
             fail(database, sqlResultSet);
           }
