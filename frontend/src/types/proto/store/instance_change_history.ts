@@ -26,6 +26,8 @@ export interface ChangedResourceSchema {
 
 export interface ChangedResourceTable {
   name: string;
+  /** estimated row count */
+  rowCount: Long;
 }
 
 function createBaseInstanceChangeHistoryPayload(): InstanceChangeHistoryPayload {
@@ -320,13 +322,16 @@ export const ChangedResourceSchema = {
 };
 
 function createBaseChangedResourceTable(): ChangedResourceTable {
-  return { name: "" };
+  return { name: "", rowCount: Long.ZERO };
 }
 
 export const ChangedResourceTable = {
   encode(message: ChangedResourceTable, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (!message.rowCount.isZero()) {
+      writer.uint32(16).int64(message.rowCount);
     }
     return writer;
   },
@@ -345,6 +350,13 @@ export const ChangedResourceTable = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.rowCount = reader.int64() as Long;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -355,13 +367,19 @@ export const ChangedResourceTable = {
   },
 
   fromJSON(object: any): ChangedResourceTable {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
+    };
   },
 
   toJSON(message: ChangedResourceTable): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (!message.rowCount.isZero()) {
+      obj.rowCount = (message.rowCount || Long.ZERO).toString();
     }
     return obj;
   },
@@ -372,6 +390,9 @@ export const ChangedResourceTable = {
   fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
     const message = createBaseChangedResourceTable();
     message.name = object.name ?? "";
+    message.rowCount = (object.rowCount !== undefined && object.rowCount !== null)
+      ? Long.fromValue(object.rowCount)
+      : Long.ZERO;
     return message;
   },
 };
