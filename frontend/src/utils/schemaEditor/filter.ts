@@ -108,6 +108,7 @@ export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "defaultExpression",
   "defaultNull",
   "defaultString",
+  "onUpdate",
   "nullable",
   "position",
 ];
