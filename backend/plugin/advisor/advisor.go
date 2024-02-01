@@ -164,7 +164,7 @@ const (
 	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
 	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
 
-	// MySQLTableDisallowTrigger is an advisor type for MySQL disallow trigger.
+	// MySQLTableDisallowTrigger is an advisor type for MySQL disallow table trigger.
 	MySQLTableDisallowTrigger Type = "bb.plugin.advisor.mysql.table.disallow-trigger"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.

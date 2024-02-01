@@ -25,7 +25,7 @@ func init() {
 type TableDisallowTriggerAdvisor struct {
 }
 
-// Check checks for disallow table partition.
+// Check checks for disallow table trigger.
 func (*TableDisallowTriggerAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
