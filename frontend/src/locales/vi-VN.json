@@ -276,7 +276,8 @@
     "permissions": "Quyền",
     "backup": "Hỗ trợ",
     "cutover": "Chuyển đổi",
-    "baseline": "Đường cơ sở"
+    "baseline": "Đường cơ sở",
+    "project-member": "Thành viên dự án"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"

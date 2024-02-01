@@ -275,7 +275,8 @@
     "permissions": "権限",
     "backup": "バックアップ",
     "cutover": "カットオーバー",
-    "baseline": "ベースライン"
+    "baseline": "ベースライン",
+    "project-member": "プロジェクトメンバー"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
