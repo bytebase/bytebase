@@ -218,6 +218,9 @@ const (
 	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
 	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
 
+	// MySQLDisallowProcedure is an advisor type for MySQL disallow procedure.
+	MySQLDisallowProcedure Type = "bb.plugin.advisor.mysql.disallow-procedure"
+
 	// PostgreSQL Advisor.
 
 	// PostgreSQLSyntax is an advisor type for PostgreSQL syntax.
