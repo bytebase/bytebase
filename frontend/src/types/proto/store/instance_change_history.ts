@@ -26,8 +26,8 @@ export interface ChangedResourceSchema {
 
 export interface ChangedResourceTable {
   name: string;
-  /** estimated row count */
-  rowCount: Long;
+  /** estimated row count of the table */
+  tableRows: Long;
 }
 
 function createBaseInstanceChangeHistoryPayload(): InstanceChangeHistoryPayload {
@@ -322,7 +322,7 @@ export const ChangedResourceSchema = {
 };
 
 function createBaseChangedResourceTable(): ChangedResourceTable {
-  return { name: "", rowCount: Long.ZERO };
+  return { name: "", tableRows: Long.ZERO };
 }
 
 export const ChangedResourceTable = {
@@ -330,8 +330,8 @@ export const ChangedResourceTable = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (!message.rowCount.isZero()) {
-      writer.uint32(16).int64(message.rowCount);
+    if (!message.tableRows.isZero()) {
+      writer.uint32(16).int64(message.tableRows);
     }
     return writer;
   },
@@ -355,7 +355,7 @@ export const ChangedResourceTable = {
             break;
           }
 
-          message.rowCount = reader.int64() as Long;
+          message.tableRows = reader.int64() as Long;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -369,7 +369,7 @@ export const ChangedResourceTable = {
   fromJSON(object: any): ChangedResourceTable {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      rowCount: isSet(object.rowCount) ? Long.fromValue(object.rowCount) : Long.ZERO,
+      tableRows: isSet(object.tableRows) ? Long.fromValue(object.tableRows) : Long.ZERO,
     };
   },
 
@@ -378,8 +378,8 @@ export const ChangedResourceTable = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (!message.rowCount.isZero()) {
-      obj.rowCount = (message.rowCount || Long.ZERO).toString();
+    if (!message.tableRows.isZero()) {
+      obj.tableRows = (message.tableRows || Long.ZERO).toString();
     }
     return obj;
   },
@@ -390,8 +390,8 @@ export const ChangedResourceTable = {
   fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
     const message = createBaseChangedResourceTable();
     message.name = object.name ?? "";
-    message.rowCount = (object.rowCount !== undefined && object.rowCount !== null)
-      ? Long.fromValue(object.rowCount)
+    message.tableRows = (object.tableRows !== undefined && object.tableRows !== null)
+      ? Long.fromValue(object.tableRows)
       : Long.ZERO;
     return message;
   },
