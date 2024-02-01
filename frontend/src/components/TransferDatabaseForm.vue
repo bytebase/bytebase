@@ -80,19 +80,19 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { Project } from "@/types/proto/v1/project_service";
 import {
   DEFAULT_PROJECT_ID,
   ComposedInstance,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_INSTANCE_NAME,
   ComposedDatabase,
-} from "../types";
+} from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
   hasProjectPermissionV2,
   sortDatabaseV1List,
-} from "../utils";
+} from "@/utils";
 
 interface LocalState {
   transferSource: TransferSource;
