@@ -15,10 +15,11 @@ import (
 )
 
 type querySpanExtractor struct {
-	ctx         context.Context
-	connectedDB string
-	metaCache   map[string]*model.DatabaseMetadata
-	f           base.GetDatabaseMetadataFunc
+	ctx               context.Context
+	connectedDB       string
+	metaCache         map[string]*model.DatabaseMetadata
+	f                 base.GetDatabaseMetadataFunc
+	lowerTableViewMap map[string]map[string]bool
 
 	ctes              []*base.PseudoTable
 	outerTableSources []base.TableSource
@@ -27,9 +28,10 @@ type querySpanExtractor struct {
 
 func newQuerySpanExtractor(connectedDB string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB: connectedDB,
-		metaCache:   make(map[string]*model.DatabaseMetadata),
-		f:           f,
+		connectedDB:       connectedDB,
+		metaCache:         make(map[string]*model.DatabaseMetadata),
+		lowerTableViewMap: make(map[string]map[string]bool),
+		f:                 f,
 	}
 }
 
@@ -71,9 +73,71 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
-		Results: tableSource.GetQuerySpanResult(),
-		// SourceColumns: tableSource.GetSourceColumns(),
+		Results:       tableSource.GetQuerySpanResult(),
+		SourceColumns: q.getAccessTables(node),
 	}, nil
+}
+
+func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColumnSet {
+	accessesMap := make(base.SourceColumnSet)
+	tables := ExtractMySQLTableList(node, false /* asName */)
+	for _, table := range tables {
+		databaseName := table.Schema.O
+		if databaseName == "" {
+			databaseName = q.connectedDB
+		}
+
+		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
+		// For example, the query is `WITH t1 AS (SELECT 1) SELECT * FROM t1` and we have a physical table `t1` in the database exactly,
+		// what we found is the physical table `t1`, but the query actually accesses the CTE `t1`.
+		// We do this because we do not have too much time to implement the real behavior.
+		// XXX(rebelice/zp): Can we pass more information here to make this function know the context and then
+		// figure out whether the table is the table the query actually accesses
+		if !q.existsTableMetadata(databaseName, table.Name.O) {
+			continue
+		}
+
+		resource := base.ColumnResource{
+			Database: databaseName,
+			Table:    table.Name.O,
+		}
+		accessesMap[resource] = true
+	}
+	return accessesMap
+}
+
+func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName string) bool {
+	if databaseName == "" {
+		databaseName = q.connectedDB
+	}
+
+	if q.lowerTableViewMap[databaseName] != nil {
+		return q.lowerTableViewMap[databaseName][strings.ToLower(tableName)]
+	}
+
+	databaseMetadata, err := q.getDatabaseMetadata(databaseName)
+	if err != nil {
+		return false
+	}
+
+	if databaseMetadata == nil {
+		return false
+	}
+	schemaMetadata := databaseMetadata.GetSchema("")
+	if schemaMetadata == nil {
+		return false
+	}
+
+	tableViewMap := make(map[string]bool)
+	for _, table := range schemaMetadata.ListTableNames() {
+		tableViewMap[strings.ToLower(table)] = true
+	}
+	for _, view := range schemaMetadata.ListViewNames() {
+		tableViewMap[strings.ToLower(view)] = true
+	}
+	q.lowerTableViewMap[databaseName] = tableViewMap
+
+	return q.lowerTableViewMap[databaseName][strings.ToLower(tableName)]
 }
 
 func (q *querySpanExtractor) extractTableSourceFromNode(node tidbast.Node) (base.TableSource, error) {
@@ -570,7 +634,7 @@ func (q *querySpanExtractor) extractTableSource(node *tidbast.TableSource) (base
 		return nil, err
 	}
 	if node.AsName.O != "" {
-		tableSource.SetTableName(node.AsName.O)
+		return base.NewPseudoTable(node.AsName.O, tableSource.GetQuerySpanResult()), nil
 	}
 	return tableSource, nil
 }
