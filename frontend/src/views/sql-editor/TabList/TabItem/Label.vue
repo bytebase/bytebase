@@ -28,7 +28,7 @@
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSheetV1Store, useTabStore } from "@/store";
+import { useWorkSheetStore, useTabStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { useTabListContext } from "../context";
 
@@ -54,7 +54,7 @@ const state = reactive<LocalState>({
 });
 
 const tabStore = useTabStore();
-const sheetV1Store = useSheetV1Store();
+const worksheetV1Store = useWorkSheetStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
 
@@ -85,7 +85,7 @@ const confirmEdit = () => {
 
   tab.name = name;
   if (tab.sheetName) {
-    sheetV1Store.patchSheet({
+    worksheetV1Store.patchSheet({
       name: tab.sheetName,
       title: name,
     });

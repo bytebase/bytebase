@@ -4,11 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 
-	"github.com/google/cel-go/cel"
-	celtypes "github.com/google/cel-go/common/types"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
@@ -100,35 +99,28 @@ func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRo
 
 func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) bool {
 	for _, role := range workspaceRoles {
-		permissions, ok := m.roles[role]
-		if !ok {
-			continue
-		}
-		for _, permission := range permissions {
-			if permission == p {
-				return true
-			}
+		permissions := m.GetPermissions(role)
+		if slices.Contains(permissions, p) {
+			return true
 		}
 	}
 	return false
 }
 
 func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
+	if GetPermissionLevel(p) == PermissionLevelWorkspace {
+		return false
+	}
 	if len(projectRoles) == 0 {
 		return false
 	}
 	for _, projectRole := range projectRoles {
 		has := false
 		for _, role := range projectRole {
-			permissions, ok := m.roles[role]
-			if !ok {
-				continue
-			}
-			for _, permission := range permissions {
-				if permission == p {
-					has = true
-					break
-				}
+			permissions := m.GetPermissions(role)
+			if slices.Contains(permissions, p) {
+				has = true
+				break
 			}
 		}
 		if !has {
@@ -170,7 +162,7 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyMessage) []string {
 	var roles []string
 	for _, binding := range policy.Bindings {
-		ok, err := EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			slog.Error("failed to eval member condition", "expression", binding.Condition.GetExpression(), log.BBError(err))
 			continue
@@ -186,58 +178,6 @@ func getRolesFromProjectPolicy(user *store.UserMessage, policy *store.IAMPolicyM
 		}
 	}
 	return roles
-}
-
-func EvalBindingCondition(expr string, requestTime time.Time) (bool, error) {
-	input := map[string]any{
-		"request.time": requestTime,
-	}
-	return doEvalBindingCondition(expr, input)
-}
-
-func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
-	if expr == "" {
-		return true, nil
-	}
-
-	e, err := cel.NewEnv(common.ProjectMemberCELAttributes...)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to new cel env")
-	}
-	ast, iss := e.Compile(expr)
-	if iss != nil && iss.Err() != nil {
-		return false, errors.Wrapf(iss.Err(), "failed to compile expr %q", expr)
-	}
-	// enable partial evaluation because the input only has request.time
-	// but the expression can have more.
-	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
-	if err != nil {
-		return false, errors.Wrapf(iss.Err(), "failed to construct program")
-	}
-	vars, err := e.PartialVars(input)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get vars")
-	}
-	out, _, err := prg.Eval(vars)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to eval cel expr")
-	}
-	// `out` is one of
-	// - True
-	// - False
-	// - a residual expression.
-
-	// return true if the result is a residual expression
-	// which means that it passes "the request.time < xxx" check.
-	if !celtypes.IsBool(out) {
-		return true, nil
-	}
-
-	res, ok := out.Equal(celtypes.True).Value().(bool)
-	if !ok {
-		return false, errors.Errorf("failed to convert cel result to bool")
-	}
-	return res, nil
 }
 
 func isNumber(v string) (int, bool) {

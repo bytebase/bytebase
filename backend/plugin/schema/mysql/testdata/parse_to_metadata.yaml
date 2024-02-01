@@ -7,6 +7,7 @@
         `d` text NULL,
         `t_not_null` text NOT NULL,
         `e` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+        `g` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (`a`),
         UNIQUE KEY `t_c_uniq_idx` (`c` DESC),
         UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5)) DESC),
@@ -56,6 +57,13 @@
                   "name":  "e",
                   "position":  6,
                   "type":  "varchar(20)"
+                },
+                {
+                  "name":  "g",
+                  "position":  7,
+                  "defaultExpression":  "CURRENT_TIMESTAMP",
+                  "onUpdate":  "CURRENT_TIMESTAMP",
+                  "type":  "TIMESTAMP"
                 }
               ],
               "indexes":  [

@@ -12,6 +12,7 @@ const (
 	PermissionEnvironmentsUpdate                    Permission = "bb.environments.update"
 	PermissionExternalVersionControlsCreate         Permission = "bb.externalVersionControls.create"
 	PermissionExternalVersionControlsDelete         Permission = "bb.externalVersionControls.delete"
+	PermissionExternalVersionControlsExchangeToken  Permission = "bb.externalVersionControls.exchangeToken"
 	PermissionExternalVersionControlsGet            Permission = "bb.externalVersionControls.get"
 	PermissionExternalVersionControlsList           Permission = "bb.externalVersionControls.list"
 	PermissionExternalVersionControlsListProjects   Permission = "bb.externalVersionControls.listProjects"
@@ -22,12 +23,6 @@ const (
 	PermissionIdentityProvidersGet                  Permission = "bb.identityProviders.get"
 	PermissionIdentityProvidersUndelete             Permission = "bb.identityProviders.undelete"
 	PermissionIdentityProvidersUpdate               Permission = "bb.identityProviders.update"
-	PermissionInstanceRolesCreate                   Permission = "bb.instanceRoles.create"
-	PermissionInstanceRolesDelete                   Permission = "bb.instanceRoles.delete"
-	PermissionInstanceRolesGet                      Permission = "bb.instanceRoles.get"
-	PermissionInstanceRolesList                     Permission = "bb.instanceRoles.list"
-	PermissionInstanceRolesUndelete                 Permission = "bb.instanceRoles.undelete"
-	PermissionInstanceRolesUpdate                   Permission = "bb.instanceRoles.update"
 	PermissionInstancesAdminExecute                 Permission = "bb.instances.adminExecute"
 	PermissionInstancesCreate                       Permission = "bb.instances.create"
 	PermissionInstancesDelete                       Permission = "bb.instances.delete"
@@ -113,6 +108,7 @@ func (p Permission) String() string {
 }
 
 func PermissionExist(p Permission) bool {
+	//exhaustive:enforce
 	switch p {
 	case
 		PermissionBackupsCreate,
@@ -150,6 +146,7 @@ func PermissionExist(p Permission) bool {
 		PermissionEnvironmentsUpdate,
 		PermissionExternalVersionControlsCreate,
 		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsExchangeToken,
 		PermissionExternalVersionControlsGet,
 		PermissionExternalVersionControlsList,
 		PermissionExternalVersionControlsListProjects,
@@ -160,12 +157,6 @@ func PermissionExist(p Permission) bool {
 		PermissionIdentityProvidersGet,
 		PermissionIdentityProvidersUndelete,
 		PermissionIdentityProvidersUpdate,
-		PermissionInstanceRolesCreate,
-		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesGet,
-		PermissionInstanceRolesList,
-		PermissionInstanceRolesUndelete,
-		PermissionInstanceRolesUpdate,
 		PermissionInstancesCreate,
 		PermissionInstancesDelete,
 		PermissionInstancesGet,
@@ -233,6 +224,7 @@ func (p PermissionLevel) String() string {
 }
 
 func GetPermissionLevel(permission Permission) PermissionLevel {
+	//exhaustive:enforce
 	switch permission {
 	case
 		PermissionEnvironmentsCreate,
@@ -243,6 +235,7 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionEnvironmentsUpdate,
 		PermissionExternalVersionControlsCreate,
 		PermissionExternalVersionControlsDelete,
+		PermissionExternalVersionControlsExchangeToken,
 		PermissionExternalVersionControlsGet,
 		PermissionExternalVersionControlsList,
 		PermissionExternalVersionControlsListProjects,
@@ -253,12 +246,6 @@ func GetPermissionLevel(permission Permission) PermissionLevel {
 		PermissionIdentityProvidersGet,
 		PermissionIdentityProvidersUndelete,
 		PermissionIdentityProvidersUpdate,
-		PermissionInstanceRolesCreate,
-		PermissionInstanceRolesDelete,
-		PermissionInstanceRolesGet,
-		PermissionInstanceRolesList,
-		PermissionInstanceRolesUndelete,
-		PermissionInstanceRolesUpdate,
 		PermissionInstancesAdminExecute,
 		PermissionInstancesCreate,
 		PermissionInstancesDelete,

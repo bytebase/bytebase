@@ -60,14 +60,18 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 
 	var items []lsp.CompletionItem
 	for _, candidate := range candidates {
-		items = append(items, lsp.CompletionItem{
-			Label:         candidate.Text,
-			Detail:        fmt.Sprintf("<%s> %s", string(candidate.Type), candidate.Definition),
+		completionItem := lsp.CompletionItem{
+			Label: candidate.Text,
+			LabelDetails: &lsp.CompletionItemLabelDetails{
+				Detail:      fmt.Sprintf("(%s)", string(candidate.Type)),
+				Description: candidate.Definition,
+			},
 			Kind:          convertLSPCompletionItemKind(candidate.Type),
 			Documentation: candidate.Comment,
 			SortText:      generateSortText(params, candidate),
 			InsertText:    generateInsertText(engine, candidate),
-		})
+		}
+		items = append(items, completionItem)
 	}
 
 	return &lsp.CompletionList{

@@ -251,7 +251,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
-		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to eval binding condition")
 		}
@@ -274,7 +274,7 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
 			continue
 		}
-		ok, err := iam.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
+		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to eval binding condition")
 		}
@@ -1226,6 +1226,18 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 			converted.PrevSchema = sdlSchema
 		}
 	}
+	if request.Concise {
+		switch instance.Engine {
+		case storepb.Engine_ORACLE:
+			conciseSchema, err := plsql.GetConciseSchema(converted.Schema)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get concise schema, error %v", err.Error())
+			}
+			converted.Schema = conciseSchema
+		default:
+			return nil, status.Errorf(codes.Unimplemented, "concise schema is not supported for engine %q", instance.Engine.String())
+		}
+	}
 	return converted, nil
 }
 
@@ -1246,9 +1258,14 @@ func (s *DatabaseService) DiffSchema(ctx context.Context, request *v1pb.DiffSche
 		return nil, status.Errorf(codes.Internal, "failed to get parser engine, error: %v", err)
 	}
 
+	strictMode := true
+	if engine == storepb.Engine_ORACLE {
+		strictMode = false
+	}
+
 	diff, err := base.SchemaDiff(engine, base.DiffContext{
 		IgnoreCaseSensitive: false,
-		StrictMode:          true,
+		StrictMode:          strictMode,
 	}, source, target)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to compute diff between source and target schemas, error: %v", err)

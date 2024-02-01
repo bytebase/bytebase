@@ -43,7 +43,7 @@ const isAdminMode = computed(() => {
 });
 
 const allowManageInstance = computed(() => {
-  return hasWorkspacePermissionV2(me.value, "bb.instanceRoles.update");
+  return hasWorkspacePermissionV2(me.value, "bb.instances.update");
 });
 
 const hasReadonlyDataSource = computed(() => {

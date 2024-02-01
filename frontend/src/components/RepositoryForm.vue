@@ -275,7 +275,11 @@
             name: instanceWithoutLicense.map((ins) => ins.title).join(','),
           })
         "
-        :action-text="$t('subscription.instance-assignment.assign-license')"
+        :action-text="
+          canManageInstanceLicense
+            ? $t('subscription.instance-assignment.assign-license')
+            : ''
+        "
         @click="state.showInstanceAssignmentDrawer = true"
       />
       <div class="flex space-x-4 mt-2">
@@ -311,6 +315,7 @@ import {
   hasFeature,
   useSubscriptionV1Store,
   useDatabaseV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import { ExternalRepositoryInfo, RepositoryConfig } from "@/types";
 import { ExternalVersionControl_Type } from "@/types/proto/v1/externalvs_service";
@@ -321,6 +326,7 @@ import {
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -366,6 +372,13 @@ const subscriptionStore = useSubscriptionV1Store();
 
 const databaseV1List = computed(() => {
   return useDatabaseV1Store().databaseListByProject(props.project.name);
+});
+
+const canManageInstanceLicense = computed((): boolean => {
+  return hasWorkspacePermissionV2(
+    useCurrentUserV1().value,
+    "bb.instances.update"
+  );
 });
 
 const instanceWithoutLicense = computed(() => {

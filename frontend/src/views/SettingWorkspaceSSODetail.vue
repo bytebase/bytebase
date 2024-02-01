@@ -19,9 +19,11 @@
   </div>
 
   <IdentityProviderCreateForm
+    v-if="!isLoading"
     class="py-4"
     :identity-provider-name="currentIdentityProvider?.name"
   />
+  <BBSpin v-else class="w-full h-64" />
 
   <FeatureModal
     feature="bb.feature.sso"
@@ -31,7 +33,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import IdentityProviderCreateForm from "@/components/IdentityProviderCreateForm.vue";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { State } from "@/types/proto/v1/common";
@@ -48,13 +50,16 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
 });
 const identityProviderStore = useIdentityProviderStore();
+const isLoading = ref<boolean>(true);
 
 watchEffect(async () => {
   if (props.ssoName) {
+    isLoading.value = true;
     await identityProviderStore.getOrFetchIdentityProviderByName(
       unescape(props.ssoName)
     );
   }
+  isLoading.value = false;
 });
 
 const currentIdentityProvider = computed(() => {

@@ -20,11 +20,11 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
-import { useSheetV1Store, useTabStore } from "@/store";
-import { getStatementSize } from "@/utils";
+import { useWorkSheetStore, useTabStore } from "@/store";
+import { getSheetStatement, getStatementSize } from "@/utils";
 
 const tabStore = useTabStore();
-const sheetV1Store = useSheetV1Store();
+const sheetV1Store = useWorkSheetStore();
 const tab = computed(() => tabStore.currentTab);
 
 const sheet = computed(() => {
@@ -38,6 +38,8 @@ const isSheetOversize = computed(() => {
     return false;
   }
 
-  return getStatementSize(sheet.value.content).lt(sheet.value.contentSize);
+  return getStatementSize(getSheetStatement(sheet.value)).lt(
+    sheet.value.contentSize
+  );
 });
 </script>

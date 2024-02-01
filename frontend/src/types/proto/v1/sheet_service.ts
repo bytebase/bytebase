@@ -52,85 +52,12 @@ export interface UpdateSheetRequest {
   updateMask: string[] | undefined;
 }
 
-export interface UpdateSheetOrganizerRequest {
-  /**
-   * The organizer to update.
-   *
-   * The organizer's `sheet` field is used to identify the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  organizer:
-    | SheetOrganizer
-    | undefined;
-  /**
-   * The list of fields to be updated.
-   * Fields are specified relative to the sheet organizer.
-   * Only support update the following fields for now:
-   * - `starred`
-   * - `pinned`
-   */
-  updateMask: string[] | undefined;
-}
-
-export interface SheetOrganizer {
-  /**
-   * The name of the sheet.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  sheet: string;
-  /** starred means if the sheet is starred. */
-  starred: boolean;
-  /** pinned means if the sheet is pinned. */
-  pinned: boolean;
-}
-
 export interface DeleteSheetRequest {
   /**
    * The name of the sheet to delete.
    * Format: projects/{project}/sheets/{sheet}
    */
   name: string;
-}
-
-export interface SearchSheetsRequest {
-  /**
-   * The parent resource of the sheet.
-   * Format: projects/{project}
-   */
-  parent: string;
-  /**
-   * To filter the search result.
-   * Format: only support the following spec for now:
-   * - `creator = users/{email}`, `creator != users/{email}`
-   * - `starred = true`, `starred = false`.
-   * Not support empty filter for now.
-   */
-  filter: string;
-  /**
-   * Not used. The maximum number of sheets to return. The service may return fewer than
-   * this value.
-   * If unspecified, at most 50 sheets will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
-   */
-  pageSize: number;
-  /**
-   * Not used. A page token, received from a previous `SearchSheets` call.
-   * Provide this to retrieve the subsequent page.
-   *
-   * When paginating, all other parameters provided to `SearchSheets` must match
-   * the call that provided the page token.
-   */
-  pageToken: string;
-}
-
-export interface SearchSheetsResponse {
-  /** The sheets that matched the search criteria. */
-  sheets: Sheet[];
-  /**
-   * Not used. A token, which can be sent as `page_token` to retrieve the next page.
-   * If this field is omitted, there are no subsequent pages.
-   */
-  nextPageToken: string;
 }
 
 export interface Sheet {
@@ -169,137 +96,8 @@ export interface Sheet {
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
   contentSize: Long;
-  visibility: Sheet_Visibility;
-  /** The source of the sheet. */
-  source: Sheet_Source;
-  /** The type of the sheet. */
-  type: Sheet_Type;
-  /** starred indicates whether the sheet is starred by the current authenticated user. */
-  starred: boolean;
   payload: SheetPayload | undefined;
   pushEvent: PushEvent | undefined;
-}
-
-export enum Sheet_Visibility {
-  VISIBILITY_UNSPECIFIED = 0,
-  /** VISIBILITY_PUBLIC - Public, sheet OWNER can read/write, and all others can read. */
-  VISIBILITY_PUBLIC = 1,
-  /** VISIBILITY_PROJECT - Project, sheet OWNER and project OWNER can read/write, and project DEVELOPER can read. */
-  VISIBILITY_PROJECT = 2,
-  /** VISIBILITY_PRIVATE - Private, only sheet OWNER can read/write. */
-  VISIBILITY_PRIVATE = 3,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_VisibilityFromJSON(object: any): Sheet_Visibility {
-  switch (object) {
-    case 0:
-    case "VISIBILITY_UNSPECIFIED":
-      return Sheet_Visibility.VISIBILITY_UNSPECIFIED;
-    case 1:
-    case "VISIBILITY_PUBLIC":
-      return Sheet_Visibility.VISIBILITY_PUBLIC;
-    case 2:
-    case "VISIBILITY_PROJECT":
-      return Sheet_Visibility.VISIBILITY_PROJECT;
-    case 3:
-    case "VISIBILITY_PRIVATE":
-      return Sheet_Visibility.VISIBILITY_PRIVATE;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Visibility.UNRECOGNIZED;
-  }
-}
-
-export function sheet_VisibilityToJSON(object: Sheet_Visibility): string {
-  switch (object) {
-    case Sheet_Visibility.VISIBILITY_UNSPECIFIED:
-      return "VISIBILITY_UNSPECIFIED";
-    case Sheet_Visibility.VISIBILITY_PUBLIC:
-      return "VISIBILITY_PUBLIC";
-    case Sheet_Visibility.VISIBILITY_PROJECT:
-      return "VISIBILITY_PROJECT";
-    case Sheet_Visibility.VISIBILITY_PRIVATE:
-      return "VISIBILITY_PRIVATE";
-    case Sheet_Visibility.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum Sheet_Source {
-  SOURCE_UNSPECIFIED = 0,
-  /** SOURCE_BYTEBASE - BYTEBASE is the sheet created in SQL Editor. */
-  SOURCE_BYTEBASE = 1,
-  /** SOURCE_BYTEBASE_ARTIFACT - BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. */
-  SOURCE_BYTEBASE_ARTIFACT = 2,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_SourceFromJSON(object: any): Sheet_Source {
-  switch (object) {
-    case 0:
-    case "SOURCE_UNSPECIFIED":
-      return Sheet_Source.SOURCE_UNSPECIFIED;
-    case 1:
-    case "SOURCE_BYTEBASE":
-      return Sheet_Source.SOURCE_BYTEBASE;
-    case 2:
-    case "SOURCE_BYTEBASE_ARTIFACT":
-      return Sheet_Source.SOURCE_BYTEBASE_ARTIFACT;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Source.UNRECOGNIZED;
-  }
-}
-
-export function sheet_SourceToJSON(object: Sheet_Source): string {
-  switch (object) {
-    case Sheet_Source.SOURCE_UNSPECIFIED:
-      return "SOURCE_UNSPECIFIED";
-    case Sheet_Source.SOURCE_BYTEBASE:
-      return "SOURCE_BYTEBASE";
-    case Sheet_Source.SOURCE_BYTEBASE_ARTIFACT:
-      return "SOURCE_BYTEBASE_ARTIFACT";
-    case Sheet_Source.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export enum Sheet_Type {
-  TYPE_UNSPECIFIED = 0,
-  TYPE_SQL = 1,
-  UNRECOGNIZED = -1,
-}
-
-export function sheet_TypeFromJSON(object: any): Sheet_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return Sheet_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "TYPE_SQL":
-      return Sheet_Type.TYPE_SQL;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Sheet_Type.UNRECOGNIZED;
-  }
-}
-
-export function sheet_TypeToJSON(object: Sheet_Type): string {
-  switch (object) {
-    case Sheet_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case Sheet_Type.TYPE_SQL:
-      return "TYPE_SQL";
-    case Sheet_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
 }
 
 export interface SheetPayload {
@@ -568,171 +366,6 @@ export const UpdateSheetRequest = {
   },
 };
 
-function createBaseUpdateSheetOrganizerRequest(): UpdateSheetOrganizerRequest {
-  return { organizer: undefined, updateMask: undefined };
-}
-
-export const UpdateSheetOrganizerRequest = {
-  encode(message: UpdateSheetOrganizerRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.organizer !== undefined) {
-      SheetOrganizer.encode(message.organizer, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.updateMask !== undefined) {
-      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSheetOrganizerRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateSheetOrganizerRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.organizer = SheetOrganizer.decode(reader, reader.uint32());
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): UpdateSheetOrganizerRequest {
-    return {
-      organizer: isSet(object.organizer) ? SheetOrganizer.fromJSON(object.organizer) : undefined,
-      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
-    };
-  },
-
-  toJSON(message: UpdateSheetOrganizerRequest): unknown {
-    const obj: any = {};
-    if (message.organizer !== undefined) {
-      obj.organizer = SheetOrganizer.toJSON(message.organizer);
-    }
-    if (message.updateMask !== undefined) {
-      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
-    return UpdateSheetOrganizerRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<UpdateSheetOrganizerRequest>): UpdateSheetOrganizerRequest {
-    const message = createBaseUpdateSheetOrganizerRequest();
-    message.organizer = (object.organizer !== undefined && object.organizer !== null)
-      ? SheetOrganizer.fromPartial(object.organizer)
-      : undefined;
-    message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseSheetOrganizer(): SheetOrganizer {
-  return { sheet: "", starred: false, pinned: false };
-}
-
-export const SheetOrganizer = {
-  encode(message: SheetOrganizer, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.sheet !== "") {
-      writer.uint32(10).string(message.sheet);
-    }
-    if (message.starred === true) {
-      writer.uint32(16).bool(message.starred);
-    }
-    if (message.pinned === true) {
-      writer.uint32(24).bool(message.pinned);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SheetOrganizer {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSheetOrganizer();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.sheet = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.starred = reader.bool();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.pinned = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SheetOrganizer {
-    return {
-      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
-      pinned: isSet(object.pinned) ? globalThis.Boolean(object.pinned) : false,
-    };
-  },
-
-  toJSON(message: SheetOrganizer): unknown {
-    const obj: any = {};
-    if (message.sheet !== "") {
-      obj.sheet = message.sheet;
-    }
-    if (message.starred === true) {
-      obj.starred = message.starred;
-    }
-    if (message.pinned === true) {
-      obj.pinned = message.pinned;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SheetOrganizer>): SheetOrganizer {
-    return SheetOrganizer.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SheetOrganizer>): SheetOrganizer {
-    const message = createBaseSheetOrganizer();
-    message.sheet = object.sheet ?? "";
-    message.starred = object.starred ?? false;
-    message.pinned = object.pinned ?? false;
-    return message;
-  },
-};
-
 function createBaseDeleteSheetRequest(): DeleteSheetRequest {
   return { name: "" };
 }
@@ -790,184 +423,6 @@ export const DeleteSheetRequest = {
   },
 };
 
-function createBaseSearchSheetsRequest(): SearchSheetsRequest {
-  return { parent: "", filter: "", pageSize: 0, pageToken: "" };
-}
-
-export const SearchSheetsRequest = {
-  encode(message: SearchSheetsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.filter !== "") {
-      writer.uint32(18).string(message.filter);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(24).int32(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      writer.uint32(34).string(message.pageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchSheetsRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchSheetsRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.filter = reader.string();
-          continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.pageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchSheetsRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
-    };
-  },
-
-  toJSON(message: SearchSheetsRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.filter !== "") {
-      obj.filter = message.filter;
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    if (message.pageToken !== "") {
-      obj.pageToken = message.pageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
-    return SearchSheetsRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchSheetsRequest>): SearchSheetsRequest {
-    const message = createBaseSearchSheetsRequest();
-    message.parent = object.parent ?? "";
-    message.filter = object.filter ?? "";
-    message.pageSize = object.pageSize ?? 0;
-    message.pageToken = object.pageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseSearchSheetsResponse(): SearchSheetsResponse {
-  return { sheets: [], nextPageToken: "" };
-}
-
-export const SearchSheetsResponse = {
-  encode(message: SearchSheetsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.sheets) {
-      Sheet.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.nextPageToken !== "") {
-      writer.uint32(18).string(message.nextPageToken);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchSheetsResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchSheetsResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.sheets.push(Sheet.decode(reader, reader.uint32()));
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.nextPageToken = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchSheetsResponse {
-    return {
-      sheets: globalThis.Array.isArray(object?.sheets) ? object.sheets.map((e: any) => Sheet.fromJSON(e)) : [],
-      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
-    };
-  },
-
-  toJSON(message: SearchSheetsResponse): unknown {
-    const obj: any = {};
-    if (message.sheets?.length) {
-      obj.sheets = message.sheets.map((e) => Sheet.toJSON(e));
-    }
-    if (message.nextPageToken !== "") {
-      obj.nextPageToken = message.nextPageToken;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
-    return SearchSheetsResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchSheetsResponse>): SearchSheetsResponse {
-    const message = createBaseSearchSheetsResponse();
-    message.sheets = object.sheets?.map((e) => Sheet.fromPartial(e)) || [];
-    message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
 function createBaseSheet(): Sheet {
   return {
     name: "",
@@ -978,10 +433,6 @@ function createBaseSheet(): Sheet {
     updateTime: undefined,
     content: new Uint8Array(0),
     contentSize: Long.ZERO,
-    visibility: 0,
-    source: 0,
-    type: 0,
-    starred: false,
     payload: undefined,
     pushEvent: undefined,
   };
@@ -1012,18 +463,6 @@ export const Sheet = {
     }
     if (!message.contentSize.isZero()) {
       writer.uint32(64).int64(message.contentSize);
-    }
-    if (message.visibility !== 0) {
-      writer.uint32(72).int32(message.visibility);
-    }
-    if (message.source !== 0) {
-      writer.uint32(80).int32(message.source);
-    }
-    if (message.type !== 0) {
-      writer.uint32(88).int32(message.type);
-    }
-    if (message.starred === true) {
-      writer.uint32(96).bool(message.starred);
     }
     if (message.payload !== undefined) {
       SheetPayload.encode(message.payload, writer.uint32(106).fork()).ldelim();
@@ -1097,34 +536,6 @@ export const Sheet = {
 
           message.contentSize = reader.int64() as Long;
           continue;
-        case 9:
-          if (tag !== 72) {
-            break;
-          }
-
-          message.visibility = reader.int32() as any;
-          continue;
-        case 10:
-          if (tag !== 80) {
-            break;
-          }
-
-          message.source = reader.int32() as any;
-          continue;
-        case 11:
-          if (tag !== 88) {
-            break;
-          }
-
-          message.type = reader.int32() as any;
-          continue;
-        case 12:
-          if (tag !== 96) {
-            break;
-          }
-
-          message.starred = reader.bool();
-          continue;
         case 13:
           if (tag !== 106) {
             break;
@@ -1158,10 +569,6 @@ export const Sheet = {
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
       content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
       contentSize: isSet(object.contentSize) ? Long.fromValue(object.contentSize) : Long.ZERO,
-      visibility: isSet(object.visibility) ? sheet_VisibilityFromJSON(object.visibility) : 0,
-      source: isSet(object.source) ? sheet_SourceFromJSON(object.source) : 0,
-      type: isSet(object.type) ? sheet_TypeFromJSON(object.type) : 0,
-      starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
       payload: isSet(object.payload) ? SheetPayload.fromJSON(object.payload) : undefined,
       pushEvent: isSet(object.pushEvent) ? PushEvent.fromJSON(object.pushEvent) : undefined,
     };
@@ -1193,18 +600,6 @@ export const Sheet = {
     if (!message.contentSize.isZero()) {
       obj.contentSize = (message.contentSize || Long.ZERO).toString();
     }
-    if (message.visibility !== 0) {
-      obj.visibility = sheet_VisibilityToJSON(message.visibility);
-    }
-    if (message.source !== 0) {
-      obj.source = sheet_SourceToJSON(message.source);
-    }
-    if (message.type !== 0) {
-      obj.type = sheet_TypeToJSON(message.type);
-    }
-    if (message.starred === true) {
-      obj.starred = message.starred;
-    }
     if (message.payload !== undefined) {
       obj.payload = SheetPayload.toJSON(message.payload);
     }
@@ -1229,10 +624,6 @@ export const Sheet = {
     message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
       ? Long.fromValue(object.contentSize)
       : Long.ZERO;
-    message.visibility = object.visibility ?? 0;
-    message.source = object.source ?? 0;
-    message.type = object.type ?? 0;
-    message.starred = object.starred ?? false;
     message.payload = (object.payload !== undefined && object.payload !== null)
       ? SheetPayload.fromPartial(object.payload)
       : undefined;
@@ -1449,61 +840,6 @@ export const SheetServiceDefinition = {
         },
       },
     },
-    searchSheets: {
-      name: "SearchSheets",
-      requestType: SearchSheetsRequest,
-      requestStream: false,
-      responseType: SearchSheetsResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          578365826: [
-            new Uint8Array([
-              39,
-              18,
-              37,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              115,
-              104,
-              101,
-              101,
-              116,
-              115,
-              58,
-              115,
-              101,
-              97,
-              114,
-              99,
-              104,
-            ]),
-          ],
-        },
-      },
-    },
     updateSheet: {
       name: "UpdateSheet",
       requestType: UpdateSheetRequest,
@@ -1561,112 +897,6 @@ export const SheetServiceDefinition = {
               47,
               42,
               125,
-            ]),
-          ],
-        },
-      },
-    },
-    updateSheetOrganizer: {
-      name: "UpdateSheetOrganizer",
-      requestType: UpdateSheetOrganizerRequest,
-      requestStream: false,
-      responseType: SheetOrganizer,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [
-            new Uint8Array([
-              21,
-              111,
-              114,
-              103,
-              97,
-              110,
-              105,
-              122,
-              101,
-              114,
-              44,
-              117,
-              112,
-              100,
-              97,
-              116,
-              101,
-              95,
-              109,
-              97,
-              115,
-              107,
-            ]),
-          ],
-          578365826: [
-            new Uint8Array([
-              64,
-              58,
-              9,
-              111,
-              114,
-              103,
-              97,
-              110,
-              105,
-              122,
-              101,
-              114,
-              26,
-              51,
-              47,
-              118,
-              49,
-              47,
-              123,
-              111,
-              114,
-              103,
-              97,
-              110,
-              105,
-              122,
-              101,
-              114,
-              46,
-              115,
-              104,
-              101,
-              101,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              115,
-              104,
-              101,
-              101,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              111,
-              114,
-              103,
-              97,
-              110,
-              105,
-              122,
-              101,
-              114,
             ]),
           ],
         },

@@ -4,16 +4,16 @@ import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useSheetV1Store,
+  useWorkSheetStore,
   useTabStore,
 } from "@/store";
 import { AnyTabInfo, UNKNOWN_ID } from "@/types";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import {
   emptyConnection,
   getSheetStatement,
   getSuggestedTabNameFromConnection,
-  isSheetReadableV1,
+  isWorksheetReadableV1,
 } from "@/utils";
 import { SheetViewMode } from "./types";
 
@@ -23,7 +23,7 @@ type SheetEvents = Emittery<{
 }>;
 
 const useSheetListByView = (viewMode: SheetViewMode) => {
-  const sheetStore = useSheetV1Store();
+  const sheetStore = useWorkSheetStore();
 
   const isInitialized = ref(false);
   const isLoading = ref(false);
@@ -108,13 +108,13 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const openSheet = async (sheet: Sheet, forceNewTab = false) => {
+export const openSheet = async (sheet: Worksheet, forceNewTab = false) => {
   const tabStore = useTabStore();
   const openingSheetTab = tabStore.tabList.find(
     (tab) => tab.sheetName == sheet.name
   );
 
-  if (!isSheetReadableV1(sheet)) {
+  if (!isWorksheetReadableV1(sheet)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

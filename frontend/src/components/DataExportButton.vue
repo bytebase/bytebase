@@ -92,7 +92,7 @@
     <div class="w-80">
       <span class="textinfolabel">{{ $t("export-data.password-info") }}</span>
       <BBTextField
-        v-modal:value="formData.password"
+        v-model:value="formData.password"
         class="my-2"
         :focus-on-mount="true"
       />

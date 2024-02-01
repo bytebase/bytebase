@@ -3,11 +3,11 @@
 
   <template v-if="sheet">
     <heroicons-outline:user-group
-      v-if="sheet.visibility === Sheet_Visibility.VISIBILITY_PROJECT"
+      v-if="sheet.visibility === Worksheet_Visibility.VISIBILITY_PROJECT"
       class="w-4 h-4"
     />
     <heroicons-outline:globe
-      v-if="sheet.visibility === Sheet_Visibility.VISIBILITY_PUBLIC"
+      v-if="sheet.visibility === Worksheet_Visibility.VISIBILITY_PUBLIC"
       class="w-4 h-4"
     />
   </template>
@@ -18,10 +18,10 @@
 
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
-import { useSheetV1Store } from "@/store";
+import { useWorkSheetStore } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
+import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { SheetConnectionIcon } from "../../EditorCommon";
 
 const props = defineProps({
@@ -35,7 +35,7 @@ const props = defineProps({
   },
 });
 
-const sheetV1Store = useSheetV1Store();
+const sheetV1Store = useWorkSheetStore();
 
 const sheet = computed(() => {
   const { sheetName } = props.tab;

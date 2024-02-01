@@ -50,20 +50,18 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
 import { useUserStore, useProjectV1Store } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
-import { Sheet_Visibility } from "@/types/proto/v1/sheet_service";
 import {
-  extractProjectResourceName,
-  projectV1Name,
-  sheetSlugV1,
-} from "@/utils";
+  Worksheet,
+  Worksheet_Visibility,
+} from "@/types/proto/v1/worksheet_service";
+import { projectV1Name, worksheetSlugV1 } from "@/utils";
 import { SheetViewMode } from "../types";
 import Dropdown from "./Dropdown.vue";
 
 const props = withDefaults(
   defineProps<{
     view: SheetViewMode;
-    sheetList: Sheet[];
+    sheetList: Worksheet[];
     loading?: boolean;
   }>(),
   {
@@ -84,11 +82,11 @@ const showCreator = computed(() => {
   return props.view === "shared" || props.view === "starred";
 });
 
-const handleSheetClick = (sheet: Sheet) => {
+const handleSheetClick = (sheet: Worksheet) => {
   router.push({
     name: SQL_EDITOR_SHARE_MODULE,
     params: {
-      sheetSlug: sheetSlugV1(sheet),
+      sheetSlug: worksheetSlugV1(sheet),
     },
   });
 };
@@ -124,15 +122,14 @@ const headers = computed(() => {
   return labelList;
 });
 
-const getValueList = (sheet: Sheet) => {
-  const projName = extractProjectResourceName(sheet.name);
-  const project = projectV1Store.getProjectByName(`projects/${projName}`);
+const getValueList = (sheet: Worksheet) => {
+  const project = projectV1Store.getProjectByName(sheet.project);
   let visibility = t("sql-editor.private");
   switch (sheet.visibility) {
-    case Sheet_Visibility.VISIBILITY_PROJECT:
+    case Worksheet_Visibility.VISIBILITY_PROJECT:
       visibility = t("common.project");
       break;
-    case Sheet_Visibility.VISIBILITY_PUBLIC:
+    case Worksheet_Visibility.VISIBILITY_PUBLIC:
       visibility = t("sql-editor.public");
   }
   const valueList = [

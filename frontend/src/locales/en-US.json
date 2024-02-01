@@ -273,7 +273,11 @@
     "nickname": "Nickname",
     "missing-permission": "Missing required permissions",
     "continue-anyway": "Continue anyway",
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "backup": "Backup",
+    "cutover": "Cutover",
+    "baseline": "Baseline",
+    "project-member": "Project member"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1241,7 +1245,8 @@
     "successfully-synced-schema-for-database-database-value-name": "Successfully synced schema for database '{0}'.",
     "start-to-sync-schema": "Start to sync schema",
     "failed-to-sync-schema": "Failed to sync schema",
-    "successfully-synced-schema": "Successfully synced schema"
+    "successfully-synced-schema": "Successfully synced schema",
+    "create": "Create database"
   },
   "instance": {
     "select": "Select instance",
@@ -2344,7 +2349,8 @@
       "not-null": "Not Null",
       "primary": "Primary",
       "foreign-key": "Foreign Key",
-      "classification": "Classification"
+      "classification": "Classification",
+      "on-update": "On Update"
     },
     "default": {
       "no-default": "No default",
@@ -3229,7 +3235,7 @@
     },
     "workspace-member": {
       "self": "Workspace Member",
-      "description": "Workspace Member has all permissions within the workspace except for managing workspace members."
+      "description": "Workspace Member is the most basic role within the workspace."
     },
     "project-owner": {
       "self": "Project Owner",

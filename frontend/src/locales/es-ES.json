@@ -273,7 +273,11 @@
     "nickname": "Apodo",
     "missing-permission": "Faltan permisos requeridos",
     "continue-anyway": "De todas maneras, continúe",
-    "permissions": "Permisos"
+    "permissions": "Permisos",
+    "backup": "Respaldo",
+    "cutover": "transición",
+    "baseline": "Base",
+    "project-member": "Miembro del proyecto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1240,7 +1244,8 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "foreign-tables": "tabla externa"
+    "foreign-tables": "tabla externa",
+    "create": "Crear base de datos"
   },
   "instance": {
     "select": "Seleccionar instancia",
@@ -3226,7 +3231,7 @@
     },
     "workspace-member": {
       "self": "Miembro del espacio de trabajo",
-      "description": "El miembro del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo, excepto la gestión de miembros del espacio de trabajo."
+      "description": "El miembro del espacio de trabajo es un usuario normal sin privilegios especiales dentro del espacio de trabajo."
     },
     "project-owner": {
       "self": "Propietario del proyecto",

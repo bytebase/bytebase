@@ -313,6 +313,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
 		}
+		if instance == nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		}
 		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,
@@ -784,7 +787,7 @@ func convertToV1PBWorkspaceIAMPolicy(policy *storepb.IamPolicy) (*v1pb.Policy_Wo
 			Condition: binding.Condition,
 		}
 
-		env, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+		env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create cel environment")
 		}

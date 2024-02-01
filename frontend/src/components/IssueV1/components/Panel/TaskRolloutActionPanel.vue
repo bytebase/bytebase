@@ -13,7 +13,7 @@
       >
         <div
           v-if="stage"
-          class="flex flex-col gap-y-1 shrink overflow-y-hidden justify-start"
+          class="flex flex-col gap-y-1 shrink-0 overflow-y-hidden justify-start"
         >
           <label class="font-medium text-control">
             {{ $t("common.stage") }}
@@ -32,23 +32,26 @@
             <template v-else>{{ $t("common.tasks") }}</template>
           </label>
           <div class="flex-1 overflow-y-auto">
-            <ul
-              class="textinfolabel space-y-1"
-              :class="[distinctTaskList.length > 1 && 'list-disc pl-4']"
-            >
-              <li v-for="item in distinctTaskList" :key="item.task.uid">
-                <span class="break-all">
-                  {{ item.task.title }}
-                </span>
-                <span v-if="item.similar.length > 0" class="ml-1 text-gray-400">
-                  {{
-                    $t("task.n-similar-tasks", {
-                      count: item.similar.length + 1,
-                    })
-                  }}
-                </span>
-              </li>
-            </ul>
+            <NScrollbar>
+              <ul class="text-sm space-y-2">
+                <li
+                  v-for="task in taskList"
+                  :key="task.uid"
+                  class="flex items-center"
+                >
+                  <NTag
+                    v-if="semanticTaskType(task.type)"
+                    class="mr-2"
+                    size="small"
+                  >
+                    <span class="inline-block text-center">
+                      {{ semanticTaskType(task.type) }}
+                    </span>
+                  </NTag>
+                  <RolloutTaskDatabaseName :task="task" />
+                </li>
+              </ul>
+            </NScrollbar>
           </div>
         </div>
 
@@ -121,8 +124,8 @@
 </template>
 
 <script setup lang="ts">
-import { groupBy, head, uniqBy } from "lodash-es";
-import { NButton, NCheckbox, NInput, NTooltip } from "naive-ui";
+import { head, uniqBy } from "lodash-es";
+import { NButton, NCheckbox, NInput, NScrollbar, NTooltip } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { PlanCheckBar } from "@/components/IssueV1/components/PlanCheckSection";
@@ -130,6 +133,7 @@ import {
   TaskRolloutAction,
   planCheckRunListForTask,
   planCheckRunSummaryForCheckRunList,
+  semanticTaskType,
   stageForTask,
   taskRolloutActionButtonProps,
   taskRolloutActionDialogButtonName,
@@ -146,6 +150,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { ErrorList } from "../common";
 import CommonDrawer from "./CommonDrawer.vue";
+import RolloutTaskDatabaseName from "./RolloutTaskDatabaseName.vue";
 
 type LocalState = {
   loading: boolean;
@@ -175,16 +180,6 @@ const title = computed(() => {
     return t("task.action-all-tasks-in-current-stage", { action });
   }
   return action;
-});
-
-const distinctTaskList = computed(() => {
-  type DistinctTaskList = { task: Task; similar: Task[] };
-  const groups = groupBy(props.taskList, (task) => task.title);
-
-  return Object.keys(groups).map<DistinctTaskList>((taskName) => {
-    const [task, ...similar] = groups[taskName];
-    return { task, similar };
-  });
 });
 
 const stage = computed(() => {

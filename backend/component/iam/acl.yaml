@@ -36,6 +36,7 @@ roles:
       - bb.environments.update
       - bb.externalVersionControls.create
       - bb.externalVersionControls.delete
+      - bb.externalVersionControls.exchangeToken
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
       - bb.externalVersionControls.listProjects
@@ -46,12 +47,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.instanceRoles.create
-      - bb.instanceRoles.delete
-      - bb.instanceRoles.get
-      - bb.instanceRoles.list
-      - bb.instanceRoles.undelete
-      - bb.instanceRoles.update
       - bb.instances.adminExecute
       - bb.instances.create
       - bb.instances.delete
@@ -138,6 +133,7 @@ roles:
       - bb.environments.update
       - bb.externalVersionControls.create
       - bb.externalVersionControls.delete
+      - bb.externalVersionControls.exchangeToken
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
       - bb.externalVersionControls.listProjects
@@ -148,12 +144,6 @@ roles:
       - bb.identityProviders.get
       - bb.identityProviders.undelete
       - bb.identityProviders.update
-      - bb.instanceRoles.create
-      - bb.instanceRoles.delete
-      - bb.instanceRoles.get
-      - bb.instanceRoles.list
-      - bb.instanceRoles.undelete
-      - bb.instanceRoles.update
       - bb.instances.adminExecute
       - bb.instances.create
       - bb.instances.delete
@@ -207,6 +197,10 @@ roles:
     permissions:
       - bb.environments.get
       - bb.environments.list
+      - bb.externalVersionControls.exchangeToken
+      - bb.externalVersionControls.get
+      - bb.externalVersionControls.list
+      - bb.externalVersionControls.searchProjects
       - bb.policies.list
       - bb.risks.list
       - bb.roles.list

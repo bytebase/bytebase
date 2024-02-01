@@ -15,19 +15,17 @@
 import { type DropdownOption, NDropdown, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSheetV1Store, pushNotification } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { useWorkSheetStore, pushNotification } from "@/store";
 import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-} from "@/types/proto/v1/sheet_service";
-import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
+  Worksheet,
+  Worksheet_Visibility,
+} from "@/types/proto/v1/worksheet_service";
+import { isWorksheetWritableV1 } from "@/utils";
 import type { SheetViewMode } from "../types";
 
 const props = defineProps<{
   view: SheetViewMode;
-  sheet: Sheet;
+  sheet: Worksheet;
 }>();
 
 const emit = defineEmits<{
@@ -35,7 +33,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const sheetV1Store = useSheetV1Store();
+const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
 
 const options = computed(() => {
@@ -54,7 +52,7 @@ const options = computed(() => {
     });
   }
 
-  const canWriteSheet = isSheetWritableV1(sheet);
+  const canWriteSheet = isWorksheetWritableV1(sheet);
   if (canWriteSheet) {
     options.push({
       key: "delete",
@@ -82,7 +80,7 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        await sheetV1Store.deleteSheetByName(sheet.name);
+        await worksheetV1Store.deleteSheetByName(sheet.name);
         emit("refresh");
         dialogInstance.destroy();
       },
@@ -94,8 +92,8 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    await sheetV1Store.upsertSheetOrganizer({
-      sheet: sheet.name,
+    await worksheetV1Store.upsertSheetOrganizer({
+      worksheet: sheet.name,
       starred: key === "star",
     });
     emit("refresh");
@@ -108,16 +106,13 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        const project = extractProjectResourceName(sheet.name);
-        await sheetV1Store.createSheet(
-          `projects/${project}`,
-          Sheet.fromPartial({
+        await worksheetV1Store.createSheet(
+          Worksheet.fromPartial({
             title: sheet.title,
+            project: sheet.project,
             content: sheet.content,
             database: sheet.database,
-            visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-            source: Sheet_Source.SOURCE_BYTEBASE,
-            type: Sheet_Type.TYPE_SQL,
+            visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
           })
         );
         pushNotification({

@@ -7,6 +7,7 @@ export * from "./projectWebhook";
 export * from "./deploymentConfig";
 export * from "./databaseSecret";
 export * from "./sheet";
+export * from "./worksheet";
 export * from "./localSheet";
 export * from "./policy";
 export * from "./setting";

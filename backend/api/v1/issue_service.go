@@ -114,7 +114,8 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	if s.profile.DevelopmentIAM {
+	// allow creator to get issue.
+	if s.profile.DevelopmentIAM && issue.Creator.ID != user.ID {
 		needPermissions := []iam.Permission{iam.PermissionIssuesGet}
 		if issue.Type == api.IssueDatabaseGeneral {
 			needPermissions = append(needPermissions, iam.PermissionPlansGet)
@@ -654,7 +655,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 	// Validate CEL expression if it's not empty.
 	if expression := request.Issue.GrantRequest.GetCondition().GetExpression(); expression != "" {
-		e, err := cel.NewEnv(common.QueryExportPolicyCELAttributes...)
+		e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to create cel environment, error: %v", err)
 		}
@@ -1795,7 +1796,6 @@ func canRequestIssue(issueCreator *store.UserMessage, user *store.UserMessage) b
 	return issueCreator.ID == user.ID
 }
 
-// TODO(p0ny): renovate this function, respect allUsers & CEL.
 func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy *store.IAMPolicyMessage) (bool, error) {
 	if len(step.Nodes) != 1 {
 		return false, errors.Errorf("expecting one node but got %v", len(step.Nodes))
@@ -1808,42 +1808,34 @@ func isUserReviewer(step *storepb.ApprovalStep, user *store.UserMessage, policy 
 		return false, errors.Errorf("expecting ANY_IN_GROUP node type but got %v", node.Type)
 	}
 
-	userHasProjectRole := map[string]bool{}
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == user.ID {
-				userHasProjectRole[convertToRoleName(string(binding.Role))] = true
-				break
-			}
-		}
+	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get user roles")
 	}
+
 	switch val := node.Payload.(type) {
 	case *storepb.ApprovalNode_GroupValue_:
 		switch val.GroupValue {
 		case storepb.ApprovalNode_GROUP_VALUE_UNSPECIFILED:
 			return false, errors.Errorf("invalid group value")
 		case storepb.ApprovalNode_WORKSPACE_OWNER:
-			return user.Role == api.WorkspaceAdmin, nil
+			return roles[common.FormatRole(api.WorkspaceAdmin.String())], nil
 		case storepb.ApprovalNode_WORKSPACE_DBA:
-			return user.Role == api.WorkspaceDBA, nil
+			return roles[common.FormatRole(api.WorkspaceDBA.String())], nil
 		case storepb.ApprovalNode_PROJECT_OWNER:
-			return userHasProjectRole[convertToRoleName(string(api.ProjectOwner))], nil
+			return roles[common.FormatRole(api.ProjectOwner.String())], nil
 		case storepb.ApprovalNode_PROJECT_MEMBER:
-			return userHasProjectRole[convertToRoleName(string(api.ProjectDeveloper))], nil
+			return roles[common.FormatRole(api.ProjectDeveloper.String())], nil
 		default:
 			return false, errors.Errorf("invalid group value")
 		}
 	case *storepb.ApprovalNode_Role:
-		if userHasProjectRole[val.Role] {
-			return true, nil
-		}
+		return roles[val.Role], nil
 	case *storepb.ApprovalNode_ExternalNodeId:
 		return true, nil
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
-
-	return false, nil
 }
 
 func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {

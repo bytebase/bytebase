@@ -11,14 +11,12 @@
 <script lang="ts" setup>
 import { computed, reactive } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useDatabaseV1Store, useSheetV1Store, useTabStore } from "@/store";
+import { useDatabaseV1Store, useWorkSheetStore, useTabStore } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-  Sheet,
-} from "@/types/proto/v1/sheet_service";
+  Worksheet,
+  Worksheet_Visibility,
+} from "@/types/proto/v1/worksheet_service";
 import { extractSheetUID } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
@@ -30,7 +28,7 @@ type LocalState = {
 
 const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
-const sheetV1Store = useSheetV1Store();
+const worksheetV1Store = useWorkSheetStore();
 const { events: sheetEvents } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
 
@@ -66,24 +64,22 @@ const doSaveSheet = async (title: string) => {
     true /* silent */
   );
 
-  let sheet: Sheet | undefined;
+  let sheet: Worksheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
-    sheet = await sheetV1Store.patchSheet({
+    sheet = await worksheetV1Store.patchSheet({
       name: sheetName,
       database: database.name,
       title: title,
       content: new TextEncoder().encode(statement),
     });
   } else {
-    sheet = await sheetV1Store.createSheet(
-      database.project,
-      Sheet.fromPartial({
+    sheet = await worksheetV1Store.createSheet(
+      Worksheet.fromPartial({
         title: title,
+        project: database.project,
         content: new TextEncoder().encode(statement),
         database: database.name,
-        visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-        source: Sheet_Source.SOURCE_BYTEBASE,
-        type: Sheet_Type.TYPE_SQL,
+        visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
       })
     );
   }

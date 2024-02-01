@@ -808,3 +808,82 @@ func ChangeIssueStatus(ctx context.Context, stores *store.Store, activityManager
 	}
 	return nil
 }
+
+// GetUserRoles returns the `uniq`ed roles of a user, including workspace roles and the roles in the projects.
+// the condition of role binding is respected and evaluated with request.time=time.Now().
+func GetUserRoles(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) ([]api.Role, error) {
+	var roles []api.Role
+	roles = append(roles, user.Roles...)
+
+	currentTime := time.Now()
+	for _, projectPolicy := range projectPolicies {
+		for _, binding := range projectPolicy.Bindings {
+			hasUser := false
+			for _, member := range binding.Members {
+				if member.ID == user.ID || member.Email == api.AllUsers {
+					hasUser = true
+					break
+				}
+			}
+			if !hasUser {
+				continue
+			}
+
+			ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), currentTime)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to evaluate binding condition")
+			}
+			if !ok {
+				continue
+			}
+
+			roles = append(roles, binding.Role)
+		}
+	}
+	roles = uniq(roles)
+
+	return roles, nil
+}
+
+// See GetUserRoles.
+func GetUserRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[api.Role]bool, error) {
+	roles, err := GetUserRoles(user, projectPolicies...)
+	if err != nil {
+		return nil, err
+	}
+
+	rolesMap := make(map[api.Role]bool)
+	for _, role := range roles {
+		rolesMap[role] = true
+	}
+	return rolesMap, nil
+}
+
+// See GetUserRoles. The returned map key format is roles/{role}.
+func GetUserFormattedRolesMap(user *store.UserMessage, projectPolicies ...*store.IAMPolicyMessage) (map[string]bool, error) {
+	roles, err := GetUserRoles(user, projectPolicies...)
+	if err != nil {
+		return nil, err
+	}
+
+	rolesMap := make(map[string]bool)
+	for _, role := range roles {
+		rolesMap[common.FormatRole(role.String())] = true
+	}
+	return rolesMap, nil
+}
+
+func uniq[T comparable](array []T) []T {
+	res := make([]T, 0, len(array))
+	seen := make(map[T]struct{}, len(array))
+
+	for _, e := range array {
+		if _, ok := seen[e]; ok {
+			continue
+		}
+		seen[e] = struct{}{}
+		res = append(res, e)
+	}
+
+	return res
+}

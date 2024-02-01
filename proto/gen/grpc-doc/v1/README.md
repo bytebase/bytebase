@@ -579,17 +579,10 @@
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
-    - [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest)
-    - [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse)
     - [Sheet](#bytebase-v1-Sheet)
-    - [SheetOrganizer](#bytebase-v1-SheetOrganizer)
     - [SheetPayload](#bytebase-v1-SheetPayload)
-    - [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest)
     - [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest)
   
-    - [Sheet.Source](#bytebase-v1-Sheet-Source)
-    - [Sheet.Type](#bytebase-v1-Sheet-Type)
-    - [Sheet.Visibility](#bytebase-v1-Sheet-Visibility)
     - [SheetPayload.Type](#bytebase-v1-SheetPayload-Type)
   
     - [SheetService](#bytebase-v1-SheetService)
@@ -617,6 +610,21 @@
     - [Advice.Status](#bytebase-v1-Advice-Status)
   
     - [SQLService](#bytebase-v1-SQLService)
+  
+- [v1/worksheet_service.proto](#v1_worksheet_service-proto)
+    - [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest)
+    - [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest)
+    - [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest)
+    - [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest)
+    - [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse)
+    - [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest)
+    - [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest)
+    - [Worksheet](#bytebase-v1-Worksheet)
+    - [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer)
+  
+    - [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility)
+  
+    - [WorksheetService](#bytebase-v1-WorksheetService)
   
 - [Scalar Value Types](#scalar-value-types)
 
@@ -2620,6 +2628,7 @@ ColumnMetadata is the metadata for columns.
 | default_null | [bool](#bool) |  |  |
 | default_string | [string](#string) |  |  |
 | default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
@@ -2908,6 +2917,7 @@ FunctionMetadata is the metadata for functions.
 | name | [string](#string) |  | The name of the change history to retrieve. Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
+| concise | [bool](#bool) |  | When true, the schema dump will be concise. |
 
 
 
@@ -9384,42 +9394,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-v1-SearchSheetsRequest"></a>
-
-### SearchSheetsRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent resource of the sheet. Format: projects/{project} |
-| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
-| page_size | [int32](#int32) |  | Not used. The maximum number of sheets to return. The service may return fewer than this value. If unspecified, at most 50 sheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchSheets` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `SearchSheets` must match the call that provided the page token. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchSheetsResponse"></a>
-
-### SearchSheetsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheets | [Sheet](#bytebase-v1-Sheet) | repeated | The sheets that matched the search criteria. |
-| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
 <a name="bytebase-v1-Sheet"></a>
 
 ### Sheet
@@ -9436,29 +9410,8 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the sheet. |
 | content | [bytes](#bytes) |  | The content of the sheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetSheet request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
-| visibility | [Sheet.Visibility](#bytebase-v1-Sheet-Visibility) |  |  |
-| source | [Sheet.Source](#bytebase-v1-Sheet-Source) |  | The source of the sheet. |
-| type | [Sheet.Type](#bytebase-v1-Sheet-Type) |  | The type of the sheet. |
-| starred | [bool](#bool) |  | starred indicates whether the sheet is starred by the current authenticated user. |
 | payload | [SheetPayload](#bytebase-v1-SheetPayload) |  |  |
 | push_event | [PushEvent](#bytebase-v1-PushEvent) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SheetOrganizer"></a>
-
-### SheetOrganizer
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| sheet | [string](#string) |  | The name of the sheet. Format: projects/{project}/sheets/{sheet} |
-| starred | [bool](#bool) |  | starred means if the sheet is starred. |
-| pinned | [bool](#bool) |  | pinned means if the sheet is pinned. |
 
 
 
@@ -9476,24 +9429,6 @@ When paginating, all other parameters provided to `SearchSheets` must match the 
 | type | [SheetPayload.Type](#bytebase-v1-SheetPayload-Type) |  |  |
 | database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the database config when creating the sheet, be used to compare with the baseline_database_config and apply the diff to the database. |
 | baseline_database_config | [DatabaseConfig](#bytebase-v1-DatabaseConfig) |  | The snapshot of the baseline database config when creating the sheet. |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateSheetOrganizerRequest"></a>
-
-### UpdateSheetOrganizerRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| organizer | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  | The organizer to update.
-
-The organizer&#39;s `sheet` field is used to identify the sheet. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
 
 
 
@@ -9518,45 +9453,6 @@ The sheet&#39;s `name` field is used to identify the sheet to update. Format: pr
 
 
  
-
-
-<a name="bytebase-v1-Sheet-Source"></a>
-
-### Sheet.Source
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SOURCE_UNSPECIFIED | 0 |  |
-| SOURCE_BYTEBASE | 1 | BYTEBASE is the sheet created in SQL Editor. |
-| SOURCE_BYTEBASE_ARTIFACT | 2 | BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML. |
-
-
-
-<a name="bytebase-v1-Sheet-Type"></a>
-
-### Sheet.Type
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| TYPE_SQL | 1 |  |
-
-
-
-<a name="bytebase-v1-Sheet-Visibility"></a>
-
-### Sheet.Visibility
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 | Public, sheet OWNER can read/write, and all others can read. |
-| VISIBILITY_PROJECT | 2 | Project, sheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
-| VISIBILITY_PRIVATE | 3 | Private, only sheet OWNER can read/write. |
-
 
 
 <a name="bytebase-v1-SheetPayload-Type"></a>
@@ -9584,9 +9480,7 @@ Type of the SheetPayload.
 | ----------- | ------------ | ------------- | ------------|
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| SearchSheets | [SearchSheetsRequest](#bytebase-v1-SearchSheetsRequest) | [SearchSheetsResponse](#bytebase-v1-SearchSheetsResponse) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| UpdateSheetOrganizer | [UpdateSheetOrganizerRequest](#bytebase-v1-UpdateSheetOrganizerRequest) | [SheetOrganizer](#bytebase-v1-SheetOrganizer) |  |
 | DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
@@ -9951,6 +9845,210 @@ Type of the SheetPayload.
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
+
+ 
+
+
+
+<a name="v1_worksheet_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/worksheet_service.proto
+
+
+
+<a name="bytebase-v1-CreateWorksheetRequest"></a>
+
+### CreateWorksheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteWorksheetRequest"></a>
+
+### DeleteWorksheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the worksheet to delete. Format: worksheets/{worksheet} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetWorksheetRequest"></a>
+
+### GetWorksheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the worksheet to retrieve. Format: worksheets/{worksheet} |
+| raw | [bool](#bool) |  | By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchWorksheetsRequest"></a>
+
+### SearchWorksheetsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. Not support empty filter for now. |
+| page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 50 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `SearchWorksheets` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-SearchWorksheetsResponse"></a>
+
+### SearchWorksheetsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheets | [Worksheet](#bytebase-v1-Worksheet) | repeated | The worksheets that matched the search criteria. |
+| next_page_token | [string](#string) |  | Not used. A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateWorksheetOrganizerRequest"></a>
+
+### UpdateWorksheetOrganizerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer to update.
+
+The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: worksheets/{worksheet} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateWorksheetRequest"></a>
+
+### UpdateWorksheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheet | [Worksheet](#bytebase-v1-Worksheet) |  | The worksheet to update.
+
+The worksheet&#39;s `name` field is used to identify the worksheet to update. Format: worksheets/{worksheet} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet. (e.g. `title`, `statement`; *not* `worksheet.title` or `worksheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
+
+
+
+
+
+
+<a name="bytebase-v1-Worksheet"></a>
+
+### Worksheet
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the worksheet resource, generated by the server. Canonical parent is project. Format: worksheets/{worksheet} |
+| project | [string](#string) |  | The project resource name. Format: projects/{project} |
+| database | [string](#string) |  | The database resource name. Format: instances/{instance}/databases/{database} If the database parent doesn&#39;t exist, the database field is empty. |
+| title | [string](#string) |  | The title of the worksheet. |
+| creator | [string](#string) |  | The creator of the Worksheet. Format: users/{email} |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the worksheet. |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the worksheet. |
+| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetWorksheet request to retrieve the full content. |
+| content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
+| visibility | [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility) |  |  |
+| starred | [bool](#bool) |  | starred indicates whether the worksheet is starred by the current authenticated user. |
+
+
+
+
+
+
+<a name="bytebase-v1-WorksheetOrganizer"></a>
+
+### WorksheetOrganizer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| worksheet | [string](#string) |  | The name of the worksheet. Format: worksheets/{worksheet} |
+| starred | [bool](#bool) |  | starred means if the worksheet is starred. |
+| pinned | [bool](#bool) |  | pinned means if the worksheet is pinned. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Worksheet-Visibility"></a>
+
+### Worksheet.Visibility
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| VISIBILITY_UNSPECIFIED | 0 |  |
+| VISIBILITY_PUBLIC | 1 | Public, worksheet OWNER can read/write, and all others can read. |
+| VISIBILITY_PROJECT | 2 | Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-WorksheetService"></a>
+
+### WorksheetService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateWorksheet | [CreateWorksheetRequest](#bytebase-v1-CreateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) |  |
+| GetWorksheet | [GetWorksheetRequest](#bytebase-v1-GetWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) |  |
+| SearchWorksheets | [SearchWorksheetsRequest](#bytebase-v1-SearchWorksheetsRequest) | [SearchWorksheetsResponse](#bytebase-v1-SearchWorksheetsResponse) |  |
+| UpdateWorksheet | [UpdateWorksheetRequest](#bytebase-v1-UpdateWorksheetRequest) | [Worksheet](#bytebase-v1-Worksheet) |  |
+| UpdateWorksheetOrganizer | [UpdateWorksheetOrganizerRequest](#bytebase-v1-UpdateWorksheetOrganizerRequest) | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  |
+| DeleteWorksheet | [DeleteWorksheetRequest](#bytebase-v1-DeleteWorksheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

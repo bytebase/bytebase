@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -29,18 +30,168 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
 		}
 	}()
+	ok, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, methodPermissionMap[fullMethod])
+	}
 
+	return nil
+}
+
+func isSkippedMethod(fullMethod string) bool {
+	if auth.IsAuthenticationAllowed(fullMethod) {
+		return true
+	}
+
+	// Below are the skipped.
+	switch fullMethod {
+	// skip methods that are not considered to be resource-related.
+	case
+		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
+		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
+		v1pb.ActuatorService_DeleteCache_FullMethodName,
+		v1pb.ActuatorService_ListDebugLog_FullMethodName,
+		v1pb.AnomalyService_SearchAnomalies_FullMethodName,
+		v1pb.AuthService_GetUser_FullMethodName,
+		v1pb.AuthService_ListUsers_FullMethodName,
+		v1pb.AuthService_CreateUser_FullMethodName,
+		v1pb.AuthService_UpdateUser_FullMethodName,
+		v1pb.AuthService_DeleteUser_FullMethodName,
+		v1pb.AuthService_UndeleteUser_FullMethodName,
+		v1pb.AuthService_Login_FullMethodName,
+		v1pb.AuthService_Logout_FullMethodName,
+		v1pb.CelService_BatchParse_FullMethodName,
+		v1pb.CelService_BatchDeparse_FullMethodName,
+		v1pb.LoggingService_ListLogs_FullMethodName,
+		v1pb.LoggingService_GetLog_FullMethodName,
+		v1pb.LoggingService_ExportLogs_FullMethodName,
+		v1pb.SQLService_Query_FullMethodName,
+		v1pb.SQLService_Export_FullMethodName,
+		v1pb.SQLService_DifferPreview_FullMethodName,
+		v1pb.SQLService_Check_FullMethodName,
+		v1pb.SQLService_Pretty_FullMethodName,
+		v1pb.SQLService_StringifyMetadata_FullMethodName,
+		v1pb.SubscriptionService_GetSubscription_FullMethodName,
+		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
+		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
+		return true
+	// skip checking for sheet service because we want to
+	// discriminate bytebase artifact sheets and user sheets first.
+	// TODO(p0ny): implement
+	case
+		v1pb.SheetService_CreateSheet_FullMethodName,
+		v1pb.SheetService_GetSheet_FullMethodName,
+		v1pb.SheetService_UpdateSheet_FullMethodName,
+		v1pb.SheetService_DeleteSheet_FullMethodName:
+		return true
+	// skip checking for sheet service because we want to
+	// discriminate bytebase artifact sheets and user sheets first.
+	// TODO(p0ny): implement
+	case
+		v1pb.WorksheetService_CreateWorksheet_FullMethodName,
+		v1pb.WorksheetService_GetWorksheet_FullMethodName,
+		v1pb.WorksheetService_SearchWorksheets_FullMethodName,
+		v1pb.WorksheetService_UpdateWorksheet_FullMethodName,
+		v1pb.WorksheetService_UpdateWorksheetOrganizer_FullMethodName,
+		v1pb.WorksheetService_DeleteWorksheet_FullMethodName:
+		return true
+	// handled in the method because we need to consider branch.Creator.
+	case
+		v1pb.BranchService_UpdateBranch_FullMethodName,
+		v1pb.BranchService_DeleteBranch_FullMethodName,
+		v1pb.BranchService_MergeBranch_FullMethodName,
+		v1pb.BranchService_RebaseBranch_FullMethodName:
+		return true
+	// no need to check.
+	case v1pb.BranchService_DiffMetadata_FullMethodName:
+		return true
+	// handled in the method because we need to consider changelist.Creator.
+	case
+		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
+		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
+		return true
+	// handled in the method because we need to consider plan.Creator.
+	case
+		v1pb.RolloutService_UpdatePlan_FullMethodName:
+		return true
+	// handled in the method because we need to consider issue.Creator and issue type.
+	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
+	case
+		v1pb.IssueService_GetIssue_FullMethodName,
+		v1pb.IssueService_CreateIssue_FullMethodName,
+		v1pb.IssueService_CreateIssueComment_FullMethodName,
+		v1pb.IssueService_UpdateIssue_FullMethodName,
+		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName,
+		v1pb.IssueService_UpdateIssueComment_FullMethodName:
+		return true
+	// skip checking for custom approval.
+	case
+		v1pb.IssueService_ApproveIssue_FullMethodName,
+		v1pb.IssueService_RejectIssue_FullMethodName,
+		v1pb.IssueService_RequestIssue_FullMethodName:
+		return true
+	// skip checking for the rollout-related.
+	// these are determined by the rollout policy.
+	case
+		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName,
+		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
+		v1pb.RolloutService_BatchRunTasks_FullMethodName:
+		return true
+	// handled in the method because checking is complex.
+	case
+		v1pb.InstanceService_SearchInstances_FullMethodName,
+		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
+		v1pb.DatabaseService_ListDatabases_FullMethodName,
+		v1pb.DatabaseService_SearchDatabases_FullMethodName,
+		v1pb.IssueService_ListIssues_FullMethodName,
+		v1pb.IssueService_SearchIssues_FullMethodName,
+		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
+		v1pb.ProjectService_SearchProjects_FullMethodName,
+		v1pb.ChangelistService_ListChangelists_FullMethodName,
+		v1pb.RolloutService_ListPlans_FullMethodName,
+		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
+		return true
+	}
+	return false
+}
+
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, error) {
 	if isSkippedMethod(fullMethod) {
-		return nil
+		return true, nil
 	}
 
 	p, ok := methodPermissionMap[fullMethod]
 	if !ok {
-		return errors.Errorf("method %q not found in method-permission map", fullMethod)
+		return false, errors.Errorf("method %q not found in method-permission map", fullMethod)
 	}
+
 	var projectIDsGetter func(context.Context, any) ([]string, error)
 
 	switch fullMethod {
+	// special cases for bb.instance.get permission check.
+	// we permit users to get instances (and all the related info) if they can get any database in the instance, even if they don't have bb.instance.get permission.
+	case
+		v1pb.InstanceService_GetInstance_FullMethodName,
+		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
+		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName:
+		var instanceID string
+		var err error
+		switch r := req.(type) {
+		case *v1pb.GetInstanceRequest:
+			instanceID, err = common.GetInstanceID(r.GetName())
+		case *v1pb.GetInstanceRoleRequest:
+			instanceID, _, err = common.GetInstanceRoleID(r.GetName())
+		case *v1pb.ListInstanceRolesRequest:
+			instanceID, err = common.GetInstanceID(r.GetParent())
+		}
+		if err != nil {
+			return false, err
+		}
+		return in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
+
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
 	case
@@ -50,7 +201,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.ProjectService_UndeleteProject_FullMethodName,
 		v1pb.SQLService_AdminExecute_FullMethodName,
 		v1pb.InstanceService_ListInstances_FullMethodName,
-		v1pb.InstanceService_GetInstance_FullMethodName,
 		v1pb.InstanceService_CreateInstance_FullMethodName,
 		v1pb.InstanceService_UpdateInstance_FullMethodName,
 		v1pb.InstanceService_DeleteInstance_FullMethodName,
@@ -61,8 +211,6 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 		v1pb.InstanceService_RemoveDataSource_FullMethodName,
 		v1pb.InstanceService_UpdateDataSource_FullMethodName,
 		v1pb.InstanceService_SyncSlowQueries_FullMethodName,
-		v1pb.InstanceRoleService_ListInstanceRoles_FullMethodName,
-		v1pb.InstanceRoleService_GetInstanceRole_FullMethodName,
 		v1pb.InstanceRoleService_CreateInstanceRole_FullMethodName,
 		v1pb.InstanceRoleService_UpdateInstanceRole_FullMethodName,
 		v1pb.InstanceRoleService_DeleteInstanceRole_FullMethodName,
@@ -185,125 +333,9 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 
 	projectIDs, err := projectIDsGetter(ctx, req)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission, err %v", err)
+		return false, errors.Wrapf(err, "failed to get project ids")
 	}
-	ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, p)
-	}
-
-	return nil
-}
-
-func isSkippedMethod(fullMethod string) bool {
-	if auth.IsAuthenticationAllowed(fullMethod) {
-		return true
-	}
-
-	// Below are the skipped.
-	switch fullMethod {
-	// skip methods that are not considered to be resource-related.
-	case
-		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
-		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
-		v1pb.ActuatorService_DeleteCache_FullMethodName,
-		v1pb.ActuatorService_ListDebugLog_FullMethodName,
-		v1pb.AnomalyService_SearchAnomalies_FullMethodName,
-		v1pb.AuthService_GetUser_FullMethodName,
-		v1pb.AuthService_ListUsers_FullMethodName,
-		v1pb.AuthService_CreateUser_FullMethodName,
-		v1pb.AuthService_UpdateUser_FullMethodName,
-		v1pb.AuthService_DeleteUser_FullMethodName,
-		v1pb.AuthService_UndeleteUser_FullMethodName,
-		v1pb.AuthService_Login_FullMethodName,
-		v1pb.AuthService_Logout_FullMethodName,
-		v1pb.CelService_BatchParse_FullMethodName,
-		v1pb.CelService_BatchDeparse_FullMethodName,
-		v1pb.LoggingService_ListLogs_FullMethodName,
-		v1pb.LoggingService_GetLog_FullMethodName,
-		v1pb.LoggingService_ExportLogs_FullMethodName,
-		v1pb.SQLService_Query_FullMethodName,
-		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_DifferPreview_FullMethodName,
-		v1pb.SQLService_Check_FullMethodName,
-		v1pb.SQLService_Pretty_FullMethodName,
-		v1pb.SQLService_StringifyMetadata_FullMethodName,
-		v1pb.SubscriptionService_GetSubscription_FullMethodName,
-		v1pb.SubscriptionService_GetFeatureMatrix_FullMethodName,
-		v1pb.SubscriptionService_UpdateSubscription_FullMethodName:
-		return true
-	// skip checking for sheet service because we want to
-	// discriminate bytebase artifact sheets and user sheets first.
-	// TODO(p0ny): implement
-	case
-		v1pb.SheetService_CreateSheet_FullMethodName,
-		v1pb.SheetService_GetSheet_FullMethodName,
-		v1pb.SheetService_SearchSheets_FullMethodName,
-		v1pb.SheetService_UpdateSheet_FullMethodName,
-		v1pb.SheetService_UpdateSheetOrganizer_FullMethodName,
-		v1pb.SheetService_DeleteSheet_FullMethodName:
-		return true
-	// handled in the method because we need to consider branch.Creator.
-	case
-		v1pb.BranchService_UpdateBranch_FullMethodName,
-		v1pb.BranchService_DeleteBranch_FullMethodName,
-		v1pb.BranchService_MergeBranch_FullMethodName,
-		v1pb.BranchService_RebaseBranch_FullMethodName:
-		return true
-	// no need to check.
-	case v1pb.BranchService_DiffMetadata_FullMethodName:
-		return true
-	// handled in the method because we need to consider changelist.Creator.
-	case
-		v1pb.ChangelistService_UpdateChangelist_FullMethodName,
-		v1pb.ChangelistService_DeleteChangelist_FullMethodName:
-		return true
-	// handled in the method because we need to consider plan.Creator.
-	case
-		v1pb.RolloutService_UpdatePlan_FullMethodName:
-		return true
-	// handled in the method because we need to consider issue.Creator and issue type.
-	// additional bb.plans.action and bb.rollouts.action permissions are required if the issue type is change database.
-	case
-		v1pb.IssueService_GetIssue_FullMethodName,
-		v1pb.IssueService_CreateIssue_FullMethodName,
-		v1pb.IssueService_CreateIssueComment_FullMethodName,
-		v1pb.IssueService_UpdateIssue_FullMethodName,
-		v1pb.IssueService_BatchUpdateIssuesStatus_FullMethodName,
-		v1pb.IssueService_UpdateIssueComment_FullMethodName:
-		return true
-	// skip checking for custom approval.
-	case
-		v1pb.IssueService_ApproveIssue_FullMethodName,
-		v1pb.IssueService_RejectIssue_FullMethodName,
-		v1pb.IssueService_RequestIssue_FullMethodName:
-		return true
-	// skip checking for the rollout-related.
-	// these are determined by the rollout policy.
-	case
-		v1pb.RolloutService_BatchCancelTaskRuns_FullMethodName,
-		v1pb.RolloutService_BatchSkipTasks_FullMethodName,
-		v1pb.RolloutService_BatchRunTasks_FullMethodName:
-		return true
-	// handled in the method because checking is complex.
-	case
-		v1pb.InstanceService_SearchInstances_FullMethodName,
-		v1pb.DatabaseService_ListSlowQueries_FullMethodName,
-		v1pb.DatabaseService_ListDatabases_FullMethodName,
-		v1pb.DatabaseService_SearchDatabases_FullMethodName,
-		v1pb.IssueService_ListIssues_FullMethodName,
-		v1pb.IssueService_SearchIssues_FullMethodName,
-		v1pb.ProjectService_ListDatabaseGroups_FullMethodName,
-		v1pb.ProjectService_SearchProjects_FullMethodName,
-		v1pb.ChangelistService_ListChangelists_FullMethodName,
-		v1pb.RolloutService_ListPlans_FullMethodName,
-		v1pb.ProjectService_ListSchemaGroups_FullMethodName:
-		return true
-	}
-	return false
+	return in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
 }
 
 func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
@@ -327,7 +359,7 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 			return nil, errors.Wrapf(err, "failed to get instance %s", instanceID)
 		}
 		if instance == nil {
-			return nil, errors.Wrapf(err, "instance not found")
+			return nil, errors.Errorf("instance not found")
 		}
 		find.IgnoreCaseSensitive = store.IgnoreDatabaseAndTableCaseSensitive(instance)
 	}
@@ -336,7 +368,7 @@ func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceNam
 		return nil, errors.Wrapf(err, "failed to get database")
 	}
 	if database == nil {
-		return nil, errors.Wrapf(err, "database %q not found", databaseResourceName)
+		return nil, errors.Errorf("database %q not found", databaseResourceName)
 	}
 	return database, nil
 }
@@ -679,6 +711,27 @@ func (in *ACLInterceptor) getProjectIDsForDatabaseService(ctx context.Context, r
 	}
 
 	return uniq(projectIDs), nil
+}
+
+func (in *ACLInterceptor) checkIAMPermissionInstancesGet(ctx context.Context, user *store.UserMessage, instanceID string) (bool, error) {
+	// fast path for Admins and DBAs.
+	ok, err := in.iamManager.CheckPermission(ctx, iam.PermissionInstancesGet, user)
+	if err != nil {
+		return false, err
+	}
+	if ok {
+		return true, nil
+	}
+
+	databaseFind := &store.FindDatabaseMessage{
+		InstanceID:  &instanceID,
+		ShowDeleted: true,
+	}
+	databases, err := searchDatabases(ctx, in.store, in.iamManager, databaseFind)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to search databases")
+	}
+	return len(databases) > 0, nil
 }
 
 func uniq[T comparable](array []T) []T {

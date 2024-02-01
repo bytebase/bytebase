@@ -27,24 +27,12 @@ service SheetService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc SearchSheets(SearchSheetsRequest) returns (SearchSheetsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/sheets:search"};
-  }
-
   rpc UpdateSheet(UpdateSheetRequest) returns (Sheet) {
     option (google.api.http) = {
       patch: "/v1/{sheet.name=projects/*/sheets/*}"
       body: "sheet"
     };
     option (google.api.method_signature) = "sheet,update_mask";
-  }
-
-  rpc UpdateSheetOrganizer(UpdateSheetOrganizerRequest) returns (SheetOrganizer) {
-    option (google.api.http) = {
-      put: "/v1/{organizer.sheet=projects/*/sheets/*}/organizer"
-      body: "organizer"
-    };
-    option (google.api.method_signature) = "organizer,update_mask";
   }
 
   rpc DeleteSheet(DeleteSheetRequest) returns (google.protobuf.Empty) {
@@ -89,72 +77,10 @@ message UpdateSheetRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
-message UpdateSheetOrganizerRequest {
-  // The organizer to update.
-  //
-  // The organizer's `sheet` field is used to identify the sheet.
-  // Format: projects/{project}/sheets/{sheet}
-  SheetOrganizer organizer = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // The list of fields to be updated.
-  // Fields are specified relative to the sheet organizer.
-  // Only support update the following fields for now:
-  // - `starred`
-  // - `pinned`
-  google.protobuf.FieldMask update_mask = 2;
-}
-
-message SheetOrganizer {
-  // The name of the sheet.
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // starred means if the sheet is starred.
-  bool starred = 2;
-
-  // pinned means if the sheet is pinned.
-  bool pinned = 3;
-}
-
 message DeleteSheetRequest {
   // The name of the sheet to delete.
   // Format: projects/{project}/sheets/{sheet}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-}
-
-message SearchSheetsRequest {
-  // The parent resource of the sheet.
-  // Format: projects/{project}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // To filter the search result.
-  // Format: only support the following spec for now:
-  // - `creator = users/{email}`, `creator != users/{email}`
-  // - `starred = true`, `starred = false`.
-  // Not support empty filter for now.
-  string filter = 2;
-
-  // Not used. The maximum number of sheets to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 sheets will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 3;
-
-  // Not used. A page token, received from a previous `SearchSheets` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `SearchSheets` must match
-  // the call that provided the page token.
-  string page_token = 4;
-}
-
-message SearchSheetsResponse {
-  // The sheets that matched the search criteria.
-  repeated Sheet sheets = 1;
-
-  // Not used. A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
 }
 
 message Sheet {
@@ -191,37 +117,6 @@ message Sheet {
 
   // content_size is the full size of the content, may not match the size of the `content` field.
   int64 content_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  enum Visibility {
-    VISIBILITY_UNSPECIFIED = 0;
-    // Public, sheet OWNER can read/write, and all others can read.
-    VISIBILITY_PUBLIC = 1;
-    // Project, sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
-    VISIBILITY_PROJECT = 2;
-    // Private, only sheet OWNER can read/write.
-    VISIBILITY_PRIVATE = 3;
-  }
-  Visibility visibility = 9 [(google.api.field_behavior) = REQUIRED];
-
-  enum Source {
-    SOURCE_UNSPECIFIED = 0;
-    // BYTEBASE is the sheet created in SQL Editor.
-    SOURCE_BYTEBASE = 1;
-    // BYTEBASE_ARTIFACT is the artifact sheet such as DDL/DML.
-    SOURCE_BYTEBASE_ARTIFACT = 2;
-  }
-  // The source of the sheet.
-  Source source = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    TYPE_SQL = 1;
-  }
-  // The type of the sheet.
-  Type type = 11 [(google.api.field_behavior) = REQUIRED];
-
-  // starred indicates whether the sheet is starred by the current authenticated user.
-  bool starred = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   SheetPayload payload = 13;
 

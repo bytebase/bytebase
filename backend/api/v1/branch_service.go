@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/epiclabs-io/diff3"
+	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -416,7 +417,14 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	// Restrict merging only when the head branch is not updated.
 	// Maybe we can support auto-merging in the future.
-	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, headBranch.Head.Metadata, headBranch.Base.Metadata)
+
+	// The first crazy night in 2024.
+	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
+	if err != nil {
+		slog.Info("cannot merge branches", log.BBError(err))
+		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
+	}
+	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, adHead, baseBranch.Head.Metadata)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
@@ -543,6 +551,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			sb, err := io.ReadAll(conflictSchema.Result)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to read conflict schema, %v", err)
+			}
+			if strings.HasSuffix(newBaseSchema, "\n") && bytes.HasSuffix(baseBranch.BaseSchema, []byte("\n")) && bytes.HasSuffix(baseBranch.HeadSchema, []byte("\n")) {
+				sb = append(sb, []byte("\n")...)
 			}
 			conflictSchemaString := string(sb)
 			return &v1pb.RebaseBranchResponse{Result: &v1pb.RebaseBranchResponse_ConflictSchema{ConflictSchema: conflictSchemaString}}, nil
@@ -815,17 +826,21 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 }
 
 func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, user *store.UserMessage) error {
-	if project.Setting == nil {
+	if len(project.Setting.GetProtectionRules()) == 0 {
 		return nil
-	}
-	// TODO(p0ny): eval CEL.
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return err
 	}
 	// Skip protection check for workspace owner and DBA.
 	if isOwnerOrDBA(user) {
 		return nil
+	}
+
+	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
+	if err != nil {
+		return err
+	}
+	roles, err := utils.GetUserFormattedRolesMap(user, policy)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get user roles")
 	}
 
 	for _, rule := range project.Setting.ProtectionRules {
@@ -839,33 +854,14 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		if !ok {
 			continue
 		}
-		pass := false
-		for _, binding := range policy.Bindings {
-			matchUser := false
-			for _, member := range binding.Members {
-				if member.Email == user.Email {
-					matchUser = true
-					break
-				}
+
+		for _, role := range rule.CreateAllowedRoles {
+			if _, ok := roles[role]; ok {
+				return nil
 			}
-			if matchUser {
-				for _, role := range rule.CreateAllowedRoles {
-					// Convert role format.
-					if role == common.FormatRole(binding.Role.String()) {
-						pass = true
-						break
-					}
-				}
-			}
-			if pass {
-				break
-			}
-		}
-		if !pass {
-			return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
 		}
 	}
-	return nil
+	return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
 }
 
 func (s *BranchService) convertBranchToBranch(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.BranchView) (*v1pb.Branch, error) {
@@ -949,6 +945,7 @@ func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.D
 			for _, column := range table.Columns {
 				filteredColumn := &storepb.ColumnMetadata{
 					Name:           column.Name,
+					OnUpdate:       column.OnUpdate,
 					Comment:        column.Comment,
 					UserComment:    column.UserComment,
 					Classification: column.Classification,
@@ -1063,6 +1060,9 @@ func equalTable(s, t *storepb.TableMetadata) bool {
 	for i := 0; i < len(s.GetColumns()); i++ {
 		sc, tc := s.GetColumns()[i], t.GetColumns()[i]
 		if sc.Name != tc.Name {
+			return false
+		}
+		if sc.OnUpdate != tc.OnUpdate {
 			return false
 		}
 		if sc.Comment != tc.Comment {

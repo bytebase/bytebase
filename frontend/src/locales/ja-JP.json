@@ -272,7 +272,11 @@
     "untitled": "無題",
     "nickname": "ニックネーム",
     "missing-permission": "必要な権限が不足しています",
-    "permissions": "権限"
+    "permissions": "権限",
+    "backup": "バックアップ",
+    "cutover": "カットオーバー",
+    "baseline": "ベースライン",
+    "project-member": "プロジェクトメンバー"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -1240,7 +1244,8 @@
     "successfully-synced-schema-for-database-database-value-name": "スキーマ同期を開始",
     "start-to-sync-schema": "スキーマ同期に失敗しました",
     "failed-to-sync-schema": "スキーマを正常に同期しました",
-    "successfully-synced-schema": "インスタンスを選択してください"
+    "successfully-synced-schema": "インスタンスを選択してください",
+    "create": "データベースの作成"
   },
   "instance": {
     "select": "データベースユーザーを選択してください",
@@ -3227,7 +3232,7 @@
     },
     "workspace-member": {
       "self": "ワークスペースメンバー",
-      "description": "ワークスペースメンバーはワークスペース内でのワークスペースメンバーの管理以外のすべての権限を持っています。"
+      "description": "ワークスペースのメンバーは、ワークスペース内で特別な権限を持たない通常のユーザーです。"
     },
     "project-owner": {
       "self": "プロジェクトオーナー",

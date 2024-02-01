@@ -176,6 +176,14 @@ func (t *mysqlTransformer) EnterColumnDefinition(ctx *mysql.ColumnDefinitionCont
 		case attribute.AUTO_INCREMENT_SYMBOL() != nil:
 			defaultValue := autoIncrementSymbol
 			columnState.defaultValue = &defaultValueExpression{value: defaultValue}
+		case attribute.ON_SYMBOL() != nil && attribute.UPDATE_SYMBOL() != nil:
+			onUpdateValue := ""
+			if attribute.TimeFunctionParameters() != nil && attribute.TimeFunctionParameters().FractionalPrecision() != nil {
+				onUpdateValue = "CURRENT_TIMESTAMP(" + attribute.TimeFunctionParameters().FractionalPrecision().GetText() + ")"
+			} else {
+				onUpdateValue = "CURRENT_TIMESTAMP"
+			}
+			columnState.onUpdate = onUpdateValue
 		}
 	}
 

@@ -1,6 +1,6 @@
 <template>
   <BBModal v-if="open && feature" :title="title" @close="$emit('cancel')">
-    <div class="min-w-0 md:min-w-[400px] max-w-4xl">
+    <div class="min-w-0 md:min-w-[400px] max-w-4xl mb-2">
       <div class="flex items-start space-x-2 mt-3">
         <div class="flex items-center">
           <heroicons-solid:lock-closed

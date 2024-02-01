@@ -41,6 +41,22 @@ type eraseListener struct {
 	rewriter antlr.TokenStreamRewriter
 }
 
+func (l *eraseListener) EnterRelational_table(ctx *parser.Relational_tableContext) {
+	if l.ctx.eraseStoreOption {
+		if ctx.RIGHT_PAREN() != nil {
+			start := ctx.RIGHT_PAREN().GetSymbol().GetTokenIndex() + 1
+			stop := ctx.GetStop().GetTokenIndex()
+			if start > stop {
+				return
+			}
+			l.rewriter.DeleteDefault(
+				start,
+				stop,
+			)
+		}
+	}
+}
+
 func (l *eraseListener) EnterTableview_name(ctx *parser.Tableview_nameContext) {
 	if l.ctx.eraseSchemaName && ctx.Id_expression() != nil {
 		l.rewriter.DeleteDefault(
@@ -89,6 +105,17 @@ func (l *eraseListener) EnterCreate_index(ctx *parser.Create_indexContext) {
 			ctx.Index_name().GetStop().GetTokenIndex(),
 			"\""+getNormalizeIndexName(ctx)+"\"",
 		)
+	}
+}
+
+func (l *eraseListener) EnterTable_index_clause(ctx *parser.Table_index_clauseContext) {
+	if l.ctx.eraseStoreOption {
+		if ctx.Index_properties() != nil {
+			l.rewriter.DeleteDefault(
+				ctx.Index_properties().GetStart().GetTokenIndex(),
+				ctx.Index_properties().GetStop().GetTokenIndex(),
+			)
+		}
 	}
 }
 

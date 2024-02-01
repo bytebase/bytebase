@@ -15,6 +15,7 @@ import {
   UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import {
   Database,
@@ -167,10 +168,15 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 
     return composed;
   };
-  const fetchDatabaseSchema = async (name: string, sdlFormat = false) => {
+  const fetchDatabaseSchema = async (
+    name: string,
+    sdlFormat = false,
+    concise = false
+  ) => {
     const schema = await databaseServiceClient.getDatabaseSchema({
       name,
       sdlFormat,
+      concise,
     });
     return schema;
   };
@@ -180,7 +186,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
 
   const transferOneDatabase = async (database: Database, project: string) => {
-    const updated = await useDatabaseV1Store().updateDatabase({
+    const updated = await updateDatabase({
       database: {
         ...database,
         project: project,
@@ -307,10 +313,14 @@ const batchComposeDatabase = async (databaseList: Database[]) => {
       .map((db) => `instances/${extractDatabaseResourceName(db.name).instance}`)
       .filter((instance) => instance !== UNKNOWN_INSTANCE_NAME)
   );
+
   await Promise.all(
-    distinctProjectList.map((project) =>
-      projectV1Store.getOrFetchProjectByName(project)
-    )
+    distinctProjectList.map((project) => {
+      if (project === DEFAULT_PROJECT_V1_NAME) {
+        return;
+      }
+      return projectV1Store.getOrFetchProjectByName(project);
+    })
   );
   await Promise.all(
     distinctInstanceList.map((instance) =>

@@ -3,7 +3,7 @@ import { nextTick, ref } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import {
   hasFeature,
-  useSheetV1Store,
+  useWorkSheetStore,
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
@@ -11,8 +11,11 @@ import {
   useTabStore,
   useCurrentUserV1,
   usePageMode,
+  useProjectV1Store,
+  useDatabaseV1Store,
+  useInstanceV1Store,
 } from "@/store";
-import { sheetNameFromSlug } from "@/utils";
+import { worksheetNameFromSlug } from "@/utils";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -114,6 +117,9 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
     useTabStore().reset();
+    useDatabaseV1Store().reset();
+    useProjectV1Store().reset();
+    useInstanceV1Store().reset();
     import("@/plugins/ai/store").then(({ useConversationStore }) => {
       useConversationStore().reset();
     });
@@ -230,8 +236,8 @@ router.beforeEach((to, from, next) => {
   }
 
   if (sheetSlug) {
-    const sheetName = sheetNameFromSlug(sheetSlug);
-    useSheetV1Store()
+    const sheetName = worksheetNameFromSlug(sheetSlug);
+    useWorkSheetStore()
       .fetchSheetByName(sheetName)
       .then(() => next())
       .catch(() => next());

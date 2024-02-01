@@ -23,26 +23,24 @@ import {
 } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useSheetV1Store, pushNotification, useTabStore } from "@/store";
-import { Sheet } from "@/types/proto/v1/sheet_service";
+import { useWorkSheetStore, pushNotification, useTabStore } from "@/store";
 import {
-  Sheet_Visibility,
-  Sheet_Source,
-  Sheet_Type,
-} from "@/types/proto/v1/sheet_service";
-import { extractProjectResourceName, isSheetWritableV1 } from "@/utils";
+  Worksheet,
+  Worksheet_Visibility,
+} from "@/types/proto/v1/worksheet_service";
+import { isWorksheetWritableV1 } from "@/utils";
 import { useSheetContext, type SheetViewMode } from "../";
 
 const props = defineProps<{
   view: SheetViewMode;
-  sheet: Sheet;
+  sheet: Worksheet;
   dropdownProps?: DropdownProps;
   secondary?: boolean;
   transparent?: boolean;
 }>();
 
 const { t } = useI18n();
-const sheetV1Store = useSheetV1Store();
+const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
 const { events } = useSheetContext();
 
@@ -62,7 +60,7 @@ const options = computed(() => {
     });
   }
 
-  const canWriteSheet = isSheetWritableV1(sheet);
+  const canWriteSheet = isWorksheetWritableV1(sheet);
   if (canWriteSheet) {
     options.push({
       key: "delete",
@@ -92,7 +90,7 @@ const handleAction = async (key: string) => {
       async onPositiveClick() {
         try {
           dialogInstance.loading = true;
-          await sheetV1Store.deleteSheetByName(sheet.name);
+          await worksheetV1Store.deleteSheetByName(sheet.name);
           events.emit("refresh", { views: ["my", "shared", "starred"] });
           turnSheetToUnsavedTab(sheet);
         } finally {
@@ -108,8 +106,8 @@ const handleAction = async (key: string) => {
       showIcon: true,
     });
   } else if (key === "star" || key === "unstar") {
-    await sheetV1Store.upsertSheetOrganizer({
-      sheet: sheet.name,
+    await worksheetV1Store.upsertSheetOrganizer({
+      worksheet: sheet.name,
       starred: key === "star",
     });
     events.emit("refresh", { views: ["starred"] });
@@ -122,16 +120,13 @@ const handleAction = async (key: string) => {
       maskClosable: false,
       closeOnEsc: false,
       async onPositiveClick() {
-        const project = extractProjectResourceName(sheet.name);
-        await sheetV1Store.createSheet(
-          `projects/${project}`,
-          Sheet.fromPartial({
+        await worksheetV1Store.createSheet(
+          Worksheet.fromPartial({
             title: sheet.title,
+            project: sheet.project,
             content: sheet.content,
             database: sheet.database,
-            visibility: Sheet_Visibility.VISIBILITY_PRIVATE,
-            source: Sheet_Source.SOURCE_BYTEBASE,
-            type: Sheet_Type.TYPE_SQL,
+            visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
           })
         );
         pushNotification({
@@ -151,7 +146,7 @@ const handleAction = async (key: string) => {
   }
 };
 
-const turnSheetToUnsavedTab = (sheet: Sheet) => {
+const turnSheetToUnsavedTab = (sheet: Worksheet) => {
   const tabStore = useTabStore();
   const tab = tabStore.tabList.find((tab) => tab.sheetName === sheet.name);
   if (tab) {

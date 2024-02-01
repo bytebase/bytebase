@@ -286,7 +286,7 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 		antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
 
 		for _, tableRef := range ctx.TableAliasRefList().AllTableRefWithWildcard() {
-			database, table := normalizeMySQLTableRefWithWildcard(tableRef)
+			database, table := NormalizeMySQLTableRefWithWildcard(tableRef)
 			if len(database) > 0 && database != l.databaseName {
 				l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
 				return
@@ -380,6 +380,6 @@ type updateTableListener struct {
 }
 
 func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, table, _ := normalizeMySQLColumnRef(ctx.ColumnRef())
+	_, table, _ := NormalizeMySQLColumnRef(ctx.ColumnRef())
 	l.tables[table] = true
 }

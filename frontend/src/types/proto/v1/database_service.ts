@@ -560,6 +560,11 @@ export interface ColumnMetadata {
   defaultExpression?:
     | string
     | undefined;
+  /**
+   * The on_update is the on update action of a column.
+   * For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+   */
+  onUpdate: string;
   /** The nullable is the nullable of a column. */
   nullable: boolean;
   /** The type is the type of a column. */
@@ -1526,6 +1531,8 @@ export interface GetChangeHistoryRequest {
   view: ChangeHistoryView;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
+  /** When true, the schema dump will be concise. */
+  concise: boolean;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -4155,6 +4162,7 @@ function createBaseColumnMetadata(): ColumnMetadata {
     defaultNull: undefined,
     defaultString: undefined,
     defaultExpression: undefined,
+    onUpdate: "",
     nullable: false,
     type: "",
     characterSet: "",
@@ -4185,6 +4193,9 @@ export const ColumnMetadata = {
     }
     if (message.defaultExpression !== undefined) {
       writer.uint32(50).string(message.defaultExpression);
+    }
+    if (message.onUpdate !== "") {
+      writer.uint32(122).string(message.onUpdate);
     }
     if (message.nullable === true) {
       writer.uint32(56).bool(message.nullable);
@@ -4262,6 +4273,13 @@ export const ColumnMetadata = {
 
           message.defaultExpression = reader.string();
           continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.onUpdate = reader.string();
+          continue;
         case 7:
           if (tag !== 56) {
             break;
@@ -4335,6 +4353,7 @@ export const ColumnMetadata = {
       defaultNull: isSet(object.defaultNull) ? globalThis.Boolean(object.defaultNull) : undefined,
       defaultString: isSet(object.defaultString) ? globalThis.String(object.defaultString) : undefined,
       defaultExpression: isSet(object.defaultExpression) ? globalThis.String(object.defaultExpression) : undefined,
+      onUpdate: isSet(object.onUpdate) ? globalThis.String(object.onUpdate) : "",
       nullable: isSet(object.nullable) ? globalThis.Boolean(object.nullable) : false,
       type: isSet(object.type) ? globalThis.String(object.type) : "",
       characterSet: isSet(object.characterSet) ? globalThis.String(object.characterSet) : "",
@@ -4367,6 +4386,9 @@ export const ColumnMetadata = {
     }
     if (message.defaultExpression !== undefined) {
       obj.defaultExpression = message.defaultExpression;
+    }
+    if (message.onUpdate !== "") {
+      obj.onUpdate = message.onUpdate;
     }
     if (message.nullable === true) {
       obj.nullable = message.nullable;
@@ -4406,6 +4428,7 @@ export const ColumnMetadata = {
     message.defaultNull = object.defaultNull ?? undefined;
     message.defaultString = object.defaultString ?? undefined;
     message.defaultExpression = object.defaultExpression ?? undefined;
+    message.onUpdate = object.onUpdate ?? "";
     message.nullable = object.nullable ?? false;
     message.type = object.type ?? "";
     message.characterSet = object.characterSet ?? "";
@@ -8476,7 +8499,7 @@ export const ListChangeHistoriesResponse = {
 };
 
 function createBaseGetChangeHistoryRequest(): GetChangeHistoryRequest {
-  return { name: "", view: 0, sdlFormat: false };
+  return { name: "", view: 0, sdlFormat: false, concise: false };
 }
 
 export const GetChangeHistoryRequest = {
@@ -8489,6 +8512,9 @@ export const GetChangeHistoryRequest = {
     }
     if (message.sdlFormat === true) {
       writer.uint32(24).bool(message.sdlFormat);
+    }
+    if (message.concise === true) {
+      writer.uint32(32).bool(message.concise);
     }
     return writer;
   },
@@ -8521,6 +8547,13 @@ export const GetChangeHistoryRequest = {
 
           message.sdlFormat = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.concise = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8535,6 +8568,7 @@ export const GetChangeHistoryRequest = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       view: isSet(object.view) ? changeHistoryViewFromJSON(object.view) : 0,
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
   },
 
@@ -8549,6 +8583,9 @@ export const GetChangeHistoryRequest = {
     if (message.sdlFormat === true) {
       obj.sdlFormat = message.sdlFormat;
     }
+    if (message.concise === true) {
+      obj.concise = message.concise;
+    }
     return obj;
   },
 
@@ -8560,6 +8597,7 @@ export const GetChangeHistoryRequest = {
     message.name = object.name ?? "";
     message.view = object.view ?? 0;
     message.sdlFormat = object.sdlFormat ?? false;
+    message.concise = object.concise ?? false;
     return message;
   },
 };
