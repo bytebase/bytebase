@@ -276,7 +276,8 @@
     "permissions": "Permisos",
     "backup": "Respaldo",
     "cutover": "transición",
-    "baseline": "Base"
+    "baseline": "Base",
+    "project-member": "Miembro del proyecto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

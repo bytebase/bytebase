@@ -274,7 +274,8 @@
     "permissions": "权限",
     "backup": "备份",
     "cutover": "切换",
-    "baseline": "基线"
+    "baseline": "基线",
+    "project-member": "项目成员"
   },
   "error-page": {
     "go-back-home": "回到主页"
