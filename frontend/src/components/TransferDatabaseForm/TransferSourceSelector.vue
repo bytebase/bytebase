@@ -8,7 +8,7 @@
         class="radio-set-row"
       >
         <NRadioGroup v-model:value="state.transferSource">
-          <NRadio :value="'DEFAULT'">
+          <NRadio v-if="hasPermissionForDefaultProject" :value="'DEFAULT'">
             {{ $t("quick-action.from-unassigned-databases") }}
           </NRadio>
           <NRadio :value="'OTHER'">
@@ -18,7 +18,9 @@
       </div>
       <NInputGroup style="width: auto">
         <InstanceSelect
-          v-if="state.transferSource == 'DEFAULT'"
+          v-if="
+            state.transferSource == 'DEFAULT' && hasPermissionForDefaultProject
+          "
           class="!w-48"
           :instance="instanceFilter?.uid ?? String(UNKNOWN_ID)"
           :include-all="true"
@@ -48,7 +50,7 @@
 
 <script lang="ts" setup>
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
-import { type PropType, computed, reactive, watch } from "vue";
+import { computed, reactive, watch } from "vue";
 import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
 import { useInstanceV1Store, useProjectV1Store } from "@/store";
 import {
@@ -65,32 +67,23 @@ interface LocalState {
   transferSource: TransferSource;
 }
 
-const props = defineProps({
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  rawDatabaseList: {
-    type: Array as PropType<ComposedDatabase[]>,
-    default: () => [],
-  },
-  transferSource: {
-    type: String as PropType<TransferSource>,
-    required: true,
-  },
-  instanceFilter: {
-    type: Object as PropType<ComposedInstance>,
-    default: undefined,
-  },
-  projectFilter: {
-    type: Object as PropType<Project>,
-    default: undefined,
-  },
-  searchText: {
-    type: String,
-    default: "",
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    project: Project;
+    rawDatabaseList?: ComposedDatabase[];
+    transferSource: TransferSource;
+    hasPermissionForDefaultProject: boolean;
+    instanceFilter?: ComposedInstance;
+    projectFilter?: Project;
+    searchText: string;
+  }>(),
+  {
+    rawDatabaseList: () => [],
+    instanceFilter: undefined,
+    projectFilter: undefined,
+    searchText: "",
+  }
+);
 
 const emit = defineEmits<{
   (event: "change", src: TransferSource): void;
