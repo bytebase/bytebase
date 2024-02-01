@@ -104,6 +104,8 @@ const (
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 	// SchemaRuleTableDisallowPartition disallow the table partition.
 	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
+	// SchemaRuleTableDisallowTrigger disallow the table trigger.
+	SchemaRuleTableDisallowTrigger SQLReviewRuleType = "table.disallow-trigger"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -1285,6 +1287,11 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLTableDisallowPartition, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableDisallowPartition, nil
+		}
+	case SchemaRuleTableDisallowTrigger:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+			return MySQLTableDisallowTrigger, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
