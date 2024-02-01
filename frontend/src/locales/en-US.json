@@ -276,7 +276,8 @@
     "permissions": "Permissions",
     "backup": "Backup",
     "cutover": "Cutover",
-    "baseline": "Baseline"
+    "baseline": "Baseline",
+    "project-member": "Project member"
   },
   "error-page": {
     "go-back-home": "Go back home"
