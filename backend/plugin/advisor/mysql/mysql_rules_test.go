@@ -60,6 +60,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableCommentConvention,
 		// advisor.SchemaRuleTableDisallowPartition disallow the table partition.
 		advisor.SchemaRuleTableDisallowPartition,
+		// advisor.SchemaRuleTableDisallowTrigger disallow the table trigger.
+		advisor.SchemaRuleTableDisallowTrigger,
 
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
 		advisor.SchemaRuleRequiredColumn,
