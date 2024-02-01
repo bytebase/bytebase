@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/nyaruka/phonenumbers"
@@ -255,4 +256,35 @@ func SanitizeUTF8String(s string) string {
 	}
 
 	return b.String()
+}
+
+// IsCamelCase checks whether a string conforms to the camel case format.
+func IsCamelCase(s string) bool {
+	// If the string is empty, it does not conform to camel case format.
+	if s == "" {
+		return false
+	}
+	// The first character must be a lowercase letter.
+	if !unicode.IsLower(rune(s[0])) {
+		return false
+	}
+	// Check if the string contains uppercase letters.
+	hasUpperCase := false
+	for _, char := range s {
+		if unicode.IsUpper(char) {
+			hasUpperCase = true
+			break
+		}
+	}
+	// If the string does not contain uppercase letters, it is not in camel case format.
+	if !hasUpperCase {
+		return false
+	}
+	// Check for consecutive uppercase letters.
+	for i := 1; i < len(s); i++ {
+		if unicode.IsUpper(rune(s[i])) && unicode.IsUpper(rune(s[i-1])) {
+			return false
+		}
+	}
+	return true
 }
