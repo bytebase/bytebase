@@ -369,10 +369,6 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	return result, nil
 }
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", stmt, limit)
-}
-
 // RunStatement runs a SQL statement in a given connection.
 func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
