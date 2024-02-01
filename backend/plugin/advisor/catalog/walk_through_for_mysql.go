@@ -542,6 +542,23 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 	}
 }
 
+func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
+	if ctx.TriggerName() == nil {
+		return
+	}
+
+	// Check if related table exists.
+	if ctx.TableRef() == nil {
+		return
+	}
+	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	_, err := l.databaseState.mysqlFindTableState(databaseName, tableName, true /* createIncompleteTable */)
+	if err != nil {
+		l.err = err
+		return
+	}
+}
+
 func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	if ctx.ProcedureName() == nil {
 		return
