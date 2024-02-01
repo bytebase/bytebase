@@ -8,6 +8,8 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
+
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -559,5 +561,193 @@ func (q *querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableS
 		}
 	}
 
+	return result, nil
+}
+
+func (q *querySpanExtractor) extractTableSource(node *tidbast.TableSource) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromNode(node.Source)
+	if err != nil {
+		return nil, err
+	}
+	if node.AsName.O != "" {
+		tableSource.SetTableName(node.AsName.O)
+	}
+	return tableSource, nil
+}
+
+func (q *querySpanExtractor) findTableSchema(databaseName string, tableName string) (base.TableSource, error) {
+	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
+	//
+	//  with tt2 as (
+	//    with tt2 as (select * from t)
+	//    select max(a) from tt2)
+	//  select * from tt2
+	//
+	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(q.ctes) - 1; i >= 0; i-- {
+		cte := q.ctes[i]
+		if databaseName == "" && cte.Name == tableName {
+			return cte, nil
+		}
+	}
+
+	if databaseName == "" {
+		databaseName = q.connectedDB
+	}
+
+	dbSchema, err := q.getDatabaseMetadata(databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database metadata for %q", databaseName)
+	}
+	if dbSchema == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &databaseName,
+		}
+	}
+	emptySchema := ""
+	schema := dbSchema.GetSchema("")
+	if schema == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &databaseName,
+			Schema:   &emptySchema,
+		}
+	}
+	lowerTableName := strings.ToLower(tableName)
+	for _, table := range schema.ListTableNames() {
+		if lowerTableName == strings.ToLower(table) {
+			var columns []string
+			tableMeta := schema.GetTable(table)
+			if tableMeta != nil {
+				for _, column := range tableMeta.GetColumns() {
+					columns = append(columns, column.Name)
+				}
+				return &base.PhysicalTable{
+					Database: databaseName,
+					Name:     table,
+					Columns:  columns,
+				}, nil
+			}
+		}
+	}
+
+	for _, view := range schema.ListViewNames() {
+		if lowerTableName == strings.ToLower(view) {
+			viewMeta := schema.GetView(view)
+			if viewMeta != nil {
+				columns, err := q.getColumnsForView(viewMeta.Definition)
+				if err != nil {
+					return nil, err
+				}
+				return &base.PseudoTable{
+					Name:    view,
+					Columns: columns,
+				}, nil
+			}
+		}
+	}
+
+	return nil, &parsererror.ResourceNotFoundError{
+		Database: &databaseName,
+		Schema:   &emptySchema,
+		Table:    &tableName,
+	}
+}
+
+func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
+	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	span, err := newQ.getQuerySpan(q.ctx, definition)
+	if err != nil {
+		return nil, err
+	}
+	return span.Results, nil
+}
+
+func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.DatabaseMetadata, error) {
+	if meta, ok := q.metaCache[databaseName]; ok {
+		return meta, nil
+	}
+	meta, err := q.f(q.ctx, databaseName)
+	if err != nil {
+		return nil, err
+	}
+	q.metaCache[databaseName] = meta
+	return meta, nil
+}
+
+func (q *querySpanExtractor) extractTableName(node *tidbast.TableName) (base.TableSource, error) {
+	return q.findTableSchema(node.Schema.O, node.Name.O)
+}
+
+func (q *querySpanExtractor) extractSetOpr(node *tidbast.SetOprStmt) (base.TableSource, error) {
+	if node.With != nil {
+		previousCteOuterLength := len(q.ctes)
+		defer func() {
+			q.ctes = q.ctes[:previousCteOuterLength]
+		}()
+		for _, cte := range node.With.CTEs {
+			cteTableSource, err := q.extractCTE(cte)
+			if err != nil {
+				return nil, err
+			}
+			q.ctes = append(q.ctes, cteTableSource)
+		}
+	}
+
+	return q.extractTableSourceFromNode(node.SelectList)
+}
+
+func mergeTableSource(left, right base.TableSource) (base.TableSource, error) {
+	leftSpanResult, rightSpanResult := left.GetQuerySpanResult(), right.GetQuerySpanResult()
+
+	if len(leftSpanResult) != len(rightSpanResult) {
+		return nil, errors.Errorf("left table source has %d columns, but right table source has %d columns", len(leftSpanResult), len(rightSpanResult))
+	}
+
+	var result []base.QuerySpanResult
+	for i, leftResult := range leftSpanResult {
+		rightResult := rightSpanResult[i]
+		newResourceColumns, _ := base.MergeSourceColumnSet(leftResult.SourceColumns, rightResult.SourceColumns)
+		result = append(result, base.QuerySpanResult{
+			Name:          leftResult.Name,
+			SourceColumns: newResourceColumns,
+		})
+	}
+	return &base.PseudoTable{
+		Name:    "",
+		Columns: result,
+	}, nil
+}
+
+func (q *querySpanExtractor) extractSetOprSelectList(node *tidbast.SetOprSelectList) (base.TableSource, error) {
+	if node.With != nil {
+		previousCteOuterLength := len(q.ctes)
+		defer func() {
+			q.ctes = q.ctes[:previousCteOuterLength]
+		}()
+		for _, cte := range node.With.CTEs {
+			cteTableSource, err := q.extractCTE(cte)
+			if err != nil {
+				return nil, err
+			}
+			q.ctes = append(q.ctes, cteTableSource)
+		}
+	}
+
+	var result base.TableSource
+	for i, selectStmt := range node.Selects {
+		tableSource, err := q.extractTableSourceFromNode(selectStmt)
+		if err != nil {
+			return nil, err
+		}
+		if i == 0 {
+			result = tableSource
+		} else {
+			result, err = mergeTableSource(result, tableSource)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to merge table source for %dth select statement", i)
+			}
+		}
+	}
 	return result, nil
 }

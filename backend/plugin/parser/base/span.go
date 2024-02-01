@@ -68,6 +68,8 @@ type TableSource interface {
 	// GetQuerySpanResult returns the query span result of the table, it's callers' responsibility
 	// to make a copy of the result if they want to modify it.
 	GetQuerySpanResult() []QuerySpanResult
+
+	SetTableName(string)
 }
 
 // baseTableSource is the base implementation table source.
@@ -93,6 +95,10 @@ func NewPseudoTable(name string, columns []QuerySpanResult) *PseudoTable {
 		Name:    name,
 		Columns: columns,
 	}
+}
+
+func (p *PseudoTable) SetTableName(name string) {
+	p.Name = name
 }
 
 func (p *PseudoTable) GetTableName() string {
@@ -129,6 +135,10 @@ type PhysicalTable struct {
 	Name string
 	// Columns are the columns of the table.
 	Columns []string
+}
+
+func (p *PhysicalTable) SetTableName(name string) {
+	p.Name = name
 }
 
 func (p *PhysicalTable) GetTableName() string {
