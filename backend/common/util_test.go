@@ -250,3 +250,39 @@ func TestValidatePhone(t *testing.T) {
 		}
 	}
 }
+
+func TestIsCamelCase(t *testing.T) {
+	tests := []struct {
+		text string
+		want bool
+	}{
+		{
+			text: "snake_case",
+			want: false,
+		},
+		{
+			text: "PascalCase",
+			want: false,
+		},
+		{
+			text: "",
+			want: false,
+		},
+		{
+			text: "non",
+			want: false,
+		},
+		{
+			text: "camelCase",
+			want: true,
+		},
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(test.text, func(t *testing.T) {
+			got := IsCamelCase(test.text)
+			assert.Equal(t, test.want, got)
+		})
+	}
+}
