@@ -97,6 +97,7 @@ const (
 	TableExists                       Code = 607
 	CreateTablePartition              Code = 608
 	TableIsReferencedByView           Code = 609
+	CreateTableTrigger                Code = 610
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -137,6 +138,9 @@ const (
 
 	// 1301 ~ 1399 comment error code.
 	CommentTooLong Code = 1301
+
+	// 1401 ~ 1499 other common error code.
+	DisallowProcedure Code = 1401
 )
 
 // Int returns the int type of code.

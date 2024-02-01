@@ -5,7 +5,10 @@
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
-          <router-link :to="`/users/${user.email}`" class="normal-link">
+          <router-link
+            :to="`/users/${user.email}`"
+            class="normal-link truncate w-36"
+          >
             {{ user.title }}
           </router-link>
           <span

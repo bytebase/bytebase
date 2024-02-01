@@ -164,6 +164,9 @@ const (
 	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
 	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
 
+	// MySQLTableDisallowTrigger is an advisor type for MySQL disallow table trigger.
+	MySQLTableDisallowTrigger Type = "bb.plugin.advisor.mysql.table.disallow-trigger"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
@@ -217,6 +220,9 @@ const (
 
 	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
 	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
+
+	// MySQLDisallowProcedure is an advisor type for MySQL disallow procedure.
+	MySQLDisallowProcedure Type = "bb.plugin.advisor.mysql.disallow-procedure"
 
 	// PostgreSQL Advisor.
 
