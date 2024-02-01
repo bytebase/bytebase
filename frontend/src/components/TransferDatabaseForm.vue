@@ -17,6 +17,7 @@
           :instance-filter="state.instanceFilter"
           :project-filter="state.projectFilter"
           :search-text="state.searchText"
+          :has-permission-for-default-project="hasPermissionForDefaultProject"
           @change="state.transferSource = $event"
           @select-instance="state.instanceFilter = $event"
           @select-project="state.projectFilter = $event"
@@ -79,19 +80,19 @@ import {
   useProjectV1ByUID,
   useProjectV1Store,
 } from "@/store";
-import { Project } from "@/types/proto/v1/project_service";
 import {
   DEFAULT_PROJECT_ID,
   ComposedInstance,
   DEFAULT_PROJECT_V1_NAME,
   UNKNOWN_INSTANCE_NAME,
   ComposedDatabase,
-} from "../types";
+} from "@/types";
+import { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
   hasProjectPermissionV2,
   sortDatabaseV1List,
-} from "../utils";
+} from "@/utils";
 
 interface LocalState {
   transferSource: TransferSource;
@@ -102,12 +103,9 @@ interface LocalState {
   selectedDatabaseUidList: string[];
 }
 
-const props = defineProps({
-  projectId: {
-    required: true,
-    type: String,
-  },
-});
+const props = defineProps<{
+  projectId: string;
+}>();
 
 const emit = defineEmits<{
   (e: "dismiss"): void;
@@ -115,22 +113,31 @@ const emit = defineEmits<{
 
 const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
+const projectStore = useProjectV1Store();
+
+const defaultProject = computed(() => {
+  return projectStore.getProjectByName(DEFAULT_PROJECT_V1_NAME);
+});
+
+const hasPermissionForDefaultProject = computed(() => {
+  return hasProjectPermissionV2(
+    defaultProject.value,
+    currentUserV1.value,
+    "bb.projects.update"
+  );
+});
 
 const state = reactive<LocalState>({
   transferSource:
-    props.projectId === String(DEFAULT_PROJECT_ID) ? "OTHER" : "DEFAULT",
+    props.projectId === String(DEFAULT_PROJECT_ID) ||
+    !hasPermissionForDefaultProject.value
+      ? "OTHER"
+      : "DEFAULT",
   instanceFilter: undefined,
   projectFilter: undefined,
   searchText: "",
   loading: false,
   selectedDatabaseUidList: [],
-});
-const hasWorkspaceManageDatabasePermission = computed(() => {
-  return hasProjectPermissionV2(
-    project.value,
-    currentUserV1.value,
-    "bb.projects.update"
-  );
 });
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
@@ -146,15 +153,17 @@ const rawDatabaseList = computed(() => {
   if (state.transferSource === "DEFAULT") {
     return databaseStore.databaseListByProject(DEFAULT_PROJECT_V1_NAME);
   } else {
-    const rawList = hasWorkspaceManageDatabasePermission.value
-      ? databaseStore.databaseList
-      : databaseStore.databaseListByUser(currentUserV1.value);
-
-    return [...rawList].filter(
-      (item) =>
+    return databaseStore.databaseList.filter((item) => {
+      return (
         item.projectEntity.uid !== props.projectId &&
-        item.project !== DEFAULT_PROJECT_V1_NAME
-    );
+        item.project !== DEFAULT_PROJECT_V1_NAME &&
+        hasProjectPermissionV2(
+          item.projectEntity,
+          currentUserV1.value,
+          "bb.projects.update"
+        )
+      );
+    });
   }
 });
 
@@ -204,7 +213,7 @@ const transferDatabase = async () => {
     databaseStore.getDatabaseByUID(uid)
   );
   const transferOneDatabase = async (database: ComposedDatabase) => {
-    const targetProject = useProjectV1Store().getProjectByUID(props.projectId);
+    const targetProject = projectStore.getProjectByUID(props.projectId);
     const databasePatch = cloneDeep(database);
     databasePatch.project = targetProject.name;
     const updateMask = ["project"];
