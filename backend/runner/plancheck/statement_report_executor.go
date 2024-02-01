@@ -484,7 +484,10 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.Sche
 			database.Schemas = append(database.Schemas, &storepb.ChangedResourceSchema{Name: resource.Schema})
 		}
 		schema := database.Schemas[len(database.Schemas)-1]
-		tableRows := dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
+		var tableRows int64
+		if dbMetadata != nil && dbMetadata.GetDatabaseMetadata() != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema) != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table) != nil {
+			tableRows = dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
+		}
 		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{
 			Name:      resource.Table,
 			TableRows: tableRows,
