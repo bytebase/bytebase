@@ -162,14 +162,6 @@ const sampleProject = computed(() => {
   return project;
 });
 
-watchEffect(async () => {
-  if (
-    hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
-  ) {
-    await projectStore.getOrFetchProjectByUID("101", true /* silent */);
-  }
-});
-
 const introList = computed(() => {
   const introList: IntroItem[] = [
     {
@@ -270,11 +262,8 @@ const introList = computed(() => {
 });
 
 const showQuickstart = computed(() => {
-  // Only show quickstart for those who have workspace admin and project owner role.
-  if (
-    !currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
-    !currentUserV1.value.roles.includes(PresetRoleType.PROJECT_OWNER)
-  ) {
+  // Only show quickstart for those who have workspace admin role.
+  if (!currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
     return false;
   }
   if (!show.value) return false;
@@ -353,5 +342,17 @@ useKBarEventOnce("open", () => {
     key: "kbar.open",
     newState: true,
   });
+});
+
+watchEffect(async () => {
+  if (!showQuickstart.value) {
+    return;
+  }
+
+  if (
+    hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
+  ) {
+    await projectStore.getOrFetchProjectByUID("101", true /* silent */);
+  }
 });
 </script>
