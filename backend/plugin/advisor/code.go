@@ -97,6 +97,7 @@ const (
 	TableExists                       Code = 607
 	CreateTablePartition              Code = 608
 	TableIsReferencedByView           Code = 609
+	CreateTableTrigger                Code = 610
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
