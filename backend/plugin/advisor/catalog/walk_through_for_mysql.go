@@ -542,6 +542,12 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 	}
 }
 
+func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	if ctx.ProcedureName() == nil {
+		return
+	}
+}
+
 func (d *DatabaseState) mysqlTargetDatabase(renamePair mysql.IRenamePairContext) string {
 	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
 	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
