@@ -1,4 +1,4 @@
-package mysql
+package tidb
 
 import (
 	"fmt"
@@ -10,11 +10,12 @@ import (
 	parser "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 func init() {
-	base.RegisterTransformDMLToSelect(store.Engine_MYSQL, TransformDMLToSelect)
+	base.RegisterTransformDMLToSelect(store.Engine_TIDB, TransformDMLToSelect)
 }
 
 func TransformDMLToSelect(statement string, sourceDatabase string, targetDatabase string, tableSuffix string) ([]base.RollbackStatement, error) {
@@ -78,10 +79,10 @@ func prepareTransformation(databaseName, statement string) (map[string][]*tableS
 	return result, nil
 }
 
-func getSQLType(statement string) (*ParseResult, bool, bool, error) {
-	listener := &StatementTypeChecker{}
+func getSQLType(statement string) (*mysql.ParseResult, bool, bool, error) {
+	listener := &mysql.StatementTypeChecker{}
 
-	stmts, err := ParseMySQL(statement)
+	stmts, err := mysql.ParseMySQL(statement)
 	if err != nil {
 		return nil, false, false, errors.Wrap(err, "failed to parse sql")
 	}
@@ -99,8 +100,11 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 	for tableName, tableStatements := range tableStatementMap {
 		targetTable := fmt.Sprintf("%s%s", tableName, tableSuffix)
 		var buf strings.Builder
-		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` AS ", databaseName, targetTable)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`;\n", databaseName, targetTable, tableName)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` ", databaseName, targetTable)); err != nil {
+			return nil, errors.Wrap(err, "failed to write insert into statement")
 		}
 		for i, tableStatement := range tableStatements {
 			if i > 0 {
@@ -131,7 +135,7 @@ func generateSQL(tableStatementMap map[string][]*tableStatement, databaseName st
 	return result, nil
 }
 
-func extractSuffixSelectStatement(parseResult *ParseResult, buf *strings.Builder) error {
+func extractSuffixSelectStatement(parseResult *mysql.ParseResult, buf *strings.Builder) error {
 	listener := &suffixSelectStatementListener{
 		buf: buf,
 	}
@@ -212,7 +216,7 @@ func (l *suffixSelectStatementListener) EnterUpdateStatement(ctx *parser.UpdateS
 }
 
 type tableStatement struct {
-	tree  *ParseResult
+	tree  *mysql.ParseResult
 	table *TableReference
 }
 
@@ -231,7 +235,7 @@ type TableReference struct {
 	StatementType StatementType
 }
 
-func extractTables(databaseName string, parseResult *ParseResult) ([]*TableReference, error) {
+func extractTables(databaseName string, parseResult *mysql.ParseResult) ([]*TableReference, error) {
 	listener := &tableReferenceListener{
 		databaseName: databaseName,
 	}
@@ -256,7 +260,7 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 
 	if ctx.TableRef() != nil {
 		// Single table delete statement.
-		database, table := NormalizeMySQLTableRef(ctx.TableRef())
+		database, table := mysql.NormalizeMySQLTableRef(ctx.TableRef())
 		if len(database) > 0 && database != l.databaseName {
 			l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
 			return
@@ -265,7 +269,7 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 		alias := ""
 
 		if ctx.TableAlias() != nil {
-			alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+			alias = mysql.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 		}
 
 		l.tables = append(l.tables, &TableReference{
@@ -286,7 +290,7 @@ func (l *tableReferenceListener) EnterDeleteStatement(ctx *parser.DeleteStatemen
 		antlr.ParseTreeWalkerDefault.Walk(singleTables, ctx.TableReferenceList())
 
 		for _, tableRef := range ctx.TableAliasRefList().AllTableRefWithWildcard() {
-			database, table := NormalizeMySQLTableRefWithWildcard(tableRef)
+			database, table := mysql.NormalizeMySQLTableRefWithWildcard(tableRef)
 			if len(database) > 0 && database != l.databaseName {
 				l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
 				return
@@ -357,7 +361,7 @@ func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
 	if l.err != nil {
 		return
 	}
-	database, tableName := NormalizeMySQLTableRef(ctx.TableRef())
+	database, tableName := mysql.NormalizeMySQLTableRef(ctx.TableRef())
 	if len(database) > 0 && database != l.databaseName {
 		l.err = errors.Errorf("database is not matched: %s != %s", database, l.databaseName)
 	}
@@ -366,7 +370,7 @@ func (l *singleTableListener) EnterSingleTable(ctx *parser.SingleTableContext) {
 	}
 
 	if ctx.TableAlias() != nil {
-		table.Alias = NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
+		table.Alias = mysql.NormalizeMySQLIdentifier(ctx.TableAlias().Identifier())
 		l.singleTables[table.Alias] = table
 	} else {
 		l.singleTables[table.Table] = table
@@ -380,6 +384,6 @@ type updateTableListener struct {
 }
 
 func (l *updateTableListener) EnterUpdateElement(ctx *parser.UpdateElementContext) {
-	_, table, _ := NormalizeMySQLColumnRef(ctx.ColumnRef())
+	_, table, _ := mysql.NormalizeMySQLColumnRef(ctx.ColumnRef())
 	l.tables[table] = true
 }
