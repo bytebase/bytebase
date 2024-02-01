@@ -252,6 +252,15 @@ const toggleUserServiceAccount = (on: boolean) => {
   state.user.userType = on ? UserType.SERVICE_ACCOUNT : UserType.USER;
 };
 
+const extractUserTitle = (email: string): string => {
+  const atIndex = email.indexOf("@");
+  if (atIndex !== -1) {
+    return email.substring(0, atIndex);
+  }
+  // If there is no @, we just return the email as title.
+  return email;
+};
+
 const handleArchiveUser = () => {
   userStore.archiveUser(props.user!);
   emit("close");
@@ -265,7 +274,7 @@ const tryCreateOrUpdateUser = async () => {
 
     await userStore.createUser({
       ...state.user,
-      title: state.user.title || state.user.email,
+      title: state.user.title || extractUserTitle(state.user.email),
       password: randomString(20),
     });
   } else {
