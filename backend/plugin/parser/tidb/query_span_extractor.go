@@ -158,28 +158,28 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node tidbast.Node) (base
 	case *tidbast.SetOprSelectList:
 		return q.extractSetOprSelectList(node)
 	case *tidbast.CreateViewStmt:
-		// list, err := q.extractNode(node.Select)
-		// if err != nil {
-		// 	return nil, err
-		// }
-		// var result []base.FieldInfo
-		// if len(node.Cols) > 0 && len(node.Cols) != len(list) {
-		// 	return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", node.ViewName.Name.O)
-		// }
-		// for i, item := range list {
-		// 	field := base.FieldInfo{
-		// 		Database: item.Database,
-		// 		Schema:   item.Schema,
-		// 		Table:    node.ViewName.Name.O,
-		// 		Name:     item.Name,
-		// 	}
-		// 	if len(node.Cols) > 0 {
-		// 		// The column name for MySQL is case insensitive.
-		// 		field.Name = node.Cols[i].L
-		// 	}
-		// 	result = append(result, field)
-		// }
-		// return result, nil
+		tableSource, err := q.extractTableSourceFromNode(node.Select)
+		if err != nil {
+			return nil, err
+		}
+		querySpanResult := tableSource.GetQuerySpanResult()
+
+		if len(node.Cols) == 0 {
+			return base.NewPseudoTable(node.ViewName.Name.O, querySpanResult), nil
+		}
+
+		if len(node.Cols) != len(querySpanResult) {
+			return nil, errors.Errorf("The used SELECT statements have a different number of columns for view %s", node.ViewName.Name.O)
+		}
+
+		var columns []base.QuerySpanResult
+		for i, item := range querySpanResult {
+			columns = append(columns, base.QuerySpanResult{
+				Name:          node.Cols[i].L,
+				SourceColumns: item.SourceColumns,
+			})
+		}
+		return base.NewPseudoTable(node.ViewName.Name.O, columns), nil
 	}
 	return nil, nil
 }
