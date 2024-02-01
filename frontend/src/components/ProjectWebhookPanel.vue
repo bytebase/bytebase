@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 divide-y divide-block-border">
+  <div class="space-y-4">
     <div v-if="allowEdit" class="flex items-center justify-end">
       <NButton
         type="primary"
@@ -9,35 +9,33 @@
         {{ $t("project.webhook.add-a-webhook") }}
       </NButton>
     </div>
-    <div class="pt-4">
-      <div v-if="projectWebhookList.length > 0" class="space-y-6">
-        <template
-          v-for="(projectWebhook, index) in projectWebhookList"
-          :key="index"
-        >
-          <ProjectWebhookCard :project-webhook="projectWebhook" />
-        </template>
-      </div>
-      <NoDataPlaceholder v-else>
-        <div class="text-center">
-          <h3 class="mt-2 text-sm font-medium text-main">
-            {{ $t("project.webhook.no-webhook.title") }}
-          </h3>
-          <p class="mt-1 text-sm text-control-light">
-            {{ $t("project.webhook.no-webhook.content") }}
-          </p>
-          <div class="mt-4">
-            <NButton
-              size="small"
-              type="primary"
-              @click.prevent="addProjectWebhook"
-            >
-              {{ $t("project.webhook.add-a-webhook") }}
-            </NButton>
-          </div>
-        </div>
-      </NoDataPlaceholder>
+    <div v-if="projectWebhookList.length > 0" class="space-y-6">
+      <template
+        v-for="(projectWebhook, index) in projectWebhookList"
+        :key="index"
+      >
+        <ProjectWebhookCard :project-webhook="projectWebhook" />
+      </template>
     </div>
+    <NoDataPlaceholder v-else>
+      <div class="text-center">
+        <h3 class="mt-2 text-sm font-medium text-main">
+          {{ $t("project.webhook.no-webhook.title") }}
+        </h3>
+        <p class="mt-1 text-sm text-control-light">
+          {{ $t("project.webhook.no-webhook.content") }}
+        </p>
+        <div v-if="allowEdit" class="mt-4">
+          <NButton
+            size="small"
+            type="primary"
+            @click.prevent="addProjectWebhook"
+          >
+            {{ $t("project.webhook.add-a-webhook") }}
+          </NButton>
+        </div>
+      </div>
+    </NoDataPlaceholder>
   </div>
 </template>
 
