@@ -174,6 +174,9 @@ const (
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
 
+	// SchemaRuleDisallowProcedure disallow procedure.
+	SchemaRuleDisallowProcedure SQLReviewRuleType = "procedure.disallow"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -1434,6 +1437,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCommentConvention, nil
+		}
+	case SchemaRuleDisallowProcedure:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLDisallowProcedure, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

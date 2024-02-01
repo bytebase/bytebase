@@ -93,6 +93,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
+		// advisor.SchemaRuleDisallowProcedure enforce the disallow procedure.
+		advisor.SchemaRuleDisallowProcedure,
 
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,

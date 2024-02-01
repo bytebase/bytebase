@@ -559,6 +559,12 @@ func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
 	}
 }
 
+func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	if ctx.ProcedureName() == nil {
+		return
+	}
+}
+
 func (d *DatabaseState) mysqlTargetDatabase(renamePair mysql.IRenamePairContext) string {
 	oldDatabaseName, _ := mysqlparser.NormalizeMySQLTableRef(renamePair.TableRef())
 	if oldDatabaseName != "" && !d.isCurrentDatabase(oldDatabaseName) {
