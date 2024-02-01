@@ -19,7 +19,6 @@
 import { asyncComputed } from "@vueuse/core";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { ErrorList } from "@/components/IssueV1/components/common";
 import {
   StageRolloutAction,
   TaskRolloutAction,
@@ -28,8 +27,10 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useUserStore } from "@/store";
+import { displayRoleTitle, extractUserResourceName } from "@/utils";
 import { RolloutAction, RolloutButtonAction } from "./common";
 
 const props = defineProps<{
@@ -46,7 +47,7 @@ const currentUser = useCurrentUserV1();
 const { issue, activeTask, releaserCandidates } = useIssueContext();
 
 const errors = asyncComputed(async () => {
-  const errors: string[] = [];
+  const errors: ErrorItem[] = [];
   if (
     !(await allowUserToApplyTaskRolloutAction(
       issue.value,
@@ -57,6 +58,26 @@ const errors = asyncComputed(async () => {
     ))
   ) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
+    const { releasers } = issue.value;
+    for (let i = 0; i < releasers.length; i++) {
+      const roleOrUser = releasers[i];
+      if (roleOrUser.startsWith("roles/")) {
+        errors.push({
+          error: displayRoleTitle(roleOrUser),
+          indent: 1,
+        });
+      }
+      if (roleOrUser.startsWith("users/")) {
+        const email = extractUserResourceName(roleOrUser);
+        const user = useUserStore().getUserByEmail(email);
+        if (user) {
+          errors.push({
+            error: `${user.title} (${user.email})`,
+            indent: 1,
+          });
+        }
+      }
+    }
   }
   return errors;
 }, []);

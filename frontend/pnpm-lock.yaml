@@ -209,8 +209,8 @@ dependencies:
 
 devDependencies:
   '@iconify/json':
-    specifier: 2.2.163
-    version: 2.2.163
+    specifier: 2.2.177
+    version: 2.2.177
   '@intlify/unplugin-vue-i18n':
     specifier: 1.6.0
     version: 1.6.0(rollup@4.9.2)(vue-i18n@9.8.0)
@@ -287,8 +287,8 @@ devDependencies:
     specifier: 2.2.6
     version: 2.2.6
   '@types/uuid':
-    specifier: 9.0.7
-    version: 9.0.7
+    specifier: 9.0.8
+    version: 9.0.8
   '@types/vscode':
     specifier: 1.85.0
     version: 1.85.0
@@ -1188,11 +1188,11 @@ packages:
     resolution: {integrity: sha512-dvuCeX5fC9dXgJn9t+X5atfmgQAzUOWqS1254Gh0m6i8wKd10ebXkfNKiRK+1GWi/yTvvLDHpoxLr0xxxeslWw==}
     dev: true
 
-  /@iconify/json@2.2.163:
-    resolution: {integrity: sha512-cBca9e8x6Bp5qN2++sl54OUbME/Y20OhXJEdkpFFvvHvt8UfQLiBKzz7q3uZ1l3EQjc8JoKgDB/n8nqfNqEWig==}
+  /@iconify/json@2.2.177:
+    resolution: {integrity: sha512-BKWZMvJklkkuDcmBqOYLXUSBCFDoYn5oaUU6j6eVQHE6KEfVYawSsTvfu4aCTx6Pzd47HR5zhTL4LJzhuKZOxg==}
     dependencies:
       '@iconify/types': 2.0.0
-      pathe: 1.1.1
+      pathe: 1.1.2
     dev: true
 
   /@iconify/types@2.0.0:
@@ -2044,8 +2044,8 @@ packages:
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
     dev: true
 
-  /@types/uuid@9.0.7:
-    resolution: {integrity: sha512-WUtIVRUZ9i5dYXefDEAI7sh9/O7jGvHg7Df/5O/gtH3Yabe5odI3UWopVR1qbPXQtvOxWu3mM4XxlYeZtMWF4g==}
+  /@types/uuid@9.0.8:
+    resolution: {integrity: sha512-jg+97EGIcY9AGHJJRaaPVgetKDsrTgbRjQ5Msgjh/DQKEFl0DtyRr/VCOyD1T2R1MNeWPK/u7JoGhlDZnKBAfA==}
     dev: true
 
   /@types/vscode@1.85.0:
@@ -4959,6 +4959,10 @@ packages:
 
   /pathe@1.1.1:
     resolution: {integrity: sha512-d+RQGp0MAYTIaDBIMmOfMwz3E+LOZnxx1HZd5R18mmCZY0QBlK0LDZfPc8FW8Ed2DlvsuE6PRjroDY+wg4+j/Q==}
+    dev: true
+
+  /pathe@1.1.2:
+    resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
     dev: true
 
   /pathval@1.1.1:
