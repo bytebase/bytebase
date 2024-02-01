@@ -28,7 +28,7 @@ func NormalizeMySQLTableRef(ctx parser.ITableRefContext) (string, string) {
 	return "", ""
 }
 
-func normalizeMySQLTableRefWithWildcard(ctx parser.ITableRefWithWildcardContext) (string, string) {
+func NormalizeMySQLTableRefWithWildcard(ctx parser.ITableRefWithWildcardContext) (string, string) {
 	identifier := NormalizeMySQLIdentifier(ctx.Identifier())
 	if ctx.DotIdentifier() == nil {
 		return "", identifier
@@ -276,7 +276,7 @@ func NormalizeMySQLColumnInternalRef(ctx parser.IColumnInternalRefContext) strin
 	return ""
 }
 
-func normalizeMySQLColumnRef(ctx parser.IColumnRefContext) (string, string, string) {
+func NormalizeMySQLColumnRef(ctx parser.IColumnRefContext) (string, string, string) {
 	return NormalizeMySQLFieldIdentifier(ctx.FieldIdentifier())
 }
 
