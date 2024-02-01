@@ -1671,6 +1671,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
+| table_rows | [int64](#int64) |  | estimated row count of the table |
 
 
 
