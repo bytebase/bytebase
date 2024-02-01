@@ -27,15 +27,10 @@ import {
   issueReviewActionButtonProps,
   allowUserToApplyReviewAction,
   useIssueContext,
+  displayReviewRoleTitle,
 } from "@/components/IssueV1/logic";
 import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
-import { useCurrentUserV1, useSettingV1Store } from "@/store";
-import { PresetRoleType } from "@/types";
-import {
-  ApprovalNode_GroupValue,
-  ApprovalNode_Type,
-} from "@/types/proto/v1/issue_service";
-import { displayRoleTitle } from "@/utils";
+import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   action: IssueReviewAction;
@@ -68,57 +63,10 @@ const errors = computed(() => {
     if (step) {
       for (let i = 0; i < step.nodes.length; i++) {
         const node = step.nodes[i];
-        const {
-          externalNodeId,
-          type,
-          groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
-          role,
-        } = node;
-        if (type !== ApprovalNode_Type.ANY_IN_GROUP) continue;
-
-        if (externalNodeId) {
-          const setting = useSettingV1Store().getSettingByName(
-            "bb.workspace.approval.external"
-          );
-          const nodes =
-            setting?.value?.externalApprovalSettingValue?.nodes ?? [];
-          const node = nodes.find((n) => n.id === externalNodeId);
-          if (node) {
-            errors.push({
-              error: node.title,
-              indent: 1,
-            });
-          } else {
-            errors.push({
-              error: `${t(
-                "custom-approval.approval-flow.external-approval.self"
-              )}: ${externalNodeId}}`,
-              indent: 1,
-            });
-          }
-        } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
+        const roleTitle = displayReviewRoleTitle(node);
+        if (node) {
           errors.push({
-            error: displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN),
-            indent: 1,
-          });
-        } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
-          errors.push({
-            error: displayRoleTitle(PresetRoleType.WORKSPACE_DBA),
-            indent: 1,
-          });
-        } else if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
-          errors.push({
-            error: displayRoleTitle(PresetRoleType.PROJECT_OWNER),
-            indent: 1,
-          });
-        } else if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
-          errors.push({
-            error: t("common.project-member"),
-            indent: 1,
-          });
-        } else if (role) {
-          errors.push({
-            error: displayRoleTitle(role),
+            error: roleTitle,
             indent: 1,
           });
         }

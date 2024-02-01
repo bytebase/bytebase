@@ -1,7 +1,9 @@
 import { computed, unref } from "vue";
+import { t } from "@/plugins/i18n";
 import {
   candidatesOfApprovalStepV1,
   useAuthStore,
+  useSettingV1Store,
   useUserStore,
 } from "@/store";
 import {
@@ -10,9 +12,16 @@ import {
   MaybeRef,
   ComposedIssue,
   WrappedReviewStep,
+  PresetRoleType,
 } from "@/types";
-import { Issue, Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { extractUserResourceName } from "@/utils";
+import {
+  ApprovalNode,
+  ApprovalNode_GroupValue,
+  ApprovalNode_Type,
+  Issue,
+  Issue_Approver_Status,
+} from "@/types/proto/v1/issue_service";
+import { displayRoleTitle, extractUserResourceName } from "@/utils";
 import { ReviewContext } from "./context";
 
 export const extractReviewContext = (issue: MaybeRef<Issue>): ReviewContext => {
@@ -143,4 +152,42 @@ export const useWrappedReviewStepsV1 = (
       candidates: candidatesOfStep(index),
     }));
   });
+};
+
+export const displayReviewRoleTitle = (node: ApprovalNode) => {
+  const {
+    externalNodeId,
+    type,
+    groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
+    role,
+  } = node;
+  if (type !== ApprovalNode_Type.ANY_IN_GROUP) {
+    return "";
+  }
+
+  if (externalNodeId) {
+    const setting = useSettingV1Store().getSettingByName(
+      "bb.workspace.approval.external"
+    );
+    const nodes = setting?.value?.externalApprovalSettingValue?.nodes ?? [];
+    const node = nodes.find((n) => n.id === externalNodeId);
+    if (node) {
+      return node.title;
+    } else {
+      return `${t(
+        "custom-approval.approval-flow.external-approval.self"
+      )}: ${externalNodeId}}`;
+    }
+  } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
+    return displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN);
+  } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA) {
+    return displayRoleTitle(PresetRoleType.WORKSPACE_DBA);
+  } else if (groupValue === ApprovalNode_GroupValue.PROJECT_OWNER) {
+    return displayRoleTitle(PresetRoleType.PROJECT_OWNER);
+  } else if (groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER) {
+    return t("common.project-member");
+  } else if (role) {
+    return displayRoleTitle(role);
+  }
+  return "";
 };
