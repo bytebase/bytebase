@@ -29,7 +29,7 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import ErrorList, { ErrorItem } from "@/components/misc/ErrorList.vue";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, useSettingV1Store } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
   ApprovalNode_GroupValue,
@@ -69,12 +69,34 @@ const errors = computed(() => {
       for (let i = 0; i < step.nodes.length; i++) {
         const node = step.nodes[i];
         const {
+          externalNodeId,
           type,
           groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
           role,
         } = node;
         if (type !== ApprovalNode_Type.ANY_IN_GROUP) continue;
-        if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
+
+        if (externalNodeId) {
+          const setting = useSettingV1Store().getSettingByName(
+            "bb.workspace.approval.external"
+          );
+          const nodes =
+            setting?.value?.externalApprovalSettingValue?.nodes ?? [];
+          const node = nodes.find((n) => n.id === externalNodeId);
+          if (node) {
+            errors.push({
+              error: node.title,
+              indent: 1,
+            });
+          } else {
+            errors.push({
+              error: `${t(
+                "custom-approval.approval-flow.external-approval.self"
+              )}: ${externalNodeId}}`,
+              indent: 1,
+            });
+          }
+        } else if (groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER) {
           errors.push({
             error: displayRoleTitle(PresetRoleType.WORKSPACE_ADMIN),
             indent: 1,
