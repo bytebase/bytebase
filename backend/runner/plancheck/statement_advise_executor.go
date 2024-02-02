@@ -146,7 +146,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		}
 	}
 
-	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), getSyntaxMode(changeType))
+	catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
@@ -357,7 +357,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				}
 			}
 
-			catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), getSyntaxMode(changeType))
+			catalog, err := e.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */, getSyntaxMode(changeType))
 			if err != nil {
 				return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 			}
