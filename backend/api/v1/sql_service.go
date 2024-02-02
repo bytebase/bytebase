@@ -1695,7 +1695,7 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 }
 
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
-// agianst the database schema bind to the given database, if the overrideMetadata is provided,
+// against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
 func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
