@@ -1655,6 +1655,7 @@
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
       "schema-history-version": "Schema 历史版本",
+      "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
@@ -3369,7 +3370,7 @@
     },
     "change-source": {
       "self": "变更来源",
-      "raw-sql": "粘贴 Schema 文本",
+      "raw-sql": "SQL 语句",
       "change-history": {
         "tables": "表"
       },

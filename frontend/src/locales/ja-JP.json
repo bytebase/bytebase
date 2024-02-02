@@ -1657,6 +1657,7 @@
       "title": "スキーマを同期する",
       "description": "Bytebaseは、スキーマを1つまたは複数のターゲットデータベースに同期することをサポートしています",
       "schema-history-version": "スキーマ履歴バージョン",
+      "copy-schema": "スキーマのコピー",
       "select-source-schema": "ソーススキーマを選択する",
       "select-target-databases": "ターゲットデータベースを選択する",
       "select-project": "プロジェクトを選択する",
