@@ -292,7 +292,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 					for _, tableSource := range fromFieldList {
 						columns = append(columns, tableSource.GetQuerySpanResult()...)
 					}
-					result.Columns = columns
+					result.Columns = append(result.Columns, columns...)
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					for _, tableSource := range fromFieldList {
