@@ -18,22 +18,25 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
 	c := &Catalog{}
 
 	if syntaxMode == advisor.SyntaxModeSDL {
 		return NewEmptyCatalog(engineType)
 	}
 
-	databaseMeta, err := s.GetDBSchema(ctx, databaseID)
-	if err != nil {
-		return nil, err
+	dbMetadata := overrideDatabaseMetadata
+	if dbMetadata == nil {
+		databaseMeta, err := s.GetDBSchema(ctx, databaseID)
+		if err != nil {
+			return nil, err
+		}
+		if databaseMeta == nil {
+			return nil, nil
+		}
+		dbMetadata = databaseMeta.GetMetadata()
 	}
-	if databaseMeta == nil {
-		return nil, nil
-	}
-
-	c.Finder = catalog.NewFinder(databaseMeta.GetMetadata(), &catalog.FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
+	c.Finder = catalog.NewFinder(dbMetadata, &catalog.FinderContext{CheckIntegrity: true, EngineType: engineType, IgnoreCaseSensitive: ignoreCaseSensitive})
 	return c, nil
 }
 

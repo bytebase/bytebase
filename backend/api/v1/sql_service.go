@@ -927,7 +927,11 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database)
+	var overideMetadata *storepb.DatabaseSchemaMetadata
+	if request.Metadata != nil {
+		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
+	}
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database, overideMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
 	}
@@ -1190,7 +1194,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	}
 
 	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase)
+	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase, nil /* Override Metadata */)
 	if err != nil {
 		return nil, nil, nil, adviceStatus, adviceList, nil, err
 	}
@@ -1690,29 +1694,36 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 	return dataSource
 }
 
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage) (advisor.Status, []*v1pb.Advice, error) {
+// sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
+// against the database schema bind to the given database, if the overrideMetadata is provided,
+// it will be used instead of fetching the database schema from the store.
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return advisor.Success, nil, nil
 	}
 
-	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
-	}
-	if dbSchema == nil {
-		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
-		}
-		dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+	dbMetadata := overrideMetadata
+	if dbMetadata == nil {
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
 		}
 		if dbSchema == nil {
-			return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+				return advisor.Error, nil, status.Errorf(codes.Internal, "failed to sync database schema: %v", err)
+			}
+			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return advisor.Error, nil, status.Errorf(codes.Internal, "failed to fetch database schema: %v", err)
+			}
+			if dbSchema == nil {
+				return advisor.Error, nil, status.Errorf(codes.NotFound, "database schema not found: %v", database.UID)
+			}
 		}
+		dbMetadata = dbSchema.GetMetadata()
 	}
 
-	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), advisor.SyntaxModeNormal)
+	catalog, err := s.store.NewCatalog(ctx, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata, advisor.SyntaxModeNormal)
 	if err != nil {
 		return advisor.Error, nil, status.Errorf(codes.Internal, "Failed to create a catalog: %v", err)
 	}
@@ -1735,8 +1746,8 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
 		instance.Engine,
-		dbSchema.GetMetadata().CharacterSet,
-		dbSchema.GetMetadata().Collation,
+		dbMetadata.CharacterSet,
+		dbMetadata.Collation,
 		environment.UID,
 		statement,
 		catalog,
