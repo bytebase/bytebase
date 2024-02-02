@@ -265,7 +265,7 @@ message CheckRequest {
     // The database name to check against.
     // Format: instances/{instance}/databases/{databaseName}
     string database = 2;
-    // The database metadata to check against.
+    // The database metadata to check against. Specify this to check against a uncommitted schema.
     DatabaseMetadata metadata = 3;
   }
 }
