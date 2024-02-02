@@ -948,7 +948,8 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare related message")
 	}
-	if instance.Engine == storepb.Engine_POSTGRES {
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_TIDB:
 		return s.QueryV2(ctx, request)
 	}
 
