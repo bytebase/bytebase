@@ -3433,7 +3433,9 @@
       "head-branch": "Head branch",
       "preview": "Preview",
       "before-merge": "Before merge",
-      "after-merge": "After merge"
+      "after-merge": "After merge",
+      "before-rebase": "Before rebase",
+      "after-rebase": "After rebase"
     },
     "source": {
       "baseline-version": "Baseline version",

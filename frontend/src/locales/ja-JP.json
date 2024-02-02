@@ -3430,7 +3430,9 @@
       "head-branch": "本店",
       "preview": "プレビュー",
       "before-merge": "マージ前",
-      "after-merge": "マージ後"
+      "after-merge": "マージ後",
+      "before-rebase": "リベース前",
+      "after-rebase": "リベース後"
     },
     "source": {
       "baseline-version": "ベースラインバージョン",

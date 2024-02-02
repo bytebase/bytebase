@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full relative flex flex-col gap-y-2 overflow-y-hidden">
+  <div class="h-full relative flex flex-col gap-y-2 overflow-y-hidden text-sm">
     <MaskSpinner v-if="state.isMerging" />
 
     <MergeBranchSelect

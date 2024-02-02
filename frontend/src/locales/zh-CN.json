@@ -3425,7 +3425,9 @@
       "head-branch": "Head 分支",
       "preview": "预览",
       "before-merge": "合并前",
-      "after-merge": "合并后"
+      "after-merge": "合并后",
+      "before-rebase": "rebase 前",
+      "after-rebase": "rebase 后"
     },
     "source": {
       "baseline-version": "基线版本",

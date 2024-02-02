@@ -3430,7 +3430,9 @@
       "head-branch": "rama principal",
       "preview": "Avance",
       "before-merge": "Antes de fusionarse",
-      "after-merge": "Después de fusionar"
+      "after-merge": "Después de fusionar",
+      "before-rebase": "Antes de rebase",
+      "after-rebase": "Después de rebase"
     },
     "source": {
       "baseline-version": "Versión básica",
