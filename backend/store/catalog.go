@@ -18,14 +18,14 @@ type Catalog struct {
 }
 
 // NewCatalog creates a new database catalog.
-func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, databaseMetadata *storepb.DatabaseSchemaMetadata, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
+func (s *Store) NewCatalog(ctx context.Context, databaseID int, engineType storepb.Engine, ignoreCaseSensitive bool, overrideDatabaseMetadata *storepb.DatabaseSchemaMetadata, syntaxMode advisor.SyntaxMode) (catalog.Catalog, error) {
 	c := &Catalog{}
 
 	if syntaxMode == advisor.SyntaxModeSDL {
 		return NewEmptyCatalog(engineType)
 	}
 
-	dbMetadata := databaseMetadata
+	dbMetadata := overrideDatabaseMetadata
 	if dbMetadata == nil {
 		databaseMeta, err := s.GetDBSchema(ctx, databaseID)
 		if err != nil {

@@ -57,7 +57,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 	}
 
 	// Run SQL review.
-	if _, _, err = s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase); err != nil {
+	if _, _, err = s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase, nil /* Override Metadata */); err != nil {
 		return nil, err
 	}
 
@@ -127,7 +127,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase)
+	adviceStatus, advices, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}

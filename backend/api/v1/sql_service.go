@@ -927,7 +927,11 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
 	}
 
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database, request.Metadata)
+	var overideMetadata *storepb.DatabaseSchemaMetadata
+	if request.Metadata != nil {
+		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
+	}
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database, overideMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
 	}
