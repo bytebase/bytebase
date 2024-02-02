@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.21.6
 
 require (
-	cloud.google.com/go/spanner v1.55.0
+	cloud.google.com/go/spanner v1.56.0
 	gitee.com/chunanyong/dm v1.8.13
 	github.com/ClickHouse/clickhouse-go/v2 v2.17.1
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -28,7 +28,7 @@ require (
 	github.com/go-ldap/ldap/v3 v3.4.6
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
-	github.com/google/cel-go v0.18.2
+	github.com/google/cel-go v0.19.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.5.0
 	github.com/gorilla/websocket v1.5.1
@@ -55,7 +55,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.4.0
-	github.com/sashabaranov/go-openai v1.17.9
+	github.com/sashabaranov/go-openai v1.19.2
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.3.1
 	github.com/sijms/go-ora/v2 v2.8.4
@@ -75,10 +75,10 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/crypto v0.18.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
-	golang.org/x/oauth2 v0.15.0
+	golang.org/x/oauth2 v0.16.0
 	golang.org/x/sys v0.16.0
 	golang.org/x/text v0.14.0
-	google.golang.org/api v0.155.0
+	google.golang.org/api v0.157.0
 	google.golang.org/genproto v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe
@@ -145,6 +145,7 @@ require (
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/tiancaiamao/gp v0.0.0-20221230034425-4025bc8a4d4a // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
