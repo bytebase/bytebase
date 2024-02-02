@@ -357,7 +357,7 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 					for _, tableSource := range fromFieldList {
 						columns = append(columns, tableSource.GetQuerySpanResult()...)
 					}
-					result.Columns = columns
+					result.Columns = append(result.Columns, columns...)
 				} else {
 					for _, tableSource := range fromFieldList {
 						sameDatabase := (field.WildCard.Schema.O == tableSource.GetDatabaseName() || (field.WildCard.Schema.O == "" && tableSource.GetDatabaseName() == q.connectedDB))

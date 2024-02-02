@@ -50,6 +50,73 @@
         - name: "1"
           sourcecolumns: []
     sourcecolumns: []
+- description: Test asterisk and column
+  statement: SELECT a, * FROM t;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: a
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: b
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: c
+        - name: d
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: t
+              column: d
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
 - description: Happy path for a simple select statement
   statement: SELECT * FROM t
   connectedDatabase: db
