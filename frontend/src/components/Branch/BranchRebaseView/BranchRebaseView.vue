@@ -1,44 +1,66 @@
 <template>
-  <div class="h-full relative">
-    <StepTab
-      :step-list="stepList"
-      :current-index="state.currentStepIndex"
-      :show-cancel="false"
-      :allow-next="allowNextStep"
-      class="h-full flex flex-col !space-y-0 gap-y-2"
-      pane-class="flex-1 flex flex-col gap-y-2 relative overflow-hidden"
-      footer-class="!space-y-0 !border-0 !pt-0"
-      @update:current-index="tryChangeStep"
-      @finish="handleRebaseBranch"
-    >
-      <template #0>
-        <SelectBranchStep
-          :project="project"
-          :source-type="state.sourceType"
-          :head-branch="headBranch"
-          :source-branch="sourceBranch"
-          :source-database="sourceDatabase"
-          :is-loading-head-branch="isLoadingHeadBranch"
-          :is-loading-source-branch="isLoadingSourceBranch"
-          :is-validating="isValidating"
-          :validation-state="validationState"
-          @update:source-type="state.sourceType = $event"
-          @update:head-branch-name="handleUpdateHeadBranch"
-          @update:source-branch-name="state.sourceBranchName = $event || null"
-          @update:source-database-uid="state.sourceDatabaseUID = $event || null"
-        />
-      </template>
-      <template #1>
-        <RebaseBranchStep
-          v-if="headBranch && sourceBranchOrDatabase && validationState"
-          ref="rebaseBranchStepRef"
-          :project="project"
-          :validation-state="validationState"
-          :base-branch="headBranch"
-        />
-      </template>
-    </StepTab>
+  <div class="h-full relative flex flex-col gap-y-2 overflow-y-hidden text-sm">
     <MaskSpinner v-if="state.isRebasing" :zindexable="false" />
+
+    <RebaseBranchSelect
+      :project="project"
+      :source-type="state.sourceType"
+      :head-branch="headBranch"
+      :source-branch="sourceBranch"
+      :source-database="sourceDatabase"
+      @update:source-type="state.sourceType = $event"
+      @update:head-branch-name="handleUpdateHeadBranch"
+      @update:source-branch-name="state.sourceBranchName = $event || null"
+      @update:source-database-uid="state.sourceDatabaseUID = $event || null"
+    />
+
+    <RebaseBranchValidationStateView
+      :project="project"
+      :source-type="state.sourceType"
+      :head-branch="headBranch"
+      :source-branch="sourceBranch"
+      :source-database="sourceDatabase"
+      :is-loading-head-branch="isLoadingHeadBranch"
+      :is-loading-source-branch="isLoadingSourceBranch"
+      :is-validating="isValidating"
+      :validation-state="validationState"
+    />
+
+    <div class="flex-1 flex flex-col overflow-y-hidden">
+      <BranchComparison
+        v-if="validationState?.branch"
+        :project="project"
+        :base="headBranch"
+        :head="validationState?.branch"
+        :is-base-loading="isLoadingHeadBranch"
+        :is-head-loading="isValidating"
+      >
+        <template v-if="headBranch" #baseline-title>
+          {{ headBranch.branchId }}
+          {{ $t("branch.merge-rebase.before-rebase") }}
+        </template>
+        <template v-if="headBranch" #head-title>
+          {{ headBranch.branchId }}
+          {{ $t("branch.merge-rebase.after-rebase") }}
+        </template>
+      </BranchComparison>
+      <ResolveConflict
+        v-else-if="validationState"
+        ref="resolveConflictRef"
+        :project="project"
+        :validation-state="validationState"
+      />
+    </div>
+
+    <div class="flex flex-row justify-end items-center gap-x-3">
+      <NButton
+        type="primary"
+        :disabled="!allowConfirm || state.isRebasing"
+        @click="handleRebaseBranch"
+      >
+        {{ $t("common.confirm") }}
+      </NButton>
+    </div>
   </div>
 </template>
 
@@ -50,14 +72,14 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { StepTab } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore, useDatabaseV1Store } from "@/store";
 import { ComposedProject, UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { defer } from "@/utils";
-import RebaseBranchStep from "./RebaseBranchStep.vue";
-import SelectBranchStep from "./SelectBranchStep.vue";
+import RebaseBranchSelect from "./RebaseBranchSelect.vue";
+import RebaseBranchValidationStateView from "./RebaseBranchValidationStateView.vue";
+import ResolveConflict from "./ResolveConflict.vue";
 import { RebaseBranchValidationState, RebaseSourceType } from "./types";
 
 interface LocalState {
@@ -88,21 +110,11 @@ const state = reactive<LocalState>({
 const { t } = useI18n();
 const route = useRoute();
 const $dialog = useDialog();
-const rebaseBranchStepRef = ref<InstanceType<typeof RebaseBranchStep>>();
+const resolveConflictRef = ref<InstanceType<typeof ResolveConflict>>();
 const branchStore = useBranchStore();
 const isLoadingHeadBranch = ref(false);
 const isLoadingSourceBranch = ref(false);
 const isValidating = ref(false);
-const combinedIsLoadingBranch = computed(() => {
-  return isLoadingHeadBranch.value || isLoadingSourceBranch.value;
-});
-
-const stepList = computed(() => [
-  { title: t("branch.select-branch") },
-  { title: t("common.preview") },
-]);
-const STEP_SELECT_BRANCH = 0;
-const STEP_REBASE_BRANCH = 1;
 
 const headBranch = computedAsync(
   async () => {
@@ -178,29 +190,12 @@ const handleUpdateHeadBranch = (branchName: string | undefined) => {
   emit("update:head-branch-name", branchName || null);
 };
 
-const tryChangeStep = (nextStepIndex: number) => {
-  if (combinedIsLoadingBranch.value) {
-    return;
-  }
-  state.currentStepIndex = nextStepIndex;
-};
-
-const allowNextStep = computed(() => {
-  if (state.currentStepIndex === STEP_SELECT_BRANCH) {
-    return (
-      headBranch.value !== undefined &&
-      sourceBranchOrDatabase.value !== undefined &&
-      validationState.value !== undefined
-    );
-  }
-  if (state.currentStepIndex === STEP_REBASE_BRANCH) {
-    return true;
-  }
-
-  console.error(
-    "[BranchRebaseView.allowNextStep] should never reach this line"
+const allowConfirm = computed(() => {
+  return (
+    headBranch.value !== undefined &&
+    sourceBranchOrDatabase.value !== undefined &&
+    validationState.value !== undefined
   );
-  return false;
 });
 
 const confirmRebaseWithMaybeConflict = () => {
@@ -226,12 +221,12 @@ const handleRebaseBranch = async () => {
   if (!source) return;
   const head = headBranch.value;
   if (!head) return;
-  const rebaseBranchStep = rebaseBranchStepRef.value;
-  if (!rebaseBranchStep) return;
+  const resolveConflict = resolveConflictRef.value;
+  if (!resolveConflict) return;
   state.isRebasing = true;
 
   try {
-    const validation = rebaseBranchStep.validateConflictSchema();
+    const validation = resolveConflict.validateConflictSchema();
     if (!validation.valid) {
       const confirmed = await confirmRebaseWithMaybeConflict();
       if (!confirmed) return;
