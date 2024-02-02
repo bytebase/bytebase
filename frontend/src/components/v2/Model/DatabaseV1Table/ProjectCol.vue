@@ -8,7 +8,7 @@
       "
     >
       <template #trigger>
-        <TenantIcon class="ml-1 text-control" />
+        <TenantIcon class="text-control" />
       </template>
       <span class="whitespace-nowrap">
         {{ $t("project.mode.batch") }}
@@ -17,7 +17,7 @@
 
     <NTooltip v-if="project.workflow === Workflow.VCS">
       <template #trigger>
-        <GitIcon class="ml-1 w-4 h-4 text-control" />
+        <GitIcon class="w-4 h-4 text-control" />
       </template>
       <span v-if="mode === 'ALL_SHORT'" class="w-40">
         {{ $t("alter-schema.vcs-info") }}
@@ -29,7 +29,7 @@
 
     <NTooltip v-if="project.state === State.DELETED">
       <template #trigger>
-        <heroicons-outline:archive class="ml-1 w-4 h-4 text-control" />
+        <heroicons-outline:archive class="w-4 h-4 text-control" />
       </template>
       <span class="whitespace-nowrap">
         {{ $t("common.archived") }}
