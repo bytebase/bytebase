@@ -2,7 +2,7 @@
   <component
     :is="link ? 'router-link' : tag"
     v-bind="bindings"
-    class="w-full inline-flex items-center gap-x-1"
+    class="inline-flex items-center gap-x-1"
     :class="link && !plain && 'normal-link'"
   >
     <NPerformantEllipsis>
