@@ -511,7 +511,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 
 		querySpanResult := tableSource.GetQuerySpanResult()
 		for _, field := range querySpanResult {
-			if field.Name == fieldName {
+			if strings.EqualFold(field.Name, fieldName) {
 				return field.SourceColumns, true
 			}
 		}
