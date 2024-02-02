@@ -50,6 +50,7 @@ export const orderByLevelDesc = (a: Risk, b: Risk): number => {
 const NumberFactorList = [
   // Risk related factors
   "affected_rows",
+  "table_rows",
   "level",
   "source",
   "expiration_days",
@@ -95,6 +96,7 @@ const FactorList = {
       "level",
       "source",
       "affected_rows",
+      "table_rows",
       "sql_type",
       "export_rows"
     )
@@ -105,6 +107,7 @@ const FactorList = {
       "level",
       "source",
       "affected_rows",
+      "table_rows",
       "sql_type"
     )
   ),

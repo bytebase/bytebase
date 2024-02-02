@@ -3343,7 +3343,8 @@
       "classification_level": "Cấp độ phân loại",
       "resource_instance_id": "ID phiên bản",
       "resource_database_name": "Tên cơ sở dữ liệu",
-      "resource_table_name": "Tên bảng"
+      "resource_table_name": "Tên bảng",
+      "table_rows": "Hàng của bảng"
     }
   },
   "changelist": {

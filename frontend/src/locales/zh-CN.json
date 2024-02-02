@@ -3323,6 +3323,7 @@
   "cel": {
     "factor": {
       "affected_rows": "影响行数",
+      "table_rows": "表行数",
       "environment_id": "环境 ID",
       "project_id": "项目 ID",
       "instance_id": "实例 ID",
