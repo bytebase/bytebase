@@ -261,8 +261,13 @@ message PrettyResponse {
 message CheckRequest {
   string statement = 1;
 
-  // Format: instances/{instance}/databases/{databaseName}
-  string database = 2;
+  oneof metadata_source {
+    // The database name to check against.
+    // Format: instances/{instance}/databases/{databaseName}
+    string database = 2;
+    // The database metadata to check against.
+    DatabaseMetadata metadata = 3;
+  }
 }
 
 message CheckResponse {
