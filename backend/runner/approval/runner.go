@@ -515,6 +515,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						"db_engine":     instance.Engine.String(),
 						"sql_type":      "UNKNOWN",
 						"affected_rows": math.MaxInt32,
+						"table_rows":    math.MaxInt64,
 					}
 
 					if run, ok := latestPlanCheckRun[Key{
@@ -526,7 +527,16 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 							if report == nil {
 								continue
 							}
+							var tableRows int64
+							for _, db := range report.GetChangedResources().GetDatabases() {
+								for _, sc := range db.GetSchemas() {
+									for _, tb := range sc.GetTables() {
+										tableRows += tb.GetTableRows()
+									}
+								}
+							}
 							args["affected_rows"] = report.AffectedRows
+							args["table_rows"] = tableRows
 							for _, statementType := range report.StatementTypes {
 								args["sql_type"] = statementType
 								res, _, err := prg.Eval(args)
@@ -546,6 +556,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 
 					args["sql_type"] = "UNKNOWN"
 					args["affected_rows"] = math.MaxInt32
+					args["table_rows"] = math.MaxInt64
 					res, _, err := prg.Eval(args)
 					if err != nil {
 						return 0, err
