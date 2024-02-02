@@ -9559,7 +9559,7 @@ Type of the SheetPayload.
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
 | database | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{databaseName} |
-| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against a uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
 
 
 

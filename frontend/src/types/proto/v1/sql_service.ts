@@ -247,7 +247,7 @@ export interface CheckRequest {
    */
   database: string;
   /**
-   * The database metadata to check against. It can be used to check against a uncommitted metadata.
+   * The database metadata to check against. It can be used to check against an uncommitted metadata.
    * If not provided, the database metadata will be fetched from the database.
    */
   metadata: DatabaseMetadata | undefined;
