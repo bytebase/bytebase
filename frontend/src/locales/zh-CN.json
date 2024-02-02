@@ -3419,7 +3419,13 @@
       "conflict-not-resolved": "似乎还有尚未解决的冲突。",
       "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
       "preview-merge-result": "预览合并后 {branch} 上的更改",
-      "preview-rebase-result": "预览 rebase 后 {branch} 上的修改"
+      "preview-rebase-result": "预览 rebase 后 {branch} 上的修改",
+      "diffs-between": "{left} 和 {right}的差异",
+      "base-branch": "Base 分支",
+      "head-branch": "Head 分支",
+      "preview": "预览",
+      "before-merge": "合并前",
+      "after-merge": "合并后"
     },
     "source": {
       "baseline-version": "基线版本",
@@ -3430,6 +3436,10 @@
       "drop-index-confirm": "删除索引？"
     },
     "force-delete": "强制删除",
-    "deleting-parent-branch": "将要删除一个父分支。"
+    "deleting-parent-branch": "将要删除一个父分支。",
+    "visualized-schema": "可视化 Schema",
+    "schema-text": "文本 Schema",
+    "baseline": "基线",
+    "head": "当前"
   }
 }

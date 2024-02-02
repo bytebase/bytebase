@@ -3426,7 +3426,13 @@
       "conflict-not-resolved": "Có vẻ như một số xung đột vẫn chưa được giải quyết.",
       "resolve-conflicts-to-rebase": "Giải quyết xung đột để rebase",
       "preview-merge-result": "Xem trước các thay đổi trên {branch} sau khi hợp nhất",
-      "preview-rebase-result": "Xem trước các thay đổi trên {branch} sau rebase"
+      "preview-rebase-result": "Xem trước các thay đổi trên {branch} sau rebase",
+      "diffs-between": "Sự khác biệt giữa {left} và {right}",
+      "base-branch": "Nhánh cơ sở",
+      "head-branch": "Trưởng chi nhánh",
+      "preview": "Xem trước",
+      "before-merge": "Trước khi hợp nhất",
+      "after-merge": "Sau khi hợp nhất"
     },
     "source": {
       "baseline-version": "Phiên bản cơ bản",
@@ -3437,6 +3443,10 @@
       "drop-index-confirm": "Bỏ chỉ số?"
     },
     "force-delete": "Buộc xóa",
-    "deleting-parent-branch": "Xóa một nhánh cha."
+    "deleting-parent-branch": "Xóa một nhánh cha.",
+    "visualized-schema": "Lược đồ trực quan",
+    "schema-text": "Văn bản lược đồ",
+    "baseline": "Đường cơ sở",
+    "head": "Cái đầu"
   }
 }

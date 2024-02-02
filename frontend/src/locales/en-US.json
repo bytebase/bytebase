@@ -3427,7 +3427,13 @@
       "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
       "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
       "preview-merge-result": "Preview changes on {branch} after merge",
-      "preview-rebase-result": "Preview changes on {branch} after rebase"
+      "preview-rebase-result": "Preview changes on {branch} after rebase",
+      "diffs-between": "Diffs between {left} and {right}",
+      "base-branch": "Base branch",
+      "head-branch": "Head branch",
+      "preview": "Preview",
+      "before-merge": "Before merge",
+      "after-merge": "After merge"
     },
     "source": {
       "baseline-version": "Baseline version",
@@ -3438,6 +3444,10 @@
       "drop-index-confirm": "Drop index?"
     },
     "force-delete": "Force delete",
-    "deleting-parent-branch": "Deleting a parent branch."
+    "deleting-parent-branch": "Deleting a parent branch.",
+    "visualized-schema": "Visualized Schema",
+    "schema-text": "Schema Text",
+    "baseline": "Baseline",
+    "head": "Head"
   }
 }

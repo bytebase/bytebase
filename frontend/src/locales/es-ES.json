@@ -3424,7 +3424,13 @@
       "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
       "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
       "preview-merge-result": "Vista previa de los cambios en {branch} después de la fusión",
-      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase"
+      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase",
+      "diffs-between": "Diferencias entre {left} y {right}",
+      "base-branch": "sucursal base",
+      "head-branch": "rama principal",
+      "preview": "Avance",
+      "before-merge": "Antes de fusionarse",
+      "after-merge": "Después de fusionar"
     },
     "source": {
       "baseline-version": "Versión básica",
@@ -3435,6 +3441,10 @@
       "drop-index-confirm": "¿Índice de caída?"
     },
     "force-delete": "Forzar eliminación",
-    "deleting-parent-branch": "Eliminando una rama principal."
+    "deleting-parent-branch": "Eliminando una rama principal.",
+    "visualized-schema": "Esquema visualizado",
+    "schema-text": "Texto del esquema",
+    "baseline": "Base",
+    "head": "Cabeza"
   }
 }
