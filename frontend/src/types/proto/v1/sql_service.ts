@@ -241,8 +241,16 @@ export interface PrettyResponse {
 
 export interface CheckRequest {
   statement: string;
-  /** Format: instances/{instance}/databases/{databaseName} */
+  /**
+   * The database name to check against.
+   * Format: instances/{instance}/databases/{databaseName}
+   */
   database: string;
+  /**
+   * The database metadata to check against. It can be used to check against an uncommitted metadata.
+   * If not provided, the database metadata will be fetched from the database.
+   */
+  metadata: DatabaseMetadata | undefined;
 }
 
 export interface CheckResponse {
@@ -1822,7 +1830,7 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { statement: "", database: "" };
+  return { statement: "", database: "", metadata: undefined };
 }
 
 export const CheckRequest = {
@@ -1832,6 +1840,9 @@ export const CheckRequest = {
     }
     if (message.database !== "") {
       writer.uint32(18).string(message.database);
+    }
+    if (message.metadata !== undefined) {
+      DatabaseMetadata.encode(message.metadata, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1857,6 +1868,13 @@ export const CheckRequest = {
 
           message.database = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1870,6 +1888,7 @@ export const CheckRequest = {
     return {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       database: isSet(object.database) ? globalThis.String(object.database) : "",
+      metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
     };
   },
 
@@ -1881,6 +1900,9 @@ export const CheckRequest = {
     if (message.database !== "") {
       obj.database = message.database;
     }
+    if (message.metadata !== undefined) {
+      obj.metadata = DatabaseMetadata.toJSON(message.metadata);
+    }
     return obj;
   },
 
@@ -1891,6 +1913,9 @@ export const CheckRequest = {
     const message = createBaseCheckRequest();
     message.statement = object.statement ?? "";
     message.database = object.database ?? "";
+    message.metadata = (object.metadata !== undefined && object.metadata !== null)
+      ? DatabaseMetadata.fromPartial(object.metadata)
+      : undefined;
     return message;
   },
 };
