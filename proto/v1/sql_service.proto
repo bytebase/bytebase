@@ -261,8 +261,13 @@ message PrettyResponse {
 message CheckRequest {
   string statement = 1;
 
+  // The database name to check against.
   // Format: instances/{instance}/databases/{databaseName}
-  string database = 2;
+  string database = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // The database metadata to check against. It can be used to check against an uncommitted metadata.
+  // If not provided, the database metadata will be fetched from the database.
+  DatabaseMetadata metadata = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message CheckResponse {
