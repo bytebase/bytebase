@@ -140,7 +140,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 			}
 			results = append(results, sdlAdvice...)
 		}
-	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		checkResults, err := mysqlStatementTypeCheck(renderedStatement, changeType)
 		if err != nil {
 			return nil, err
