@@ -267,7 +267,7 @@ message CheckRequest {
 
   // The database metadata to check against. It can be used to check against an uncommitted metadata.
   // If not provided, the database metadata will be fetched from the database.
-  DatabaseMetadata metadata = 3;
+  DatabaseMetadata metadata = 3 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message CheckResponse {
