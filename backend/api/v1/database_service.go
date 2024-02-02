@@ -2486,17 +2486,12 @@ func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseI
 }
 
 func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, instance *store.InstanceMessage, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
-	openaiKeyName := api.SettingPluginOpenAIKey
-	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
+	key, endpoint, err := s.getOpenAISetting((ctx))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get setting: %v", err)
-	}
-	if key.Value == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
+		return nil, err
 	}
 
 	var schemas []*model.DBSchema
-
 	// Deal with the cross database query.
 	resources, err := base.ExtractResourceList(instance.Engine, database.DatabaseName, "", request.Statement)
 	if err != nil {
@@ -2619,7 +2614,7 @@ func (s *DatabaseService) mysqlAdviseIndex(ctx context.Context, request *v1pb.Ad
 		return nil
 	}
 
-	result, err := getOpenAIResponse(ctx, messages, key.Value, generateFunc)
+	result, err := getOpenAIResponse(ctx, messages, key, endpoint, generateFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -2656,15 +2651,10 @@ func restoreNode(node tidbast.Node) (string, error) {
 }
 
 func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest, database *store.DatabaseMessage) (*v1pb.AdviseIndexResponse, error) {
-	openaiKeyName := api.SettingPluginOpenAIKey
-	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
+	key, endpoint, err := s.getOpenAISetting((ctx))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to get setting: %v", err)
+		return nil, err
 	}
-	if key.Value == "" {
-		return nil, status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
-	}
-
 	schema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to get database schema: %v", err)
@@ -2732,7 +2722,7 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 		return nil
 	}
 
-	result, err := getOpenAIResponse(ctx, messages, key.Value, generateFunc)
+	result, err := getOpenAIResponse(ctx, messages, key, endpoint, generateFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -2740,13 +2730,38 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 	return result, nil
 }
 
-func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMessage, key string, generateResponse func(*v1pb.AdviseIndexResponse) error) (*v1pb.AdviseIndexResponse, error) {
+func (s *DatabaseService) getOpenAISetting(ctx context.Context) (string, string, error) {
+	openaiKeyName := api.SettingPluginOpenAIKey
+	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
+	if err != nil {
+		return "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
+	}
+	if key.Value == "" {
+		return "", "", status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
+	}
+	openaiEndpointName := api.SettingPluginOpenAIEndpoint
+	endpointSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiEndpointName})
+	if err != nil {
+		return "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
+	}
+	var endpoint string
+	if endpointSetting != nil {
+		endpoint = endpointSetting.Value
+	}
+	return key.Value, endpoint, nil
+}
+
+func getOpenAIResponse(ctx context.Context, messages []openai.ChatCompletionMessage, key, endpoint string, generateResponse func(*v1pb.AdviseIndexResponse) error) (*v1pb.AdviseIndexResponse, error) {
 	var result v1pb.AdviseIndexResponse
 	successful := false
 	var retErr error
 	// Retry 5 times if failed.
 	for i := 0; i < 5; i++ {
-		client := openai.NewClient(key)
+		cfg := openai.DefaultConfig(key)
+		if endpoint != "" {
+			cfg.BaseURL = endpoint
+		}
+		client := openai.NewClientWithConfig(cfg)
 		resp, err := client.CreateChatCompletion(
 			ctx,
 			openai.ChatCompletionRequest{
