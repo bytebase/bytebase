@@ -1657,6 +1657,7 @@
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
       "schema-history-version": "Versión del historial de esquema",
+      "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",

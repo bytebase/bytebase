@@ -1658,6 +1658,7 @@
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
       "schema-history-version": "Schema History Version",
+      "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",

@@ -11,7 +11,7 @@
           <i18n-t
             keypath="auth.sign-up.admin-title"
             tag="p"
-            class="text-accent font-semnibold"
+            class="text-accent font-semnibold text-center"
           >
             <template #account>
               <span class="text-accent font-semnibold">{{

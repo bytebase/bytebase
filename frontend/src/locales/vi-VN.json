@@ -1658,6 +1658,7 @@
       "title": "Lược đồ đồng bộ hóa",
       "description": "Bytebase hỗ trợ đồng bộ hóa lược đồ với một hoặc nhiều cơ sở dữ liệu đích.",
       "schema-history-version": "Phiên bản lịch sử lược đồ",
+      "copy-schema": "Sao chép lược đồ",
       "select-source-schema": "Chọn lược đồ nguồn",
       "select-target-databases": "Chọn cơ sở dữ liệu đích",
       "select-project": "Chọn dự án",
