@@ -3426,7 +3426,15 @@
       "conflict-not-resolved": "まだ解決されていない衝突があるようです",
       "resolve-conflicts-to-rebase": "リベースするために衝突を解決してください",
       "preview-merge-result": "merge 後に {branch} の変更をプレビューする",
-      "preview-rebase-result": "rebase 後に {branch} の変更をプレビューする"
+      "preview-rebase-result": "rebase 後に {branch} の変更をプレビューする",
+      "diffs-between": "{left} と {right} の差分",
+      "base-branch": "ベースブランチ",
+      "head-branch": "本店",
+      "preview": "プレビュー",
+      "before-merge": "マージ前",
+      "after-merge": "マージ後",
+      "before-rebase": "リベース前",
+      "after-rebase": "リベース後"
     },
     "source": {
       "baseline-version": "ベースラインバージョン",
@@ -3437,6 +3445,10 @@
       "drop-index-confirm": "インデックスを削除しますか？"
     },
     "force-delete": "強制削除",
-    "deleting-parent-branch": "親ブランチを削除しています"
+    "deleting-parent-branch": "親ブランチを削除しています",
+    "visualized-schema": "視覚化されたスキーマ",
+    "schema-text": "スキーマテキスト",
+    "baseline": "ベースライン",
+    "head": "頭"
   }
 }
