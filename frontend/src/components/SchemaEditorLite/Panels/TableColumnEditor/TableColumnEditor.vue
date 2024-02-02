@@ -445,7 +445,7 @@ const columns = computed(() => {
         return h(InlineInput, {
           value: column.onUpdate,
           disabled: props.readonly || props.disableAlterColumn(column),
-          placeholder: "on update",
+          placeholder: "",
           style: {
             "--n-padding-left": "6px",
             "--n-padding-right": "4px",
