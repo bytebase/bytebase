@@ -3341,7 +3341,8 @@
       "classification_level": "分類レベル",
       "resource_instance_id": "インスタンスID",
       "resource_database_name": "データベース名",
-      "resource_table_name": "テーブル名"
+      "resource_table_name": "テーブル名",
+      "table_rows": "テーブルの行"
     }
   },
   "changelist": {

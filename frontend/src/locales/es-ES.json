@@ -3341,7 +3341,8 @@
       "classification_level": "Nivel de clasificación",
       "resource_instance_id": "ID de instancia",
       "resource_database_name": "Nombre de la base de datos",
-      "resource_table_name": "Nombre de la tabla"
+      "resource_table_name": "Nombre de la tabla",
+      "table_rows": "Filas de la tabla"
     }
   },
   "changelist": {

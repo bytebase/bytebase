@@ -1,6 +1,7 @@
 export const NumberFactorList = [
   // Risk related factors
   "affected_rows",
+  "table_rows",
   "level",
   "source",
 
