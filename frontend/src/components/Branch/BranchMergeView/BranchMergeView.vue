@@ -1,61 +1,79 @@
 <template>
-  <div class="h-full relative">
-    <StepTab
-      :step-list="stepList"
-      :current-index="state.currentStepIndex"
-      :show-cancel="false"
-      :allow-next="allowNextStep"
-      class="h-full flex flex-col !space-y-0 gap-y-4"
-      pane-class="flex-1 flex flex-col gap-y-2 relative overflow-hidden"
-      footer-class="!space-y-0 !border-0 !pt-0"
-      @update:current-index="tryChangeStep"
-      @finish="handleMergeBranch"
-    >
-      <template #0>
-        <SelectBranchStep
-          v-model:delete-branch-after-merged="state.deleteBranchAfterMerged"
-          :project="project"
-          :head-branch="headBranch"
-          :target-branch="targetBranch"
-          :is-loading-head-branch="isLoadingHeadBranch"
-          :is-loading-target-branch="isLoadingTargetBranch"
-          :is-validating="isValidating"
-          :validation-state="validationState"
-          @update:head-branch-name="handleUpdateHeadBranch"
-          @update:target-branch-name="state.targetBranchName = $event || null"
-        />
-      </template>
-      <template #1>
-        <MergeBranchStep
-          v-if="targetBranch && headBranch && validationState?.branch"
-          :project="project"
-          :merged-branch="validationState.branch"
-          :base-branch="targetBranch"
-        />
-      </template>
-    </StepTab>
+  <div class="h-full relative flex flex-col gap-y-2 overflow-y-hidden text-sm">
     <MaskSpinner v-if="state.isMerging" />
+
+    <MergeBranchSelect
+      v-model:delete-branch-after-merged="state.deleteBranchAfterMerged"
+      :project="project"
+      :head-branch="headBranch"
+      :target-branch="targetBranch"
+      @update:head-branch-name="handleUpdateHeadBranch"
+      @update:target-branch-name="state.targetBranchName = $event || null"
+    />
+
+    <MergeBranchValidationStateView
+      :project="project"
+      :head-branch="headBranch"
+      :target-branch="targetBranch"
+      :is-loading-head-branch="isLoadingHeadBranch"
+      :is-loading-target-branch="isLoadingTargetBranch"
+      :is-validating="isValidating"
+      :validation-state="validationState"
+    />
+
+    <div class="flex-1">
+      <BranchComparison
+        v-if="validationState?.branch"
+        :project="project"
+        :base="targetBranch"
+        :head="validationState?.branch"
+        :is-base-loading="isLoadingTargetBranch"
+        :is-head-loading="isValidating"
+      >
+        <template v-if="targetBranch" #baseline-title>
+          {{ targetBranch.branchId }}
+          {{ $t("branch.merge-rebase.before-merge") }}
+        </template>
+        <template v-if="targetBranch" #head-title>
+          {{ targetBranch.branchId }}
+          {{ $t("branch.merge-rebase.after-merge") }}
+        </template>
+      </BranchComparison>
+      <div v-else-if="validationState?.errmsg" class="text-error text-sm">
+        {{ validationState.errmsg }}
+      </div>
+    </div>
+
+    <div class="flex flex-row justify-end items-center gap-x-3">
+      <NButton
+        type="primary"
+        :disabled="!allowConfirm || state.isMerging"
+        @click="handleMergeBranch"
+      >
+        {{ $t("common.confirm") }}
+      </NButton>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { StepTab } from "@/components/v2";
 import { branchServiceClient } from "@/grpcweb";
 import { pushNotification, useBranchStore } from "@/store";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
-import MergeBranchStep from "./MergeBranchStep.vue";
-import SelectBranchStep from "./SelectBranchStep.vue";
+import BranchComparison from "../common/BranchComparison.vue";
+import MergeBranchSelect from "./MergeBranchSelect.vue";
+import MergeBranchValidationStateView from "./MergeBranchValidationStateView.vue";
 import { MergeBranchValidationState } from "./types";
 
 interface LocalState {
-  currentStepIndex: number;
   targetBranchName: string | null;
   deleteBranchAfterMerged: boolean;
   isMerging: boolean;
@@ -77,7 +95,6 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  currentStepIndex: 0,
   targetBranchName: null,
   deleteBranchAfterMerged: false,
   isMerging: false,
@@ -87,16 +104,6 @@ const branchStore = useBranchStore();
 const isLoadingHeadBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
 const isValidating = ref(false);
-const combinedIsLoadingBranch = computed(() => {
-  return isLoadingHeadBranch.value || isLoadingTargetBranch.value;
-});
-
-const stepList = computed(() => [
-  { title: t("branch.select-branch") },
-  { title: t("common.preview") },
-]);
-const STEP_SELECT_BRANCH = 0;
-const STEP_MERGE_BRANCH = 1;
 
 const headBranch = computedAsync(
   async () => {
@@ -169,27 +176,12 @@ const handleUpdateHeadBranch = (branchName: string | undefined) => {
   emit("update:head-branch-name", branchName || null);
 };
 
-const tryChangeStep = (nextStepIndex: number) => {
-  if (combinedIsLoadingBranch.value) {
-    return;
-  }
-  state.currentStepIndex = nextStepIndex;
-};
-
-const allowNextStep = computed(() => {
-  if (state.currentStepIndex === STEP_SELECT_BRANCH) {
-    return (
-      headBranch.value !== undefined &&
-      targetBranch.value !== undefined &&
-      validationState.value?.status === Status.OK
-    );
-  }
-  if (state.currentStepIndex === STEP_MERGE_BRANCH) {
-    return true;
-  }
-
-  console.error("[BranchMergeView.allowNextStep] should never reach this line");
-  return false;
+const allowConfirm = computed(() => {
+  return (
+    headBranch.value !== undefined &&
+    targetBranch.value !== undefined &&
+    validationState.value?.status === Status.OK
+  );
 });
 
 const handleMergeBranch = async () => {
