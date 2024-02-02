@@ -66,6 +66,7 @@ import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
 import { useCurrentUserV1, usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
+import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { Defer, VueStyle, defer, hasWorkspacePermissionV2 } from "@/utils";
@@ -77,10 +78,12 @@ const props = withDefaults(
   defineProps<{
     getStatement: () => Promise<{ errors: string[]; statement: string }>;
     database: ComposedDatabase;
+    databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
   }>(),
   {
+    databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
   }
@@ -122,11 +125,15 @@ const policyErrors = computed(() => {
   return [];
 });
 
-const runCheckInternal = async (statement: string) => {
+const runCheckInternal = async (
+  statement: string,
+  databaseMetadata: DatabaseMetadata | undefined
+) => {
   const { database } = props;
   const result = await sqlServiceClient.check({
     statement,
     database: database.name,
+    metadata: databaseMetadata,
   });
   return result;
 };
@@ -160,7 +167,7 @@ const runChecks = async () => {
     return handleErrors(errors);
   }
   try {
-    const result = await runCheckInternal(statement);
+    const result = await runCheckInternal(statement, props.databaseMetadata);
     advices.value = result.advices;
   } finally {
     isRunning.value = false;

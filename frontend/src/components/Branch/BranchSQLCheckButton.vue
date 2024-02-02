@@ -2,6 +2,7 @@
   <SQLCheckButton
     v-if="database"
     :database="database"
+    :database-metadata="databaseMetadata"
     :get-statement="getStatement"
     class="justify-end"
     :button-style="{
@@ -31,5 +32,9 @@ const props = defineProps<{
 
 const database = computed(() => {
   return useDatabaseV1Store().getDatabaseByName(props.branch.baselineDatabase);
+});
+
+const databaseMetadata = computed(() => {
+  return props.branch.baselineSchemaMetadata;
 });
 </script>
