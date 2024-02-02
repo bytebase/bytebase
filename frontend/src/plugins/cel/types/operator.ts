@@ -49,6 +49,7 @@ export const isStringOperator = (op: Operator): op is StringOperator => {
 /// Define supported operators for each factor
 const OperatorList: Record<Factor, Operator[]> = {
   affected_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
+  table_rows: uniq([...EqualityOperatorList, ...CompareOperatorList]),
 
   level: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
   source: uniq([...EqualityOperatorList, ...CollectionOperatorList]),
