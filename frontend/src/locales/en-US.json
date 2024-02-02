@@ -3331,6 +3331,7 @@
   "cel": {
     "factor": {
       "affected_rows": "Affected rows",
+      "table_rows": "Table rows",
       "environment_id": "Environment ID",
       "project_id": "Project ID",
       "instance_id": "Instance ID",
