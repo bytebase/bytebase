@@ -53,7 +53,7 @@ onMounted(async () => {
     useUserStore().fetchUserList(),
     useEnvironmentV1Store().fetchEnvironments(),
     useInstanceV1Store().fetchInstanceList(),
-    useProjectV1Store().fetchProjectList(),
+    useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);
   await Promise.all([prepareDatabases(), useUIStateStore().restoreState()]);
 
