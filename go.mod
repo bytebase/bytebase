@@ -69,7 +69,7 @@ require (
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
-	github.com/xo/dburl v0.20.0
+	github.com/xo/dburl v0.21.1
 	github.com/xuri/excelize/v2 v2.8.0
 	go.mongodb.org/mongo-driver v1.13.1
 	go.uber.org/multierr v1.11.0
