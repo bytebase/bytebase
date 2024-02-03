@@ -37,7 +37,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/improbable-eng/grpc-web v0.15.0
-	github.com/jackc/pgtype v1.14.0
+	github.com/jackc/pgtype v1.14.1
 	github.com/jackc/pgx/v5 v5.5.2
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo-contrib v0.15.0
