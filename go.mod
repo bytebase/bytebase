@@ -49,7 +49,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/nyaruka/phonenumbers v1.3.1
-	github.com/paulmach/orb v0.10.0
+	github.com/paulmach/orb v0.11.1
 	github.com/pganalyze/pg_query_go/v4 v4.2.3
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20221101143359-5b0be9af540e
