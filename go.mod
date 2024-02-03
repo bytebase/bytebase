@@ -30,7 +30,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/cel-go v0.19.0
 	github.com/google/go-cmp v0.6.0
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gosimple/slug v1.13.1
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
