@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-2">
-    <InstanceOperations :instance-list="selectedInstanceList" />
+    <InstanceOperations
+      v-if="showOperation"
+      :instance-list="selectedInstanceList"
+    />
     <BBGrid
       class="border-y"
       :column-list="columnList"
@@ -87,6 +90,7 @@ const props = defineProps<{
   instanceList: ComposedInstance[];
   canAssignLicense: boolean;
   allowSelection: boolean;
+  showOperation: boolean;
 }>();
 
 const { t } = useI18n();
