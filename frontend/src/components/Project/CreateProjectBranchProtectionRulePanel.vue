@@ -142,9 +142,8 @@ const state = reactive<LocalState>({
       target: ProtectionRule_Target.BRANCH,
     }),
   disallowAllRoles:
-    !!props.protectionRule &&
-    props.protectionRule?.createAllowedRoles.length !== 0,
-  selectedRoles: props.protectionRule?.createAllowedRoles || [],
+    !!props.protectionRule && props.protectionRule?.allowedRoles.length !== 0,
+  selectedRoles: props.protectionRule?.allowedRoles || [],
 });
 
 const branches = computed(() => {
@@ -213,8 +212,8 @@ const handleConfirm = async () => {
   const rules = cloneDeep(branchProtectionRules.value);
   const rule = ProtectionRule.fromPartial({
     ...state.protectionRule,
-    // If disallowAllRoles is false, `createAllowedRoles` should be an empty array.
-    createAllowedRoles: state.disallowAllRoles ? state.selectedRoles : [],
+    // If disallowAllRoles is false, `allowedRoles` should be an empty array.
+    allowedRoles: state.disallowAllRoles ? state.selectedRoles : [],
   });
   if (isCreating.value) {
     rules.push(rule);
