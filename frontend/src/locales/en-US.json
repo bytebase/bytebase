@@ -3437,7 +3437,11 @@
       "before-merge": "Before merge",
       "after-merge": "After merge",
       "before-rebase": "Before rebase",
-      "after-rebase": "After rebase"
+      "after-rebase": "After rebase",
+      "post-merge-action": {
+        "rebase": "Merge and rebase branch",
+        "delete": "Merge and delete branch"
+      }
     },
     "source": {
       "baseline-version": "Baseline version",

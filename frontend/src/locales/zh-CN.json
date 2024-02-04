@@ -3429,7 +3429,11 @@
       "before-merge": "合并前",
       "after-merge": "合并后",
       "before-rebase": "rebase 前",
-      "after-rebase": "rebase 后"
+      "after-rebase": "rebase 后",
+      "post-merge-action": {
+        "rebase": "合并且同步分支",
+        "delete": "合并且删除分支"
+      }
     },
     "source": {
       "baseline-version": "基线版本",

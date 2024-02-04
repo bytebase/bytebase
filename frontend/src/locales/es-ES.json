@@ -3434,7 +3434,11 @@
       "before-merge": "Antes de fusionarse",
       "after-merge": "Después de fusionar",
       "before-rebase": "Antes de rebase",
-      "after-rebase": "Después de rebase"
+      "after-rebase": "Después de rebase",
+      "post-merge-action": {
+        "rebase": "Fusionar y reorganizar rama",
+        "delete": "Fusionar y eliminar rama"
+      }
     },
     "source": {
       "baseline-version": "Versión básica",
