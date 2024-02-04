@@ -1292,8 +1292,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return PostgreSQLTableDisallowPartition, nil
 		}
 	case SchemaRuleTableDisallowTrigger:
-		switch engine {
-		case storepb.Engine_MYSQL:
+		if engine == storepb.Engine_MYSQL {
 			return MySQLTableDisallowTrigger, nil
 		}
 	case SchemaRuleMySQLEngine:
