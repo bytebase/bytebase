@@ -46,7 +46,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/lor00x/goldap v0.0.0-20180618054307-a546dffdd1a3
 	github.com/mattn/go-oci8 v0.1.1
-	github.com/mattn/go-sqlite3 v1.14.19
+	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/microsoft/go-mssqldb v1.6.0
 	github.com/nyaruka/phonenumbers v1.3.1
 	github.com/paulmach/orb v0.11.1
