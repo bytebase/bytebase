@@ -65,7 +65,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/stretchr/testify v1.8.4
 	github.com/swaggo/echo-swagger v1.4.1
-	github.com/swaggo/swag v1.16.2
+	github.com/swaggo/swag v1.16.3
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/vjeantet/ldapserver v1.0.1
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8
