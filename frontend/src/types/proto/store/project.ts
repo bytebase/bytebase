@@ -15,10 +15,10 @@ export interface ProtectionRule {
   /** The name of the branch/changelist or wildcard. */
   nameFilter: string;
   /**
-   * The roles allowed to create branches or changelists.
-   * Format: roles/OWNER.
+   * The roles allowed to create branches or changelists, rebase branches, delete branches.
+   * Format: roles/projectOwner.
    */
-  createAllowedRoles: string[];
+  allowedRoles: string[];
   branchSource: ProtectionRule_BranchSource;
 }
 
@@ -157,7 +157,7 @@ export const Project = {
 };
 
 function createBaseProtectionRule(): ProtectionRule {
-  return { id: "", target: 0, nameFilter: "", createAllowedRoles: [], branchSource: 0 };
+  return { id: "", target: 0, nameFilter: "", allowedRoles: [], branchSource: 0 };
 }
 
 export const ProtectionRule = {
@@ -171,7 +171,7 @@ export const ProtectionRule = {
     if (message.nameFilter !== "") {
       writer.uint32(26).string(message.nameFilter);
     }
-    for (const v of message.createAllowedRoles) {
+    for (const v of message.allowedRoles) {
       writer.uint32(34).string(v!);
     }
     if (message.branchSource !== 0) {
@@ -213,7 +213,7 @@ export const ProtectionRule = {
             break;
           }
 
-          message.createAllowedRoles.push(reader.string());
+          message.allowedRoles.push(reader.string());
           continue;
         case 5:
           if (tag !== 40) {
@@ -236,8 +236,8 @@ export const ProtectionRule = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
       nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
-      createAllowedRoles: globalThis.Array.isArray(object?.createAllowedRoles)
-        ? object.createAllowedRoles.map((e: any) => globalThis.String(e))
+      allowedRoles: globalThis.Array.isArray(object?.allowedRoles)
+        ? object.allowedRoles.map((e: any) => globalThis.String(e))
         : [],
       branchSource: isSet(object.branchSource) ? protectionRule_BranchSourceFromJSON(object.branchSource) : 0,
     };
@@ -254,8 +254,8 @@ export const ProtectionRule = {
     if (message.nameFilter !== "") {
       obj.nameFilter = message.nameFilter;
     }
-    if (message.createAllowedRoles?.length) {
-      obj.createAllowedRoles = message.createAllowedRoles;
+    if (message.allowedRoles?.length) {
+      obj.allowedRoles = message.allowedRoles;
     }
     if (message.branchSource !== 0) {
       obj.branchSource = protectionRule_BranchSourceToJSON(message.branchSource);
@@ -271,7 +271,7 @@ export const ProtectionRule = {
     message.id = object.id ?? "";
     message.target = object.target ?? 0;
     message.nameFilter = object.nameFilter ?? "";
-    message.createAllowedRoles = object.createAllowedRoles?.map((e) => e) || [];
+    message.allowedRoles = object.allowedRoles?.map((e) => e) || [];
     message.branchSource = object.branchSource ?? 0;
     return message;
   },

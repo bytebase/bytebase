@@ -2215,10 +2215,10 @@ func (s *ProjectService) UpdateProjectProtectionRules(ctx context.Context, reque
 	var rules []*storepb.ProtectionRule
 	for _, rule := range request.ProtectionRules.Rules {
 		rules = append(rules, &storepb.ProtectionRule{
-			Id:                 rule.Id,
-			Target:             storepb.ProtectionRule_Target(rule.Target),
-			NameFilter:         rule.NameFilter,
-			CreateAllowedRoles: rule.CreateAllowedRoles,
+			Id:           rule.Id,
+			Target:       storepb.ProtectionRule_Target(rule.Target),
+			NameFilter:   rule.NameFilter,
+			AllowedRoles: rule.AllowedRoles,
 		})
 	}
 
@@ -2248,10 +2248,10 @@ func convertProtectionRules(project *store.ProjectMessage) *v1pb.ProtectionRules
 	if project.Setting != nil {
 		for _, rule := range project.Setting.ProtectionRules {
 			resp.Rules = append(resp.Rules, &v1pb.ProtectionRule{
-				Id:                 rule.Id,
-				Target:             v1pb.ProtectionRule_Target(rule.Target),
-				NameFilter:         rule.NameFilter,
-				CreateAllowedRoles: rule.CreateAllowedRoles,
+				Id:           rule.Id,
+				Target:       v1pb.ProtectionRule_Target(rule.Target),
+				NameFilter:   rule.NameFilter,
+				AllowedRoles: rule.AllowedRoles,
 			})
 		}
 	}
