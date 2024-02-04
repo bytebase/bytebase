@@ -45,6 +45,7 @@
           :resource-type="'branch'"
           :branch="branch"
           :diff-when-ready="true"
+          :disable-diff-coloring="disableDiffColoring"
         />
       </div>
       <div
@@ -91,6 +92,7 @@ const props = defineProps<{
   branch: Branch;
   readonly?: boolean;
   hideSQLCheckButton?: boolean;
+  disableDiffColoring?: boolean;
 }>();
 
 const { t } = useI18n();

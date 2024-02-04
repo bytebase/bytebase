@@ -20,6 +20,7 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-list"
+      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 
@@ -104,6 +105,7 @@ const {
   project,
   readonly,
   selectionEnabled,
+  disableDiffColoring,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -418,14 +420,17 @@ useConsumePendingScrollToTable(
 .schema-editor-table-list :deep(.n-data-table-td.input-cell) {
   @apply pl-0.5 pr-1 py-0;
 }
-.schema-editor-table-list :deep(.n-data-table-tr.created .n-data-table-td) {
+.schema-editor-table-list:not(.disable-diff-coloring)
+  :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;
 }
-.schema-editor-table-list :deep(.n-data-table-tr.dropped .n-data-table-td) {
+.schema-editor-table-list:not(.disable-diff-coloring)
+  :deep(.n-data-table-tr.dropped .n-data-table-td) {
   @apply text-red-700 !bg-red-50 opacity-70;
 }
 
-.schema-editor-table-list :deep(.n-data-table-tr.updated .n-data-table-td) {
+.schema-editor-table-list:not(.disable-diff-coloring)
+  :deep(.n-data-table-tr.updated .n-data-table-td) {
   @apply text-yellow-700 !bg-yellow-50;
 }
 </style>

@@ -80,13 +80,21 @@
     <NDivider class="!my-0" />
 
     <div
-      class="w-full flex flex-row justify-between items-center text-sm mt-1 gap-4"
+      class="w-full flex flex-row justify-between items-center text-sm gap-4 h-[32px]"
     >
-      <div class="flex flex-row justify-start items-center opacity-80">
-        <span class="mr-4 shrink-0"
-          >{{ $t("schema-designer.baseline-version") }}:</span
-        >
-        <DatabaseInfo class="flex-nowrap mr-4 shrink-0" :database="database" />
+      <div
+        class="flex-1 flex flex-row justify-start items-center opacity-80 whitespace-nowrap"
+      >
+        <span class="mr-4">{{ $t("schema-designer.baseline-version") }}:</span>
+        <DatabaseInfo class="flex-nowrap" :database="database" />
+      </div>
+      <div
+        v-if="!state.isEditing"
+        class="flex flex-row justify-end items-center gap-x-1 whitespace-nowrap"
+      >
+        <NCheckbox v-model:checked="state.showDiff">
+          {{ $t("branch.show-diff-with-branch-baseline") }}
+        </NCheckbox>
       </div>
     </div>
 
@@ -96,6 +104,7 @@
         :project="project"
         :readonly="!state.isEditing"
         :branch="dirtyBranch"
+        :disable-diff-coloring="!state.isEditing && !state.showDiff"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
@@ -124,7 +133,7 @@
 import { asyncComputed } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
-import { NButton, NDivider, NInput, useDialog } from "naive-ui";
+import { NButton, NCheckbox, NDivider, NInput, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { CSSProperties, computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -165,9 +174,9 @@ import { validateBranchName } from "./utils";
 
 interface LocalState {
   branchId: string;
+  showDiff: boolean;
   isEditing: boolean;
   isEditingBranchId: boolean;
-  showDiffEditor: boolean;
   isReverting: boolean;
   savingStatus: string;
   applyingToDatabaseStatus: boolean;
@@ -190,9 +199,9 @@ const { runSQLCheck } = provideSQLCheckContext();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
   branchId: "",
+  showDiff: false,
   isEditing: false,
   isEditingBranchId: false,
-  showDiffEditor: false,
   isReverting: false,
   savingStatus: "",
   applyingToDatabaseStatus: false,
