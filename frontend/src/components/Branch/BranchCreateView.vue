@@ -268,37 +268,42 @@ const handleConfirm = async () => {
   const { branch, parent } = branchData.value;
 
   const { baselineDatabase } = branch;
-  isCreating.value = true;
-  if (!parent) {
-    await branchStore.createBranch(
-      props.project.name,
-      branchId.value,
-      Branch.fromPartial({
-        baselineDatabase,
-      })
-    );
-  } else {
-    await branchStore.createBranch(
-      props.project.name,
-      branchId.value,
-      Branch.fromPartial({
-        parentBranch: parent,
-      })
-    );
-  }
-  isCreating.value = false;
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("schema-designer.message.created-succeed"),
-  });
 
-  // Go to branch detail page after created.
-  router.replace({
-    name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
-    params: {
-      branchName: branchId.value,
-    },
-  });
+  try {
+    isCreating.value = true;
+    if (!parent) {
+      await branchStore.createBranch(
+        props.project.name,
+        branchId.value,
+        Branch.fromPartial({
+          baselineDatabase,
+        })
+      );
+    } else {
+      await branchStore.createBranch(
+        props.project.name,
+        branchId.value,
+        Branch.fromPartial({
+          parentBranch: parent,
+        })
+      );
+    }
+    isCreating.value = false;
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("schema-designer.message.created-succeed"),
+    });
+
+    // Go to branch detail page after created.
+    router.replace({
+      name: PROJECT_V1_ROUTE_BRANCH_DETAIL,
+      params: {
+        branchName: branchId.value,
+      },
+    });
+  } catch {
+    isCreating.value = false;
+  }
 };
 </script>
