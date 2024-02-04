@@ -28,7 +28,7 @@ jobs:
           go mod tidy
           git diff --exit-code
       - name: Cache MySQL
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ./backend/resources/mysql/*.tar.gz
