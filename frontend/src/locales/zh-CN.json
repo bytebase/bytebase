@@ -3431,7 +3431,7 @@
       "before-rebase": "rebase 前",
       "after-rebase": "rebase 后",
       "post-merge-action": {
-        "rebase": "合并且 rebase 分支",
+        "rebase": "合并且同步分支",
         "delete": "合并且删除分支"
       }
     },
