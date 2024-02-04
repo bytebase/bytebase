@@ -207,3 +207,5 @@ ruleList:
     level: WARNING
     payload:
       number: 64
+  - type: system.procedure.disallow
+    level: ERROR

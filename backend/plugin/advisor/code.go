@@ -140,7 +140,7 @@ const (
 	// 1301 ~ 1399 comment error code.
 	CommentTooLong Code = 1301
 
-	// 1401 ~ 1499 other common error code.
+	// 1401 ~ 1499 procedure error code.
 	DisallowProcedure Code = 1401
 )
 

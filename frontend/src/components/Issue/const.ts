@@ -84,6 +84,7 @@ export const LocalizedSQLRuleErrorCodes = new Set<number>([
   SQLReviewPolicyErrorCode.INSERT_USE_ORDER_BY_RAND,
   SQLReviewPolicyErrorCode.DISABLED_COLLATION,
   SQLReviewPolicyErrorCode.COMMENT_TOO_LONG,
+  SQLReviewPolicyErrorCode.CREATE_PROCEDURE,
   CompatibilityErrorCode.COMPATIBILITY_DROP_DATABASE,
   CompatibilityErrorCode.COMPATIBILITY_RENAME_TABLE,
   CompatibilityErrorCode.COMPATIBILITY_DROP_TABLE,

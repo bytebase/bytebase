@@ -723,3 +723,8 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
+  - type: system.procedure.disallow
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList: []
