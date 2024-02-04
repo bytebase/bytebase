@@ -40,7 +40,7 @@
     "google-protobuf": "^3.21.2",
     "highlight.js": "11.9.0",
     "html-to-image": "^1.11.11",
-    "inter-ui": "4.0.0",
+    "inter-ui": "4.0.1",
     "is-chinese": "^2.0.0",
     "js-base64": "^3.7.5",
     "js-yaml": "4.1.0",
