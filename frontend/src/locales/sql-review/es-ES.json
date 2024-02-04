@@ -56,6 +56,10 @@
       "title": "Prohibir el uso de tablas particionadas",
       "description": "En algunos motores de base de datos, las tablas particionadas no están maduras y el uso y mantenimiento son incómodos. Por lo tanto, es más propenso a utilizar métodos manuales de partición de datos como la fragmentación de bases de datos y tablas. Nivel de sugerencia de error: Advertencia"
     },
+    "table-disallow-trigger": {
+      "title": "Prohibir el uso de desencadenadores en tablas",
+      "description": "Los desencadenadores pueden hacer que el flujo de control sea difícil de seguir y aumentar la complejidad del sistema. En lugar de usar desencadenadores, se recomienda utilizar la lógica de la aplicación para realizar operaciones de base de datos. Nivel de sugerencia de error: Advertencia"
+    },
     "table-comment": {
       "title": "Convención de comentarios de tabla",
       "description": "Configure si la tabla requiere comentarios y la longitud máxima de comentarios.",
