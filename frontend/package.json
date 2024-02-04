@@ -23,7 +23,7 @@
     "@joe-re/sql-parser": "^1.7.0",
     "@markdoc/markdoc": "0.4.0",
     "@soerenmartius/vue3-clipboard": "0.1.2",
-    "@tanstack/vue-table": "8.10.7",
+    "@tanstack/vue-table": "8.11.8",
     "@vueuse/core": "10.4.1",
     "abort-controller-x": "^0.4.3",
     "axios": "1.6.3",
