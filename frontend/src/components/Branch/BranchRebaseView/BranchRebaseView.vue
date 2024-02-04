@@ -221,21 +221,25 @@ const handleRebaseBranch = async () => {
   if (!source) return;
   const head = headBranch.value;
   if (!head) return;
-  const resolveConflict = resolveConflictRef.value;
-  if (!resolveConflict) return;
-  state.isRebasing = true;
 
-  try {
+  let mergedSchema = "";
+  const resolveConflict = resolveConflictRef.value;
+  if (resolveConflict) {
     const validation = resolveConflict.validateConflictSchema();
     if (!validation.valid) {
       const confirmed = await confirmRebaseWithMaybeConflict();
       if (!confirmed) return;
     }
+    mergedSchema = validation.schema ?? "";
+  }
+  state.isRebasing = true;
+
+  try {
     const response = await branchStore.rebaseBranch({
       name: head.name,
       sourceBranch: state.sourceType === "BRANCH" ? source.name : "",
       sourceDatabase: state.sourceType === "DATABASE" ? source.name : "",
-      mergedSchema: validation.schema ?? "",
+      mergedSchema,
       etag: "",
       validateOnly: false,
     });
