@@ -177,7 +177,7 @@ const (
 	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
 
 	// SchemaRuleDisallowProcedure disallow procedure.
-	SchemaRuleDisallowProcedure SQLReviewRuleType = "procedure.disallow"
+	SchemaRuleDisallowProcedure SQLReviewRuleType = "system.procedure.disallow"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
