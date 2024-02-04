@@ -2218,6 +2218,7 @@ func (s *ProjectService) UpdateProjectProtectionRules(ctx context.Context, reque
 			Id:           rule.Id,
 			Target:       storepb.ProtectionRule_Target(rule.Target),
 			NameFilter:   rule.NameFilter,
+			BranchSource: storepb.ProtectionRule_BranchSource(rule.BranchSource),
 			AllowedRoles: rule.AllowedRoles,
 		})
 	}
@@ -2251,6 +2252,7 @@ func convertProtectionRules(project *store.ProjectMessage) *v1pb.ProtectionRules
 				Id:           rule.Id,
 				Target:       v1pb.ProtectionRule_Target(rule.Target),
 				NameFilter:   rule.NameFilter,
+				BranchSource: v1pb.ProtectionRule_BranchSource(rule.GetBranchSource()),
 				AllowedRoles: rule.AllowedRoles,
 			})
 		}
