@@ -1960,11 +1960,12 @@
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
-          "description": "Support wildcard such as feature/* or *-stable"
+          "description": "Support wildcard such as feature/* or *-stable. Empty string matches all branches."
         },
         "applies-to-n-branches": "Applies to {n} branch | Applies to {n} branches",
         "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
-        "no-protection-rule-configured": "No protection rule configured."
+        "no-protection-rule-configured": "No protection rule configured.",
+        "only-apply-to-main-branches": "Only apply to main branches"
       }
     },
     "members": {
