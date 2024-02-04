@@ -213,21 +213,25 @@ const handleMergeBranch = async (post: PostMergeAction) => {
       return;
     }
     if (post === "REBASE") {
-      const response = await branchStore.rebaseBranch({
-        name: head.name,
-        sourceBranch: target.name,
-        sourceDatabase: "",
-        mergedSchema: "",
-        etag: "",
-        validateOnly: false,
-      });
+      await branchStore.deleteBranch(head.name);
+      const pendingRecreateBranch = Branch.fromPartial({});
+      if (head.parentBranch) {
+        pendingRecreateBranch.parentBranch = head.parentBranch;
+      } else {
+        pendingRecreateBranch.baselineDatabase = head.baselineDatabase;
+      }
+      const recreatedBranch = await branchStore.createBranch(
+        props.project.name,
+        head.branchId,
+        pendingRecreateBranch
+      );
 
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("branch.merge-rebase.rebase-succeeded"),
       });
-      emit("merged", mergedBranch, head.name, response.branch);
+      emit("merged", recreatedBranch, recreatedBranch.name, recreatedBranch);
       return;
     }
     emit("merged", mergedBranch, head.name, head);
