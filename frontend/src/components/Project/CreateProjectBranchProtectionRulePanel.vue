@@ -27,6 +27,18 @@
         <NInput v-model:value="state.protectionRule.nameFilter" />
       </div>
       <div class="mt-2">
+        <NCheckbox
+          :checked="state.protectionRule.branchSource === BranchSource.DATABASE"
+          @update:checked="toggleApplyToMainBranches"
+        >
+          {{
+            $t(
+              "project.settings.branch-protection-rules.only-apply-to-main-branches"
+            )
+          }}
+        </NCheckbox>
+      </div>
+      <div class="mt-2">
         <p class="text-sm">
           {{
             $t(
@@ -106,6 +118,7 @@ import {
 import { ComposedProject, PresetRoleType } from "@/types";
 import {
   ProtectionRule,
+  ProtectionRule_BranchSource as BranchSource,
   ProtectionRule_Target,
 } from "@/types/proto/v1/project_service";
 import { displayRoleTitle } from "@/utils";
@@ -154,7 +167,14 @@ const branches = computed(() => {
 });
 
 const matchedBranchList = computed(() => {
-  return branches.value.filter((branch) => {
+  const branchList =
+    state.protectionRule.branchSource === BranchSource.DATABASE
+      ? branches.value.filter((br) => !br.parentBranch)
+      : branches.value;
+  if (state.protectionRule.nameFilter === "") {
+    return branchList;
+  }
+  return branchList.filter((branch) => {
     return wildcardToRegex(state.protectionRule.nameFilter).test(
       branch.branchId
     );
@@ -166,9 +186,6 @@ const isCreating = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  if (!state.protectionRule.nameFilter) {
-    return false;
-  }
   return hasProjectPermissionV2(
     props.project,
     useCurrentUserV1().value,
@@ -203,6 +220,12 @@ watch(
     }
   }
 );
+
+const toggleApplyToMainBranches = (on: boolean) => {
+  state.protectionRule.branchSource = on
+    ? BranchSource.DATABASE
+    : BranchSource.BRANCH_SOURCE_UNSPECIFIED;
+};
 
 const handleConfirm = async () => {
   if (!allowConfirm.value) {

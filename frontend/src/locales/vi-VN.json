@@ -1960,11 +1960,12 @@
         "add-rule": "Thêm quy tắc",
         "branch-name-pattern": {
           "self": "Mẫu tên chi nhánh",
-          "description": "Hỗ trợ ký tự đại diện như tính năng/* hoặc *-ổn định"
+          "description": "Hỗ trợ ký tự đại diện như feature/* hoặc *-stable. \nChuỗi rỗng khớp với tất cả các nhánh."
         },
         "applies-to-n-branches": "Áp dụng cho chi nhánh {n} | Áp dụng cho {n} chi nhánh",
         "only-allow-specified-roles-to-create-branch": "Chỉ cho phép các vai trò được chỉ định để tạo chi nhánh",
-        "no-protection-rule-configured": "Không có quy tắc bảo vệ nào được cấu hình."
+        "no-protection-rule-configured": "Không có quy tắc bảo vệ nào được cấu hình.",
+        "only-apply-to-main-branches": "Chỉ áp dụng cho chi nhánh chính"
       }
     },
     "members": {

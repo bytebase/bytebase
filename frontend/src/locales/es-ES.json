@@ -1959,11 +1959,12 @@
         "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
-          "description": "Soporta comodines como feature/* o *-stable"
+          "description": "Admite comodines como feature/* o *-stable. \nLa cadena vacía coincide con todas las ramas."
         },
         "applies-to-n-branches": "Se aplica a {n} ramas",
         "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
-        "no-protection-rule-configured": "No hay regla de protección configurada"
+        "no-protection-rule-configured": "No hay regla de protección configurada",
+        "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       }
     },
     "members": {

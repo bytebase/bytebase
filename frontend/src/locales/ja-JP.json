@@ -1958,11 +1958,12 @@
         "add-rule": "ルールを追加する",
         "branch-name-pattern": {
           "self": "ブランチ名のパターン",
-          "description": "feature/*や*-stableなどのワイルドカードをサポートします。"
+          "description": "feature/* や *-stable などのワイルドカードをサポートします。\n空の文字列はすべてのブランチに一致します。"
         },
         "applies-to-n-branches": "{n}ブランチに適用されます | {n}ブランチに適用されます",
         "only-allow-specified-roles-to-create-branch": "指定された役割のみがブランチの作成を許可します",
-        "no-protection-rule-configured": "保護ルールが設定されていません。"
+        "no-protection-rule-configured": "保護ルールが設定されていません。",
+        "only-apply-to-main-branches": "メインブランチにのみ適用されます"
       }
     },
     "members": {

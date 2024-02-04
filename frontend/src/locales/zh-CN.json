@@ -1955,11 +1955,12 @@
         "add-rule": "添加分支",
         "branch-name-pattern": {
           "self": "分支名称模式",
-          "description": "支持通配符，如 feature/* 或 *-stable"
+          "description": "支持通配符，如 feature/* 或 *-stable。留空则匹配所有分支。"
         },
         "applies-to-n-branches": "应用到了 {n} 个分支",
         "only-allow-specified-roles-to-create-branch": "只允许指定角色创建分支",
-        "no-protection-rule-configured": "没有配置分支保护规则。"
+        "no-protection-rule-configured": "没有配置分支保护规则。",
+        "only-apply-to-main-branches": "只对主分支生效"
       }
     },
     "members": {
