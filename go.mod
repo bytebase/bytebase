@@ -4,7 +4,7 @@ go 1.21.6
 
 require (
 	cloud.google.com/go/spanner v1.56.0
-	gitee.com/chunanyong/dm v1.8.13
+	gitee.com/chunanyong/dm v1.8.14
 	github.com/ClickHouse/clickhouse-go/v2 v2.18.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.0
