@@ -1290,7 +1290,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleTableDisallowTrigger:
 		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+		case storepb.Engine_MYSQL:
 			return MySQLTableDisallowTrigger, nil
 		}
 	case SchemaRuleMySQLEngine:
