@@ -168,8 +168,8 @@ dependencies:
     specifier: 3.1.5
     version: 3.1.5
   sql-formatter:
-    specifier: 15.0.2
-    version: 15.0.2
+    specifier: 15.2.0
+    version: 15.2.0
   uuid:
     specifier: 9.0.1
     version: 9.0.1
@@ -5706,8 +5706,8 @@ packages:
     resolution: {integrity: sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw==}
     dev: false
 
-  /sql-formatter@15.0.2:
-    resolution: {integrity: sha512-B8FTRc1dhb36lfuwSdiLhwrhkvT3PU/3es7YDPPQBOhbGHdXKlweAXTRS+QfCWk06ufAh118yFja6NcukBS4gg==}
+  /sql-formatter@15.2.0:
+    resolution: {integrity: sha512-k1gDOblvmtzmrBT687Y167ElwQI/8KrlhfKeIUXsi6jw7Rp5n3G8TkMFZF0Z9NG7rAzHKXUlJ8kfmcIfMf5lFg==}
     hasBin: true
     dependencies:
       argparse: 2.0.1
