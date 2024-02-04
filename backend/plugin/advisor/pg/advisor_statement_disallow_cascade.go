@@ -93,10 +93,11 @@ func cascadeNumRecursive(jsonData map[string]any) int {
 			cnt += cascadeNumRecursive(value)
 		case []any:
 			for _, v := range value {
-				switch v := v.(type) {
-				case map[string]any:
-					cnt += cascadeNumRecursive(v)
+				mv, ok := v.(map[string]any)
+				if !ok {
+					continue
 				}
+				cnt += cascadeNumRecursive(mv)
 			}
 		}
 	}

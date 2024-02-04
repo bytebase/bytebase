@@ -1330,8 +1330,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return PostgreSQLIndexTotalNumberLimit, nil
 		}
 	case SchemaRuleStatementDisallowCascade:
-		switch engine {
-		case storepb.Engine_POSTGRES:
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLStatementDisallowCascade, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
