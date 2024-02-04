@@ -3449,6 +3449,7 @@
     "visualized-schema": "Esquema visualizado",
     "schema-text": "Texto del esquema",
     "baseline": "Base",
-    "head": "Cabeza"
+    "head": "Cabeza",
+    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama"
   }
 }
