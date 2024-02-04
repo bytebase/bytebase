@@ -16,6 +16,7 @@ export const upsertColumnPrimaryKey = (
       IndexMetadata.fromPartial({
         primary: true,
         name: "PRIMARY",
+        unique: true,
         expressions: [columnName],
       })
     );
