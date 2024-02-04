@@ -13,8 +13,8 @@ cloud.google.com/go/longrunning v0.5.4/go.mod h1:zqNVncI0BOP8ST6XQD1+VcvuShMmq7+
 cloud.google.com/go/spanner v1.56.0 h1:o/Cv7/zZ1WgRXVCd5g3Nc23ZI39p/1pWFqFwvg6Wcu8=
 cloud.google.com/go/spanner v1.56.0/go.mod h1:DndqtUKQAt3VLuV2Le+9Y3WTnq5cNKrnLb/Piqcj+h0=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-gitee.com/chunanyong/dm v1.8.13 h1:X33lDC4YuiWDapr5VMvgrG3XqfF4vfNcYt7c6scx35s=
-gitee.com/chunanyong/dm v1.8.13/go.mod h1:EPRJnuPFgbyOFgJ0TRYCTGzhq+ZT4wdyaj/GW/LLcNg=
+gitee.com/chunanyong/dm v1.8.14 h1:1S9+aD0fY/HXkcm8dKh2HjYsDlcdXNG+4IOX9JtrSjA=
+gitee.com/chunanyong/dm v1.8.14/go.mod h1:EPRJnuPFgbyOFgJ0TRYCTGzhq+ZT4wdyaj/GW/LLcNg=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN7oaIRCjzsZ2dE+yG5k+rsdt3qcwykqK6HVGcKwsw4=
 github.com/99designs/keyring v1.2.2 h1:pZd3neh/EmUzWONb35LxQfvuY7kiSXAq3HQd97+XBn0=
