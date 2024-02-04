@@ -42,7 +42,7 @@
     "html-to-image": "^1.11.11",
     "inter-ui": "4.0.1",
     "is-chinese": "^2.0.0",
-    "js-base64": "^3.7.5",
+    "js-base64": "^3.7.6",
     "js-yaml": "4.1.0",
     "jszip": "^3.10.1",
     "libphonenumber-js": "^1.10.52",
