@@ -3449,6 +3449,7 @@
     "visualized-schema": "視覚化されたスキーマ",
     "schema-text": "スキーマテキスト",
     "baseline": "ベースライン",
-    "head": "頭"
+    "head": "頭",
+    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示"
   }
 }

@@ -3451,6 +3451,7 @@
     "visualized-schema": "Lược đồ trực quan",
     "schema-text": "Văn bản lược đồ",
     "baseline": "Đường cơ sở",
-    "head": "Cái đầu"
+    "head": "Cái đầu",
+    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh"
   }
 }
