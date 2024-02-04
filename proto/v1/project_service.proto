@@ -870,4 +870,10 @@ message ProtectionRule {
   // The roles allowed to create branches or changelists.
   // Format: roles/OWNER.
   repeated string create_allowed_roles = 4;
+
+  enum BranchSource {
+    BRANCH_SOURCE_UNSPECIFIED = 0;
+    DATABASE = 1;
+  }
+  BranchSource branch_source = 5;
 }

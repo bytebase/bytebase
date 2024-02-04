@@ -423,6 +423,7 @@
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
     - [OperatorType](#bytebase-v1-OperatorType)
+    - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
@@ -6595,6 +6596,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
 | create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+| branch_source | [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource) |  |  |
 
 
 
@@ -7041,6 +7043,18 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
+
+
+
+<a name="bytebase-v1-ProtectionRule-BranchSource"></a>
+
+### ProtectionRule.BranchSource
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
 
 
 
