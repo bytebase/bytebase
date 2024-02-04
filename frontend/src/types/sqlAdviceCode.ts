@@ -152,6 +152,10 @@ export enum SQLAdviceCodeComment {
   CommentTooLong = 1301,
 }
 
+export enum SQLAdviceCodeProcedure {
+  CreateProcedure = 1401,
+}
+
 export type SQLAdviceCode =
   | SQLAdviceCodeGeneral
   | SQLAdviceCodeCompatibility

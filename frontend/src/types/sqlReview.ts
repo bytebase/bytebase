@@ -152,6 +152,7 @@ export type RuleType =
   | "system.charset.allowlist"
   | "system.collation.allowlist"
   | "system.comment.length"
+  | "system.procedure.disallow"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
