@@ -301,6 +301,10 @@
       "title": "禁止过滤条件使用左模糊匹配",
       "description": "当使用左模糊匹配，例如 \"LIKE '%ABC'\"，数据库优化器将无法进行快速索引扫描，而只能执行全表或全索引扫描，可能造成极为严重的性能问题。建议错误等级：错误"
     },
+    "statement-disallow-cascade": {
+      "title": "禁止使用 \"CASCADE\"",
+      "description": "CASCADE 操作可能导致意外的数据丢失，可能导致意外的结果。建议错误等级：错误"
+    },
     "statement-disallow-commit": {
       "title": "禁止显式 \"COMMIT\"",
       "description": "某些情况要求多条语句包含在一个事务中由系统提交，只允许同时成功或同时失败，以便部分出错时快速重跑，因此不允许出现显式的 \"COMMIT\"。建议错误等级：警告"

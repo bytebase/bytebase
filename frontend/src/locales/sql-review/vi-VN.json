@@ -300,6 +300,10 @@
       "title": "Cấm sử dụng ký tự đại diện hàng đầu trong điều kiện lọc",
       "description": "Khi sử dụng ký tự đại diện hàng đầu, chẳng hạn như \"THÍCH '%ABC'\", trình tối ưu hóa cơ sở dữ liệu không thể sử dụng tính năng quét chỉ mục nhanh và chuyển sang quét toàn bộ bảng hoặc quét chỉ mục đầy đủ, điều này có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi đề xuất: Lỗi"
     },
+    "statement-disallow-cascade": {
+      "title": "Cấm sử dụng \"CASCADE\"",
+      "description": "Cấm sử dụng \"CASCADE\" trong các mệnh đề \"DELETE\" và \"UPDATE\". Mức độ lỗi đề xuất: Lỗi"
+    },
     "statement-disallow-commit": {
       "title": "Cấm tuyên bố \"COMMIT\" rõ ràng",
       "description": "Trong một số trường hợp, cần phải đưa nhiều câu lệnh vào một giao dịch được hệ thống thực hiện để nhanh chóng chạy lại trong trường hợp bị lỗi một phần. Do đó, \"COMMIT\" rõ ràng là không được phép. Mức độ lỗi đề xuất: Cảnh báo"
