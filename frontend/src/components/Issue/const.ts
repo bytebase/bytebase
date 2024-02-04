@@ -55,6 +55,7 @@ export const LocalizedSQLRuleErrorCodes = new Set<number>([
   SQLReviewPolicyErrorCode.TABLE_EXISTS,
   SQLReviewPolicyErrorCode.CREATE_TABLE_PARTITION,
   SQLReviewPolicyErrorCode.TABLE_IS_REFERENCED_BY_VIEW,
+  SQLReviewPolicyErrorCode.CREATE_TABLE_TRIGGER,
   SQLReviewPolicyErrorCode.DATABASE_NOT_EMPTY,
   SQLReviewPolicyErrorCode.NOT_CURRENT_DATABASE,
   SQLReviewPolicyErrorCode.DATABASE_IS_DELETED,
