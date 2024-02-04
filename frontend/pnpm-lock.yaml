@@ -18,8 +18,8 @@ dependencies:
     specifier: 0.1.2
     version: 0.1.2
   '@tanstack/vue-table':
-    specifier: 8.10.7
-    version: 8.10.7(vue@3.3.12)
+    specifier: 8.11.8
+    version: 8.11.8(vue@3.3.12)
   '@vueuse/core':
     specifier: 10.4.1
     version: 10.4.1(vue@3.3.12)
@@ -1581,18 +1581,18 @@ packages:
       tailwindcss: 3.3.6
     dev: true
 
-  /@tanstack/table-core@8.10.7:
-    resolution: {integrity: sha512-KQk5OMg5OH6rmbHZxuNROvdI+hKDIUxANaHlV+dPlNN7ED3qYQ/WkpY2qlXww1SIdeMlkIhpN/2L00rof0fXFw==}
+  /@tanstack/table-core@8.11.8:
+    resolution: {integrity: sha512-DECHvtq4YW4U/gqg6etup7ydt/RB1Bi1pJaMpHUXl65ooW1d71Nv7BzD66rUdHrBSNdyiW3PLTPUQlpXjAgDeA==}
     engines: {node: '>=12'}
     dev: false
 
-  /@tanstack/vue-table@8.10.7(vue@3.3.12):
-    resolution: {integrity: sha512-13tTANgJuJHVW73rPLI+qrZVhrd9Yqxjys6t/Uor0qR0oS8Xk9xJE9WHqvaGsgVNBsIs9dE53S5GEBZqGC3FUw==}
+  /@tanstack/vue-table@8.11.8(vue@3.3.12):
+    resolution: {integrity: sha512-soIgSJNgFJ9520mExVw1LfcMi/ubNQc31BuZCyh0qsZSZUxbZt95aXkq8xDM7al+GH8OGz9wvE2nVP2gEAzNIQ==}
     engines: {node: '>=12'}
     peerDependencies:
       vue: ^3.2.33
     dependencies:
-      '@tanstack/table-core': 8.10.7
+      '@tanstack/table-core': 8.11.8
       vue: 3.3.12(typescript@5.3.3)
     dev: false
 
