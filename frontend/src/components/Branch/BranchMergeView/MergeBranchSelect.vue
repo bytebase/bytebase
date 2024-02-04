@@ -22,20 +22,11 @@
       :filter="headBranchFilter"
       @update:branch="$emit('update:head-branch-name', $event)"
     />
-    <NCheckbox
-      :checked="deleteBranchAfterMerged"
-      @update:checked="
-        $emit('update:delete-branch-after-merged', $event as boolean)
-      "
-    >
-      {{ $t("branch.merge-rebase.delete-branch-after-merged") }}
-    </NCheckbox>
   </div>
 </template>
 
 <script setup lang="ts">
 import { MoveLeftIcon } from "lucide-vue-next";
-import { NCheckbox } from "naive-ui";
 import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 
@@ -43,13 +34,11 @@ const props = defineProps<{
   project: ComposedProject;
   targetBranch: Branch | undefined;
   headBranch: Branch | undefined;
-  deleteBranchAfterMerged: boolean;
 }>();
 
 defineEmits<{
   (event: "update:head-branch-name", branch: string | undefined): void;
   (event: "update:target-branch-name", branch: string | undefined): void;
-  (event: "update:delete-branch-after-merged", on: boolean): void;
 }>();
 
 const targetBranchFilter = (branch: Branch) => {

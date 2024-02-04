@@ -3434,7 +3434,11 @@
       "before-merge": "マージ前",
       "after-merge": "マージ後",
       "before-rebase": "リベース前",
-      "after-rebase": "リベース後"
+      "after-rebase": "リベース後",
+      "post-merge-action": {
+        "rebase": "ブランチをマージしてリベースする",
+        "delete": "ブランチのマージと削除"
+      }
     },
     "source": {
       "baseline-version": "ベースラインバージョン",
