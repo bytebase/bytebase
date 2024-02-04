@@ -319,6 +319,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,
 		SchemaRuleStatementNoLeadingWildcardLike,
+		SchemaRuleStatementDisallowCascade,
 		SchemaRuleStatementDisallowCommit,
 		SchemaRuleStatementDisallowLimit,
 		SchemaRuleStatementDisallowOrderBy,

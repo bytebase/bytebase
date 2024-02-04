@@ -25,6 +25,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-commit
     level: WARNING
+  - type: statement.disallow-cascade
+    level: WARNING
   - type: statement.disallow-limit
     level: WARNING
   - type: statement.disallow-order-by
