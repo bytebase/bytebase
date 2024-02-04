@@ -56,6 +56,10 @@
       "title": "Prohibit using partition table",
       "description": "In some database engines, partitioned tables are not mature, and the use and maintenance are inconvenient. Therefore, it is more inclined to use manual data partitioning methods such as database and table sharding. Suggestion error level: Warning"
     },
+    "table-disallow-trigger": {
+      "title": "Prevent the use of triggers on tables",
+      "description": "This rule restricts the usage of triggers on tables. Triggers can introduce complexity and potential performance issues to database operations. By disallowing triggers, the system can maintain a simpler and more predictable behavior. Suggestion error level: Warning"
+    },
     "table-comment": {
       "title": "Comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",
