@@ -28,8 +28,10 @@ func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	// Results are the result columns of a query span.
+	// Currently, SourceColumns in the QuerySpanResult are only for the fields in the Query.
 	Results []QuerySpanResult
 	// SourceColumns are the source columns contributing to the span.
+	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
 	SourceColumns SourceColumnSet
 }
 

@@ -164,6 +164,9 @@ const (
 	// MySQLTableDisallowPartition is an advisor type for MySQL disallow table partition.
 	MySQLTableDisallowPartition Type = "bb.plugin.advisor.mysql.table.disallow-partition"
 
+	// MySQLTableDisallowTrigger is an advisor type for MySQL disallow table trigger.
+	MySQLTableDisallowTrigger Type = "bb.plugin.advisor.mysql.table.disallow-trigger"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
@@ -217,6 +220,9 @@ const (
 
 	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
 	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
+
+	// MySQLDisallowProcedure is an advisor type for MySQL disallow procedure.
+	MySQLDisallowProcedure Type = "bb.plugin.advisor.mysql.disallow-procedure"
 
 	// PostgreSQL Advisor.
 
@@ -336,6 +342,9 @@ const (
 
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
+
+	// PostgreSQLStatementDisallowCascade is an advisor type for PostgreSQL to disallow cascade.
+	PostgreSQLStatementDisallowCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-cascade"
 
 	// Oracle Advisor.
 
@@ -522,6 +531,9 @@ type Context struct {
 	CurrentDatabase string
 	// CurrentSchema is the current schema. Special for Oracle.
 	CurrentSchema string
+	// Statement is the original statement of AST, it is used for some PostgreSQL
+	// advisors which need to check the token stream.
+	Statements string
 }
 
 // Advisor is the interface for advisor.

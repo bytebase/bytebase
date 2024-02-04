@@ -19,6 +19,7 @@
     <div
       ref="treeContainerElRef"
       class="schema-editor-tree flex-1 pb-1 text-sm overflow-hidden select-none"
+      :class="[disableDiffColoring && 'disable-diff-coloring']"
       :data-height="treeContainerHeight"
     >
       <NTree
@@ -148,13 +149,14 @@ const {
   targets,
   readonly,
   currentTab,
+  disableDiffColoring,
+  selectionEnabled,
   addTab,
   markEditStatus,
   removeEditStatus,
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
-  selectionEnabled,
   upsertTableConfig,
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
@@ -796,13 +798,16 @@ const handleExpandedKeysChange = (expandedKeys: string[]) => {
 .schema-editor-tree :deep(.n-tree-node-switcher) {
   @apply px-0 !w-4 !h-7;
 }
-.schema-editor-tree :deep(.n-tree-node-content .created) {
+.schema-editor-tree:not(.disable-diff-coloring)
+  :deep(.n-tree-node-content .created) {
   @apply text-green-700;
 }
-.schema-editor-tree :deep(.n-tree-node-content .dropped) {
+.schema-editor-tree:not(.disable-diff-coloring)
+  :deep(.n-tree-node-content .dropped) {
   @apply text-red-700 line-through;
 }
-.schema-editor-tree :deep(.n-tree-node-content .updated) {
+.schema-editor-tree:not(.disable-diff-coloring)
+  :deep(.n-tree-node-content .updated) {
   @apply text-yellow-700;
 }
 </style>

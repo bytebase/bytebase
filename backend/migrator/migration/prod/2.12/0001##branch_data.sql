@@ -1,3 +1,5 @@
+ALTER TABLE branch ADD COLUMN IF NOT EXISTS creator_id INTEGER NOT NULL REFERENCES principal (id);
+ALTER TABLE branch ADD COLUMN IF NOT EXISTS updater_id INTEGER NOT NULL REFERENCES principal (id);
 INSERT INTO branch (creator_id, created_ts, updater_id, updated_ts, project_id, name, engine, base, head, config)
 SELECT
 	sheet.creator_id,

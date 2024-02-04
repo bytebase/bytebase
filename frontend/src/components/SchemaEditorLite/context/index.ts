@@ -26,6 +26,7 @@ export const provideSchemaEditorContext = (params: {
   project: Ref<ComposedProject>;
   targets: Ref<EditTarget[]>;
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
+  disableDiffColoring: Ref<boolean>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
   const context = {

@@ -60,6 +60,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableCommentConvention,
 		// advisor.SchemaRuleTableDisallowPartition disallow the table partition.
 		advisor.SchemaRuleTableDisallowPartition,
+		// advisor.SchemaRuleTableDisallowTrigger disallow the table trigger.
+		advisor.SchemaRuleTableDisallowTrigger,
 
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
 		advisor.SchemaRuleRequiredColumn,
@@ -91,6 +93,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
+		// advisor.SchemaRuleDisallowProcedure enforce the disallow procedure.
+		advisor.SchemaRuleDisallowProcedure,
 
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 		advisor.SchemaRuleSchemaBackwardCompatibility,

@@ -81,6 +81,11 @@ ruleList:
       - OCEANBASE
       - MARIADB
     componentList: []
+  - type: table.disallow-trigger
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -117,6 +122,11 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+    componentList: []
+  - type: statement.disallow-cascade
+    category: STATEMENT
+    engineList:
+      - POSTGRES
     componentList: []
   - type: statement.disallow-commit
     category: STATEMENT

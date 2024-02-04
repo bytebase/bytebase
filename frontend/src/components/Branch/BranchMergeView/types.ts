@@ -6,3 +6,5 @@ export type MergeBranchValidationState = {
   branch?: Branch;
   errmsg?: string;
 };
+
+export type PostMergeAction = "NOOP" | "DELETE" | "REBASE";

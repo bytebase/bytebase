@@ -19,6 +19,7 @@
         :allow-selection="false"
         :can-assign-license="false"
         :instance-list="filteredInstanceList"
+        :show-operation="false"
       />
       <EnvironmentV1Table
         v-else-if="state.selectedTab == 'ENVIRONMENT'"

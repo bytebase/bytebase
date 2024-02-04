@@ -45,9 +45,9 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
+const router = useRouter();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-const router = useRouter();
 
 const state = reactive<LocalState>({
   prevLoggedIn: authStore.isLoggedIn(),

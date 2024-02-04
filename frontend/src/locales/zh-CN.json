@@ -1655,6 +1655,7 @@
       "title": "库表同步",
       "description": "Bytebase 支持将一个指定的 Schema 同步到一个或多个目标数据库。",
       "schema-history-version": "Schema 历史版本",
+      "copy-schema": "粘贴 Schema 文本",
       "select-source-schema": "选择源 Schema",
       "select-target-databases": "选择目标数据库",
       "select-project": "选择项目",
@@ -1954,11 +1955,12 @@
         "add-rule": "添加分支",
         "branch-name-pattern": {
           "self": "分支名称模式",
-          "description": "支持通配符，如 feature/* 或 *-stable"
+          "description": "支持通配符，如 feature/* 或 *-stable。留空则匹配所有分支。"
         },
         "applies-to-n-branches": "应用到了 {n} 个分支",
         "only-allow-specified-roles-to-create-branch": "只允许指定角色创建分支",
-        "no-protection-rule-configured": "没有配置分支保护规则。"
+        "no-protection-rule-configured": "没有配置分支保护规则。",
+        "only-apply-to-main-branches": "只对主分支生效"
       }
     },
     "members": {
@@ -3322,6 +3324,7 @@
   "cel": {
     "factor": {
       "affected_rows": "影响行数",
+      "table_rows": "表行数",
       "environment_id": "环境 ID",
       "project_id": "项目 ID",
       "instance_id": "实例 ID",
@@ -3369,7 +3372,7 @@
     },
     "change-source": {
       "self": "变更来源",
-      "raw-sql": "粘贴 Schema 文本",
+      "raw-sql": "SQL 语句",
       "change-history": {
         "tables": "表"
       },
@@ -3419,7 +3422,19 @@
       "conflict-not-resolved": "似乎还有尚未解决的冲突。",
       "resolve-conflicts-to-rebase": "解决冲突以进行 rebase",
       "preview-merge-result": "预览合并后 {branch} 上的更改",
-      "preview-rebase-result": "预览 rebase 后 {branch} 上的修改"
+      "preview-rebase-result": "预览 rebase 后 {branch} 上的修改",
+      "diffs-between": "{left} 和 {right}的差异",
+      "base-branch": "Base 分支",
+      "head-branch": "Head 分支",
+      "preview": "预览",
+      "before-merge": "合并前",
+      "after-merge": "合并后",
+      "before-rebase": "rebase 前",
+      "after-rebase": "rebase 后",
+      "post-merge-action": {
+        "rebase": "合并且同步分支",
+        "delete": "合并且删除分支"
+      }
     },
     "source": {
       "baseline-version": "基线版本",
@@ -3430,6 +3445,11 @@
       "drop-index-confirm": "删除索引？"
     },
     "force-delete": "强制删除",
-    "deleting-parent-branch": "将要删除一个父分支。"
+    "deleting-parent-branch": "将要删除一个父分支。",
+    "visualized-schema": "可视化 Schema",
+    "schema-text": "文本 Schema",
+    "baseline": "基线",
+    "head": "当前",
+    "show-diff-with-branch-baseline": "显示与分支基线之间的差异"
   }
 }

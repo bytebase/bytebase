@@ -12,6 +12,8 @@ ruleList:
       format: _del$
   - type: table.disallow-partition
     level: ERROR
+  - type: table.disallow-trigger
+    level: ERROR
   - type: table.comment
     level: ERROR
     payload:
@@ -24,6 +26,8 @@ ruleList:
   - type: statement.where.no-leading-wildcard-like
     level: ERROR
   - type: statement.disallow-commit
+    level: ERROR
+  - type: statement.disallow-cascade
     level: ERROR
   - type: statement.disallow-limit
     level: ERROR

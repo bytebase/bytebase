@@ -292,7 +292,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 					for _, tableSource := range fromFieldList {
 						columns = append(columns, tableSource.GetQuerySpanResult()...)
 					}
-					result.Columns = columns
+					result.Columns = append(result.Columns, columns...)
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					for _, tableSource := range fromFieldList {
@@ -371,12 +371,11 @@ func (*querySpanExtractor) mergeJoinTableSource(node *pgquery.Node_JoinExpr, lef
 		for idx, spanResult := range leftSpanResult {
 			if _, ok := rightSpanResultIdx[spanResult.Name]; ok {
 				spanResult.SourceColumns, _ = base.MergeSourceColumnSet(spanResult.SourceColumns, rightSpanResult[idx].SourceColumns)
-				result.Columns = append(result.Columns, spanResult)
-				delete(rightSpanResultIdx, spanResult.Name)
 			}
+			result.Columns = append(result.Columns, spanResult)
 		}
 		for _, spanResult := range rightSpanResult {
-			if _, ok := leftSpanResultIdx[spanResult.Name]; ok {
+			if _, ok := leftSpanResultIdx[spanResult.Name]; !ok {
 				result.Columns = append(result.Columns, spanResult)
 			}
 		}

@@ -319,6 +319,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,
 		SchemaRuleStatementNoLeadingWildcardLike,
+		SchemaRuleStatementDisallowCascade,
 		SchemaRuleStatementDisallowCommit,
 		SchemaRuleStatementDisallowLimit,
 		SchemaRuleStatementDisallowOrderBy,
@@ -329,6 +330,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleTableRequirePK,
 		SchemaRuleTableNoFK,
 		SchemaRuleTableDisallowPartition,
+		SchemaRuleTableDisallowTrigger,
 		SchemaRuleColumnNotNull,
 		SchemaRuleColumnDisallowChangeType,
 		SchemaRuleColumnSetDefaultForNotNull,
@@ -351,7 +353,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementDisallowAddNotNull,
 		SchemaRuleIndexTypeNoBlob,
 		SchemaRuleIdentifierNoKeyword,
-		SchemaRuleTableNameNoKeyword:
+		SchemaRuleTableNameNoKeyword,
+		SchemaRuleDisallowProcedure:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",

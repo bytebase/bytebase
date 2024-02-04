@@ -56,6 +56,10 @@
       "title": "Cấm sử dụng bảng phân vùng",
       "description": "Trong một số công cụ cơ sở dữ liệu, các bảng phân vùng chưa hoàn thiện và việc sử dụng cũng như bảo trì rất bất tiện. Do đó, người ta có xu hướng sử dụng các phương pháp phân vùng dữ liệu thủ công như cơ sở dữ liệu và phân chia bảng. Mức độ lỗi đề xuất: Cảnh báo"
     },
+    "table-disallow-trigger": {
+      "title": "Cấm sử dụng cơ chế kích hoạt",
+      "description": "Cơ chế kích hoạt có thể gây ra sự không thống nhất dữ liệu và làm giảm hiệu suất. Mức độ lỗi đề xuất: Lỗi"
+    },
     "table-comment": {
       "title": "quy ước bình luận",
       "description": "Định cấu hình xem bảng có yêu cầu nhận xét hay không và độ dài nhận xét tối đa.",
@@ -299,6 +303,10 @@
     "statement-where-no-leading-wildcard-like": {
       "title": "Cấm sử dụng ký tự đại diện hàng đầu trong điều kiện lọc",
       "description": "Khi sử dụng ký tự đại diện hàng đầu, chẳng hạn như \"THÍCH '%ABC'\", trình tối ưu hóa cơ sở dữ liệu không thể sử dụng tính năng quét chỉ mục nhanh và chuyển sang quét toàn bộ bảng hoặc quét chỉ mục đầy đủ, điều này có thể gây ra tác động nghiêm trọng đến hiệu suất. Mức độ lỗi đề xuất: Lỗi"
+    },
+    "statement-disallow-cascade": {
+      "title": "Cấm sử dụng \"CASCADE\"",
+      "description": "Cấm sử dụng \"CASCADE\" trong các mệnh đề \"DELETE\" và \"UPDATE\". Mức độ lỗi đề xuất: Lỗi"
     },
     "statement-disallow-commit": {
       "title": "Cấm tuyên bố \"COMMIT\" rõ ràng",
