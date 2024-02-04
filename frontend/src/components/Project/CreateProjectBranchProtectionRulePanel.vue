@@ -106,7 +106,6 @@ import {
 import { ComposedProject, PresetRoleType } from "@/types";
 import {
   ProtectionRule,
-  ProtectionRule_BranchSource,
   ProtectionRule_Target,
 } from "@/types/proto/v1/project_service";
 import { displayRoleTitle } from "@/utils";
@@ -141,7 +140,6 @@ const state = reactive<LocalState>({
     ProtectionRule.fromPartial({
       id: uuidv4(),
       target: ProtectionRule_Target.BRANCH,
-      branchSource: ProtectionRule_BranchSource.DATABASE,
     }),
   disallowAllRoles:
     !!props.protectionRule &&
