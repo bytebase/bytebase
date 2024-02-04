@@ -138,7 +138,7 @@
     "tailwindcss": "3.3.6",
     "ts-proto": "^1.165.1",
     "typescript": "5.3.3",
-    "unplugin-icons": "0.18.1",
+    "unplugin-icons": "0.18.3",
     "unplugin-vue-components": "0.25.2",
     "vite": "4.5.2",
     "vite-bundle-visualizer": "^1.0.1",
