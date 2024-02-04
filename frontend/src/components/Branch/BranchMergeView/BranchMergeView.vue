@@ -3,7 +3,6 @@
     <MaskSpinner v-if="state.isMerging" />
 
     <MergeBranchSelect
-      v-model:delete-branch-after-merged="state.deleteBranchAfterMerged"
       :project="project"
       :head-branch="headBranch"
       :target-branch="targetBranch"
@@ -45,20 +44,19 @@
     </div>
 
     <div class="flex flex-row justify-end items-center gap-x-3">
-      <NButton
-        type="primary"
-        :disabled="!allowConfirm || state.isMerging"
-        @click="handleMergeBranch"
-      >
-        {{ $t("common.confirm") }}
-      </NButton>
+      <MergeBranchButton
+        :button-props="{
+          type: 'primary',
+          disabled: !allowConfirm || state.isMerging,
+        }"
+        @perform-action="handleMergeBranch"
+      />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
-import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -69,13 +67,13 @@ import { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import BranchComparison from "../common/BranchComparison.vue";
+import MergeBranchButton from "./MergeBranchButton.vue";
 import MergeBranchSelect from "./MergeBranchSelect.vue";
 import MergeBranchValidationStateView from "./MergeBranchValidationStateView.vue";
-import { MergeBranchValidationState } from "./types";
+import { MergeBranchValidationState, PostMergeAction } from "./types";
 
 interface LocalState {
   targetBranchName: string | null;
-  deleteBranchAfterMerged: boolean;
   isMerging: boolean;
 }
 
@@ -96,7 +94,6 @@ const emit = defineEmits<{
 
 const state = reactive<LocalState>({
   targetBranchName: null,
-  deleteBranchAfterMerged: false,
   isMerging: false,
 });
 const { t } = useI18n();
@@ -184,7 +181,7 @@ const allowConfirm = computed(() => {
   );
 });
 
-const handleMergeBranch = async () => {
+const handleMergeBranch = async (post: PostMergeAction) => {
   const target = targetBranch.value;
   if (!target) return;
   const head = headBranch.value;
@@ -198,27 +195,46 @@ const handleMergeBranch = async () => {
       etag: "",
       validateOnly: false,
     });
-    if (state.deleteBranchAfterMerged) {
-      await branchStore.deleteBranch(head.name);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.deleted"),
-      });
-    }
 
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: t("branch.merge-rebase.merge-succeeded"),
     });
+    if (post === "DELETE") {
+      await branchStore.deleteBranch(head.name);
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("common.deleted"),
+      });
 
-    emit(
-      "merged",
-      mergedBranch,
-      head.name,
-      state.deleteBranchAfterMerged ? undefined : head
-    );
+      emit("merged", mergedBranch, head.name, undefined);
+      return;
+    }
+    if (post === "REBASE") {
+      await branchStore.deleteBranch(head.name);
+      const pendingRecreateBranch = Branch.fromPartial({});
+      if (head.parentBranch) {
+        pendingRecreateBranch.parentBranch = head.parentBranch;
+      } else {
+        pendingRecreateBranch.baselineDatabase = head.baselineDatabase;
+      }
+      const recreatedBranch = await branchStore.createBranch(
+        props.project.name,
+        head.branchId,
+        pendingRecreateBranch
+      );
+
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("branch.merge-rebase.rebase-succeeded"),
+      });
+      emit("merged", recreatedBranch, recreatedBranch.name, recreatedBranch);
+      return;
+    }
+    emit("merged", mergedBranch, head.name, head);
   } catch (error: any) {
     pushNotification({
       module: "bytebase",
