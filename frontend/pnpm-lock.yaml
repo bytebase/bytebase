@@ -48,8 +48,8 @@ dependencies:
     specifier: 1.4.7
     version: 1.4.7
   elkjs:
-    specifier: ^0.8.2
-    version: 0.8.2
+    specifier: ^0.9.1
+    version: 0.9.1
   emittery:
     specifier: ^1.0.1
     version: 1.0.1
@@ -3391,8 +3391,8 @@ packages:
     resolution: {integrity: sha512-/bKPPcgZVUziECqDc+0HkT87+0zhaWSZHNXqF8FLd2lQcptpmUFwoCSWjCdOng9Gdq+afKArPdEg/0ZW461Eng==}
     dev: true
 
-  /elkjs@0.8.2:
-    resolution: {integrity: sha512-L6uRgvZTH+4OF5NE/MBbzQx/WYpru1xCBE9respNj6qznEewGUIfhzmm7horWWxbNO2M0WckQypGctR8lH79xQ==}
+  /elkjs@0.9.1:
+    resolution: {integrity: sha512-JWKDyqAdltuUcyxaECtYG6H4sqysXSLeoXuGUBfRNESMTkj+w+qdb0jya8Z/WI0jVd03WQtCGhS6FOFtlhD5FQ==}
     dev: false
 
   /emitter@0.0.2:
