@@ -6595,7 +6595,7 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
 | branch_source | [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource) |  |  |
 
 
