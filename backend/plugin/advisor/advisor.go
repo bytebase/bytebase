@@ -343,6 +343,9 @@ const (
 	// PostgreSQLCollationAllowlist is an advisor type for PostgreSQL collation allowlist.
 	PostgreSQLCollationAllowlist Type = "bb.plugin.advisor.postgresql.collation.allowlist"
 
+	// PostgreSQLStatementDisallowCascade is an advisor type for PostgreSQL to disallow cascade.
+	PostgreSQLStatementDisallowCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-cascade"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
@@ -528,6 +531,9 @@ type Context struct {
 	CurrentDatabase string
 	// CurrentSchema is the current schema. Special for Oracle.
 	CurrentSchema string
+	// Statement is the original statement of AST, it is used for some PostgreSQL
+	// advisors which need to check the token stream.
+	Statements string
 }
 
 // Advisor is the interface for advisor.

@@ -37,6 +37,7 @@ const (
 	StatementAddColumnWithDefault    Code = 210
 	StatementAddCheckWithValidation  Code = 211
 	StatementAddNotNull              Code = 212
+	StatementDisallowCascade         Code = 213
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
