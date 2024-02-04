@@ -157,7 +157,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if err := s.checkProtectionRules(ctx, project, branchID, user); err != nil {
+	if err := s.checkProtectionRules(ctx, project, branchID, request.GetBranch().GetBaselineDatabase() != "", user); err != nil {
 		return nil, err
 	}
 
@@ -825,7 +825,7 @@ func (s *BranchService) checkBranchPermission(ctx context.Context, projectID str
 	return status.Errorf(codes.PermissionDenied, "permission denied")
 }
 
-func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, user *store.UserMessage) error {
+func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, databaseSource bool, user *store.UserMessage) error {
 	if len(project.Setting.GetProtectionRules()) == 0 {
 		return nil
 	}
@@ -847,12 +847,17 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 		if rule.Target != storepb.ProtectionRule_BRANCH {
 			continue
 		}
-		ok, err := path.Match(rule.NameFilter, branchID)
-		if err != nil {
-			return err
-		}
-		if !ok {
+		if rule.GetBranchSource() == storepb.ProtectionRule_DATABASE && !databaseSource {
 			continue
+		}
+		if rule.NameFilter != "" {
+			ok, err := path.Match(rule.NameFilter, branchID)
+			if err != nil {
+				return err
+			}
+			if !ok {
+				continue
+			}
 		}
 
 		for _, role := range rule.CreateAllowedRoles {
