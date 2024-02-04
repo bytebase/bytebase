@@ -103,6 +103,7 @@ export type RuleType =
   | "table.no-foreign-key"
   | "table.drop-naming-convention"
   | "table.disallow-partition"
+  | "table.disallow-trigger"
   | "table.comment"
   | "naming.table"
   | "naming.column"

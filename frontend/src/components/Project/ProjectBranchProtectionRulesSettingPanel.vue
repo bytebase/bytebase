@@ -16,7 +16,10 @@
       class="w-full flex flex-row justify-between items-center px-3 py-2 border border-b-0 last:border-b"
     >
       <NTag type="success" round>
-        {{ rule.nameFilter }}
+        <template v-if="rule.nameFilter">{{ rule.nameFilter }}</template>
+        <span v-else class="text-control-placeholder">
+          {{ $t("common.all") }}
+        </span>
       </NTag>
       <div class="flex flex-row justify-end items-center">
         <NButton text :disabled="!allowEdit" @click="handleEditRule(rule)">
@@ -53,6 +56,7 @@ import { ref } from "vue";
 import { useProjectBranchProtectionRules } from "@/store/modules/v1/projectProtectionRoles";
 import { ComposedProject } from "@/types";
 import { ProtectionRule } from "@/types/proto/v1/project_service";
+import CreateProjectBranchProtectionRulePanel from "./CreateProjectBranchProtectionRulePanel.vue";
 
 const props = defineProps<{
   project: ComposedProject;
