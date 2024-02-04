@@ -24,9 +24,9 @@ message ProtectionRule {
   // The name of the branch/changelist or wildcard.
   string name_filter = 3;
 
-  // The roles allowed to create branches or changelists.
-  // Format: roles/OWNER.
-  repeated string create_allowed_roles = 4;
+  // The roles allowed to create branches or changelists, rebase branches, delete branches.
+  // Format: roles/projectOwner.
+  repeated string allowed_roles = 4;
 
   enum BranchSource {
     BRANCH_SOURCE_UNSPECIFIED = 0;

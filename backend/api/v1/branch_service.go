@@ -348,15 +348,15 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 // MergeBranch merges a personal draft branch to the target branch.
 func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
-	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
+	projectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	baseProject, err := s.getProject(ctx, baseProjectID)
+	project, err := s.getProject(ctx, projectID)
 	if err != nil {
 		return nil, err
 	}
-	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
+	baseBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &baseBranchID, LoadFull: true})
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 			if baseBranch.CreatorID == user.ID {
 				return true, nil
 			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, baseProject.ResourceID)
+			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
 		}()
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
@@ -384,7 +384,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
 		}
-	} else if err := s.checkBranchPermission(ctx, baseProject.ResourceID); err != nil {
+	} else if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
 
@@ -454,7 +454,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		baseBranch.HeadSchema = baseBranchNewHeadSchema
 	} else {
 		if err := s.store.UpdateBranch(ctx, &store.UpdateBranchMessage{
-			ProjectID:  baseProject.ResourceID,
+			ProjectID:  project.ResourceID,
 			ResourceID: baseBranchID,
 			UpdaterID:  user.ID,
 			Head:       baseBranchNewHead,
@@ -462,13 +462,13 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 		}); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed update branch, error %v", err)
 		}
-		baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &baseProject.ResourceID, ResourceID: &baseBranchID})
+		baseBranch, err = s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &baseBranchID})
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	v1Branch, err := s.convertBranchToBranch(ctx, baseProject, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
+	v1Branch, err := s.convertBranchToBranch(ctx, project, baseBranch, v1pb.BranchView_BRANCH_VIEW_FULL)
 	if err != nil {
 		return nil, err
 	}
@@ -514,6 +514,9 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.PermissionDenied, "permission denied to rebase branch")
 		}
 	} else if err := s.checkBranchPermission(ctx, baseProject.ResourceID); err != nil {
+		return nil, err
+	}
+	if err := s.checkProtectionRules(ctx, baseProject, baseBranchID, baseBranch.Config.SourceDatabase != "", user); err != nil {
 		return nil, err
 	}
 
@@ -706,6 +709,9 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 	} else if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
 		return nil, err
 	}
+	if err := s.checkProtectionRules(ctx, project, branchID, branch.Config.SourceDatabase != "", user); err != nil {
+		return nil, err
+	}
 
 	if !request.Force {
 		childBranches, err := s.store.ListBranches(ctx, &store.FindBranchMessage{
@@ -860,7 +866,7 @@ func (s *BranchService) checkProtectionRules(ctx context.Context, project *store
 			}
 		}
 
-		for _, role := range rule.CreateAllowedRoles {
+		for _, role := range rule.AllowedRoles {
 			if _, ok := roles[role]; ok {
 				return nil
 			}
