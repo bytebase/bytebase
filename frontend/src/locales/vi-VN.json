@@ -3436,7 +3436,11 @@
       "before-merge": "Trước khi hợp nhất",
       "after-merge": "Sau khi hợp nhất",
       "before-rebase": "Trước khi nổi loạn",
-      "after-rebase": "Sau khi nổi loạn"
+      "after-rebase": "Sau khi nổi loạn",
+      "post-merge-action": {
+        "rebase": "Hợp nhất và rebase chi nhánh",
+        "delete": "Hợp nhất và xóa chi nhánh"
+      }
     },
     "source": {
       "baseline-version": "Phiên bản cơ bản",
@@ -3451,6 +3455,7 @@
     "visualized-schema": "Lược đồ trực quan",
     "schema-text": "Văn bản lược đồ",
     "baseline": "Đường cơ sở",
-    "head": "Cái đầu"
+    "head": "Cái đầu",
+    "show-diff-with-branch-baseline": "Hiển thị sự khác biệt với đường cơ sở của nhánh"
   }
 }

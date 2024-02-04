@@ -83,7 +83,7 @@
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
 import { reactive, computed } from "vue";
-import { usePageMode } from "@/store";
+import { useFilterStore, usePageMode } from "@/store";
 import { ComposedDatabase, ComposedProject, UNKNOWN_ID } from "@/types";
 import {
   filterDatabaseV1ByKeyword,
@@ -106,6 +106,7 @@ const props = defineProps<{
 }>();
 
 const pageMode = usePageMode();
+const { filter } = useFilterStore();
 
 const state = reactive<LocalState>({
   selectedDatabaseIds: new Set(),
@@ -163,6 +164,9 @@ const filteredDatabaseList = computed(() => {
     list = list.filter((db) => {
       return labels.some((kv) => db.labels[kv.key] === kv.value);
     });
+  }
+  if (filter.database) {
+    list = list.filter((db) => db.name === filter.database);
   }
   return list;
 });

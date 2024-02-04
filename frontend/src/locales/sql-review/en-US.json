@@ -304,6 +304,10 @@
       "title": "Prohibit using leading wildcard in filter conditions",
       "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
+    "statement-disallow-cascade": {
+      "title": "Prohibit using \"CASCADE\" option in DDL statements",
+      "description": "The \"CASCADE\" option can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    },
     "statement-disallow-commit": {
       "title": "Prohibit explicit \"COMMIT\" statement",
       "description": "In some cases, multiple statements are required to be included in a transaction committed by the system, in order to quickly rerun in case of partial failure. Therefore, explicit \"COMMIT\" is not allowed. Suggestion error level: Warning"

@@ -304,6 +304,10 @@
       "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
       "description": "Al usar comodines principales, como \"LIKE '%ABC'\", el optimizador de la base de datos no puede usar el escaneo de índice rápido y debe recurrir al escaneo completo de la tabla o del índice completo, lo que puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
     },
+    "statement-disallow-cascade": {
+      "title": "Prohibir el uso de la opción \"CASCADE\" en las declaraciones DDL",
+      "description": "La opción \"CASCADE\" puede causar cambios en cascada en las dependencias de los objetos de la base de datos, lo que puede causar un impacto grave en la aplicación. Nivel de sugerencia de error: Error"
+    },
     "statement-disallow-commit": {
       "title": "Prohibir la declaración explícita de \"COMMIT\"",
       "description": "En algunos casos, se requiere que varias declaraciones se incluyan en una transacción confirmada por el sistema, para poder volver a ejecutarse rápidamente en caso de fallo parcial. Por lo tanto, no se permite la declaración explícita de \"COMMIT\". Nivel de sugerencia de error: Advertencia"

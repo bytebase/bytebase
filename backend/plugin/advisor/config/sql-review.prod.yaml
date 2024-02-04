@@ -27,6 +27,8 @@ ruleList:
     level: ERROR
   - type: statement.disallow-commit
     level: ERROR
+  - type: statement.disallow-cascade
+    level: ERROR
   - type: statement.disallow-limit
     level: ERROR
   - type: statement.disallow-order-by

@@ -154,6 +154,7 @@
     - [Project](#bytebase-store-Project)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
+    - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
 - [store/role.proto](#store_role-proto)
@@ -2395,13 +2396,26 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
+| branch_source | [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-ProtectionRule-BranchSource"></a>
+
+### ProtectionRule.BranchSource
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
+
 
 
 <a name="bytebase-store-ProtectionRule-Target"></a>

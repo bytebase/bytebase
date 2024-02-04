@@ -69,6 +69,8 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
+	// SchemaRuleStatementDisallowCascade disallow using cascade in the issue.
+	SchemaRuleStatementDisallowCascade SQLReviewRuleType = "statement.disallow-cascade"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
 	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
@@ -707,6 +709,7 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 				Charset:         checkContext.Charset,
 				Collation:       checkContext.Collation,
 				AST:             ast,
+				Statements:      statements,
 				Rule:            rule,
 				Catalog:         finder,
 				Driver:          checkContext.Driver,
@@ -1325,6 +1328,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLIndexTotalNumberLimit, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
+		}
+	case SchemaRuleStatementDisallowCascade:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementDisallowCascade, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {

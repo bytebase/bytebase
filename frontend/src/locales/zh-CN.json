@@ -3429,7 +3429,11 @@
       "before-merge": "合并前",
       "after-merge": "合并后",
       "before-rebase": "rebase 前",
-      "after-rebase": "rebase 后"
+      "after-rebase": "rebase 后",
+      "post-merge-action": {
+        "rebase": "合并且同步分支",
+        "delete": "合并且删除分支"
+      }
     },
     "source": {
       "baseline-version": "基线版本",
@@ -3444,6 +3448,7 @@
     "visualized-schema": "可视化 Schema",
     "schema-text": "文本 Schema",
     "baseline": "基线",
-    "head": "当前"
+    "head": "当前",
+    "show-diff-with-branch-baseline": "显示与分支基线之间的差异"
   }
 }

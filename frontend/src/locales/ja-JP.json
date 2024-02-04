@@ -3434,7 +3434,11 @@
       "before-merge": "マージ前",
       "after-merge": "マージ後",
       "before-rebase": "リベース前",
-      "after-rebase": "リベース後"
+      "after-rebase": "リベース後",
+      "post-merge-action": {
+        "rebase": "ブランチをマージしてリベースする",
+        "delete": "ブランチのマージと削除"
+      }
     },
     "source": {
       "baseline-version": "ベースラインバージョン",
@@ -3449,6 +3453,7 @@
     "visualized-schema": "視覚化されたスキーマ",
     "schema-text": "スキーマテキスト",
     "baseline": "ベースライン",
-    "head": "頭"
+    "head": "頭",
+    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示"
   }
 }

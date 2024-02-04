@@ -4,7 +4,7 @@
 
 <script lang="ts" setup>
 import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import {
   useEnvironmentV1Store,
   useInstanceV1Store,
@@ -20,6 +20,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 
 const route = useRoute();
+const router = useRouter();
 const isLoading = ref<boolean>(true);
 
 const policyStore = usePolicyV1Store();
@@ -39,6 +40,8 @@ const prepareDatabases = async () => {
 };
 
 onMounted(async () => {
+  await router.isReady();
+
   // Prepare roles, workspace policies and settings first.
   await Promise.all([
     useRoleStore().fetchRoleList(),

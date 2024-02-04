@@ -33,6 +33,7 @@ import {
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
 import { customTheme } from "@/utils/customTheme";
+import { useFilterStore } from "./filter";
 import { useTabStore } from "./tab";
 import {
   useDBSchemaV1Store,
@@ -63,6 +64,7 @@ const defaultFactorList = (): StatefulFactor[] => {
 };
 
 export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
+  const { filter } = useFilterStore();
   const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
     "bb.sql-editor.tree-factor-list",
     defaultFactorList(),
@@ -102,9 +104,15 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     cloneDeep(factorListInLocalStorage.value)
   );
   const filteredDatabaseList = computed(() => {
-    if (selectedProject.value) {
+    if (filter.database) {
       return databaseList.value.filter((database) => {
-        return database.project === selectedProject.value?.name;
+        return database.name === filter.database;
+      });
+    }
+    if (filter.project || selectedProject.value) {
+      const projectName = filter.project ?? selectedProject.value?.name;
+      return databaseList.value.filter((database) => {
+        return database.project === projectName;
       });
     }
 
