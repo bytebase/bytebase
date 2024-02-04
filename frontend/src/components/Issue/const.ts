@@ -13,6 +13,7 @@ export const LocalizedSQLRuleErrorCodes = new Set<number>([
   SQLReviewPolicyErrorCode.STATEMENT_ADD_COLUMN_WITH_DEFAULT,
   SQLReviewPolicyErrorCode.STATEMENT_ADD_CHECK_WITH_VALIDATION,
   SQLReviewPolicyErrorCode.STATEMENT_ADD_NOT_NULL,
+  SQLReviewPolicyErrorCode.STATEMENT_DISALLOW_CASCADE,
   SQLReviewPolicyErrorCode.TABLE_NAMING_MISMATCH,
   SQLReviewPolicyErrorCode.COLUMN_NAMING_MISMATCH,
   SQLReviewPolicyErrorCode.INDEX_NAMING_MISMATCH,

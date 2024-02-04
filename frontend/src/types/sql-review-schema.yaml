@@ -118,6 +118,11 @@ ruleList:
       - OCEANBASE
       - MARIADB
     componentList: []
+  - type: statement.disallow-cascade
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+    componentList: []
   - type: statement.disallow-commit
     category: STATEMENT
     engineList:
