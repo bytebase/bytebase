@@ -3452,6 +3452,7 @@
     "visualized-schema": "Visualized Schema",
     "schema-text": "Schema Text",
     "baseline": "Baseline",
-    "head": "Head"
+    "head": "Head",
+    "show-diff-with-branch-baseline": "Show diff with branch baseline"
   }
 }

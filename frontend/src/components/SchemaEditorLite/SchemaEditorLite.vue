@@ -43,6 +43,7 @@ const props = defineProps<{
   branch?: Branch;
   loading?: boolean;
   diffWhenReady?: boolean;
+  disableDiffColoring?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
@@ -97,6 +98,7 @@ const context = provideSchemaEditorContext({
   resourceType: toRef(props, "resourceType"),
   readonly: toRef(props, "readonly"),
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
+  disableDiffColoring: toRef(props, "disableDiffColoring"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
   useAlgorithm(context);
