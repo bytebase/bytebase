@@ -106,6 +106,7 @@ export enum SQLReviewPolicyErrorCode {
   INSERT_USE_ORDER_BY_RAND = 1108,
   DISABLED_COLLATION = 1201,
   COMMENT_TOO_LONG = 1301,
+  CREATE_PROCEDURE = 1401,
 }
 
 export enum CompatibilityErrorCode {

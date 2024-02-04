@@ -443,6 +443,10 @@
           "title": "Độ dài bình luận tối đa"
         }
       }
+    },
+    "system-procedure-disallow": {
+      "title": "Cấm thực thi các thủ tục hệ thống",
+      "description": "Cấm thực thi các thủ tục hệ thống. Mức độ lỗi đề xuất: Lỗi"
     }
   },
   "level": {

@@ -444,11 +444,9 @@
         }
       }
     },
-    "level": {
-      "name": "Nivel de error",
-      "error": "Error",
-      "warning": "Advertencia",
-      "disabled": "Desactivado"
+    "system-procedure-disallow": {
+      "title": "Prohibir la ejecución de procedimientos del sistema",
+      "description": "Los procedimientos del sistema pueden realizar operaciones de alto riesgo, como la eliminación de datos, la modificación de la estructura de la base de datos, etc. Nivel de error sugerido: Error"
     }
   },
   "level": {
