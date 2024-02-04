@@ -939,8 +939,9 @@ func filterDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *storepb.D
 				Classification: table.Classification,
 				Comment:        table.Comment,
 				UserComment:    table.UserComment,
-				Collation:      table.Collation,
-				Engine:         table.Engine,
+				// For Display only.
+				Collation: table.Collation,
+				Engine:    table.Engine,
 			}
 			for _, column := range table.Columns {
 				filteredColumn := &storepb.ColumnMetadata{
