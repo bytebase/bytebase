@@ -141,7 +141,7 @@
     "unplugin-icons": "0.18.1",
     "unplugin-vue-components": "0.25.2",
     "vite": "4.5.2",
-    "vite-bundle-visualizer": "^0.11.0",
+    "vite-bundle-visualizer": "^1.0.1",
     "vitest": "1.0.4",
     "vue-i18n": "9.8.0",
     "vue-router": "4.2.4",
