@@ -135,8 +135,8 @@ dependencies:
     specifier: 1.8.0
     version: 1.8.0(jquery@3.7.1)(popper.js@1.16.1)(typescript@5.3.3)
   pinia:
-    specifier: 2.0.33
-    version: 2.0.33(typescript@5.3.3)(vue@3.3.12)
+    specifier: 2.1.7
+    version: 2.1.7(typescript@5.3.3)(vue@3.3.12)
   pouchdb:
     specifier: ^8.0.1
     version: 8.0.1
@@ -5041,12 +5041,12 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /pinia@2.0.33(typescript@5.3.3)(vue@3.3.12):
-    resolution: {integrity: sha512-HOj1yVV2itw6rNIrR2f7+MirGNxhORjrULL8GWgRwXsGSvEqIQ+SE0MYt6cwtpegzCda3i+rVTZM+AM7CG+kRg==}
+  /pinia@2.1.7(typescript@5.3.3)(vue@3.3.12):
+    resolution: {integrity: sha512-+C2AHFtcFqjPih0zpYuvof37SFxMQ7OEG2zV9jRI12i9BOy3YQVAHwdKtyyc8pDcDyIc33WCIsZaCFWU7WWxGQ==}
     peerDependencies:
       '@vue/composition-api': ^1.4.0
       typescript: '>=4.4.4'
-      vue: ^2.6.14 || ^3.2.0
+      vue: ^2.6.14 || ^3.3.0
     peerDependenciesMeta:
       '@vue/composition-api':
         optional: true
