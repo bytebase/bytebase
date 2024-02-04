@@ -255,6 +255,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 // if peer database task is not done
 // if the peer database task type is schemaUpdate.
 func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *store.ProjectMessage, createdDatabase *store.DatabaseMessage, peerDatabase *store.DatabaseMessage) {
+	if peerDatabase == nil {
+		return
+	}
 	if project.TenantMode != api.TenantModeTenant {
 		return
 	}
