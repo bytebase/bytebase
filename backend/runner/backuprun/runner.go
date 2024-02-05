@@ -490,7 +490,6 @@ func (r *Runner) ScheduleBackupTask(ctx context.Context, database *store.Databas
 		StageID:    createdStage.ID,
 		InstanceID: instance.UID,
 		DatabaseID: &database.UID,
-		Status:     api.TaskPendingApproval,
 		Type:       api.TaskDatabaseBackup,
 		Payload:    string(bytes),
 		CreatorID:  creatorID,
