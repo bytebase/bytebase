@@ -24,6 +24,14 @@ func TestValidateSQLForEditor(t *testing.T) {
 		},
 		{
 			sql: `explain    analyze select * from t`,
+			ans: true,
+		},
+		{
+			sql: `explain    analyze insert into t values (1)`,
+			ans: false,
+		},
+		{
+			sql: `EXPLAIN ANALYZE WITH cte1 AS (DELETE FROM t RETURNING id) SELECT * FROM cte1`,
 			ans: false,
 		},
 		{
