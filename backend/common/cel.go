@@ -284,7 +284,7 @@ func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
 	// but the expression can have more.
 	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 	if err != nil {
-		return false, errors.Wrapf(iss.Err(), "failed to construct program")
+		return false, errors.Wrapf(err, "failed to construct program")
 	}
 	vars, err := e.PartialVars(input)
 	if err != nil {
