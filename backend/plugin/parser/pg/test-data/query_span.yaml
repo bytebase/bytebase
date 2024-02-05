@@ -1,3 +1,75 @@
+- description: Test for SELECT partial FROM JOIN clause
+  statement: SELECT t1.*, t2.c, 0 FROM t1 JOIN t2 ON 1 = 1;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: a
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: b
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: c
+        - name: ?column?
+          sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   connectedDatabase: db

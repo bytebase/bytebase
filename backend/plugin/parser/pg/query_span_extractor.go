@@ -239,7 +239,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 		}
 		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
 		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
-			return nil, errors.Wrapf(err, "left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(leftQuerySpanResult))
+			return nil, errors.Errorf("left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(rightQuerySpanResult))
 		}
 		var result []base.QuerySpanResult
 		for i, leftSpanResult := range leftQuerySpanResult {
@@ -286,7 +286,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 				return nil, errors.Wrapf(err, "failed to convert column ref to column name def: %+v", fieldNode.ColumnRef.Fields)
 			}
 			if columnRef.ColumnName == "*" {
-				// SELECT * FROM ... case
+				// SELECT [x].* FROM ... case
 				if columnRef.Table.Name == "" {
 					var columns []base.QuerySpanResult
 					for _, tableSource := range fromFieldList {
@@ -295,13 +295,23 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 					result.Columns = append(result.Columns, columns...)
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
+					find := false
 					for _, tableSource := range fromFieldList {
 						if schemaName == "" || schemaName == tableSource.GetSchemaName() {
 							if tableName == tableSource.GetTableName() {
+								find = true
 								result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
 								break
 							}
 						}
+					}
+					if !find {
+						sources, ok := q.getAllTableColumnSources(schemaName, tableName)
+						if ok {
+							result.Columns = append(result.Columns, sources...)
+							break
+						}
+						return nil, errors.Errorf("failed to get all table column sources for schema: %s, table: %s", schemaName, tableName)
 					}
 				}
 			} else {
@@ -346,10 +356,12 @@ func (q *querySpanExtractor) extractTableSourceFromJoin(node *pgquery.Node_JoinE
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract span result from left join: %+v", node.JoinExpr.Larg)
 	}
+	q.tableSourcesFrom = append(q.tableSourcesFrom, leftTableSource)
 	rightTableSource, err := q.extractTableSourceFromNode(node.JoinExpr.Rarg)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract span result from right join: %+v", node.JoinExpr.Rarg)
 	}
+	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
 }
 
@@ -634,7 +646,18 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		if err != nil {
 			return base.SourceColumnSet{}, err
 		}
-		return q.getFieldColumnSource(extractSchemaTableColumnName(columnNameDef)), nil
+		schema, table, column := extractSchemaTableColumnName(columnNameDef)
+		sources, ok := q.getFieldColumnSource(schema, table, column)
+		if !ok {
+			return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+				Err:      errors.New("cannot find the column ref"),
+				Database: &q.connectedDB,
+				Schema:   &schema,
+				Table:    &table,
+				Column:   &column,
+			}
+		}
+		return sources, nil
 	case *pgquery.Node_AExpr:
 		var nodeList []*pgquery.Node
 		nodeList = append(nodeList, node.AExpr.Lexpr)
@@ -728,7 +751,50 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNodeList(list [
 	return result, nil
 }
 
-func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) base.SourceColumnSet {
+func (q *querySpanExtractor) getAllTableColumnSources(schemaName, tableName string) ([]base.QuerySpanResult, bool) {
+	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
+		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+			return nil, false
+		}
+		if tableName != "" && tableName != tableSource.GetTableName() {
+			return nil, false
+		}
+		// If the table name is empty, we should check if there are ambiguous fields,
+		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+
+		return tableSource.GetQuerySpanResult(), true
+	}
+
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
+			return sourceColumnSet, true
+		}
+	}
+
+	for _, tableSource := range q.tableSourcesFrom {
+		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
+			return sourceColumnSet, true
+		}
+	}
+
+	return []base.QuerySpanResult{}, false
+}
+
+func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldName string) (base.SourceColumnSet, bool) {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
 		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
 			return nil, false
@@ -764,17 +830,17 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 
 	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
 		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
-			return sourceColumnSet
+			return sourceColumnSet, true
 		}
 	}
 
 	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet
+			return sourceColumnSet, true
 		}
 	}
 
-	return base.SourceColumnSet{}
+	return base.SourceColumnSet{}, false
 }
 
 func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string) (base.TableSource, error) {
