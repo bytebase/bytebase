@@ -86,12 +86,11 @@ type tableData struct {
 	line                     int
 }
 
-// isReservedKeyword checks if the keyword is a reserved keyword.
-func isReservedKeyword(keyword string) bool {
-	upperKeyword := strings.ToUpper(keyword)
+// isKeyword checks if the keyword is a MySQL keyword.
+func isKeyword(suspect string) bool {
 	for _, item := range parser.Keywords56 {
-		if upperKeyword == item.Keyword {
-			return item.Reserved
+		if strings.EqualFold(suspect, item.Keyword) {
+			return true
 		}
 	}
 	return false

@@ -81,7 +81,7 @@ func (checker *namingIdentifierNoKeywordChecker) EnterIdentifier(ctx *mysql.Iden
 
 	// Remove backticks as possible.
 	identifier := trimBackTicks(textNode.GetText())
-	if isReservedKeyword(identifier) {
+	if isKeyword(identifier) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.NameIsKeywordIdentifier,
