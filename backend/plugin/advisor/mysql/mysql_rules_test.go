@@ -24,7 +24,7 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIDXNaming,
 		// advisor.SchemaRuleAutoIncrementColumnNaming enforce the auto_increment column name format.
 		advisor.SchemaRuleAutoIncrementColumnNaming,
-		// advisor.SchemaRuleIdentifierNoKeyword disallow reserved keyword as identifier.
+		// advisor.SchemaRuleIdentifierNoKeyword enforce the identifier no keyword.
 		advisor.SchemaRuleIdentifierNoKeyword,
 
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
