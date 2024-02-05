@@ -8,4 +8,5 @@ type ExplainStmt struct {
 	// Here we only support SELECT now.
 	// TODO(rebelice): support more.
 	Statement Node
+	Analyze   bool
 }
