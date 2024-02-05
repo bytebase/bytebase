@@ -1,0 +1,28 @@
+- statement: CREATE TABLE `t`(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: CREATE TABLE `ANALYZE`(id int);
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: 'Identifier "ANALYZE" is a keyword and should be avoided'
+      line: 1
+      details: ""
+- statement: |
+    CREATE TABLE t(
+      id int, 
+      `current_timestamp` int
+    );
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: 'Identifier "current_timestamp" is a keyword and should be avoided'
+      line: 3
+      details: ""

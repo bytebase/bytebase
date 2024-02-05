@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	parser "github.com/bytebase/mysql-parser"
 )
 
 type columnSet map[string]bool
@@ -82,4 +84,15 @@ type tableData struct {
 	defaultCurrentTimeCount  int
 	onUpdateCurrentTimeCount int
 	line                     int
+}
+
+// isReservedKeyword checks if the keyword is a reserved keyword.
+func isReservedKeyword(keyword string) bool {
+	upperKeyword := strings.ToUpper(keyword)
+	for _, item := range parser.Keywords56 {
+		if upperKeyword == item.Keyword {
+			return item.Reserved
+		}
+	}
+	return false
 }
