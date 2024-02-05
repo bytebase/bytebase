@@ -309,9 +309,15 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 						sources, ok := q.getAllTableColumnSources(schemaName, tableName)
 						if ok {
 							result.Columns = append(result.Columns, sources...)
-							break
+							find = true
 						}
-						return nil, errors.Errorf("failed to get all table column sources for schema: %s, table: %s", schemaName, tableName)
+					}
+					if !find {
+						return nil, &parsererror.ResourceNotFoundError{
+							Err:    errors.New("failed to find table to calculate asterisk"),
+							Schema: &schemaName,
+							Table:  &tableName,
+						}
 					}
 				}
 			} else {

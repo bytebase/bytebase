@@ -362,9 +362,25 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 					for _, tableSource := range fromFieldList {
 						sameDatabase := (field.WildCard.Schema.O == tableSource.GetDatabaseName() || (field.WildCard.Schema.O == "" && tableSource.GetDatabaseName() == q.connectedDB))
 						sameTable := field.WildCard.Table.O == tableSource.GetTableName()
+						find := false
 						if sameDatabase && sameTable {
 							result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
+							find = true
 							break
+						}
+						if !find {
+							sources, ok := q.getAllTableColumnSources(field.WildCard.Schema.O, field.WildCard.Table.O)
+							if ok {
+								result.Columns = append(result.Columns, sources...)
+								find = true
+							}
+						}
+						if !find {
+							return nil, &parsererror.ResourceNotFoundError{
+								Err:      errors.New("failed to find table to calculate asterisk"),
+								Database: &field.WildCard.Schema.O,
+								Table:    &field.WildCard.Table.O,
+							}
 						}
 					}
 				}
@@ -404,7 +420,17 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 
 	switch node := in.(type) {
 	case *tidbast.ColumnNameExpr:
-		return q.getFieldColumnSource(node.Name.Schema.O, node.Name.Table.O, node.Name.Name.O), nil
+		database, table, column := node.Name.Schema.O, node.Name.Table.O, node.Name.Name.O
+		sources, ok := q.getFieldColumnSource(database, table, column)
+		if !ok {
+			return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
+				Err:      errors.New("cannot find the column ref"),
+				Database: &database,
+				Table:    &table,
+				Column:   &column,
+			}
+		}
+		return sources, nil
 	case *tidbast.BinaryOperationExpr:
 		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.L, node.R})
 	case *tidbast.UnaryOperationExpr:
@@ -495,7 +521,54 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 	return base.SourceColumnSet{}, nil
 }
 
-func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) base.SourceColumnSet {
+func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName string) ([]base.QuerySpanResult, bool) {
+	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
+		if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
+			return nil, false
+		}
+		if databaseName == "" && tableSource.GetDatabaseName() != "" && tableSource.GetDatabaseName() != q.connectedDB {
+			return nil, false
+		}
+		if tableName != "" && tableName != tableSource.GetTableName() {
+			return nil, false
+		}
+		// If the table name is empty, we should check if there are ambiguous fields,
+		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+
+		return tableSource.GetQuerySpanResult(), true
+	}
+
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
+		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
+			return sourceColumnSet, true
+		}
+	}
+
+	for _, tableSource := range q.tableSourcesFrom {
+		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
+			return sourceColumnSet, true
+		}
+	}
+
+	return nil, false
+}
+
+func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, bool) {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
 		if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
 			return nil, false
@@ -535,17 +608,17 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
 		tableSource := q.outerTableSources[i]
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet
+			return sourceColumnSet, true
 		}
 	}
 
 	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet
+			return sourceColumnSet, true
 		}
 	}
 
-	return base.SourceColumnSet{}
+	return base.SourceColumnSet{}, false
 }
 
 func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, error) {
@@ -557,10 +630,13 @@ func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from left table")
 	}
+	q.tableSourcesFrom = append(q.tableSourcesFrom, leftTableSource)
 	rightTableSource, err := q.extractTableSourceFromNode(node.Right)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to extract table source from right table")
 	}
+	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
+	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
 }
 
