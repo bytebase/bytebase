@@ -199,7 +199,8 @@ const { runSQLCheck } = provideSQLCheckContext();
 const schemaDesignerRef = ref<InstanceType<typeof SchemaDesignEditorLite>>();
 const state = reactive<LocalState>({
   branchId: "",
-  showDiff: false,
+  // default true to child branches, default false to main branches
+  showDiff: props.dirtyBranch.parentBranch ? true : false, 
   isEditing: false,
   isEditingBranchId: false,
   isReverting: false,
