@@ -2042,11 +2042,35 @@ func TestExplainStmt(t *testing.T) {
 							},
 						},
 					},
+					Analyze: false,
 				},
 			},
 			statementList: []base.SingleSQL{
 				{
 					Text:     "EXPLAIN SELECT * FROM tech_book",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "EXPLAIN ANALYZE SELECT * FROM tech_book",
+			want: []ast.Node{
+				&ast.ExplainStmt{
+					Statement: &ast.SelectStmt{
+						SetOperation: ast.SetOperationTypeNone,
+						FieldList: []ast.ExpressionNode{
+							&ast.ColumnNameDef{
+								Table:      &ast.TableDef{},
+								ColumnName: "*",
+							},
+						},
+					},
+					Analyze: true,
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     "EXPLAIN ANALYZE SELECT * FROM tech_book",
 					LastLine: 1,
 				},
 			},
