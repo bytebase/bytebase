@@ -47,3 +47,31 @@ func (e *ResourceNotFoundError) Error() string {
 func (e *ResourceNotFoundError) Unwrap() error {
 	return e.Err
 }
+
+// TypeNotSupportedError is returned when a type is not supported in the
+// query span, for example, using a function as table source.
+type TypeNotSupportedError struct {
+	Err  error
+	Type string
+	Name string
+}
+
+func (e *TypeNotSupportedError) Error() string {
+	parts := []string{
+		fmt.Sprintf("type not supported: %s", e.Type),
+	}
+
+	if e.Err != nil {
+		parts = append(parts, fmt.Sprintf("err: %s", e.Err.Error()))
+	}
+
+	if e.Name != "" {
+		parts = append(parts, fmt.Sprintf("name: %s", e.Name))
+	}
+
+	return strings.Join(parts, ", ")
+}
+
+func (e *TypeNotSupportedError) Unwrap() error {
+	return e.Err
+}
