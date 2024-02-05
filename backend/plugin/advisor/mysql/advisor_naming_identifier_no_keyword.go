@@ -73,7 +73,7 @@ func (checker *namingIdentifierNoKeywordChecker) EnterIdentifier(ctx *mysql.Iden
 		return
 	}
 
-	// The keyword id should be wrapped in backquotes, otherwise a syntax error will be thrown before entering this checker.
+	// The suspect identifier should be always wrapped in backquotes, otherwise a syntax error will be thrown before entering this checker.
 	node := pureIdentifier.BACK_TICK_QUOTED_ID()
 	if node == nil {
 		return
