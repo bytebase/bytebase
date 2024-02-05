@@ -93,7 +93,6 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
@@ -193,23 +192,22 @@ const categoryAndTitle = (
 ): [string, string] => {
   if (checkResult.sqlReviewReport) {
     const code = checkResult.sqlReviewReport?.code ?? checkResult.code;
+    if (!code) {
+      return ["", checkResult.title];
+    }
     if (code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
       const title = messageWithCode(checkResult.title, code);
       return ["", title];
     }
-    if (LocalizedSQLRuleErrorCodes.has(code)) {
-      const rule = ruleTemplateMap.get(checkResult.title as RuleType);
-      if (rule) {
-        const ruleLocalization = getRuleLocalization(rule.type);
-        const key = `sql-review.category.${rule.category.toLowerCase()}`;
-        const category = t(key);
-        const title = messageWithCode(ruleLocalization.title, code);
-        return [category, title];
-      } else {
-        return ["", messageWithCode(checkResult.title, code)];
-      }
+    const rule = ruleTemplateMap.get(checkResult.title as RuleType);
+    if (rule) {
+      const ruleLocalization = getRuleLocalization(rule.type);
+      const key = `sql-review.category.${rule.category.toLowerCase()}`;
+      const category = t(key);
+      const title = messageWithCode(ruleLocalization.title, code);
+      return [category, title];
     }
-    return ["", checkResult.title];
+    return ["", messageWithCode(checkResult.title, code)];
   }
   if (checkResult.sqlSummaryReport) {
     if (typeof checkResult.sqlSummaryReport.affectedRows === "number") {
