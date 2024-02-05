@@ -74,13 +74,13 @@ func (checker *namingIdentifierNoKeywordChecker) EnterIdentifier(ctx *mysql.Iden
 	}
 
 	// The suspect identifier should be always wrapped in backquotes, otherwise a syntax error will be thrown before entering this checker.
-	node := pureIdentifier.BACK_TICK_QUOTED_ID()
-	if node == nil {
+	textNode := pureIdentifier.BACK_TICK_QUOTED_ID()
+	if textNode == nil {
 		return
 	}
 
 	// Remove backticks as possible.
-	identifier := trimBackTicks(node.GetText())
+	identifier := trimBackTicks(textNode.GetText())
 	if isReservedKeyword(identifier) {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
