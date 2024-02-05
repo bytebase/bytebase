@@ -35,9 +35,7 @@ type TaskMessage struct {
 	TaskRunRawList []*TaskRunMessage
 
 	// Domain specific fields
-	Name string
-	// Deprecated: use LatestTaskRunStatus instead.
-	Status            api.TaskStatus
+	Name              string
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedTs int64
@@ -100,18 +98,17 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			create.InstanceID,
 			create.DatabaseID,
 			create.Name,
-			create.Status,
 			create.Type,
 			create.Payload,
 			create.EarliestAllowedTs,
 		)
-		const count = 11
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10, i*count+11))
+		const count = 10
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
 		return nil, err
 	}
-	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts`); err != nil {
+	if _, err := query.WriteString(` RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts`); err != nil {
 		return nil, err
 	}
 
@@ -141,7 +138,6 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			&task.InstanceID,
 			&databaseID,
 			&task.Name,
-			&task.Status,
 			&task.Type,
 			&task.Payload,
 			&task.EarliestAllowedTs,
@@ -181,14 +177,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 	}
 	if v := find.DatabaseID; v != nil {
 		where, args = append(where, fmt.Sprintf("task.database_id = $%d", len(args)+1)), append(args, *v)
-	}
-	if v := find.StatusList; v != nil {
-		list := []string{}
-		for _, status := range *v {
-			list = append(list, fmt.Sprintf("$%d", len(args)+1))
-			args = append(args, status)
-		}
-		where = append(where, fmt.Sprintf("task.status in (%s)", strings.Join(list, ",")))
 	}
 	if v := find.LatestTaskRunStatusList; v != nil {
 		where = append(where, fmt.Sprintf("latest_task_run.status = ANY($%d)", len(args)+1))
@@ -231,7 +219,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			task.instance_id,
 			task.database_id,
 			task.name,
-			task.status,
 			latest_task_run.status AS latest_task_run_status,
 			task.type,
 			task.payload,
@@ -273,7 +260,6 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 			&task.InstanceID,
 			&task.DatabaseID,
 			&task.Name,
-			&task.Status,
 			&task.LatestTaskRunStatus,
 			&task.Type,
 			&task.Payload,
@@ -362,7 +348,7 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		UPDATE task
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, status, type, payload, earliest_allowed_ts
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, pipeline_id, stage_id, instance_id, database_id, name, type, payload, earliest_allowed_ts
 	`, len(args)),
 		args...,
 	).Scan(
@@ -376,7 +362,6 @@ func (s *Store) UpdateTaskV2(ctx context.Context, patch *api.TaskPatch) (*TaskMe
 		&task.InstanceID,
 		&task.DatabaseID,
 		&task.Name,
-		&task.Status,
 		&task.Type,
 		&task.Payload,
 		&task.EarliestAllowedTs,
