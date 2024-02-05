@@ -77,6 +77,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			instance_id,
 			database_id,
 			name,
+			status,
 			type,
 			payload,
 			earliest_allowed_ts
@@ -102,7 +103,7 @@ func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*
 			create.EarliestAllowedTs,
 		)
 		const count = 10
-		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10))
+		queryValues = append(queryValues, fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, 'PENDING_APPROVAL', $%d, $%d, $%d)", i*count+1, i*count+2, i*count+3, i*count+4, i*count+5, i*count+6, i*count+7, i*count+8, i*count+9, i*count+10))
 	}
 	if _, err := query.WriteString(strings.Join(queryValues, ",")); err != nil {
 		return nil, err
