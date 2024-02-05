@@ -321,7 +321,6 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 					Name:              fmt.Sprintf("Copied task for database %q from %q", createdDatabase.DatabaseName, peerDatabase.DatabaseName),
 					InstanceID:        task.InstanceID,
 					DatabaseID:        &createdDatabase.UID,
-					Status:            api.TaskPendingApproval,
 					Type:              task.Type,
 					EarliestAllowedTs: task.EarliestAllowedTs,
 					Payload:           task.Payload,
