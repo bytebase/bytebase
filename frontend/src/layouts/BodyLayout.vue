@@ -307,7 +307,6 @@ const version = computed(() => {
 });
 
 const gitCommit = computed(() => {
-  console.log("actuatorStore", actuatorStore);
   return `${actuatorStore.gitCommit.substring(0, 7)}`;
 });
 
