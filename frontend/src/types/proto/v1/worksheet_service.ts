@@ -18,8 +18,6 @@ export interface GetWorksheetRequest {
    * Format: worksheets/{worksheet}
    */
   name: string;
-  /** By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content. */
-  raw: boolean;
 }
 
 export interface UpdateWorksheetRequest {
@@ -156,8 +154,8 @@ export interface Worksheet {
     | undefined;
   /**
    * The content of the worksheet.
-   * By default, it will be cut off, if it doesn't match the `content_size`, you can
-   * set the `raw` to true in GetWorksheet request to retrieve the full content.
+   * By default, it will be cut off in SearchWorksheet() method. If it doesn't match the `content_size`, you can
+   * use GetWorksheet() request to retrieve the full content.
    */
   content: Uint8Array;
   /** content_size is the full size of the content, may not match the size of the `content` field. */
@@ -275,16 +273,13 @@ export const CreateWorksheetRequest = {
 };
 
 function createBaseGetWorksheetRequest(): GetWorksheetRequest {
-  return { name: "", raw: false };
+  return { name: "" };
 }
 
 export const GetWorksheetRequest = {
   encode(message: GetWorksheetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.raw === true) {
-      writer.uint32(16).bool(message.raw);
     }
     return writer;
   },
@@ -303,13 +298,6 @@ export const GetWorksheetRequest = {
 
           message.name = reader.string();
           continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.raw = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -320,19 +308,13 @@ export const GetWorksheetRequest = {
   },
 
   fromJSON(object: any): GetWorksheetRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      raw: isSet(object.raw) ? globalThis.Boolean(object.raw) : false,
-    };
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
   toJSON(message: GetWorksheetRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.raw === true) {
-      obj.raw = message.raw;
     }
     return obj;
   },
@@ -343,7 +325,6 @@ export const GetWorksheetRequest = {
   fromPartial(object: DeepPartial<GetWorksheetRequest>): GetWorksheetRequest {
     const message = createBaseGetWorksheetRequest();
     message.name = object.name ?? "";
-    message.raw = object.raw ?? false;
     return message;
   },
 };

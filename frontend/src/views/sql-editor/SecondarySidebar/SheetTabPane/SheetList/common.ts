@@ -1,7 +1,7 @@
 import { escape } from "lodash-es";
 import { TabInfo } from "@/types";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { extractSheetUID, getHighlightHTMLByRegExp } from "@/utils";
+import { extractWorksheetUID, getHighlightHTMLByRegExp } from "@/utils";
 
 export type TabItem = {
   type: "TAB";
@@ -25,7 +25,7 @@ export const domIDForItem = (item: MergedItem) => {
     return `bb-sheet-list-tab-${item.target.id}`;
   }
   // sheet
-  return `bb-sheet-list-sheet-${extractSheetUID(item.target.name)}`;
+  return `bb-sheet-list-sheet-${extractWorksheetUID(item.target.name)}`;
 };
 
 export const titleHTML = (item: MergedItem, keyword: string) => {
