@@ -150,13 +150,7 @@
             :readonly="true"
             :auto-height="{ min: 120, max: 480 }"
           />
-          <div
-            v-if="
-              getStatementSize(changeHistory.statement).ne(
-                changeHistory.statementSize
-              )
-            "
-          >
+          <div v-if="guessedIsBasicView">
             <NButton
               quaternary
               size="small"
@@ -458,28 +452,14 @@ watch(
         skipCache: false,
         view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
       }),
-      changeHistoryStore.fetchChangeHistory({
-        name: changeHistoryName.value,
-      }),
+      changeHistoryStore.getOrFetchChangeHistoryByName(
+        changeHistoryName.value,
+        ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+      ),
     ]);
   },
   { immediate: true }
 );
-
-const fetchFullHistory = async () => {
-  if (state.loading) {
-    return;
-  }
-  state.loading = true;
-  try {
-    await changeHistoryStore.getOrFetchChangeHistoryByName(
-      changeHistoryName.value,
-      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
-    );
-  } finally {
-    state.loading = false;
-  }
-};
 
 const switchShowDiff = async (showDiff: boolean) => {
   await fetchFullHistory();
@@ -525,10 +505,10 @@ const prevChangeHistoryList = computed(() => {
 // changeHistory is the latest migration NOW.
 const changeHistory = computed((): ChangeHistory | undefined => {
   if (prevChangeHistoryList.value.length > 0) {
-    const prev = prevChangeHistoryList.value[0];
-    return changeHistoryStore.getChangeHistoryByName(prev.name) || prev;
+    const current = prevChangeHistoryList.value[0];
+    return changeHistoryStore.getChangeHistoryByName(current.name) ?? current;
   }
-  return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value)!;
+  return changeHistoryStore.getChangeHistoryByName(changeHistoryName.value);
 });
 
 const changeHistorySchema = computed(() => {
@@ -536,11 +516,7 @@ const changeHistorySchema = computed(() => {
     return "";
   }
   let schema = changeHistory.value.schema;
-  if (
-    getStatementSize(changeHistory.value.schema).lt(
-      changeHistory.value.schemaSize
-    )
-  ) {
+  if (guessedIsBasicView.value) {
     schema = `${schema}${schema.endsWith("\n") ? "" : "\n"}...`;
   }
   return schema;
@@ -564,7 +540,39 @@ const changeHistoryStatement = computed(() => {
 // previousHistory is the last change history before the one of given id.
 // Only referenced if hasDrift is true.
 const previousHistory = computed((): ChangeHistory | undefined => {
-  return prevChangeHistoryList.value[1];
+  const prev = prevChangeHistoryList.value[1];
+  if (!prev) return undefined;
+  return changeHistoryStore.getChangeHistoryByName(prev.name) ?? prev;
+});
+
+const fetchFullPreviousHistory = async () => {
+  const prev = previousHistory.value;
+  if (!prev) return;
+  await changeHistoryStore.getOrFetchChangeHistoryByName(
+    prev.name,
+    ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+  );
+};
+const fetchFullHistory = async () => {
+  if (state.loading) {
+    return;
+  }
+  state.loading = true;
+  try {
+    await changeHistoryStore.getOrFetchChangeHistoryByName(
+      changeHistoryName.value,
+      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+    );
+    await fetchFullPreviousHistory();
+  } finally {
+    state.loading = false;
+  }
+};
+
+const guessedIsBasicView = computed(() => {
+  const history = changeHistory.value;
+  if (!history) return true;
+  return getStatementSize(history.statement).ne(history.statementSize);
 });
 
 // "Show diff" feature is enabled when current migration has changed the schema.
@@ -582,6 +590,9 @@ const hasDrift = computed((): boolean => {
     return false;
   }
   if (changeHistory.value.type === ChangeHistory_Type.BASELINE) {
+    return false;
+  }
+  if (guessedIsBasicView.value) {
     return false;
   }
 
@@ -677,6 +688,18 @@ const copySchema = async () => {
     });
   });
 };
+
+watch(
+  guessedIsBasicView,
+  (basic) => {
+    if (!basic) {
+      fetchFullPreviousHistory();
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 
 useTitle(changeHistory.value?.version || "Change History");
 </script>

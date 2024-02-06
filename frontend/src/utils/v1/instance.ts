@@ -228,6 +228,13 @@ export const instanceV1AllowsReorderColumns = (
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
+export const instanceV1SupportsConciseSchema = (
+  instanceOrEngine: Instance | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.ORACLE].includes(engine);
+};
+
 export const engineOfInstanceV1 = (instanceOrEngine: Instance | Engine) => {
   if (typeof instanceOrEngine === "number") {
     return instanceOrEngine;

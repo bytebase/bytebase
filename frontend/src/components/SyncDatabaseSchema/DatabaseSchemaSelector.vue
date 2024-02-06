@@ -72,9 +72,10 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis, NSelect, SelectOption } from "naive-ui";
-import { computed, h, onMounted, reactive, ref, watch } from "vue";
+import { computed, h, onMounted, reactive, watch } from "vue";
 import { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -90,7 +91,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistoryView,
@@ -98,6 +98,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractChangeHistoryUID,
+  instanceV1SupportsConciseSchema,
   mockLatestSchemaChangeHistory,
 } from "@/utils";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
@@ -110,7 +111,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (event: "update", state: LocalState): void;
+  (event: "update", state: ChangeHistorySourceSchema): void;
 }>();
 
 interface LocalState {
@@ -131,7 +132,6 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const environmentStore = useEnvironmentV1Store();
-const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 
 const database = computed(() => {
   const databaseId = state.databaseId;
@@ -147,16 +147,6 @@ const hasSyncSchemaFeature = computed(() => {
     database.value?.instanceEntity
   );
 });
-
-const prepareChangeHistoryList = async () => {
-  if (!database.value) {
-    return;
-  }
-
-  await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-    database.value.name
-  );
-};
 
 onMounted(async () => {
   if (props.selectState?.databaseId) {
@@ -179,31 +169,16 @@ onMounted(async () => {
   }
 });
 
-watch(() => state.databaseId, prepareChangeHistoryList);
-
-const prepareFullViewChangeHistory = async () => {
-  const changeHistory = state.changeHistory;
-  if (!changeHistory || changeHistory.uid === String(UNKNOWN_ID)) {
-    return;
+const fullViewChangeHistory = computedAsync(async () => {
+  const name = state.changeHistory?.name;
+  if (!name) {
+    return undefined;
   }
-
-  const cache = fullViewChangeHistoryCache.value.get(changeHistory.name);
-  if (!cache) {
-    const fullViewChangeHistory = await changeHistoryStore.fetchChangeHistory({
-      name: changeHistory.name,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
-    });
-    fullViewChangeHistoryCache.value.set(
-      fullViewChangeHistory.name,
-      fullViewChangeHistory
-    );
-  }
-};
-
-watch(() => state.changeHistory, prepareFullViewChangeHistory, {
-  immediate: true,
-  deep: true,
-});
+  return changeHistoryStore.getOrFetchChangeHistoryByName(
+    name,
+    ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+  );
+}, undefined);
 
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
@@ -369,7 +344,10 @@ const handleSchemaVersionSelect = async (
     state.showFeatureModal = true;
     return;
   }
-  if (database.value?.instanceEntity.engine === Engine.ORACLE) {
+  if (
+    database.value &&
+    instanceV1SupportsConciseSchema(database.value.instanceEntity)
+  ) {
     const conciseHistory = await changeHistoryStore.fetchChangeHistory({
       name: changeHistory.name,
       view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
@@ -410,8 +388,8 @@ watch(
         state.changeHistory = mockLatestSchemaChangeHistory(database, schema);
         const conciseSchema = await databaseStore.fetchDatabaseSchema(
           `${database.name}/schema`,
-          false,
-          true
+          /* sdlFormat */ false,
+          /* concise */ instanceV1SupportsConciseSchema(database.instanceEntity)
         );
         state.conciseHistory = conciseSchema.schema;
       }
@@ -422,18 +400,35 @@ watch(
 );
 
 watch(
-  () => [state, fullViewChangeHistoryCache.value],
-  () => {
-    const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
-      state.changeHistory?.name || ""
-    );
-    emit("update", {
-      ...state,
-      changeHistory: fullViewChangeHistory || state.changeHistory,
-      conciseHistory: state.conciseHistory,
-    });
+  [
+    () => state.projectId,
+    () => state.environmentId,
+    () => state.databaseId,
+    () => state.changeHistory,
+    fullViewChangeHistory,
+    () => state.conciseHistory,
+  ],
+  ([
+    projectId,
+    environmentId,
+    databaseId,
+    basicViewChangeHistory,
+    fullViewChangeHistory,
+    conciseHistory,
+  ]) => {
+    const changeHistory = fullViewChangeHistory ?? basicViewChangeHistory;
+    const params: ChangeHistorySourceSchema = {
+      projectId,
+      environmentId,
+      databaseId,
+      changeHistory,
+      conciseHistory,
+    };
+    emit("update", params);
   },
-  { deep: true }
+  {
+    immediate: true,
+  }
 );
 </script>
 
