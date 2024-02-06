@@ -601,6 +601,15 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 				return nil, err
 			}
 		}
+		for _, option := range in.ExplainStmt.Options {
+			switch option := option.Node.(type) {
+			case *pgquery.Node_DefElem:
+				if option.DefElem.Defname == "analyze" {
+					explainStmt.Analyze = true
+				}
+			default:
+			}
+		}
 		return explainStmt, nil
 	case *pgquery.Node_InsertStmt:
 		insertStmt := &ast.InsertStmt{
@@ -820,6 +829,8 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 		if in.TransactionStmt.Kind == pgquery.TransactionStmtKind_TRANS_STMT_COMMIT {
 			return &ast.CommitStmt{}, nil
 		}
+	case *pgquery.Node_VariableSetStmt:
+		return &ast.VariableSetStmt{}, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
