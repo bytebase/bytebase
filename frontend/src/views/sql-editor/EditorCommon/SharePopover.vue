@@ -143,10 +143,13 @@ const isShowAccessPopover = ref(false);
 
 const updateSheet = () => {
   if (sheet.value) {
-    worksheetV1Store.patchSheet({
-      name: sheet.value.name,
-      visibility: currentAccess.value.value,
-    });
+    worksheetV1Store.patchSheet(
+      {
+        name: sheet.value.name,
+        visibility: currentAccess.value.value,
+      },
+      ["visibility"]
+    );
   }
 };
 

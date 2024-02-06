@@ -125,7 +125,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+		return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
@@ -143,7 +143,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		} else {
 			schema = database.DatabaseName
 		}
-		return reportForOracle(database.DatabaseName, schema, renderedStatement)
+		return reportForOracle(database.DatabaseName, schema, renderedStatement, dbSchema)
 	default:
 		return []*storepb.PlanCheckRunResult_Result{
 			{
@@ -282,7 +282,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					defer driver.Close(ctx)
 					sqlDB := driver.GetDB()
 
-					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema.GetMetadata())
+					return reportForPostgres(ctx, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
 				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 					driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 					if err != nil {
@@ -300,7 +300,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 					} else {
 						schema = database.DatabaseName
 					}
-					return reportForOracle(database.DatabaseName, schema, renderedStatement)
+					return reportForOracle(database.DatabaseName, schema, renderedStatement, dbSchema)
 				default:
 					return nil, nil
 				}
@@ -334,7 +334,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	return results, nil
 }
 
-func reportForOracle(databaseName string, schemaName string, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForOracle(databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_ORACLE, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -377,7 +377,7 @@ func reportForOracle(databaseName string, schemaName string, statement string) (
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   nil,
 					AffectedRows:     0,
-					ChangedResources: convertToChangedResources(changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
 				},
 			},
 		},
@@ -456,7 +456,7 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
 				},
 			},
 		},
@@ -472,7 +472,7 @@ func isDML(tp string) bool {
 	}
 }
 
-func convertToChangedResources(resources []base.SchemaResource) *storepb.ChangedResources {
+func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.SchemaResource) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
 	// resources is ordered by (db, schema, table)
 	for _, resource := range resources {
@@ -484,12 +484,19 @@ func convertToChangedResources(resources []base.SchemaResource) *storepb.Changed
 			database.Schemas = append(database.Schemas, &storepb.ChangedResourceSchema{Name: resource.Schema})
 		}
 		schema := database.Schemas[len(database.Schemas)-1]
-		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{Name: resource.Table})
+		var tableRows int64
+		if dbMetadata != nil && dbMetadata.GetDatabaseMetadata() != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema) != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table) != nil {
+			tableRows = dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
+		}
+		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{
+			Name:      resource.Table,
+			TableRows: tableRows,
+		})
 	}
 	return meta
 }
 
-func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *storepb.DatabaseSchemaMetadata) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -524,7 +531,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 		sqlTypeSet[sqlType] = struct{}{}
 		changedResources = append(changedResources, resources...)
 
-		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata, stmt)
+		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), stmt)
 		if err != nil {
 			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
 		} else {
@@ -546,7 +553,7 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database, statement s
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
 				},
 			},
 		},

@@ -423,6 +423,7 @@
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [DatabaseGroupView](#bytebase-v1-DatabaseGroupView)
     - [OperatorType](#bytebase-v1-OperatorType)
+    - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
     - [SchemaChange](#bytebase-v1-SchemaChange)
     - [SchemaGroupView](#bytebase-v1-SchemaGroupView)
@@ -2628,6 +2629,7 @@ ColumnMetadata is the metadata for columns.
 | default_null | [bool](#bool) |  |  |
 | default_string | [string](#string) |  |  |
 | default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
@@ -6593,7 +6595,8 @@ When paginating, all other parameters provided to `ListSchemaGroups` must match 
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
+| branch_source | [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource) |  |  |
 
 
 
@@ -7040,6 +7043,18 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | OPERATOR_TYPE_UNSPECIFIED | 0 | The operator is not specified. |
 | OPERATOR_TYPE_IN | 1 | The operator is &#34;In&#34;. |
 | OPERATOR_TYPE_EXISTS | 2 | The operator is &#34;Exists&#34;. |
+
+
+
+<a name="bytebase-v1-ProtectionRule-BranchSource"></a>
+
+### ProtectionRule.BranchSource
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
 
 
 
@@ -9557,7 +9572,8 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | statement | [string](#string) |  |  |
-| database | [string](#string) |  | Format: instances/{instance}/databases/{databaseName} |
+| database | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{databaseName} |
+| metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
 
 
 
@@ -9895,7 +9911,6 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the worksheet to retrieve. Format: worksheets/{worksheet} |
-| raw | [bool](#bool) |  | By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content. |
 
 
 
@@ -9988,7 +10003,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | creator | [string](#string) |  | The creator of the Worksheet. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the worksheet. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the worksheet. |
-| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetWorksheet request to retrieve the full content. |
+| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off in SearchWorksheet() method. If it doesn&#39;t match the `content_size`, you can use GetWorksheet() request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | visibility | [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility) |  |  |
 | starred | [bool](#bool) |  | starred indicates whether the worksheet is starred by the current authenticated user. |

@@ -30,4 +30,7 @@ message ChangedResourceSchema {
 
 message ChangedResourceTable {
   string name = 1;
+
+  // estimated row count of the table
+  int64 table_rows = 2;
 }

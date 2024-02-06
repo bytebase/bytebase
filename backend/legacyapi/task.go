@@ -266,8 +266,7 @@ type TaskFind struct {
 	DatabaseID *int
 
 	// Domain specific fields
-	StatusList *[]TaskStatus
-	TypeList   *[]TaskType
+	TypeList *[]TaskType
 	// Payload contains JSONB expressions
 	// Ref: https://www.postgresql.org/docs/current/functions-json.html
 	Payload         string

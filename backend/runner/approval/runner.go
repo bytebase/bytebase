@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"math"
-	"reflect"
 	"sort"
 	"sync"
 	"time"
@@ -16,6 +14,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/encoding/protojson"
+
+	celtypes "github.com/google/cel-go/common/types"
 
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
@@ -26,10 +26,8 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/runner/relay"
-	"github.com/bytebase/bytebase/backend/utils"
-
 	"github.com/bytebase/bytebase/backend/store"
-
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -328,19 +326,14 @@ func getApprovalTemplate(approvalSetting *storepb.WorkspaceApprovalSetting, risk
 			return nil, errors.Wrap(err, "failed to compile expression")
 		}
 
-		res, _, err := prg.Eval(map[string]any{
+		out, _, err := prg.Eval(map[string]any{
 			"level":  riskLevel,
 			"source": int64(convertToSource(riskSource)),
 		})
 		if err != nil {
 			return nil, err
 		}
-
-		val, err := res.ConvertToNative(reflect.TypeOf(false))
-		if err != nil {
-			return nil, errors.Wrap(err, "expect bool result")
-		}
-		if boolVal, ok := val.(bool); ok && boolVal {
+		if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 			return rule.Template, nil
 		}
 	}
@@ -503,7 +496,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 					if issues != nil && issues.Err() != nil {
 						return 0, errors.Errorf("failed to parse expression: %v", issues.Err())
 					}
-					prg, err := e.Program(ast)
+					prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 					if err != nil {
 						return 0, err
 					}
@@ -512,9 +505,19 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 						"project_id":     issue.Project.ResourceID,
 						"database_name":  databaseName,
 						// convert to string type otherwise cel-go will complain that storepb.Engine is not string type.
-						"db_engine":     instance.Engine.String(),
-						"sql_type":      "UNKNOWN",
-						"affected_rows": math.MaxInt32,
+						"db_engine": instance.Engine.String(),
+					}
+
+					vars, err := e.PartialVars(args)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to get vars")
+					}
+					out, _, err := prg.Eval(vars)
+					if err != nil {
+						return 0, errors.Wrapf(err, "failed to eval expression")
+					}
+					if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
+						return risk.Level, nil
 					}
 
 					if run, ok := latestPlanCheckRun[Key{
@@ -526,36 +529,27 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, licenseSer
 							if report == nil {
 								continue
 							}
+							var tableRows int64
+							for _, db := range report.GetChangedResources().GetDatabases() {
+								for _, sc := range db.GetSchemas() {
+									for _, tb := range sc.GetTables() {
+										tableRows += tb.GetTableRows()
+									}
+								}
+							}
 							args["affected_rows"] = report.AffectedRows
+							args["table_rows"] = tableRows
 							for _, statementType := range report.StatementTypes {
 								args["sql_type"] = statementType
-								res, _, err := prg.Eval(args)
+								out, _, err := prg.Eval(args)
 								if err != nil {
 									return 0, err
 								}
-								val, err := res.ConvertToNative(reflect.TypeOf(false))
-								if err != nil {
-									return 0, errors.Wrap(err, "expect bool result")
-								}
-								if boolVal, ok := val.(bool); ok && boolVal {
+								if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 									return risk.Level, nil
 								}
 							}
 						}
-					}
-
-					args["sql_type"] = "UNKNOWN"
-					args["affected_rows"] = math.MaxInt32
-					res, _, err := prg.Eval(args)
-					if err != nil {
-						return 0, err
-					}
-					val, err := res.ConvertToNative(reflect.TypeOf(false))
-					if err != nil {
-						return 0, errors.Wrap(err, "expect bool result")
-					}
-					if boolVal, ok := val.(bool); ok && boolVal {
-						return risk.Level, nil
 					}
 				}
 				return 0, nil
@@ -683,16 +677,11 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"export_rows":     factors.ExportRows,
 					"expiration_days": expirationDays,
 				}
-				res, _, err := prg.Eval(args)
+				out, _, err := prg.Eval(args)
 				if err != nil {
 					return 0, store.RiskSourceUnknown, false, err
 				}
-
-				val, err := res.ConvertToNative(reflect.TypeOf(false))
-				if err != nil {
-					return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "expect bool result")
-				}
-				if boolVal, ok := val.(bool); ok && boolVal {
+				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 					if risk.Level > maxRisk {
 						maxRisk = risk.Level
 					}
@@ -714,16 +703,11 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 					"db_engine":       instance.Engine.String(),
 					"expiration_days": expirationDays,
 				}
-				res, _, err := prg.Eval(args)
+				out, _, err := prg.Eval(args)
 				if err != nil {
 					return 0, store.RiskSourceUnknown, false, err
 				}
-
-				val, err := res.ConvertToNative(reflect.TypeOf(false))
-				if err != nil {
-					return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "expect bool result")
-				}
-				if boolVal, ok := val.(bool); ok && boolVal {
+				if res, ok := out.Equal(celtypes.True).Value().(bool); ok && res {
 					if risk.Level > maxRisk {
 						maxRisk = risk.Level
 					}

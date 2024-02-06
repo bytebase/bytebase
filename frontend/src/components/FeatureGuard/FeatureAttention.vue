@@ -70,10 +70,16 @@ const state = reactive<LocalState>({
   showQRCodeModal: false,
 });
 
-const hasPermission = hasWorkspacePermissionV2(
-  useCurrentUserV1().value,
-  "bb.settings.set"
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2(useCurrentUserV1().value, "bb.settings.set")
 );
+
+const canManageInstanceLicense = computed((): boolean => {
+  return hasWorkspacePermissionV2(
+    useCurrentUserV1().value,
+    "bb.instances.update"
+  );
+});
 
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
@@ -87,11 +93,14 @@ const instanceMissingLicense = computed(() => {
 });
 
 const actionText = computed(() => {
-  if (!hasPermission) {
-    return "";
-  }
   if (instanceMissingLicense.value) {
+    if (!canManageInstanceLicense.value) {
+      return "";
+    }
     return t("subscription.instance-assignment.assign-license");
+  }
+  if (!hasPermission.value) {
+    return "";
   }
   if (!subscriptionStore.canTrial) {
     return t("subscription.upgrade");

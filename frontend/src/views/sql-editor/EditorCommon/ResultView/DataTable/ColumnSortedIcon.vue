@@ -1,10 +1,18 @@
 <template>
-  <template v-if="isSorted">
-    <span class="w-4 h-auto opacity-80 ml-0.5">
-      <ArrowDownWideNarrow v-if="isSorted === 'asc'" class="w-full h-auto" />
-      <ArrowUpWideNarrow v-else class="w-full h-auto" />
-    </span>
-  </template>
+  <span class="w-4 h-auto opacity-80 ml-1">
+    <ArrowUpWideNarrow
+      v-if="isSorted === 'desc'"
+      class="w-full h-auto text-accent"
+    />
+    <ArrowDownWideNarrow
+      v-else
+      :class="[
+        'w-full h-auto',
+        !isSorted && ' text-gray-300',
+        !!isSorted && 'text-accent',
+      ]"
+    />
+  </span>
 </template>
 
 <script lang="ts" setup>

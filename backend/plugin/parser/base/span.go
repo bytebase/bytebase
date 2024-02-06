@@ -28,8 +28,10 @@ func MergeSourceColumnSet(m, n SourceColumnSet) (SourceColumnSet, bool) {
 // QuerySpan is the span for a query.
 type QuerySpan struct {
 	// Results are the result columns of a query span.
+	// Currently, SourceColumns in the QuerySpanResult are only for the fields in the Query.
 	Results []QuerySpanResult
 	// SourceColumns are the source columns contributing to the span.
+	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
 	SourceColumns SourceColumnSet
 }
 
@@ -110,6 +112,43 @@ func (*PseudoTable) GetServerName() string {
 }
 
 func (p *PseudoTable) GetQuerySpanResult() []QuerySpanResult {
+	return p.Columns
+}
+
+// PhysicalView is the resource of a physical view, which can be refer with schema name,
+// and its columns can refer to the columns of the underlying tables.
+type PhysicalView struct {
+	baseTableSource
+
+	// Server is the normalized server name, it's empty if the column comes from the connected server.
+	Server string
+	// Database is the normalized database name, it should not be empty.
+	Database string
+	// Schema is the normalized schema name, it should not be empty for the engines that support schema, and should be empty for the engines that don't support schema.
+	Schema string
+	// Name is the normalized table name, it should not be empty.
+	Name string
+	// Columns are the columns of the table.
+	Columns []QuerySpanResult
+}
+
+func (p *PhysicalView) GetTableName() string {
+	return p.Name
+}
+
+func (p *PhysicalView) GetSchemaName() string {
+	return p.Schema
+}
+
+func (p *PhysicalView) GetDatabaseName() string {
+	return p.Database
+}
+
+func (p *PhysicalView) GetServerName() string {
+	return p.Server
+}
+
+func (p *PhysicalView) GetQuerySpanResult() []QuerySpanResult {
 	return p.Columns
 }
 

@@ -36,9 +36,19 @@ func validateQuery(statement string) (bool, error) {
 	if err != nil {
 		return false, convertToSyntaxError(statement, err)
 	}
+
+	explainAnalyze := false
 	for _, stmt := range stmtList {
-		switch stmt.(type) {
-		case *ast.SelectStmt, *ast.ExplainStmt, *ast.VariableSetStmt:
+		switch stmt := stmt.(type) {
+		case *ast.SelectStmt, *ast.VariableSetStmt:
+		case *ast.ExplainStmt:
+			if stmt.Analyze {
+				// We only support analyze select, because analyze will actually execute the statement.
+				if _, ok := stmt.Statement.(*ast.SelectStmt); !ok {
+					return false, nil
+				}
+				explainAnalyze = true
+			}
 		default:
 			return false, nil
 		}
@@ -52,27 +62,9 @@ func validateQuery(statement string) (bool, error) {
 	}
 
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
-	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
-		return true, nil
-	}
-
-	if isSelect, _ := regexp.MatchString(`^SELECT\*\s+?`, formattedStr); isSelect {
-		return true, nil
-	}
-
-	if isExplain, _ := regexp.MatchString(`^EXPLAIN\s+?`, formattedStr); isExplain {
-		if isExplainAnalyze, _ := regexp.MatchString(`^EXPLAIN\s+ANALYZE\s+?`, formattedStr); isExplainAnalyze {
-			return false, nil
-		}
-		return true, nil
-	}
-
-	if isVariableSet, _ := regexp.MatchString(`^SET\s+?`, formattedStr); isVariableSet {
-		return true, nil
-	}
 
 	cteRegex := regexp.MustCompile(`^WITH\s+?`)
-	if matchResult := cteRegex.MatchString(formattedStr); matchResult {
+	if matchResult := cteRegex.MatchString(formattedStr); matchResult || explainAnalyze {
 		var jsonData map[string]any
 
 		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
@@ -85,7 +77,7 @@ func validateQuery(statement string) (bool, error) {
 		return !keyExistsInJSONData(jsonData, dmlKeyList), nil
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {

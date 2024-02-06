@@ -56,6 +56,10 @@
       "title": "Prohibir el uso de tablas particionadas",
       "description": "En algunos motores de base de datos, las tablas particionadas no están maduras y el uso y mantenimiento son incómodos. Por lo tanto, es más propenso a utilizar métodos manuales de partición de datos como la fragmentación de bases de datos y tablas. Nivel de sugerencia de error: Advertencia"
     },
+    "table-disallow-trigger": {
+      "title": "Prohibir el uso de desencadenadores en tablas",
+      "description": "Los desencadenadores pueden hacer que el flujo de control sea difícil de seguir y aumentar la complejidad del sistema. En lugar de usar desencadenadores, se recomienda utilizar la lógica de la aplicación para realizar operaciones de base de datos. Nivel de sugerencia de error: Advertencia"
+    },
     "table-comment": {
       "title": "Convención de comentarios de tabla",
       "description": "Configure si la tabla requiere comentarios y la longitud máxima de comentarios.",
@@ -300,6 +304,10 @@
       "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
       "description": "Al usar comodines principales, como \"LIKE '%ABC'\", el optimizador de la base de datos no puede usar el escaneo de índice rápido y debe recurrir al escaneo completo de la tabla o del índice completo, lo que puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
     },
+    "statement-disallow-cascade": {
+      "title": "Prohibir el uso de la opción \"CASCADE\" en las declaraciones DDL",
+      "description": "La opción \"CASCADE\" puede causar cambios en cascada en las dependencias de los objetos de la base de datos, lo que puede causar un impacto grave en la aplicación. Nivel de sugerencia de error: Error"
+    },
     "statement-disallow-commit": {
       "title": "Prohibir la declaración explícita de \"COMMIT\"",
       "description": "En algunos casos, se requiere que varias declaraciones se incluyan en una transacción confirmada por el sistema, para poder volver a ejecutarse rápidamente en caso de fallo parcial. Por lo tanto, no se permite la declaración explícita de \"COMMIT\". Nivel de sugerencia de error: Advertencia"
@@ -436,11 +444,9 @@
         }
       }
     },
-    "level": {
-      "name": "Nivel de error",
-      "error": "Error",
-      "warning": "Advertencia",
-      "disabled": "Desactivado"
+    "system-procedure-disallow": {
+      "title": "Prohibir la ejecución de procedimientos del sistema",
+      "description": "Los procedimientos del sistema pueden realizar operaciones de alto riesgo, como la eliminación de datos, la modificación de la estructura de la base de datos, etc. Nivel de error sugerido: Error"
     }
   },
   "level": {

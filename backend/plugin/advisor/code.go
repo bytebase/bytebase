@@ -37,6 +37,7 @@ const (
 	StatementAddColumnWithDefault    Code = 210
 	StatementAddCheckWithValidation  Code = 211
 	StatementAddNotNull              Code = 212
+	StatementDisallowCascade         Code = 213
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -97,6 +98,7 @@ const (
 	TableExists                       Code = 607
 	CreateTablePartition              Code = 608
 	TableIsReferencedByView           Code = 609
+	CreateTableTrigger                Code = 610
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -137,6 +139,9 @@ const (
 
 	// 1301 ~ 1399 comment error code.
 	CommentTooLong Code = 1301
+
+	// 1401 ~ 1499 procedure error code.
+	DisallowProcedure Code = 1401
 )
 
 // Int returns the int type of code.

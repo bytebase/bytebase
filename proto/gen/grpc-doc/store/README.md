@@ -154,6 +154,7 @@
     - [Project](#bytebase-store-Project)
     - [ProtectionRule](#bytebase-store-ProtectionRule)
   
+    - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
     - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
 - [store/role.proto](#store_role-proto)
@@ -602,6 +603,7 @@ ColumnMetadata is the metadata for columns.
 | default | [google.protobuf.StringValue](#google-protobuf-StringValue) |  | The default is the default of a column. Use google.protobuf.StringValue to distinguish between an empty string default value or no default. |
 | default_null | [bool](#bool) |  |  |
 | default_expression | [string](#string) |  |  |
+| on_update | [string](#string) |  | The on_update is the on update action of a column. For MySQL like databases, it&#39;s only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value. |
 | nullable | [bool](#bool) |  | The nullable is the nullable of a column. |
 | type | [string](#string) |  | The type is the type of a column. |
 | character_set | [string](#string) |  | The character_set is the character_set of a column. |
@@ -1670,6 +1672,7 @@ InstanceOptions is the option for instances.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
+| table_rows | [int64](#int64) |  | estimated row count of the table |
 
 
 
@@ -2393,13 +2396,26 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | id | [string](#string) |  | A unique identifier for a node in UUID format. |
 | target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
 | name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| create_allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists. Format: roles/OWNER. |
+| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
+| branch_source | [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-ProtectionRule-BranchSource"></a>
+
+### ProtectionRule.BranchSource
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
+| DATABASE | 1 |  |
+
 
 
 <a name="bytebase-store-ProtectionRule-Target"></a>

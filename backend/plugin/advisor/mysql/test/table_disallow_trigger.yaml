@@ -1,0 +1,21 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE TABLE account (acct_num INT, amount DECIMAL(10,2));
+    CREATE TRIGGER ins_sum BEFORE INSERT ON account
+       FOR EACH ROW SET @sum = @sum + NEW.amount;
+  want:
+    - status: WARN
+      code: 610
+      title: table.disallow-trigger
+      content: |-
+        Trigger is forbidden, but "CREATE TRIGGER ins_sum BEFORE INSERT ON account
+           FOR EACH ROW SET @sum = @sum + NEW.amount;" creates
+      line: 2
+      details: ""

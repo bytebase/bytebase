@@ -502,8 +502,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to find the stage to run")
 	}
 
-	pendingApprovalStatus := []api.TaskStatus{api.TaskPendingApproval}
-	stageToRunTasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID, StatusList: &pendingApprovalStatus})
+	stageToRunTasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID, StageID: &stageToRun.ID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list tasks, error: %v", err)
 	}
@@ -1406,6 +1405,11 @@ func canUserRunStageTasks(ctx context.Context, s *store.Store, user *store.UserM
 		return true, nil
 	}
 
+	for _, role := range p.WorkspaceRoles {
+		if roles[role] {
+			return true, nil
+		}
+	}
 	for _, role := range p.ProjectRoles {
 		if roles[role] {
 			return true, nil

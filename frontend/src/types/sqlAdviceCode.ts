@@ -97,6 +97,7 @@ export enum SQLAdviceCodeTable {
   TableCommentTooLong = 606,
   TableExists = 607,
   CreateTablePartition = 608,
+  CreateTableTrigger = 610,
 }
 
 // 701 ~ 799 database advisor error code.
@@ -149,6 +150,10 @@ export enum SQLAdviceCodeCollation {
 // 1301 ~ 1399 comment error code.
 export enum SQLAdviceCodeComment {
   CommentTooLong = 1301,
+}
+
+export enum SQLAdviceCodeProcedure {
+  CreateProcedure = 1401,
 }
 
 export type SQLAdviceCode =

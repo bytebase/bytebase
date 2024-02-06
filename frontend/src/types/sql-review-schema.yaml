@@ -81,6 +81,11 @@ ruleList:
       - OCEANBASE
       - MARIADB
     componentList: []
+  - type: table.disallow-trigger
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -117,6 +122,11 @@ ruleList:
       - OCEANBASE_ORACLE
       - OCEANBASE
       - MARIADB
+    componentList: []
+  - type: statement.disallow-cascade
+    category: STATEMENT
+    engineList:
+      - POSTGRES
     componentList: []
   - type: statement.disallow-commit
     category: STATEMENT
@@ -367,6 +377,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - SNOWFLAKE
       - MSSQL
+      - MYSQL
     componentList: []
   - type: naming.identifier.case
     category: NAMING
@@ -713,3 +724,8 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
+  - type: system.procedure.disallow
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList: []

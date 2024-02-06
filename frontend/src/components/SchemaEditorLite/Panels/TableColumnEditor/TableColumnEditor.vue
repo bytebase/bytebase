@@ -21,6 +21,7 @@
       :bordered="true"
       :bottom-bordered="true"
       class="schema-editor-table-column-editor"
+      :class="[disableDiffColoring && 'disable-diff-coloring']"
     />
   </div>
 
@@ -177,12 +178,13 @@ const state = reactive<LocalState>({
 
 const {
   resourceType,
+  disableDiffColoring,
+  selectionEnabled,
   markEditStatus,
   getColumnStatus,
   getColumnConfig,
   upsertColumnConfig,
   useConsumePendingScrollToColumn,
-  selectionEnabled,
   getAllColumnsSelectionState,
   updateAllColumnsSelection,
 } = useSchemaEditorContext();
@@ -430,6 +432,31 @@ const columns = computed(() => {
           engine: props.engine,
           onInput: (value) => handleColumnDefaultInput(column, value),
           onSelect: (option) => handleColumnDefaultSelect(column, option.key),
+        });
+      },
+    },
+    {
+      key: "on-update",
+      title: t("schema-editor.column.on-update"),
+      resizable: true,
+      minWidth: 140,
+      maxWidth: 320,
+      hide: props.engine !== Engine.MYSQL && props.engine !== Engine.TIDB,
+      className: "input-cell",
+      render: (column) => {
+        return h(InlineInput, {
+          value: column.onUpdate,
+          disabled: props.readonly || props.disableAlterColumn(column),
+          placeholder: "",
+          style: {
+            "--n-padding-left": "6px",
+            "--n-padding-right": "4px",
+            "--n-text-color-disabled": "rgb(var(--color-main))",
+          },
+          "onUpdate:value": (value) => {
+            column.onUpdate = value;
+            markColumnStatus(column, "updated");
+          },
         });
       },
     },
@@ -754,15 +781,15 @@ useConsumePendingScrollToColumn(
 .schema-editor-table-column-editor :deep(.n-data-table-td.text-cell) {
   @apply pr-1 py-0;
 }
-.schema-editor-table-column-editor
+.schema-editor-table-column-editor:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.created .n-data-table-td) {
   @apply text-green-700 !bg-green-50;
 }
-.schema-editor-table-column-editor
+.schema-editor-table-column-editor:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.dropped .n-data-table-td) {
   @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
 }
-.schema-editor-table-column-editor
+.schema-editor-table-column-editor:not(.disable-diff-coloring)
   :deep(.n-data-table-tr.updated .n-data-table-td) {
   @apply text-yellow-700 !bg-yellow-50;
 }

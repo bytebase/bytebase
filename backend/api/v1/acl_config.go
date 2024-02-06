@@ -159,7 +159,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.ExternalVersionControlService_ListExternalVersionControls_FullMethodName:          iam.PermissionExternalVersionControlsList,
 	v1pb.ExternalVersionControlService_GetExternalVersionControl_FullMethodName:            iam.PermissionExternalVersionControlsGet,
 	v1pb.ExternalVersionControlService_CreateExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsCreate,
-	v1pb.ExternalVersionControlService_ExchangeToken_FullMethodName:                        iam.PermissionExternalVersionControlsUpdate,
+	v1pb.ExternalVersionControlService_ExchangeToken_FullMethodName:                        iam.PermissionExternalVersionControlsExchangeToken,
 	v1pb.ExternalVersionControlService_UpdateExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsUpdate,
 	v1pb.ExternalVersionControlService_DeleteExternalVersionControl_FullMethodName:         iam.PermissionExternalVersionControlsDelete,
 	v1pb.ExternalVersionControlService_SearchExternalVersionControlProjects_FullMethodName: iam.PermissionExternalVersionControlsSearchProjects,

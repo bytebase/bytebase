@@ -25,20 +25,17 @@
                 class="relative px-2 py-2 min-w-[2rem] text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider border border-t-0 border-block-border border-b-0"
                 v-bind="tableResize.getColumnProps(header.index)"
               >
-                <div class="flex items-center overflow-hidden">
-                  <span
-                    class="flex flex-row items-center cursor-pointer select-none"
-                    @click="header.column.getToggleSortingHandler()?.($event)"
-                  >
+                <div
+                  class="flex items-center overflow-hidden cursor-pointer"
+                  @click="header.column.getToggleSortingHandler()?.($event)"
+                >
+                  <span class="flex flex-row items-center select-none">
                     <template
                       v-if="String(header.column.columnDef.header).length > 0"
                     >
                       {{ header.column.columnDef.header }}
                     </template>
                     <br v-else class="min-h-[1rem] inline-flex" />
-                    <ColumnSortedIcon
-                      :is-sorted="header.column.getIsSorted()"
-                    />
                   </span>
 
                   <SensitiveDataIcon
@@ -58,6 +55,8 @@
                       custom-class="ml-0.5 shrink-0"
                     />
                   </template>
+
+                  <ColumnSortedIcon :is-sorted="header.column.getIsSorted()" />
                 </div>
 
                 <!-- The drag-to-resize handler -->

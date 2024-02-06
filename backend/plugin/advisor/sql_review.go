@@ -69,6 +69,8 @@ const (
 	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
+	// SchemaRuleStatementDisallowCascade disallow using cascade in the issue.
+	SchemaRuleStatementDisallowCascade SQLReviewRuleType = "statement.disallow-cascade"
 	// SchemaRuleStatementDisallowCommit disallow using commit in the issue.
 	SchemaRuleStatementDisallowCommit SQLReviewRuleType = "statement.disallow-commit"
 	// SchemaRuleStatementDisallowLimit disallow the LIMIT clause in INSERT, DELETE and UPDATE statements.
@@ -104,6 +106,8 @@ const (
 	SchemaRuleTableCommentConvention SQLReviewRuleType = "table.comment"
 	// SchemaRuleTableDisallowPartition disallow the table partition.
 	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
+	// SchemaRuleTableDisallowTrigger disallow the table trigger.
+	SchemaRuleTableDisallowTrigger SQLReviewRuleType = "table.disallow-trigger"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -171,6 +175,9 @@ const (
 
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
+
+	// SchemaRuleDisallowProcedure disallow procedure.
+	SchemaRuleDisallowProcedure SQLReviewRuleType = "system.procedure.disallow"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -702,6 +709,7 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 				Charset:         checkContext.Charset,
 				Collation:       checkContext.Collation,
 				AST:             ast,
+				Statements:      statements,
 				Rule:            rule,
 				Catalog:         finder,
 				Driver:          checkContext.Driver,
@@ -1103,6 +1111,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return SnowflakeIdentifierNamingNoKeyword, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLIdentifierNamingNoKeyword, nil
+		case storepb.Engine_MYSQL:
+			return MySQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
@@ -1283,6 +1293,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableDisallowPartition, nil
 		}
+	case SchemaRuleTableDisallowTrigger:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableDisallowTrigger, nil
+		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
@@ -1315,6 +1329,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLIndexTotalNumberLimit, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLIndexTotalNumberLimit, nil
+		}
+	case SchemaRuleStatementDisallowCascade:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementDisallowCascade, nil
 		}
 	case SchemaRuleStatementDisallowCommit:
 		switch engine {
@@ -1427,6 +1445,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCommentConvention, nil
+		}
+	case SchemaRuleDisallowProcedure:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLDisallowProcedure, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

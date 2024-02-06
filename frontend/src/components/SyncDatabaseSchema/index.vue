@@ -25,14 +25,17 @@
               :value="'SCHEMA_HISTORY_VERSION'"
               :label="$t('database.sync-schema.schema-history-version')"
             />
-            <NRadio :value="'RAW_SQL'" :label="$t('schema-editor.raw-sql')" />
+            <NRadio
+              :value="'RAW_SQL'"
+              :label="$t('database.sync-schema.copy-schema')"
+            />
           </NRadioGroup>
         </div>
         <DatabaseSchemaSelector
           v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
           :select-state="changeHistorySourceSchemaState"
           :disable-project-select="!!project"
-          @update="handleChangeHistorySchameVersionChanges"
+          @update="handleChangeHistorySchemaVersionChanges"
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === 'RAW_SQL'"
@@ -129,7 +132,7 @@ const projectId = computed(() => {
   }
 });
 
-const handleChangeHistorySchameVersionChanges = (
+const handleChangeHistorySchemaVersionChanges = (
   schemaVersion: ChangeHistorySourceSchema
 ) => {
   Object.assign(changeHistorySourceSchemaState, schemaVersion);

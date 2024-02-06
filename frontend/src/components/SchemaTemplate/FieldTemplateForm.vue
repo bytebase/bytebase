@@ -15,7 +15,7 @@
               v-model:value="state.category"
               :options="categoryOptions"
               :placeholder="$t('schema-template.form.unclassified')"
-              :disabled="!readonly"
+              :disabled="readonly"
               :consistent-menu-width="true"
             />
           </div>
@@ -28,7 +28,7 @@
           <InstanceEngineRadioGrid
             v-model:engine="state.engine"
             :engine-list="engineList"
-            :disabled="!readonly"
+            :disabled="readonly"
             class="grid-cols-4 gap-2"
           />
         </div>
@@ -44,7 +44,7 @@
             <NInput
               v-model:value="state.column!.name"
               placeholder="column name"
-              :disabled="!readonly"
+              :disabled="readonly"
             />
           </div>
 
@@ -54,7 +54,7 @@
             </label>
             <div class="flex items-center gap-x-2 mt-3 text-sm">
               {{ columnSemanticType?.title }}
-              <div v-if="readonly" class="flex items-center">
+              <div v-if="!readonly" class="flex items-center">
                 <MiniActionButton
                   v-if="columnSemanticType"
                   @click.prevent="onSemanticTypeApply('')"
@@ -79,7 +79,7 @@
                 :classification="state.column?.classification"
                 :classification-config="classificationConfig"
               />
-              <div v-if="readonly" class="flex items-center">
+              <div v-if="!readonly" class="flex items-center">
                 <MiniActionButton
                   v-if="state.column?.classification"
                   @click.prevent="state.column!.classification = ''"
@@ -114,7 +114,7 @@
                     ? schemaTemplateColumnTypeOptions
                     : dataTypeOptions
                 "
-                :disabled="!readonly"
+                :disabled="readonly"
                 placeholder="column type"
                 @update:value="state.column!.type = $event"
               />
@@ -130,7 +130,7 @@
               <DropdownInput
                 :value="getColumnDefaultDisplayString(state.column!)||null"
                 :options="defaultValueOptions"
-                :disabled="!readonly"
+                :disabled="readonly"
                 :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
                 @update:value="handleColumnDefaultChange"
               />
@@ -146,7 +146,7 @@
               <NSwitch
                 v-model:value="state.column!.nullable"
                 :text="false"
-                :disabled="!readonly"
+                :disabled="readonly"
               />
             </div>
           </div>
@@ -160,7 +160,7 @@
               v-model:value="state.column!.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
-              :disabled="!readonly"
+              :disabled="readonly"
             />
           </div>
         </div>
@@ -187,7 +187,7 @@
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
-            v-if="readonly"
+            v-if="!readonly"
             :disabled="submitDisabled"
             type="primary"
             @click.prevent="submit"

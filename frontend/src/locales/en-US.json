@@ -276,7 +276,8 @@
     "permissions": "Permissions",
     "backup": "Backup",
     "cutover": "Cutover",
-    "baseline": "Baseline"
+    "baseline": "Baseline",
+    "project-member": "Project member"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1657,6 +1658,7 @@
       "title": "Sync Schema",
       "description": "Bytebase supports synchronizing a schema to one or multiple target databases.",
       "schema-history-version": "Schema History Version",
+      "copy-schema": "Copy schema",
       "select-source-schema": "Select source schema",
       "select-target-databases": "Select target databases",
       "select-project": "Select project",
@@ -1958,11 +1960,12 @@
         "add-rule": "Add Rule",
         "branch-name-pattern": {
           "self": "Branch name pattern",
-          "description": "Support wildcard such as feature/* or *-stable"
+          "description": "Support wildcard such as feature/* or *-stable. Empty string matches all branches."
         },
         "applies-to-n-branches": "Applies to {n} branch | Applies to {n} branches",
         "only-allow-specified-roles-to-create-branch": "Only allow specified roles to create branch",
-        "no-protection-rule-configured": "No protection rule configured."
+        "no-protection-rule-configured": "No protection rule configured.",
+        "only-apply-to-main-branches": "Only apply to main branches"
       }
     },
     "members": {
@@ -2348,7 +2351,8 @@
       "not-null": "Not Null",
       "primary": "Primary",
       "foreign-key": "Foreign Key",
-      "classification": "Classification"
+      "classification": "Classification",
+      "on-update": "On Update"
     },
     "default": {
       "no-default": "No default",
@@ -3328,6 +3332,7 @@
   "cel": {
     "factor": {
       "affected_rows": "Affected rows",
+      "table_rows": "Table rows",
       "environment_id": "Environment ID",
       "project_id": "Project ID",
       "instance_id": "Instance ID",
@@ -3425,7 +3430,19 @@
       "conflict-not-resolved": "It seems that some conflicts haven't been resolved yet.",
       "resolve-conflicts-to-rebase": "Resolve conflicts to rebase",
       "preview-merge-result": "Preview changes on {branch} after merge",
-      "preview-rebase-result": "Preview changes on {branch} after rebase"
+      "preview-rebase-result": "Preview changes on {branch} after rebase",
+      "diffs-between": "Diffs between {left} and {right}",
+      "base-branch": "Base branch",
+      "head-branch": "Head branch",
+      "preview": "Preview",
+      "before-merge": "Before merge",
+      "after-merge": "After merge",
+      "before-rebase": "Before rebase",
+      "after-rebase": "After rebase",
+      "post-merge-action": {
+        "rebase": "Merge and rebase branch",
+        "delete": "Merge and delete branch"
+      }
     },
     "source": {
       "baseline-version": "Baseline version",
@@ -3436,6 +3453,11 @@
       "drop-index-confirm": "Drop index?"
     },
     "force-delete": "Force delete",
-    "deleting-parent-branch": "Deleting a parent branch."
+    "deleting-parent-branch": "Deleting a parent branch.",
+    "visualized-schema": "Visualized Schema",
+    "schema-text": "Schema Text",
+    "baseline": "Baseline",
+    "head": "Head",
+    "show-diff-with-branch-baseline": "Show diff with branch baseline"
   }
 }

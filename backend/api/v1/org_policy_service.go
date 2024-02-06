@@ -313,6 +313,9 @@ func (s *OrgPolicyService) getPolicyResourceTypeAndID(ctx context.Context, reque
 		if err != nil {
 			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.Internal, err.Error())
 		}
+		if instance == nil {
+			return api.PolicyResourceTypeUnknown, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+		}
 		database, err := s.findActiveDatabase(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
 			DatabaseName:        &databaseName,

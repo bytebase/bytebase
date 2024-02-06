@@ -240,12 +240,8 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 	if n.action == diffActionCreate {
 		// If two actions are CREATE or UPDATE both, we need to check the table attributes is conflict.
 		// XXX: Expanding the table attributes check if we support more attributes.
-		if n.head.Engine != other.head.Engine {
-			return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.head.Engine, other.head.Engine)
-		}
-		if n.head.Collation != other.head.Collation {
-			return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.head.Collation, other.head.Collation)
-		}
+		// Engine and Collation is the attributes are used to display only, would not
+		// affect the table schema in schema design.
 		if n.head.Comment != other.head.Comment {
 			return true, fmt.Sprintf("conflict table comment, one is %s, the other is %s", n.head.Comment, other.head.Comment)
 		}
@@ -258,26 +254,8 @@ func (n *metadataDiffTableNode) tryMerge(other *metadataDiffTableNode) (bool, st
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Engine != other.head.Engine {
-			if n.base.Engine != n.head.Engine {
-				if n.head.Engine != other.head.Engine {
-					return true, fmt.Sprintf("conflict table engine, one is %s, the other is %s", n.head.Engine, other.head.Engine)
-				}
-			} else {
-				n.head.Engine = other.head.Engine
-			}
-		}
-
-		if other.base.Collation != other.head.Collation {
-			if n.base.Collation != n.head.Collation {
-				if n.head.Collation != other.head.Collation {
-					return true, fmt.Sprintf("conflict table collation, one is %s, the other is %s", n.head.Collation, other.head.Collation)
-				}
-			} else {
-				n.head.Collation = other.head.Collation
-			}
-		}
-
+		// Engine and Collation is the attributes are used to display only, would not
+		// affect the table schema in schema design.
 		if other.base.Comment != other.head.Comment {
 			if n.base.Comment != n.head.Comment {
 				if n.head.Comment != other.head.Comment {

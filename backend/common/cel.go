@@ -30,6 +30,7 @@ var RiskFactors = []cel.EnvOption{
 	cel.Variable("affected_rows", cel.IntType),
 	cel.Variable("expiration_days", cel.IntType),
 	cel.Variable("export_rows", cel.IntType),
+	cel.Variable("table_rows", cel.IntType),
 }
 
 // ApprovalFactors are the variables when finding the approval template.
@@ -283,7 +284,7 @@ func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
 	// but the expression can have more.
 	prg, err := e.Program(ast, cel.EvalOptions(cel.OptPartialEval))
 	if err != nil {
-		return false, errors.Wrapf(iss.Err(), "failed to construct program")
+		return false, errors.Wrapf(err, "failed to construct program")
 	}
 	vars, err := e.PartialVars(input)
 	if err != nil {

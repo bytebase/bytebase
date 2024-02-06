@@ -275,7 +275,8 @@
     "permissions": "権限",
     "backup": "バックアップ",
     "cutover": "カットオーバー",
-    "baseline": "ベースライン"
+    "baseline": "ベースライン",
+    "project-member": "プロジェクトメンバー"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -1656,6 +1657,7 @@
       "title": "スキーマを同期する",
       "description": "Bytebaseは、スキーマを1つまたは複数のターゲットデータベースに同期することをサポートしています",
       "schema-history-version": "スキーマ履歴バージョン",
+      "copy-schema": "スキーマのコピー",
       "select-source-schema": "ソーススキーマを選択する",
       "select-target-databases": "ターゲットデータベースを選択する",
       "select-project": "プロジェクトを選択する",
@@ -1956,11 +1958,12 @@
         "add-rule": "ルールを追加する",
         "branch-name-pattern": {
           "self": "ブランチ名のパターン",
-          "description": "feature/*や*-stableなどのワイルドカードをサポートします。"
+          "description": "feature/* や *-stable などのワイルドカードをサポートします。\n空の文字列はすべてのブランチに一致します。"
         },
         "applies-to-n-branches": "{n}ブランチに適用されます | {n}ブランチに適用されます",
         "only-allow-specified-roles-to-create-branch": "指定された役割のみがブランチの作成を許可します",
-        "no-protection-rule-configured": "保護ルールが設定されていません。"
+        "no-protection-rule-configured": "保護ルールが設定されていません。",
+        "only-apply-to-main-branches": "メインブランチにのみ適用されます"
       }
     },
     "members": {
@@ -3339,7 +3342,8 @@
       "classification_level": "分類レベル",
       "resource_instance_id": "インスタンスID",
       "resource_database_name": "データベース名",
-      "resource_table_name": "テーブル名"
+      "resource_table_name": "テーブル名",
+      "table_rows": "テーブルの行"
     }
   },
   "changelist": {
@@ -3423,7 +3427,19 @@
       "conflict-not-resolved": "まだ解決されていない衝突があるようです",
       "resolve-conflicts-to-rebase": "リベースするために衝突を解決してください",
       "preview-merge-result": "merge 後に {branch} の変更をプレビューする",
-      "preview-rebase-result": "rebase 後に {branch} の変更をプレビューする"
+      "preview-rebase-result": "rebase 後に {branch} の変更をプレビューする",
+      "diffs-between": "{left} と {right} の差分",
+      "base-branch": "ベースブランチ",
+      "head-branch": "本店",
+      "preview": "プレビュー",
+      "before-merge": "マージ前",
+      "after-merge": "マージ後",
+      "before-rebase": "リベース前",
+      "after-rebase": "リベース後",
+      "post-merge-action": {
+        "rebase": "ブランチをマージしてリベースする",
+        "delete": "ブランチのマージと削除"
+      }
     },
     "source": {
       "baseline-version": "ベースラインバージョン",
@@ -3434,6 +3450,11 @@
       "drop-index-confirm": "インデックスを削除しますか？"
     },
     "force-delete": "強制削除",
-    "deleting-parent-branch": "親ブランチを削除しています"
+    "deleting-parent-branch": "親ブランチを削除しています",
+    "visualized-schema": "視覚化されたスキーマ",
+    "schema-text": "スキーマテキスト",
+    "baseline": "ベースライン",
+    "head": "頭",
+    "show-diff-with-branch-baseline": "ブランチベースラインとの差分を表示"
   }
 }

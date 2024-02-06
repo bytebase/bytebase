@@ -557,6 +557,10 @@ message ColumnMetadata {
     string default_expression = 6;
   }
 
+  // The on_update is the on update action of a column.
+  // For MySQL like databases, it's only supported for TIMESTAMP columns with CURRENT_TIMESTAMP as on update value.
+  string on_update = 15;
+
   // The nullable is the nullable of a column.
   bool nullable = 7;
 

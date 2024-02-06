@@ -1,0 +1,24 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE PROCEDURE simpleProcedure()
+    BEGIN
+        SELECT 'Hello, World!' AS Message;
+    END;
+  want:
+    - status: WARN
+      code: 1401
+      title: system.procedure.disallow
+      content: |-
+        Procedure is forbidden, but "CREATE PROCEDURE simpleProcedure()
+        BEGIN
+            SELECT 'Hello, World!' AS Message;
+        END;" creates
+      line: 1
+      details: ""

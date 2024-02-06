@@ -1,7 +1,8 @@
-import { isEqual, isUndefined } from "lodash-es";
+import { uniqBy } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { worksheetServiceClient } from "@/grpcweb";
+import { useCache } from "@/store/cache";
 import { UNKNOWN_ID } from "@/types";
 import {
   Worksheet,
@@ -17,18 +18,20 @@ import { useCurrentUserV1 } from "../auth";
 import { useTabStore } from "../tab";
 import { getUserEmailFromIdentifier } from "./common";
 
-const REQUEST_CACHE_BY_UID = new Map<
-  string /* uid */,
-  Promise<Worksheet | undefined>
->();
+type WorksheetView = "FULL" | "BASIC";
+type WorksheetCacheKey = [string /* uid */, WorksheetView];
 
 export const useWorkSheetStore = defineStore("worksheet_v1", () => {
-  const sheetsByName = ref(new Map<string, Worksheet>());
+  const cacheByUID = useCache<WorksheetCacheKey, Worksheet | undefined>(
+    "bb.worksheet.by-uid"
+  );
 
   // Getters
   const sheetList = computed(() => {
-    // Hide those sheets from issue.
-    return Array.from(sheetsByName.value.values());
+    const sheetList = Array.from(cacheByUID.entityCacheMap.values())
+      .map((entry) => entry.entity)
+      .filter((sheet): sheet is Worksheet => sheet !== undefined);
+    return uniqBy(sheetList, (sheet) => sheet.name);
   });
   const mySheetList = computed(() => {
     const me = useCurrentUserV1();
@@ -49,16 +52,17 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
   });
 
   // Utilities
-  const removeLocalSheet = (name: string) => {
-    const uid = extractWorksheetUID(name);
-    if (uid.startsWith("-")) {
-      sheetsByName.value.delete(name);
+  const setCache = (worksheet: Worksheet, view: WorksheetView) => {
+    const uid = extractWorksheetUID(worksheet.name);
+    if (uid === String(UNKNOWN_ID)) return;
+    if (view === "FULL") {
+      // A FULL version should override BASIC version
+      cacheByUID.invalidateEntity([uid, "BASIC"]);
     }
+    cacheByUID.setEntity([uid, view], worksheet);
   };
-  const setSheetList = (sheets: Worksheet[]) => {
-    for (const sheet of sheets) {
-      sheetsByName.value.set(sheet.name, sheet);
-    }
+  const setListCache = (sheets: Worksheet[]) => {
+    sheets.forEach((sheet) => setCache(sheet, "BASIC"));
   };
 
   // CRUD
@@ -66,17 +70,33 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const created = await worksheetServiceClient.createWorksheet({
       worksheet,
     });
-    setSheetList([created]);
-    if (worksheet.name) {
-      removeLocalSheet(worksheet.name);
-    }
+    setCache(created, "FULL");
     return created;
   };
 
-  const getSheetByName = (name: string) => {
-    return sheetsByName.value.get(name);
+  /**
+   *
+   * @param name
+   * @param view undefined to any (FULL -> BASIC)
+   * @returns
+   */
+  const getSheetByName = (
+    name: string,
+    view: WorksheetView | undefined = undefined
+  ) => {
+    const uid = extractWorksheetUID(name);
+    if (!uid || uid === String(UNKNOWN_ID)) {
+      return undefined;
+    }
+    if (view === undefined) {
+      return (
+        cacheByUID.getEntity([uid, "FULL"]) ??
+        cacheByUID.getEntity([uid, "BASIC"])
+      );
+    }
+    return cacheByUID.getEntity([uid, view]);
   };
-  const fetchSheetByName = async (name: string, raw = false) => {
+  const fetchSheetByName = async (name: string) => {
     const uid = extractWorksheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
@@ -84,10 +104,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     try {
       const sheet = await worksheetServiceClient.getWorksheet({
         name,
-        raw,
       });
-
-      setSheetList([sheet]);
       return sheet;
     } catch {
       return undefined;
@@ -98,28 +115,25 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
-    if (uid === String(UNKNOWN_ID)) {
-      return undefined;
+    const entity = cacheByUID.getEntity([uid, "FULL"]);
+    if (entity) {
+      return entity;
     }
-    const existed = getSheetByName(name);
-    if (existed) {
-      return existed;
-    }
-    const cached = REQUEST_CACHE_BY_UID.get(uid);
-    if (cached) {
-      return cached;
+    const request = cacheByUID.getRequest([uid, "FULL"]);
+    if (request) {
+      return request;
     }
 
-    const request = fetchSheetByName(name);
-    REQUEST_CACHE_BY_UID.set(uid, request);
-    request.then((sheet) => {
+    const promise = fetchSheetByName(name);
+    cacheByUID.setRequest([uid, "FULL"], promise);
+    promise.then((sheet) => {
       if (!sheet) {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
-        REQUEST_CACHE_BY_UID.delete(uid);
+        cacheByUID.invalidateRequest([uid, "FULL"]);
       }
     });
-    return request;
+    return promise;
   };
 
   const fetchMySheetList = async () => {
@@ -127,7 +141,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `creator = users/${me.value.email}`,
     });
-    setSheetList(worksheets);
+    setListCache(worksheets);
     return worksheets;
   };
   const fetchSharedSheetList = async () => {
@@ -135,41 +149,35 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `creator != users/${me.value.email}`,
     });
-    setSheetList(worksheets);
+    setListCache(worksheets);
     return worksheets;
   };
   const fetchStarredSheetList = async () => {
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `starred = true`,
     });
-    setSheetList(worksheets);
+    setListCache(worksheets);
     return worksheets;
   };
 
   const patchSheet = async (
     worksheet: Partial<Worksheet>,
-    updateMask: string[] | undefined = undefined
+    updateMask: string[]
   ) => {
     if (!worksheet.name) return;
-    const existed = sheetsByName.value.get(worksheet.name);
-    if (!existed) return;
-    if (!updateMask) {
-      updateMask = getUpdateMaskForSheet(existed, worksheet);
-    }
-    if (updateMask.length === 0) {
-      return existed;
-    }
     const updated = await worksheetServiceClient.updateWorksheet({
       worksheet,
       updateMask,
     });
-    setSheetList([updated]);
+    setCache(updated, "FULL");
     return updated;
   };
 
   const deleteSheetByName = async (name: string) => {
     await worksheetServiceClient.deleteWorksheet({ name });
-    sheetsByName.value.delete(name);
+    const uid = extractWorksheetUID(name);
+    cacheByUID.invalidateEntity([uid, "FULL"]);
+    cacheByUID.invalidateEntity([uid, "BASIC"]);
   };
 
   const upsertSheetOrganizer = async (
@@ -182,9 +190,13 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     });
 
     // Update local sheet values
-    const sheet = getSheetByName(organizer.worksheet);
-    if (sheet) {
-      sheet.starred = organizer.starred;
+    const fullViewWorksheet = getSheetByName(organizer.worksheet, "FULL");
+    if (fullViewWorksheet) {
+      fullViewWorksheet.starred = organizer.starred;
+    }
+    const basicViewWorksheet = getSheetByName(organizer.worksheet, "BASIC");
+    if (basicViewWorksheet) {
+      basicViewWorksheet.starred = organizer.starred;
     }
   };
 
@@ -244,26 +256,3 @@ export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
 
   return { currentSheet, isCreator, isReadOnly };
 });
-
-const getUpdateMaskForSheet = (
-  origin: Worksheet,
-  update: Partial<Worksheet>
-): string[] => {
-  const updateMask: string[] = [];
-  if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("title");
-  }
-  if (
-    !isUndefined(update.content) &&
-    !isEqual(origin.content, update.content)
-  ) {
-    updateMask.push("content");
-  }
-  if (
-    !isUndefined(update.visibility) &&
-    !isEqual(origin.visibility, update.visibility)
-  ) {
-    updateMask.push("visibility");
-  }
-  return updateMask;
-};

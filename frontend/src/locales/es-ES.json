@@ -276,7 +276,8 @@
     "permissions": "Permisos",
     "backup": "Respaldo",
     "cutover": "transición",
-    "baseline": "Base"
+    "baseline": "Base",
+    "project-member": "Miembro del proyecto"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1656,6 +1657,7 @@
       "title": "Sincronizar esquema",
       "description": "Bytebase admite la sincronización de un esquema con una o varias bases de datos de destino",
       "schema-history-version": "Versión del historial de esquema",
+      "copy-schema": "Copiar esquema",
       "select-source-schema": "Seleccione el esquema de origen",
       "select-target-databases": "Seleccione las bases de datos de destino",
       "select-project": "Seleccione el proyecto",
@@ -1957,11 +1959,12 @@
         "add-rule": "Agregar Regla",
         "branch-name-pattern": {
           "self": "Patrón de nombre de rama",
-          "description": "Soporta comodines como feature/* o *-stable"
+          "description": "Admite comodines como feature/* o *-stable. \nLa cadena vacía coincide con todas las ramas."
         },
         "applies-to-n-branches": "Se aplica a {n} ramas",
         "only-allow-specified-roles-to-create-branch": "Sólo permitir roles especificados para crear rama",
-        "no-protection-rule-configured": "No hay regla de protección configurada"
+        "no-protection-rule-configured": "No hay regla de protección configurada",
+        "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       }
     },
     "members": {
@@ -3339,7 +3342,8 @@
       "classification_level": "Nivel de clasificación",
       "resource_instance_id": "ID de instancia",
       "resource_database_name": "Nombre de la base de datos",
-      "resource_table_name": "Nombre de la tabla"
+      "resource_table_name": "Nombre de la tabla",
+      "table_rows": "Filas de la tabla"
     }
   },
   "changelist": {
@@ -3423,7 +3427,19 @@
       "conflict-not-resolved": "Parece que algunos conflictos aún no se han resuelto.",
       "resolve-conflicts-to-rebase": "Resolver conflictos para rebase",
       "preview-merge-result": "Vista previa de los cambios en {branch} después de la fusión",
-      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase"
+      "preview-rebase-result": "Vista previa de los cambios en {branch} después de la rebase",
+      "diffs-between": "Diferencias entre {left} y {right}",
+      "base-branch": "sucursal base",
+      "head-branch": "rama principal",
+      "preview": "Avance",
+      "before-merge": "Antes de fusionarse",
+      "after-merge": "Después de fusionar",
+      "before-rebase": "Antes de rebase",
+      "after-rebase": "Después de rebase",
+      "post-merge-action": {
+        "rebase": "Fusionar y reorganizar rama",
+        "delete": "Fusionar y eliminar rama"
+      }
     },
     "source": {
       "baseline-version": "Versión básica",
@@ -3434,6 +3450,11 @@
       "drop-index-confirm": "¿Índice de caída?"
     },
     "force-delete": "Forzar eliminación",
-    "deleting-parent-branch": "Eliminando una rama principal."
+    "deleting-parent-branch": "Eliminando una rama principal.",
+    "visualized-schema": "Esquema visualizado",
+    "schema-text": "Texto del esquema",
+    "baseline": "Base",
+    "head": "Cabeza",
+    "show-diff-with-branch-baseline": "Mostrar diferencia con la línea base de la rama"
   }
 }

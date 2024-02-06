@@ -23,10 +23,14 @@ import {
 } from "vue";
 import type { Language } from "@/types";
 import type { AutoHeightOptions } from "./composables";
-import { useAutoHeight, useOptionByKey } from "./composables";
+import { useAutoHeight, useOptionByKey, useOptions } from "./composables";
 import monaco, { createMonacoDiffEditor } from "./editor";
 import { useMonacoTextModel } from "./text-model";
-import type { IStandaloneDiffEditor, MonacoModule } from "./types";
+import type {
+  IStandaloneDiffEditor,
+  IStandaloneDiffEditorConstructionOptions,
+  MonacoModule,
+} from "./types";
 import { extensionNameOfLanguage } from "./utils";
 
 export type DiffEditorAutoHeightOptions = AutoHeightOptions & {
@@ -39,6 +43,7 @@ const props = withDefaults(
     modified?: string;
     language?: Language;
     readonly?: boolean;
+    options?: IStandaloneDiffEditorConstructionOptions;
     autoHeight?: DiffEditorAutoHeightOptions;
   }>(),
   {
@@ -46,6 +51,7 @@ const props = withDefaults(
     modified: "",
     language: "sql",
     readonly: false,
+    options: undefined,
     autoHeight: undefined,
   }
 );
@@ -127,6 +133,7 @@ onMounted(async () => {
   useDiffModels(monaco, editor);
   // Use "plugin" composable features
   useOptionByKey(monaco, editor, "readOnly", toRef(props, "readonly"));
+  useOptions(monaco, editor, toRef(props, "options"));
   const modifiedContent = useModifiedContent(monaco, editor);
   if (props.autoHeight) {
     useAutoHeight(

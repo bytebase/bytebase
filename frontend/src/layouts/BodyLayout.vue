@@ -146,7 +146,7 @@
                 <span v-if="canUpgrade" class="whitespace-nowrap">
                   {{ $t("settings.release.new-version-available") }}
                 </span>
-                <span v-else-if="gitCommit"> Git hash {{ gitCommit }} </span>
+                <span v-if="gitCommit"> Git hash {{ gitCommit }} </span>
               </NTooltip>
             </div>
           </div>

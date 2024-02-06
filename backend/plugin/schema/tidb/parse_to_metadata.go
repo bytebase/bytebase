@@ -131,6 +131,13 @@ func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
 						}
 					}
 					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
+				case tidbast.ColumnOptionOnUpdate:
+					onUpdate, err := restoreExpr(option.Expr)
+					if err != nil {
+						t.err = err
+						return in, true
+					}
+					columnState.onUpdate = *onUpdate
 				}
 			}
 			table.columns[columnName] = columnState

@@ -344,6 +344,8 @@ const syncURLWithConnection = () => {
 };
 
 onMounted(async () => {
+  await router.isReady();
+
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
 

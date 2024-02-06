@@ -14,6 +14,7 @@
     />
     <InstanceV1Table
       :allow-selection="true"
+      :show-operation="true"
       :instance-list="filteredInstanceV1List"
       :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
     />

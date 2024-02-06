@@ -172,3 +172,9 @@ defineExpose({
   editorRef,
 });
 </script>
+
+<style>
+.editor-widget.suggest-widget .signature-label {
+  @apply ml-2;
+}
+</style>

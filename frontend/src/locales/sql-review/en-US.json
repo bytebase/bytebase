@@ -56,6 +56,10 @@
       "title": "Prohibit using partition table",
       "description": "In some database engines, partitioned tables are not mature, and the use and maintenance are inconvenient. Therefore, it is more inclined to use manual data partitioning methods such as database and table sharding. Suggestion error level: Warning"
     },
+    "table-disallow-trigger": {
+      "title": "Prevent the use of triggers on tables",
+      "description": "This rule restricts the usage of triggers on tables. Triggers can introduce complexity and potential performance issues to database operations. By disallowing triggers, the system can maintain a simpler and more predictable behavior. Suggestion error level: Warning"
+    },
     "table-comment": {
       "title": "Comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",
@@ -300,6 +304,10 @@
       "title": "Prohibit using leading wildcard in filter conditions",
       "description": "When using leading wildcard, such as \"LIKE '%ABC'\", the database optimizer cannot use fast index scan, and fallback to full table scan or full index scan, which may cause serious performance impact. Suggestion error level: Error"
     },
+    "statement-disallow-cascade": {
+      "title": "Prohibit using \"CASCADE\" option in DDL statements",
+      "description": "The \"CASCADE\" option can cause a large number of dependent objects to be deleted or modified, which may cause unexpected results. Suggestion error level: Error"
+    },
     "statement-disallow-commit": {
       "title": "Prohibit explicit \"COMMIT\" statement",
       "description": "In some cases, multiple statements are required to be included in a transaction committed by the system, in order to quickly rerun in case of partial failure. Therefore, explicit \"COMMIT\" is not allowed. Suggestion error level: Warning"
@@ -435,6 +443,10 @@
           "title": "Maximum comment length"
         }
       }
+    },
+    "system-procedure-disallow": {
+      "title": "Disallow to create procedures",
+      "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Error"
     }
   },
   "level": {

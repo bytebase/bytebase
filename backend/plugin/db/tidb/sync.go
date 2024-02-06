@@ -324,6 +324,17 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			}
 		}
 
+		if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
+			re := regexp.MustCompile(`CURRENT_TIMESTAMP\((\d+)\)`)
+			match := re.FindStringSubmatch(extra)
+			if len(match) > 0 {
+				digits := match[1]
+				column.OnUpdate = fmt.Sprintf("CURRENT_TIMESTAMP(%s)", digits)
+			} else {
+				column.OnUpdate = "CURRENT_TIMESTAMP"
+			}
+		}
+
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 	}

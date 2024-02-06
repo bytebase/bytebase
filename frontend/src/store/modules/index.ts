@@ -20,3 +20,4 @@ export * from "./dbGroup";
 export * from "./utils";
 export * from "./v1";
 export * from "./branch";
+export * from "./filter";

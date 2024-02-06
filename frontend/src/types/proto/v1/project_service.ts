@@ -1193,10 +1193,11 @@ export interface ProtectionRule {
   /** The name of the branch/changelist or wildcard. */
   nameFilter: string;
   /**
-   * The roles allowed to create branches or changelists.
-   * Format: roles/OWNER.
+   * The roles allowed to create branches or changelists, rebase branches, delete branches.
+   * Format: roles/projectOwner.
    */
-  createAllowedRoles: string[];
+  allowedRoles: string[];
+  branchSource: ProtectionRule_BranchSource;
 }
 
 /** The type of target. */
@@ -1234,6 +1235,39 @@ export function protectionRule_TargetToJSON(object: ProtectionRule_Target): stri
     case ProtectionRule_Target.CHANGELIST:
       return "CHANGELIST";
     case ProtectionRule_Target.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum ProtectionRule_BranchSource {
+  BRANCH_SOURCE_UNSPECIFIED = 0,
+  DATABASE = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function protectionRule_BranchSourceFromJSON(object: any): ProtectionRule_BranchSource {
+  switch (object) {
+    case 0:
+    case "BRANCH_SOURCE_UNSPECIFIED":
+      return ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED;
+    case 1:
+    case "DATABASE":
+      return ProtectionRule_BranchSource.DATABASE;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ProtectionRule_BranchSource.UNRECOGNIZED;
+  }
+}
+
+export function protectionRule_BranchSourceToJSON(object: ProtectionRule_BranchSource): string {
+  switch (object) {
+    case ProtectionRule_BranchSource.BRANCH_SOURCE_UNSPECIFIED:
+      return "BRANCH_SOURCE_UNSPECIFIED";
+    case ProtectionRule_BranchSource.DATABASE:
+      return "DATABASE";
+    case ProtectionRule_BranchSource.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -5365,7 +5399,7 @@ export const ProtectionRules = {
 };
 
 function createBaseProtectionRule(): ProtectionRule {
-  return { id: "", target: 0, nameFilter: "", createAllowedRoles: [] };
+  return { id: "", target: 0, nameFilter: "", allowedRoles: [], branchSource: 0 };
 }
 
 export const ProtectionRule = {
@@ -5379,8 +5413,11 @@ export const ProtectionRule = {
     if (message.nameFilter !== "") {
       writer.uint32(26).string(message.nameFilter);
     }
-    for (const v of message.createAllowedRoles) {
+    for (const v of message.allowedRoles) {
       writer.uint32(34).string(v!);
+    }
+    if (message.branchSource !== 0) {
+      writer.uint32(40).int32(message.branchSource);
     }
     return writer;
   },
@@ -5418,7 +5455,14 @@ export const ProtectionRule = {
             break;
           }
 
-          message.createAllowedRoles.push(reader.string());
+          message.allowedRoles.push(reader.string());
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.branchSource = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -5434,9 +5478,10 @@ export const ProtectionRule = {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       target: isSet(object.target) ? protectionRule_TargetFromJSON(object.target) : 0,
       nameFilter: isSet(object.nameFilter) ? globalThis.String(object.nameFilter) : "",
-      createAllowedRoles: globalThis.Array.isArray(object?.createAllowedRoles)
-        ? object.createAllowedRoles.map((e: any) => globalThis.String(e))
+      allowedRoles: globalThis.Array.isArray(object?.allowedRoles)
+        ? object.allowedRoles.map((e: any) => globalThis.String(e))
         : [],
+      branchSource: isSet(object.branchSource) ? protectionRule_BranchSourceFromJSON(object.branchSource) : 0,
     };
   },
 
@@ -5451,8 +5496,11 @@ export const ProtectionRule = {
     if (message.nameFilter !== "") {
       obj.nameFilter = message.nameFilter;
     }
-    if (message.createAllowedRoles?.length) {
-      obj.createAllowedRoles = message.createAllowedRoles;
+    if (message.allowedRoles?.length) {
+      obj.allowedRoles = message.allowedRoles;
+    }
+    if (message.branchSource !== 0) {
+      obj.branchSource = protectionRule_BranchSourceToJSON(message.branchSource);
     }
     return obj;
   },
@@ -5465,7 +5513,8 @@ export const ProtectionRule = {
     message.id = object.id ?? "";
     message.target = object.target ?? 0;
     message.nameFilter = object.nameFilter ?? "";
-    message.createAllowedRoles = object.createAllowedRoles?.map((e) => e) || [];
+    message.allowedRoles = object.allowedRoles?.map((e) => e) || [];
+    message.branchSource = object.branchSource ?? 0;
     return message;
   },
 };
