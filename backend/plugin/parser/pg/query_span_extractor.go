@@ -933,9 +933,12 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		if err != nil {
 			return nil, err
 		}
-		return &base.PseudoTable{
-			Name:    tableName,
-			Columns: columns,
+		return &base.PhysicalView{
+			Server:   "",
+			Database: q.connectedDB,
+			Schema:   schemaName,
+			Name:     tableName,
+			Columns:  columns,
 		}, nil
 	}
 
@@ -944,9 +947,12 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		if err != nil {
 			return nil, err
 		}
-		return &base.PseudoTable{
-			Name:    tableName,
-			Columns: columns,
+		return &base.PhysicalView{
+			Server:   "",
+			Database: q.connectedDB,
+			Schema:   schemaName,
+			Name:     tableName,
+			Columns:  columns,
 		}, nil
 	}
 	return nil, nil
