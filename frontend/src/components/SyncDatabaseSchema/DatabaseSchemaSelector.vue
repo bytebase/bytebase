@@ -133,7 +133,6 @@ const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const environmentStore = useEnvironmentV1Store();
-// const fullViewChangeHistoryCache = ref<Map<string, ChangeHistory>>(new Map());
 
 const database = computed(() => {
   const databaseId = state.databaseId;
