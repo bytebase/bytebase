@@ -130,7 +130,7 @@ func (s *WorksheetService) GetWorksheet(ctx context.Context, request *v1pb.GetWo
 	ws := store.SheetFromBytebase
 	find := &store.FindSheetMessage{
 		UID:      &worksheetUID,
-		LoadFull: request.Raw,
+		LoadFull: true,
 		Source:   &ws,
 	}
 	worksheet, err := s.findWorksheet(ctx, find)
