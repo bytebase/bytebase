@@ -35,7 +35,7 @@
           v-if="state.sourceSchemaType === 'SCHEMA_HISTORY_VERSION'"
           :select-state="changeHistorySourceSchemaState"
           :disable-project-select="!!project"
-          @update="handleChangeHistorySchameVersionChanges"
+          @update="handleChangeHistorySchemaVersionChanges"
         />
         <RawSQLEditor
           v-if="state.sourceSchemaType === 'RAW_SQL'"
@@ -132,7 +132,7 @@ const projectId = computed(() => {
   }
 });
 
-const handleChangeHistorySchameVersionChanges = (
+const handleChangeHistorySchemaVersionChanges = (
   schemaVersion: ChangeHistorySourceSchema
 ) => {
   Object.assign(changeHistorySourceSchemaState, schemaVersion);
