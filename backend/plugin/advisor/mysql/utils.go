@@ -87,8 +87,9 @@ type tableData struct {
 }
 
 // isKeyword checks if the keyword is a MySQL keyword.
+// TODO: We should check with map instead of linear search.
 func isKeyword(suspect string) bool {
-	for _, item := range parser.Keywords56 {
+	for _, item := range parser.Keywords80 {
 		if strings.EqualFold(suspect, item.Keyword) {
 			return true
 		}

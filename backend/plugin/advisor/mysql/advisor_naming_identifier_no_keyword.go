@@ -66,15 +66,10 @@ type namingIdentifierNoKeywordChecker struct {
 	title      string
 }
 
-// EnterIdentifier is called when entering the identifier production.
-func (checker *namingIdentifierNoKeywordChecker) EnterIdentifier(ctx *mysql.IdentifierContext) {
-	pureIdentifier := ctx.PureIdentifier()
-	if pureIdentifier == nil {
-		return
-	}
-
+// EnterPureIdentifier is called when entering the pureIdentifier production.
+func (checker *namingIdentifierNoKeywordChecker) EnterPureIdentifier(ctx *mysql.PureIdentifierContext) {
 	// The suspect identifier should be always wrapped in backquotes, otherwise a syntax error will be thrown before entering this checker.
-	textNode := pureIdentifier.BACK_TICK_QUOTED_ID()
+	textNode := ctx.BACK_TICK_QUOTED_ID()
 	if textNode == nil {
 		return
 	}
