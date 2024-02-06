@@ -76,29 +76,34 @@ func (checker *namingIdentifierNoKeywordChecker) EnterPureIdentifier(ctx *mysql.
 
 	// Remove backticks as possible.
 	identifier := trimBackTicks(textNode.GetText())
-	if isKeyword(identifier) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.NameIsKeywordIdentifier,
-			Title:   checker.title,
-			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-			Line:    ctx.GetStart().GetLine(),
-		})
+	advice := checker.checkIdentifier(identifier)
+	if advice != nil {
+		advice.Line = ctx.GetStart().GetLine()
+		checker.adviceList = append(checker.adviceList, *advice)
 	}
 }
 
 // EnterIdentifierKeyword is called when entering the identifierKeyword production.
 func (checker *namingIdentifierNoKeywordChecker) EnterIdentifierKeyword(ctx *mysql.IdentifierKeywordContext) {
 	identifier := ctx.GetText()
+	advice := checker.checkIdentifier(identifier)
+	if advice != nil {
+		advice.Line = ctx.GetStart().GetLine()
+		checker.adviceList = append(checker.adviceList, *advice)
+	}
+}
+
+func (checker *namingIdentifierNoKeywordChecker) checkIdentifier(identifier string) *advisor.Advice {
 	if isKeyword(identifier) {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+		return &advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.NameIsKeywordIdentifier,
 			Title:   checker.title,
 			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
-			Line:    ctx.GetStart().GetLine(),
-		})
+		}
 	}
+
+	return nil
 }
 
 func trimBackTicks(s string) string {
