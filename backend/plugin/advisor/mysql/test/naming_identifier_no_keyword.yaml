@@ -15,6 +15,22 @@
       line: 1
       column: 13
       details: ""
+- statement: CREATE TABLE execute(id int)
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: 'Identifier "execute" is a keyword and should be avoided'
+      line: 1
+      details: ""
+- statement: CREATE TABLE `execute`(id int)
+  want:
+    - status: WARN
+      code: 308
+      title: naming.identifier.no-keyword
+      content: 'Identifier "execute" is a keyword and should be avoided'
+      line: 1
+      details: ""
 - statement: CREATE TABLE `interval`(id int);
   want:
     - status: WARN

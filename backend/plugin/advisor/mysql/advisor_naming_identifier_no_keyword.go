@@ -87,6 +87,20 @@ func (checker *namingIdentifierNoKeywordChecker) EnterPureIdentifier(ctx *mysql.
 	}
 }
 
+// EnterIdentifierKeyword is called when entering the identifierKeyword production.
+func (checker *namingIdentifierNoKeywordChecker) EnterIdentifierKeyword(ctx *mysql.IdentifierKeywordContext) {
+	identifier := ctx.GetText()
+	if isKeyword(identifier) {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.NameIsKeywordIdentifier,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Identifier %q is a keyword and should be avoided", identifier),
+			Line:    ctx.GetStart().GetLine(),
+		})
+	}
+}
+
 func trimBackTicks(s string) string {
 	if len(s) < 2 {
 		return s
