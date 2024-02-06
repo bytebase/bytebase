@@ -141,7 +141,9 @@
         <DatabaseChangeHistoryPanel :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="allowToChangeDatabase && allowGetBackupSetting"
+        v-if="
+          showBackupRestoreTab && allowToChangeDatabase && allowGetBackupSetting
+        "
         name="backup-and-restore"
         :tab="$t('common.backup-and-restore')"
       >
@@ -315,6 +317,9 @@ const {
   allowListChangeHistories,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
+const showBackupRestoreTab = computed(() => {
+  return false; // hide for now
+});
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
