@@ -431,21 +431,6 @@ watch(
     immediate: true,
   }
 );
-
-// watch(
-//   () => [state, fullViewChangeHistoryCache.value],
-//   () => {
-//     const fullViewChangeHistory = fullViewChangeHistoryCache.value.get(
-//       state.changeHistory?.name || ""
-//     );
-//     emit("update", {
-//       ...state,
-//       changeHistory: fullViewChangeHistory || state.changeHistory,
-//       conciseHistory: state.conciseHistory,
-//     });
-//   },
-//   { deep: true }
-// );
 </script>
 
 <style lang="postcss">
