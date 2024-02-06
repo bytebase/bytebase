@@ -779,9 +779,10 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 				if err != nil {
 					return nil, err
 				}
-				return &base.PseudoTable{
-					Name:    view,
-					Columns: columns,
+				return &base.PhysicalView{
+					Database: databaseName,
+					Name:     view,
+					Columns:  columns,
 				}, nil
 			}
 		}
