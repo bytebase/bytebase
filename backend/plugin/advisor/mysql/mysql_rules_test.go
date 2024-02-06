@@ -64,6 +64,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDisallowPartition,
 		// advisor.SchemaRuleTableDisallowTrigger disallow the table trigger.
 		advisor.SchemaRuleTableDisallowTrigger,
+		// advisor.SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
+		advisor.SchemaRuleTableNoDuplicateIndex,
 
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
 		advisor.SchemaRuleRequiredColumn,
