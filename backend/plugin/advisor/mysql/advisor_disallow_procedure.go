@@ -36,7 +36,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	if err != nil {
 		return nil, err
 	}
-	checker := &tableDisallowProcedureChecker{
+	checker := &disallowProcedureChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -57,7 +57,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	return checker.adviceList, nil
 }
 
-type tableDisallowProcedureChecker struct {
+type disallowProcedureChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
@@ -67,12 +67,12 @@ type tableDisallowProcedureChecker struct {
 	text       string
 }
 
-func (checker *tableDisallowProcedureChecker) EnterQuery(ctx *mysql.QueryContext) {
+func (checker *disallowProcedureChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
 // EnterCreateProcedure is to check if the procedure is forbidden.
-func (checker *tableDisallowProcedureChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+func (checker *disallowProcedureChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	code := advisor.Ok
 	if ctx.ProcedureName() != nil {
 		code = advisor.DisallowProcedure
