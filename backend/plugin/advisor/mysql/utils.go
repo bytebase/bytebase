@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	parser "github.com/bytebase/mysql-parser"
 )
 
 type columnSet map[string]bool
@@ -82,4 +84,15 @@ type tableData struct {
 	defaultCurrentTimeCount  int
 	onUpdateCurrentTimeCount int
 	line                     int
+}
+
+// isKeyword checks if the keyword is a MySQL keyword.
+// TODO: We should check with map instead of linear search.
+func isKeyword(suspect string) bool {
+	for _, item := range parser.Keywords80 {
+		if strings.EqualFold(suspect, item.Keyword) {
+			return true
+		}
+	}
+	return false
 }
