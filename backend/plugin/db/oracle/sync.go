@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -222,6 +223,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		SELECT username FROM all_users
 		WHERE username NOT IN (%s) AND username NOT LIKE 'APEX_%%' ORDER BY username`,
 		systemSchema)
+	slog.Debug("running get schemas query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -273,6 +275,7 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 		ORDER BY TABLE_NAME`, schemaName)
 	}
 
+	slog.Debug("running get tables query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -338,6 +341,7 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 		ORDER BY TABLE_NAME, COLUMN_ID`, schemaName)
 	}
 
+	slog.Debug("running get columns query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -393,6 +397,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
 	}
+	slog.Debug("running get index column query")
 	colRows, err := txn.Query(queryColumn)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryColumn)
@@ -427,6 +432,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		WHERE TABLE_OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME, COLUMN_POSITION`, schemaName)
 	}
+	slog.Debug("running get index expression query")
 	expRows, err := txn.Query(queryExpression)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, queryExpression)
@@ -467,6 +473,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME, INDEX_NAME`, schemaName)
 	}
+	slog.Debug("running get index query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
@@ -518,6 +525,7 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 	`, schemaName)
 	}
 
+	slog.Debug("running get view query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
