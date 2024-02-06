@@ -10,11 +10,7 @@ import {
   GetChangeHistoryRequest,
   ListChangeHistoriesRequest,
 } from "@/types/proto/v1/database_service";
-import {
-  extractChangeHistoryUID,
-  extractDatabaseResourceName,
-  getStatementSize,
-} from "@/utils";
+import { extractChangeHistoryUID } from "@/utils";
 
 type CacheKeyType = [string /* name */, ChangeHistoryView];
 
@@ -22,18 +18,10 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   const cache = useCache<CacheKeyType, ChangeHistory>(
     "bb.change-history.by-name"
   );
-
-  // const changeHistoryMapByName = reactive(new Map<string, ChangeHistory>());
   const changeHistoryListMapByDatabase = reactive(
     new Map<string, ChangeHistory[]>()
   );
 
-  // const upsertChangeHistoryMap = async (historyList: ChangeHistory[]) => {
-  //   for (let i = 0; i < historyList.length; i++) {
-  //     const history = historyList[i];
-  //     changeHistoryMapByName.set(history.name, history);
-  //   }
-  // };
   const upsertChangeHistoryListMap = async (
     parent: string,
     historyList: ChangeHistory[]
@@ -96,10 +84,10 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     return promise;
   };
   /**
-   * 
-   * @param name 
+   *
+   * @param name
    * @param view default undefined to any view (full -> basic)
-   * @returns 
+   * @returns
    */
   const getChangeHistoryByName = (
     name: string,
