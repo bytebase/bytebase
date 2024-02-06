@@ -9911,7 +9911,6 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the worksheet to retrieve. Format: worksheets/{worksheet} |
-| raw | [bool](#bool) |  | By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content. |
 
 
 
@@ -10004,7 +10003,7 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | creator | [string](#string) |  | The creator of the Worksheet. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The create time of the worksheet. |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The last update time of the worksheet. |
-| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off, if it doesn&#39;t match the `content_size`, you can set the `raw` to true in GetWorksheet request to retrieve the full content. |
+| content | [bytes](#bytes) |  | The content of the worksheet. By default, it will be cut off in SearchWorksheet() method. If it doesn&#39;t match the `content_size`, you can use GetWorksheet() request to retrieve the full content. |
 | content_size | [int64](#int64) |  | content_size is the full size of the content, may not match the size of the `content` field. |
 | visibility | [Worksheet.Visibility](#bytebase-v1-Worksheet-Visibility) |  |  |
 | starred | [bool](#bool) |  | starred indicates whether the worksheet is starred by the current authenticated user. |
