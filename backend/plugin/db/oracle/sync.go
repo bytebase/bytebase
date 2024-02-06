@@ -239,6 +239,9 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
+	}
 
 	return result, nil
 }
@@ -292,6 +295,9 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
 	return tableMap, nil
@@ -360,6 +366,9 @@ func getTableColumns(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
 	return columnsMap, nil
@@ -524,6 +533,9 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 	}
 	if err := rows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrapf(err, "failed to close rows")
 	}
 
 	return viewMap, nil
