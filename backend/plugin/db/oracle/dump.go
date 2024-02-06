@@ -49,6 +49,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer, _ bool) (string, 
 
 func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {
 	for _, schema := range schemas {
+		slog.Debug("dump schema", slog.String("schema", schema))
 		if err := driver.dumpSchemaTxn(ctx, txn, schema, out); err != nil {
 			return errors.Wrapf(err, "failed to dump schema %q", schema)
 		}
@@ -57,21 +58,31 @@ func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string
 }
 
 func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
-	if err := driver.dumpTableTxn(ctx, txn, schema, out); err != nil {
+	version, err := parseVersion(driver.connectionCtx.EngineVersion)
+	if err != nil {
+		return err
+	}
+	slog.Debug("dump tables", slog.String("schema", schema))
+	if err := dumpTableTxn(ctx, txn, schema, version, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump tables")
 	}
+	slog.Debug("dump views", slog.String("schema", schema))
 	if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump views")
 	}
+	slog.Debug("dump functions", slog.String("schema", schema))
 	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump functions")
 	}
+	slog.Debug("dump indexes", slog.String("schema", schema))
 	if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump indexes")
 	}
-	if err := driver.dumpSequenceTxn(ctx, txn, schema, out); err != nil {
+	slog.Debug("dump sequences", slog.String("schema", schema))
+	if err := dumpSequenceTxn(ctx, txn, schema, version, out); err != nil {
 		return errors.Wrapf(err, "failed to dump sequences")
 	}
+	slog.Debug("dump triggers", slog.String("schema", schema))
 	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
 		return errors.Wrapf(err, "failed to dump trigger ordering")
 	}
@@ -1700,8 +1711,9 @@ ORDER BY AT.TABLE_OWNER, AT.TABLE_NAME, AT.TRIGGER_NAME, ATC.COLUMN_NAME ASC
 `
 )
 
-func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {
+func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, schemaTenantMode bool, out io.Writer) error {
 	tableMap := make(map[string]*tableSchema)
+	slog.Debug("running dump table query", slog.String("schema", schema))
 	tableRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTableSQL, schema))
 	var constraintList []*constraintMeta
 	if err != nil {
@@ -1788,18 +1800,15 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 	}
 
 	var fieldRows *sql.Rows
-	firstVersion, secondVersion, err := driver.getVersion(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get oracle version")
-	}
 	// https://docs.oracle.com/en/database/oracle/oracle-database/12.2/refrn/ALL_TAB_COLS.html#GUID-85036F42-140A-406B-BE11-0AC49A00DBA3
-	equalOrHigherThan12c2release := firstVersion > 12 || (firstVersion == 12 && secondVersion >= 2)
+	equalOrHigherThan12c2release := version.first > 12 || (version.first == 12 && version.second >= 2)
 	fieldSQL := ""
 	if equalOrHigherThan12c2release {
 		fieldSQL = fmt.Sprintf(dumpFieldSQL, schema)
 	} else {
 		fieldSQL = fmt.Sprintf(dumpFieldSQLCompatible, schema)
 	}
+	slog.Debug("running dump table fields", slog.String("schema", schema))
 	fieldRows, err = txn.QueryContext(ctx, fieldSQL)
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fieldSQL)
@@ -1851,6 +1860,7 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 		return errors.Wrapf(err, "failed to close rows")
 	}
 
+	slog.Debug("running dump table constraint query", slog.String("schema", schema))
 	constraintRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpConstraintSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpConstraintSQL, schema))
@@ -1933,11 +1943,12 @@ func (driver *Driver) dumpTableTxn(ctx context.Context, txn *sql.Tx, schema stri
 		tableMap[constraint.TableName.String].constraints = append(tableMap[constraint.TableName.String].constraints, constraint)
 	}
 
-	return assembleTableStatement(tableMap, driver.schemaTenantMode, out)
+	return assembleTableStatement(tableMap, schemaTenantMode, out)
 }
 
 func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	viewList := []*viewMeta{}
+	slog.Debug("running dump view query", slog.String("schema", schema))
 	viewRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpViewSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpViewSQL, schema))
@@ -1974,6 +1985,9 @@ func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) e
 	if err := viewRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpViewSQL, schema))
 	}
+	if err := viewRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	// TODO: assemble CREATE VIEW
 	_ = viewList
@@ -1982,6 +1996,7 @@ func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) e
 
 func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	functionList := []*functionMeta{}
+	slog.Debug("running dump function query", slog.String("schema", schema))
 	functionRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpFunctionSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpFunctionSQL, schema))
@@ -2024,6 +2039,9 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 	if err := functionRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpFunctionSQL, schema))
 	}
+	if err := functionRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	// TODO: assemble CREATE FUNCTION
 	_ = functionList
@@ -2032,6 +2050,7 @@ func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Write
 
 func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantMode bool, out io.Writer) error {
 	indexes := []*indexMeta{}
+	slog.Debug("running dump index query", slog.String("schema", schema))
 	indexRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpIndexSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpIndexSQL, schema))
@@ -2115,7 +2134,11 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantM
 	if err := indexRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpIndexSQL, schema))
 	}
+	if err := indexRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
+	slog.Debug("merging indexes", slog.String("schema", schema))
 	var mergedIndexList []*mergedIndexMeta
 	for _, index := range indexes {
 		if len(mergedIndexList) == 0 || mergedIndexList[len(mergedIndexList)-1].IndexName != index.IndexName {
@@ -2194,20 +2217,16 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantM
 	return assembleIndexes(mergedIndexList, schemaTenantMode, out)
 }
 
-func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
+func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
-	var sequenceRows *sql.Rows
-	firstVersion, _, err := driver.getVersion(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get oracle version")
-	}
-	sequenceSQL := ""
-	if firstVersion >= 12 {
+	var sequenceSQL string
+	if version.first >= 12 {
 		sequenceSQL = fmt.Sprintf(dumpSequenceSQL, schema)
 	} else {
 		sequenceSQL = fmt.Sprintf(dumpSequenceSQL11g, schema)
 	}
-	sequenceRows, err = txn.QueryContext(ctx, sequenceSQL)
+	slog.Debug("running dump sequence query", slog.String("schema", schema))
+	sequenceRows, err := txn.QueryContext(ctx, sequenceSQL)
 	if err != nil {
 		return util.FormatErrorWithQuery(err, sequenceSQL)
 	}
@@ -2237,6 +2256,9 @@ func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema s
 	if err := sequenceRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, sequenceSQL)
 	}
+	if err := sequenceRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	// TODO: assemble CREATE SEQUENCE
 	_ = sequences
@@ -2245,6 +2267,7 @@ func (driver *Driver) dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema s
 
 func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	triggerOrderingMap := make(map[string]*triggerOrderingMeta)
+	slog.Debug("running dump trigger ordering query", slog.String("schema", schema))
 	triggerOrderingRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTriggerOrderingSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpTriggerOrderingSQL, schema))
@@ -2269,8 +2292,12 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ i
 	if err := triggerOrderingRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpTriggerOrderingSQL, schema))
 	}
+	if err := triggerOrderingRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
+	}
 
 	triggers := []*triggerMeta{}
+	slog.Debug("running dump trigger query", slog.String("schema", schema))
 	triggerRows, err := txn.QueryContext(ctx, fmt.Sprintf(dumpTriggerSQL, schema))
 	if err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpTriggerSQL, schema))
@@ -2308,6 +2335,9 @@ func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ i
 	}
 	if err := triggerRows.Err(); err != nil {
 		return util.FormatErrorWithQuery(err, fmt.Sprintf(dumpTriggerSQL, schema))
+	}
+	if err := triggerRows.Close(); err != nil {
+		return errors.Wrapf(err, "failed to close rows")
 	}
 
 	// TODO: assemble CREATE TRIGGER
