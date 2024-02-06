@@ -75,7 +75,7 @@
 import { computedAsync } from "@vueuse/core";
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis, NSelect, SelectOption } from "naive-ui";
-import { computed, h, onMounted, reactive, ref, watch } from "vue";
+import { computed, h, onMounted, reactive, watch } from "vue";
 import { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -91,7 +91,6 @@ import {
   useEnvironmentV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   ChangeHistory,
   ChangeHistoryView,
