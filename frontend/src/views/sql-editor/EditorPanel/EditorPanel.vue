@@ -5,8 +5,6 @@
 
       <ConnectionPathBar />
 
-      <SheetForIssueTipsBar />
-
       <Suspense>
         <SQLEditor @execute="handleExecute" />
         <template #fallback>
@@ -52,7 +50,6 @@ import {
   SaveSheetModal,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
-import SheetForIssueTipsBar from "./SheetForIssueTipsBar.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
