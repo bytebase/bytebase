@@ -354,7 +354,7 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   if (isTabItem(item)) {
     tabStore.setCurrentTabId(item.target.id);
   } else {
-    openSheet(item.target, e.metaKey || e.ctrlKey);
+    openSheet(item.target.name, e.metaKey || e.ctrlKey);
   }
 };
 
