@@ -98,6 +98,9 @@ const (
 	// MySQLNamingAutoIncrementColumnConvention is an advisor type for MySQL auto-increment naming convention.
 	MySQLNamingAutoIncrementColumnConvention Type = "bb.plugin.advisor.mysql.naming.auto-increment-column"
 
+	// MySQLIdentifierNamingNoKeyword is an advisor type for MySQL identifier naming convention without keyword.
+	MySQLIdentifierNamingNoKeyword Type = "bb.plugin.advisor.mysql.naming.identifier-no-keyword"
+
 	// MySQLColumnRequirement is an advisor type for MySQL column requirement.
 	MySQLColumnRequirement Type = "bb.plugin.advisor.mysql.column.require"
 
