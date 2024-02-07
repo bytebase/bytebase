@@ -120,6 +120,7 @@ const (
 	DuplicateColumnInIndex     Code = 812
 	IndexCountExceedsLimit     Code = 813
 	CreateIndexUnconcurrently  Code = 814
+	DuplicateIndexInTable      Code = 815
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
