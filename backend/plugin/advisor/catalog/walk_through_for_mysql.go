@@ -935,8 +935,26 @@ func (t *TableState) mysqlValidateColumnList(ctx *FinderContext, columnList []st
 }
 
 // mysqlValidateExpressionList validates the expression list.
-func (*TableState) mysqlValidateExpressionList(_ *FinderContext, _ []string, _ bool, _ bool) *WalkThroughError {
-	// TODO: implement validate expression list.
+// TODO: update expression validation.
+func (t *TableState) mysqlValidateExpressionList(_ *FinderContext, expressionList []string, primary bool, isSpatial bool) *WalkThroughError {
+	for _, expression := range expressionList {
+		column, exists := t.columnSet[strings.ToLower(expression)]
+		// If expression is not a column, we do not need to validate it.
+		if !exists {
+			continue
+		}
+
+		if primary {
+			column.nullable = newFalsePointer()
+		}
+		if isSpatial && column.nullable != nil && *column.nullable {
+			return &WalkThroughError{
+				Type: ErrorTypeSpatialIndexKeyNullable,
+				// The error content comes from MySQL.
+				Content: fmt.Sprintf("All parts of a SPATIAL index must be NOT NULL, but `%s` is nullable", column.name),
+			}
+		}
+	}
 	return nil
 }
 
