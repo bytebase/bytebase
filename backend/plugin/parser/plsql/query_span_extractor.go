@@ -66,7 +66,57 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		q: q,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	return listener.result, listener.err
+	if listener.err != nil {
+		return nil, errors.Wrapf(listener.err, "failed to extract query span from statement: %s", statement)
+	}
+	resources, err := ExtractResourceList(q.connectedDatabase, q.defaultSchema, statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
+	}
+	columnSet := make(base.SourceColumnSet)
+	for _, resource := range resources {
+		if !q.existsTableMetadata(resource) {
+			continue
+		}
+		columnSet[base.ColumnResource{
+			Server:   resource.LinkedServer,
+			Database: resource.Database,
+			Schema:   resource.Schema,
+			Table:    resource.Table,
+		}] = true
+	}
+	result := base.QuerySpan{
+		SourceColumns: columnSet,
+	}
+	if listener.result != nil {
+		result.Results = listener.result.Results
+	}
+	return &result, nil
+}
+
+func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) bool {
+	if resource.Table == "DUAL" {
+		return false
+	}
+	if resource.Schema == "" {
+		resource.Schema = q.defaultSchema
+	}
+	meta, err := q.getDatabaseMetadata(resource.Schema)
+	if err != nil {
+		return false
+	}
+	if meta == nil {
+		return false
+	}
+	schema := meta.GetSchema(resource.Schema)
+	if schema == nil {
+		return false
+	}
+
+	return schema.GetTable(resource.Table) != nil ||
+		schema.GetView(resource.Table) != nil ||
+		schema.GetMaterializedView(resource.Table) != nil ||
+		schema.GetExternalTable(resource.Table) != nil
 }
 
 type selectListener struct {
@@ -233,11 +283,11 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		if err != nil {
 			return nil, err
 		}
-		q.outerTableSources = append(q.outerTableSources, tableSources...)
+		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSources...)
 		fromTableSource = tableSources
 	}
 	defer func() {
-		q.outerTableSources = nil
+		q.tableSourcesFrom = nil
 	}()
 
 	result := new(base.PseudoTable)
@@ -310,7 +360,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 
 	switch rule := ctx.(type) {
 	case plsql.IColumn_nameContext:
-		schemaName, tableName, columnName, err := plsqlNormalizeColumnName(q.defaultSchema, rule)
+		schemaName, tableName, columnName, err := plsqlNormalizeColumnName("", rule)
 		if err != nil {
 			return "", nil, err
 		}
@@ -340,9 +390,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		}
 		switch len(list) {
 		case 1:
-			return list[0], q.getFieldColumnSource(q.defaultSchema, "", list[0]), nil
+			return list[0], q.getFieldColumnSource("", "", list[0]), nil
 		case 2:
-			return list[1], q.getFieldColumnSource(q.defaultSchema, list[0], list[1]), nil
+			return list[1], q.getFieldColumnSource("", list[0], list[1]), nil
 		case 3:
 			return list[2], q.getFieldColumnSource(list[0], list[1], list[2]), nil
 		default:
@@ -368,9 +418,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		}
 		switch len(list) {
 		case 1:
-			return list[0], q.getFieldColumnSource(q.defaultSchema, "", list[0]), nil
+			return list[0], q.getFieldColumnSource("", "", list[0]), nil
 		case 2:
-			return list[1], q.getFieldColumnSource(q.defaultSchema, list[0], list[1]), nil
+			return list[1], q.getFieldColumnSource("", list[0], list[1]), nil
 		case 3:
 			return list[2], q.getFieldColumnSource(list[0], list[1], list[2]), nil
 		default:
@@ -782,9 +832,9 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		}
 		switch len(str) {
 		case 1:
-			return str[0], q.getFieldColumnSource(q.defaultSchema, "", str[0]), nil
+			return str[0], q.getFieldColumnSource("", "", str[0]), nil
 		case 2:
-			return str[1], q.getFieldColumnSource(q.defaultSchema, str[0], str[1]), nil
+			return str[1], q.getFieldColumnSource("", str[0], str[1]), nil
 		case 3:
 			return str[2], q.getFieldColumnSource(str[0], str[1], str[2]), nil
 		default:
@@ -952,7 +1002,7 @@ func (q *querySpanExtractor) plsqlExtractFromClause(ctx plsql.IFrom_clauseContex
 	for _, tableRef := range tableRefList.AllTable_ref() {
 		tableSource, err := q.plsqlExtractTableRef(tableRef)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to extract table ref")
 		}
 		result = append(result, tableSource)
 	}
@@ -1080,7 +1130,7 @@ func (q *querySpanExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxCon
 	tableRefAuxInternal := ctx.Table_ref_aux_internal()
 	tableSource, err := q.plsqlExtractTableRefAuxInternal(tableRefAuxInternal)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to extract table ref aux internal")
 	}
 
 	tableAlias := ctx.Table_alias()
@@ -1180,7 +1230,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	//
 	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
 	// This is the reason we loop the slice in reversed order.
-	if schemaName == "" {
+	if schemaName == q.defaultSchema {
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
@@ -1189,9 +1239,6 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 		}
 	}
 
-	if schemaName == "" {
-		schemaName = q.defaultSchema
-	}
 	dbSchema, err := q.getDatabaseMetadata(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", schemaName)

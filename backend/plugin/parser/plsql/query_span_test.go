@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -49,6 +48,7 @@ func TestGetQuerySpan(t *testing.T) {
 		databaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter)
 		a.NoError(err)
+		a.NotNil(result)
 		resultYaml := result.ToYaml()
 		if record {
 			testCases[i].QuerySpan = resultYaml
@@ -70,10 +70,6 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 		m := make(map[string]*model.DatabaseMetadata)
 		for _, metadata := range databaseMetadata {
 			m[metadata.Name] = model.NewDatabaseMetadata(metadata)
-		}
-
-		if strings.EqualFold(databaseName, "public") {
-			databaseName = "DB"
 		}
 
 		if databaseMetadata, ok := m[databaseName]; ok {
