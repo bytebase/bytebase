@@ -37,7 +37,7 @@
           <NFormItem
             v-if="isDevelopmentIAM"
             path="roles"
-            :label="$t('common.role.self')"
+            :label="$t('settings.members.table.roles')"
           >
             <div class="w-full">
               <NSelect
