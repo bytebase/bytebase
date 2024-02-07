@@ -60,9 +60,6 @@ message GetWorksheetRequest {
   // The name of the worksheet to retrieve.
   // Format: worksheets/{worksheet}
   string name = 1 [(google.api.field_behavior) = REQUIRED];
-
-  // By default, the content of the worksheet is cut off, set the `raw` to true to retrieve the full content.
-  bool raw = 2;
 }
 
 message UpdateWorksheetRequest {
@@ -179,8 +176,8 @@ message Worksheet {
   google.protobuf.Timestamp update_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The content of the worksheet.
-  // By default, it will be cut off, if it doesn't match the `content_size`, you can
-  // set the `raw` to true in GetWorksheet request to retrieve the full content.
+  // By default, it will be cut off in SearchWorksheet() method. If it doesn't match the `content_size`, you can
+  // use GetWorksheet() request to retrieve the full content.
   bytes content = 8 [(google.api.field_behavior) = REQUIRED];
 
   // content_size is the full size of the content, may not match the size of the `content` field.

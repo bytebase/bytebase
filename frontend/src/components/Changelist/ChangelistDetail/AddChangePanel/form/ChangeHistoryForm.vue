@@ -156,8 +156,8 @@ const selectedChangeHistoryList = computed<string[]>({
     const changeHistories: ChangeHistory[] = [];
     for (let i = 0; i < selected.length; i++) {
       const name = selected[i];
-      const changeHistory =
-        useChangeHistoryStore().getChangeHistoryByName(name);
+      const changeHistoryStore = useChangeHistoryStore();
+      const changeHistory = changeHistoryStore.getChangeHistoryByName(name);
       if (changeHistory) {
         changeHistories.push(changeHistory);
       }

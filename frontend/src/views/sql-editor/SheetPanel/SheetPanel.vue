@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[75vw] max-w-[calc(100vw-2rem)]">
+  <div class="w-[75vw] max-w-[calc(100vw-2rem)] relative">
     <NTabs v-model:value="view">
       <NTabPane name="my" :tab="$t('sheet.mine')">
         <SheetTable
@@ -39,14 +39,17 @@
         </div>
       </template>
     </NTabs>
+    <MaskSpinner v-if="isFetchingSheet" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { NButton, NTabs, NTabPane } from "naive-ui";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
+import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
-import { usePageMode } from "@/store";
+import { usePageMode, useSQLEditorStore } from "@/store";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
@@ -56,13 +59,14 @@ const emit = defineEmits<{
 }>();
 
 const { view, events } = useSheetContext();
+const { isFetchingSheet } = storeToRefs(useSQLEditorStore());
 const pageMode = usePageMode();
 const keyword = ref("");
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Worksheet) => {
-  if (await openSheet(sheet)) {
+  if (await openSheet(sheet.name)) {
     emit("close");
   }
 };

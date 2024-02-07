@@ -3,7 +3,6 @@ import { nextTick, ref } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import {
   hasFeature,
-  useWorkSheetStore,
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
@@ -15,7 +14,6 @@ import {
   useDatabaseV1Store,
   useInstanceV1Store,
 } from "@/store";
-import { worksheetNameFromSlug } from "@/utils";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -236,11 +234,9 @@ router.beforeEach((to, from, next) => {
   }
 
   if (sheetSlug) {
-    const sheetName = worksheetNameFromSlug(sheetSlug);
-    useWorkSheetStore()
-      .fetchSheetByName(sheetName)
-      .then(() => next())
-      .catch(() => next());
+    // We've moved the preparation data fetch jobs into ProvideSQLEditorContext.
+    // so just next() here.
+    next();
     return;
   }
 

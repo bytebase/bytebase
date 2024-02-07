@@ -77,7 +77,6 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { LocalizedSQLRuleErrorCodes } from "@/components/Issue/const";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
 import { useReviewPolicyByEnvironmentName } from "@/store";
@@ -142,23 +141,22 @@ const statusIconClass = (status: Advice_Status) => {
 
 const categoryAndTitle = (advice: Advice): [string, string] => {
   const code = advice.code;
+  if (!code) {
+    return ["", advice.title];
+  }
   if (code === SQLReviewPolicyErrorCode.EMPTY_POLICY) {
     const title = messageWithCode(advice.title, code);
     return ["", title];
   }
-  if (LocalizedSQLRuleErrorCodes.has(code)) {
-    const rule = ruleTemplateMap.get(advice.title as RuleType);
-    if (rule) {
-      const ruleLocalization = getRuleLocalization(rule.type);
-      const key = `sql-review.category.${rule.category.toLowerCase()}`;
-      const category = t(key);
-      const title = messageWithCode(ruleLocalization.title, code);
-      return [category, title];
-    } else {
-      return ["", messageWithCode(advice.title, code)];
-    }
+  const rule = ruleTemplateMap.get(advice.title as RuleType);
+  if (rule) {
+    const ruleLocalization = getRuleLocalization(rule.type);
+    const key = `sql-review.category.${rule.category.toLowerCase()}`;
+    const category = t(key);
+    const title = messageWithCode(ruleLocalization.title, code);
+    return [category, title];
   }
-  return ["", advice.title];
+  return ["", messageWithCode(advice.title, code)];
 };
 
 const messageWithCode = (message: string, code: number) => {

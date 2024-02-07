@@ -1111,6 +1111,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return SnowflakeIdentifierNamingNoKeyword, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLIdentifierNamingNoKeyword, nil
+		case storepb.Engine_MYSQL:
+			return MySQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {

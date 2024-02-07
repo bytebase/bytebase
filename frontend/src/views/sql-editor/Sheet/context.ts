@@ -1,4 +1,5 @@
 import Emittery from "emittery";
+import { storeToRefs } from "pinia";
 import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
@@ -6,9 +7,9 @@ import {
   useDatabaseV1Store,
   useWorkSheetStore,
   useTabStore,
+  useSQLEditorStore,
 } from "@/store";
 import { AnyTabInfo, UNKNOWN_ID } from "@/types";
-import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import {
   emptyConnection,
   getSheetStatement,
@@ -108,10 +109,22 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const openSheet = async (sheet: Worksheet, forceNewTab = false) => {
+export const openSheet = async (name: string, forceNewTab = false) => {
+  const { isFetchingSheet } = storeToRefs(useSQLEditorStore());
+  const cleanup = () => {
+    isFetchingSheet.value = false;
+  };
+
+  isFetchingSheet.value = true;
+  const sheet = await useWorkSheetStore().getOrFetchSheetByName(name);
+  if (!sheet) {
+    cleanup();
+    return false;
+  }
+
   const tabStore = useTabStore();
   const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetName == sheet.name
+    (tab) => tab.sheetName === sheet.name
   );
 
   if (!isWorksheetReadableV1(sheet)) {
@@ -120,8 +133,12 @@ export const openSheet = async (sheet: Worksheet, forceNewTab = false) => {
       style: "CRITICAL",
       title: t("common.access-denied"),
     });
+    cleanup();
     return false;
   }
+
+  cleanup();
+
   const statement = getSheetStatement(sheet);
   const newTab: AnyTabInfo = {
     sheetName: sheet.name,

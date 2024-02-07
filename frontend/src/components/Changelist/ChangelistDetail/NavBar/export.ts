@@ -4,6 +4,7 @@ import { useChangeHistoryStore, useSheetV1Store } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { Changelist_Change_Source as ChangeSource } from "@/types";
 import { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
+import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
   escapeFilename,
   getChangelistChangeSourceType,
@@ -33,7 +34,10 @@ const zipFileForChangeHistory = async (
     return;
   }
   const changeHistory =
-    await useChangeHistoryStore().getOrFetchChangeHistoryByName(change.source);
+    await useChangeHistoryStore().getOrFetchChangeHistoryByName(
+      change.source,
+      ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
+    );
   if (!changeHistory) {
     return;
   }
