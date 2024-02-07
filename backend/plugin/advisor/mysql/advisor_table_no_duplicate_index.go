@@ -73,7 +73,11 @@ type tableNoDuplicateIndexChecker struct {
 
 type duplicateIndex struct {
 	indexName string
+	// BTREE, HASH, etc.
 	indexType string
+	unique    bool
+	fulltext  bool
+	spatial   bool
 	columns   []string
 	// line is the line number of the index definition.
 	line int
@@ -143,26 +147,26 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(ctx mysql.ITabl
 	}
 
 	index := duplicateIndex{
-		line: checker.baseLine + ctx.GetStart().GetLine(),
+		indexType: "BTREE",
+		line:      checker.baseLine + ctx.GetStart().GetLine(),
 	}
 	if ctx.KeyListVariants() != nil {
 		index.columns = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 	}
-	indexType := "INDEX"
-	if ctx.KEY_SYMBOL() != nil {
-		indexType = "KEY"
-	} else if ctx.PRIMARY_SYMBOL() != nil {
-		indexType = "PRIMARY"
-	} else if ctx.UNIQUE_SYMBOL() != nil {
-		indexType = "UNIQUE"
+	if ctx.UNIQUE_SYMBOL() != nil {
+		index.unique = true
 	} else if ctx.FULLTEXT_SYMBOL() != nil {
-		indexType = "FULLTEXT"
+		index.fulltext = true
 	} else if ctx.SPATIAL_SYMBOL() != nil {
-		indexType = "SPATIAL"
+		index.spatial = true
 	}
-	index.indexType = indexType
-	if ctx.IndexNameAndType() != nil && ctx.IndexNameAndType().IndexName() != nil {
-		index.indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+	if ctx.IndexNameAndType() != nil {
+		if ctx.IndexNameAndType().IndexName() != nil {
+			index.indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+		}
+		if ctx.IndexNameAndType().IndexType() != nil {
+			index.indexType = ctx.IndexNameAndType().IndexType().GetText()
+		}
 	}
 	checker.indexList = append(checker.indexList, index)
 }
@@ -173,20 +177,31 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	}
 
 	index := duplicateIndex{
-		line: checker.baseLine + ctx.GetStart().GetLine(),
+		indexType: "BTREE",
+		line:      checker.baseLine + ctx.GetStart().GetLine(),
 	}
-	indexType := "INDEX"
 	if ctx.UNIQUE_SYMBOL() != nil {
-		indexType = "UNIQUE"
+		index.unique = true
 	} else if ctx.FULLTEXT_SYMBOL() != nil {
-		indexType = "FULLTEXT"
+		index.fulltext = true
 	} else if ctx.SPATIAL_SYMBOL() != nil {
-		indexType = "SPATIAL"
+		index.spatial = true
 	}
-	index.indexType = indexType
 	if ctx.IndexName() != nil {
 		index.indexName = mysqlparser.NormalizeIndexName(ctx.IndexName())
 	}
+	if ctx.IndexNameAndType() != nil {
+		if ctx.IndexNameAndType().IndexName() != nil {
+			index.indexName = mysqlparser.NormalizeIndexName(ctx.IndexNameAndType().IndexName())
+		}
+		if ctx.IndexNameAndType().IndexType() != nil {
+			index.indexType = ctx.IndexNameAndType().IndexType().GetText()
+		}
+	}
+	if ctx.IndexTypeClause() != nil && ctx.IndexTypeClause().IndexType() != nil {
+		index.indexType = ctx.IndexTypeClause().IndexType().GetText()
+	}
+
 	index.columns = mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	checker.indexList = append(checker.indexList, index)
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
@@ -205,7 +220,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 func hasDuplicateIndexes(indexList []duplicateIndex) *duplicateIndex {
 	seen := make(map[string]struct{})
 	for _, index := range indexList {
-		key := indexNameKey(index)
+		key := indexKey(index)
 		if _, exists := seen[key]; exists {
 			return &index
 		}
@@ -214,7 +229,19 @@ func hasDuplicateIndexes(indexList []duplicateIndex) *duplicateIndex {
 	return nil
 }
 
-// indexNameKey returns a string key for the index with the index type and columns.
-func indexNameKey(index duplicateIndex) string {
-	return fmt.Sprintf("%s:%s", index.indexType, strings.Join(index.columns, ","))
+// indexKey returns a string key for the index with the index type and columns.
+func indexKey(index duplicateIndex) string {
+	parts := []string{}
+	if index.unique {
+		parts = append(parts, "unique")
+	}
+	if index.fulltext {
+		parts = append(parts, "fulltext")
+	}
+	if index.spatial {
+		parts = append(parts, "spatial")
+	}
+	parts = append(parts, index.indexType)
+	parts = append(parts, index.columns...)
+	return strings.Join(parts, "-")
 }

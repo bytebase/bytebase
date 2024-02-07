@@ -101,3 +101,14 @@
       content: "`orders` has duplicate index `idx_customer_duplicate`"
       line: 7
       details: ""
+- statement: |-
+    CREATE TABLE orders (
+        id INT PRIMARY KEY,
+        order_number INT,
+        customer VARCHAR(50)
+    );
+    CREATE INDEX idx_customer_btree USING BTREE ON orders (customer);
+    CREATE INDEX idx_customer_hash USING HASH ON orders (customer);
+  want:
+    - status: SUCCESS
+      title: OK
