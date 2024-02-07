@@ -36,7 +36,7 @@
       code: 815
       title: table.no-duplicate-index
       content: "`users` has duplicate index `idx_username_duplicate`"
-      line: 1
+      line: 7
       details: ""
 - statement: |-
     CREATE TABLE orders (
@@ -52,7 +52,7 @@
       code: 815
       title: table.no-duplicate-index
       content: "`orders` has duplicate index ``"
-      line: 1
+      line: 7
       details: ""
 - statement: |-
     CREATE TABLE orders (

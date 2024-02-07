@@ -75,6 +75,8 @@ type duplicateIndex struct {
 	indexName string
 	indexType string
 	columns   []string
+	// line is the line number of the index definition.
+	line int
 }
 
 func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
@@ -100,7 +102,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 			Code:    advisor.DuplicateIndexInTable,
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			Line:    index.line,
 		})
 	}
 }
@@ -128,7 +130,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 			Code:    advisor.DuplicateIndexInTable,
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			Line:    index.line,
 		})
 	}
 }
@@ -140,7 +142,9 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(ctx mysql.ITabl
 		return
 	}
 
-	index := duplicateIndex{}
+	index := duplicateIndex{
+		line: checker.baseLine + ctx.GetStart().GetLine(),
+	}
 	if ctx.KeyListVariants() != nil {
 		index.columns = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
 	}
@@ -168,7 +172,9 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 		return
 	}
 
-	index := duplicateIndex{}
+	index := duplicateIndex{
+		line: checker.baseLine + ctx.GetStart().GetLine(),
+	}
 	indexType := "INDEX"
 	if ctx.UNIQUE_SYMBOL() != nil {
 		indexType = "UNIQUE"
@@ -190,7 +196,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 			Code:    advisor.DuplicateIndexInTable,
 			Title:   checker.title,
 			Content: fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			Line:    index.line,
 		})
 	}
 }
