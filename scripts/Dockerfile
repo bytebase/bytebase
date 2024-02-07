@@ -18,7 +18,7 @@ COPY . .
 RUN pnpm --dir frontend install --frozen-lockfile
 RUN pnpm --dir frontend release-docker
 
-FROM golang:1.21.6 as backend
+FROM golang:1.22.0 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
