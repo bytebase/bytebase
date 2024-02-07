@@ -12,11 +12,11 @@ COPY . .
 
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
 
-FROM golang:1.21.6 as backend
+FROM golang:1.22.0 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
-ARG GO_VERSION="1.21.6"
+ARG GO_VERSION="1.22.0"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.
 # https://render.com/docs/environment-variables
 ARG RENDER_GIT_COMMIT="unknown"
