@@ -86,3 +86,18 @@
       content: "`orders` has duplicate index `idx_customer_id_duplicate`"
       line: 7
       details: ""
+- statement: |-
+    CREATE TABLE orders (
+        id INT PRIMARY KEY,
+        order_number INT,
+        customer VARCHAR(50)
+    );
+    CREATE INDEX idx_customer ON orders (customer, (order_number * 2));
+    CREATE INDEX idx_customer_duplicate ON orders (customer, (order_number * 2));
+  want:
+    - status: WARN
+      code: 815
+      title: table.no-duplicate-index
+      content: "`orders` has duplicate index `idx_customer_duplicate`"
+      line: 7
+      details: ""

@@ -221,15 +221,15 @@ func NormalizeKeyList(ctx parser.IKeyListContext) []string {
 	return result
 }
 
-// NormalizeMySQLKeyListWithExpression normalize the given keyListWithExpression.
+// NormalizeMySQLKeyListWithExpression normalizes the given keyListWithExpression.
 func NormalizeKeyListWithExpression(ctx parser.IKeyListWithExpressionContext) []string {
 	var result []string
-	for _, key := range ctx.AllKeyPartOrExpression() {
-		if key.KeyPart() != nil {
-			keyText := NormalizeMySQLIdentifier(key.KeyPart().Identifier())
+	for _, expression := range ctx.AllKeyPartOrExpression() {
+		if expression.KeyPart() != nil {
+			keyText := NormalizeMySQLIdentifier(expression.KeyPart().Identifier())
 			result = append(result, keyText)
-		} else if key.ExprWithParentheses() != nil {
-			keyText := key.GetParser().GetTokenStream().GetTextFromRuleContext(key.ExprWithParentheses())
+		} else if expression.ExprWithParentheses() != nil {
+			keyText := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expression.ExprWithParentheses().Expr())
 			result = append(result, keyText)
 		}
 	}

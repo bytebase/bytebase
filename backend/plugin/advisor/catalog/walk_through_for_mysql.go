@@ -436,12 +436,12 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return
 	}
-	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
-	if err := table.mysqlValidateKeyStringList(l.databaseState.ctx, columnList, false /* primary */, isSpatial); err != nil {
+	if err := table.mysqlValidateKeyListVariants(l.databaseState.ctx, ctx.CreateIndexTarget().KeyListVariants(), false /* primary */, isSpatial); err != nil {
 		l.err = err
 		return
 	}
 
+	columnList := mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	if err := table.mysqlCreateIndex(indexName, columnList, unique, tp, mysql.NewEmptyTableConstraintDefContext(), ctx); err != nil {
 		l.err = err
 		return
@@ -821,10 +821,10 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 				// never reach here.
 				return nil
 			}
-			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlValidateKeyStringList(ctx, keyList, true /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyListVariants(ctx, constraintDef.KeyListVariants(), true /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
 			if err := t.mysqlCreatePrimaryKey(keyList, mysqlGetIndexType(constraintDef)); err != nil {
 				return err
 			}
@@ -834,8 +834,7 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 				// never reach here.
 				return nil
 			}
-			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial */); err != nil {
+			if err := t.mysqlValidateKeyListVariants(ctx, constraintDef.KeyListVariants(), false /* primary */, false /* isSpatial */); err != nil {
 				return err
 			}
 
@@ -843,6 +842,7 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
 			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
 			if err := t.mysqlCreateIndex(indexName, keyList, false /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
@@ -852,8 +852,7 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 				// never reach here.
 				return nil
 			}
-			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyListVariants(ctx, constraintDef.KeyListVariants(), false /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
 
@@ -864,6 +863,7 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 			if constraintDef.IndexNameAndType() != nil && constraintDef.IndexNameAndType().IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexNameAndType().IndexName())
 			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
 			if err := t.mysqlCreateIndex(indexName, keyList, true /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
@@ -873,14 +873,14 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 				// never reach here.
 				return nil
 			}
-			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
-			if err := t.mysqlValidateKeyStringList(ctx, keyList, false /* primary */, false /* isSpatial*/); err != nil {
+			if err := t.mysqlValidateKeyListVariants(ctx, constraintDef.KeyListVariants(), false /* primary */, false /* isSpatial*/); err != nil {
 				return err
 			}
 			indexName := ""
 			if constraintDef.IndexName() != nil {
 				indexName = mysqlparser.NormalizeIndexName(constraintDef.IndexName())
 			}
+			keyList := mysqlparser.NormalizeKeyListVariants(constraintDef.KeyListVariants())
 			if err := t.mysqlCreateIndex(indexName, keyList, false /* unique */, mysqlGetIndexType(constraintDef), constraintDef, mysql.NewEmptyCreateIndexContext()); err != nil {
 				return err
 			}
@@ -894,8 +894,25 @@ func (t *TableState) mysqlCreateConstraint(ctx *FinderContext, constraintDef mys
 	return nil
 }
 
-func (t *TableState) mysqlValidateKeyStringList(ctx *FinderContext, keyList []string, primary bool, isSpatial bool) *WalkThroughError {
-	for _, columnName := range keyList {
+// mysqlValidateKeyListVariants validates the key list variants.
+func (t *TableState) mysqlValidateKeyListVariants(ctx *FinderContext, keyList mysql.IKeyListVariantsContext, primary bool, isSpatial bool) *WalkThroughError {
+	if keyList.KeyList() != nil {
+		columns := mysqlparser.NormalizeKeyList(keyList.KeyList())
+		if err := t.mysqlValidateColumnList(ctx, columns, primary, isSpatial); err != nil {
+			return err
+		}
+	}
+	if keyList.KeyListWithExpression() != nil {
+		expressions := mysqlparser.NormalizeKeyListWithExpression(keyList.KeyListWithExpression())
+		if err := t.mysqlValidateExpressionList(ctx, expressions, primary, isSpatial); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *TableState) mysqlValidateColumnList(ctx *FinderContext, columnList []string, primary bool, isSpatial bool) *WalkThroughError {
+	for _, columnName := range columnList {
 		column, exists := t.columnSet[strings.ToLower(columnName)]
 		if !exists {
 			if ctx.CheckIntegrity {
@@ -914,6 +931,12 @@ func (t *TableState) mysqlValidateKeyStringList(ctx *FinderContext, keyList []st
 			}
 		}
 	}
+	return nil
+}
+
+// mysqlValidateExpressionList validates the expression list.
+func (*TableState) mysqlValidateExpressionList(_ *FinderContext, _ []string, _ bool, _ bool) *WalkThroughError {
+	// TODO: implement validate expression list.
 	return nil
 }
 
