@@ -331,6 +331,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleTableNoFK,
 		SchemaRuleTableDisallowPartition,
 		SchemaRuleTableDisallowTrigger,
+		SchemaRuleTableNoDuplicateIndex,
 		SchemaRuleColumnNotNull,
 		SchemaRuleColumnDisallowChangeType,
 		SchemaRuleColumnSetDefaultForNotNull,
