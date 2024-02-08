@@ -751,6 +751,7 @@ func (c *mergedConstraintMeta) assembleConstraintState(out io.Writer) error {
 	return nil
 }
 
+// nolint
 type viewMeta struct {
 	ViewName       sql.NullString
 	TextLength     sql.NullInt64
@@ -770,6 +771,7 @@ type viewMeta struct {
 	ConstraintType sql.NullString
 }
 
+// nolint
 type functionMeta struct {
 	ObjectName    sql.NullString
 	Owner         sql.NullString
@@ -1181,6 +1183,7 @@ type indexMeta struct {
 	ConstraintType       sql.NullString
 }
 
+// nolint
 type sequenceMeta struct {
 	SequenceName sql.NullString
 	MinValue     sql.NullInt64
@@ -1195,6 +1198,7 @@ type sequenceMeta struct {
 	SessionFlag sql.NullString
 }
 
+// nolint
 type triggerOrderingMeta struct {
 	TriggerOwner      sql.NullString
 	TriggerName       sql.NullString
@@ -1203,6 +1207,7 @@ type triggerOrderingMeta struct {
 	OrderingType      sql.NullString
 }
 
+// nolint
 type triggerMeta struct {
 	Owner            sql.NullString
 	TriggerName      sql.NullString
