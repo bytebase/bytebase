@@ -52,8 +52,8 @@ const openModal = async () => {
   if (!state.fetchLast) {
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: props.database.name,
-      skipCache: true,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      skipCache: true,
     });
     state.fetchLast = true;
   }

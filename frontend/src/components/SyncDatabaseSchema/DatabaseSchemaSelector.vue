@@ -95,6 +95,7 @@ import {
   ChangeHistory,
   ChangeHistoryView,
   ChangeHistory_Type,
+  DatabaseMetadataView,
 } from "@/types/proto/v1/database_service";
 import {
   extractChangeHistoryUID,
@@ -219,7 +220,10 @@ const handleDatabaseSelect = async (databaseId: string | undefined) => {
     state.projectId = database.projectEntity.uid;
     state.environmentId = environment?.uid;
     state.databaseId = databaseId;
-    dbSchemaStore.getOrFetchDatabaseMetadata({ database: database.name });
+    dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: database.name,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    });
   }
 };
 

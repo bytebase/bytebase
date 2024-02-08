@@ -37,8 +37,8 @@ export const useVirtualBranch = (
     state.isLoadingDatabaseMetadata = true;
     const metadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: db.name,
-      skipCache: true, // ensure using the latest
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      skipCache: true, // ensure using the latest
     });
     if (signal.aborted) return;
     databaseHeadMetadata.value = filterDatabaseMetadata(metadata);
