@@ -204,8 +204,8 @@ dependencies:
     specifier: ^4.1.0
     version: 4.1.0(vue@3.4.16)
   vueuc:
-    specifier: 0.4.51
-    version: 0.4.51(vue@3.4.16)
+    specifier: 0.4.58
+    version: 0.4.58(vue@3.4.16)
 
 devDependencies:
   '@iconify/json':
@@ -4831,7 +4831,7 @@ packages:
       vdirs: 0.1.8(vue@3.4.16)
       vooks: 0.2.12(vue@3.4.16)
       vue: 3.4.16(typescript@5.3.3)
-      vueuc: 0.4.54(vue@3.4.16)
+      vueuc: 0.4.58(vue@3.4.16)
     dev: false
 
   /nanoid@3.3.7:
@@ -6621,23 +6621,8 @@ packages:
       vue: 3.4.16(typescript@5.3.3)
     dev: false
 
-  /vueuc@0.4.51(vue@3.4.16):
-    resolution: {integrity: sha512-pLiMChM4f+W8czlIClGvGBYo656lc2Y0/mXFSCydcSmnCR1izlKPGMgiYBGjbY9FDkFG8a2HEVz7t0DNzBWbDw==}
-    peerDependencies:
-      vue: ^3.0.11
-    dependencies:
-      '@css-render/vue3-ssr': 0.15.12(vue@3.4.16)
-      '@juggle/resize-observer': 3.4.0
-      css-render: 0.15.12
-      evtd: 0.2.4
-      seemly: 0.3.8
-      vdirs: 0.1.8(vue@3.4.16)
-      vooks: 0.2.12(vue@3.4.16)
-      vue: 3.4.16(typescript@5.3.3)
-    dev: false
-
-  /vueuc@0.4.54(vue@3.4.16):
-    resolution: {integrity: sha512-2LED7h1BSnCRPBI6AlSIf+1Yte1shN+Vb2gpspO5wHI7zWzbcq4bAu2f9nFh5yXIUKdzqmLvzRsOXDl4TrDyCw==}
+  /vueuc@0.4.58(vue@3.4.16):
+    resolution: {integrity: sha512-Wnj/N8WbPRSxSt+9ji1jtDHPzda5h2OH/0sFBhvdxDRuyCZbjGg3/cKMaKqEoe+dErTexG2R+i6Q8S/Toq1MYg==}
     peerDependencies:
       vue: ^3.0.11
     dependencies:

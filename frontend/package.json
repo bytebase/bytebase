@@ -85,7 +85,7 @@
     "vscode-ws-jsonrpc": "3.1.0",
     "vue": "3.4.16",
     "vuedraggable": "^4.1.0",
-    "vueuc": "0.4.51"
+    "vueuc": "0.4.58"
   },
   "devDependencies": {
     "@iconify/json": "2.2.181",
