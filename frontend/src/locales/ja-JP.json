@@ -531,7 +531,8 @@
       "view-by-principals": "プリンシパルで表示",
       "view-by-roles": "ロールで表示",
       "add-member": "メンバーを追加",
-      "update-member": "メンバーを更新"
+      "update-member": "メンバーを更新",
+      "workspace-role-at-least-one": "ワークスペースレベルで少なくとも1つのロールを選択"
     },
     "im-integration": {
       "enable": "有効にする",

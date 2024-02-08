@@ -532,7 +532,8 @@
       "view-by-principals": "Ver por responsables",
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
-      "update-member": "Actualizar miembro"
+      "update-member": "Actualizar miembro",
+      "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador"
     },
     "im-integration": {
       "enable": "Habilitar",
