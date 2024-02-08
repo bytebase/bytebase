@@ -66,26 +66,28 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	if err := dumpTableTxn(ctx, txn, schema, version, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump tables")
 	}
-	slog.Debug("dump views", slog.String("schema", schema))
-	if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump views")
-	}
-	slog.Debug("dump functions", slog.String("schema", schema))
-	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump functions")
-	}
-	slog.Debug("dump indexes", slog.String("schema", schema))
-	if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
-		return errors.Wrapf(err, "failed to dump indexes")
-	}
-	slog.Debug("dump sequences", slog.String("schema", schema))
-	if err := dumpSequenceTxn(ctx, txn, schema, version, out); err != nil {
-		return errors.Wrapf(err, "failed to dump sequences")
-	}
-	slog.Debug("dump triggers", slog.String("schema", schema))
-	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump trigger ordering")
-	}
+	/*
+		slog.Debug("dump views", slog.String("schema", schema))
+		if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump views")
+		}
+		slog.Debug("dump functions", slog.String("schema", schema))
+		if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump functions")
+		}
+		slog.Debug("dump indexes", slog.String("schema", schema))
+		if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
+			return errors.Wrapf(err, "failed to dump indexes")
+		}
+		slog.Debug("dump sequences", slog.String("schema", schema))
+		if err := dumpSequenceTxn(ctx, txn, schema, version, out); err != nil {
+			return errors.Wrapf(err, "failed to dump sequences")
+		}
+		slog.Debug("dump triggers", slog.String("schema", schema))
+		if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump trigger ordering")
+		}
+	*/
 	return nil
 }
 
