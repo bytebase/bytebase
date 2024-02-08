@@ -8,6 +8,7 @@ import {
   DeepPartial,
   ListChangelistsRequest,
 } from "@/types/proto/v1/changelist_service";
+import { ChangeHistoryView } from "@/types/proto/v1/database_service";
 import {
   ResourceComposer,
   isBranchChangeSource,
@@ -101,7 +102,10 @@ export const useChangelistStore = defineStore("changelist", () => {
     const { sheet, source } = change;
     if (isChangeHistoryChangeSource(change)) {
       composer.collect(source, () =>
-        useChangeHistoryStore().getOrFetchChangeHistoryByName(source)
+        useChangeHistoryStore().getOrFetchChangeHistoryByName(
+          source,
+          ChangeHistoryView.CHANGE_HISTORY_VIEW_BASIC
+        )
       );
     } else if (isBranchChangeSource(change)) {
       composer.collect(source, () =>

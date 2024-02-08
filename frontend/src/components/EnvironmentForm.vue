@@ -80,7 +80,10 @@
           />
         </div>
 
-        <div class="flex flex-col gap-y-2">
+        <div
+          v-if="showBackupSchedulePolicySection"
+          class="flex flex-col gap-y-2"
+        >
           <label class="textlabel"> {{ $t("policy.backup.name") }} </label>
           <span
             v-show="valueChanged('backupPolicy')"
@@ -344,6 +347,9 @@ const state = reactive<LocalState>({
   environmentTier: props.environmentTier,
 });
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+const showBackupSchedulePolicySection = computed(() => {
+  return false; // Hide for now
+});
 
 const bindings = computed(() => {
   if (props.drawer) {

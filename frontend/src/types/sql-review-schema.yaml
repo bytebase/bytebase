@@ -377,6 +377,7 @@ ruleList:
       - OCEANBASE_ORACLE
       - SNOWFLAKE
       - MSSQL
+      - MYSQL
     componentList: []
   - type: naming.identifier.case
     category: NAMING

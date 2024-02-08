@@ -19,7 +19,7 @@
       type="text"
       class="edit"
       @blur="confirmEdit"
-      @keyup.enter="confirmEdit"
+      @keyup.enter="e => (e.target as HTMLInputElement).blur()"
       @keyup.esc="cancelEdit"
     />
   </div>
@@ -85,10 +85,13 @@ const confirmEdit = () => {
 
   tab.name = name;
   if (tab.sheetName) {
-    worksheetV1Store.patchSheet({
-      name: tab.sheetName,
-      title: name,
-    });
+    worksheetV1Store.patchSheet(
+      {
+        name: tab.sheetName,
+        title: name,
+      },
+      ["title"]
+    );
   }
 
   state.editing = false;

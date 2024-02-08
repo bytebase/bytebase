@@ -17,7 +17,7 @@ import {
   Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto/v1/worksheet_service";
-import { extractSheetUID } from "@/utils";
+import { extractWorksheetUID } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
@@ -56,7 +56,7 @@ const doSaveSheet = async (title: string) => {
   const { name, statement, sheetName } = tabStore.currentTab;
   title = title || name;
 
-  const sheetId = Number(extractSheetUID(sheetName ?? ""));
+  const sheetId = Number(extractWorksheetUID(sheetName ?? ""));
 
   const conn = tabStore.currentTab.connection;
   const database = await databaseStore.getOrFetchDatabaseByUID(
@@ -66,12 +66,14 @@ const doSaveSheet = async (title: string) => {
 
   let sheet: Worksheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
-    sheet = await worksheetV1Store.patchSheet({
-      name: sheetName,
-      database: database.name,
-      title: title,
-      content: new TextEncoder().encode(statement),
-    });
+    sheet = await worksheetV1Store.patchSheet(
+      {
+        name: sheetName,
+        title,
+        content: new TextEncoder().encode(statement),
+      },
+      ["title", "content"]
+    );
   } else {
     sheet = await worksheetV1Store.createSheet(
       Worksheet.fromPartial({

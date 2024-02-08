@@ -108,6 +108,8 @@ const (
 	SchemaRuleTableDisallowPartition SQLReviewRuleType = "table.disallow-partition"
 	// SchemaRuleTableDisallowTrigger disallow the table trigger.
 	SchemaRuleTableDisallowTrigger SQLReviewRuleType = "table.disallow-trigger"
+	// SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
+	SchemaRuleTableNoDuplicateIndex SQLReviewRuleType = "table.no-duplicate-index"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -1111,6 +1113,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return SnowflakeIdentifierNamingNoKeyword, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLIdentifierNamingNoKeyword, nil
+		case storepb.Engine_MYSQL:
+			return MySQLIdentifierNamingNoKeyword, nil
 		}
 	case SchemaRuleIdentifierCase:
 		switch engine {
@@ -1294,6 +1298,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleTableDisallowTrigger:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableDisallowTrigger, nil
+		}
+	case SchemaRuleTableNoDuplicateIndex:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableNoDuplicateIndex, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
