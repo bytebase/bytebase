@@ -35,7 +35,7 @@
             <template #link>
               <router-link
                 v-if="hasManageSQLReviewPolicyPermission"
-                :to="`/setting/sql-review`"
+                :to="{ name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW }"
                 class="ml-1 normal-link underline"
               >
                 {{ $t("common.go-to-configure") }}
@@ -64,6 +64,7 @@ import { computed, onUnmounted, ref } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
+import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1, usePolicyByParentAndType } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";

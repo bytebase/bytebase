@@ -8,7 +8,10 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <SQLCheckDetail :database="database" :advices="advices" />
+    <PlanCheckDetail
+      :plan-check-run="planCheckRun"
+      :environment="environment"
+    />
 
     <div
       v-if="confirm"
@@ -33,11 +36,17 @@ import { NButton } from "naive-ui";
 import { computed, onMounted } from "vue";
 import { usePolicyV1Store } from "@/store";
 import { ComposedDatabase } from "@/types";
+import {
+  PlanCheckRun,
+  PlanCheckRun_Result,
+  PlanCheckRun_Result_Status,
+  PlanCheckRun_Result_SqlReviewReport,
+  PlanCheckRun_Status,
+} from "@/types/proto/v1/rollout_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { Defer } from "@/utils";
-import SQLCheckDetail from "./SQLCheckDetail.vue";
 
-const { advices } = defineProps<{
+const { advices, database } = defineProps<{
   database: ComposedDatabase;
   advices: Advice[];
   overrideTitle?: string;
@@ -70,4 +79,40 @@ const prepareOrgPolicy = async () => {
     "policies/RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW"
   );
 };
+
+const environment = computed(() => {
+  return database.effectiveEnvironmentEntity.name;
+});
+
+const planCheckRun = computed((): PlanCheckRun => {
+  return PlanCheckRun.fromPartial({
+    status: PlanCheckRun_Status.DONE,
+    results: advices.map((advice) => {
+      let status = PlanCheckRun_Result_Status.STATUS_UNSPECIFIED;
+      switch (advice.status) {
+        case Advice_Status.SUCCESS:
+          status = PlanCheckRun_Result_Status.SUCCESS;
+          break;
+        case Advice_Status.WARNING:
+          status = PlanCheckRun_Result_Status.WARNING;
+          break;
+        case Advice_Status.ERROR:
+          status = PlanCheckRun_Result_Status.ERROR;
+          break;
+      }
+      return PlanCheckRun_Result.fromPartial({
+        status,
+        title: advice.title,
+        code: advice.code,
+        content: advice.content,
+        sqlReviewReport: PlanCheckRun_Result_SqlReviewReport.fromPartial({
+          line: advice.line,
+          column: advice.column,
+          detail: advice.detail,
+          code: advice.code,
+        }),
+      });
+    }),
+  });
+});
 </script>
