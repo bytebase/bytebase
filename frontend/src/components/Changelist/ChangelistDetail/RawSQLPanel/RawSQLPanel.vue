@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
@@ -93,11 +94,11 @@ const title = ref(t("changelist.change-source.raw-sql"));
 const statement = ref("");
 const isUpdating = ref(false);
 
-const sheet = computed(() => {
+const sheet = computedAsync(async () => {
   const { sheetName } = props;
   if (!sheetName) return undefined;
-  return sheetStore.getSheetByName(sheetName);
-});
+  return sheetStore.getOrFetchSheetByName(sheetName, "FULL");
+}, undefined);
 
 const show = computed(() => {
   return sheet.value !== undefined;

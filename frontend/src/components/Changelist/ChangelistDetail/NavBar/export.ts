@@ -26,10 +26,7 @@ const zipFileForChangeHistory = async (
   change: Change,
   index: number
 ) => {
-  const sheet = await useSheetV1Store().fetchSheetByName(
-    change.sheet,
-    true /* raw */
-  );
+  const sheet = await useSheetV1Store().fetchSheetByName(change.sheet, "FULL");
   if (!sheet) {
     return;
   }
@@ -51,10 +48,7 @@ const zipFileForChangeHistory = async (
 };
 
 const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
-  const sheet = await useSheetV1Store().fetchSheetByName(
-    change.sheet,
-    true /* raw */
-  );
+  const sheet = await useSheetV1Store().fetchSheetByName(change.sheet, "FULL");
   if (!sheet) {
     return;
   }
@@ -71,10 +65,7 @@ const zipFileForBranch = async (zip: JSZip, change: Change, index: number) => {
 };
 
 const zipFileForRawSQL = async (zip: JSZip, change: Change, index: number) => {
-  const sheet = await useSheetV1Store().fetchSheetByName(
-    change.sheet,
-    true /* raw */
-  );
+  const sheet = await useSheetV1Store().fetchSheetByName(change.sheet, "FULL");
   if (!sheet) {
     return;
   }

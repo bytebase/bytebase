@@ -168,7 +168,8 @@ const tryRollbackTask = async () => {
     ].join(" ");
 
     const originalSheet = await sheetV1Store.getOrFetchSheetByName(
-      config.value.sheet
+      config.value.sheet,
+      "FULL"
     );
     const description = [
       "The original SQL statement:",

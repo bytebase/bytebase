@@ -184,7 +184,7 @@ const createSheets = async () => {
       sheet.database = "";
     }
     sheet.title = issue.value.title;
-    const createdSheet = await useSheetV1Store().createSheet(
+    const createdSheet = await sheetStore.createSheet(
       issue.value.project,
       sheet
     );
@@ -246,7 +246,7 @@ const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
     const spec = specForTask(issue.planEntity, task);
     const database = databaseForTask(issue, task);
     const sheetName = sheetNameOfTaskV1(task);
-    const sheet = await sheetStore.getOrFetchSheetByName(sheetName);
+    const sheet = await sheetStore.getOrFetchSheetByName(sheetName, "FULL");
     const statement = sheet ? getSheetStatement(sheet) : "";
     eventParams.tasks.push({
       database: toRaw(database),
