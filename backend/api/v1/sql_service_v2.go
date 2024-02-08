@@ -45,7 +45,15 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		return nil, err
 	}
 
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance), s.buildListDatabaseNamesFunc(instance))
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		s.buildGetDatabaseMetadataFunc(instance),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}
@@ -115,7 +123,15 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	// Get query span.
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance), s.buildListDatabaseNamesFunc(instance))
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		s.buildGetDatabaseMetadataFunc(instance),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}

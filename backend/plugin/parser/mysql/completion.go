@@ -598,7 +598,6 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 		}
 	} else {
 		// User didn't specify the column list, so we need to fetch the column list from the database.
-		// TODO(zp): GetQuerySpan doesn't support MySQL yet.
 		if span, err := base.GetQuerySpan(
 			l.context.ctx,
 			store.Engine_MYSQL,
@@ -606,6 +605,7 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 			l.context.defaultDatabase,
 			l.context.getMetadata,
 			l.context.listDatabaseNames,
+			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
 				table.Columns = append(table.Columns, column.Name)
@@ -988,7 +988,6 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 			}
 		} else {
 			// User didn't specify the column list, so we should extract the column list from the select statement.
-			// TODO(zp): GetQuerySpan doesn't support MySQL yet.
 			if span, err := base.GetQuerySpan(
 				l.context.ctx,
 				store.Engine_MYSQL,
@@ -996,6 +995,7 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 				l.context.defaultDatabase,
 				l.context.getMetadata,
 				l.context.listDatabaseNames,
+				false,
 			); err == nil && len(span) == 1 {
 				for _, column := range span[0].Results {
 					reference.Columns = append(reference.Columns, column.Name)

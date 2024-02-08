@@ -23,44 +23,52 @@ func TestGetQuerySpan(t *testing.T) {
 		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  string              `yaml:"metadata,omitempty"`
-		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
+		Metadata           string              `yaml:"metadata,omitempty"`
+		QuerySpan          *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
+		IgnoreCaseSensitve bool                `yaml:"ignoreCaseSensitive,omitempty"`
 	}
 
-	const (
-		record       = true
-		testDataPath = "test-data/query_span.yaml"
+	var (
+		record        = true
+		testDataPaths = []string{
+			"test-data/query-span/standard.yaml",
+			"test-data/query-span/case_insensitive.yaml",
+		}
 	)
 
 	a := require.New(t)
-	yamlFile, err := os.Open(testDataPath)
-	a.NoError(err)
+	for _, testDataPath := range testDataPaths {
+		testDataPath := testDataPath
 
-	var testCases []testCase
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
+		yamlFile, err := os.Open(testDataPath)
+		a.NoError(err)
 
-	for i, tc := range testCases {
-		metadata := &storepb.DatabaseSchemaMetadata{}
-		a.NoErrorf(protojson.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
-		databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter, databaseNameLister)
-		a.NoErrorf(err, "statement: %s", tc.Statement)
-		resultYaml := result.ToYaml()
-		if record {
-			testCases[i].QuerySpan = resultYaml
-		} else {
-			a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+		var testCases []testCase
+		byteValue, err := io.ReadAll(yamlFile)
+		a.NoError(err)
+		a.NoError(yamlFile.Close())
+		a.NoError(yaml.Unmarshal(byteValue, &testCases))
+
+		for i, tc := range testCases {
+			metadata := &storepb.DatabaseSchemaMetadata{}
+			a.NoErrorf(protojson.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
+			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter, databaseNameLister, tc.IgnoreCaseSensitve)
+			a.NoErrorf(err, "statement: %s", tc.Statement)
+			resultYaml := result.ToYaml()
+			if record {
+				testCases[i].QuerySpan = resultYaml
+			} else {
+				a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+			}
 		}
-	}
 
-	if record {
-		byteValue, err := yaml.Marshal(testCases)
-		a.NoError(err)
-		err = os.WriteFile(testDataPath, byteValue, 0644)
-		a.NoError(err)
+		if record {
+			byteValue, err := yaml.Marshal(testCases)
+			a.NoError(err)
+			err = os.WriteFile(testDataPath, byteValue, 0644)
+			a.NoError(err)
+		}
 	}
 }
 

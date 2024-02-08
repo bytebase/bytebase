@@ -617,6 +617,7 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 			l.context.defaultDatabase,
 			l.context.getMetadata,
 			l.context.listDatabaseNames,
+			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
 				table.Columns = append(table.Columns, column.Name)
@@ -979,6 +980,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 						l.context.defaultDatabase,
 						l.context.getMetadata,
 						l.context.listDatabaseNames,
+						false,
 					); err == nil && len(span) == 1 {
 						for _, column := range span[0].Results {
 							virtualReference.Columns = append(virtualReference.Columns, column.Name)
