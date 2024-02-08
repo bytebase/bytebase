@@ -24,7 +24,7 @@
       <PlanCheckDetail
         v-if="selectedPlanCheckRun"
         :plan-check-run="selectedPlanCheckRun"
-        :task="task"
+        :environment="environment"
       />
     </div>
   </BBModal>
@@ -34,13 +34,14 @@
 import { first, orderBy } from "lodash-es";
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import { TabFilter, TabFilterItem } from "@/components/v2";
 import {
   PlanCheckRun,
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import { humanizeDate } from "@/utils";
+import { humanizeDate, extractEnvironmentResourceName } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
 
@@ -56,6 +57,7 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { issue } = useIssueContext();
 
 const selectedPlanCheckRunList = computed(() => {
   return orderBy(
@@ -96,5 +98,16 @@ const tabItemList = computed(() => {
 
 watch(selectedPlanCheckRunList, (list) => {
   selectedPlanCheckRunUID.value = first(list)?.uid;
+});
+
+const environment = computed(() => {
+  const task = props.task;
+  if (!task) {
+    return;
+  }
+  const database = databaseForTask(issue.value, task);
+  return extractEnvironmentResourceName(
+    database.effectiveEnvironmentEntity.name
+  );
 });
 </script>

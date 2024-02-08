@@ -93,9 +93,10 @@
 <script setup lang="ts">
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
+import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
+import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
 import { useReviewPolicyByEnvironmentName } from "@/store";
 import {
   GeneralErrorCode,
@@ -112,9 +113,7 @@ import {
   PlanCheckRun_Result,
   PlanCheckRun_Result_Status,
   PlanCheckRun_Status,
-  Task,
 } from "@/types/proto/v1/rollout_service";
-import { extractEnvironmentResourceName } from "@/utils";
 import PlanCheckResultDefinitionModal from "./PlanCheckResultDefinitionModal.vue";
 
 interface ErrorCodeLink {
@@ -142,15 +141,15 @@ type LocalState = {
 
 const props = defineProps<{
   planCheckRun: PlanCheckRun;
-  task?: Task;
+  environment?: string;
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const state = reactive<LocalState>({
   activeRule: undefined,
   activeResultDefinition: undefined,
 });
-const { issue } = useIssueContext();
 
 const statusIconClass = (status: PlanCheckRun_Result_Status) => {
   switch (status) {
@@ -233,10 +232,13 @@ const errorCodeLink = (
     case GeneralErrorCode.OK:
       return;
     case SQLReviewPolicyErrorCode.EMPTY_POLICY:
+      const route = router.resolve({
+        name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+      });
       return {
         title: t("sql-review.configure-policy"),
         target: "_self",
-        url: "/setting/sql-review",
+        url: route.fullPath,
       };
     default: {
       const errorCodeNamespace =
@@ -273,14 +275,7 @@ const showCategoryColumn = computed((): boolean =>
 
 const reviewPolicy = useReviewPolicyByEnvironmentName(
   computed(() => {
-    const task = props.task;
-    if (!task) {
-      return String(UNKNOWN_ID);
-    }
-    const database = databaseForTask(issue.value, task);
-    return extractEnvironmentResourceName(
-      database.effectiveEnvironmentEntity.name
-    );
+    return props.environment || String(UNKNOWN_ID);
   })
 );
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
