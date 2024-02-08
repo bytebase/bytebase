@@ -530,7 +530,8 @@
       "view-by-principals": "按成员查看",
       "view-by-roles": "按角色查看",
       "add-member": "添加成员",
-      "update-member": "更新成员"
+      "update-member": "更新成员",
+      "workspace-role-at-least-one": "至少选择一个工作空间级别的角色"
     },
     "im-integration": {
       "enable": "启用",

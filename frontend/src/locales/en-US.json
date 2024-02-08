@@ -532,7 +532,8 @@
       "view-by-principals": "View by principals",
       "view-by-roles": "View by roles",
       "add-member": "Add member",
-      "update-member": "Update member"
+      "update-member": "Update member",
+      "workspace-role-at-least-one": "At least one workspace role is required"
     },
     "im-integration": {
       "enable": "Enable",

@@ -532,7 +532,8 @@
       "view-by-principals": "Xem bởi hiệu trưởng",
       "view-by-roles": "Xem theo vai trò",
       "add-member": "Thêm thành viên",
-      "update-member": "Cập nhật thành viên"
+      "update-member": "Cập nhật thành viên",
+      "workspace-role-at-least-one": "Không thể xóa vai trò của người dùng cuối cùng trong không gian làm việc."
     },
     "im-integration": {
       "enable": "Cho phép",
