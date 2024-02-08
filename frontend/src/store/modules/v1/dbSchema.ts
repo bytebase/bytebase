@@ -7,7 +7,6 @@ import {
   DatabaseMetadata,
   TableMetadata,
   DatabaseMetadataView,
-  GetDatabaseMetadataRequest,
 } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName } from "@/utils";
 
