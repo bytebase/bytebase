@@ -55,6 +55,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		return nil, errors.Errorf("invalid port %q", config.Port)
 	}
 	options := make(map[string]string)
+	options["CONNECTION TIMEOUT"] = "0"
 	if config.SID != "" {
 		options["SID"] = config.SID
 	}

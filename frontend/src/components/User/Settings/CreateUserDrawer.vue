@@ -37,14 +37,22 @@
           <NFormItem
             v-if="isDevelopmentIAM"
             path="roles"
-            :label="$t('common.role.self')"
+            :label="$t('settings.members.table.roles')"
           >
-            <NSelect
-              v-model:value="state.user.roles"
-              multiple
-              :options="availableRoles"
-              :placeholder="$t('role.select-roles')"
-            />
+            <div class="w-full">
+              <NSelect
+                v-model:value="state.user.roles"
+                multiple
+                :options="availableRoles"
+                :placeholder="$t('role.select-roles')"
+              />
+              <p
+                v-if="state.user.roles.length > 0 && !hasWorkspaceRole"
+                class="textinfolabel mt-1 !text-red-600"
+              >
+                {{ $t("settings.members.workspace-role-at-least-one") }}
+              </p>
+            </div>
           </NFormItem>
           <!-- TODO(steven): remove this after IAM migrated -->
           <NFormItem v-else path="roles" :label="$t('common.role.self')">
@@ -161,7 +169,7 @@ import {
   useRoleStore,
   useUserStore,
 } from "@/store";
-import { PresetRoleType, emptyUser } from "@/types";
+import { PRESET_WORKSPACE_ROLES, PresetRoleType, emptyUser } from "@/types";
 import {
   UpdateUserRequest,
   User,
@@ -207,12 +215,20 @@ const availableRoles = computed(() => {
   }));
 });
 
+const hasWorkspaceRole = computed(() => {
+  return state.user.roles.some((role) => PRESET_WORKSPACE_ROLES.includes(role));
+});
+
 const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 
 const isCreating = computed(() => !props.user);
 
 const allowConfirm = computed(() => {
-  if (!state.user.email || state.user.roles.length === 0) {
+  if (
+    !state.user.email ||
+    state.user.roles.length === 0 ||
+    !hasWorkspaceRole.value
+  ) {
     return false;
   }
   if (

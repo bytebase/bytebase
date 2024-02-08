@@ -356,7 +356,6 @@ import {
   ChangeHistory_Type,
   changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
-  DatabaseMetadataView,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
 import { PushEvent, VcsType, vcsTypeToJSON } from "@/types/proto/v1/vcs";
@@ -450,7 +449,6 @@ watch(
       dbSchemaStore.getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: false,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
       }),
       changeHistoryStore.getOrFetchChangeHistoryByName(
         changeHistoryName.value,

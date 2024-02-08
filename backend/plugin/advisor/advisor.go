@@ -170,6 +170,9 @@ const (
 	// MySQLTableDisallowTrigger is an advisor type for MySQL disallow table trigger.
 	MySQLTableDisallowTrigger Type = "bb.plugin.advisor.mysql.table.disallow-trigger"
 
+	// MySQLTableNoDuplicateIndex is an advisor type for MySQL no duplicate index.
+	MySQLTableNoDuplicateIndex Type = "bb.plugin.advisor.mysql.table.no-duplicate-index"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 

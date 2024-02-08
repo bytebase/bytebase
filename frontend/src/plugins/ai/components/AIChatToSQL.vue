@@ -14,6 +14,7 @@ import {
 } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { Connection } from "@/types";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import type { AIContextEvents } from "../types";
 
 const [{ useChatByTab, provideAIContext }, { default: ChatPanel }] =
@@ -66,7 +67,8 @@ const { database } = useDatabaseV1ByUID(
 );
 const databaseMetadata = useMetadata(
   database.value.name,
-  false /* !skipCache */
+  false /* !skipCache */,
+  DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
 );
 
 const events: AIContextEvents = new Emittery();
@@ -84,7 +86,7 @@ provideAIContext({
   openAIKey,
   openAIEndpoint,
   engine: computed(() => instance.value.engine),
-  databaseMetadata: databaseMetadata,
+  databaseMetadata,
   autoRun,
   showHistoryDialog: toRef(state, "showHistoryDialog"),
   chat,

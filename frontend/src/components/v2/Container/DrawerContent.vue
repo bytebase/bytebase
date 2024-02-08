@@ -1,5 +1,10 @@
 <template>
-  <NDrawerContent class="relative" :closable="closable" :title="title">
+  <NDrawerContent
+    class="relative"
+    :closable="closable"
+    :title="title"
+    v-bind="contentProps"
+  >
     <template v-if="$slots.header" #header>
       <slot name="header" />
     </template>
@@ -13,16 +18,18 @@
 </template>
 
 <script setup lang="ts">
-import { NDrawerContent } from "naive-ui";
+import { NDrawerContent, DrawerContentProps } from "naive-ui";
 
 withDefaults(
   defineProps<{
     title?: string;
     closable?: boolean;
+    contentProps?: DrawerContentProps;
   }>(),
   {
     title: undefined,
     closable: true,
+    contentProps: undefined,
   }
 );
 </script>

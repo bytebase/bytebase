@@ -10,4 +10,10 @@ export const PresetRoleType = {
   PROJECT_VIEWER: "roles/projectViewer",
 };
 
+export const PRESET_WORKSPACE_ROLES = [
+  PresetRoleType.WORKSPACE_ADMIN,
+  PresetRoleType.WORKSPACE_DBA,
+  PresetRoleType.WORKSPACE_MEMBER,
+];
+
 export const PRESET_ROLES = Object.values(PresetRoleType);
