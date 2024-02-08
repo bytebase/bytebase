@@ -54,7 +54,7 @@
     "monaco-editor": "0.45.0",
     "monaco-editor-workers": "0.45.0",
     "monaco-languageclient": "7.3.0",
-    "naive-ui": "2.36.0",
+    "naive-ui": "2.37.3",
     "nice-grpc-common": "^2.0.2",
     "nice-grpc-error-details": "^0.2.4",
     "nice-grpc-web": "^3.3.2",

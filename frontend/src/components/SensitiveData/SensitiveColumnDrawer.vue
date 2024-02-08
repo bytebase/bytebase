@@ -218,6 +218,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { TrashIcon } from "lucide-vue-next";
 import {
   NSelect,
@@ -617,31 +618,18 @@ const updateExceptionPolicy = async () => {
   await policyStore.updatePolicy(["payload"], policy);
 };
 
-const columnMetadata = computed(() => {
-  if (
-    props.column.maskData.maskingLevel !==
-    MaskingLevel.MASKING_LEVEL_UNSPECIFIED
-  ) {
-    return;
+const columnMetadata = computedAsync(async () => {
+  const { column } = props;
+  if (column.maskData.maskingLevel !== MaskingLevel.MASKING_LEVEL_UNSPECIFIED) {
+    return undefined;
   }
-  const schemaList = dbSchemaStore.getSchemaList(props.column.database.name);
-  const schema = schemaList.find(
-    (schema) => schema.name === props.column.maskData.schema
-  );
-  if (!schema) {
-    return;
-  }
-  const table = schema.tables.find(
-    (table) => table.name === props.column.maskData.table
-  );
-  if (!table) {
-    return;
-  }
-
-  return table.columns.find(
-    (column) => column.name === props.column.maskData.column
-  );
-});
+  const table = await dbSchemaStore.getOrFetchTableMetadata({
+    database: column.database.name,
+    schema: column.maskData.schema,
+    table: column.maskData.table,
+  });
+  return table?.columns.find((c) => c.name === column.maskData.column);
+}, undefined);
 
 const algorithmList = computed((): SelectOption[] => {
   const list = (

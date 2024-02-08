@@ -126,7 +126,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, ref, reactive } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { computed, ref, reactive } from "vue";
 import {
   DatabaseV1Name,
   InstanceV1Name,
@@ -140,10 +141,7 @@ import {
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import {
-  ExternalTableMetadata,
-  TableMetadata,
-} from "@/types/proto/v1/database_service";
+import { TableMetadata } from "@/types/proto/v1/database_service";
 import { hasProjectPermissionV2, isDatabaseV1Queryable } from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
@@ -170,7 +168,25 @@ const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
 });
-const externalTable = ref<ExternalTableMetadata>();
+
+const isFetchingTableMetadata = ref(false);
+const externalTable = computedAsync(
+  async () => {
+    const { schemaName, externalTableName } = props;
+    if (!externalTableName) {
+      return;
+    }
+    const externalTableList = await dbSchemaStore.getOrFetchExternalTableList(
+      database.value.name,
+      schemaName
+    );
+    return externalTableList.find((t) => t.name === externalTableName);
+  },
+  undefined,
+  {
+    evaluating: isFetchingTableMetadata,
+  }
+);
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
@@ -203,24 +219,4 @@ const getTableName = (tableName: string) => {
   }
   return tableName;
 };
-
-watch(
-  () => [props.externalTableName, props.schemaName],
-  ([externalTableName, schemaName]) => {
-    if (!externalTableName) {
-      return;
-    }
-    const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-    const schema = schemaList.find((schema) => schema.name === schemaName);
-    if (schema) {
-      externalTable.value = schema.externalTables.find((t) => {
-        if (t.name === externalTableName) {
-          externalTable.value = t;
-          return true;
-        }
-        return false;
-      });
-    }
-  }
-);
 </script>

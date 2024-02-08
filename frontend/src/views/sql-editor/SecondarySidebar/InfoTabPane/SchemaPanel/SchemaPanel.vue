@@ -92,8 +92,8 @@ const databaseMetadata = asyncComputed(
     const { name } = database.value;
     const databaseMetadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: name,
-      skipCache: false,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+      skipCache: false,
     });
     return databaseMetadata;
   },

@@ -72,6 +72,7 @@ import {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { MaskData } from "@/types/proto/v1/org_policy_service";
+import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
 
 type LocalState = {
   showFeatureModal: boolean;
