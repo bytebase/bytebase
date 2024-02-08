@@ -15,7 +15,7 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_OCEANBASE_ORACLE, GetQuerySpan)
 }
 
-func GetQuerySpan(ctx context.Context, statement string, database string, getDatabaseMetadata base.GetDatabaseMetadataFunc) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, statement string, database string, getDatabaseMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc, _ bool) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, getDatabaseMetadata)
 
 	querySpan, err := extractor.getQuerySpan(ctx, statement)
