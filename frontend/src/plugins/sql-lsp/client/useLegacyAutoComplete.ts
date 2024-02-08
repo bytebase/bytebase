@@ -60,8 +60,8 @@ export const useLegacyAutoComplete = async (
 
     return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: database.value.name,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: false,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
     });
   }, DatabaseMetadata.fromPartial({ name: unknownDatabase().name }));
 
