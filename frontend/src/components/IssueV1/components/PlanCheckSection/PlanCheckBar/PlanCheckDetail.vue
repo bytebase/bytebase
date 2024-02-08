@@ -232,13 +232,12 @@ const errorCodeLink = (
     case GeneralErrorCode.OK:
       return;
     case SQLReviewPolicyErrorCode.EMPTY_POLICY:
-      const route = router.resolve({
-        name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
-      });
       return {
         title: t("sql-review.configure-policy"),
         target: "_self",
-        url: route.fullPath,
+        url: router.resolve({
+          name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+        }).fullPath,
       };
     default: {
       const errorCodeNamespace =
