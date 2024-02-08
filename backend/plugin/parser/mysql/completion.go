@@ -32,8 +32,8 @@ func init() {
 }
 
 // Completion is the entry point of MySQL code completion.
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata)
+func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
+	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
 	return completer.completion()
 }
 
@@ -208,6 +208,7 @@ type Completer struct {
 	scanner             *base.Scanner
 	defaultDatabase     string
 	getMetadata         base.GetDatabaseMetadataFunc
+	listDatabaseNames   base.ListDatabaseNamesFunc
 	metadataCache       map[string]*model.DatabaseMetadata
 	noSeparatorRequired map[int]bool
 	// referencesStack is a hierarchical stack of table references.
@@ -220,7 +221,7 @@ type Completer struct {
 	cteTables  []*base.VirtualTableReference
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) *Completer {
+func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all MySQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -242,6 +243,7 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 		scanner:             scanner,
 		defaultDatabase:     defaultDatabase,
 		getMetadata:         metadata,
+		listDatabaseNames:   listDatabaseNames,
 		metadataCache:       make(map[string]*model.DatabaseMetadata),
 		noSeparatorRequired: newNoSeparatorRequired(),
 		cteCache:            make(map[int][]*base.VirtualTableReference),
@@ -603,6 +605,7 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 			fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 			l.context.defaultDatabase,
 			l.context.getMetadata,
+			l.context.listDatabaseNames,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
 				table.Columns = append(table.Columns, column.Name)
@@ -992,6 +995,7 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 				fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 				l.context.defaultDatabase,
 				l.context.getMetadata,
+				l.context.listDatabaseNames,
 			); err == nil && len(span) == 1 {
 				for _, column := range span[0].Results {
 					reference.Columns = append(reference.Columns, column.Name)

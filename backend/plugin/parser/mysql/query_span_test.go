@@ -1,4 +1,4 @@
-package pg
+package mysql
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	const (
-		record       = false
+		record       = true
 		testDataPath = "test-data/query_span.yaml"
 	)
 
@@ -44,15 +44,15 @@ func TestGetQuerySpan(t *testing.T) {
 
 	for i, tc := range testCases {
 		metadata := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(protojson.Unmarshal([]byte(tc.Metadata), metadata))
+		a.NoErrorf(protojson.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
 		databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
 		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter, databaseNameLister)
-		a.NoError(err)
+		a.NoErrorf(err, "statement: %s", tc.Statement)
 		resultYaml := result.ToYaml()
 		if record {
 			testCases[i].QuerySpan = resultYaml
 		} else {
-			a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+			a.Equalf(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
 		}
 	}
 

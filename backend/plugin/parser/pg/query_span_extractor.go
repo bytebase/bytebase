@@ -296,6 +296,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					find := false
+					// TODO(zp): remove iterate fromFieldList because we had append it to q.tableSourcesFrom.
 					for _, tableSource := range fromFieldList {
 						if schemaName == "" || schemaName == tableSource.GetSchemaName() {
 							if tableName == tableSource.GetTableName() {

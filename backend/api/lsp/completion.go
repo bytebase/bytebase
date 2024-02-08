@@ -51,7 +51,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
-	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
+	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc, h.ListDatabaseNamesFunc)
 	if err != nil {
 		// return errors will close the websocket connection, so we just log the error and return empty completion list.
 		slog.Error("Failed to get completion candidates", "err", err)
@@ -165,4 +165,23 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName stri
 		return nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
 	}
 	return metadata.GetDatabaseMetadata(), nil
+}
+
+func (h *Handler) ListDatabaseNamesFunc(ctx context.Context) ([]string, error) {
+	instanceID := h.getInstanceID()
+	if instanceID == "" {
+		return nil, errors.Errorf("instance is not specified")
+	}
+
+	databases, err := h.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID: &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list databases")
+	}
+	var names []string
+	for _, database := range databases {
+		names = append(names, database.DatabaseName)
+	}
+	return names, nil
 }

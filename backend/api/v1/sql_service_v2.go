@@ -45,7 +45,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		return nil, err
 	}
 
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
+	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance), s.buildListDatabaseNamesFunc(instance))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}
@@ -115,7 +115,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	// Get query span.
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
+	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance), s.buildListDatabaseNamesFunc(instance))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}
@@ -532,6 +532,22 @@ func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessag
 			return nil, nil
 		}
 		return databaseMetadata.GetDatabaseMetadata(), nil
+	}
+}
+
+func (s *SQLService) buildListDatabaseNamesFunc(instance *store.InstanceMessage) base.ListDatabaseNamesFunc {
+	return func(ctx context.Context) ([]string, error) {
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instance.ResourceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, 0, len(databases))
+		for _, database := range databases {
+			names = append(names, database.DatabaseName)
+		}
+		return names, nil
 	}
 }
 

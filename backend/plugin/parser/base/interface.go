@@ -31,10 +31,10 @@ type ExtractChangedResourcesFunc func(string, string, string) ([]SchemaResource,
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
-type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc) ([]Candidate, error)
+type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
-type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc) (*QuerySpan, error)
+type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc, listDatabaseFunc ListDatabaseNamesFunc) (*QuerySpan, error)
 
 // GetAffectedRows is the interface of getting the affected rows for a statement.
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
@@ -166,12 +166,12 @@ func RegisterCompleteFunc(engine storepb.Engine, f CompletionFunc) {
 }
 
 // Completion returns the completion candidates for the statement.
-func Completion(ctx context.Context, engine storepb.Engine, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc) ([]Candidate, error) {
+func Completion(ctx context.Context, engine storepb.Engine, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error) {
 	f, ok := completers[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata)
+	return f(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, listDatabaseNames)
 }
 
 func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
@@ -184,7 +184,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
-func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database string, getMetadataFunc GetDatabaseMetadataFunc) ([]*QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -198,7 +198,7 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 		if stmt.Empty {
 			continue
 		}
-		result, err := f(ctx, stmt.Text, database, getMetadataFunc)
+		result, err := f(ctx, stmt.Text, database, getMetadataFunc, listDatabaseNamesFunc)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
 			var resourceNotFound *parsererror.ResourceNotFoundError

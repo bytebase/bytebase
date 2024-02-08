@@ -227,6 +227,9 @@ func (c ColumnResource) String() string {
 // GetDatabaseMetadataFunc is the function to get database metadata.
 type GetDatabaseMetadataFunc func(context.Context, string) (*model.DatabaseMetadata, error)
 
+// ListDatabaseNamesFunc is the function to list database names.
+type ListDatabaseNamesFunc func(context.Context) ([]string, error)
+
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{
 		Results:       []YamlQuerySpanResult{},
