@@ -24,7 +24,7 @@
     "@markdoc/markdoc": "0.4.0",
     "@soerenmartius/vue3-clipboard": "0.1.2",
     "@tanstack/vue-table": "8.11.8",
-    "@vueuse/core": "10.4.1",
+    "@vueuse/core": "10.7.2",
     "abort-controller-x": "^0.4.3",
     "axios": "1.6.7",
     "bootstrap": "5.3.2",
@@ -83,9 +83,9 @@
     "vscode-languageserver-textdocument": "1.0.11",
     "vscode-languageserver-types": "3.17.5",
     "vscode-ws-jsonrpc": "3.1.0",
-    "vue": "3.3.12",
+    "vue": "3.4.16",
     "vuedraggable": "^4.1.0",
-    "vueuc": "0.4.51"
+    "vueuc": "0.4.58"
   },
   "devDependencies": {
     "@iconify/json": "2.2.177",
@@ -120,7 +120,7 @@
     "@typescript-eslint/parser": "6.21.0",
     "@vicons/ionicons5": "0.12.0",
     "@vitejs/plugin-vue": "4.3.4",
-    "@vue/compiler-sfc": "3.3.12",
+    "@vue/compiler-sfc": "3.4.16",
     "@vue/eslint-config-typescript": "12.0.0",
     "autoprefixer": "10.4.17",
     "code-inspector-plugin": "^0.7.0",
