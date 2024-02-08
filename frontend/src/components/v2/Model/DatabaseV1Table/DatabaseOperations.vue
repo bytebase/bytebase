@@ -110,7 +110,10 @@ import {
   DEFAULT_PROJECT_V1_NAME,
   ProjectPermission,
 } from "@/types";
-import { Database } from "@/types/proto/v1/database_service";
+import {
+  Database,
+  DatabaseMetadataView,
+} from "@/types/proto/v1/database_service";
 import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
@@ -328,6 +331,7 @@ const syncSchema = async () => {
         databaseStore.syncDatabase(db.name).then(() => {
           dbSchemaStore.getOrFetchDatabaseMetadata({
             database: db.name,
+            view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
             skipCache: true,
           });
         });

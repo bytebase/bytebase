@@ -14,7 +14,6 @@ import {
 } from "@/types";
 import {
   SchemaMetadata,
-  DatabaseMetadataView,
   TableMetadata,
   TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
@@ -253,7 +252,6 @@ export const fetchDatabaseSubTree = async (
       await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
         database: database.name,
         skipCache: false,
-        view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
       });
 
     const { schemas } = databaseMetadata;

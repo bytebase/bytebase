@@ -254,7 +254,6 @@ import {
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
-import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import {
   isPITRDatabaseV1,
   instanceV1HasAlterSchema,
@@ -429,7 +428,6 @@ const syncDatabaseSchema = async () => {
     dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.value.name,
       skipCache: true,
-      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
     });
     pushNotification({
       module: "bytebase",

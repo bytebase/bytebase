@@ -1,12 +1,14 @@
 <template>
   <Drawer :show="show" @close="$emit('dismiss')">
-    <DrawerContent :title="$t('database.table-detail')">
-      <div
-        v-if="table"
-        class="flex-1 overflow-auto focus:outline-none w-[calc(100vw-256px)]"
-        tabindex="0"
-      >
-        <main class="flex-1 relative pb-8 overflow-y-auto">
+    <DrawerContent
+      :title="$t('database.table-detail')"
+      :content-props="{
+        bodyContentClass: 'relative',
+      }"
+    >
+      <div class="focus:outline-none w-[calc(100vw-256px)]" tabindex="0">
+        <MaskSpinner v-if="isFetchingTableMetadata" />
+        <main v-if="table" class="flex-1 relative pb-8 overflow-y-auto">
           <!-- Highlight Panel -->
           <div
             class="px-4 pb-4 border-b border-block-border md:flex md:items-center md:justify-between"
@@ -200,7 +202,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, ref, reactive } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { computed, reactive, ref } from "vue";
 import {
   DatabaseV1Name,
   InstanceV1Name,
@@ -215,7 +218,6 @@ import {
 import { usePolicyByParentAndType } from "@/store/modules/v1/policy";
 import { DEFAULT_PROJECT_V1_NAME, defaultProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
-import { TableMetadata } from "@/types/proto/v1/database_service";
 import { PolicyType, MaskData } from "@/types/proto/v1/org_policy_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
@@ -228,6 +230,7 @@ import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 import IndexTable from "./IndexTable.vue";
 import PartitionTablesDataTable from "./PartitionTablesDataTable.vue";
+import MaskSpinner from "./misc/MaskSpinner.vue";
 
 interface LocalState {
   columnNameSearchKeyword: string;
@@ -252,7 +255,26 @@ const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
 });
-const table = ref<TableMetadata>();
+const isFetchingTableMetadata = ref(false);
+const table = computedAsync(
+  async () => {
+    const { databaseName, tableName, schemaName } = props;
+    if (!tableName) {
+      return undefined;
+    }
+    return dbSchemaStore.getOrFetchTableMetadata({
+      database: databaseName,
+      schema: schemaName,
+      table: tableName,
+      skipCache: false,
+      silent: false,
+    });
+  },
+  undefined,
+  {
+    evaluating: isFetchingTableMetadata,
+  }
+);
 
 const database = computed(() => {
   return databaseV1Store.getDatabaseByName(props.databaseName);
@@ -314,28 +336,6 @@ const getTableName = (tableName: string) => {
   }
   return tableName;
 };
-
-watch(
-  () => [props.tableName, props.schemaName],
-  ([tableName, schemaName]) => {
-    if (!tableName) {
-      return;
-    }
-    const schemaList = dbSchemaStore.getSchemaList(database.value.name);
-    const schema = schemaList.find((schema) => schema.name === schemaName);
-    if (schema) {
-      dbSchemaStore
-        .getOrFetchTableMetadata({
-          database: props.databaseName,
-          schema: schema?.name,
-          table: tableName,
-          skipCache: false,
-          silent: false,
-        })
-        .then((metadata) => (table.value = metadata));
-    }
-  }
-);
 
 const sensitiveDataPolicy = usePolicyByParentAndType(
   computed(() => ({
