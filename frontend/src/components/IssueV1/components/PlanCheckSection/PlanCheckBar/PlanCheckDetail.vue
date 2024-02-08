@@ -234,7 +234,7 @@ const errorCodeLink = (
     case SQLReviewPolicyErrorCode.EMPTY_POLICY:
       return {
         title: t("sql-review.configure-policy"),
-        target: "_self",
+        target: "__blank",
         url: router.resolve({
           name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
         }).fullPath,
