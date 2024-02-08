@@ -280,7 +280,7 @@ func start() {
 		return
 	}
 
-	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s has started on port %d 🚀", profile.Version, flags.port))
+	fmt.Printf(greetingBanner, fmt.Sprintf("Version %s(%s) has started on port %d 🚀", profile.Version, profile.GitCommit, flags.port))
 
 	// Execute program.
 	if err := s.Run(ctx, flags.port); err != nil {
