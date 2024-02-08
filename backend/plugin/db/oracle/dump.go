@@ -66,26 +66,30 @@ func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema str
 	if err := dumpTableTxn(ctx, txn, schema, version, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump tables")
 	}
-	slog.Debug("dump views", slog.String("schema", schema))
-	if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump views")
-	}
-	slog.Debug("dump functions", slog.String("schema", schema))
-	if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump functions")
-	}
+	/*
+		slog.Debug("dump views", slog.String("schema", schema))
+		if err := dumpViewTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump views")
+		}
+		slog.Debug("dump functions", slog.String("schema", schema))
+		if err := dumpFunctionTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump functions")
+		}
+	*/
 	slog.Debug("dump indexes", slog.String("schema", schema))
 	if err := dumpIndexTxn(ctx, txn, schema, driver.schemaTenantMode, out); err != nil {
 		return errors.Wrapf(err, "failed to dump indexes")
 	}
-	slog.Debug("dump sequences", slog.String("schema", schema))
-	if err := dumpSequenceTxn(ctx, txn, schema, version, out); err != nil {
-		return errors.Wrapf(err, "failed to dump sequences")
-	}
-	slog.Debug("dump triggers", slog.String("schema", schema))
-	if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
-		return errors.Wrapf(err, "failed to dump trigger ordering")
-	}
+	/*
+		slog.Debug("dump sequences", slog.String("schema", schema))
+		if err := dumpSequenceTxn(ctx, txn, schema, version, out); err != nil {
+			return errors.Wrapf(err, "failed to dump sequences")
+		}
+		slog.Debug("dump triggers", slog.String("schema", schema))
+		if err := dumpTriggerOrderingTxn(ctx, txn, schema, out); err != nil {
+			return errors.Wrapf(err, "failed to dump trigger ordering")
+		}
+	*/
 	return nil
 }
 
@@ -747,6 +751,7 @@ func (c *mergedConstraintMeta) assembleConstraintState(out io.Writer) error {
 	return nil
 }
 
+// nolint
 type viewMeta struct {
 	ViewName       sql.NullString
 	TextLength     sql.NullInt64
@@ -766,6 +771,7 @@ type viewMeta struct {
 	ConstraintType sql.NullString
 }
 
+// nolint
 type functionMeta struct {
 	ObjectName    sql.NullString
 	Owner         sql.NullString
@@ -1177,6 +1183,7 @@ type indexMeta struct {
 	ConstraintType       sql.NullString
 }
 
+// nolint
 type sequenceMeta struct {
 	SequenceName sql.NullString
 	MinValue     sql.NullInt64
@@ -1191,6 +1198,7 @@ type sequenceMeta struct {
 	SessionFlag sql.NullString
 }
 
+// nolint
 type triggerOrderingMeta struct {
 	TriggerOwner      sql.NullString
 	TriggerName       sql.NullString
@@ -1199,6 +1207,7 @@ type triggerOrderingMeta struct {
 	OrderingType      sql.NullString
 }
 
+// nolint
 type triggerMeta struct {
 	Owner            sql.NullString
 	TriggerName      sql.NullString
@@ -1946,6 +1955,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *orac
 	return assembleTableStatement(tableMap, schemaTenantMode, out)
 }
 
+// nolint
 func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	viewList := []*viewMeta{}
 	slog.Debug("running dump view query", slog.String("schema", schema))
@@ -1994,6 +2004,7 @@ func dumpViewTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) e
 	return nil
 }
 
+// nolint
 func dumpFunctionTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	functionList := []*functionMeta{}
 	slog.Debug("running dump function query", slog.String("schema", schema))
@@ -2217,6 +2228,7 @@ func dumpIndexTxn(ctx context.Context, txn *sql.Tx, schema string, schemaTenantM
 	return assembleIndexes(mergedIndexList, schemaTenantMode, out)
 }
 
+// nolint
 func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, version *oracleVersion, _ io.Writer) error {
 	sequences := []*sequenceMeta{}
 	var sequenceSQL string
@@ -2265,6 +2277,7 @@ func dumpSequenceTxn(ctx context.Context, txn *sql.Tx, schema string, version *o
 	return nil
 }
 
+// nolint
 func dumpTriggerOrderingTxn(ctx context.Context, txn *sql.Tx, schema string, _ io.Writer) error {
 	triggerOrderingMap := make(map[string]*triggerOrderingMeta)
 	slog.Debug("running dump trigger ordering query", slog.String("schema", schema))
