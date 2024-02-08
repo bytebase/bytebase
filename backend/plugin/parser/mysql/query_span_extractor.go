@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -52,6 +53,25 @@ func newQuerySpanExtractor(connectedDB string, getDatabaseMetadata base.GetDatab
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
+	accessTables, err := getAccessTables(q.connectedDB, stmt)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get access tables from statement: %s", stmt)
+	}
+	// We do not support simultaneous access to the system table and the user table
+	// because we do not synchronize the schema of the system table.
+	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
+	// As a result, we exclude getting query span results for accessing only the system table.
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if mixed != nil {
+		return nil, mixed
+	}
+	if allSystems {
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
+	}
+
 	list, err := ParseMySQL(stmt)
 	if err != nil {
 		return nil, err
@@ -73,7 +93,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	listener := newSelectOnlyListener(q)
 	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
 
-	return listener.querySpan, listener.err
+	if listener.err != nil {
+		return nil, listener.err
+	}
+	return &base.QuerySpan{
+		Results:       listener.querySpan.Results,
+		SourceColumns: accessTables,
+	}, nil
 }
 
 func (q *querySpanExtractor) extractContext(ctx antlr.ParserRuleContext) (*base.PseudoTable, error) {
@@ -1216,8 +1242,8 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 
 	return nil, &parsererror.ResourceNotFoundError{
 		Database: &databaseName,
-		Schema:   &tableName,
-		Table:    &fieldName,
+		Table:    &tableName,
+		Column:   &fieldName,
 	}
 }
 
@@ -1390,4 +1416,103 @@ func (s *selectOnlyListener) EnterSelectStatement(ctx *parser.SelectStatementCon
 
 	s.querySpan.Results = append(s.querySpan.Results, fields.Columns...)
 	return
+}
+
+func getAccessTables(currentDatabase string, statement string) (base.SourceColumnSet, error) {
+	treeList, err := ParseMySQL(statement)
+	if err != nil {
+		return nil, err
+	}
+
+	l := &accessTableListener{
+		currentDatabase: currentDatabase,
+		sourceColumnSet: make(base.SourceColumnSet),
+	}
+
+	result := make(base.SourceColumnSet)
+	for _, tree := range treeList {
+		if tree == nil {
+			continue
+		}
+		antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
+		result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
+	}
+
+	return result, nil
+}
+
+type accessTableListener struct {
+	*parser.BaseMySQLParserListener
+
+	currentDatabase string
+	sourceColumnSet base.SourceColumnSet
+}
+
+func newAccessTableListener(currentDatabase string) *accessTableListener {
+	return &accessTableListener{
+		currentDatabase: currentDatabase,
+		sourceColumnSet: make(base.SourceColumnSet),
+	}
+}
+
+// EnterTableRef is called when production tableRef is entered.
+func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
+	sourceColumn := base.ColumnResource{
+		Database: l.currentDatabase,
+	}
+	if ctx.DotIdentifier() != nil {
+		sourceColumn.Table = NormalizeMySQLIdentifier(ctx.DotIdentifier().Identifier())
+	}
+	db, table := normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	if db != "" {
+		sourceColumn.Database = db
+	}
+	sourceColumn.Table = table
+	l.sourceColumnSet[sourceColumn] = true
+}
+
+// isMixedQuery checks whether the query accesses the user table and system table at the same time.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems bool, mixed error) {
+	userMsg, systemMsg := "", ""
+	for table := range m {
+		if msg := isSystemResource(table, ignoreCaseSensitive); msg != "" {
+			systemMsg = msg
+			continue
+		}
+		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
+		if systemMsg != "" {
+			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		}
+	}
+
+	if userMsg != "" && systemMsg != "" {
+		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	}
+
+	return userMsg == "" && systemMsg != "", nil
+}
+
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) string {
+	if ignoreCaseSensitive {
+		if strings.EqualFold(resource.Database, "information_schema") {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+		if strings.EqualFold(resource.Database, "performance_schema") {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+		if strings.EqualFold(resource.Database, "mysql") {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+	} else {
+		if resource.Database == "information_schema" {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+		if resource.Database == "performance_schema" {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+		if resource.Database == "mysql" {
+			return fmt.Sprintf("system schema %q", resource.Table)
+		}
+	}
+	return ""
 }

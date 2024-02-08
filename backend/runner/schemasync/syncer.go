@@ -271,7 +271,8 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 		EnvironmentID: instance.EnvironmentID,
 		ResourceID:    instance.ResourceID,
 		Metadata: &storepb.InstanceMetadata{
-			LastSyncTime: timestamppb.Now(),
+			LastSyncTime:             timestamppb.Now(),
+			MysqlLowerCaseTableNames: instanceMeta.Metadata.GetMysqlLowerCaseTableNames(),
 		},
 	}
 	if instanceMeta.Version != instance.EngineVersion {

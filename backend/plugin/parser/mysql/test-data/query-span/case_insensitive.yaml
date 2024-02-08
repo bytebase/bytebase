@@ -1,6 +1,7 @@
 - description: Test Case Insensitive
   statement: SELECT * FROM T;
   connectedDatabase: db
+  ignoreCaseSensitive: true
   metadata: |-
     {
       "name":  "db",
@@ -29,5 +30,9 @@
               schema: ""
               table: T
               column: a
-    sourcecolumns: []
-  ignoreCaseSensitive: true
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: T
+          column: ""

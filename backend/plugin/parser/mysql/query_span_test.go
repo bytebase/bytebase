@@ -18,18 +18,18 @@ import (
 
 func TestGetQuerySpan(t *testing.T) {
 	type testCase struct {
-		Description       string `yaml:"description,omitempty"`
-		Statement         string `yaml:"statement,omitempty"`
-		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
+		Description        string `yaml:"description,omitempty"`
+		Statement          string `yaml:"statement,omitempty"`
+		ConnectedDatabase  string `yaml:"connectedDatabase,omitempty"`
+		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata           string              `yaml:"metadata,omitempty"`
-		QuerySpan          *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
-		IgnoreCaseSensitve bool                `yaml:"ignoreCaseSensitive,omitempty"`
+		Metadata  string              `yaml:"metadata,omitempty"`
+		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
 	var (
-		record        = true
+		record        = false
 		testDataPaths = []string{
 			"test-data/query-span/standard.yaml",
 			"test-data/query-span/case_insensitive.yaml",
