@@ -99,8 +99,8 @@ dependencies:
     specifier: 6.3.4
     version: 6.3.4
   maz-ui:
-    specifier: ^3.29.10
-    version: 3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.52)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.4.16)
+    specifier: ^3.31.6
+    version: 3.31.6(dayjs@1.11.10)(libphonenumber-js@1.10.52)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.4.16)
   monaco-editor:
     specifier: 0.45.0
     version: 0.45.0
@@ -4540,8 +4540,8 @@ packages:
       remove-accents: 0.5.0
     dev: false
 
-  /maz-ui@3.29.10(dayjs@1.11.10)(libphonenumber-js@1.10.52)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.4.16):
-    resolution: {integrity: sha512-M4lu+gDXdSf0jcW6ac4f+WE4Tidg5PPLbj3hVWyUakuMXJomC0vBtRaiA05nLlqH1t+2p1nwvLrSQBtAD4Rc6Q==}
+  /maz-ui@3.31.6(dayjs@1.11.10)(libphonenumber-js@1.10.52)(typescript@5.3.3)(unplugin-vue-components@0.25.2)(vue-router@4.2.5)(vue@3.4.16):
+    resolution: {integrity: sha512-P4RhwyHbqhqxkQtD2dgF+img9qeEgU9t3Bz2Qkd3CkEtIEIdQm3W+ZyNQHXaouQT04NEwfPWsEG+CG7YgEIAFg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
     hasBin: true
     peerDependencies:
