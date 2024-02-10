@@ -102,7 +102,7 @@
     "@types/js-yaml": "4.0.9",
     "@types/lodash-es": "4.17.12",
     "@types/markdown-it": "^13.0.7",
-    "@types/node": "20.10.6",
+    "@types/node": "20.11.17",
     "@types/normalize-wheel": "^1.0.4",
     "@types/papaparse": "5.3.14",
     "@types/pouchdb": "^6.4.2",
