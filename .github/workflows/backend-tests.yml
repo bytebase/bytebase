@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies
         run: go generate -tags mysql ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: v1.55.2
           args: -j 16 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
