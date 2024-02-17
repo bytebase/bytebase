@@ -45,7 +45,7 @@
     "js-base64": "^3.7.6",
     "js-yaml": "4.1.0",
     "jszip": "^3.10.1",
-    "libphonenumber-js": "^1.10.52",
+    "libphonenumber-js": "^1.10.56",
     "lodash-es": "4.17.21",
     "lucide-vue-next": "^0.292.0",
     "markdown-it": "^14.0.0",
