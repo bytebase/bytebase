@@ -120,7 +120,7 @@
     "@typescript-eslint/parser": "6.21.0",
     "@vicons/ionicons5": "0.12.0",
     "@vitejs/plugin-vue": "4.3.4",
-    "@vue/compiler-sfc": "3.4.16",
+    "@vue/compiler-sfc": "3.4.19",
     "@vue/eslint-config-typescript": "12.0.0",
     "autoprefixer": "10.4.17",
     "code-inspector-plugin": "^0.7.0",
