@@ -123,8 +123,8 @@ dependencies:
     specifier: ^3.3.2
     version: 3.3.2(ws@8.15.1)
   node-sql-parser:
-    specifier: 4.17.0
-    version: 4.17.0
+    specifier: 4.18.0
+    version: 4.18.0
   normalize-wheel:
     specifier: ^1.0.1
     version: 1.0.1
@@ -4829,8 +4829,8 @@ packages:
     resolution: {integrity: sha512-y10wOWt8yZpqXmOgRo77WaHEmhYQYGNA6y421PKsKYWEK8aW+cqAphborZDhqfyKrbZEN92CN1X2KbafY2s7Yw==}
     dev: true
 
-  /node-sql-parser@4.17.0:
-    resolution: {integrity: sha512-3IhovpmUBpcETnoKK/KBdkz2mz53kVG5E1dnqz1QuYvtzdxYZW5xaGGEvW9u6Yyy2ivwR3eUZrn9inmEVef02w==}
+  /node-sql-parser@4.18.0:
+    resolution: {integrity: sha512-2YEOR5qlI1zUFbGMLKNfsrR5JUvFg9LxIRVE+xJe962pfVLH0rnItqLzv96XVs1Y1UIR8FxsXAuvX/lYAWZ2BQ==}
     engines: {node: '>=8'}
     dependencies:
       big-integer: 1.6.52
