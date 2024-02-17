@@ -51,8 +51,8 @@ dependencies:
     specifier: ^0.9.1
     version: 0.9.1
   emittery:
-    specifier: ^1.0.1
-    version: 1.0.1
+    specifier: ^1.0.3
+    version: 1.0.3
   escape-string-regexp:
     specifier: 5.0.0
     version: 5.0.0
@@ -1384,14 +1384,14 @@ packages:
       '@types/markdown-it': 12.2.3
     dev: false
 
-  /@mazui/cli@3.31.6(typescript@5.3.3):
-    resolution: {integrity: sha512-lsdbAKr1n8yWpfwg09FpULPvYFysC8ksOuUqgLye6x8q+vz4KWI0v71Rc5BbLMfQPa5q6C1SIIyIE9K2OVOTFQ==}
+  /@mazui/cli@3.32.1(typescript@5.3.3):
+    resolution: {integrity: sha512-iWXCs82dEI3qYr2mdVCPtKQSL4LHrJnnIgOJpeP/he1/f7Fs4ib47gplI/uv2ojzIDd6VZRyPEr0Cs6oYkQYhg==}
     hasBin: true
     dependencies:
       '@clack/prompts': 0.7.0
       clear: 0.1.0
       colorette: 2.0.20
-      commander: 11.1.0
+      commander: 12.0.0
       cosmiconfig: 9.0.0(typescript@5.3.3)
       figlet: 1.7.0
       tinycolor2: 1.6.0
@@ -2901,9 +2901,9 @@ packages:
     engines: {node: '>=14'}
     dev: false
 
-  /commander@11.1.0:
-    resolution: {integrity: sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==}
-    engines: {node: '>=16'}
+  /commander@12.0.0:
+    resolution: {integrity: sha512-MwVNWlYjDTtOjX5PiD7o5pK0UrFU/OYgcJfjjK4RaHZETNtjJqrZa9Y9ds88+A+f+d5lv+561eZ+yCKoS3gbAA==}
+    engines: {node: '>=18'}
     dev: false
 
   /commander@2.20.3:
@@ -3424,8 +3424,8 @@ packages:
       - supports-color
     dev: false
 
-  /emittery@1.0.1:
-    resolution: {integrity: sha512-2ID6FdrMD9KDLldGesP6317G78K7km/kMcwItRtVFva7I/cSEOIaLpewaUb+YLXVwdAp3Ctfxh/V5zIl1sj7dQ==}
+  /emittery@1.0.3:
+    resolution: {integrity: sha512-tJdCJitoy2lrC2ldJcqN4vkqJ00lT+tOWNT1hBJjO/3FDMJa5TTIiYGCKGkn/WfCyOzUMObeohbVTj00fhiLiA==}
     engines: {node: '>=14.16'}
     dev: false
 
@@ -4575,7 +4575,7 @@ packages:
       vue-router:
         optional: true
     dependencies:
-      '@mazui/cli': 3.31.6(typescript@5.3.3)
+      '@mazui/cli': 3.32.1(typescript@5.3.3)
       dayjs: 1.11.10
       libphonenumber-js: 1.10.52
       unplugin-vue-components: 0.25.2(rollup@4.9.6)(vue@3.4.16)
