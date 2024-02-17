@@ -51,8 +51,8 @@ dependencies:
     specifier: ^0.9.1
     version: 0.9.1
   emittery:
-    specifier: ^1.0.1
-    version: 1.0.1
+    specifier: ^1.0.3
+    version: 1.0.3
   escape-string-regexp:
     specifier: 5.0.0
     version: 5.0.0
@@ -3424,8 +3424,8 @@ packages:
       - supports-color
     dev: false
 
-  /emittery@1.0.1:
-    resolution: {integrity: sha512-2ID6FdrMD9KDLldGesP6317G78K7km/kMcwItRtVFva7I/cSEOIaLpewaUb+YLXVwdAp3Ctfxh/V5zIl1sj7dQ==}
+  /emittery@1.0.3:
+    resolution: {integrity: sha512-tJdCJitoy2lrC2ldJcqN4vkqJ00lT+tOWNT1hBJjO/3FDMJa5TTIiYGCKGkn/WfCyOzUMObeohbVTj00fhiLiA==}
     engines: {node: '>=14.16'}
     dev: false
 
