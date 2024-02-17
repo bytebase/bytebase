@@ -159,7 +159,7 @@ type Completer struct {
 	cteTables  []*base.VirtualTableReference
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc) *Completer {
+func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all PostgreSQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
