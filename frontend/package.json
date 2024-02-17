@@ -47,7 +47,7 @@
     "jszip": "^3.10.1",
     "libphonenumber-js": "^1.10.56",
     "lodash-es": "4.17.21",
-    "lucide-vue-next": "^0.292.0",
+    "lucide-vue-next": "^0.331.0",
     "markdown-it": "^14.0.0",
     "match-sorter": "6.3.4",
     "maz-ui": "^3.32.1",
