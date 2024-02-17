@@ -2,28 +2,22 @@ updates:
   - package-ecosystem: "github-actions"
     commit-message:
       prefix: "chore"
-    directory: "/" 
+    directory: "/"
     schedule:
-      day: "saturday"
-      interval: "weekly"
-      time: "03:00"
-    
+      interval: "monthly"
+
   - package-ecosystem: "gomod"
     commit-message:
       prefix: "chore"
     directory: "/"
     schedule:
-      day: "saturday"
-      interval: "weekly"
-      time: "03:00"
-      
+      interval: "monthly"
+
   - package-ecosystem: "npm"
     commit-message:
       prefix: "chore"
     directory: "/frontend"
     schedule:
-      day: "saturday"
-      interval: "weekly"
-      time: "03:00"
+      interval: "monthly"
 
 version: 2
