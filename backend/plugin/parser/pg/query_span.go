@@ -16,7 +16,7 @@ func init() {
 }
 
 // GetQuerySpan returns the query span for the given statement.
-func GetQuerySpan(ctx context.Context, statement, database string, getDatabaseMetadata base.GetDatabaseMetadataFunc) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, statement, database, _ string, getDatabaseMetadata base.GetDatabaseMetadataFunc) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, getDatabaseMetadata)
 
 	querySpan, err := extractor.getQuerySpan(ctx, statement)

@@ -225,7 +225,7 @@ func (c ColumnResource) String() string {
 }
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
-type GetDatabaseMetadataFunc func(context.Context, string) (*model.DatabaseMetadata, error)
+type GetDatabaseMetadataFunc func(context.Context, string) (string, *model.DatabaseMetadata, error)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{

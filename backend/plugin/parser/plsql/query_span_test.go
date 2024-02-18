@@ -46,7 +46,7 @@ func TestGetQuerySpan(t *testing.T) {
 		metadata := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(tc.Metadata), metadata))
 		databaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter)
+		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, databaseMetadataGetter)
 		a.NoError(err)
 		a.NotNil(result)
 		resultYaml := result.ToYaml()
@@ -66,16 +66,16 @@ func TestGetQuerySpan(t *testing.T) {
 }
 
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) base.GetDatabaseMetadataFunc {
-	return func(_ context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 		m := make(map[string]*model.DatabaseMetadata)
 		for _, metadata := range databaseMetadata {
 			m[metadata.Name] = model.NewDatabaseMetadata(metadata)
 		}
 
 		if databaseMetadata, ok := m[databaseName]; ok {
-			return databaseMetadata, nil
+			return databaseName, databaseMetadata, nil
 		}
 
-		return nil, errors.Errorf("database %q not found", databaseName)
+		return "", nil, errors.Errorf("database %q not found", databaseName)
 	}
 }

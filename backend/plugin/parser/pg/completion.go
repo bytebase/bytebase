@@ -279,7 +279,7 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return
 		}
@@ -614,6 +614,7 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 			store.Engine_POSTGRES,
 			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt()),
 			l.context.defaultDatabase,
+			"",
 			l.context.getMetadata,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
@@ -975,6 +976,7 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 						store.Engine_POSTGRES,
 						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
+						"",
 						l.context.getMetadata,
 					); err == nil && len(span) == 1 {
 						for _, column := range span[0].Results {
@@ -1086,7 +1088,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 
 func (c *Completer) listAllSchemas() []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1098,7 +1100,7 @@ func (c *Completer) listAllSchemas() []string {
 
 func (c *Completer) listTables(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1114,7 +1116,7 @@ func (c *Completer) listTables(schema string) []string {
 
 func (c *Completer) listForeignTables(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1130,7 +1132,7 @@ func (c *Completer) listForeignTables(schema string) []string {
 
 func (c *Completer) listMaterializedViews(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}
@@ -1146,7 +1148,7 @@ func (c *Completer) listMaterializedViews(schema string) []string {
 
 func (c *Completer) listViews(schema string) []string {
 	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
-		metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
+		_, metadata, err := c.getMetadata(c.ctx, c.defaultDatabase)
 		if err != nil || metadata == nil {
 			return nil
 		}

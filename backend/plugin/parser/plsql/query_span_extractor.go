@@ -27,24 +27,29 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-func newQuerySpanExtractor(defaultSchema string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
+func newQuerySpanExtractor(connectionDatabase string, defaultSchema string, f base.GetDatabaseMetadataFunc) *querySpanExtractor {
 	return &querySpanExtractor{
-		defaultSchema: defaultSchema,
-		metaCache:     make(map[string]*model.DatabaseMetadata),
-		f:             f,
+		connectedDatabase: connectionDatabase,
+		defaultSchema:     defaultSchema,
+		metaCache:         make(map[string]*model.DatabaseMetadata),
+		f:                 f,
 	}
 }
 
-func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.DatabaseMetadata, error) {
-	if meta, ok := q.metaCache[database]; ok {
-		return meta, nil
+func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.DatabaseMetadata, error) {
+	// There are two models for the database metadata, one is schema based, the other is database based.
+	// We deal with two models in f, so we use schema name here.
+	// The f will return the real database name and the metadata.
+	// We just return them to the caller.
+	if meta, ok := q.metaCache[schema]; ok {
+		return schema, meta, nil
 	}
-	meta, err := q.f(q.ctx, database)
+	databaseName, meta, err := q.f(q.ctx, schema)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", q.defaultSchema)
+		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
-	q.metaCache[database] = meta
-	return meta, nil
+	q.metaCache[databaseName] = meta
+	return databaseName, meta, nil
 }
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
@@ -101,7 +106,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if resource.Schema == "" {
 		resource.Schema = q.defaultSchema
 	}
-	meta, err := q.getDatabaseMetadata(resource.Schema)
+	_, meta, err := q.getDatabaseMetadata(resource.Schema)
 	if err != nil {
 		return false
 	}
@@ -1239,7 +1244,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 		}
 	}
 
-	dbSchema, err := q.getDatabaseMetadata(schemaName)
+	databaseName, dbSchema, err := q.getDatabaseMetadata(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", schemaName)
 	}
@@ -1251,7 +1256,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &schemaName,
+			Database: &databaseName,
 			Schema:   &schemaName,
 		}
 	}
@@ -1261,7 +1266,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 	foreignTable := schema.GetExternalTable(tableName)
 	if table == nil && view == nil && materializedView == nil && foreignTable == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &schemaName,
+			Database: &databaseName,
 			Schema:   &schemaName,
 			Table:    &tableName,
 		}
@@ -1274,7 +1279,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 		}
 		return &base.PhysicalTable{
 			Server:   "",
-			Database: schemaName,
+			Database: databaseName,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1288,7 +1293,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 		}
 		return &base.PhysicalTable{
 			Server:   "",
-			Database: schemaName,
+			Database: databaseName,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1320,7 +1325,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(schemaName, tableName string) 
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultSchema, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.defaultSchema, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1329,7 +1334,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.defaultSchema, q.f)
+	newQ := newQuerySpanExtractor(q.connectedDatabase, q.defaultSchema, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)
