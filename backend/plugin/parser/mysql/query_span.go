@@ -18,7 +18,7 @@ func init() {
 // GetQuerySpan returns the query span for the given statement.
 func GetQuerySpan(
 	ctx context.Context,
-	statement, database, schema string,
+	statement, database, _ string,
 	getDatabaseMetadata base.GetDatabaseMetadataFunc,
 	listDatabaseFunc base.ListDatabaseNamesFunc,
 	ignoreCaseSensitive bool,

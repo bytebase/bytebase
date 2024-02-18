@@ -7,7 +7,6 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
-	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
@@ -265,7 +264,7 @@ func (q *querySpanExtractor) extractExplicitTable(ctx mysql.IExplicitTableContex
 	}
 
 	databaseName, tableName := NormalizeMySQLTableRef(ctx.TableRef())
-	databaseName, tableSource, err := q.findTableSchema(databaseName, tableName)
+	tableSource, err := q.findTableSchema(databaseName, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -556,28 +555,28 @@ func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r mysql.IJoi
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, rightTableSource)
 
-	tp := JOIN
+	tp := Join
 
 	if v := r.InnerJoinType(); v != nil {
 		if v.INNER_SYMBOL() != nil {
-			tp = INNER_JOIN
+			tp = InnerJoin
 		} else if v.CROSS_SYMBOL() != nil {
-			tp = CROSS_JOIN
+			tp = CrossJoin
 		} else if v.STRAIGHT_JOIN_SYMBOL() != nil {
-			tp = STRAIGHT_JOIN
+			tp = StraightJoin
 		}
 	} else if v := r.OuterJoinType(); v != nil {
 		if v.LEFT_SYMBOL() != nil {
-			tp = LEFT_OUTER_JOIN
+			tp = LeftOuterJoin
 		} else if v.RIGHT_SYMBOL() != nil {
-			tp = RIGHT_OUTER_JOIN
+			tp = RightOuterJoin
 		}
 	} else if v := r.NaturalJoinType(); v != nil {
-		tp = NATRUAL_INNER_JOIN
+		tp = NaturalInnerJoin
 		if v.LEFT_SYMBOL() != nil {
-			tp = NATRUAL_LEFT_OUTER_JOIN
+			tp = NaturalLeftOuterJoin
 		} else if v.RIGHT_SYMBOL() != nil {
-			tp = NATRUAL_RIGHT_OUTER_JOIN
+			tp = NaturalRightOuterJoin
 		}
 	}
 
@@ -586,7 +585,7 @@ func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r mysql.IJoi
 		usingIdentifiers = NormalizeMySQLIdentifierList(r.IdentifierListWithParentheses().IdentifierList())
 	}
 
-	joinedTableSource, err := q.joinTableSources(l, rightTableSource, tp, usingIdentifiers)
+	joinedTableSource, err := joinTableSources(l, rightTableSource, tp, usingIdentifiers)
 	if err != nil {
 		return nil, err
 	}
@@ -597,21 +596,21 @@ func (q *querySpanExtractor) extractJoinedTable(l base.TableSource, r mysql.IJoi
 type joinType int
 
 const (
-	JOIN joinType = iota
-	INNER_JOIN
-	CROSS_JOIN
-	STRAIGHT_JOIN
-	LEFT_OUTER_JOIN
-	RIGHT_OUTER_JOIN
-	NATRUAL_INNER_JOIN
-	NATRUAL_LEFT_OUTER_JOIN
-	NATRUAL_RIGHT_OUTER_JOIN
+	Join joinType = iota
+	InnerJoin
+	CrossJoin
+	StraightJoin
+	LeftOuterJoin
+	RightOuterJoin
+	NaturalInnerJoin
+	NaturalLeftOuterJoin
+	NaturalRightOuterJoin
 )
 
 // joinTableSources joins the left and right table sources with the join type.
-func (q *querySpanExtractor) joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.TableSource, error) {
+func joinTableSources(l, r base.TableSource, tp joinType, using []string) (base.TableSource, error) {
 	switch tp {
-	case JOIN, INNER_JOIN, CROSS_JOIN, STRAIGHT_JOIN, LEFT_OUTER_JOIN, RIGHT_OUTER_JOIN:
+	case Join, InnerJoin, CrossJoin, StraightJoin, LeftOuterJoin, RightOuterJoin:
 		var columns []base.QuerySpanResult
 		// In MySQL, JOIN, CROSS JOIN, and INNER JOIN are syntactic equivalents (they can replace each other).
 		leftFieldsMap := make(map[string]bool)
@@ -642,7 +641,7 @@ func (q *querySpanExtractor) joinTableSources(l, r base.TableSource, tp joinType
 			Name:    "",
 			Columns: columns,
 		}, nil
-	case NATRUAL_INNER_JOIN, NATRUAL_LEFT_OUTER_JOIN, NATRUAL_RIGHT_OUTER_JOIN:
+	case NaturalInnerJoin, NaturalLeftOuterJoin, NaturalRightOuterJoin:
 		// Natural join will merge all the columns with the same name.
 		leftFieldsMap := make(map[string]bool)
 		for _, field := range l.GetQuerySpanResult() {
@@ -698,7 +697,7 @@ func (q *querySpanExtractor) extractTableFactor(ctx mysql.ITableFactorContext) (
 				result = tableSource
 				continue
 			}
-			result, err = q.joinTableSources(result, tableSource, CROSS_JOIN, nil)
+			result, err = joinTableSources(result, tableSource, CrossJoin, nil)
 			if err != nil {
 				return nil, err
 			}
@@ -802,7 +801,7 @@ func extractColumnInternalRefList(ctx mysql.IColumnInternalRefListContext) []str
 
 func (q *querySpanExtractor) extractSingleTable(ctx mysql.ISingleTableContext) (base.TableSource, error) {
 	databaseName, tableName := NormalizeMySQLTableRef(ctx.TableRef())
-	databaseName, tableSource, err := q.findTableSchema(databaseName, tableName)
+	tableSource, err := q.findTableSchema(databaseName, tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -1247,7 +1246,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	}
 }
 
-func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (string, base.TableSource, error) {
+func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (base.TableSource, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
 	//  with tt2 as (
@@ -1261,7 +1260,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
-				return "", table, nil
+				return table, nil
 			}
 		}
 	}
@@ -1273,14 +1272,14 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 	var dbSchema *model.DatabaseMetadata
 	allDatabaseNames, err := q.listDBFunc(q.ctx)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "failed to list databases")
+		return nil, errors.Wrap(err, "failed to list databases")
 	}
 	if q.ignoreCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, databaseName) {
 				_, dbSchema, err = q.f(q.ctx, db)
 				if err != nil {
-					return "", nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+					return nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
 				break
 			}
@@ -1290,14 +1289,14 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 			if db == databaseName {
 				_, dbSchema, err = q.f(q.ctx, db)
 				if err != nil {
-					return "", nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+					return nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
 				break
 			}
 		}
 	}
 	if dbSchema == nil {
-		return "", nil, &parsererror.ResourceNotFoundError{
+		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
 		}
 	}
@@ -1305,7 +1304,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 	emptySchema := ""
 	schema := dbSchema.GetSchema(emptySchema)
 	if schema == nil {
-		return "", nil, &parsererror.ResourceNotFoundError{
+		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
 			Schema:   &emptySchema,
 		}
@@ -1327,7 +1326,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 		for _, column := range tableSchema.GetColumns() {
 			columnNames = append(columnNames, column.Name)
 		}
-		return databaseName, &base.PhysicalTable{
+		return &base.PhysicalTable{
 			Name:     tableName,
 			Schema:   emptySchema,
 			Database: databaseName,
@@ -1350,9 +1349,9 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 	if viewSchema != nil {
 		columns, err := q.getColumnsForView(viewSchema.Definition)
 		if err != nil {
-			return "", nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
+			return nil, errors.Wrapf(err, "failed to get columns for view %q", tableName)
 		}
-		return databaseName, &base.PhysicalView{
+		return &base.PhysicalView{
 			Name:     tableName,
 			Schema:   emptySchema,
 			Database: databaseName,
@@ -1361,7 +1360,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 		}, nil
 	}
 
-	return "", nil, &parsererror.ResourceNotFoundError{
+	return nil, &parsererror.ResourceNotFoundError{
 		Database: &databaseName,
 		Schema:   &emptySchema,
 		Table:    &tableName,
@@ -1379,7 +1378,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 
 // selectOnlyListener is the listener to listen the top level select statement only.
 type selectOnlyListener struct {
-	*parser.BaseMySQLParserListener
+	*mysql.BaseMySQLParserListener
 
 	// The only misson of the listener is the find the precise select statement.
 	// All the eval work will be handled by the querySpanExtractor.
@@ -1398,7 +1397,7 @@ func newSelectOnlyListener(extractor *querySpanExtractor) *selectOnlyListener {
 	}
 }
 
-func (s *selectOnlyListener) EnterSelectStatement(ctx *parser.SelectStatementContext) {
+func (s *selectOnlyListener) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
 	parent := ctx.GetParent()
 	if parent == nil {
 		return
@@ -1415,7 +1414,6 @@ func (s *selectOnlyListener) EnterSelectStatement(ctx *parser.SelectStatementCon
 	}
 
 	s.querySpan.Results = append(s.querySpan.Results, fields.Columns...)
-	return
 }
 
 func getAccessTables(currentDatabase string, statement string) (base.SourceColumnSet, error) {
@@ -1424,10 +1422,7 @@ func getAccessTables(currentDatabase string, statement string) (base.SourceColum
 		return nil, err
 	}
 
-	l := &accessTableListener{
-		currentDatabase: currentDatabase,
-		sourceColumnSet: make(base.SourceColumnSet),
-	}
+	l := newAccessTableListener(currentDatabase)
 
 	result := make(base.SourceColumnSet)
 	for _, tree := range treeList {
@@ -1442,7 +1437,7 @@ func getAccessTables(currentDatabase string, statement string) (base.SourceColum
 }
 
 type accessTableListener struct {
-	*parser.BaseMySQLParserListener
+	*mysql.BaseMySQLParserListener
 
 	currentDatabase string
 	sourceColumnSet base.SourceColumnSet
@@ -1456,7 +1451,7 @@ func newAccessTableListener(currentDatabase string) *accessTableListener {
 }
 
 // EnterTableRef is called when production tableRef is entered.
-func (l *accessTableListener) EnterTableRef(ctx *parser.TableRefContext) {
+func (l *accessTableListener) EnterTableRef(ctx *mysql.TableRefContext) {
 	sourceColumn := base.ColumnResource{
 		Database: l.currentDatabase,
 	}
