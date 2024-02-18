@@ -1856,6 +1856,7 @@ func dumpTableTxn(ctx context.Context, txn *sql.Tx, schema string, version *orac
 			slog.Warn("column name null", slog.String("schema", schema), slog.String("table", field.TableName.String))
 			continue
 		}
+		// ALL_TAB_COLS includes the metadata for both tables and views. If we cannot find the table, it's the column for a view. We can skip it for now.
 		if _, ok := tableMap[field.TableName.String]; !ok {
 			slog.Warn("column table not found", slog.String("schema", schema), slog.String("table", field.TableName.String), slog.String("column", field.ColumnName.String))
 			continue
