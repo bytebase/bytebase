@@ -217,8 +217,6 @@
     "total": "Total",
     "discard-changes": "Descartar cambios",
     "error-message": "Mensaje de error",
-    "resource-id": "ID de recurso",
-    "domain": "Dominio",
     "demo-mode": "Demostración",
     "operations": "Operaciones",
     "on": "Encendido",
@@ -277,7 +275,8 @@
     "backup": "Respaldo",
     "cutover": "transición",
     "baseline": "Base",
-    "project-member": "Miembro del proyecto"
+    "project-member": "Miembro del proyecto",
+    "leave-without-saving": "¿Salir sin ahorrar?"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
