@@ -14,9 +14,9 @@ OUTPUT_DIR=$(mkdir_output "$1")
 OUTPUT_BINARY=$OUTPUT_DIR/bytebase
 
 GO_VERSION=`go version | { read _ _ v _; echo ${v#go}; }`
-if [ "$(version ${GO_VERSION})" -lt "$(version 1.22.0)" ];
+if [ "$(version ${GO_VERSION})" -lt "$(version 1.21.6)" ];
 then
-   echo "${RED}Precheck failed.${NC} Require go version >= 1.22.0. Current version ${GO_VERSION}."; exit 1;
+   echo "${RED}Precheck failed.${NC} Require go version >= 1.21.6. Current version ${GO_VERSION}."; exit 1;
 fi
 
 NODE_VERSION=`node -v | { read v; echo ${v#v}; }`
