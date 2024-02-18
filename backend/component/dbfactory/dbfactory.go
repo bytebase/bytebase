@@ -85,7 +85,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 }
 
 // GetReadOnlyDatabaseSource returns the read-only data source for the given instance and database.
-func (d *DBFactory) GetReadOnlyDatabaseSource(instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (*store.DataSourceMessage, string, error) {
+func (*DBFactory) GetReadOnlyDatabaseSource(instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (*store.DataSourceMessage, string, error) {
 	var dataSource *store.DataSourceMessage
 	if dataSourceID == "" {
 		dataSource = utils.DataSourceFromInstanceWithType(instance, api.RO)
