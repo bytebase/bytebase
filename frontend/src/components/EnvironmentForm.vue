@@ -1,8 +1,8 @@
 <template>
-  <component :is="drawer ? DrawerContent : 'div'" v-bind="bindings">
+  <component :is="create ? DrawerContent : 'div'" v-bind="bindings">
     <div
       class="divide-y divide-block-border"
-      :class="drawer ? 'w-[36rem]' : 'w-full px-4 pb-4'"
+      :class="create ? 'w-[36rem]' : 'w-full px-4 pb-4'"
     >
       <div class="flex flex-col gap-y-6">
         <div class="flex flex-col gap-y-2">
@@ -175,7 +175,7 @@
         </div>
       </div>
 
-      <div v-if="!drawer" class="mt-6 flex justify-between items-center pt-5">
+      <div v-if="!create" class="mt-6 flex justify-between items-center pt-5">
         <template
           v-if="(state.environment as Environment).state === State.ACTIVE"
         >
@@ -228,7 +228,7 @@
       </div>
     </div>
 
-    <template v-if="drawer" #footer>
+    <template v-if="create" #footer>
       <div class="flex justify-end items-center gap-x-3">
         <NButton @click.prevent="$emit('cancel')">
           {{ $t("common.cancel") }}
@@ -247,12 +247,13 @@
 </template>
 
 <script lang="ts" setup>
+import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
@@ -319,10 +320,6 @@ const props = defineProps({
     required: true,
     type: Number as PropType<EnvironmentTier>,
   },
-  drawer: {
-    type: Boolean,
-    default: false,
-  },
 });
 
 const emit = defineEmits([
@@ -352,7 +349,7 @@ const showBackupSchedulePolicySection = computed(() => {
 });
 
 const bindings = computed(() => {
-  if (props.drawer) {
+  if (props.create) {
     return {
       title: t("environment.create"),
     };
@@ -523,6 +520,23 @@ const valueChanged = (
       );
   }
 };
+
+useEventListener("beforeunload", (e) => {
+  if (props.create || !valueChanged()) {
+    return;
+  }
+  e.returnValue = t("common.leave-without-saving");
+  return e.returnValue;
+});
+
+onBeforeRouteLeave((to, from, next) => {
+  if (!props.create && valueChanged()) {
+    if (!window.confirm(t("common.leave-without-saving"))) {
+      return;
+    }
+  }
+  next();
+});
 
 const revertEnvironment = () => {
   state.environment = cloneDeep(props.environment!);

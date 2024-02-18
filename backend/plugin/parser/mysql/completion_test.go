@@ -70,12 +70,12 @@ func listDatbaseNamesForTest(_ context.Context) ([]string, error) {
 	return []string{"db"}, nil
 }
 
-func getMetadataForTest(_ context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+func getMetadataForTest(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 	if databaseName != "db" {
-		return nil, nil
+		return "", nil, nil
 	}
 
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	return "db", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
 		Name: databaseName,
 		Schemas: []*storepb.SchemaMetadata{
 			{

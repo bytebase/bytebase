@@ -47,10 +47,10 @@ const columnList = computed(() => [
     title: t("common.name"),
   },
   {
-    title: t("common.resource-id"),
+    title: t("settings.sso.form.resource-id"),
   },
   {
-    title: t("common.domain"),
+    title: t("settings.sso.form.domain"),
   },
 ]);
 

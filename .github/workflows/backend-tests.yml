@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: 1.22.0
+          go-version: 1.21.6
           cache: false
       - name: Verify go.mod is tidy
         run: |
@@ -37,13 +37,13 @@ jobs:
       - name: Install dependencies
         run: go generate -tags mysql ./...
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: v1.55.2
-          args: -j 16 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
+          args: -j 8 --verbose --timeout 20m --max-same-issues=30 --allow-parallel-runners
           skip-cache: true
       - name: Run all tests
-        run: go test -p=16 -tags=mysql -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
+        run: go test -p=8 -tags=mysql -v ./backend/... | tee test.log; exit ${PIPESTATUS[0]}
       - name: Pretty print tests running time
         # grep: filter out lines like "--- PASS: TestVCS (15.04s)"
         # sed: remove unnecessary characters

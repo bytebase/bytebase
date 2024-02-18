@@ -13,7 +13,7 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_TIDB, GetQuerySpan)
 }
 
-func GetQuerySpan(ctx context.Context, statement, database string, getDatabaseMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc, _ bool) (*base.QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, statement, database, _ string, getDatabaseMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc, _ bool) (*base.QuerySpan, error) {
 	extractor := newQuerySpanExtractor(database, getDatabaseMetadata)
 
 	querySpan, err := extractor.getQuerySpan(ctx, statement)

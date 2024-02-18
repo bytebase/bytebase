@@ -34,7 +34,7 @@ type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, erro
 type CompletionFunc func(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata GetDatabaseMetadataFunc, listDatabaseNames ListDatabaseNamesFunc) ([]Candidate, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
-type GetQuerySpanFunc func(ctx context.Context, statement, database string, metadataFunc GetDatabaseMetadataFunc, listDatabaseFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) (*QuerySpan, error)
+type GetQuerySpanFunc func(ctx context.Context, statement, database, schema string, metadataFunc GetDatabaseMetadataFunc, listDatabaseFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) (*QuerySpan, error)
 
 // GetAffectedRows is the interface of getting the affected rows for a statement.
 type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
@@ -184,7 +184,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
-func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
+func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, database, schema string, getMetadataFunc GetDatabaseMetadataFunc, listDatabaseNamesFunc ListDatabaseNamesFunc, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -198,7 +198,7 @@ func GetQuerySpan(ctx context.Context, engine storepb.Engine, statement, databas
 		if stmt.Empty {
 			continue
 		}
-		result, err := f(ctx, stmt.Text, database, getMetadataFunc, listDatabaseNamesFunc, ignoreCaseSensitive)
+		result, err := f(ctx, stmt.Text, database, schema, getMetadataFunc, listDatabaseNamesFunc, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
 			var resourceNotFound *parsererror.ResourceNotFoundError

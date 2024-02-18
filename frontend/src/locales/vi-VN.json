@@ -217,8 +217,6 @@
     "total": "Tổng cộng",
     "discard-changes": "Loại bỏ những thay đổi",
     "error-message": "Thông báo lỗi",
-    "resource-id": "ID tài nguyên",
-    "domain": "Lãnh địa",
     "demo-mode": "Thử nghiệm",
     "operations": "Hoạt động",
     "on": "TRÊN",
@@ -277,7 +275,8 @@
     "backup": "Hỗ trợ",
     "cutover": "Chuyển đổi",
     "baseline": "Đường cơ sở",
-    "project-member": "Thành viên dự án"
+    "project-member": "Thành viên dự án",
+    "leave-without-saving": "Rời đi mà không lưu?"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"

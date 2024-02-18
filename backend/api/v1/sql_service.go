@@ -954,7 +954,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, errors.Wrapf(err, "failed to prepare related message")
 	}
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE:
 		return s.QueryV2(ctx, request)
 	}
 

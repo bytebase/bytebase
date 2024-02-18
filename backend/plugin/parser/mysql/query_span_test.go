@@ -53,7 +53,7 @@ func TestGetQuerySpan(t *testing.T) {
 			metadata := &storepb.DatabaseSchemaMetadata{}
 			a.NoErrorf(protojson.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
 			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-			result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, databaseMetadataGetter, databaseNameLister, tc.IgnoreCaseSensitve)
+			result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, "", databaseMetadataGetter, databaseNameLister, tc.IgnoreCaseSensitve)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {
@@ -73,17 +73,17 @@ func TestGetQuerySpan(t *testing.T) {
 }
 
 func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	return func(_ context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
 				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
 			}
 
 			if databaseMetadata, ok := m[databaseName]; ok {
-				return databaseMetadata, nil
+				return "", databaseMetadata, nil
 			}
 
-			return nil, errors.Errorf("database %q not found", databaseName)
+			return "", nil, errors.Errorf("database %q not found", databaseName)
 		}, func(_ context.Context) ([]string, error) {
 			var names []string
 			for _, metadata := range databaseMetadata {

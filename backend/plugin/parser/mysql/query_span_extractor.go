@@ -1278,7 +1278,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 	if q.ignoreCaseSensitive {
 		for _, db := range allDatabaseNames {
 			if strings.EqualFold(db, databaseName) {
-				dbSchema, err = q.f(q.ctx, db)
+				_, dbSchema, err = q.f(q.ctx, db)
 				if err != nil {
 					return "", nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}
@@ -1288,7 +1288,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (st
 	} else {
 		for _, db := range allDatabaseNames {
 			if db == databaseName {
-				dbSchema, err = q.f(q.ctx, db)
+				_, dbSchema, err = q.f(q.ctx, db)
 				if err != nil {
 					return "", nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
 				}

@@ -810,7 +810,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.Da
 	if meta, ok := q.metaCache[databaseName]; ok {
 		return meta, nil
 	}
-	meta, err := q.f(q.ctx, databaseName)
+	_, meta, err := q.f(q.ctx, databaseName)
 	if err != nil {
 		return nil, err
 	}

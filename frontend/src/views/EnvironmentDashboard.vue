@@ -39,7 +39,6 @@
   <Drawer v-model:show="state.showCreateModal">
     <EnvironmentForm
       :create="true"
-      :drawer="true"
       :environment="getEnvironmentCreate()"
       :rollout-policy="DEFAULT_NEW_ROLLOUT_POLICY"
       :backup-policy="DEFAULT_NEW_BACKUP_PLAN_POLICY"

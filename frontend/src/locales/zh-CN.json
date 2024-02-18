@@ -275,7 +275,8 @@
     "backup": "备份",
     "cutover": "切换",
     "baseline": "基线",
-    "project-member": "项目成员"
+    "project-member": "项目成员",
+    "leave-without-saving": "不保存变动？"
   },
   "error-page": {
     "go-back-home": "回到主页"
