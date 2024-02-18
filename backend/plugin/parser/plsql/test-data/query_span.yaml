@@ -120,7 +120,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -187,7 +187,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -254,7 +254,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -314,7 +314,7 @@
               column: C
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -355,7 +355,7 @@
           sourcecolumns: []
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -414,12 +414,12 @@
           sourcecolumns: []
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: GALLERIES
           column: ""
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: PAINTINGS
           column: ""
@@ -523,7 +523,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -590,12 +590,12 @@
           sourcecolumns: []
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T1
           column: ""
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T2
           column: ""
@@ -683,7 +683,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -750,7 +750,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -796,7 +796,7 @@
               column: A
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -863,7 +863,7 @@
               column: D
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -945,7 +945,7 @@
           sourcecolumns: []
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
@@ -1012,7 +1012,7 @@
               column: C
     sourcecolumns:
         - server: ""
-          database: ""
+          database: PUBLIC
           schema: PUBLIC
           table: T
           column: ""
