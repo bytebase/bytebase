@@ -57,7 +57,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
 	}
-	meta, err := q.f(q.ctx, database)
+	_, meta, err := q.f(q.ctx, database)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
 	}
