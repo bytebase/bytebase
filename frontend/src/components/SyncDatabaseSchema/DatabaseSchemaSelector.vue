@@ -45,7 +45,8 @@
       </span>
       <div class="w-192 flex flex-row justify-start items-center relative">
         <NSelect
-          :value="state.changeHistory?.name"
+          :loading="isPreparingSchemaVersionOptions"
+          :value="state.changeHistoryName"
           :options="schemaVersionOptions"
           :placeholder="$t('change-history.select')"
           :disabled="
@@ -75,7 +76,7 @@
 import { computedAsync } from "@vueuse/core";
 import { head, isNull, isUndefined } from "lodash-es";
 import { NEllipsis, NSelect, SelectOption } from "naive-ui";
-import { computed, h, onMounted, reactive, watch } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -85,10 +86,10 @@ import {
 } from "@/components/v2";
 import {
   useChangeHistoryStore,
-  useDBSchemaV1Store,
   useDatabaseV1Store,
   useSubscriptionV1Store,
   useEnvironmentV1Store,
+  useDBSchemaV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -120,9 +121,7 @@ interface LocalState {
   projectId?: string;
   environmentId?: string;
   databaseId?: string;
-  changeHistory?: ChangeHistory;
-  // conciseHistory is used for Oracle only.
-  conciseHistory?: string;
+  changeHistoryName?: string;
 }
 
 const state = reactive<LocalState>({
@@ -142,44 +141,15 @@ const database = computed(() => {
   return databaseStore.getDatabaseByUID(databaseId);
 });
 
+const isPreparingSchemaVersionOptions = ref(false);
+const isFetchingChangeHistorySourceSchema = ref(false);
+
 const hasSyncSchemaFeature = computed(() => {
   return useSubscriptionV1Store().hasInstanceFeature(
     "bb.feature.sync-schema-all-versions",
     database.value?.instanceEntity
   );
 });
-
-onMounted(async () => {
-  if (props.selectState?.databaseId) {
-    try {
-      const database = await databaseStore.getOrFetchDatabaseByUID(
-        props.selectState.databaseId || ""
-      );
-      const environment = await environmentStore.getOrFetchEnvironmentByName(
-        database.effectiveEnvironment
-      );
-      state.projectId = props.selectState.projectId;
-      state.databaseId = database.uid;
-      state.environmentId = environment.uid;
-      state.changeHistory = props.selectState.changeHistory;
-    } catch (error) {
-      // do nothing.
-    }
-  } else if (props.selectState?.projectId) {
-    state.projectId = props.selectState.projectId;
-  }
-});
-
-const fullViewChangeHistory = computedAsync(async () => {
-  const name = state.changeHistory?.name;
-  if (!name) {
-    return undefined;
-  }
-  return changeHistoryStore.getOrFetchChangeHistoryByName(
-    name,
-    ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
-  );
-}, undefined);
 
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
@@ -309,9 +279,9 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
   return h("div", { class: "w-full flex justify-between" }, children);
 };
 const isMockLatestSchemaChangeHistorySelected = computed(() => {
-  if (!state.changeHistory) return false;
+  if (!state.changeHistoryName) return false;
   return (
-    extractChangeHistoryUID(state.changeHistory.name) === String(UNKNOWN_ID)
+    extractChangeHistoryUID(state.changeHistoryName) === String(UNKNOWN_ID)
   );
 });
 const fallbackSchemaVersionOption = (value: string): SelectOption => {
@@ -348,57 +318,115 @@ const handleSchemaVersionSelect = async (
     state.showFeatureModal = true;
     return;
   }
-  if (
-    database.value &&
-    instanceV1SupportsConciseSchema(database.value.instanceEntity)
-  ) {
-    const conciseHistory = await changeHistoryStore.fetchChangeHistory({
-      name: changeHistory.name,
-      view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
-      concise: true,
-    });
-    state.conciseHistory = conciseHistory.schema;
-  }
-  state.changeHistory = changeHistory;
+  state.changeHistoryName = changeHistory.name;
 };
+
+const mergedChangeHistorySourceSchema = computedAsync(
+  async (): Promise<
+    | Pick<ChangeHistorySourceSchema, "changeHistory" | "conciseHistory">
+    | undefined
+  > => {
+    const { databaseId, changeHistoryName } = state;
+    if (!isValidId(databaseId)) {
+      return undefined;
+    }
+    if (!changeHistoryName) {
+      return undefined;
+    }
+
+    const database = databaseStore.getDatabaseByUID(databaseId);
+    if (database) {
+      if (isMockLatestSchemaChangeHistorySelected.value) {
+        // If database has no migration history, we will use its latest schema.
+        const schema = await databaseStore.fetchDatabaseSchema(
+          `${database.name}/schema`
+        );
+        const changeHistory = mockLatestSchemaChangeHistory(database, schema);
+        if (instanceV1SupportsConciseSchema(database.instanceEntity)) {
+          const conciseSchema = await databaseStore.fetchDatabaseSchema(
+            `${database.name}/schema`,
+            /* sdlFormat */ false,
+            /* concise */ instanceV1SupportsConciseSchema(
+              database.instanceEntity
+            )
+          );
+          const conciseHistory = conciseSchema.schema;
+          return {
+            changeHistory,
+            conciseHistory,
+          };
+        } else {
+          return {
+            changeHistory,
+          };
+        }
+      } else {
+        // Fetch the FULL view of changeHistory
+        const changeHistory = await changeHistoryStore.fetchChangeHistory({
+          name: changeHistoryName,
+          view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+        });
+
+        if (instanceV1SupportsConciseSchema(database.instanceEntity)) {
+          const conciseHistory = await changeHistoryStore.fetchChangeHistory({
+            name: changeHistoryName,
+            view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+            concise: true,
+          });
+          return {
+            changeHistory,
+            conciseHistory: conciseHistory.schema,
+          };
+        } else {
+          return {
+            changeHistory,
+          };
+        }
+      }
+    } else {
+      return undefined;
+    }
+  },
+  undefined,
+  { evaluating: isFetchingChangeHistorySourceSchema }
+);
 
 watch(
   () => [state.databaseId],
   async () => {
     const databaseId = state.databaseId;
     if (!isValidId(databaseId)) {
-      state.changeHistory = undefined;
+      state.changeHistoryName = undefined;
       return;
     }
 
     const database = databaseStore.getDatabaseByUID(databaseId);
     if (database) {
-      const changeHistoryList = (
-        await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
-          database.name
-        )
-      ).filter((changeHistory) =>
-        allowedMigrationTypeList.includes(changeHistory.type)
-      );
+      try {
+        isPreparingSchemaVersionOptions.value = true;
+        const changeHistoryList = (
+          await changeHistoryStore.getOrFetchChangeHistoryListOfDatabase(
+            database.name
+          )
+        ).filter((changeHistory) =>
+          allowedMigrationTypeList.includes(changeHistory.type)
+        );
 
-      if (changeHistoryList.length > 0) {
-        // Default select the first migration history.
-        state.changeHistory = head(changeHistoryList);
-      } else {
-        // If database has no migration history, we will use its latest schema.
-        const schema = await databaseStore.fetchDatabaseSchema(
-          `${database.name}/schema`
-        );
-        state.changeHistory = mockLatestSchemaChangeHistory(database, schema);
-        const conciseSchema = await databaseStore.fetchDatabaseSchema(
-          `${database.name}/schema`,
-          /* sdlFormat */ false,
-          /* concise */ instanceV1SupportsConciseSchema(database.instanceEntity)
-        );
-        state.conciseHistory = conciseSchema.schema;
+        if (changeHistoryList.length > 0) {
+          // Default select the first migration history.
+          state.changeHistoryName = head(changeHistoryList)?.name;
+        } else {
+          // If database has no migration history, we will use its latest schema.
+          state.changeHistoryName = mockLatestSchemaChangeHistory(
+            database,
+            undefined
+          ).name;
+        }
+      } finally {
+        isPreparingSchemaVersionOptions.value = false;
       }
     } else {
-      state.changeHistory = undefined;
+      state.changeHistoryName = undefined;
     }
   }
 );
@@ -408,27 +436,49 @@ watch(
     () => state.projectId,
     () => state.environmentId,
     () => state.databaseId,
-    () => state.changeHistory,
-    fullViewChangeHistory,
-    () => state.conciseHistory,
+    mergedChangeHistorySourceSchema,
+    isFetchingChangeHistorySourceSchema,
   ],
-  ([
-    projectId,
-    environmentId,
-    databaseId,
-    basicViewChangeHistory,
-    fullViewChangeHistory,
-    conciseHistory,
-  ]) => {
-    const changeHistory = fullViewChangeHistory ?? basicViewChangeHistory;
+  ([projectId, environmentId, databaseId, source, isFetching]) => {
     const params: ChangeHistorySourceSchema = {
       projectId,
       environmentId,
       databaseId,
-      changeHistory,
-      conciseHistory,
+      changeHistory: source?.changeHistory,
+      conciseHistory: source?.conciseHistory,
+      isFetching,
     };
     emit("update", params);
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  [() => props.selectState?.databaseId, () => props.selectState?.projectId],
+  async ([databaseId, projectId]) => {
+    if (databaseId) {
+      try {
+        const database = await databaseStore.getOrFetchDatabaseByUID(
+          databaseId
+        );
+        const environment = await environmentStore.getOrFetchEnvironmentByName(
+          database.effectiveEnvironment
+        );
+        state.projectId = projectId;
+        state.databaseId = database.uid;
+        state.environmentId = environment.uid;
+        state.changeHistoryName = props.selectState?.changeHistory?.name;
+      } catch (error) {
+        // do nothing.
+      }
+    } else if (projectId) {
+      state.projectId = projectId;
+      state.databaseId = undefined;
+      state.environmentId = undefined;
+      state.changeHistoryName = undefined;
+    }
   },
   {
     immediate: true,

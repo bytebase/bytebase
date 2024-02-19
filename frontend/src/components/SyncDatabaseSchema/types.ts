@@ -9,6 +9,7 @@ export interface ChangeHistorySourceSchema {
   databaseId?: string;
   changeHistory?: ChangeHistory;
   conciseHistory?: string;
+  isFetching?: boolean;
 }
 
 export interface RawSQLState {
