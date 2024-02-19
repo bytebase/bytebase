@@ -73,6 +73,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_DifferPreview_FullMethodName,
 		v1pb.SQLService_Check_FullMethodName,
+		v1pb.SQLService_ParseMyBatisMapper_FullMethodName,
 		v1pb.SQLService_Pretty_FullMethodName,
 		v1pb.SQLService_StringifyMetadata_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,
