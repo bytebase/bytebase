@@ -60,7 +60,7 @@ func (l *queryValidateListener) EnterQuery(ctx *parser.QueryContext) {
 
 // EnterSimpleStatement is called when production simpleStatement is entered.
 func (l *queryValidateListener) EnterSimpleStatement(ctx *parser.SimpleStatementContext) {
-	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil {
+	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil && ctx.SetStatement() == nil {
 		l.valid = false
 	}
 }

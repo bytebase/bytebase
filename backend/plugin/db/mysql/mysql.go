@@ -360,9 +360,10 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := strings.TrimLeft(strings.TrimRight(singleSQL.Text, " \n\t;"), " \n\t")
 	isExplain := strings.HasPrefix(statement, "EXPLAIN")
+	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 
 	stmt := statement
-	if !isExplain && queryContext.Limit > 0 {
+	if !isExplain && !isSet && queryContext.Limit > 0 {
 		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
 	}
 
