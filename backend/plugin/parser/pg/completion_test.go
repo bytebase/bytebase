@@ -40,7 +40,7 @@ func TestCompletion(t *testing.T) {
 
 	for i, t := range tests {
 		text, caretOffset := catchCaret(t.Input)
-		result, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, text, 1, caretOffset, "db", getMetadataForTest)
+		result, err := base.Completion(context.Background(), storepb.Engine_POSTGRES, text, 1, caretOffset, "db", getMetadataForTest, listDatbaseNamesForTest)
 		a.NoError(err)
 		var filteredResult []base.Candidate
 		for _, r := range result {
@@ -64,6 +64,10 @@ func TestCompletion(t *testing.T) {
 		err = os.WriteFile(filepath, byteValue, 0644)
 		a.NoError(err)
 	}
+}
+
+func listDatbaseNamesForTest(_ context.Context) ([]string, error) {
+	return []string{"db"}, nil
 }
 
 func getMetadataForTest(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {

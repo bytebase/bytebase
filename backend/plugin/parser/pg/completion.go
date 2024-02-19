@@ -33,8 +33,8 @@ func init() {
 }
 
 // Completion is the entry point of PostgreSQL code completion.
-func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc) ([]base.Candidate, error) {
-	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata)
+func Completion(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, l base.ListDatabaseNamesFunc) ([]base.Candidate, error) {
+	completer := NewCompleter(ctx, statement, caretLine, caretOffset, defaultDatabase, metadata, l)
 	return completer.completion()
 }
 
@@ -146,6 +146,7 @@ type Completer struct {
 	scanner             *base.Scanner
 	defaultDatabase     string
 	getMetadata         base.GetDatabaseMetadataFunc
+	listDatabaseNames   base.ListDatabaseNamesFunc
 	metadataCache       map[string]*model.DatabaseMetadata
 	noSeparatorRequired map[int]bool
 	// referencesStack is a hierarchical stack of table references.
@@ -158,7 +159,7 @@ type Completer struct {
 	cteTables  []*base.VirtualTableReference
 }
 
-func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc) *Completer {
+func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
 	parser, lexer, scanner := prepareParserAndScanner(statement, caretLine, caretOffset)
 	// For all PostgreSQL completers, we use one global follow sets by state.
 	// The FollowSetsByState is the thread-safe struct.
@@ -616,6 +617,8 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 			l.context.defaultDatabase,
 			"",
 			l.context.getMetadata,
+			l.context.listDatabaseNames,
+			false,
 		); err == nil && len(span) == 1 {
 			for _, column := range span[0].Results {
 				table.Columns = append(table.Columns, column.Name)
@@ -978,6 +981,8 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 						l.context.defaultDatabase,
 						"",
 						l.context.getMetadata,
+						l.context.listDatabaseNames,
+						false,
 					); err == nil && len(span) == 1 {
 						for _, column := range span[0].Results {
 							virtualReference.Columns = append(virtualReference.Columns, column.Name)
