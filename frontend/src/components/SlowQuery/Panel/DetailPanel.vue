@@ -62,7 +62,10 @@
             </div>
           </div>
         </div>
-        <IndexAdvisor v-if="slowQueryLog" :slow-query-log="slowQueryLog" />
+        <IndexAdvisor
+          v-if="slowQueryLog && hasIndexAdvisorPermission"
+          :slow-query-log="slowQueryLog"
+        />
         <div
           v-if="instanceV1HasSlowQueryDetail(database.instanceEntity)"
           class="flex-1 overflow-auto border"
@@ -135,9 +138,11 @@ import {
   Drawer,
   DrawerContent,
 } from "@/components/v2";
+import { useCurrentUserV1 } from "@/store";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import IndexAdvisor from "./IndexAdvisor.vue";
 
 export type SlowQueryDetailsRow = BBGridRow<SlowQueryDetails>;
@@ -188,6 +193,13 @@ const columns = computed(() => {
 const log = computed(() => props.slowQueryLog!.log);
 const database = computed(() => props.slowQueryLog!.database);
 const selectedDetail = shallowRef<SlowQueryDetails>();
+const hasIndexAdvisorPermission = computed(() =>
+  hasProjectPermissionV2(
+    database.value.projectEntity,
+    useCurrentUserV1().value,
+    "bb.databases.adviseIndex"
+  )
+);
 
 const isSelectedRow = (item: SlowQueryDetails) => {
   return selectedDetail.value === item;
