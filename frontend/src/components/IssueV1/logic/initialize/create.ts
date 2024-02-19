@@ -316,7 +316,10 @@ export const buildSpecForTarget = async (
       type: Plan_ChangeDatabaseConfig_Type.DATA,
     });
     if (query.sheetId) {
-      const sheet = await useSheetV1Store().getOrFetchSheetByUID(query.sheetId);
+      const sheet = await useSheetV1Store().getOrFetchSheetByUID(
+        query.sheetId,
+        "FULL"
+      );
       if (sheet) {
         spec.changeDatabaseConfig.sheet = sheet.name;
       }
@@ -341,7 +344,8 @@ export const buildSpecForTarget = async (
 
     if (query.sheetId) {
       const remoteSheet = await useSheetV1Store().getOrFetchSheetByUID(
-        query.sheetId
+        query.sheetId,
+        "FULL"
       );
       if (remoteSheet) {
         // make a local copy for remote sheet for further editing

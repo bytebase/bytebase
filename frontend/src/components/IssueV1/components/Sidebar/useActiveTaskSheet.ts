@@ -16,6 +16,7 @@ export const useActiveTaskSheet = () => {
       return undefined;
     }
     const name = sheetName.value;
+    // Use any (basic or full) view of sheets here to save data size
     return sheetStore.getSheetByName(name);
   });
   watch(
@@ -28,6 +29,7 @@ export const useActiveTaskSheet = () => {
       const uid = extractSheetUID(sheetName);
       if (!uid) return;
       sheetReady.value = false;
+      // Use any (basic or full) view of sheets here to save data size
       sheetStore.getOrFetchSheetByName(sheetName).finally(() => {
         sheetReady.value = true;
       });

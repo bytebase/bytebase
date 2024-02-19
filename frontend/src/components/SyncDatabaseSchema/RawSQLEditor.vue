@@ -140,7 +140,7 @@ const engineSelectorOptions = computed(() => {
 });
 
 const sheet = computed(() => {
-  return sheetStore.getSheetByUID(String(props.sheetId || UNKNOWN_ID));
+  return sheetStore.getSheetByUID(String(props.sheetId || UNKNOWN_ID), "FULL");
 });
 
 const isSheetOversized = computed(() => {
@@ -154,7 +154,10 @@ const isSheetOversized = computed(() => {
 
 onMounted(async () => {
   if (props.sheetId) {
-    const sheet = await sheetStore.getOrFetchSheetByUID(String(props.sheetId));
+    const sheet = await sheetStore.getOrFetchSheetByUID(
+      String(props.sheetId),
+      "FULL"
+    );
     if (sheet) {
       const statement = new TextDecoder().decode(sheet.content);
       state.editStatement = statement;
@@ -234,10 +237,13 @@ const handleUpdateSheet = useDebounceFn(async (statement: string) => {
     return;
   }
 
-  await sheetStore.patchSheet({
-    name: sheet.value.name,
-    content: new TextEncoder().encode(statement),
-  });
+  await sheetStore.patchSheet(
+    {
+      name: sheet.value.name,
+      content: new TextEncoder().encode(statement),
+    },
+    ["content"]
+  );
 }, 1000);
 
 const update = (sheetId?: number) => {

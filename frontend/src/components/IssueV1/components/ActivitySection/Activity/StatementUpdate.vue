@@ -50,6 +50,7 @@ const showPanel = ref(false);
 
 const prepareStatement = async (uid: string) => {
   if (uid === String(UNKNOWN_ID)) return "";
+  // Use any (basic or full) view of sheets here to save data size
   const sheet = await useSheetV1Store().getOrFetchSheetByUID(uid);
   if (!sheet) return "";
   return getSheetStatement(sheet);
