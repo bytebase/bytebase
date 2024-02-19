@@ -134,6 +134,10 @@ func NormalizeMySQLSelectAlias(selectAlias parser.ISelectAliasContext) string {
 
 // NormalizeMySQLIdentifierList normalizes the given identifier list.
 func NormalizeMySQLIdentifierList(ctx parser.IIdentifierListContext) []string {
+	if ctx == nil {
+		return []string{}
+	}
+
 	var result []string
 	for _, identifier := range ctx.AllIdentifier() {
 		result = append(result, NormalizeMySQLIdentifier(identifier))

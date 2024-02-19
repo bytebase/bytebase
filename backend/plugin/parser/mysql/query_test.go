@@ -87,6 +87,10 @@ func TestValidateSQLForEditor(t *testing.T) {
 			statement: `create table t (a int);`,
 			validate:  false,
 		},
+		{
+			statement: `SET max_execution_time = 1000; select * from t`,
+			validate:  true,
+		},
 	}
 
 	for _, test := range tests {

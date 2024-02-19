@@ -69,6 +69,23 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 // If the read-only data source is not defined, we will fallback to admin data source.
 // Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
 func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (db.Driver, error) {
+	dataSource, databaseName, err := d.GetReadOnlyDatabaseSource(instance, database, dataSourceID)
+	if err != nil {
+		return nil, err
+	}
+	schemaTenantMode := false
+	if instance.Options != nil && instance.Options.SchemaTenantMode {
+		schemaTenantMode = true
+	}
+	dataShare := false
+	if database != nil {
+		dataShare = database.DataShare
+	}
+	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode, db.ConnectionContext{})
+}
+
+// GetReadOnlyDatabaseSource returns the read-only data source for the given instance and database.
+func (*DBFactory) GetReadOnlyDatabaseSource(instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (*store.DataSourceMessage, string, error) {
 	var dataSource *store.DataSourceMessage
 	if dataSourceID == "" {
 		dataSource = utils.DataSourceFromInstanceWithType(instance, api.RO)
@@ -86,7 +103,7 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		}
 	}
 	if dataSource == nil {
-		return nil, common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
+		return nil, "", common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
 	}
 
 	databaseName := ""
@@ -103,15 +120,8 @@ func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *sto
 		dataSource.SID = ""
 		databaseName = database.DatabaseName
 	}
-	schemaTenantMode := false
-	if instance.Options != nil && instance.Options.SchemaTenantMode {
-		schemaTenantMode = true
-	}
-	dataShare := false
-	if database != nil {
-		dataShare = database.DataShare
-	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, schemaTenantMode, db.ConnectionContext{})
+
+	return dataSource, databaseName, nil
 }
 
 // GetDataSourceDriver returns the database driver for a data source.

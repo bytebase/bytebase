@@ -217,8 +217,6 @@
     "total": "Tổng cộng",
     "discard-changes": "Loại bỏ những thay đổi",
     "error-message": "Thông báo lỗi",
-    "resource-id": "ID tài nguyên",
-    "domain": "Lãnh địa",
     "demo-mode": "Thử nghiệm",
     "operations": "Hoạt động",
     "on": "TRÊN",
@@ -277,7 +275,8 @@
     "backup": "Hỗ trợ",
     "cutover": "Chuyển đổi",
     "baseline": "Đường cơ sở",
-    "project-member": "Thành viên dự án"
+    "project-member": "Thành viên dự án",
+    "leave-without-saving": "Rời đi mà không lưu?"
   },
   "error-page": {
     "go-back-home": "Trở về nhà"
@@ -2204,7 +2203,7 @@
     "close-pane": "Đóng ngăn",
     "loading-data": "Đang tải dữ liệu...",
     "table-empty-placeholder": "Bấm vào Chạy để thực hiện truy vấn.",
-    "no-rows-found": "Không tìm thấy hàng nào",
+    "no-data-available": "Không có dữ liệu",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "only-select-allowed": "Chỉ các câu lệnh {select} mới được phép thực thi.",
     "want-to-action": "Nếu bạn muốn {want}, hãy nhấp vào nút {action} {reaction}.",

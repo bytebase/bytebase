@@ -217,8 +217,6 @@
     "total": "Total",
     "discard-changes": "Discard changes",
     "error-message": "Error message",
-    "resource-id": "Resource ID",
-    "domain": "Domain",
     "demo-mode": "Demo",
     "operations": "Operations",
     "on": "On",
@@ -277,7 +275,8 @@
     "backup": "Backup",
     "cutover": "Cutover",
     "baseline": "Baseline",
-    "project-member": "Project member"
+    "project-member": "Project member",
+    "leave-without-saving": "Leave without saving?"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2204,7 +2203,7 @@
     "close-pane": "Close Pane",
     "loading-data": "Loading Data...",
     "table-empty-placeholder": "Click Run to execute the query.",
-    "no-rows-found": "No rows found",
+    "no-data-available": "No data available",
     "download-as-file": "Download as {file}",
     "only-select-allowed": "Only {select} statements are allowed to execute.",
     "want-to-action": "If you want to {want}, click the {action} button {reaction}.",

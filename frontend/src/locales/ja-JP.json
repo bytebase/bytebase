@@ -217,8 +217,6 @@
     "total": "合計",
     "discard-changes": "変更を破棄",
     "error-message": "エラーメッセージ",
-    "resource-id": "リソースID",
-    "domain": "ドメイン",
     "demo-mode": "デモ",
     "operations": "操作",
     "on": "オン",
@@ -272,11 +270,13 @@
     "untitled": "無題",
     "nickname": "ニックネーム",
     "missing-permission": "必要な権限が不足しています",
+    "continue-anyway": "とにかく続けます",
     "permissions": "権限",
     "backup": "バックアップ",
     "cutover": "カットオーバー",
     "baseline": "ベースライン",
-    "project-member": "プロジェクトメンバー"
+    "project-member": "プロジェクトメンバー",
+    "leave-without-saving": "保存せずに終了しますか?"
   },
   "error-page": {
     "go-back-home": "ホームに戻る"
@@ -2202,7 +2202,7 @@
     "close-pane": "パネルを閉じる",
     "loading-data": "データを読み込んでいます...",
     "table-empty-placeholder": "クエリを実行するには実行ボタンをクリックしてください",
-    "no-rows-found": "行が見つかりません",
+    "no-data-available": "データがありません",
     "download-as-file": "{file}としてダウンロード",
     "only-select-allowed": "実行できるのは{select}ステートメントのみです",
     "want-to-action": "{want}したい場合は、{action}ボタンをクリックして{reaction}してください",

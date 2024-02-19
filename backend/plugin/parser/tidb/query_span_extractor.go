@@ -725,10 +725,12 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 	//
 	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
 	// This is the reason we loop the slice in reversed order.
-	for i := len(q.ctes) - 1; i >= 0; i-- {
-		cte := q.ctes[i]
-		if databaseName == "" && cte.Name == tableName {
-			return cte, nil
+	if databaseName == "" {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			cte := q.ctes[i]
+			if cte.Name == tableName {
+				return cte, nil
+			}
 		}
 	}
 
@@ -808,7 +810,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(databaseName string) (*model.Da
 	if meta, ok := q.metaCache[databaseName]; ok {
 		return meta, nil
 	}
-	meta, err := q.f(q.ctx, databaseName)
+	_, meta, err := q.f(q.ctx, databaseName)
 	if err != nil {
 		return nil, err
 	}

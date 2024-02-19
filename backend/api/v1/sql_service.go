@@ -286,7 +286,8 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to prepare related message")
 	}
-	if instance.Engine == storepb.Engine_POSTGRES {
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL:
 		return s.ExportV2(ctx, request)
 	}
 	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
@@ -953,7 +954,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, errors.Wrapf(err, "failed to prepare related message")
 	}
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_TIDB:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE:
 		return s.QueryV2(ctx, request)
 	}
 

@@ -57,7 +57,7 @@ func (q *querySpanExtractor) getDatabaseMetadata(database string) (*model.Databa
 	if meta, ok := q.metaCache[database]; ok {
 		return meta, nil
 	}
-	meta, err := q.f(q.ctx, database)
+	_, meta, err := q.f(q.ctx, database)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", database)
 	}
@@ -296,6 +296,7 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_Sel
 				} else {
 					schemaName, tableName, _ := extractSchemaTableColumnName(columnRef)
 					find := false
+					// TODO(zp): remove iterate fromFieldList because we had append it to q.tableSourcesFrom.
 					for _, tableSource := range fromFieldList {
 						if schemaName == "" || schemaName == tableSource.GetSchemaName() {
 							if tableName == tableSource.GetTableName() {

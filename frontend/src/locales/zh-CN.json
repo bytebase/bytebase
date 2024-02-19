@@ -275,7 +275,8 @@
     "backup": "备份",
     "cutover": "切换",
     "baseline": "基线",
-    "project-member": "项目成员"
+    "project-member": "项目成员",
+    "leave-without-saving": "不保存变动？"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2199,7 +2200,7 @@
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
-    "no-rows-found": "暂无数据",
+    "no-data-available": "暂无数据",
     "download-as-file": "下载为 {file} 格式",
     "only-select-allowed": "只允许执行 {select} 语句",
     "want-to-action": "如果您想要{want}，点击“{action}”按钮{reaction}。",

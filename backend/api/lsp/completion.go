@@ -51,7 +51,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		slog.Debug("Engine is not supported", slog.String("engine", engine.String()))
 		return newEmptyCompletionList(), nil
 	}
-	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc)
+	candidates, err := base.Completion(ctx, engine, string(content), params.Position.Line+1, params.Position.Character, defaultDatabase, h.GetDatabaseMetadataFunc, h.ListDatabaseNamesFunc)
 	if err != nil {
 		// return errors will close the websocket connection, so we just log the error and return empty completion list.
 		slog.Error("Failed to get completion candidates", "err", err)
@@ -140,11 +140,11 @@ func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind 
 	}
 }
 
-func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 	// TODO: do ACL check here.
 	instanceID := h.getInstanceID()
 	if instanceID == "" {
-		return nil, errors.Errorf("instance is not specified")
+		return "", nil, errors.Errorf("instance is not specified")
 	}
 
 	database, err := h.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -152,17 +152,36 @@ func (h *Handler) GetDatabaseMetadataFunc(ctx context.Context, databaseName stri
 		DatabaseName: &databaseName,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database")
+		return "", nil, errors.Wrap(err, "failed to get database")
 	}
 	if database == nil {
-		return nil, errors.Errorf("database %s for instance %s not found", databaseName, instanceID)
+		return "", nil, errors.Errorf("database %s for instance %s not found", databaseName, instanceID)
 	}
 	metadata, err := h.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database schema")
+		return "", nil, errors.Wrap(err, "failed to get database schema")
 	}
 	if metadata == nil {
-		return nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
+		return "", nil, errors.Errorf("database %s schema for instance %s not found", databaseName, instanceID)
 	}
-	return metadata.GetDatabaseMetadata(), nil
+	return databaseName, metadata.GetDatabaseMetadata(), nil
+}
+
+func (h *Handler) ListDatabaseNamesFunc(ctx context.Context) ([]string, error) {
+	instanceID := h.getInstanceID()
+	if instanceID == "" {
+		return nil, errors.Errorf("instance is not specified")
+	}
+
+	databases, err := h.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+		InstanceID: &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list databases")
+	}
+	var names []string
+	for _, database := range databases {
+		names = append(names, database.DatabaseName)
+	}
+	return names, nil
 }

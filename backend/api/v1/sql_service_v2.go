@@ -45,7 +45,35 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		return nil, err
 	}
 
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
+	schemaName := ""
+	if instance.Engine == storepb.Engine_ORACLE {
+		// For Oracle, there are two modes, schema-based and database-based management.
+		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+		// So the default schemaName is the connectionDatabase.
+		// For database-based management, we need to use the dataSource.Username as the schemaName.
+		// So the default schemaName is the dataSource.Username.
+		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+		if isSchemaTenantMode {
+			schemaName = request.ConnectionDatabase
+		} else {
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get read only database source")
+			}
+			schemaName = dataSource.Username
+		}
+	}
+
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		schemaName,
+		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}
@@ -114,8 +142,36 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		return nil, err
 	}
 
+	schemaName := ""
+	if instance.Engine == storepb.Engine_ORACLE {
+		// For Oracle, there are two modes, schema-based and database-based management.
+		// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+		// So the default schemaName is the connectionDatabase.
+		// For database-based management, we need to use the dataSource.Username as the schemaName.
+		// So the default schemaName is the dataSource.Username.
+		isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+		if isSchemaTenantMode {
+			schemaName = request.ConnectionDatabase
+		} else {
+			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get read only database source")
+			}
+			schemaName = dataSource.Username
+		}
+	}
+
 	// Get query span.
-	spans, err := base.GetQuerySpan(ctx, instance.Engine, statement, request.ConnectionDatabase, s.buildGetDatabaseMetadataFunc(instance))
+	spans, err := base.GetQuerySpan(
+		ctx,
+		instance.Engine,
+		statement,
+		request.ConnectionDatabase,
+		schemaName,
+		s.buildGetDatabaseMetadataFunc(instance, request.ConnectionDatabase),
+		s.buildListDatabaseNamesFunc(instance),
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span")
 	}
@@ -512,26 +568,73 @@ func (s *SQLService) getColumnForColumnResource(ctx context.Context, instanceID 
 	return columnMetadata, columnConfig, nil
 }
 
-func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage) base.GetDatabaseMetadataFunc {
-	return func(ctx context.Context, databaseName string) (*model.DatabaseMetadata, error) {
+func (s *SQLService) buildGetDatabaseMetadataFunc(instance *store.InstanceMessage, connectionDatabase string) base.GetDatabaseMetadataFunc {
+	if instance.Engine == storepb.Engine_ORACLE {
+		return func(ctx context.Context, schemaName string) (string, *model.DatabaseMetadata, error) {
+			// There are two modes for Oracle, schema-based and database-based management.
+			// For schema-based management, also say tenant mode, we need to use the schemaName as the databaseName.
+			// For database-based management, we need to use the connectionDatabase as the databaseName.
+			databaseName := connectionDatabase
+			isSchemaTenantMode := (instance.Options != nil && instance.Options.GetSchemaTenantMode())
+			if isSchemaTenantMode {
+				databaseName = schemaName
+			}
+
+			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return "", nil, err
+			}
+			if database == nil {
+				return "", nil, nil
+			}
+			databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return "", nil, err
+			}
+			if databaseMetadata == nil {
+				return "", nil, nil
+			}
+			return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+		}
+	}
+	return func(ctx context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &databaseName,
 		})
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
 		if database == nil {
-			return nil, nil
+			return "", nil, nil
 		}
 		databaseMetadata, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, err
+			return "", nil, err
 		}
 		if databaseMetadata == nil {
-			return nil, nil
+			return "", nil, nil
 		}
-		return databaseMetadata.GetDatabaseMetadata(), nil
+		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+	}
+}
+
+func (s *SQLService) buildListDatabaseNamesFunc(instance *store.InstanceMessage) base.ListDatabaseNamesFunc {
+	return func(ctx context.Context) ([]string, error) {
+		databases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instance.ResourceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, 0, len(databases))
+		for _, database := range databases {
+			names = append(names, database.DatabaseName)
+		}
+		return names, nil
 	}
 }
 
