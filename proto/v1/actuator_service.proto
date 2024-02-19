@@ -141,4 +141,7 @@ message ActuatorInfo {
   bool iam_guard = 18;
 
   repeated string unlicensed_features = 19;
+
+  // logo is the branding logo.
+  string logo = 20;
 }

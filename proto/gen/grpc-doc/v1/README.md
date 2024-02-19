@@ -666,6 +666,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | pre_update_backup | [bool](#bool) |  | lsp is the enablement of data backup prior to data update. |
 | iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 | unlicensed_features | [string](#string) | repeated |  |
+| logo | [string](#string) |  | logo is the branding logo. |
 
 
 

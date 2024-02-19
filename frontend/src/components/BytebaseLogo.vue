@@ -2,7 +2,8 @@
   <div
     class="flex-shrink-0 w-44 min-h-[4rem] flex items-center overflow-y-hidden"
   >
-    <router-link
+    <component
+      :is="component"
       to="/"
       class="w-full select-none flex flex-row justify-center items-center"
       active-class=""
@@ -20,15 +21,24 @@
         src="../assets/logo-full.svg"
         alt="Bytebase"
       />
-    </router-link>
+    </component>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { useActuatorV1Store } from "@/store/modules/v1/actuator";
+
+withDefaults(
+  defineProps<{
+    component?: "router-link" | "span";
+  }>(),
+  {
+    component: "router-link",
+  }
+);
 
 const customBrandingLogo = computed((): string | undefined => {
-  return useSettingV1Store().brandingLogo;
+  return useActuatorV1Store().serverInfo?.logo;
 });
 </script>

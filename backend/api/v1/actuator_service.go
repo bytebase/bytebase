@@ -98,6 +98,17 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
 	}
 
+	settingName := api.SettingBrandingLogo
+	brandingSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name: &settingName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace branding: %v", err)
+	}
+	if brandingSetting == nil {
+		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -131,6 +142,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		PreUpdateBackup:    s.profile.PreUpdateBackup,
 		IamGuard:           s.profile.DevelopmentIAM,
 		UnlicensedFeatures: unlicensedFeaturesString,
+		Logo:               brandingSetting.Value,
 	}
 
 	return &serverInfo, nil

@@ -102,6 +102,8 @@ export interface ActuatorInfo {
   /** iam_guard is the enablement of IAM checks. */
   iamGuard: boolean;
   unlicensedFeatures: string[];
+  /** logo is the branding logo. */
+  logo: string;
 }
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
@@ -554,6 +556,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     preUpdateBackup: false,
     iamGuard: false,
     unlicensedFeatures: [],
+    logo: "",
   };
 }
 
@@ -615,6 +618,9 @@ export const ActuatorInfo = {
     }
     for (const v of message.unlicensedFeatures) {
       writer.uint32(154).string(v!);
+    }
+    if (message.logo !== "") {
+      writer.uint32(162).string(message.logo);
     }
     return writer;
   },
@@ -759,6 +765,13 @@ export const ActuatorInfo = {
 
           message.unlicensedFeatures.push(reader.string());
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.logo = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -791,6 +804,7 @@ export const ActuatorInfo = {
       unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
         ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
         : [],
+      logo: isSet(object.logo) ? globalThis.String(object.logo) : "",
     };
   },
 
@@ -853,6 +867,9 @@ export const ActuatorInfo = {
     if (message.unlicensedFeatures?.length) {
       obj.unlicensedFeatures = message.unlicensedFeatures;
     }
+    if (message.logo !== "") {
+      obj.logo = message.logo;
+    }
     return obj;
   },
 
@@ -880,6 +897,7 @@ export const ActuatorInfo = {
     message.preUpdateBackup = object.preUpdateBackup ?? false;
     message.iamGuard = object.iamGuard ?? false;
     message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
+    message.logo = object.logo ?? "";
     return message;
   },
 };

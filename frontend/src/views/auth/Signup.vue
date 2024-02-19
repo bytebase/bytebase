@@ -1,11 +1,8 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <img
-        class="h-12 w-auto mx-auto mb-8"
-        src="../../assets/logo-full.svg"
-        alt="Bytebase"
-      />
+      <BytebaseLogo component="span" class="mx-auto mb-8" />
+
       <h2 class="text-2xl leading-9 font-medium text-main">
         <template v-if="needAdminSetup">
           <i18n-t

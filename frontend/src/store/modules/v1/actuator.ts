@@ -82,6 +82,11 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
   },
   actions: {
+    setLogo(logo: string) {
+      if (this.serverInfo) {
+        this.serverInfo.logo = logo;
+      }
+    },
     setServerInfo(serverInfo: ActuatorInfo) {
       this.serverInfo = serverInfo;
     },
