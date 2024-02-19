@@ -39,6 +39,12 @@ service SQLService {
       body: "*"
     };
   }
+  rpc ParseMyBatisMapper(ParseMyBatisMapperRequest) returns (ParseMyBatisMapperResponse) {
+    option (google.api.http) = {
+      post: "/v1/sql/parseMyBatisMapper"
+      body: "*"
+    };
+  }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
     option (google.api.http) = {
@@ -272,6 +278,14 @@ message CheckRequest {
 
 message CheckResponse {
   repeated Advice advices = 1;
+}
+
+message ParseMyBatisMapperRequest {
+  string content = 1;
+}
+
+message ParseMyBatisMapperResponse {
+  repeated string statements = 1;
 }
 
 message StringifyMetadataRequest {
