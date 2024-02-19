@@ -33,6 +33,20 @@ service ActuatorService {
     option (google.api.http) = {get: "/v1/actuator/debug"};
     option (google.api.method_signature) = "";
   }
+
+  rpc GetResourcePackage(GetResourcePackageRequest) returns (ResourcePackage) {
+    option (google.api.http) = {get: "/v1/actuator/resources"};
+    option (google.api.method_signature) = "";
+  }
+}
+
+// The request message for getting the theme resource.
+message GetResourcePackageRequest {}
+
+// The theme resources.
+message ResourcePackage {
+  // The branding logo.
+  bytes logo = 1;
 }
 
 message GetActuatorInfoRequest {}
@@ -141,7 +155,4 @@ message ActuatorInfo {
   bool iam_guard = 18;
 
   repeated string unlicensed_features = 19;
-
-  // logo is the branding logo.
-  string logo = 20;
 }

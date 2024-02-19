@@ -87,17 +87,8 @@ func (s *ActuatorService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequ
 	return &emptypb.Empty{}, nil
 }
 
-func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
-	count, err := s.store.CountUsers(ctx, api.EndUser)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
-	}
-
+// GetResourcePackage gets the theme resources.
+func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetResourcePackageRequest) (*v1pb.ResourcePackage, error) {
 	settingName := api.SettingBrandingLogo
 	brandingSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
 		Name: &settingName,
@@ -107,6 +98,22 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 	}
 	if brandingSetting == nil {
 		return nil, errors.Errorf("cannot find setting %v", settingName)
+	}
+
+	return &v1pb.ResourcePackage{
+		Logo: []byte(brandingSetting.Value),
+	}, nil
+}
+
+func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
+	count, err := s.store.CountUsers(ctx, api.EndUser)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
 	}
 
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
@@ -142,7 +149,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		PreUpdateBackup:    s.profile.PreUpdateBackup,
 		IamGuard:           s.profile.DevelopmentIAM,
 		UnlicensedFeatures: unlicensedFeaturesString,
-		Logo:               brandingSetting.Value,
 	}
 
 	return &serverInfo, nil

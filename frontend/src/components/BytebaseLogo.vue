@@ -38,7 +38,7 @@ withDefaults(
   }
 );
 
-const customBrandingLogo = computed((): string | undefined => {
-  return useActuatorV1Store().serverInfo?.logo;
+const customBrandingLogo = computed((): string => {
+  return useActuatorV1Store().brandingLogo;
 });
 </script>
