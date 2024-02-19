@@ -257,6 +257,14 @@ export interface CheckResponse {
   advices: Advice[];
 }
 
+export interface ParseMyBatisMapperRequest {
+  content: Uint8Array;
+}
+
+export interface ParseMyBatisMapperResponse {
+  statements: string[];
+}
+
 export interface StringifyMetadataRequest {
   metadata:
     | DatabaseMetadata
@@ -1979,6 +1987,124 @@ export const CheckResponse = {
   },
 };
 
+function createBaseParseMyBatisMapperRequest(): ParseMyBatisMapperRequest {
+  return { content: new Uint8Array(0) };
+}
+
+export const ParseMyBatisMapperRequest = {
+  encode(message: ParseMyBatisMapperRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParseMyBatisMapperRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseMyBatisMapperRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.content = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseMyBatisMapperRequest {
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ParseMyBatisMapperRequest): unknown {
+    const obj: any = {};
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseMyBatisMapperRequest>): ParseMyBatisMapperRequest {
+    return ParseMyBatisMapperRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParseMyBatisMapperRequest>): ParseMyBatisMapperRequest {
+    const message = createBaseParseMyBatisMapperRequest();
+    message.content = object.content ?? new Uint8Array(0);
+    return message;
+  },
+};
+
+function createBaseParseMyBatisMapperResponse(): ParseMyBatisMapperResponse {
+  return { statements: [] };
+}
+
+export const ParseMyBatisMapperResponse = {
+  encode(message: ParseMyBatisMapperResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.statements) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParseMyBatisMapperResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParseMyBatisMapperResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statements.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParseMyBatisMapperResponse {
+    return {
+      statements: globalThis.Array.isArray(object?.statements)
+        ? object.statements.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ParseMyBatisMapperResponse): unknown {
+    const obj: any = {};
+    if (message.statements?.length) {
+      obj.statements = message.statements;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ParseMyBatisMapperResponse>): ParseMyBatisMapperResponse {
+    return ParseMyBatisMapperResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ParseMyBatisMapperResponse>): ParseMyBatisMapperResponse {
+    const message = createBaseParseMyBatisMapperResponse();
+    message.statements = object.statements?.map((e) => e) || [];
+    return message;
+  },
+};
+
 function createBaseStringifyMetadataRequest(): StringifyMetadataRequest {
   return { metadata: undefined, engine: 0 };
 }
@@ -2282,6 +2408,53 @@ export const SQLServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([18, 58, 1, 42, 34, 13, 47, 118, 49, 47, 115, 113, 108, 47, 99, 104, 101, 99, 107]),
+          ],
+        },
+      },
+    },
+    parseMyBatisMapper: {
+      name: "ParseMyBatisMapper",
+      requestType: ParseMyBatisMapperRequest,
+      requestStream: false,
+      responseType: ParseMyBatisMapperResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              31,
+              58,
+              1,
+              42,
+              34,
+              26,
+              47,
+              118,
+              49,
+              47,
+              115,
+              113,
+              108,
+              47,
+              112,
+              97,
+              114,
+              115,
+              101,
+              77,
+              121,
+              66,
+              97,
+              116,
+              105,
+              115,
+              77,
+              97,
+              112,
+              112,
+              101,
+              114,
+            ]),
           ],
         },
       },
