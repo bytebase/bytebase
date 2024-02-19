@@ -2482,7 +2482,7 @@ func extractMybatisMapperSQL(mapperContent string, engineType storepb.Engine) (s
 	var placeholder string
 	switch engineType {
 	case storepb.Engine_MYSQL:
-		placeholder = "?"
+		placeholder = "@1"
 	case storepb.Engine_POSTGRES:
 		placeholder = "$1"
 	default:
