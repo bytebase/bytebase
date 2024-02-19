@@ -1,30 +1,34 @@
-import { isEqual, isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, unref, watchEffect } from "vue";
+import { computed, unref, watchEffect } from "vue";
 import { sheetServiceClient } from "@/grpcweb";
+import { useCache } from "@/store/cache";
 import { UNKNOWN_ID, MaybeRef } from "@/types";
 import { Sheet } from "@/types/proto/v1/sheet_service";
 import { extractSheetUID, getSheetStatement } from "@/utils";
 
-const REQUEST_CACHE_BY_UID = new Map<
-  string /* uid */,
-  Promise<Sheet | undefined>
->();
+export type SheetView = "FULL" | "BASIC";
+type SheetCacheKey = [string /* uid */, SheetView];
 
 export const useSheetV1Store = defineStore("sheet_v1", () => {
-  const sheetsByName = ref(new Map<string, Sheet>());
+  const cacheByUID = useCache<SheetCacheKey, Sheet | undefined>(
+    "bb.sheet.by-uid"
+  );
 
   // Utilities
   const removeLocalSheet = (name: string) => {
     const uid = extractSheetUID(name);
     if (uid.startsWith("-")) {
-      sheetsByName.value.delete(name);
+      cacheByUID.invalidateEntity([uid, "FULL"]);
     }
   };
-  const setSheetList = (sheets: Sheet[]) => {
-    for (const sheet of sheets) {
-      sheetsByName.value.set(sheet.name, sheet);
+  const setCache = (sheet: Sheet, view: SheetView) => {
+    const uid = extractSheetUID(sheet.name);
+    if (uid === String(UNKNOWN_ID)) return;
+    if (view === "FULL") {
+      // A FULL version should override BASIC version
+      cacheByUID.invalidateEntity([uid, "BASIC"]);
     }
+    cacheByUID.setEntity([uid, view], sheet);
   };
 
   // CRUD
@@ -33,115 +37,102 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
       parent,
       sheet,
     });
-    setSheetList([created]);
+    setCache(created, "FULL");
     if (sheet.name) {
       removeLocalSheet(sheet.name);
     }
     return created;
   };
 
-  const getSheetByName = (name: string) => {
-    return sheetsByName.value.get(name);
+  /**
+   *
+   * @param uid
+   * @param view default undefined to any (FULL -> BASIC)
+   * @returns
+   */
+  const getSheetByUID = (uid: string, view?: SheetView) => {
+    if (view === undefined) {
+      return (
+        cacheByUID.getEntity([uid, "FULL"]) ??
+        cacheByUID.getEntity([uid, "BASIC"])
+      );
+    }
+    return cacheByUID.getEntity([uid, view]);
   };
-  const fetchSheetByName = async (name: string, raw = false) => {
+  const getSheetRequestByUID = (uid: string, view?: SheetView) => {
+    if (view === undefined) {
+      return (
+        cacheByUID.getRequest([uid, "FULL"]) ??
+        cacheByUID.getRequest([uid, "BASIC"])
+      );
+    }
+    return cacheByUID.getRequest([uid, view]);
+  };
+  /**
+   *
+   * @param name
+   * @param view default undefined to any (FULL -> BASIC)
+   * @returns
+   */
+  const getSheetByName = (name: string, view?: SheetView) => {
+    const uid = extractSheetUID(name);
+    if (!uid || uid === String(UNKNOWN_ID)) {
+      return undefined;
+    }
+    return getSheetByUID(uid, view);
+  };
+  const fetchSheetByName = async (name: string, view: SheetView) => {
     const uid = extractSheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
     try {
+      console.debug("[fetchSheetByName]", name, view);
       const sheet = await sheetServiceClient.getSheet({
         name,
-        raw,
+        raw: view === "FULL",
       });
-
-      setSheetList([sheet]);
       return sheet;
     } catch {
       return undefined;
     }
   };
-  const getOrFetchSheetByName = async (name: string) => {
+  const getOrFetchSheetByName = async (name: string, view?: SheetView) => {
     const uid = extractSheetUID(name);
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
-    if (uid === String(UNKNOWN_ID)) {
-      return undefined;
+    const entity = getSheetByUID(name, view);
+    if (entity) {
+      return entity;
     }
-    const existed = getSheetByName(name);
-    if (existed) {
-      return existed;
-    }
-    const cached = REQUEST_CACHE_BY_UID.get(uid);
-    if (cached) {
-      return cached;
+    const request = getSheetRequestByUID(name, view);
+    if (request) {
+      return request;
     }
 
-    const request = fetchSheetByName(name);
-    REQUEST_CACHE_BY_UID.set(uid, request);
-    request.then((sheet) => {
+    const promise = fetchSheetByName(name, view ?? "BASIC");
+    cacheByUID.setRequest([uid, view ?? "BASIC"], promise);
+    promise.then((sheet) => {
       if (!sheet) {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
-        REQUEST_CACHE_BY_UID.delete(uid);
+        cacheByUID.invalidateRequest([uid, view ?? "BASIC"]);
       }
     });
-    return request;
+    return promise;
   };
-  const getSheetByUID = (uid: string) => {
-    for (const [name, sheet] of sheetsByName.value) {
-      if (extractSheetUID(name) === uid) {
-        return sheet;
-      }
-    }
-  };
-  const getOrFetchSheetByUID = async (uid: string) => {
-    if (uid.startsWith("-") || !uid) {
-      return undefined;
-    }
-    if (uid === String(UNKNOWN_ID)) {
-      return undefined;
-    }
-    const existed = getSheetByUID(uid);
-    if (existed) {
-      return existed;
-    }
-    const cached = REQUEST_CACHE_BY_UID.get(uid);
-    if (cached) {
-      return cached;
-    }
-
-    const name = `projects/-/sheets/${uid}`;
-    const request = fetchSheetByName(name);
-    REQUEST_CACHE_BY_UID.set(uid, request);
-    request.then((sheet) => {
-      if (!sheet) {
-        // If the request failed
-        // remove the request cache entry so we can retry when needed.
-        REQUEST_CACHE_BY_UID.delete(uid);
-      }
-    });
-    return request;
+  const getOrFetchSheetByUID = async (uid: string, view?: SheetView) => {
+    return getOrFetchSheetByName(`projects/-/sheets/${uid}`, view);
   };
 
-  const patchSheet = async (
-    sheet: Partial<Sheet>,
-    updateMask: string[] | undefined = undefined
-  ) => {
+  const patchSheet = async (sheet: Partial<Sheet>, updateMask: string[]) => {
     if (!sheet.name) return;
-    const existed = sheetsByName.value.get(sheet.name);
-    if (!existed) return;
-    if (!updateMask) {
-      updateMask = getUpdateMaskForSheet(existed, sheet);
-    }
-    if (updateMask.length === 0) {
-      return existed;
-    }
     const updated = await sheetServiceClient.updateSheet({
       sheet,
       updateMask,
     });
-    setSheetList([updated]);
+    setCache(updated, "FULL");
     return updated;
   };
 
@@ -156,31 +147,17 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
   };
 });
 
-const getUpdateMaskForSheet = (
-  origin: Sheet,
-  update: Partial<Sheet>
-): string[] => {
-  const updateMask: string[] = [];
-  if (!isUndefined(update.title) && !isEqual(origin.title, update.title)) {
-    updateMask.push("title");
-  }
-  if (
-    !isUndefined(update.content) &&
-    !isEqual(origin.content, update.content)
-  ) {
-    updateMask.push("content");
-  }
-  return updateMask;
-};
-
-export const useSheetStatementByUID = (uid: MaybeRef<string>) => {
+export const useSheetStatementByUID = (
+  uid: MaybeRef<string>,
+  view?: MaybeRef<SheetView | undefined>
+) => {
   const store = useSheetV1Store();
   watchEffect(async () => {
-    await store.getOrFetchSheetByUID(unref(uid));
+    await store.getOrFetchSheetByUID(unref(uid), unref(view));
   });
 
   return computed(() => {
-    const sheet = store.getSheetByUID(unref(uid));
+    const sheet = store.getSheetByUID(unref(uid), unref(view));
     if (!sheet) return "";
     return getSheetStatement(sheet);
   });

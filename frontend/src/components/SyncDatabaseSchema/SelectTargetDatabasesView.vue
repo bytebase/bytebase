@@ -244,7 +244,12 @@ import {
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { ChangeHistory } from "@/types/proto/v1/database_service";
-import { changeHistoryLink, databaseV1Url, toClipboard } from "@/utils";
+import {
+  changeHistoryLink,
+  databaseV1Url,
+  getSheetStatement,
+  toClipboard,
+} from "@/utils";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
@@ -316,9 +321,12 @@ const sourceDatabaseSchema = computed(() => {
   } else if (props.sourceSchemaType === "RAW_SQL") {
     let statement = props.rawSqlState?.statement || "";
     if (props.rawSqlState?.sheetId) {
-      const sheet = sheetStore.getSheetByUID(String(props.rawSqlState.sheetId));
+      const sheet = sheetStore.getSheetByUID(
+        String(props.rawSqlState.sheetId),
+        "FULL"
+      );
       if (sheet) {
-        statement = new TextDecoder().decode(sheet.content);
+        statement = getSheetStatement(sheet);
       }
     }
     return statement;
@@ -404,7 +412,10 @@ onMounted(async () => {
 
   // Prepare raw sql statement from sheet.
   if (props.rawSqlState?.sheetId) {
-    await sheetStore.getOrFetchSheetByUID(String(props.rawSqlState.sheetId));
+    await sheetStore.getOrFetchSheetByUID(
+      String(props.rawSqlState.sheetId),
+      "FULL"
+    );
   }
 });
 

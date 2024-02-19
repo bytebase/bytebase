@@ -115,6 +115,7 @@ export const useChangelistStore = defineStore("changelist", () => {
       // Raw SQL, no need to compose
     }
     composer.collect(sheet, () =>
+      // Use any (basic or full) view of sheets here to save data size
       useSheetV1Store().getOrFetchSheetByName(sheet)
     );
   };
