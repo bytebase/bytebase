@@ -38,6 +38,7 @@
       <div class="flex items-center justify-between space-x-2">
         <NButton
           v-if="currentIndex != 0"
+          v-bind="backButtonProps"
           @click.prevent="$emit('update:currentIndex', currentIndex - 1)"
         >
           <heroicons-outline:chevron-left
@@ -49,6 +50,7 @@
           v-if="currentIndex == stepList.length - 1"
           :disabled="!allowNext"
           type="primary"
+          v-bind="finishButtonProps"
           @click.prevent="$emit('finish')"
         >
           {{ $t(finishTitle) }}
@@ -57,6 +59,7 @@
           v-else-if="!stepList[currentIndex].hideNext"
           :disabled="!allowNext"
           type="primary"
+          v-bind="nextButtonProps"
           @click.prevent="$emit('update:currentIndex', currentIndex + 1)"
         >
           {{ $t("bbkit.common.next") }}
@@ -67,7 +70,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NSteps, NStep, NButton } from "naive-ui";
+import { NSteps, NStep, NButton, ButtonProps } from "naive-ui";
 import { VueClass } from "@/utils/types";
 
 withDefaults(
@@ -80,6 +83,9 @@ withDefaults(
     paneClass?: VueClass;
     footerClass?: VueClass;
     stepList: { title: string; description?: string; hideNext?: boolean }[];
+    backButtonProps?: ButtonProps;
+    nextButtonProps?: ButtonProps;
+    finishButtonProps?: ButtonProps;
   }>(),
   {
     showCancel: true,
@@ -88,6 +94,9 @@ withDefaults(
     finishTitle: "bbkit.common.finish",
     paneClass: undefined,
     footerClass: undefined,
+    backButtonProps: undefined,
+    nextButtonProps: undefined,
+    finishButtonProps: undefined,
   }
 );
 
