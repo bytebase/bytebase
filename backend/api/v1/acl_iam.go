@@ -50,6 +50,7 @@ func isSkippedMethod(fullMethod string) bool {
 	switch fullMethod {
 	// skip methods that are not considered to be resource-related.
 	case
+		v1pb.ActuatorService_GetResourcePackage_FullMethodName,
 		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
 		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
 		v1pb.ActuatorService_DeleteCache_FullMethodName,

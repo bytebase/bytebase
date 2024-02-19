@@ -8,8 +8,10 @@
     - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
     - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
+    - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -711,6 +713,16 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
+<a name="bytebase-v1-GetResourcePackageRequest"></a>
+
+### GetResourcePackageRequest
+The request message for getting the theme resource.
+
+
+
+
+
+
 <a name="bytebase-v1-ListDebugLogRequest"></a>
 
 ### ListDebugLogRequest
@@ -739,6 +751,21 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | ----- | ---- | ----- | ----------- |
 | logs | [DebugLog](#bytebase-v1-DebugLog) | repeated | The logs from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ResourcePackage"></a>
+
+### ResourcePackage
+The theme resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| logo | [bytes](#bytes) |  | The branding logo. |
 
 
 
@@ -778,6 +805,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | ListDebugLog | [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest) | [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse) |  |
+| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) |  |
 
  
 

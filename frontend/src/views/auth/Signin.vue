@@ -1,10 +1,6 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
-    <img
-      class="h-12 w-auto mx-auto mb-8"
-      src="../../assets/logo-full.svg"
-      alt="Bytebase"
-    />
+    <BytebaseLogo component="span" class="mx-auto" />
 
     <div class="mt-8">
       <n-card>
