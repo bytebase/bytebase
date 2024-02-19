@@ -853,9 +853,10 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.Oauth
 
 // UpsertEnvironmentVariable creates or updates the environment variable in the repository.
 //
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-post
 // WARNING: This is not supported in Bitbucket Cloud.
 func (*Provider) UpsertEnvironmentVariable(context.Context, *common.OauthContext, string, string, string, string) error {
-	return errors.New("not supported")
+	return nil
 }
 
 // Link is the API message for link.
