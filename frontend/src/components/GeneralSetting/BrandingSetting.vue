@@ -119,6 +119,7 @@ import { NPopconfirm } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
+import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
 interface LocalState {
@@ -183,6 +184,8 @@ const doUpdate = async (content: string, message: string) => {
         stringValue: content,
       },
     });
+
+    useActuatorV1Store().setLogo(content);
 
     state.logoFile = null;
     state.logoUrl = setting.value?.stringValue;

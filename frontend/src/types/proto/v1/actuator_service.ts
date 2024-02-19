@@ -7,6 +7,16 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
+/** The request message for getting the theme resource. */
+export interface GetResourcePackageRequest {
+}
+
+/** The theme resources. */
+export interface ResourcePackage {
+  /** The branding logo. */
+  logo: Uint8Array;
+}
+
 export interface GetActuatorInfoRequest {
 }
 
@@ -103,6 +113,106 @@ export interface ActuatorInfo {
   iamGuard: boolean;
   unlicensedFeatures: string[];
 }
+
+function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
+  return {};
+}
+
+export const GetResourcePackageRequest = {
+  encode(_: GetResourcePackageRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetResourcePackageRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetResourcePackageRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): GetResourcePackageRequest {
+    return {};
+  },
+
+  toJSON(_: GetResourcePackageRequest): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetResourcePackageRequest>): GetResourcePackageRequest {
+    return GetResourcePackageRequest.fromPartial(base ?? {});
+  },
+  fromPartial(_: DeepPartial<GetResourcePackageRequest>): GetResourcePackageRequest {
+    const message = createBaseGetResourcePackageRequest();
+    return message;
+  },
+};
+
+function createBaseResourcePackage(): ResourcePackage {
+  return { logo: new Uint8Array(0) };
+}
+
+export const ResourcePackage = {
+  encode(message: ResourcePackage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.logo.length !== 0) {
+      writer.uint32(10).bytes(message.logo);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ResourcePackage {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResourcePackage();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.logo = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ResourcePackage {
+    return { logo: isSet(object.logo) ? bytesFromBase64(object.logo) : new Uint8Array(0) };
+  },
+
+  toJSON(message: ResourcePackage): unknown {
+    const obj: any = {};
+    if (message.logo.length !== 0) {
+      obj.logo = base64FromBytes(message.logo);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ResourcePackage>): ResourcePackage {
+    return ResourcePackage.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ResourcePackage>): ResourcePackage {
+    const message = createBaseResourcePackage();
+    message.logo = object.logo ?? new Uint8Array(0);
+    return message;
+  },
+};
 
 function createBaseGetActuatorInfoRequest(): GetActuatorInfoRequest {
   return {};
@@ -1047,8 +1157,74 @@ export const ActuatorServiceDefinition = {
         },
       },
     },
+    getResourcePackage: {
+      name: "GetResourcePackage",
+      requestType: GetResourcePackageRequest,
+      requestStream: false,
+      responseType: ResourcePackage,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([0])],
+          578365826: [
+            new Uint8Array([
+              24,
+              18,
+              22,
+              47,
+              118,
+              49,
+              47,
+              97,
+              99,
+              116,
+              117,
+              97,
+              116,
+              111,
+              114,
+              47,
+              114,
+              101,
+              115,
+              111,
+              117,
+              114,
+              99,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
+
+function bytesFromBase64(b64: string): Uint8Array {
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
+  }
+}
+
+function base64FromBytes(arr: Uint8Array): string {
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString("base64");
+  } else {
+    const bin: string[] = [];
+    arr.forEach((byte) => {
+      bin.push(globalThis.String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(""));
+  }
+}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -24,6 +24,7 @@ const (
 	ActuatorService_UpdateActuatorInfo_FullMethodName = "/bytebase.v1.ActuatorService/UpdateActuatorInfo"
 	ActuatorService_DeleteCache_FullMethodName        = "/bytebase.v1.ActuatorService/DeleteCache"
 	ActuatorService_ListDebugLog_FullMethodName       = "/bytebase.v1.ActuatorService/ListDebugLog"
+	ActuatorService_GetResourcePackage_FullMethodName = "/bytebase.v1.ActuatorService/GetResourcePackage"
 )
 
 // ActuatorServiceClient is the client API for ActuatorService service.
@@ -34,6 +35,7 @@ type ActuatorServiceClient interface {
 	UpdateActuatorInfo(ctx context.Context, in *UpdateActuatorInfoRequest, opts ...grpc.CallOption) (*ActuatorInfo, error)
 	DeleteCache(ctx context.Context, in *DeleteCacheRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ListDebugLog(ctx context.Context, in *ListDebugLogRequest, opts ...grpc.CallOption) (*ListDebugLogResponse, error)
+	GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error)
 }
 
 type actuatorServiceClient struct {
@@ -80,6 +82,15 @@ func (c *actuatorServiceClient) ListDebugLog(ctx context.Context, in *ListDebugL
 	return out, nil
 }
 
+func (c *actuatorServiceClient) GetResourcePackage(ctx context.Context, in *GetResourcePackageRequest, opts ...grpc.CallOption) (*ResourcePackage, error) {
+	out := new(ResourcePackage)
+	err := c.cc.Invoke(ctx, ActuatorService_GetResourcePackage_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActuatorServiceServer is the server API for ActuatorService service.
 // All implementations must embed UnimplementedActuatorServiceServer
 // for forward compatibility
@@ -88,6 +99,7 @@ type ActuatorServiceServer interface {
 	UpdateActuatorInfo(context.Context, *UpdateActuatorInfoRequest) (*ActuatorInfo, error)
 	DeleteCache(context.Context, *DeleteCacheRequest) (*emptypb.Empty, error)
 	ListDebugLog(context.Context, *ListDebugLogRequest) (*ListDebugLogResponse, error)
+	GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error)
 	mustEmbedUnimplementedActuatorServiceServer()
 }
 
@@ -106,6 +118,9 @@ func (UnimplementedActuatorServiceServer) DeleteCache(context.Context, *DeleteCa
 }
 func (UnimplementedActuatorServiceServer) ListDebugLog(context.Context, *ListDebugLogRequest) (*ListDebugLogResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListDebugLog not implemented")
+}
+func (UnimplementedActuatorServiceServer) GetResourcePackage(context.Context, *GetResourcePackageRequest) (*ResourcePackage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetResourcePackage not implemented")
 }
 func (UnimplementedActuatorServiceServer) mustEmbedUnimplementedActuatorServiceServer() {}
 
@@ -192,6 +207,24 @@ func _ActuatorService_ListDebugLog_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActuatorService_GetResourcePackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetResourcePackageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActuatorServiceServer).GetResourcePackage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActuatorService_GetResourcePackage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActuatorServiceServer).GetResourcePackage(ctx, req.(*GetResourcePackageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActuatorService_ServiceDesc is the grpc.ServiceDesc for ActuatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -214,6 +247,10 @@ var ActuatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListDebugLog",
 			Handler:    _ActuatorService_ListDebugLog_Handler,
+		},
+		{
+			MethodName: "GetResourcePackage",
+			Handler:    _ActuatorService_GetResourcePackage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
