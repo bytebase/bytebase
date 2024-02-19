@@ -281,7 +281,7 @@ message CheckResponse {
 }
 
 message ParseMyBatisMapperRequest {
-  string content = 1;
+  bytes content = 1;
 }
 
 message ParseMyBatisMapperResponse {

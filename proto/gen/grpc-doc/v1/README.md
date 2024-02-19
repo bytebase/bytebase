@@ -9701,7 +9701,7 @@ Type of the SheetPayload.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| content | [string](#string) |  |  |
+| content | [bytes](#bytes) |  |  |
 
 
 

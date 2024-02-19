@@ -258,7 +258,7 @@ export interface CheckResponse {
 }
 
 export interface ParseMyBatisMapperRequest {
-  content: string;
+  content: Uint8Array;
 }
 
 export interface ParseMyBatisMapperResponse {
@@ -1988,13 +1988,13 @@ export const CheckResponse = {
 };
 
 function createBaseParseMyBatisMapperRequest(): ParseMyBatisMapperRequest {
-  return { content: "" };
+  return { content: new Uint8Array(0) };
 }
 
 export const ParseMyBatisMapperRequest = {
   encode(message: ParseMyBatisMapperRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.content !== "") {
-      writer.uint32(10).string(message.content);
+    if (message.content.length !== 0) {
+      writer.uint32(10).bytes(message.content);
     }
     return writer;
   },
@@ -2011,7 +2011,7 @@ export const ParseMyBatisMapperRequest = {
             break;
           }
 
-          message.content = reader.string();
+          message.content = reader.bytes();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2023,13 +2023,13 @@ export const ParseMyBatisMapperRequest = {
   },
 
   fromJSON(object: any): ParseMyBatisMapperRequest {
-    return { content: isSet(object.content) ? globalThis.String(object.content) : "" };
+    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
   },
 
   toJSON(message: ParseMyBatisMapperRequest): unknown {
     const obj: any = {};
-    if (message.content !== "") {
-      obj.content = message.content;
+    if (message.content.length !== 0) {
+      obj.content = base64FromBytes(message.content);
     }
     return obj;
   },
@@ -2039,7 +2039,7 @@ export const ParseMyBatisMapperRequest = {
   },
   fromPartial(object: DeepPartial<ParseMyBatisMapperRequest>): ParseMyBatisMapperRequest {
     const message = createBaseParseMyBatisMapperRequest();
-    message.content = object.content ?? "";
+    message.content = object.content ?? new Uint8Array(0);
     return message;
   },
 };
