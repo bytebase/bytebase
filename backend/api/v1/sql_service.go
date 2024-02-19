@@ -1027,7 +1027,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 }
 
 // ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
-func (s *SQLService) ParseMyBatisMapper(ctx context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
+func (s *SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
 	content := string(request.Content)
 
 	parser := mapperparser.NewParser(content)
