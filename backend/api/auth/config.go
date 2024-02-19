@@ -16,6 +16,7 @@ var authenticationAllowlistMethods = map[string]bool{
 	v1pb.AuthService_Logout_FullMethodName:                            true,
 	v1pb.AuthService_CreateUser_FullMethodName:                        true,
 	v1pb.IdentityProviderService_ListIdentityProviders_FullMethodName: true,
+	v1pb.SQLService_ParseMyBatisMapper_FullMethodName:                 true,
 }
 
 // IsAuthenticationAllowed returns whether the method is exempted from authentication.

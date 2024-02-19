@@ -27,6 +27,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	mapperparser "github.com/bytebase/bytebase/backend/plugin/parser/mybatis/mapper"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/activity"
@@ -1022,6 +1024,40 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	response.Advices = adviceList
 
 	return response, nil
+}
+
+// ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
+func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBatisMapperRequest) (*v1pb.ParseMyBatisMapperResponse, error) {
+	content := string(request.Content)
+
+	parser := mapperparser.NewParser(content)
+	node, err := parser.Parse()
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to parse mybatis mapper: %v", err)
+	}
+
+	var stringsBuilder strings.Builder
+	if err := node.RestoreSQL(parser.NewRestoreContext().WithRestoreDataNodePlaceholder("@1"), &stringsBuilder); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to restore mybatis mapper: %v", err)
+	}
+
+	statement := stringsBuilder.String()
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
+	}
+
+	var results []string
+	for _, sql := range singleSQLs {
+		if sql.Empty {
+			continue
+		}
+		results = append(results, sql.Text)
+	}
+
+	return &v1pb.ParseMyBatisMapperResponse{
+		Statements: results,
+	}, nil
 }
 
 // postQuery does the following:
