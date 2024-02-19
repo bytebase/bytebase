@@ -366,6 +366,10 @@
       "title": "Restricción de agregar restricción \"NOT NULL\" a columnas existentes",
       "description": "Antes de PostgreSQL 11, agregar una restricción NOT NULL requería verificar los datos existentes. Esto bloquea la lectura y escritura, lo que puede causar interrupciones comerciales. En PostgreSQL 11 y superior, este problema se ha optimizado y no es necesario prestar atención a esta especificación. Nivel de error sugerido: Advertencia"
     },
+    "statement-select-full-table-scan": {
+      "title": "Verificar escaneo completo de tabla en consultas",
+      "description": "El escaneo completo de tabla es una operación intensiva en recursos y puede causar un impacto grave en el rendimiento. Nivel de sugerencia de error: Error"
+    },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
       "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"

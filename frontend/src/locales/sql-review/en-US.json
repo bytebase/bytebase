@@ -366,6 +366,10 @@
       "title": "Restrict adding \"NOT NULL\" constraint to existing columns",
       "description": "Before PostgreSQL 11, adding a NOT NULL constraint need to verify the existing data. This blocks read and write, which may cause business interruption. In PostgreSQL 11 and above, this issue has been optimized and there is no need to pay attention to this specification. Suggestion error level: Warning"
     },
+    "statement-select-full-table-scan": {
+      "title": "Check full table scan for queries",
+      "description": "Full table scan is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Error"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"

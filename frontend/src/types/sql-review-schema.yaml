@@ -230,6 +230,13 @@ ruleList:
     engineList:
       - POSTGRES
     componentList: []
+  - type: statement.select-full-table-scan
+    category: STATEMENT
+    engineList:
+      - MYSQL
+      - OCEANBASE
+      - MARIADB
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:
