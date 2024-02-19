@@ -1,4 +1,5 @@
 import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
+import Long from "long";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import { ComposedDatabase, UNKNOWN_ID } from "@/types";
@@ -119,6 +120,9 @@ export const mockLatestSchemaChangeHistory = (
     name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
     uid: String(UNKNOWN_ID),
     schema: schema?.schema,
+    schemaSize: Long.fromNumber(
+      new TextEncoder().encode(schema?.schema).length
+    ),
     version: "Latest version",
     description: "the latest schema of database",
   });
