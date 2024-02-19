@@ -55,6 +55,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-add-not-null
     level: WARNING
+  - type: statement.select-full-table-scan
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:

@@ -147,6 +147,7 @@ export type RuleType =
   | "statement.disallow-add-column-with-default"
   | "statement.add-check-not-valid"
   | "statement.disallow-add-not-null"
+  | "statement.select-full-table-scan"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
