@@ -45,8 +45,8 @@ func TestGetQuerySpan(t *testing.T) {
 	for i, tc := range testCases {
 		metadata := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(protojson.Unmarshal([]byte(tc.Metadata), metadata))
-		databaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, databaseMetadataGetter)
+		databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+		result, err := GetQuerySpan(context.TODO(), tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, databaseMetadataGetter, databaseNamesLister, false)
 		a.NoError(err)
 		a.NotNil(result)
 		resultYaml := result.ToYaml()
@@ -65,17 +65,23 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) base.GetDatabaseMetadataFunc {
+func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, databaseName string) (string, *model.DatabaseMetadata, error) {
-		m := make(map[string]*model.DatabaseMetadata)
-		for _, metadata := range databaseMetadata {
-			m[metadata.Name] = model.NewDatabaseMetadata(metadata)
-		}
+			m := make(map[string]*model.DatabaseMetadata)
+			for _, metadata := range databaseMetadata {
+				m[metadata.Name] = model.NewDatabaseMetadata(metadata)
+			}
 
-		if databaseMetadata, ok := m[databaseName]; ok {
-			return databaseName, databaseMetadata, nil
-		}
+			if databaseMetadata, ok := m[databaseName]; ok {
+				return databaseName, databaseMetadata, nil
+			}
 
-		return "", nil, errors.Errorf("database %q not found", databaseName)
-	}
+			return "", nil, errors.Errorf("database %q not found", databaseName)
+		}, func(_ context.Context) ([]string, error) {
+			names := make([]string, 0, len(databaseMetadata))
+			for _, metadata := range databaseMetadata {
+				names = append(names, metadata.Name)
+			}
+			return names, nil
+		}
 }

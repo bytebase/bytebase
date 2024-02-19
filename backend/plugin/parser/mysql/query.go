@@ -35,10 +35,10 @@ func validateQuery(statement string) (bool, error) {
 	}
 	for _, item := range trees {
 		l := &queryValidateListener{
-			validate: true,
+			valid: true,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(l, item.Tree)
-		if !l.validate {
+		if !l.valid {
 			return false, nil
 		}
 	}
@@ -48,34 +48,34 @@ func validateQuery(statement string) (bool, error) {
 type queryValidateListener struct {
 	*parser.BaseMySQLParserListener
 
-	validate bool
+	valid bool
 }
 
 // EnterQuery is called when production query is entered.
 func (l *queryValidateListener) EnterQuery(ctx *parser.QueryContext) {
 	if ctx.BeginWork() != nil {
-		l.validate = false
+		l.valid = false
 	}
 }
 
 // EnterSimpleStatement is called when production simpleStatement is entered.
 func (l *queryValidateListener) EnterSimpleStatement(ctx *parser.SimpleStatementContext) {
 	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil {
-		l.validate = false
+		l.valid = false
 	}
 }
 
 // EnterUtilityStatement is called when production utilityStatement is entered.
 func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStatementContext) {
 	if ctx.ExplainStatement() == nil {
-		l.validate = false
+		l.valid = false
 	}
 }
 
 // EnterExplainableStatement is called when production explainableStatement is entered.
 func (l *queryValidateListener) EnterExplainableStatement(ctx *parser.ExplainableStatementContext) {
 	if ctx.DeleteStatement() != nil || ctx.UpdateStatement() != nil || ctx.InsertStatement() != nil || ctx.ReplaceStatement() != nil {
-		l.validate = false
+		l.valid = false
 	}
 }
 
