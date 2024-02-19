@@ -367,6 +367,10 @@
       "title": "限制向已有列添加 \"NOT NULL\" 约束",
       "description": "在 PostgreSQL 11 之前的版本中，向表中添加 NOT NULL 约束将对已有数据进行校验并导致全表锁定无法读写，这可能导致业务中断。在 PostgreSQL 11 及以上版本中该问题已得到优化，无需关注此规范。建议错误等级：警告"
     },
+    "statement-select-full-table-scan": {
+      "title": "检查查询是否存在全表扫描",
+      "description": "全表扫描是一种消耗大量资源的操作，可能导致严重的性能影响。建议错误等级：错误"
+    },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
       "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
