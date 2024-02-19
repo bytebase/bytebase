@@ -2202,7 +2202,7 @@
     "close-pane": "パネルを閉じる",
     "loading-data": "データを読み込んでいます...",
     "table-empty-placeholder": "クエリを実行するには実行ボタンをクリックしてください",
-    "no-rows-found": "行が見つかりません",
+    "no-data-available": "データがありません",
     "download-as-file": "{file}としてダウンロード",
     "only-select-allowed": "実行できるのは{select}ステートメントのみです",
     "want-to-action": "{want}したい場合は、{action}ボタンをクリックして{reaction}してください",
