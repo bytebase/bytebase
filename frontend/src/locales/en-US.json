@@ -948,6 +948,9 @@
       "form": {
         "note": "Note",
         "placeholder": "(Optional) Add a note..."
+      },
+      "error": {
+        "some-tasks-are-still-running": "Some tasks are still running"
       }
     },
     "subscribe": "Subscribe",

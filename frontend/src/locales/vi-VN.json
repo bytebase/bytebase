@@ -948,6 +948,9 @@
       "form": {
         "note": "Ghi chú",
         "placeholder": "(Tùy chọn) Thêm ghi chú..."
+      },
+      "error": {
+        "some-tasks-are-still-running": "Một số tác vụ vẫn đang chạy"
       }
     },
     "subscribe": "Đặt mua",
