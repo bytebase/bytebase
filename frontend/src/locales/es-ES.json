@@ -947,6 +947,9 @@
       "form": {
         "note": "Nota",
         "placeholder": "(Opcional) Agregar una nota..."
+      },
+      "error": {
+        "some-tasks-are-still-running": "Algunas tareas aún se están ejecutando"
       }
     },
     "subscribe": "Suscribirse",
