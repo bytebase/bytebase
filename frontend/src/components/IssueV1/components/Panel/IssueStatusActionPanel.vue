@@ -17,6 +17,29 @@
           </div>
         </div>
 
+        <div v-if="issueStatusActionErrors.length > 0" class="flex flex-col">
+          <ErrorList
+            :errors="issueStatusActionErrors"
+            bullets="none"
+            class="text-sm"
+          >
+            <template #prefix>
+              <heroicons:exclamation-triangle
+                class="text-warning w-4 h-4 inline-block mr-1 mb-px"
+              />
+            </template>
+          </ErrorList>
+          <div>
+            <NCheckbox v-model:checked="performActionAnyway">
+              {{
+                $t("issue.action-anyway", {
+                  action: issueStatusActionDisplayName(action),
+                })
+              }}
+            </NCheckbox>
+          </div>
+        </div>
+
         <div class="flex flex-col gap-y-1">
           <p class="font-medium text-control">
             {{ $t("common.comment") }}
@@ -38,18 +61,27 @@
         <NButton @click="$emit('close')">
           {{ $t("common.cancel") }}
         </NButton>
-        <NButton
-          v-bind="issueStatusActionButtonProps(action)"
-          @click="handleConfirm(action, comment)"
-        >
-          {{ issueStatusActionDisplayName(action) }}
-        </NButton>
+        <NTooltip :disabled="confirmErrors.length === 0" placement="top">
+          <template #trigger>
+            <NButton
+              :disabled="confirmErrors.length > 0"
+              v-bind="issueStatusActionButtonProps(action)"
+              @click="handleConfirm(action, comment)"
+            >
+              {{ issueStatusActionDisplayName(action) }}
+            </NButton>
+          </template>
+          <template #default>
+            <ErrorList :errors="confirmErrors" />
+          </template>
+        </NTooltip>
       </div>
     </template>
   </CommonDrawer>
 </template>
 
 <script setup lang="ts">
+import { NCheckbox } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -59,8 +91,11 @@ import {
   issueStatusActionDisplayName,
   IssueStatusActionToIssueStatusMap,
 } from "@/components/IssueV1/logic";
+import ErrorList from "@/components/misc/ErrorList.vue";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
+import { Task_Status } from "@/types/proto/v1/rollout_service";
+import { flattenTaskV1List } from "@/utils";
 import CommonDrawer from "./CommonDrawer.vue";
 
 type LocalState = {
@@ -80,6 +115,7 @@ const state = reactive<LocalState>({
 });
 const { events, issue } = useIssueContext();
 const comment = ref("");
+const performActionAnyway = ref(false);
 
 const title = computed(() => {
   const { action } = props;
@@ -93,6 +129,22 @@ const title = computed(() => {
       return t("issue.status-transition.modal.reopen");
   }
   return "";
+});
+
+const issueStatusActionErrors = computed(() => {
+  const tasks = flattenTaskV1List(issue.value.rolloutEntity);
+  if (tasks.some((task) => task.status === Task_Status.RUNNING)) {
+    return [t("issue.status-transition.error.some-tasks-are-still-running")];
+  }
+  return [];
+});
+
+const confirmErrors = computed(() => {
+  const errors: string[] = [];
+  if (issueStatusActionErrors.value.length > 0 && !performActionAnyway.value) {
+    errors.push(...issueStatusActionErrors.value);
+  }
+  return errors;
 });
 
 const handleConfirm = async (
