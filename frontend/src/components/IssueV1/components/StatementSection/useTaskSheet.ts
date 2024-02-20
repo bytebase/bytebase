@@ -1,4 +1,5 @@
-import { computed, ref, watch } from "vue";
+import { computedAsync } from "@vueuse/core";
+import { computed, ref } from "vue";
 import { useSheetV1Store } from "@/store";
 import { ESTABLISH_BASELINE_SQL } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
@@ -18,30 +19,21 @@ export const useTaskSheet = () => {
     return sheetNameOfTaskV1(selectedTask.value);
   });
   const sheetReady = ref(false);
-  const sheet = computed(() => {
-    const name = sheetName.value;
-    const uid = extractSheetUID(name);
-    if (uid.startsWith("-")) {
-      return getLocalSheetByName(name);
-    }
-    return sheetStore.getSheetByName(name);
-  });
-  watch(
-    sheetName,
-    (sheetName) => {
-      const uid = extractSheetUID(sheetName);
-      if (!uid) return;
+  const sheet = computedAsync(
+    async () => {
+      const name = sheetName.value;
+      const uid = extractSheetUID(name);
       if (uid.startsWith("-")) {
-        // The sheet is not created yet (uid starts with "-")
-        sheetReady.value = true;
-      } else {
-        sheetReady.value = false;
-        sheetStore.getOrFetchSheetByName(sheetName).finally(() => {
-          sheetReady.value = true;
-        });
+        return getLocalSheetByName(name);
       }
+
+      // Use any (basic or full) view of sheets here to save data size
+      return sheetStore.getOrFetchSheetByName(name);
     },
-    { immediate: true }
+    undefined,
+    {
+      evaluating: sheetReady,
+    }
   );
   const sheetStatement = computed({
     get() {

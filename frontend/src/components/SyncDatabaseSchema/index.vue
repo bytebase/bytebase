@@ -14,6 +14,7 @@
       :allow-next="allowNext"
       :finish-title="$t('database.sync-schema.preview-issue')"
       pane-class="flex-1 overflow-y-auto"
+      :next-button-props="nextButtonProps"
       @cancel="cancelSetup"
       @update:current-index="tryChangeStep"
       @finish="tryFinishSetup"
@@ -63,7 +64,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { isNull, isUndefined } from "lodash-es";
-import { NRadioGroup, NRadio, useDialog } from "naive-ui";
+import { NRadioGroup, NRadio, useDialog, ButtonProps } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -156,6 +157,7 @@ const allowNext = computed(() => {
   if (state.currentStep === SELECT_SOURCE_SCHEMA) {
     if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
       return (
+        !changeHistorySourceSchemaState.isFetching &&
         isValidId(changeHistorySourceSchemaState.environmentId) &&
         isValidId(changeHistorySourceSchemaState.databaseId) &&
         !isUndefined(changeHistorySourceSchemaState.changeHistory)
@@ -182,6 +184,19 @@ const allowNext = computed(() => {
       .filter((item) => item.diff !== "");
     return targetDatabaseDiffList.length > 0;
   }
+});
+
+const nextButtonProps = computed((): ButtonProps | undefined => {
+  if (state.currentStep === SELECT_SOURCE_SCHEMA) {
+    if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
+      if (changeHistorySourceSchemaState.isFetching) {
+        return {
+          loading: true,
+        };
+      }
+    }
+  }
+  return undefined;
 });
 
 const handleRawSQLStateChange = (state: RawSQLState) => {

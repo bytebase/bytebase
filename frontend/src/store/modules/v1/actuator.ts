@@ -6,7 +6,11 @@ import { watchEffect } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import { Release, ReleaseInfo } from "@/types";
-import { ActuatorInfo, DebugLog } from "@/types/proto/v1/actuator_service";
+import {
+  ActuatorInfo,
+  ResourcePackage,
+  DebugLog,
+} from "@/types/proto/v1/actuator_service";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
@@ -24,6 +28,7 @@ export type PageMode =
 interface ActuatorState {
   pageMode: PageMode;
   serverInfo?: ActuatorInfo;
+  resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
   debugLogList: DebugLog[];
 }
@@ -32,6 +37,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
     pageMode: "BUNDLED",
     serverInfo: undefined,
+    resourcePackage: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {
       ignoreRemindModalTillNextRelease: false,
       nextCheckTs: 0,
@@ -41,6 +47,12 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
   getters: {
     info: (state) => {
       return state.serverInfo;
+    },
+    brandingLogo: (state) => {
+      if (!state.resourcePackage?.logo) {
+        return "";
+      }
+      return new TextDecoder().decode(state.resourcePackage?.logo);
     },
     version: (state) => {
       return state.serverInfo?.version || "";
@@ -82,13 +94,21 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
   },
   actions: {
+    setLogo(logo: string) {
+      if (this.resourcePackage) {
+        this.resourcePackage.logo = new TextEncoder().encode(logo);
+      }
+    },
     setServerInfo(serverInfo: ActuatorInfo) {
       this.serverInfo = serverInfo;
     },
     async fetchServerInfo() {
-      const serverInfo = await actuatorServiceClient.getActuatorInfo({});
+      const [serverInfo, resourcePackage] = await Promise.all([
+        actuatorServiceClient.getActuatorInfo({}),
+        actuatorServiceClient.getResourcePackage({}),
+      ]);
       this.setServerInfo(serverInfo);
-
+      this.resourcePackage = resourcePackage;
       return serverInfo;
     },
     async patchDebug({ debug }: { debug: boolean }) {

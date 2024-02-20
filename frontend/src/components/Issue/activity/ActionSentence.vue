@@ -305,6 +305,7 @@ watch(
     if (
       activity.action === LogEntity_Action.ACTION_PIPELINE_TASK_STATEMENT_UPDATE
     ) {
+      // Use any (basic or full) view of sheets here to save data size
       sheetV1Store.getOrFetchSheetByUID(
         String(
           (JSON.parse(activity.payload) as ActivityTaskStatementUpdatePayload)

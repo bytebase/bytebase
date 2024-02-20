@@ -97,7 +97,7 @@
           v-if="rows.length === 0"
           class="text-center w-full my-12 textinfolabel"
         >
-          {{ $t("sql-editor.no-rows-found") }}
+          {{ $t("sql-editor.no-data-available") }}
         </div>
       </div>
     </div>

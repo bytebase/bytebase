@@ -366,6 +366,10 @@
       "title": "Hạn chế thêm ràng buộc \"NOT NULL\" vào các cột hiện có",
       "description": "Trước PostgreSQL 11, việc thêm ràng buộc NOT NULL cần phải xác minh dữ liệu hiện có. Điều này chặn việc đọc và viết, có thể gây gián đoạn hoạt động kinh doanh. Trong PostgreSQL 11 trở lên, vấn đề này đã được tối ưu hóa và không cần phải chú ý đến thông số kỹ thuật này. Mức độ lỗi đề xuất: Cảnh báo"
     },
+    "statement-select-full-table-scan": {
+      "title": "Kiểm tra quét toàn bộ bảng cho các truy vấn",
+      "description": "Quét toàn bộ bảng là một hoạt động tốn tài nguyên và có thể gây ảnh hưởng nghiêm trọng đến hiệu suất. Mức độ lỗi đề xuất: Lỗi"
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"

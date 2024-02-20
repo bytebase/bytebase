@@ -947,6 +947,9 @@
       "form": {
         "note": "笔记",
         "placeholder": "（可选）添加一段笔记…"
+      },
+      "error": {
+        "some-tasks-are-still-running": "部分任务仍在运行"
       }
     },
     "subscribe": "订阅",
@@ -2200,7 +2203,7 @@
     "close-pane": "关闭面板",
     "loading-data": "加载数据中...",
     "table-empty-placeholder": "点击 ”运行“ 执行查询",
-    "no-rows-found": "暂无数据",
+    "no-data-available": "暂无数据",
     "download-as-file": "下载为 {file} 格式",
     "only-select-allowed": "只允许执行 {select} 语句",
     "want-to-action": "如果您想要{want}，点击“{action}”按钮{reaction}。",

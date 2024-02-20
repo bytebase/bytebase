@@ -8,8 +8,10 @@
     - [DebugLog](#bytebase-v1-DebugLog)
     - [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest)
     - [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest)
     - [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse)
+    - [ResourcePackage](#bytebase-v1-ResourcePackage)
     - [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -598,6 +600,8 @@
     - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
     - [ExportResponse](#bytebase-v1-ExportResponse)
+    - [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest)
+    - [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse)
     - [PrettyRequest](#bytebase-v1-PrettyRequest)
     - [PrettyResponse](#bytebase-v1-PrettyResponse)
     - [QueryRequest](#bytebase-v1-QueryRequest)
@@ -711,6 +715,16 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 
 
+<a name="bytebase-v1-GetResourcePackageRequest"></a>
+
+### GetResourcePackageRequest
+The request message for getting the theme resource.
+
+
+
+
+
+
 <a name="bytebase-v1-ListDebugLogRequest"></a>
 
 ### ListDebugLogRequest
@@ -739,6 +753,21 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | ----- | ---- | ----- | ----------- |
 | logs | [DebugLog](#bytebase-v1-DebugLog) | repeated | The logs from the specified request. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ResourcePackage"></a>
+
+### ResourcePackage
+The theme resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| logo | [bytes](#bytes) |  | The branding logo. |
 
 
 
@@ -778,6 +807,7 @@ When paginating, all other parameters provided to `ListDebugLog` must match the 
 | UpdateActuatorInfo | [UpdateActuatorInfoRequest](#bytebase-v1-UpdateActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) |  |
 | DeleteCache | [DeleteCacheRequest](#bytebase-v1-DeleteCacheRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | ListDebugLog | [ListDebugLogRequest](#bytebase-v1-ListDebugLogRequest) | [ListDebugLogResponse](#bytebase-v1-ListDebugLogResponse) |  |
+| GetResourcePackage | [GetResourcePackageRequest](#bytebase-v1-GetResourcePackageRequest) | [ResourcePackage](#bytebase-v1-ResourcePackage) |  |
 
  
 
@@ -9663,6 +9693,36 @@ Type of the SheetPayload.
 
 
 
+<a name="bytebase-v1-ParseMyBatisMapperRequest"></a>
+
+### ParseMyBatisMapperRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ParseMyBatisMapperResponse"></a>
+
+### ParseMyBatisMapperResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statements | [string](#string) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-PrettyRequest"></a>
 
 ### PrettyRequest
@@ -9858,6 +9918,7 @@ Type of the SheetPayload.
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
+| ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
 

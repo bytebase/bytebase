@@ -50,6 +50,7 @@ func isSkippedMethod(fullMethod string) bool {
 	switch fullMethod {
 	// skip methods that are not considered to be resource-related.
 	case
+		v1pb.ActuatorService_GetResourcePackage_FullMethodName,
 		v1pb.ActuatorService_GetActuatorInfo_FullMethodName,
 		v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName,
 		v1pb.ActuatorService_DeleteCache_FullMethodName,
@@ -72,6 +73,7 @@ func isSkippedMethod(fullMethod string) bool {
 		v1pb.SQLService_Export_FullMethodName,
 		v1pb.SQLService_DifferPreview_FullMethodName,
 		v1pb.SQLService_Check_FullMethodName,
+		v1pb.SQLService_ParseMyBatisMapper_FullMethodName,
 		v1pb.SQLService_Pretty_FullMethodName,
 		v1pb.SQLService_StringifyMetadata_FullMethodName,
 		v1pb.SubscriptionService_GetSubscription_FullMethodName,

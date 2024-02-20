@@ -227,6 +227,9 @@ const (
 	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
 	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
 
+	// MySQLStatementSelectFullTableScan is an advisor type for checking MySQL select full table scan or not.
+	MySQLStatementSelectFullTableScan Type = "bb.plugin.advisor.mysql.statement.select-full-table-scan"
+
 	// MySQLDisallowProcedure is an advisor type for MySQL disallow procedure.
 	MySQLDisallowProcedure Type = "bb.plugin.advisor.mysql.disallow-procedure"
 

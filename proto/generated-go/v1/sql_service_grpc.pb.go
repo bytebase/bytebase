@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SQLService_Query_FullMethodName             = "/bytebase.v1.SQLService/Query"
-	SQLService_Export_FullMethodName            = "/bytebase.v1.SQLService/Export"
-	SQLService_AdminExecute_FullMethodName      = "/bytebase.v1.SQLService/AdminExecute"
-	SQLService_DifferPreview_FullMethodName     = "/bytebase.v1.SQLService/DifferPreview"
-	SQLService_Check_FullMethodName             = "/bytebase.v1.SQLService/Check"
-	SQLService_Pretty_FullMethodName            = "/bytebase.v1.SQLService/Pretty"
-	SQLService_StringifyMetadata_FullMethodName = "/bytebase.v1.SQLService/StringifyMetadata"
+	SQLService_Query_FullMethodName              = "/bytebase.v1.SQLService/Query"
+	SQLService_Export_FullMethodName             = "/bytebase.v1.SQLService/Export"
+	SQLService_AdminExecute_FullMethodName       = "/bytebase.v1.SQLService/AdminExecute"
+	SQLService_DifferPreview_FullMethodName      = "/bytebase.v1.SQLService/DifferPreview"
+	SQLService_Check_FullMethodName              = "/bytebase.v1.SQLService/Check"
+	SQLService_ParseMyBatisMapper_FullMethodName = "/bytebase.v1.SQLService/ParseMyBatisMapper"
+	SQLService_Pretty_FullMethodName             = "/bytebase.v1.SQLService/Pretty"
+	SQLService_StringifyMetadata_FullMethodName  = "/bytebase.v1.SQLService/StringifyMetadata"
 )
 
 // SQLServiceClient is the client API for SQLService service.
@@ -37,6 +38,7 @@ type SQLServiceClient interface {
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (SQLService_AdminExecuteClient, error)
 	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
+	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
 	StringifyMetadata(ctx context.Context, in *StringifyMetadataRequest, opts ...grpc.CallOption) (*StringifyMetadataResponse, error)
 }
@@ -116,6 +118,15 @@ func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...
 	return out, nil
 }
 
+func (c *sQLServiceClient) ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error) {
+	out := new(ParseMyBatisMapperResponse)
+	err := c.cc.Invoke(ctx, SQLService_ParseMyBatisMapper_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sQLServiceClient) Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error) {
 	out := new(PrettyResponse)
 	err := c.cc.Invoke(ctx, SQLService_Pretty_FullMethodName, in, out, opts...)
@@ -143,6 +154,7 @@ type SQLServiceServer interface {
 	AdminExecute(SQLService_AdminExecuteServer) error
 	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
+	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
 	StringifyMetadata(context.Context, *StringifyMetadataRequest) (*StringifyMetadataResponse, error)
 	mustEmbedUnimplementedSQLServiceServer()
@@ -166,6 +178,9 @@ func (UnimplementedSQLServiceServer) DifferPreview(context.Context, *DifferPrevi
 }
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
+}
+func (UnimplementedSQLServiceServer) ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ParseMyBatisMapper not implemented")
 }
 func (UnimplementedSQLServiceServer) Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Pretty not implemented")
@@ -284,6 +299,24 @@ func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SQLService_ParseMyBatisMapper_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ParseMyBatisMapperRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SQLServiceServer).ParseMyBatisMapper(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SQLService_ParseMyBatisMapper_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SQLServiceServer).ParseMyBatisMapper(ctx, req.(*ParseMyBatisMapperRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SQLService_Pretty_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PrettyRequest)
 	if err := dec(in); err != nil {
@@ -342,6 +375,10 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Check",
 			Handler:    _SQLService_Check_Handler,
+		},
+		{
+			MethodName: "ParseMyBatisMapper",
+			Handler:    _SQLService_ParseMyBatisMapper_Handler,
 		},
 		{
 			MethodName: "Pretty",

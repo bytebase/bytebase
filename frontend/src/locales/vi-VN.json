@@ -948,6 +948,9 @@
       "form": {
         "note": "Ghi chú",
         "placeholder": "(Tùy chọn) Thêm ghi chú..."
+      },
+      "error": {
+        "some-tasks-are-still-running": "Một số tác vụ vẫn đang chạy"
       }
     },
     "subscribe": "Đặt mua",
@@ -2203,7 +2206,7 @@
     "close-pane": "Đóng ngăn",
     "loading-data": "Đang tải dữ liệu...",
     "table-empty-placeholder": "Bấm vào Chạy để thực hiện truy vấn.",
-    "no-rows-found": "Không tìm thấy hàng nào",
+    "no-data-available": "Không có dữ liệu",
     "download-as-file": "Tải xuống dưới dạng {file}",
     "only-select-allowed": "Chỉ các câu lệnh {select} mới được phép thực thi.",
     "want-to-action": "Nếu bạn muốn {want}, hãy nhấp vào nút {action} {reaction}.",

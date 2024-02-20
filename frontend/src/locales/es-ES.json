@@ -947,6 +947,9 @@
       "form": {
         "note": "Nota",
         "placeholder": "(Opcional) Agregar una nota..."
+      },
+      "error": {
+        "some-tasks-are-still-running": "Algunas tareas aún se están ejecutando"
       }
     },
     "subscribe": "Suscribirse",
@@ -2199,7 +2202,7 @@
     "close-pane": "Cerrar panel",
     "loading-data": "Cargando datos...",
     "table-empty-placeholder": "Haga clic en Ejecutar para ejecutar la consulta.",
-    "no-rows-found": "No se encontraron filas",
+    "no-data-available": "No hay datos disponibles",
     "download-as-file": "Descargar como {file}",
     "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
     "want-to-action": "Si desea {want}, haga clic en el botón {action} {reaction}.",

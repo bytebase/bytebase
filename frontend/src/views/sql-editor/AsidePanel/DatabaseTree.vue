@@ -88,6 +88,7 @@ import {
   isConnectableSQLEditorTreeNode,
   languageOfEngineV1,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import {
   emptyConnection,
   findAncestor,
@@ -447,7 +448,13 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
   }
   tableNameParts.push(wrapSQLIdentifier(tableOrViewName, engine));
 
-  const query = `SELECT * FROM ${tableNameParts.join(".")} LIMIT ${LIMIT}`;
+  const queryParts = ["SELECT * FROM", tableNameParts.join(".")];
+  if (engine === Engine.ORACLE || engine === Engine.OCEANBASE_ORACLE) {
+    queryParts.push(`WHERE ROWNUM <= ${LIMIT}`);
+  } else {
+    queryParts.push(`LIMIT ${LIMIT}`);
+  }
+  const query = queryParts.join(" ");
   runQuery(query);
 };
 

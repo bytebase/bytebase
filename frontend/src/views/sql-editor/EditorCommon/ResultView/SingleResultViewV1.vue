@@ -21,7 +21,10 @@
           `${data.length} ${t("sql-editor.rows", data.length)}`
         }}</span>
         <span
-          v-if="data.length === RESULT_ROWS_LIMIT"
+          v-if="
+            currentTab.mode === TabMode.ReadOnly &&
+            data.length === RESULT_ROWS_LIMIT
+          "
           class="ml-2 whitespace-nowrap text-sm text-gray-500"
         >
           <span>-</span>
