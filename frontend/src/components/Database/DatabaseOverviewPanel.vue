@@ -204,6 +204,7 @@ import { useDBSchemaV1Store } from "@/store";
 import { ComposedDatabase, DataSource } from "@/types";
 import { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine, State } from "@/types/proto/v1/common";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -254,6 +255,7 @@ watch(
   async (database) => {
     await dbSchemaStore.getOrFetchDatabaseMetadata({
       database,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
       skipCache: false,
     });
     if (schemaList.value.length > 0) {
