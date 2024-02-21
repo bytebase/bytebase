@@ -40,7 +40,6 @@ func Test_SetupGitLabCI(t *testing.T) {
 	include, ok := content["include"].([]any)
 	assert.Equal(t, ok, true)
 
-	sqlReviewCI, ok := findSQLReviewCI(include)
-	assert.Equal(t, ok, true)
-	assert.NotNil(t, sqlReviewCI)
+	sqlReviewCI := existSQLReviewCI(include)
+	assert.Equal(t, sqlReviewCI, true)
 }

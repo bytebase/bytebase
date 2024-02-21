@@ -1770,6 +1770,7 @@
     "sql-review-ci-enable-gitlab": "Kích hoạt CI đánh giá SQL thông qua GitLab CI",
     "sql-review-ci-enable-github": "Kích hoạt CI đánh giá SQL thông qua hành động GitHub",
     "sql-review-ci-enable-azure": "Kích hoạt CI đánh giá SQL thông qua Azure DevOps Pipeline",
+    "sql-review-ci-enable-title": "Bật CI đánh giá SQL qua đường dẫn",
     "sql-review-ci-description": "Bytebase sẽ tạo một {pr} để thiết lập CI đánh giá SQL trong kho lưu trữ của bạn. Trong mọi {pr}, chính sách đánh giá SQL dựa trên môi trường sẽ kiểm tra các tệp đã thay đổi khớp với \"{pathTemplate}\".",
     "sql-review-ci-setup": "Thiết lập CI đánh giá SQL",
     "sql-review-ci-setup-failed": "Không thể thiết lập CI đánh giá SQL",

@@ -1,0 +1,4 @@
+name: %s
+image: atlassian/default-image:4
+script:
+  - bash %s --pull-request-id="$BITBUCKET_PR_ID" --repo-id="$BITBUCKET_REPO_UUID" --repo-url="$BITBUCKET_GIT_HTTP_ORIGIN" --api="%s" --token="%s"

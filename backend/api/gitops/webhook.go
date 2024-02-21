@@ -721,6 +721,8 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
 		case vcs.AzureDevOps:
 			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
+		case vcs.Bitbucket:
+			response = convertSQLAdviceToGitLabCIResult(sqlFileName2Advice)
 		}
 
 		slog.Debug("SQL review finished",
