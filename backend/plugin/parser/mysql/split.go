@@ -148,13 +148,6 @@ func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, err
 				continue
 			}
 
-			isIfNotExists := (base.GetDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserNOT_SYMBOL ||
-				base.GetDefaultChannelTokenType(tokens, i, 1) == parser.MySQLParserNOT2_SYMBOL) &&
-				base.GetDefaultChannelTokenType(tokens, i, 2) == parser.MySQLParserEXISTS_SYMBOL
-			if isIfNotExists {
-				continue
-			}
-
 			ifStack = append(ifStack, &openParenthesis{tokenType: tokens[i].GetTokenType(), pos: i})
 		case parser.MySQLParserLOOP_SYMBOL:
 			isEndLoop := base.GetDefaultChannelTokenType(tokens, i, -1) == parser.MySQLParserEND_SYMBOL
