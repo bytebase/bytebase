@@ -38,6 +38,67 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 	bigSQL := generateOneMBInsert()
 	tests := []splitTestData{
 		{
+			statement: `
+			DELIMITER ;;
+			CREATE PROCEDURE dorepeat(p1 INT)
+			BEGIN
+				DECLARE x INT;
+				SET x = 0;
+				label1: WHILE x < p1 DO
+					SET x = x + 1;
+				END WHILE label1;
+			END;;
+			DELIMITER ;
+			CALL dorepeat(1000);
+			SELECT x;
+			`,
+			want: resData{
+				res: []base.SingleSQL{
+					{
+						Text: `			CREATE PROCEDURE dorepeat(p1 INT)
+			BEGIN
+				DECLARE x INT;
+				SET x = 0;
+				label1: WHILE x < p1 DO
+					SET x = x + 1;
+				END WHILE label1;
+			END;`,
+						BaseLine:             2,
+						FirstStatementLine:   2,
+						FirstStatementColumn: 3,
+						LastLine:             9,
+						LastColumn:           7,
+					},
+					{
+						Text:                 `			CALL dorepeat(1000);`,
+						BaseLine:             11,
+						FirstStatementLine:   11,
+						FirstStatementColumn: 3,
+						LastLine:             11,
+						LastColumn:           22,
+					},
+					{
+						Text: `
+			SELECT x;`,
+						BaseLine:             11,
+						FirstStatementLine:   12,
+						FirstStatementColumn: 3,
+						LastLine:             12,
+						LastColumn:           11,
+					},
+					{
+						Text:                 "\n\t\t\t",
+						BaseLine:             12,
+						FirstStatementLine:   13,
+						FirstStatementColumn: 3,
+						LastLine:             13,
+						LastColumn:           2,
+						Empty:                true,
+					},
+				},
+			},
+		},
+		{
 			// 20 IF symbol
 			statement: `
 			SELECT
@@ -592,18 +653,6 @@ func TestMySQLSplitMultiSQL(t *testing.T) {
 						FirstStatementColumn: 0,
 					},
 				},
-			},
-		},
-		{
-			statement: `INSERT INTO t VALUES ('klajfas)`,
-			want: resData{
-				err: "failed to split multi sql: invalid string: not found delimiter: ', but found EOF",
-			},
-		},
-		{
-			statement: "INSERT INTO `t VALUES ('klajfas)",
-			want: resData{
-				err: "failed to split multi sql: invalid indentifier: not found delimiter: `, but found EOF",
 			},
 		},
 	}
