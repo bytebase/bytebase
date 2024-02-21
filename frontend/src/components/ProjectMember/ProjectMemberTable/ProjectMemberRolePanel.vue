@@ -509,15 +509,12 @@ watch(
     for (const rawBinding of rawBindingList) {
       const singleBindingList = [];
       const singleBinding: SingleBinding = {
-        databaseResource: undefined,
-        expiration: undefined,
-        description: undefined,
+        description: rawBinding.condition?.description || "",
         rawBinding: rawBinding,
       };
 
       if (rawBinding.parsedExpr?.expr) {
         const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
-        singleBinding.description = rawBinding.condition?.description || "";
         if (conditionExpr.expiredTime) {
           singleBinding.expiration = new Date(conditionExpr.expiredTime);
         }

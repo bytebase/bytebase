@@ -1984,6 +1984,7 @@
       "show-inactive": "显示未激活成员",
       "select-users": "选择用户",
       "assign-role": "分配角色",
+      "assign-reason": "（可选）理由",
       "never-expires": "永不过期",
       "expired": "已过期",
       "role-description": "角色描述",
