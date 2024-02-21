@@ -1042,7 +1042,7 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 	}
 
 	statement := stringsBuilder.String()
-	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_POSTGRES, statement)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to split mybatis mapper: %v", err)
 	}
