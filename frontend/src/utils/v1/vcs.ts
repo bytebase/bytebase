@@ -27,7 +27,7 @@ export const supportSQLReviewCI = (
   vcsType: ExternalVersionControl_Type
 ): boolean => {
   return (
-    vcsType == ExternalVersionControl_Type.GITHUB ||
+    vcsType === ExternalVersionControl_Type.GITHUB ||
     vcsType === ExternalVersionControl_Type.GITLAB ||
     vcsType === ExternalVersionControl_Type.AZURE_DEVOPS ||
     (vcsType === ExternalVersionControl_Type.BITBUCKET && isDev())
