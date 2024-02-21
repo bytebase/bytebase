@@ -14,6 +14,7 @@ type ResourceNotFoundError struct {
 	Schema   *string
 	Table    *string
 	Column   *string
+	Function *string
 }
 
 func (e *ResourceNotFoundError) Error() string {
@@ -33,6 +34,9 @@ func (e *ResourceNotFoundError) Error() string {
 	if e.Column != nil {
 		resourceParts = append(resourceParts, fmt.Sprintf("column: %s", *e.Column))
 	}
+	if e.Function != nil {
+		resourceParts = append(resourceParts, fmt.Sprintf("function: %s", *e.Function))
+	}
 	parts := []string{
 		fmt.Sprintf("resource not found: %s", strings.Join(resourceParts, ", ")),
 	}
@@ -51,9 +55,10 @@ func (e *ResourceNotFoundError) Unwrap() error {
 // TypeNotSupportedError is returned when a type is not supported in the
 // query span, for example, using a function as table source.
 type TypeNotSupportedError struct {
-	Err  error
-	Type string
-	Name string
+	Err   error
+	Type  string
+	Name  string
+	Extra string
 }
 
 func (e *TypeNotSupportedError) Error() string {
@@ -67,6 +72,10 @@ func (e *TypeNotSupportedError) Error() string {
 
 	if e.Name != "" {
 		parts = append(parts, fmt.Sprintf("name: %s", e.Name))
+	}
+
+	if e.Extra != "" {
+		parts = append(parts, fmt.Sprintf("extra: %s", e.Extra))
 	}
 
 	return strings.Join(parts, ", ")
