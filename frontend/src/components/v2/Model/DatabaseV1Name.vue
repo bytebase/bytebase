@@ -1,12 +1,21 @@
 <template>
   <component
-    :is="link ? 'router-link' : NEllipsis"
+    :is="shouldShowLink ? 'router-link' : NEllipsis"
     v-bind="bindings"
     class="inline-flex items-center gap-x-1"
-    :class="[link && !plain && 'normal-link', link && 'hover:underline']"
+    :class="[
+      shouldShowLink && !plain && 'normal-link',
+      shouldShowLink && 'hover:underline',
+    ]"
   >
     <span v-if="prefix" class="mr-1 text-gray-400">{{ prefix }}</span>
     <span>{{ database.databaseName }}</span>
+    <span
+      v-if="showNotFound && database.syncState === State.DELETED"
+      class="text-control-placeholder"
+    >
+      (NOT_FOUND)
+    </span>
   </component>
 </template>
 
@@ -14,7 +23,7 @@
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
+import { Engine, State } from "@/types/proto/v1/common";
 import { databaseV1Url } from "@/utils";
 
 const props = withDefaults(
@@ -22,15 +31,21 @@ const props = withDefaults(
     database: ComposedDatabase;
     link?: boolean;
     plain?: boolean;
+    showNotFound?: boolean;
   }>(),
   {
     link: true,
     plain: false,
+    showNotFound: false,
   }
 );
 
+const shouldShowLink = computed(() => {
+  return props.link && props.database.syncState === State.ACTIVE;
+});
+
 const bindings = computed(() => {
-  if (props.link) {
+  if (shouldShowLink.value) {
     return {
       to: databaseV1Url(props.database),
       activeClass: "",

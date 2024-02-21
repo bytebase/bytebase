@@ -27,16 +27,26 @@
     <div class="flex items-center gap-x-1">
       <heroicons-outline:database />
 
-      <template v-if="database">
+      <template
+        v-if="
+          databaseCreationStatus === 'EXISTED' ||
+          databaseCreationStatus === 'CREATED'
+        "
+      >
         <EnvironmentV1Name
-          :environment="database.effectiveEnvironmentEntity"
+          :environment="coreDatabaseInfo.effectiveEnvironmentEntity"
           :plain="true"
           :show-icon="false"
           :link="link"
           text-class="text-control-light"
         />
 
-        <DatabaseV1Name :database="database" :plain="true" :link="link" />
+        <DatabaseV1Name
+          :database="coreDatabaseInfo"
+          :plain="true"
+          :link="link"
+          :show-not-found="true"
+        />
       </template>
       <span v-else>
         {{ coreDatabaseInfo.databaseName }}
