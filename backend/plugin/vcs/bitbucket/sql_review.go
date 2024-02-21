@@ -2,8 +2,9 @@ package bitbucket
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
+
+	"github.com/pkg/errors"
 
 	"gopkg.in/yaml.v3"
 )
