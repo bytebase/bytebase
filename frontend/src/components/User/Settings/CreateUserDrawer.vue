@@ -9,8 +9,41 @@
       "
     >
       <template #default>
-        <NForm :model="state.user">
-          <NFormItem path="email" :label="$t('common.email')">
+        <NForm>
+          <div
+            v-if="isCreating"
+            class="w-full mb-4 flex flex-row justify-start items-center"
+          >
+            <span class="mr-2 text-sm">{{ $t("common.type") }}</span>
+            <NRadioGroup v-model:value="state.user.userType" name="userType">
+              <NRadio :value="UserType.USER" :label="$t('common.user')" />
+              <NRadio
+                :value="UserType.SERVICE_ACCOUNT"
+                :label="$t('settings.members.service-account')"
+              />
+            </NRadioGroup>
+            <a
+              href="https://www.bytebase.com/docs/get-started/terraform?source=console"
+              target="_blank"
+            >
+              <heroicons-outline:question-mark-circle class="w-4 h-4" />
+            </a>
+          </div>
+          <NFormItem
+            v-if="
+              (isCreating &&
+                state.user.userType !== UserType.SERVICE_ACCOUNT) ||
+              !isCreating
+            "
+            :label="$t('common.name')"
+          >
+            <NInput
+              v-model:value="state.user.title"
+              :input-props="{ type: 'text', autocomplete: 'off' }"
+              placeholder="foo"
+            />
+          </NFormItem>
+          <NFormItem :label="$t('common.email')">
             <div
               v-if="
                 isCreating && state.user.userType === UserType.SERVICE_ACCOUNT
@@ -33,17 +66,12 @@
               placeholder="foo@example.com"
             />
           </NFormItem>
-          <!-- In IAM development, we'll show roles multiple selector -->
-          <NFormItem
-            v-if="isDevelopmentIAM"
-            path="roles"
-            :label="$t('settings.members.table.roles')"
-          >
+          <NFormItem :label="$t('settings.members.table.roles')">
             <div class="w-full">
               <NSelect
                 v-model:value="state.user.roles"
                 multiple
-                :options="availableRoles"
+                :options="availableRoleOptions"
                 :placeholder="$t('role.select-roles')"
               />
               <p
@@ -54,47 +82,6 @@
               </p>
             </div>
           </NFormItem>
-          <!-- TODO(steven): remove this after IAM migrated -->
-          <NFormItem v-else path="roles" :label="$t('common.role.self')">
-            <NSelect
-              :value="state.user.roles[0]"
-              :options="availableRoles"
-              :placeholder="$t('role.select-role')"
-              @change="state.user.roles = [$event]"
-            />
-          </NFormItem>
-          <NFormItem
-            v-if="!isCreating"
-            path="title"
-            :label="$t('common.nickname')"
-          >
-            <NInput
-              v-model:value="state.user.title"
-              :input-props="{ type: 'text', autocomplete: 'off' }"
-              placeholder="foo"
-            />
-          </NFormItem>
-          <div
-            v-if="isCreating"
-            class="col-span-2 flex justify-start gap-x-2 items-center text-sm text-gray-500"
-          >
-            <NSwitch
-              :value="state.user.userType === UserType.SERVICE_ACCOUNT"
-              size="small"
-              @update:value="toggleUserServiceAccount($event)"
-            />
-            <span>
-              {{ $t("settings.members.create-as-service-account") }}
-              <a
-                target="_blank"
-                href="https://www.bytebase.com/docs/get-started/terraform?source=console"
-              >
-                <heroicons-outline:question-mark-circle
-                  class="w-4 h-4 inline-block mb-0.5"
-                />
-              </a>
-            </span>
-          </div>
         </NForm>
       </template>
       <template #footer>
@@ -157,8 +144,9 @@ import {
   NForm,
   NFormItem,
   NInput,
-  NSwitch,
   NSelect,
+  NRadioGroup,
+  NRadio,
 } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -201,7 +189,7 @@ const state = reactive<LocalState>({
   user: cloneDeep(props.user) || emptyUser(),
 });
 
-const availableRoles = computed(() => {
+const availableRoleOptions = computed(() => {
   const roles = isDevelopmentIAM.value
     ? useRoleStore().roleList.map((role) => role.name)
     : [
@@ -263,10 +251,6 @@ const hasMoreThanOneOwner = computed(() => {
     ).length > 1
   );
 });
-
-const toggleUserServiceAccount = (on: boolean) => {
-  state.user.userType = on ? UserType.SERVICE_ACCOUNT : UserType.USER;
-};
 
 const extractUserTitle = (email: string): string => {
   const atIndex = email.indexOf("@");
