@@ -189,5 +189,5 @@ func getRows(res []any) (int64, error) {
 		}
 	}
 
-	return 0, errors.Errorf("failed to extract rows from query plan")
+	return 0, nil
 }
