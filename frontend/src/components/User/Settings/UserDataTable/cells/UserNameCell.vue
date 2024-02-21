@@ -7,7 +7,7 @@
         <div class="flex flex-row items-center space-x-2">
           <router-link
             :to="`/users/${user.email}`"
-            class="normal-link truncate w-36"
+            class="normal-link truncate max-w-[10em]"
           >
             {{ user.title }}
           </router-link>
