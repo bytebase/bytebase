@@ -18,7 +18,10 @@ export const useTaskSheet = () => {
   const sheetName = computed(() => {
     return sheetNameOfTaskV1(selectedTask.value);
   });
-  const sheetReady = ref(false);
+  const isFetchingSheet = ref(false);
+  const sheetReady = computed(() => {
+    return !isFetchingSheet.value;
+  });
   const sheet = computedAsync(
     async () => {
       const name = sheetName.value;
@@ -32,7 +35,7 @@ export const useTaskSheet = () => {
     },
     undefined,
     {
-      evaluating: sheetReady,
+      evaluating: isFetchingSheet,
     }
   );
   const sheetStatement = computed({
