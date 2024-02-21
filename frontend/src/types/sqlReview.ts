@@ -104,6 +104,7 @@ export type RuleType =
   | "table.drop-naming-convention"
   | "table.disallow-partition"
   | "table.disallow-trigger"
+  | "table.no-duplicate-index"
   | "table.comment"
   | "naming.table"
   | "naming.column"
