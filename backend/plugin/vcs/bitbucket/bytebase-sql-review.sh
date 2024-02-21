@@ -51,8 +51,13 @@ response=$(curl -s --show-error -X POST $API_URL \
 echo "response: $response"
 
 content=$(echo "$response" | jq -r '.content')
+status=$(echo "$response" | jq -r '.status')
+
 len=$(echo "$content" | jq '. | length')
 if [[ $len == 0 ]]; then exit 0; fi
 
 msg=$(echo "$content" | jq -r '.[0]')
+mkdir test-results
 echo $msg >> test-results/bytebase-sql-review.xml
+
+if [ "$status" != "SUCCESS" ]; then exit 1; fi

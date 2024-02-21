@@ -12,7 +12,7 @@ import { NSpin } from "naive-ui";
 
 withDefaults(
   defineProps<{
-    size?: "small" | "medium" | "large";
+    size?: "small" | "medium" | "large" | number;
   }>(),
   {
     size: "small",

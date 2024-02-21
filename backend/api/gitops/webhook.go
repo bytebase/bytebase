@@ -615,14 +615,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return false, nil
 			}
 
-			if !strings.HasPrefix(repo.WebURL, request.WebURL) {
-				slog.Debug("Skip repository as the web URL is not matched.",
-					slog.String("request_web_url", request.WebURL),
-					slog.String("repo_web_url", repo.WebURL),
-				)
-				return false, nil
-			}
-
 			// We will use workspace id as token in integration test for skipping the check.
 			return token == workspaceID || token == repo.WebhookSecretToken, nil
 		}
@@ -2281,6 +2273,8 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 		pathes := strings.Split(filePath, "/")
 		filename := pathes[len(pathes)-1]
 
+		errorCount := 0
+		failureCount := 0
 		for _, advice := range adviceList {
 			if advice.Code == 0 {
 				continue
@@ -2293,8 +2287,12 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 
 			if advice.Status == advisor.Error {
 				status = advice.Status
-			} else if advice.Status == advisor.Warn && status != advisor.Error {
-				status = advice.Status
+				errorCount++
+			} else if advice.Status == advisor.Warn {
+				failureCount++
+				if status != advisor.Error {
+					status = advice.Status
+				}
 			}
 
 			content := fmt.Sprintf("Error: %s.\nPlease check the docs at %s#%d",
@@ -2318,7 +2316,7 @@ func convertSQLAdviceToGitLabCIResult(adviceMap map[string][]advisor.Advice) *ap
 		if len(testcaseList) > 0 {
 			testsuiteList = append(
 				testsuiteList,
-				fmt.Sprintf("<testsuite name=\"%s\">\n%s\n</testsuite>", filePath, strings.Join(testcaseList, "\n")),
+				fmt.Sprintf("<testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\">\n%s\n</testsuite>", errorCount, failureCount, len(adviceList), filePath, strings.Join(testcaseList, "\n")),
 			)
 		}
 	}
