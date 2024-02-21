@@ -242,6 +242,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
+			internalFunctions:        make(map[string]*FunctionMetadata),
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -269,6 +270,11 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 				Definition: materializedView.Definition,
 			}
 		}
+		for _, function := range schema.Functions {
+			schemaMetadata.internalFunctions[function.Name] = &FunctionMetadata{
+				Definition: function.Definition,
+			}
+		}
 		databaseMetadata.internal[schema.Name] = schemaMetadata
 	}
 	return databaseMetadata
@@ -294,6 +300,7 @@ type SchemaMetadata struct {
 	internalExternalTable    map[string]*ExternalTableMetadata
 	internalViews            map[string]*ViewMetadata
 	internalMaterializedView map[string]*MaterializedViewMetadata
+	internalFunctions        map[string]*FunctionMetadata
 }
 
 // GetTable gets the schema by name.
@@ -314,6 +321,11 @@ func (s *SchemaMetadata) GetMaterializedView(name string) *MaterializedViewMetad
 // GetExternalTable gets the external table by name.
 func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 	return s.internalExternalTable[name]
+}
+
+// GetFunction gets the function by name.
+func (s *SchemaMetadata) GetFunction(name string) *FunctionMetadata {
+	return s.internalFunctions[name]
 }
 
 // ListTableNames lists the table names.
@@ -467,5 +479,9 @@ type ViewMetadata struct {
 }
 
 type MaterializedViewMetadata struct {
+	Definition string
+}
+
+type FunctionMetadata struct {
 	Definition string
 }
