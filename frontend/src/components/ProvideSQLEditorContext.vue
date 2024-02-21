@@ -349,12 +349,11 @@ onMounted(async () => {
   if (treeStore.state === "UNSET") {
     treeStore.state = "LOADING";
 
+    // Prepare roles, workspace policies and settings first.
     await Promise.all([
       useSettingV1Store().fetchSettingList(),
       useRoleStore().fetchRoleList(),
       useEnvironmentV1Store().fetchEnvironments(),
-      prepareInstances(),
-      prepareProjects(),
       policyV1Store.fetchPolicies({
         resourceType: PolicyResourceType.WORKSPACE,
       }),
@@ -363,6 +362,8 @@ onMounted(async () => {
         policyType: PolicyType.DISABLE_COPY_DATA,
       }),
     ]);
+    // Then prepare the other resources.
+    await Promise.all([prepareInstances(), prepareProjects()]);
 
     await prepareDatabases();
 

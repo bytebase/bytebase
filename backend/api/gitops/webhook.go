@@ -2483,10 +2483,8 @@ func extractMybatisMapperSQL(mapperContent string, engineType storepb.Engine) (s
 
 	var placeholder string
 	switch engineType {
-	case storepb.Engine_MYSQL:
+	case storepb.Engine_MYSQL, storepb.Engine_POSTGRES:
 		placeholder = "@1"
-	case storepb.Engine_POSTGRES:
-		placeholder = "$1"
 	default:
 		return "", nil, errors.Errorf("unsupported database type %q", engineType)
 	}

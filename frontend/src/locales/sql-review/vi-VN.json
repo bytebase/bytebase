@@ -60,6 +60,10 @@
       "title": "Cấm sử dụng cơ chế kích hoạt",
       "description": "Cơ chế kích hoạt có thể gây ra sự không thống nhất dữ liệu và làm giảm hiệu suất. Mức độ lỗi đề xuất: Lỗi"
     },
+    "table-no-duplicate-index": {
+      "title": "Cấm chỉ mục trùng lặp",
+      "description": "Quy tắc này cấm tạo các chỉ mục trùng lặp trên bảng. Các chỉ mục trùng lặp chiếm dung lượng lưu trữ bổ sung và có thể làm giảm hiệu suất truy vấn. Mức độ lỗi gợi ý: Cảnh báo"
+    },
     "table-comment": {
       "title": "quy ước bình luận",
       "description": "Định cấu hình xem bảng có yêu cầu nhận xét hay không và độ dài nhận xét tối đa.",
