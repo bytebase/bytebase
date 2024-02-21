@@ -13,6 +13,7 @@
           {{ $t("common.configure") }}
         </NButton>
         <NButton
+          v-if="hasSyncPermission"
           type="primary"
           :disabled="!allowSync"
           :loading="syncing"
@@ -138,6 +139,10 @@ const loading = shallowRef(false);
 const slowQueryLogList = shallowRef<ComposedSlowQueryLog[]>([]);
 const selectedSlowQueryLog = shallowRef<ComposedSlowQueryLog>();
 const syncing = shallowRef(false);
+
+const hasSyncPermission = computed(() =>
+  hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync")
+);
 
 const searchScopes = computed(() => {
   return [...props.readonlySearchScopes, ...state.params.scopes];
