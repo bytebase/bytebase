@@ -1986,6 +1986,7 @@
       "show-inactive": "非アクティブメンバーを表示",
       "select-users": "ユーザーを選択",
       "assign-role": "ロールを割り当てる",
+      "assign-reason": "(オプション) 理由",
       "never-expires": "決して",
       "expired": "期限切れ",
       "role-description": "ロールの説明",
