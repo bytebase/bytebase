@@ -22,11 +22,6 @@ func init() {
 // SplitSQL splits the given SQL statement into multiple SQL statements.
 func SplitSQL(statement string) ([]base.SingleSQL, error) {
 	statement = mysqlAddSemicolonIfNeeded(statement)
-	var err error
-	statement, err = DealWithDelimiter(statement)
-	if err != nil {
-		return nil, err
-	}
 	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
@@ -37,6 +32,138 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 		return splitByParser(lexer, stream)
 	}
 	return list, nil
+}
+
+func splitDelimiterModeSQL(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+	var result []base.SingleSQL
+	delimiter := ";"
+	tokens := stream.GetAllTokens()
+	start := 0
+
+	i := 0
+	for {
+		if i >= len(tokens) {
+			break
+		}
+		token := tokens[i]
+		// Deal with delimiter statement.
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() == parser.MySQLLexerDELIMITER_SYMBOL {
+			newStart, delimiterStatement := extractDelimiterStatement(stream, i)
+			var err error
+			delimiter, err = ExtractDelimiter(delimiterStatement)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract delimiter from statement: %s", delimiterStatement)
+			}
+			start = newStart
+			i = newStart
+			continue
+		}
+
+		// Deal with normal statement.
+		if delimiter == ";" && token.GetTokenType() == parser.MySQLLexerSEMICOLON_SYMBOL {
+			line, col := base.FirstDefaultChannelTokenPosition(tokens[start : i+1])
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
+			result = append(result, base.SingleSQL{
+				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i]),
+				BaseLine:             tokens[start].GetLine() - 1,
+				LastLine:             tokens[i].GetLine() - 1,
+				LastColumn:           tokens[i].GetColumn(),
+				FirstStatementLine:   line,
+				FirstStatementColumn: col,
+				Empty:                base.IsEmpty(tokens[start:i+1], parser.MySQLLexerSEMICOLON_SYMBOL),
+			})
+			i++
+			start = i
+			continue
+		}
+
+		if token.GetChannel() != antlr.TokenDefaultChannel {
+			i++
+			continue
+		}
+
+		if newStart, ok := tryMatchDelimiter(stream, i, delimiter); ok {
+			line, col := base.FirstDefaultChannelTokenPosition(tokens[start:newStart])
+			// From antlr4, the line is ONE based, and the column is ZERO based.
+			// So we should minus 1 for the line.
+			result = append(result, base.SingleSQL{
+				// Use a single semicolon instead of the user defined delimiter.
+				Text:                 stream.GetTextFromTokens(tokens[start], tokens[i-1]) + ";",
+				BaseLine:             tokens[start].GetLine() - 1,
+				LastLine:             tokens[newStart-1].GetLine() - 1,
+				LastColumn:           tokens[newStart-1].GetColumn(),
+				FirstStatementLine:   line,
+				FirstStatementColumn: col,
+				Empty:                base.IsEmpty(tokens[start:i], parser.MySQLLexerSEMICOLON_SYMBOL),
+			})
+			i = newStart
+			start = newStart
+			continue
+		}
+
+		i++
+	}
+
+	endPos := len(tokens) - 1
+	if start < endPos {
+		line, col := base.FirstDefaultChannelTokenPosition(tokens[start:])
+		// From antlr4, the line is ONE based, and the column is ZERO based.
+		// So we should minus 1 for the line.
+		result = append(result, base.SingleSQL{
+			Text:                 stream.GetTextFromTokens(tokens[start], tokens[endPos-1]),
+			BaseLine:             tokens[start].GetLine() - 1,
+			LastLine:             tokens[endPos-1].GetLine() - 1,
+			LastColumn:           tokens[endPos-1].GetColumn(),
+			FirstStatementLine:   line,
+			FirstStatementColumn: col,
+			Empty:                base.IsEmpty(tokens[start:endPos], parser.MySQLLexerSEMICOLON_SYMBOL),
+		})
+	}
+
+	return result, nil
+}
+
+func tryMatchDelimiter(stream *antlr.CommonTokenStream, pos int, delimiter string) (int, bool) {
+	matchPos := 0
+	length := len(stream.GetAllTokens())
+	for i := pos; i < length; i++ {
+		text := stream.GetTextFromInterval(antlr.Interval{Start: i, Stop: i})
+		for j := 0; j < len(text); j++ {
+			if j+matchPos >= len(delimiter) || text[j] != delimiter[j+matchPos] {
+				return 0, false
+			}
+			matchPos++
+			if matchPos == len(delimiter) {
+				return i + 1, true
+			}
+		}
+	}
+
+	return 0, false
+}
+
+func extractDelimiterStatement(stream *antlr.CommonTokenStream, pos int) (int, string) {
+	length := len(stream.GetAllTokens())
+	for i := pos; i < length; i++ {
+		if (stream.Get(i).GetTokenType() == parser.MySQLLexerWHITESPACE && stream.Get(i).GetText() == "\n") ||
+			(stream.Get(i).GetTokenType() == antlr.TokenEOF) {
+			return i + 1, stream.GetTextFromTokens(stream.Get(pos), stream.Get(i-1))
+		}
+	}
+
+	// never reach here
+	return length, stream.GetTextFromTokens(stream.Get(pos), stream.Get(length-1))
+}
+
+func hasDelimiterStatement(stream *antlr.CommonTokenStream) bool {
+	tokens := stream.GetAllTokens()
+	for _, token := range tokens {
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() == parser.MySQLLexerDELIMITER_SYMBOL {
+			return true
+		}
+	}
+	return false
 }
 
 func splitByParser(lexer *parser.MySQLLexer, stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
@@ -106,8 +233,12 @@ type openParenthesis struct {
 }
 
 func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
-	var result []base.SingleSQL
 	stream.Fill()
+	if hasDelimiterStatement(stream) {
+		return splitDelimiterModeSQL(stream)
+	}
+
+	var result []base.SingleSQL
 	tokens := stream.GetAllTokens()
 
 	var beginCaseStack, ifStack, loopStack, whileStack, repeatStack []*openParenthesis
