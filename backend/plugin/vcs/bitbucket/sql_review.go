@@ -2,11 +2,10 @@ package bitbucket
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
-	"gopkg.in/yaml.v2"
-
-	"github.com/go-faster/errors"
+	"gopkg.in/yaml.v3"
 )
 
 type pipelineStep struct {
