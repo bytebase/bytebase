@@ -139,7 +139,7 @@ func TestVCSSQLReview_ConvertSQLAdviceToGitLabCIResult(t *testing.T) {
 	expect :=
 		`<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="SQL Review">
-<testsuite name="file1.sql">
+<testsuite errors="1" failures="1" tests="3" name="file1.sql">
 <testcase name="[WARN] file1.sql#L1: column.no-null" classname="file1.sql" file="file1.sql#L1">
 <failure>
 Error: Column "id" in "public"."book" cannot have NULL value.
@@ -153,7 +153,7 @@ Please check the docs at https://www.bytebase.com/docs/reference/error-code/advi
 </failure>
 </testcase>
 </testsuite>
-<testsuite name="file2.sql">
+<testsuite errors="1" failures="1" tests="3" name="file2.sql">
 <testcase name="[WARN] file2.sql#L1: naming.table" classname="file2.sql" file="file2.sql#L1">
 <failure>
 Error: "techBook" mismatches table naming convention, naming format should be "^[a-z]+(_[a-z]+)*$".
