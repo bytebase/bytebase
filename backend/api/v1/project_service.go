@@ -1253,6 +1253,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			return nil, err
 		}
 	case vcsplugin.Bitbucket:
+		// TODO(ed): we need to call the API to enable the pipeline.
 		if err := setupVCSSQLReviewCIForBitBucket(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint, repository.WebhookSecretToken); err != nil {
 			return nil, err
 		}

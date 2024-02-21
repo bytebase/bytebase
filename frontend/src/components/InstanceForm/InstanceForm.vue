@@ -189,7 +189,7 @@
           <MaximumConnectionsInput
             v-if="!isCreating"
             ref="maximumConnectionsInputRef"
-            :maximum-connections="basicInfo.options?.maximumConnections"
+            :maximum-connections="basicInfo.options?.maximumConnections ?? 0"
             :allow-edit="allowEdit"
             @update:maximum-connections="changeMaximumConnections"
           />
@@ -253,11 +253,11 @@
         <div class="mt-6 pt-0 border-none">
           <div class="flex flex-row space-x-2">
             <NButton
-              class="whitespace-nowrap flex items-center gap-x-1"
+              class="whitespace-nowrap flex items-center"
+              :loading="state.isTestingConnection"
               :disabled="!allowCreate || state.isRequesting || !allowEdit"
               @click.prevent="testConnection(false /* !silent */)"
             >
-              <BBSpin v-if="state.isTestingConnection" />
               <span>{{ $t("instance.test-connection") }}</span>
             </NButton>
           </div>
