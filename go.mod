@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.23.6
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.50.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20240112100339-e0b6f27b07cf
+	github.com/bytebase/mysql-parser v0.0.0-20240220070334-5b2c6e79084d
 	github.com/bytebase/plsql-parser v0.0.0-20231110065312-688a51648c4a
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20230706111031-cafd8faa2dc9
