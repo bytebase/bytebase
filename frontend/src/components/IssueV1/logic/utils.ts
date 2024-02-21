@@ -12,6 +12,8 @@ import {
   unknownDatabase,
   UNKNOWN_ID,
 } from "@/types";
+import { State } from "@/types/proto/v1/common";
+import { InstanceResource } from "@/types/proto/v1/instance_service";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan,
@@ -47,7 +49,27 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
       task.type === Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER ||
       task.type === Task_Type.DATABASE_SCHEMA_BASELINE
     ) {
-      return useDatabaseV1Store().getDatabaseByName(task.target);
+      const db = useDatabaseV1Store().getDatabaseByName(task.target);
+      if (db.uid === String(UNKNOWN_ID)) {
+        // Database not found, it's probably NOT_FOUND (maybe dropped actually)
+        // Mock a database using all known resources
+        db.project = issue.project;
+        db.projectEntity = issue.projectEntity;
+
+        db.name = task.target;
+        const { instance: instanceName, database: databaseName } =
+          extractDatabaseResourceName(db.name);
+        db.databaseName = databaseName;
+        db.instance = `instances/${instanceName}`;
+        const instance = useInstanceV1Store().getInstanceByName(db.instance);
+        db.instanceEntity = instance;
+        db.instanceResource = InstanceResource.fromJSON(instance);
+        db.environment = instance.environment;
+        db.effectiveEnvironment = instance.environment;
+        db.effectiveEnvironmentEntity = instance.environmentEntity;
+        db.syncState = State.DELETED;
+      }
+      return db;
     }
   }
   return unknownDatabase();
