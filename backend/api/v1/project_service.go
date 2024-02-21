@@ -1241,15 +1241,19 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 
 	switch vcs.Type {
 	case vcsplugin.GitHub:
-		if err := s.setupVCSSQLReviewCIForGitHub(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
+		if err := setupVCSSQLReviewCIForGitHub(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
 	case vcsplugin.GitLab:
-		if err := s.setupVCSSQLReviewCIForGitLab(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
+		if err := setupVCSSQLReviewCIForGitLab(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
 	case vcsplugin.AzureDevOps:
-		if err := s.setupVCSSQLReviewCIForAzureDevOps(ctx, repository, vcs, branch, sqlReviewEndpoint); err != nil {
+		if err := setupVCSSQLReviewCIForAzureDevOps(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
+			return nil, err
+		}
+	case vcsplugin.Bitbucket:
+		if err := setupVCSSQLReviewCIForBitBucket(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint, repository.WebhookSecretToken); err != nil {
 			return nil, err
 		}
 	}
@@ -1316,8 +1320,9 @@ func (s *ProjectService) setupVCSSQLReviewBranch(ctx context.Context, repository
 }
 
 // setupVCSSQLReviewCIForGitHub will create the pull request in GitHub to setup SQL review action.
-func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
+func setupVCSSQLReviewCIForGitHub(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
 	branch *vcsplugin.BranchInfo,
@@ -1327,22 +1332,6 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 	fileLastCommitID := ""
 	fileSHA := ""
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
 	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
 		oauthContext,
@@ -1383,32 +1372,71 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitHub(
 	)
 }
 
-// setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
+func setupVCSSQLReviewCIForBitBucket(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
+	repository *store.RepositoryMessage,
+	vcs *store.ExternalVersionControlMessage,
+	branch *vcsplugin.BranchInfo,
+	sqlReviewEndpoint string,
+	sqlReviewSecret string,
+) error {
+	if err := createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, bitbucket.SQLReviewScriptFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
+		return bitbucket.SQLReviewScript, nil
+	}); err != nil {
+		return err
+	}
+
+	return createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, bitbucket.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
+		content := make(map[string]any)
+
+		if fileMeta != nil {
+			ciFileContent, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileContent(
+				ctx,
+				oauthContext,
+				vcs.InstanceURL,
+				repository.ExternalID,
+				bitbucket.CIFilePath,
+				vcsplugin.RefInfo{
+					RefType: vcsplugin.RefTypeCommit,
+					RefName: fileMeta.LastCommitID,
+				},
+			)
+			if err != nil {
+				return "", err
+			}
+			if err := yaml.Unmarshal([]byte(ciFileContent), &content); err != nil {
+				return "", err
+			}
+		}
+
+		newContent, err := bitbucket.SetupBitBucketCI(content, sqlReviewEndpoint, sqlReviewSecret)
+		if err != nil {
+			return "", err
+		}
+
+		return newContent, nil
+	})
+}
+
+// setupVCSSQLReviewCIForGitLab will create or update SQL review related files in GitLab to setup SQL review CI.
+func setupVCSSQLReviewCIForGitLab(
+	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
 ) error {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return status.Errorf(codes.FailedPrecondition, "external url is required")
+	// create or update the SQL review CI.
+	if err := createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
+		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
+	}); err != nil {
+		return err
 	}
 
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
 	// create or update the .gitlab-ci.yml
-	if err := s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
+	return createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, gitlab.CIFilePath, func(fileMeta *vcsplugin.FileMeta) (string, error) {
 		content := make(map[string]any)
 
 		if fileMeta != nil {
@@ -1437,19 +1465,13 @@ func (s *ProjectService) setupVCSSQLReviewCIForGitLab(
 		}
 
 		return newContent, nil
-	}); err != nil {
-		return err
-	}
-
-	// create or update the SQL review CI.
-	return s.createOrUpdateVCSSQLReviewFileForGitLab(ctx, repository, vcs, branch, gitlab.SQLReviewCIFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
-		return gitlab.SetupSQLReviewCI(sqlReviewEndpoint), nil
 	})
 }
 
 // setupVCSSQLReviewCIForAzureDevOps will create or update SQL review related files in Azure DevOps to setup SQL review CI.
-func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
+func setupVCSSQLReviewCIForAzureDevOps(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
 	branch *vcsplugin.BranchInfo,
@@ -1458,23 +1480,6 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 	sqlReviewConfig := azure.SetupSQLReviewCI(sqlReviewEndpoint, repository.BranchFilter)
 	fileLastCommitID := ""
 	fileSHA := ""
-
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
 
 	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,
@@ -1516,31 +1521,16 @@ func (s *ProjectService) setupVCSSQLReviewCIForAzureDevOps(
 	)
 }
 
-// createOrUpdateVCSSQLReviewFileForGitLab will create or update SQL review file for GitLab CI.
-func (s *ProjectService) createOrUpdateVCSSQLReviewFileForGitLab(
+// createOrUpdateVCSSQLReviewFile will create or update SQL review file for GitLab or BitBucket.
+func createOrUpdateVCSSQLReviewFile(
 	ctx context.Context,
+	oauthContext *common.OauthContext,
 	repository *store.RepositoryMessage,
 	vcs *store.ExternalVersionControlMessage,
 	branch *vcsplugin.BranchInfo,
 	fileName string,
 	getNewContent func(meta *vcsplugin.FileMeta) (string, error),
 ) error {
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to find workspace setting with error: %v", err.Error())
-	}
-	if setting.ExternalUrl == "" {
-		return status.Errorf(codes.FailedPrecondition, "external url is required")
-	}
-	oauthContext := &common.OauthContext{
-		ClientID:     vcs.ApplicationID,
-		ClientSecret: vcs.Secret,
-		AccessToken:  repository.AccessToken,
-		RefreshToken: repository.RefreshToken,
-		Refresher:    utils.RefreshToken(ctx, s.store, repository.WebURL),
-		RedirectURL:  fmt.Sprintf("%s/oauth/callback", setting.ExternalUrl),
-	}
-
 	fileExisted := true
 	fileMeta, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileMeta(
 		ctx,

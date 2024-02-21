@@ -3,6 +3,7 @@ import {
   ExternalVersionControl,
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
+import { isDev } from "@/utils";
 
 export const getVCSUIType = (vcs: ExternalVersionControl): VCSUIType => {
   switch (vcs.type) {
@@ -20,4 +21,15 @@ export const getVCSUIType = (vcs: ExternalVersionControl): VCSUIType => {
     default:
       return "GITLAB_SELF_HOST";
   }
+};
+
+export const supportSQLReviewCI = (
+  vcsType: ExternalVersionControl_Type
+): boolean => {
+  return (
+    vcsType === ExternalVersionControl_Type.GITHUB ||
+    vcsType === ExternalVersionControl_Type.GITLAB ||
+    vcsType === ExternalVersionControl_Type.AZURE_DEVOPS ||
+    (vcsType === ExternalVersionControl_Type.BITBUCKET && isDev())
+  );
 };
