@@ -326,7 +326,7 @@ import {
   schemaChangeToJSON,
 } from "@/types/proto/v1/project_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, supportSQLReviewCI } from "@/utils";
 
 const FILE_REQUIRED_PLACEHOLDER = "{{DB_NAME}}, {{VERSION}}, {{TYPE}}";
 const SCHEMA_REQUIRED_PLACEHOLDER = "{{DB_NAME}}";
@@ -397,11 +397,7 @@ const isProjectSchemaChangeTypeSDL = computed(() => {
   return (props.schemaChangeType || SchemaChange.DDL) === SchemaChange.SDL;
 });
 const canEnableSQLReview = computed(() => {
-  return (
-    props.vcsType == ExternalVersionControl_Type.GITHUB ||
-    props.vcsType === ExternalVersionControl_Type.GITLAB ||
-    props.vcsType === ExternalVersionControl_Type.AZURE_DEVOPS
-  );
+  return supportSQLReviewCI(props.vcsType);
 });
 const enableSQLReviewTitle = computed(() => {
   switch (props.vcsType) {
@@ -412,7 +408,7 @@ const enableSQLReviewTitle = computed(() => {
     case ExternalVersionControl_Type.AZURE_DEVOPS:
       return t("repository.sql-review-ci-enable-azure");
     default:
-      return "";
+      return t("repository.sql-review-ci-enable-title");
   }
 });
 

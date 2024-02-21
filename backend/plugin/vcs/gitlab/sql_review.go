@@ -43,7 +43,7 @@ func SetupGitLabCI(gitlabCI map[string]any) (string, error) {
 		includeList = append(includeList, include)
 	}
 
-	if _, ok := findSQLReviewCI(includeList); !ok {
+	if !existSQLReviewCI(includeList) {
 		includeList = append(includeList, map[string]string{sqlReviewCIFileRelativePathKeywordInGitLabCI: SQLReviewCIFilePath})
 	}
 
@@ -56,14 +56,14 @@ func SetupGitLabCI(gitlabCI map[string]any) (string, error) {
 	return string(newContent), nil
 }
 
-func findSQLReviewCI(include []any) (map[string]any, bool) {
+func existSQLReviewCI(include []any) bool {
 	for _, data := range include {
 		if val, ok := data.(map[string]any); ok {
 			if val[sqlReviewCIFileRelativePathKeywordInGitLabCI] == SQLReviewCIFilePath {
-				return val, true
+				return true
 			}
 		}
 	}
 
-	return nil, false
+	return false
 }
