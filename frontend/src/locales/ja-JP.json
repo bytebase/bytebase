@@ -1769,6 +1769,7 @@
     "sql-review-ci-enable-gitlab": "GitLab CIを介してSQLレビューCIを有効にする",
     "sql-review-ci-enable-github": "GitHubアクションを介してSQLレビューCIを有効にする",
     "sql-review-ci-enable-azure": "Azure DevOpsパイプラインを介してSQLレビューCIを有効にする",
+    "sql-review-ci-enable-title": "パイプライン経由で SQL Review CI を有効にする",
     "sql-review-ci-description": "Bytebaseはリポジトリ内でSQLレビューCIを設定するための{pr}を作成します。各{pr}では、環境ベースのSQLレビューポリシーが\"{pathTemplate}\"に一致する変更されたファイルに対してチェックを行います。",
     "sql-review-ci-setup": "SQLレビューCIの設定",
     "sql-review-ci-setup-failed": "SQLレビューCIの設定に失敗しました",

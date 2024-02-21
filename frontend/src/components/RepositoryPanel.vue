@@ -152,7 +152,7 @@
     </div>
   </BBModal>
   <BBAlert
-    v-if="supportSQLReviewCI"
+    v-if="supportSQLReview"
     v-model:show="state.showSetupSQLReviewCIFailureModal"
     type="warning"
     :ok-text="$t('common.retry')"
@@ -170,7 +170,7 @@
     "
   />
   <BBModal
-    v-if="supportSQLReviewCI && state.showLoadingSQLReviewPRModal"
+    v-if="supportSQLReview && state.showLoadingSQLReviewPRModal"
     class="relative overflow-hidden"
     :show-close="false"
     :close-on-esc="false"
@@ -191,7 +191,7 @@
     </div>
   </BBModal>
   <BBModal
-    v-if="supportSQLReviewCI && state.showRestoreSQLReviewCIModal"
+    v-if="supportSQLReview && state.showRestoreSQLReviewCIModal"
     class="relative overflow-hidden"
     :title="$t('repository.sql-review-ci-remove')"
     @close="onSQLReviewCIModalClose"
@@ -277,6 +277,7 @@ import {
   ExternalVersionControl_Type,
 } from "@/types/proto/v1/externalvs_service";
 import { Project, SchemaChange } from "@/types/proto/v1/project_service";
+import { supportSQLReviewCI } from "@/utils";
 import { ExternalRepositoryInfo, RepositoryConfig } from "../types";
 
 interface LocalState {
@@ -381,13 +382,9 @@ const isProjectSchemaChangeTypeSDL = computed(() => {
   return state.schemaChangeType === SchemaChange.SDL;
 });
 
-const supportSQLReviewCI = computed(() => {
+const supportSQLReview = computed(() => {
   const { type } = props.vcs;
-  return (
-    type == ExternalVersionControl_Type.GITHUB ||
-    type === ExternalVersionControl_Type.GITLAB ||
-    type === ExternalVersionControl_Type.AZURE_DEVOPS
-  );
+  return supportSQLReviewCI(type);
 });
 
 const allowUpdate = computed(() => {
