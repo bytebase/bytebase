@@ -22,7 +22,16 @@
       <span>{{ $t("project.members.assign-role") }}</span>
       <ProjectRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
-
+    <div class="w-full">
+      <span>{{ $t("common.reason") }}</span>
+      <NInput
+        v-model:value="state.reason"
+        class="mt-2"
+        type="textarea"
+        rows="2"
+        :placeholder="$t('project.members.assign-reason')"
+      />
+    </div>
     <div
       v-if="
         state.role === PresetRoleType.PROJECT_QUERIER ||
@@ -67,7 +76,7 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { NInputNumber } from "naive-ui";
+import { NInputNumber, NInput } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -98,6 +107,7 @@ defineEmits<{
 interface LocalState {
   userUidList: string[];
   role?: string;
+  reason: string;
   expireDays: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -111,6 +121,7 @@ const { t } = useI18n();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   userUidList: [],
+  reason: "",
   // Default is never expires.
   expireDays: 0,
   // Exporter options.
@@ -144,14 +155,6 @@ const expireDaysOptions = computed(() => {
         label: t("common.date.days", { days: 3 }),
       },
       {
-        value: 7,
-        label: t("common.date.days", { days: 7 }),
-      },
-      {
-        value: 15,
-        label: t("common.date.days", { days: 15 }),
-      },
-      {
         value: 30,
         label: t("common.date.days", { days: 30 }),
       },
@@ -175,16 +178,8 @@ const expireDaysOptions = computed(() => {
       label: t("common.date.days", { days: 30 }),
     },
     {
-      value: 60,
-      label: t("common.date.days", { days: 60 }),
-    },
-    {
       value: 90,
       label: t("common.date.days", { days: 90 }),
-    },
-    {
-      value: 180,
-      label: t("common.date.months", { months: 6 }),
     },
     {
       value: 365,
@@ -243,11 +238,13 @@ watch(
     if (expression.length > 0) {
       props.binding.condition = Expr.create({
         title: conditionName,
+        description: state.reason,
         expression: expression.join(" && "),
       });
     } else {
       props.binding.condition = Expr.create({
         title: conditionName,
+        description: state.reason,
         expression: undefined,
       });
     }

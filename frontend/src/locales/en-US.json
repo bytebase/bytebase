@@ -1986,6 +1986,7 @@
       "show-inactive": "Show inactive members",
       "select-users": "Select users",
       "assign-role": "Assign role",
+      "assign-reason": "(Optional)Assign reason",
       "never-expires": "Never",
       "expired": "Expired",
       "role-description": "Role description",
