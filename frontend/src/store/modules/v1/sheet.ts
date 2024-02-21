@@ -102,11 +102,11 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     if (uid.startsWith("-") || !uid) {
       return undefined;
     }
-    const entity = getSheetByUID(name, view);
+    const entity = getSheetByUID(uid, view);
     if (entity) {
       return entity;
     }
-    const request = getSheetRequestByUID(name, view);
+    const request = getSheetRequestByUID(uid, view);
     if (request) {
       return request;
     }
@@ -118,6 +118,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
         // If the request failed
         // remove the request cache entry so we can retry when needed.
         cacheByUID.invalidateRequest([uid, view ?? "BASIC"]);
+        return;
       }
     });
     return promise;
