@@ -60,6 +60,10 @@
       "title": "Prevent the use of triggers on tables",
       "description": "This rule restricts the usage of triggers on tables. Triggers can introduce complexity and potential performance issues to database operations. By disallowing triggers, the system can maintain a simpler and more predictable behavior. Suggestion error level: Warning"
     },
+    "table-no-duplicate-index": {
+      "title": "Disallow duplicate indexes",
+      "description": "This rule prohibits the creation of duplicate indexes on a table. Duplicate indexes consume extra storage space and can potentially reduce query performance. Suggestion error level: Warning"
+    },
     "table-comment": {
       "title": "Comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",

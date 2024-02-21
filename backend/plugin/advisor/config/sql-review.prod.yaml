@@ -19,6 +19,8 @@ ruleList:
     payload:
       required: true
       maxLength: 64
+  - type: table.no-duplicate-index
+    level: WARNING
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require
