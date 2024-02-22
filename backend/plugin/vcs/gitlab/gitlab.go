@@ -904,10 +904,10 @@ func (p *Provider) getEnvironmentVariable(ctx context.Context, oauthCtx *common.
 	}
 
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, "failed to read file from URL %s", url)
+		return nil, common.Errorf(common.NotFound, "failed to found variable from URL %s", url)
 	} else if code >= 300 {
 		return nil,
-			errors.Errorf("failed to read file from URL %s, status code: %d, body: %s",
+			errors.Errorf("failed to found variable from URL %s, status code: %d, body: %s",
 				url,
 				code,
 				body,
@@ -979,7 +979,7 @@ func (p *Provider) updateEnvironmentVariable(ctx context.Context, oauthCtx *comm
 		},
 	)
 	if err != nil {
-		return errors.Wrap(err, "marshal environment create")
+		return errors.Wrap(err, "marshal environment update")
 	}
 	code, _, resp, err := oauth.Put(
 		ctx,
