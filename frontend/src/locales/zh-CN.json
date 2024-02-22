@@ -3226,6 +3226,7 @@
     "title": "称谓",
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
+    "import-from-role": "从角色导入",
     "workspace-admin": {
       "self": "工作空间管理员",
       "description": "工作空间内的所有权限。"

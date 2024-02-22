@@ -7,6 +7,7 @@ export type WorkspacePermission =
   | "bb.environments.update"
   | "bb.externalVersionControls.create"
   | "bb.externalVersionControls.delete"
+  | "bb.externalVersionControls.exchangeToken"
   | "bb.externalVersionControls.get"
   | "bb.externalVersionControls.list"
   | "bb.externalVersionControls.listProjects"

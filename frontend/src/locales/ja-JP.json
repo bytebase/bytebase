@@ -3230,6 +3230,7 @@
     "title": "タイトル",
     "select-role": "ロールを選択",
     "expired-tip": "ロールは期限切れの可能性があります。",
+    "import-from-role": "ロールからインポート",
     "workspace-admin": {
       "self": "ワークスペース管理者",
       "description": "ワークスペース管理者はワークスペース内でのすべての権限を持っています。"
