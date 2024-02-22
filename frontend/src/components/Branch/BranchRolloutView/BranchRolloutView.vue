@@ -126,6 +126,7 @@ import { NButton, useDialog } from "naive-ui";
 import { computed, reactive, ref, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import SchemaEditorLite, {
   RolloutObject,
   generateDiffDDL,
@@ -173,7 +174,6 @@ const rawSQLPreviewState = reactive({
 });
 const rawSQLPreviewPlaceholder = computed(() => {
   if (rawSQLPreviewState.isFetching) return undefined;
-  if (rawSQLPreviewPlaceholder.value) return undefined;
   return t("schema-editor.generated-ddl-is-empty");
 });
 
