@@ -532,7 +532,7 @@ func (s *Store) CheckActivationLimit(ctx context.Context, maximumActivation int)
 	}
 
 	if count >= maximumActivation {
-		return common.Errorf(common.Invalid, "activation instance count reaches the limitation")
+		return common.Errorf(common.Invalid, "activation instance count has reached the limit (%v)", count)
 	}
 	return nil
 }
