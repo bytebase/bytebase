@@ -3228,6 +3228,7 @@
     "title": "Título",
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
+    "import-from-role": "Importar desde el rol",
     "workspace-admin": {
       "self": "Administrador del espacio de trabajo",
       "description": "El administrador del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo."
