@@ -40,6 +40,7 @@ const (
 	StatementDisallowCascade                Code = 213
 	StatementCheckSelectFullTableScanFailed Code = 214
 	StatementHasTableFullScan               Code = 215
+	StatementCreateWithoutSchemaName        Code = 216
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

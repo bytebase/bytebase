@@ -9,11 +9,15 @@
       title: column.no-null
       content: Column "id" in "public"."book" cannot have NULL value
       line: 2
+      column: 0
+      details: ""
     - status: WARN
       code: 402
       title: column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 3
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int, name varchar(255), PRIMARY KEY (id))
   want:
     - status: WARN
@@ -21,6 +25,8 @@
       title: column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255))
   want:
     - status: WARN
@@ -28,6 +34,8 @@
       title: column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int NOT NULL, name varchar(255))
   want:
     - status: WARN
@@ -35,6 +43,8 @@
       title: column.no-null
       content: Column "name" in "public"."book" cannot have NULL value
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int PRIMARY KEY, name varchar(255) NOT NULL)
   want:
     - status: SUCCESS
@@ -42,6 +52,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN reader int
   want:
     - status: WARN
@@ -49,6 +61,8 @@
       title: column.no-null
       content: Column "reader" in "public"."tech_book" cannot have NULL value
       line: 1
+      column: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book DROP COLUMN id;
     ALTER TABLE tech_book DROP COLUMN name;
@@ -59,6 +73,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ALTER COLUMN id SET NOT NULL
   want:
     - status: SUCCESS
@@ -66,6 +82,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ALTER COLUMN name DROP NOT NULL
   want:
     - status: WARN
@@ -73,6 +91,8 @@
       title: column.no-null
       content: Column "name" in "public"."tech_book" cannot have NULL value
       line: 1
+      column: 0
+      details: ""
 - statement: /* this is a comment */
   want:
     - status: SUCCESS
@@ -80,3 +100,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""

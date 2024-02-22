@@ -5,6 +5,8 @@
       title: index.create-concurrently
       content: Creating indexes will block writes on the table, unless use CONCURRENTLY
       line: 1
+      column: 0
+      details: ""
 - statement: create index concurrently on tech_book(id);
   want:
     - status: SUCCESS
@@ -12,3 +14,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""

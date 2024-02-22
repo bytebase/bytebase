@@ -1,0 +1,18 @@
+- statement: CREATE TABLE t(id int);
+  want:
+    - status: WARN
+      code: 216
+      title: statement.create-specify-schema
+      content: Table schema should be specified.
+      line: 1
+      column: 0
+      details: ""
+- statement: CREATE TABLE public.t(id int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      column: 0
+      details: ""

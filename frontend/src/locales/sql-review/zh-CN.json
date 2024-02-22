@@ -375,6 +375,10 @@
       "title": "检查查询是否存在全表扫描",
       "description": "全表扫描是一种消耗大量资源的操作，可能导致严重的性能影响。建议错误等级：错误"
     },
+    "statement-create-specify-schema": {
+      "title": "禁止创建未指定 schema 的对象",
+      "description": "如果未指定 schema，对象将在默认模式中创建，可能导致意外结果。"
+    },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
       "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"

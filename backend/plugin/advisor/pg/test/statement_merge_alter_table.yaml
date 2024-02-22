@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE tech_book ADD COLUMN a int;
@@ -15,3 +17,5 @@
       title: statement.merge-alter-table
       content: There are 2 statements to modify table `t`
       line: 3
+      column: 0
+      details: ""

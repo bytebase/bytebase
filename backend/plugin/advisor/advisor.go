@@ -355,6 +355,9 @@ const (
 	// PostgreSQLStatementDisallowCascade is an advisor type for PostgreSQL to disallow cascade.
 	PostgreSQLStatementDisallowCascade Type = "bb.plugin.advisor.postgresql.statement.disallow-cascade"
 
+	// PostgreSQLStatementCreateSpecifySchema is an advisor type for PostgreSQL to specify schema when creating.
+	PostgreSQLStatementCreateSpecifySchema Type = "bb.plugin.advisor.postgresql.statement.create-specify-schema"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
