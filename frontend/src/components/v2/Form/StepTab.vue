@@ -1,7 +1,7 @@
 <template>
   <div v-bind="$attrs" :class="[!sticky && 'space-y-8']">
     <div :class="['px-0.5', sticky && 'pt-2 pb-4 sticky top-0 bg-white z-10']">
-      <NSteps :current="currentIndex + 1" :status="'process'">
+      <NSteps :current="currentIndex + 1" size="small" :status="'process'">
         <NStep
           v-for="(step, i) in stepList"
           :key="i"
