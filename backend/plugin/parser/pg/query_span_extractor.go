@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -41,14 +43,19 @@ type querySpanExtractor struct {
 
 	// tableSourcesFrom is the list of table sources from the FROM clause.
 	tableSourcesFrom []base.TableSource
+
+	// sourceColumnsInFunction is the source columns in the function.
+	// It's used to resolve defined functions body as a table source.
+	sourceColumnsInFunction base.SourceColumnSet
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
 func newQuerySpanExtractor(connectedDB string, getDatabaseMetadata base.GetDatabaseMetadataFunc) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB: connectedDB,
-		metaCache:   make(map[string]*model.DatabaseMetadata),
-		f:           getDatabaseMetadata,
+		connectedDB:             connectedDB,
+		metaCache:               make(map[string]*model.DatabaseMetadata),
+		f:                       getDatabaseMetadata,
+		sourceColumnsInFunction: make(base.SourceColumnSet),
 	}
 }
 
@@ -131,6 +138,11 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, err
 	}
 
+	// merge the source columns in the function to the access tables.
+	for source := range q.sourceColumnsInFunction {
+		accessTables[source] = true
+	}
+
 	return &base.QuerySpan{
 		Results:       tableSource.GetQuerySpanResult(),
 		SourceColumns: accessTables,
@@ -153,8 +165,164 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 		return q.extractTableSourceFromSubselect(node)
 	case *pgquery.Node_JoinExpr:
 		return q.extractTableSourceFromJoin(node)
+	case *pgquery.Node_RangeFunction:
+		return q.extractTableSourceFromRangeFunction(node)
 	}
 	return nil, newTypeNotSupportedErrorByNode(node)
+}
+
+func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.Node_RangeFunction) (base.TableSource, error) {
+	schemaName, funcName := extractFunctionNameInRangeFunction(node.RangeFunction)
+	if schemaName == "" || funcName == "" {
+		return nil, &parsererror.TypeNotSupportedError{
+			Type: "function",
+			Err:  errors.Errorf("node: %+v", node),
+		}
+	}
+
+	tableSource, err := q.findFunctionDefine(schemaName, funcName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
+	}
+	if node.RangeFunction.Alias == nil {
+		return tableSource, nil
+	}
+	querySpanResult := tableSource.GetQuerySpanResult()
+	if len(node.RangeFunction.Alias.Colnames) == 0 {
+		return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, querySpanResult), nil
+	}
+
+	if len(node.RangeFunction.Alias.Colnames) != len(querySpanResult) {
+		return nil, errors.Errorf("expect equal length but found %d and %d", len(node.RangeFunction.Alias.Colnames), len(querySpanResult))
+	}
+
+	var columns []base.QuerySpanResult
+	for i, columnName := range node.RangeFunction.Alias.Colnames {
+		name := columnName.GetString_().Sval
+		columns = append(columns, base.QuerySpanResult{
+			Name:          name,
+			SourceColumns: querySpanResult[i].SourceColumns,
+		})
+	}
+
+	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
+}
+
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (base.TableSource, error) {
+	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
+	}
+	if dbSchema == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+		}
+	}
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	schema := dbSchema.GetSchema(schemaName)
+	if schema == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+			Schema:   &schemaName,
+		}
+	}
+	function := schema.GetFunction(funcName)
+	if function == nil {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.connectedDB,
+			Schema:   &schemaName,
+			Function: &funcName,
+		}
+	}
+
+	columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
+	if err != nil {
+		return nil, err
+	}
+	return &base.PseudoTable{
+		Columns: columns,
+	}, nil
+}
+
+func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
+	res, err := pgquery.Parse(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
+	}
+	if len(res.Stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(res.Stmts))
+	}
+	createFunc, ok := res.Stmts[0].Stmt.Node.(*pgquery.Node_CreateFunctionStmt)
+	if !ok {
+		return nil, errors.Errorf("expecting CreateFunctionStmt but got %T", res.Stmts[0].Stmt.Node)
+	}
+	var asBody string
+	for _, option := range createFunc.CreateFunctionStmt.Options {
+		defElem := option.GetDefElem()
+		if defElem == nil {
+			continue
+		}
+		if strings.EqualFold(defElem.Defname, "as") {
+			argList := defElem.Arg.GetList()
+			if argList == nil {
+				continue
+			}
+			for _, arg := range argList.Items {
+				if arg == nil {
+					continue
+				}
+				asBody = arg.GetString_().Sval
+				break
+			}
+			continue
+		}
+		if strings.EqualFold(defElem.Defname, "language") {
+			arg := defElem.Arg.GetString_()
+			if arg == nil {
+				continue
+			}
+			if !strings.EqualFold(arg.Sval, "sql") {
+				return nil, &parsererror.TypeNotSupportedError{
+					Type:  "function language",
+					Name:  arg.Sval,
+					Extra: fmt.Sprintf("function: %s", name),
+				}
+			}
+			continue
+		}
+	}
+	if asBody == "" {
+		return nil, errors.Errorf("expecting AS body but got empty for function: %s", name)
+	}
+	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+	span, err := newQ.getQuerySpan(q.ctx, asBody)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+	}
+	for source := range span.SourceColumns {
+		q.sourceColumnsInFunction[source] = true
+	}
+
+	var columnNames []string
+	for _, parameter := range createFunc.CreateFunctionStmt.Parameters {
+		funcPara := parameter.GetFunctionParameter()
+		if funcPara == nil {
+			continue
+		}
+		switch funcPara.Mode {
+		case pgquery.FunctionParameterMode_FUNC_PARAM_OUT, pgquery.FunctionParameterMode_FUNC_PARAM_TABLE:
+			columnNames = append(columnNames, funcPara.Name)
+		}
+	}
+	if len(columnNames) != len(span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(span.Results), name)
+	}
+	for i, columnName := range columnNames {
+		span.Results[i].Name = columnName
+	}
+	return span.Results, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_SelectStmt) (base.TableSource, error) {
@@ -1303,8 +1471,8 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupportedError {
 	switch node := node.Node.(type) {
 	case *pgquery.Node_RangeFunction:
-		name := extractFunctionNameInRangeFunction(node.RangeFunction)
-		if name == "" {
+		schemaName, funcName := extractFunctionNameInRangeFunction(node.RangeFunction)
+		if schemaName == "" && funcName == "" {
 			return &parsererror.TypeNotSupportedError{
 				Type: "function",
 				Err:  errors.Errorf("node: %+v", node),
@@ -1312,7 +1480,7 @@ func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupp
 		}
 		return &parsererror.TypeNotSupportedError{
 			Type: "function",
-			Name: name,
+			Name: fmt.Sprintf("%s.%s", schemaName, funcName),
 		}
 	default:
 		return &parsererror.TypeNotSupportedError{
@@ -1321,14 +1489,34 @@ func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupp
 	}
 }
 
-func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) string {
+func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) (string, string) {
 	// Capture the function name from the range function.
+	for _, f := range node.GetFunctions() {
+		if listNode, ok := f.Node.(*pgquery.Node_List); ok {
+			for _, item := range listNode.List.GetItems() {
+				if funcCall, ok := item.Node.(*pgquery.Node_FuncCall); ok {
+					var names []string
+					for _, name := range funcCall.FuncCall.GetFuncname() {
+						if stringNode, ok := name.Node.(*pgquery.Node_String_); ok {
+							names = append(names, stringNode.String_.GetSval())
+						}
+					}
 
-	// regex := regexp.MustCompile(`funcname:{string:{sval:""}}`)
-	regex := regexp.MustCompile(`funcname:{string:{sval:"(?P<funcname>[a-zA-Z0-9_]+)"}}`)
-	match := regex.FindStringSubmatch(fmt.Sprintf("%+v", node))
-	if len(match) == 0 {
-		return ""
+					switch len(names) {
+					case 2:
+						return names[0], names[1]
+					case 1:
+						return "public", names[0]
+					case 0:
+						return "", ""
+					default:
+						slog.Debug("Unknow function name", "name", strings.Join(names, "."))
+						return names[0], names[1]
+					}
+				}
+			}
+		}
 	}
-	return match[1]
+
+	return "", ""
 }

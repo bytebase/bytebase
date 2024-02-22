@@ -1,3 +1,93 @@
+- description: Test For Cascade Function As table Source
+  statement: SELECT * FROM cascade_t(1);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "select_t",
+              "definition": "CREATE FUNCTION select_t (x int) RETURNS TABLE(a int) AS $$ SELECT a FROM t WHERE a = $1; $$ LANGUAGE SQL;"
+            },
+            {
+              "name": "cascade_t",
+              "definition": "CREATE FUNCTION cascade_t (x int) RETURNS TABLE(a int) AS $$ SELECT * FROM select_t($1); $$ LANGUAGE SQL;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+- description: Test For Function As Table Source
+  statement: SELECT * FROM select_t(1);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "select_t",
+              "definition": "CREATE FUNCTION select_t (x int) RETURNS TABLE(a int) AS $$ SELECT a FROM t WHERE a = $1; $$ LANGUAGE SQL;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
 - description: Test For Explain statements
   statement: EXPLAIN SELECT 1;
   connectedDatabase: db

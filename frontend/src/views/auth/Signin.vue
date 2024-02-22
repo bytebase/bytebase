@@ -88,6 +88,7 @@
                   attr-type="submit"
                   type="primary"
                   :disabled="!allowSignin()"
+                  :loading="state.isLoading"
                   size="large"
                   style="width: 100%"
                 >
@@ -195,6 +196,7 @@
                     type="primary"
                     size="large"
                     :disabled="!allowSignin(identityProvider.name)"
+                    :loading="state.isLoading"
                     style="width: 100%"
                   >
                     {{ $t("common.sign-in") }}
@@ -260,6 +262,7 @@ interface LocalState {
   email: string;
   password: string;
   showPassword: boolean;
+  isLoading: boolean;
 }
 
 const router = useRouter();
@@ -272,6 +275,7 @@ const state = reactive<LocalState>({
   email: "",
   password: "",
   showPassword: false,
+  isLoading: false,
 });
 const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
 
@@ -319,22 +323,28 @@ const allowSignin = (idpName?: string) => {
 };
 
 const trySignin = async (idpName?: string) => {
-  const mfaTempToken = await authStore.login({
-    email: state.email,
-    password: state.password,
-    web: true,
-    idpName: idpName,
-  });
-  if (mfaTempToken) {
-    router.push({
-      name: AUTH_MFA_MODULE,
-      query: {
-        mfaTempToken,
-        redirect: route.query.redirect as string,
-      },
+  if (state.isLoading) return;
+  state.isLoading = true;
+  try {
+    const mfaTempToken = await authStore.login({
+      email: state.email,
+      password: state.password,
+      web: true,
+      idpName: idpName,
     });
-  } else {
-    router.push("/");
+    if (mfaTempToken) {
+      router.push({
+        name: AUTH_MFA_MODULE,
+        query: {
+          mfaTempToken,
+          redirect: route.query.redirect as string,
+        },
+      });
+    } else {
+      router.push("/");
+    }
+  } finally {
+    state.isLoading = false;
   }
 };
 
