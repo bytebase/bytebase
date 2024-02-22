@@ -242,6 +242,11 @@ ruleList:
       - OCEANBASE
       - MARIADB
     componentList: []
+  - type: statement.create-specify-schema
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:

@@ -59,6 +59,8 @@ ruleList:
     level: WARNING
   - type: statement.select-full-table-scan
     level: WARNING
+  - type: statement.create-specify-schema
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:

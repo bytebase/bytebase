@@ -374,6 +374,10 @@
       "title": "Check full table scan for queries",
       "description": "Full table scan is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Error"
     },
+    "statement-create-specify-schema": {
+      "title": "Prohibit creating objects without specifying the schema",
+      "description": "If the schema is not specified, the object will be created in the default schema, which may cause unexpected results."
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"

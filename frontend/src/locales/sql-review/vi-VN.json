@@ -374,6 +374,10 @@
       "title": "Kiểm tra quét toàn bộ bảng cho các truy vấn",
       "description": "Quét toàn bộ bảng là một hoạt động tốn tài nguyên và có thể gây ảnh hưởng nghiêm trọng đến hiệu suất. Mức độ lỗi đề xuất: Lỗi"
     },
+    "statement-create-specify-schema": {
+      "title": "Cấm tạo đối tượng mà không chỉ định schema",
+      "description": "Nếu không chỉ định schema, đối tượng sẽ được tạo trong schema mặc định, điều này có thể gây ra kết quả không mong muốn."
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
