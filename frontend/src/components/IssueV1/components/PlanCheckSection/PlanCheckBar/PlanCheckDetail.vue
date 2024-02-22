@@ -103,7 +103,7 @@ import {
   RuleTemplate,
   RuleType,
   SQLReviewPolicyErrorCode,
-  UNKNOWN_ID,
+  UNKNOWN_ENVIRONMENT_NAME,
   findRuleTemplate,
   getRuleLocalization,
   ruleTemplateMap,
@@ -274,7 +274,7 @@ const showCategoryColumn = computed((): boolean =>
 
 const reviewPolicy = useReviewPolicyByEnvironmentName(
   computed(() => {
-    return props.environment || String(UNKNOWN_ID);
+    return props.environment || UNKNOWN_ENVIRONMENT_NAME;
   })
 );
 const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
