@@ -345,11 +345,11 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	for _, value := range jsonData {
 		switch value := value.(type) {
 		case map[string]any:
-			sqlList = append(sqlList, extractSQLListFromJsonData(value)...)
+			sqlList = append(sqlList, extractSQLListFromJSONData(value)...)
 		case []any:
 			for _, v := range value {
 				if m, ok := v.(map[string]any); ok {
-					sqlList = append(sqlList, extractSQLListFromJsonData(m)...)
+					sqlList = append(sqlList, extractSQLListFromJSONData(m)...)
 				}
 			}
 		}
@@ -391,7 +391,7 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	return leftQuerySpanResult, nil
 }
 
-func extractSQLListFromJsonData(jsonData map[string]any) []string {
+func extractSQLListFromJSONData(jsonData map[string]any) []string {
 	var sqlList []string
 	if jsonData["PLpgSQL_stmt_return_query"] != nil {
 		sqlList = append(sqlList, extractSQL(jsonData["PLpgSQL_stmt_return_query"]))
@@ -400,11 +400,11 @@ func extractSQLListFromJsonData(jsonData map[string]any) []string {
 	for _, value := range jsonData {
 		switch value := value.(type) {
 		case map[string]any:
-			sqlList = append(sqlList, extractSQLListFromJsonData(value)...)
+			sqlList = append(sqlList, extractSQLListFromJSONData(value)...)
 		case []any:
 			for _, v := range value {
 				if m, ok := v.(map[string]any); ok {
-					sqlList = append(sqlList, extractSQLListFromJsonData(m)...)
+					sqlList = append(sqlList, extractSQLListFromJSONData(m)...)
 				}
 			}
 		}
