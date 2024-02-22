@@ -2,14 +2,17 @@
   <div
     class="select-target-database-view h-full overflow-y-hidden flex flex-col gap-y-4"
   >
-    <div class="w-full flex flex-col md:flex-row gap-y-4 md:gap-8">
-      <span>{{ $t("database.sync-schema.source-schema") }}</span>
-      <template
-        v-if="
-          sourceSchemaType === 'SCHEMA_HISTORY_VERSION' && databaseSourceSchema
-        "
-      >
-        <div class="space-y-2">
+    <div class="w-full flex flex-col md:flex-row gap-y-4 md:gap-4 textlabel">
+      <span class="shrink-0 textinfolabel">{{
+        $t("database.sync-schema.source-schema")
+      }}</span>
+      <div class="flex flex-row justify-start items-center gap-x-4 flex-wrap">
+        <template
+          v-if="
+            sourceSchemaType === 'SCHEMA_HISTORY_VERSION' &&
+            databaseSourceSchema
+          "
+        >
           <div>
             <span>{{ $t("common.project") }} - </span>
             <a
@@ -26,9 +29,7 @@
               >{{ getDatabaseSourceSchemaEnvironment()!.title }}</a
             >
           </div>
-        </div>
-        <div class="space-y-2">
-          <div>
+          <div class="flex flex-row justify-start items-center whitespace-pre">
             <span>{{ $t("common.database") }} - </span>
             <a
               class="normal-link inline-flex items-center"
@@ -49,28 +50,28 @@
               {{ databaseSourceSchema.changeHistory.version }}
             </a>
           </div>
-        </div>
-      </template>
-      <template v-else>
-        <div>
-          <span>{{ $t("common.project") }} - </span>
-          <a
-            class="normal-link inline-flex items-center"
-            :href="`/${project.name}`"
-            >{{ project.title }}</a
-          >
-        </div>
-        <div>
-          <span>{{ "Schema" }} - </span>
-          <span
-            class="normal-link inline-flex items-center"
-            @click="state.showViewRawSQLPanel = true"
-          >
-            <EngineIcon class="mr-1" :engine="engine" />
-            <span>{{ $t("schema-editor.raw-sql") }}</span>
-          </span>
-        </div>
-      </template>
+        </template>
+        <template v-else>
+          <div>
+            <span>{{ $t("common.project") }} - </span>
+            <a
+              class="normal-link inline-flex items-center"
+              :href="`/${project.name}`"
+              >{{ project.title }}</a
+            >
+          </div>
+          <div class="flex flex-row justify-start items-center whitespace-pre">
+            <span>{{ "Schema" }} - </span>
+            <span
+              class="normal-link inline-flex items-center"
+              @click="state.showViewRawSQLPanel = true"
+            >
+              <EngineIcon class="mr-1" :engine="engine" />
+              <span>{{ $t("schema-editor.raw-sql") }}</span>
+            </span>
+          </div>
+        </template>
+      </div>
     </div>
 
     <div
