@@ -163,6 +163,6 @@ export default defineComponent({
 }
 
 .modal-container {
-  @apply px-4 max-h-screen overflow-auto w-full;
+  @apply px-4 max-h-screen overflow-auto w-full h-full;
 }
 </style>
