@@ -7,7 +7,7 @@
       />
     </p>
     <StepTab
-      class="py-4 flex-1 overflow-hidden flex flex-col"
+      class="pt-4 flex-1 overflow-hidden flex flex-col"
       :step-list="stepTabList"
       :current-index="state.currentStep"
       :show-cancel="false"
