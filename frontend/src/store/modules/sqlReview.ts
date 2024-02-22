@@ -214,11 +214,16 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         this.setReviewPolicy(reviewPolicy);
       }
     },
+    getReviewPolicyByEnvironmentName(
+      name: string
+    ): SQLReviewPolicy | undefined {
+      return this.reviewPolicyList.find((g) => g.environment.name === name);
+    },
     getReviewPolicyByEnvironmentId(
       environmentId: string
     ): SQLReviewPolicy | undefined {
-      return this.reviewPolicyList.find(
-        (g) => g.environment.name === `${environmentNamePrefix}${environmentId}`
+      return this.getReviewPolicyByEnvironmentName(
+        `${environmentNamePrefix}${environmentId}`
       );
     },
 
@@ -240,12 +245,12 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       this.reviewPolicyList = reviewPolicyList;
       return reviewPolicyList;
     },
-    async getOrFetchReviewPolicyByEnvironmentId(
-      environmentId: string
+    async getOrFetchReviewPolicyByEnvironmentName(
+      name: string
     ): Promise<SQLReviewPolicy | undefined> {
       const environmentV1Store = useEnvironmentV1Store();
       const environment = await environmentV1Store.getOrFetchEnvironmentByName(
-        `${environmentNamePrefix}${environmentId}`,
+        name,
         true /* silent */
       );
       const policyStore = usePolicyV1Store();
@@ -261,6 +266,13 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         this.setReviewPolicy(reviewPolicy);
       }
       return reviewPolicy;
+    },
+    async getOrFetchReviewPolicyByEnvironmentId(
+      environmentId: string
+    ): Promise<SQLReviewPolicy | undefined> {
+      return this.getOrFetchReviewPolicyByEnvironmentName(
+        `${environmentNamePrefix}${environmentId}`
+      );
     },
   },
 });
@@ -281,10 +293,10 @@ export const useReviewPolicyByEnvironmentName = (
   const store = useSQLReviewStore();
   watchEffect(() => {
     const id = unref(environmentId);
-    store.getOrFetchReviewPolicyByEnvironmentId(id);
+    store.getOrFetchReviewPolicyByEnvironmentName(id);
   });
 
   return computed(() =>
-    store.getReviewPolicyByEnvironmentId(unref(environmentId))
+    store.getReviewPolicyByEnvironmentName(unref(environmentId))
   );
 };
