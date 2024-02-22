@@ -411,7 +411,8 @@
                 </dt>
                 <dd class="text-sm text-main">
                   Account > Read, Webhooks > Read and write, Repositories >
-                  Write, Pipelines > Edit variables, Pull requests > Write
+                  Write and Admin, Pipelines > Edit variables, Pull requests >
+                  Write
                 </dd>
               </div>
             </dl>
