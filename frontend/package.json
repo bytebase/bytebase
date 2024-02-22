@@ -83,7 +83,7 @@
     "vscode-languageserver-textdocument": "1.0.11",
     "vscode-languageserver-types": "3.17.5",
     "vscode-ws-jsonrpc": "3.1.0",
-    "vue": "3.4.16",
+    "vue": "3.4.19",
     "vuedraggable": "^4.1.0",
     "vueuc": "0.4.58"
   },
@@ -144,7 +144,7 @@
     "vite-bundle-visualizer": "^1.0.1",
     "vitest": "1.2.2",
     "vue-i18n": "9.9.1",
-    "vue-router": "4.2.5",
+    "vue-router": "4.3.0",
     "vue-tsc": "1.8.27",
     "ws": "^8.15.1"
   },
