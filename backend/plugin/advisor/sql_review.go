@@ -97,6 +97,8 @@ const (
 	SchemaRuleStatementDisallowAddNotNull = "statement.disallow-add-not-null"
 	// SchemaRuleStatementDisallowAddColumn disallow to add column.
 	SchemaRuleStatementSelectFullTableScan = "statement.select-full-table-scan"
+	// SchemaRuleStatementCreateSpecifySchema disallow to create table without specifying schema.
+	SchemaRuleStatementCreateSpecifySchema = "statement.create-specify-schema"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1454,6 +1456,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLStatementSelectFullTableScan, nil
+		}
+	case SchemaRuleStatementCreateSpecifySchema:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementCreateSpecifySchema, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {

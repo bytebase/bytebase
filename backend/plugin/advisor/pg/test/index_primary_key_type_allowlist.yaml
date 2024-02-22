@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(a BIGSERIAL, PRIMARY KEY(a));
   want:
     - status: SUCCESS
@@ -12,6 +14,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a varchar(20) PRIMARY KEY
@@ -22,6 +26,8 @@
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a varchar(20),
@@ -33,3 +39,5 @@
       title: index.primary-key-type-allowlist
       content: The column "a" is one of the primary key, but its type "character varying(20)" is not in allowlist
       line: 2
+      column: 0
+      details: ""

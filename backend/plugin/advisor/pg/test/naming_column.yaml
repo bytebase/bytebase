@@ -5,6 +5,8 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int, qavszgslczmsacubtvyymzhojfytkcmon int)
   want:
     - status: SUCCESS
@@ -12,6 +14,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int, creator_Id int)
   want:
     - status: SUCCESS
@@ -19,6 +23,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id int, creator_id int)
   want:
     - status: SUCCESS
@@ -26,6 +32,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creatorId" int
@@ -35,6 +43,8 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book ADD COLUMN "creator" int
@@ -44,6 +54,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creatorId"
@@ -53,6 +65,8 @@
       title: naming.column
       content: '"book"."creatorId" mismatches column naming convention, naming format should be "^[a-z]+(_[a-z]+)*$"'
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(id int, creator_id int);
                 ALTER TABLE book RENAME COLUMN creator_id TO "creator"
@@ -62,3 +76,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""

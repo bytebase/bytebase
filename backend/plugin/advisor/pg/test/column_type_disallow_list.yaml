@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(a int, b JSON);
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column "t"."b" is
       line: 1
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(d char(5));
     ALTER TABLE t add COLUMN a JSON;
@@ -21,3 +25,5 @@
       title: column.type-disallow-list
       content: Disallow column type JSON but column "t"."a" is
       line: 2
+      column: 0
+      details: ""
