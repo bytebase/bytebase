@@ -1,4 +1,108 @@
-- description: Test For Cascade Function As table Source
+- description: Test For Complex PLpgSQL Function As Table Source
+  statement: SELECT * FROM plpgsql_complex_t(1);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "plpgsql_complex_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int) RETURNS TABLE(a int) AS $$ BEGIN IF x = 1 THEN RETURN QUERY SELECT a FROM t WHERE a = $1; ELSE RETURN QUERY SELECT a FROM t2 WHERE a = $1; END IF; END; $$ LANGUAGE plpgsql;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
+- description: Test For PLpgSQL Function As Table Source
+  statement: SELECT * FROM plpgsql_t(1);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "plpgsql_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int) RETURNS TABLE(a int) AS $$ BEGIN RETURN QUERY SELECT a FROM t WHERE a = $1; END; $$ LANGUAGE plpgsql;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+- description: Test For Cascade Function As Table Source
   statement: SELECT * FROM cascade_t(1);
   connectedDatabase: db
   metadata: |-
