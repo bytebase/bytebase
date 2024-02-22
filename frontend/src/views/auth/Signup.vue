@@ -178,6 +178,7 @@
               type="primary"
               size="large"
               :disabled="!allowSignup"
+              :loading="state.isLoading"
               style="width: 100%"
             >
               {{
@@ -233,6 +234,7 @@ interface LocalState {
   nameManuallyEdited: boolean;
   acceptTermsAndPolicy: boolean;
   showPassword: boolean;
+  isLoading: boolean;
 }
 
 const actuatorStore = useActuatorV1Store();
@@ -247,6 +249,7 @@ const state = reactive<LocalState>({
   nameManuallyEdited: false,
   acceptTermsAndPolicy: true,
   showPassword: false,
+  isLoading: false,
 });
 
 onUnmounted(() => {
@@ -328,24 +331,32 @@ const onTextName = () => {
 };
 
 const trySignup = async () => {
+  if (state.isLoading) return;
+
   if (!passwordMatch.value) {
     state.showPasswordMismatchError = true;
   } else {
-    const signupInfo: SignupInfo = {
-      email: state.email,
-      password: state.password,
-      name: state.name,
-    };
-    await useAuthStore().signup(signupInfo);
-    if (needAdminSetup.value) {
-      await actuatorStore.fetchServerInfo();
-      // When the first time we created an end user, the server-side will
-      // generate onboarding data.
-      // We write a flag here to indicate that the workspace is just created
-      // and we can consume this flag somewhere else if needed.
-      useOnboardingStateStore().initialize();
+    state.isLoading = true;
+
+    try {
+      const signupInfo: SignupInfo = {
+        email: state.email,
+        password: state.password,
+        name: state.name,
+      };
+      await useAuthStore().signup(signupInfo);
+      if (needAdminSetup.value) {
+        await actuatorStore.fetchServerInfo();
+        // When the first time we created an end user, the server-side will
+        // generate onboarding data.
+        // We write a flag here to indicate that the workspace is just created
+        // and we can consume this flag somewhere else if needed.
+        useOnboardingStateStore().initialize();
+      }
+      router.replace("/");
+    } finally {
+      state.isLoading = false;
     }
-    router.replace("/");
   }
 };
 </script>
