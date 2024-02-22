@@ -153,7 +153,6 @@ import { useI18n } from "vue-i18n";
 import {
   getUpdateMaskFromUsers,
   pushNotification,
-  useActuatorV1Store,
   useRoleStore,
   useUserStore,
 } from "@/store";
@@ -182,7 +181,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const actuatorStore = useActuatorV1Store();
 const userStore = useUserStore();
 const state = reactive<LocalState>({
   isRequesting: false,
@@ -190,13 +188,7 @@ const state = reactive<LocalState>({
 });
 
 const availableRoleOptions = computed(() => {
-  const roles = isDevelopmentIAM.value
-    ? useRoleStore().roleList.map((role) => role.name)
-    : [
-        PresetRoleType.WORKSPACE_ADMIN,
-        PresetRoleType.WORKSPACE_DBA,
-        PresetRoleType.WORKSPACE_MEMBER,
-      ];
+  const roles = useRoleStore().roleList.map((role) => role.name);
   return roles.map((role) => ({
     label: displayRoleTitle(role),
     value: role,
@@ -206,8 +198,6 @@ const availableRoleOptions = computed(() => {
 const hasWorkspaceRole = computed(() => {
   return state.user.roles.some((role) => PRESET_WORKSPACE_ROLES.includes(role));
 });
-
-const isDevelopmentIAM = computed(() => actuatorStore.serverInfo?.iamGuard);
 
 const isCreating = computed(() => !props.user);
 
