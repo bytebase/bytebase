@@ -851,11 +851,169 @@ func (p *Provider) CreatePullRequest(ctx context.Context, oauthCtx *common.Oauth
 	}, nil
 }
 
-// UpsertEnvironmentVariable creates or updates the environment variable in the repository.
+type pipelineVariable struct {
+	// Type should always be "pipeline_variable"
+	Type    string `json:"type,omitempty"`
+	UUID    string `json:"uuid,omitempty"`
+	Key     string `json:"key,omitempty"`
+	Value   string `json:"value,omitempty"`
+	Secured bool   `json:"secured,omitempty"`
+}
+
+type listPipelineVariable struct {
+	Values []*pipelineVariable `json:"values"`
+}
+
+// UpsertEnvironmentVariable creates or updates the pipeline variable in the repository.
+func (p *Provider) UpsertEnvironmentVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	existed, err := p.getPipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, key)
+	if err != nil {
+		return err
+	}
+
+	if existed == nil {
+		return p.createPipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, key, value)
+	}
+	return p.updatePipelineVariable(ctx, oauthCtx, instanceURL, repositoryID, existed.UUID, value)
+}
+
+// getPipelineVariable gets the pipeline variable in the repository.
 //
-// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-post
-// WARNING: This is not supported in Bitbucket Cloud.
-func (*Provider) UpsertEnvironmentVariable(context.Context, *common.OauthContext, string, string, string, string) error {
+// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-get.
+func (p *Provider) getPipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key string) (*pipelineVariable, error) {
+	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables", p.APIURL(instanceURL), repositoryID)
+	code, _, body, err := oauth.Get(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, nil
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to found variable from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	variables := new(listPipelineVariable)
+	if err := json.Unmarshal([]byte(body), variables); err != nil {
+		return nil, err
+	}
+
+	for _, variable := range variables.Values {
+		if variable.Key == key {
+			return variable, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// createPipelineVariable creates the pipeline variable in the repository.
+//
+// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-post.
+func (p *Provider) createPipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, key, value string) error {
+	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables", p.APIURL(instanceURL), repositoryID)
+	body, err := json.Marshal(
+		pipelineVariable{
+			Type:    "pipeline_variable",
+			Key:     key,
+			Value:   value,
+			Secured: true,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal variable create")
+	}
+	code, _, resp, err := oauth.Post(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "POST %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to create pipeline variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to create pipeline variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
+// updatePipelineVariable updates the environment variable in the repository.
+//
+// https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-variables-variable-uuid-put.
+func (p *Provider) updatePipelineVariable(ctx context.Context, oauthCtx *common.OauthContext, instanceURL, repositoryID, variableID, value string) error {
+	url := fmt.Sprintf("%s/repositories/%s/pipelines_config/variables/%s", p.APIURL(instanceURL), repositoryID, variableID)
+	body, err := json.Marshal(
+		pipelineVariable{
+			Value: value,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal variable update")
+	}
+	code, _, resp, err := oauth.Put(
+		ctx,
+		p.client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+	if code == http.StatusNotFound {
+		return common.Errorf(common.NotFound, "failed to update pipeline variable through URL %s", url)
+	} else if code >= 300 {
+		return errors.Errorf("failed to update pipeline variable through URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
 	return nil
 }
 
