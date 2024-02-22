@@ -11,33 +11,13 @@
 
     <div class="flex-1 w-full flex flex-col gap-y-2 overflow-hidden">
       <template v-if="tab === 'diff'">
-        <div class="w-full flex flex-row justify-between items-center">
-          <span>{{ previewSchemaChangeMessage }}</span>
-          <div class="space-x-2 shrink-0">
-            <NButton size="small" @click="handleNavigatorClick('previous')">
-              <template #icon>
-                <ArrowUpIcon class="w-5 h-auto" />
-              </template>
-            </NButton>
-            <NButton size="small" @click="handleNavigatorClick('next')">
-              <template #icon>
-                <ArrowDownIcon class="w-5 h-auto" />
-              </template>
-            </NButton>
-          </div>
-        </div>
-        <div
+        <SchemaDiffViewer
           v-if="shouldShowDiff"
-          class="w-full flex-1 overflow-y-scroll border"
-        >
-          <DiffEditor
-            ref="diffEditorRef"
-            class="h-full"
-            :original="targetDatabaseSchema"
-            :modified="displayOnlySourceDatabaseSchema"
-            :readonly="true"
-          />
-        </div>
+          :title="previewSchemaChangeMessage"
+          :original="targetDatabaseSchema"
+          :modified="displayOnlySourceDatabaseSchema"
+          :show-fullscreen="true"
+        />
         <div
           v-else
           class="w-full flex-1 border flex items-center justify-center"
@@ -77,12 +57,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ArrowDownIcon, ArrowUpIcon } from "lucide-vue-next";
-import { NButton, NTabs, NTab } from "naive-ui";
+import { NTabs, NTab } from "naive-ui";
 import { ref } from "vue";
-import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
+import { MonacoEditor } from "@/components/MonacoEditor";
 import { dialectOfEngineV1 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import SchemaDiffViewer from "./SchemaDiffViewer.vue";
 
 defineProps<{
   statement: string;
@@ -101,12 +81,7 @@ defineEmits<{
   (event: "copy-statement"): void;
 }>();
 
-const diffEditorRef = ref<InstanceType<typeof DiffEditor>>();
 const tab = ref<"diff" | "ddl">("diff");
-
-const handleNavigatorClick = (target: "next" | "previous") => {
-  diffEditorRef?.value?.diffEditor?.editor?.goToDiff(target);
-};
 </script>
 
 <style lang="postcss">
