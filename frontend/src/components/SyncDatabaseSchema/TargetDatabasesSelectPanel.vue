@@ -82,16 +82,13 @@
               >
                 <div class="radio text-sm flex justify-start md:flex-1">
                   <NCheckbox
+                    :class="database.syncState !== State.ACTIVE && 'opacity-40'"
                     :checked="isDatabaseSelected(database.uid)"
+                    :label="database.databaseName"
                     @update:checked="
                       (checked) => toggleDatabaseSelected(database.uid, checked)
                     "
                   />
-                  <span
-                    class="font-medium ml-2 text-main"
-                    :class="database.syncState !== State.ACTIVE && 'opacity-40'"
-                    >{{ database.databaseName }}</span
-                  >
                 </div>
                 <div
                   class="flex items-center gap-x-1 textinfolabel ml-6 pl-0 md:ml-0 md:pl-0 md:justify-end"
