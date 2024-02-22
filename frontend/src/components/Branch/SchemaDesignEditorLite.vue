@@ -105,7 +105,6 @@ const rawSQLPreviewState = reactive({
 });
 const rawSQLPreviewPlaceholder = computed(() => {
   if (rawSQLPreviewState.isFetching) return undefined;
-  if (rawSQLPreviewPlaceholder.value) return undefined;
   return t("schema-editor.generated-ddl-is-empty");
 });
 const database = computed(() => {
