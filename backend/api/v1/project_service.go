@@ -1253,8 +1253,7 @@ func (s *ProjectService) setupVCSSQLReviewCI(ctx context.Context, repository *st
 			return nil, err
 		}
 	case vcsplugin.Bitbucket:
-		// TODO(ed): we need to call the API to enable the pipeline.
-		if err := setupVCSSQLReviewCIForBitBucket(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint, repository.WebhookSecretToken); err != nil {
+		if err := setupVCSSQLReviewCIForBitBucket(ctx, oauthContext, repository, vcs, branch, sqlReviewEndpoint); err != nil {
 			return nil, err
 		}
 	}
@@ -1380,8 +1379,12 @@ func setupVCSSQLReviewCIForBitBucket(
 	vcs *store.ExternalVersionControlMessage,
 	branch *vcsplugin.BranchInfo,
 	sqlReviewEndpoint string,
-	sqlReviewSecret string,
 ) error {
+	bitbucketPlugin := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{})
+	if err := bitbucket.EnableSQLReviewCI(ctx, oauthContext, bitbucketPlugin.APIURL(vcs.InstanceURL), vcs.InstanceURL, repository.ExternalID); err != nil {
+		return errors.Wrapf(err, "failed to enable the pipeline")
+	}
+
 	if err := createOrUpdateVCSSQLReviewFile(ctx, oauthContext, repository, vcs, branch, bitbucket.SQLReviewScriptFilePath, func(_ *vcsplugin.FileMeta) (string, error) {
 		return bitbucket.SQLReviewScript, nil
 	}); err != nil {
@@ -1392,7 +1395,7 @@ func setupVCSSQLReviewCIForBitBucket(
 		content := make(map[string]any)
 
 		if fileMeta != nil {
-			ciFileContent, err := vcsplugin.Get(vcs.Type, vcsplugin.ProviderConfig{}).ReadFileContent(
+			ciFileContent, err := bitbucketPlugin.ReadFileContent(
 				ctx,
 				oauthContext,
 				vcs.InstanceURL,
@@ -1411,7 +1414,7 @@ func setupVCSSQLReviewCIForBitBucket(
 			}
 		}
 
-		newContent, err := bitbucket.SetupBitBucketCI(content, sqlReviewEndpoint, sqlReviewSecret)
+		newContent, err := bitbucket.SetupBitBucketCI(content, sqlReviewEndpoint)
 		if err != nil {
 			return "", err
 		}
@@ -3195,7 +3198,7 @@ func createVCSWebhook(ctx context.Context, vcsType vcsplugin.Type, webhookEndpoi
 
 // refreshToken is a no-op token refresher. It should be used when the repository isn't created yet.
 func refreshTokenNoop() common.TokenRefresher {
-	return func(newToken, newRefreshToken string, expiresTs int64) error {
+	return func(_, _ string, _ int64) error {
 		return nil
 	}
 }

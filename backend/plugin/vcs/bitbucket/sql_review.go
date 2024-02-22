@@ -1,10 +1,18 @@
 package bitbucket
 
 import (
+	"bytes"
+	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/plugin/vcs"
+	"github.com/bytebase/bytebase/backend/plugin/vcs/internal/oauth"
 
 	"gopkg.in/yaml.v3"
 )
@@ -17,6 +25,10 @@ type pipelineStep struct {
 
 type pipeline struct {
 	Step *pipelineStep `yaml:"step"`
+}
+
+type pipelineConfig struct {
+	Enabled bool `json:"enabled"`
 }
 
 const (
@@ -37,24 +49,70 @@ var sqlReviewPipelineStep string
 //go:embed bytebase-sql-review.sh
 var SQLReviewScript string
 
-func getSQLReviewStep(endpoint, webhookSecret string) string {
+func getSQLReviewStep(endpoint string) string {
 	return fmt.Sprintf(
 		sqlReviewPipelineStep,
 		pipelineStepName,
 		SQLReviewScriptFilePath,
 		endpoint,
-		// TODO(ed): insert secret in the repo environment variable and use vcs.SQLReviewAPISecretName.
-		webhookSecret,
+		vcs.SQLReviewAPISecretName,
 	)
 }
 
-func SetupBitBucketCI(bitBucketCI map[string]any, endpoint, webhookSecret string) (string, error) {
+// EnableSQLReviewCI enables the pipeline.
+//
+// Docs: https://developer.atlassian.com/cloud/bitbucket/rest/api-group-pipelines/#api-repositories-workspace-repo-slug-pipelines-config-put.
+func EnableSQLReviewCI(ctx context.Context, oauthCtx *common.OauthContext, apiURL, instanceURL, repositoryID string) error {
+	body, err := json.Marshal(
+		pipelineConfig{
+			Enabled: true,
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "marshal pipeline config")
+	}
+
+	client := &http.Client{}
+	url := fmt.Sprintf("%s/repositories/%s/pipelines_config", apiURL, repositoryID)
+	code, _, resp, err := oauth.Put(
+		ctx,
+		client,
+		url,
+		&oauthCtx.AccessToken,
+		bytes.NewReader(body),
+		tokenRefresher(
+			instanceURL,
+			oauthContext{
+				ClientID:     oauthCtx.ClientID,
+				ClientSecret: oauthCtx.ClientSecret,
+				RefreshToken: oauthCtx.RefreshToken,
+			},
+			oauthCtx.Refresher,
+		),
+	)
+	if err != nil {
+		return errors.Wrapf(err, "PUT %s", url)
+	}
+	if code >= 300 {
+		return errors.Errorf("failed to update pipeline config from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			resp,
+		)
+	}
+	return nil
+}
+
+func SetupBitBucketCI(bitBucketCI map[string]any, endpoint string) (string, error) {
 	if _, ok := bitBucketCI["image"]; !ok {
 		bitBucketCI["image"] = "atlassian/default-image:4"
 	}
 	if _, ok := bitBucketCI["pipelines"]; !ok {
 		bitBucketCI["pipelines"] = make(map[string]any)
 	}
+	// enable pipeline for pull request
+	// https://support.atlassian.com/bitbucket-cloud/docs/pipeline-start-conditions/#Pull-Requests
+	// https://stackoverflow.com/questions/55019205/how-to-run-pipeline-only-on-pull-request-to-master-branch
 	if _, ok := bitBucketCI["pipelines"].(map[string]any)["pull-requests"]; !ok {
 		bitBucketCI["pipelines"].(map[string]any)["pull-requests"] = make(map[string]any)
 	}
@@ -70,7 +128,7 @@ func SetupBitBucketCI(bitBucketCI map[string]any, endpoint, webhookSecret string
 		prSteps = append(prSteps, steps)
 	}
 
-	stepStr := getSQLReviewStep(endpoint, webhookSecret)
+	stepStr := getSQLReviewStep(endpoint)
 	pipelineStep := &pipelineStep{}
 	if err := yaml.Unmarshal([]byte(stepStr), pipelineStep); err != nil {
 		return "", errors.Wrapf(err, "failed to parse pipeline step")
