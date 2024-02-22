@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT tech_book_id_name PRIMARY KEY (id, name)
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT udmhjtnsaablcmjhqcznfiwtnevcehcvw PRIMARY KEY (id, name)
   want:
     - status: WARN
@@ -19,6 +23,8 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "udmhjtnsaablcmjhqcznfiwtnevcehcvw"
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), CONSTRAINT pk_book_name PRIMARY KEY (name))
   want:
     - status: SUCCESS
@@ -26,6 +32,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     -- this is the first line.
             CREATE TABLE book(
@@ -39,6 +47,8 @@
       title: naming.index.pk
       content: Primary key in table "book" mismatches the naming convention, expect "^$|^pk_book_name$" but found "tech_book_name"
       line: 5
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id INT, name VARCHAR(20), PRIMARY KEY (name))
   want:
     - status: SUCCESS
@@ -46,6 +56,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE book(id INT, name VARCHAR(20) PRIMARY KEY)
   want:
     - status: SUCCESS
@@ -53,6 +65,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book_id_name PRIMARY KEY USING INDEX old_index
   want:
     - status: SUCCESS
@@ -60,6 +74,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD CONSTRAINT pk_tech_book PRIMARY KEY USING INDEX old_index
   want:
     - status: WARN
@@ -67,6 +83,8 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book_id_name
   want:
     - status: SUCCESS
@@ -74,6 +92,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book RENAME CONSTRAINT old_pk TO pk_tech_book
   want:
     - status: WARN
@@ -81,6 +101,8 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book_id_name
   want:
     - status: SUCCESS
@@ -88,6 +110,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER INDEX old_pk RENAME TO pk_tech_book
   want:
     - status: WARN
@@ -95,3 +119,5 @@
       title: naming.index.pk
       content: Primary key in table "tech_book" mismatches the naming convention, expect "^$|^pk_tech_book_id_name$" but found "pk_tech_book"
       line: 1
+      column: 0
+      details: ""

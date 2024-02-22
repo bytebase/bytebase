@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: DELETE FROM t1
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: statement.where.require
       content: '"DELETE FROM t1" requires WHERE clause'
       line: 1
+      column: 0
+      details: ""
 - statement: UPDATE t1 SET a = 1
   want:
     - status: WARN
@@ -19,6 +23,8 @@
       title: statement.where.require
       content: '"UPDATE t1 SET a = 1" requires WHERE clause'
       line: 1
+      column: 0
+      details: ""
 - statement: DELETE FROM t1 WHERE a > 0
   want:
     - status: SUCCESS
@@ -26,6 +32,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: UPDATE t1 SET a = 1 WHERE a > 10
   want:
     - status: SUCCESS
@@ -33,6 +41,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: SELECT a FROM t
   want:
     - status: WARN
@@ -40,6 +50,8 @@
       title: statement.where.require
       content: '"SELECT a FROM t" requires WHERE clause'
       line: 1
+      column: 0
+      details: ""
 - statement: SELECT a FROM t WHERE a > 0
   want:
     - status: SUCCESS
@@ -47,6 +59,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
   want:
     - status: WARN
@@ -54,3 +68,5 @@
       title: statement.where.require
       content: '"SELECT a FROM t WHERE a > (SELECT max(id) FROM user)" requires WHERE clause'
       line: 1
+      column: 0
+      details: ""

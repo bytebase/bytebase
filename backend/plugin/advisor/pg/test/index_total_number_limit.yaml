@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE INDEX idx_id_name on tech_book(id, name)
   want:
     - status: SUCCESS
@@ -12,6 +14,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE INDEX idx_id_name_1 on tech_book(id, name);
     CREATE INDEX idx_id_name_2 on tech_book(id, name);
@@ -24,6 +28,8 @@
       title: index.total-number-limit
       content: The count of index in table "public"."tech_book" should be no more than 5, but found 8
       line: 5
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int PRIMARY KEY, b int, c int);
     CREATE INDEX idx_a_b_1 on t(a, b);
@@ -37,6 +43,8 @@
       title: index.total-number-limit
       content: The count of index in table "public"."t" should be no more than 5, but found 6
       line: 6
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a int PRIMARY KEY,
@@ -53,3 +61,5 @@
       title: index.total-number-limit
       content: The count of index in table "public"."t" should be no more than 5, but found 6
       line: 9
+      column: 0
+      details: ""

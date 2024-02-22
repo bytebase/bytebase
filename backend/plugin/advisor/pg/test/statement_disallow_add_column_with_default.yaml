@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN c int DEFAULT 0;
   want:
     - status: WARN
@@ -12,3 +14,5 @@
       title: statement.disallow-add-column-with-default
       content: Adding column with DEFAULT will locked the whole table and rewriting each rows
       line: 1
+      column: 0
+      details: ""

@@ -5,6 +5,8 @@
       title: column.required
       content: 'Table "book" requires columns: created_ts, creator_id, updated_ts, updater_id'
       line: 1
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE book(
                   id int,
@@ -18,6 +20,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN creator_id int;
     ALTER TABLE tech_book RENAME COLUMN creator_id TO creator;
@@ -27,6 +31,8 @@
       title: column.required
       content: 'Table "tech_book" requires columns: creator_id'
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN creator_id int;
     ALTER TABLE tech_book DROP COLUMN creator_id;
@@ -36,3 +42,5 @@
       title: column.required
       content: 'Table "tech_book" requires columns: creator_id'
       line: 2
+      column: 0
+      details: ""

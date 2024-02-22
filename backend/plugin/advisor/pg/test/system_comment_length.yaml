@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: comment on column public.name is 'is a  to long column name'
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: system.comment.length
       content: The length of comment should be within 20 characters
       line: 1
+      column: 0
+      details: ""
 - statement: comment on table public is 'is a table name'
   want:
     - status: SUCCESS
@@ -19,6 +23,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: comment on table public is 'is a  to long table name long long long long long long long'
   want:
     - status: WARN
@@ -26,3 +32,5 @@
       title: system.comment.length
       content: The length of comment should be within 20 characters
       line: 1
+      column: 0
+      details: ""

@@ -5,3 +5,5 @@
       title: schema.backward-compatibility
       content: '"ALTER TABLE tech_book ALTER COLUMN name TYPE TEXT" may cause incompatibility with the existing data and code'
       line: 1
+      column: 0
+      details: ""

@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(a int) PARTITION BY RANGE (a);
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: table.disallow-partition
       content: Table partition is forbidden, but "CREATE TABLE t(a int) PARTITION BY RANGE (a);" creates
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;
   want:
     - status: WARN
@@ -19,3 +23,5 @@
       title: table.disallow-partition
       content: Table partition is forbidden, but "ALTER TABLE tech_book ATTACH PARTITION p1 DEFAULT;" creates
       line: 1
+      column: 0
+      details: ""

@@ -5,6 +5,8 @@
       title: column.disallow-change-type
       content: The statement "ALTER TABLE tech_book ALTER COLUMN id SET DATA TYPE INTEGER" changes column type
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN c1 int
   want:
     - status: SUCCESS
@@ -12,3 +14,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
