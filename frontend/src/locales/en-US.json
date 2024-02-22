@@ -3232,6 +3232,7 @@
     "title": "Title",
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
+    "import-from-role": "Import from role",
     "workspace-admin": {
       "self": "Workspace Admin",
       "description": "Workspace Admin has all permissions within the workspace."

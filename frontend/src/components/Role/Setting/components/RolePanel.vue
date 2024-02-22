@@ -48,14 +48,24 @@
         </div>
 
         <div v-if="isDev()" class="flex flex-col gap-y-2">
-          <div class="textlabel">
-            {{ $t("common.permissions") }}
-            <span class="ml-0.5 text-error">*</span>
+          <div class="w-full flex flex-row justify-between items-center">
+            <div class="textlabel">
+              {{ $t("common.permissions") }}
+              <span class="ml-0.5 text-error">*</span>
+            </div>
+            <NButton
+              size="small"
+              @click="state.showImportPermissionFromRoleModal = true"
+            >
+              <PlusIcon class="w-4 h-auto mr-1" />
+              <span>{{ $t("role.import-from-role") }}</span>
+            </NButton>
           </div>
           <NTransfer
             v-model:value="state.role.permissions"
             class="!h-[32rem]"
             source-filterable
+            source-filter-placeholder="Search"
             :options="permissionOptions"
           />
         </div>
@@ -78,10 +88,17 @@
       </template>
     </DrawerContent>
   </Drawer>
+
+  <ImportPermissionFromRoleModal
+    v-if="state.showImportPermissionFromRoleModal"
+    @cancel="state.showImportPermissionFromRoleModal = false"
+    @import="handleImportPermissions"
+  />
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, uniq } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NInput, NTransfer } from "naive-ui";
 import { computed, reactive, watch, nextTick, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -95,11 +112,13 @@ import {
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName, isDev } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
+import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
 type LocalState = {
   role: Role;
   dirty: boolean;
   loading: boolean;
+  showImportPermissionFromRoleModal: boolean;
 };
 
 const props = defineProps<{
@@ -120,6 +139,7 @@ const state = reactive<LocalState>({
   role: Role.fromJSON({}),
   dirty: false,
   loading: false,
+  showImportPermissionFromRoleModal: false,
 });
 
 const resourceId = computed({
@@ -150,6 +170,11 @@ const allowSave = computed(() => {
   }
   return true;
 });
+
+const handleImportPermissions = (permissions: string[]) => {
+  state.role.permissions = uniq([...state.role.permissions, ...permissions]);
+  state.showImportPermissionFromRoleModal = false;
+};
 
 const handleSave = async () => {
   if (!hasCustomRoleFeature.value) {
