@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t (
             a int,
@@ -15,6 +17,8 @@
       title: index.no-duplicate-column
       content: PRIMARY KEY "" has duplicate column "t"."a"
       line: 3
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     CREATE INDEX idx_a on t(a, a);
@@ -24,6 +28,8 @@
       title: index.no-duplicate-column
       content: INDEX "idx_a" has duplicate column "t"."a"
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD CONSTRAINT uk_a UNIQUE (a, a);
@@ -33,6 +39,8 @@
       title: index.no-duplicate-column
       content: UNIQUE KEY "uk_a" has duplicate column "t"."a"
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD CONSTRAINT pk_a PRIMARY KEY (a, a);
@@ -42,6 +50,8 @@
       title: index.no-duplicate-column
       content: PRIMARY KEY "pk_a" has duplicate column "t"."a"
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(a int);
     ALTER TABLE t ADD CONSTRAINT fk_a FOREIGN KEY (a, a) REFERENCES t1(a, b);
@@ -51,3 +61,5 @@
       title: index.no-duplicate-column
       content: FOREIGN KEY "fk_a" has duplicate column "t"."a"
       line: 2
+      column: 0
+      details: ""

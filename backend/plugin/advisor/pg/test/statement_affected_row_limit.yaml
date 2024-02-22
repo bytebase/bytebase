@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: UPDATE tech_book SET id = 1
   want:
     - status: SUCCESS
@@ -12,3 +14,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""

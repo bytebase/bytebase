@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(a text COLLATE "unknown")
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: system.collation.allowlist
       content: Use disabled collation "unknown", related statement "CREATE TABLE t(a text COLLATE "unknown")"
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown"
   want:
     - status: WARN
@@ -19,6 +23,8 @@
       title: system.collation.allowlist
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ADD COLUMN c1 text COLLATE "unknown""
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown"
   want:
     - status: WARN
@@ -26,3 +32,5 @@
       title: system.collation.allowlist
       content: Use disabled collation "unknown", related statement "ALTER TABLE tech_book ALTER COLUMN id TYPE text COLLATE "unknown""
       line: 1
+      column: 0
+      details: ""

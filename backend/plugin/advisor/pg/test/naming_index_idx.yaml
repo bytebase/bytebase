@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE INDEX tech_book_id_name ON tech_book(id, name)
   want:
     - status: WARN
@@ -12,6 +14,8 @@
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "tech_book_id_name"
       line: 1
+      column: 0
+      details: ""
 - statement: CREATE INDEX wfdtqyetsyoovcvikjlyfukxyjxxxhifl ON tech_book(id, name)
   want:
     - status: WARN
@@ -19,6 +23,8 @@
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "wfdtqyetsyoovcvikjlyfukxyjxxxhifl"
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book_id_name
   want:
     - status: SUCCESS
@@ -26,6 +32,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER INDEX old_index RENAME TO idx_tech_book
   want:
     - status: WARN
@@ -33,3 +41,5 @@
       title: naming.index.idx
       content: Index in table "tech_book" mismatches the naming convention, expect "^$|^idx_tech_book_id_name$" but found "idx_tech_book"
       line: 1
+      column: 0
+      details: ""

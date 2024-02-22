@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(id INT, PRIMARY KEY (id))
   want:
     - status: SUCCESS
@@ -12,6 +14,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: CREATE TABLE t(id INT)
   want:
     - status: WARN
@@ -19,6 +23,8 @@
       title: table.require-pk
       content: 'Table "public"."t" requires PRIMARY KEY, related statement: "CREATE TABLE t(id INT)"'
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_pk"
   want:
     - status: WARN
@@ -26,6 +32,8 @@
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP CONSTRAINT \"old_pk\""'
       line: 1
+      column: 0
+      details: ""
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT "old_index"
   want:
     - status: SUCCESS
@@ -33,6 +41,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE "tech_book" DROP CONSTRAINT constraint_not_in_catalog
   want:
     - status: SUCCESS
@@ -40,6 +50,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: ALTER TABLE "tech_book" DROP COLUMN id
   want:
     - status: WARN
@@ -47,6 +59,8 @@
       title: table.require-pk
       content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE \"tech_book\" DROP COLUMN id"'
       line: 1
+      column: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN column_not_in_pk int;
     ALTER TABLE "tech_book" DROP COLUMN column_not_in_pk;
@@ -56,3 +70,5 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""

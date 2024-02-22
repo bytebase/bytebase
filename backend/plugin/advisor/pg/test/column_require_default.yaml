@@ -5,6 +5,8 @@
       title: OK
       content: ""
       line: 0
+      column: 0
+      details: ""
 - statement: |-
     CREATE TABLE t(
       a int,
@@ -16,6 +18,8 @@
       title: column.require-default
       content: Column "t"."a" in schema "public" doesn't have DEFAULT
       line: 2
+      column: 0
+      details: ""
 - statement: |-
     ALTER TABLE tech_book ADD COLUMN a BLOB;
     ALTER TABLE tech_book ADD COLUMN b timestamp;
@@ -25,8 +29,12 @@
       title: column.require-default
       content: Column "tech_book"."a" in schema "public" doesn't have DEFAULT
       line: 1
+      column: 0
+      details: ""
     - status: WARN
       code: 420
       title: column.require-default
       content: Column "tech_book"."b" in schema "public" doesn't have DEFAULT
       line: 2
+      column: 0
+      details: ""
