@@ -190,19 +190,21 @@ func (*Driver) Restore(context.Context, io.Reader) error {
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
-	lines := strings.Split(statement, "\n")
-	for i := range lines {
-		lines[i] = strings.Trim(lines[i], " \n\t\r")
+	l := strings.Split(statement, "\n")
+	for i := range l {
+		l[i] = strings.Trim(l[i], " \n\t\r")
+	}
+	var lines []string
+	for _, v := range l {
+		if v == "" {
+			continue
+		}
+		lines = append(lines, v)
 	}
 
-	var data []*v1pb.QueryRow
 	var cmds []*redis.Cmd
-
 	if _, err := d.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		for _, line := range lines {
-			if line == "" {
-				continue
-			}
 			var input []any
 			for _, s := range strings.Split(line, " ") {
 				input = append(input, s)
@@ -215,24 +217,60 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 		return nil, err
 	}
 
-	for _, cmd := range cmds {
+	var queryResult []*v1pb.QueryResult
+	for i, cmd := range cmds {
 		if cmd.Err() == redis.Nil {
-			data = append(data, &v1pb.QueryRow{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_StringValue{StringValue: "redis: nil"}}}})
+			queryResult = append(queryResult, &v1pb.QueryResult{
+				ColumnNames:     []string{"#", "Value"},
+				ColumnTypeNames: []string{"INT", "TEXT"},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_Int32Value{Int32Value: 1}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
+					},
+				},
+				Latency:   durationpb.New(time.Since(startTime)),
+				Statement: lines[i],
+			})
 			continue
 		}
 
 		// RowValue cannot handle interface{} type
-		val := cmd.String()
-		data = append(data, &v1pb.QueryRow{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_StringValue{StringValue: val}}}})
+		data := getResult(cmd)
+		queryResult = append(queryResult, &v1pb.QueryResult{
+			ColumnNames:     []string{"#", "Value"},
+			ColumnTypeNames: []string{"INT", "TEXT"},
+			Rows:            data,
+			Latency:         durationpb.New(time.Since(startTime)),
+			Statement:       lines[i],
+		})
 	}
 
-	return []*v1pb.QueryResult{{
-		ColumnNames:     []string{"result"},
-		ColumnTypeNames: []string{"TEXT"},
-		Rows:            data,
-		Latency:         durationpb.New(time.Since(startTime)),
-		Statement:       statement,
-	}}, nil
+	return queryResult, nil
+}
+
+func getResult(cmd *redis.Cmd) []*v1pb.QueryRow {
+	var result []*v1pb.QueryRow
+	val := cmd.Val()
+	l, ok := val.([]any)
+	if ok {
+		for i, v := range l {
+			result = append(result, getResultRow(i+1, v))
+		}
+	} else {
+		result = append(result, getResultRow(1, val))
+	}
+	return result
+}
+
+func getResultRow(i int, v any) *v1pb.QueryRow {
+	s := fmt.Sprintf("%v", v)
+	return &v1pb.QueryRow{Values: []*v1pb.RowValue{
+		{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}},
+		{Kind: &v1pb.RowValue_StringValue{StringValue: s}}},
+	}
 }
 
 // RunStatement runs a SQL statement in a given connection.
