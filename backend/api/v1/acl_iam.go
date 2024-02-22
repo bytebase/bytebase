@@ -30,12 +30,12 @@ func (in *ACLInterceptor) checkIAMPermission(ctx context.Context, fullMethod str
 			slog.Error("iam check PANIC RECOVER", log.BBError(perr), log.BBStack("panic-stack"))
 		}
 	}()
-	ok, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user)
+	ok, extra, err := in.doIAMPermissionCheck(ctx, fullMethod, req, user)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission for method %q, err: %v", fullMethod, err)
+		return status.Errorf(codes.Internal, "failed to check permission for method %q, extra %v, err: %v", fullMethod, extra, err)
 	}
 	if !ok {
-		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q", fullMethod, methodPermissionMap[fullMethod])
+		return status.Errorf(codes.PermissionDenied, "permission denied for method %q, user does not have permission %q, extra %v", fullMethod, methodPermissionMap[fullMethod], extra)
 	}
 
 	return nil
@@ -160,14 +160,14 @@ func isSkippedMethod(fullMethod string) bool {
 	return false
 }
 
-func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, error) {
+func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod string, req any, user *store.UserMessage) (bool, []string, error) {
 	if isSkippedMethod(fullMethod) {
-		return true, nil
+		return true, nil, nil
 	}
 
 	p, ok := methodPermissionMap[fullMethod]
 	if !ok {
-		return false, errors.Errorf("method %q not found in method-permission map", fullMethod)
+		return false, nil, errors.Errorf("method %q not found in method-permission map", fullMethod)
 	}
 
 	var projectIDsGetter func(context.Context, any) ([]string, error)
@@ -190,9 +190,10 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 			instanceID, err = common.GetInstanceID(r.GetParent())
 		}
 		if err != nil {
-			return false, err
+			return false, []string{instanceID}, err
 		}
-		return in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
+		ok, err := in.checkIAMPermissionInstancesGet(ctx, user, instanceID)
+		return ok, []string{instanceID}, err
 
 	// below are "workspace-level" permissions.
 	// we don't have to go down to the project level.
@@ -335,9 +336,10 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 
 	projectIDs, err := projectIDsGetter(ctx, req)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project ids")
+		return false, projectIDs, errors.Wrapf(err, "failed to get project ids")
 	}
-	return in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	ok, err = in.iamManager.CheckPermission(ctx, p, user, projectIDs...)
+	return ok, projectIDs, err
 }
 
 func getDatabaseMessage(ctx context.Context, s *store.Store, databaseResourceName string) (*store.DatabaseMessage, error) {
