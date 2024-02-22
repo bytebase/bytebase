@@ -246,6 +246,13 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 	}, nil
 }
 
+type languageType int
+
+const (
+	languageTypeSQL languageType = iota
+	languageTypePLPGSQL
+)
+
 func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]base.QuerySpanResult, error) {
 	res, err := pgquery.Parse(definition)
 	if err != nil {
@@ -259,6 +266,7 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 		return nil, errors.Errorf("expecting CreateFunctionStmt but got %T", res.Stmts[0].Stmt.Node)
 	}
 	var asBody string
+	var language languageType
 	for _, option := range createFunc.CreateFunctionStmt.Options {
 		defElem := option.GetDefElem()
 		if defElem == nil {
@@ -283,7 +291,12 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 			if arg == nil {
 				continue
 			}
-			if !strings.EqualFold(arg.Sval, "sql") {
+			switch strings.ToLower(arg.Sval) {
+			case "sql":
+				language = languageTypeSQL
+			case "plpgsql":
+				language = languageTypePLPGSQL
+			default:
 				return nil, &parsererror.TypeNotSupportedError{
 					Type:  "function language",
 					Name:  arg.Sval,
@@ -296,6 +309,129 @@ func (q *querySpanExtractor) getColumnsForFunction(name, definition string) ([]b
 	if asBody == "" {
 		return nil, errors.Errorf("expecting AS body but got empty for function: %s", name)
 	}
+	switch language {
+	case languageTypeSQL:
+		return q.extractTableSourceFromSQLFunction(createFunc, name, asBody)
+	case languageTypePLPGSQL:
+		return q.extractTableSourceFromPLPGSQLFunction(createFunc, name, definition)
+	}
+	return nil, errors.Errorf("unsupported language type: %d", language)
+}
+
+func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name, definition string) ([]base.QuerySpanResult, error) {
+	var columnNames []string
+	for _, parameter := range createFunc.CreateFunctionStmt.Parameters {
+		funcPara := parameter.GetFunctionParameter()
+		if funcPara == nil {
+			continue
+		}
+		switch funcPara.Mode {
+		case pgquery.FunctionParameterMode_FUNC_PARAM_OUT, pgquery.FunctionParameterMode_FUNC_PARAM_TABLE:
+			columnNames = append(columnNames, funcPara.Name)
+		}
+	}
+
+	res, err := pgquery.ParsePlPgSqlToJSON(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PLPGSQL function definition: %s", definition)
+	}
+
+	var jsonData []any
+	if err := json.Unmarshal([]byte(res), &jsonData); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal JSON")
+	}
+
+	var sqlList []string
+	for _, value := range jsonData {
+		switch value := value.(type) {
+		case map[string]any:
+			sqlList = append(sqlList, extractSQLListFromJSONData(value)...)
+		case []any:
+			for _, v := range value {
+				if m, ok := v.(map[string]any); ok {
+					sqlList = append(sqlList, extractSQLListFromJSONData(m)...)
+				}
+			}
+		}
+	}
+	var leftQuerySpanResult []base.QuerySpanResult
+	for _, columnName := range columnNames {
+		leftQuerySpanResult = append(leftQuerySpanResult, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: base.SourceColumnSet{},
+		})
+	}
+
+	for _, sql := range sqlList {
+		newQ := newQuerySpanExtractor(q.connectedDB, q.f)
+		span, err := newQ.getQuerySpan(q.ctx, sql)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+		}
+		for source := range span.SourceColumns {
+			q.sourceColumnsInFunction[source] = true
+		}
+
+		rightQuerySpanResult := span.Results
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
+			return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(leftQuerySpanResult), len(rightQuerySpanResult), name)
+		}
+		var result []base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		leftQuerySpanResult = result
+	}
+
+	return leftQuerySpanResult, nil
+}
+
+func extractSQLListFromJSONData(jsonData map[string]any) []string {
+	var sqlList []string
+	if jsonData["PLpgSQL_stmt_return_query"] != nil {
+		sqlList = append(sqlList, extractSQL(jsonData["PLpgSQL_stmt_return_query"]))
+	}
+
+	for _, value := range jsonData {
+		switch value := value.(type) {
+		case map[string]any:
+			sqlList = append(sqlList, extractSQLListFromJSONData(value)...)
+		case []any:
+			for _, v := range value {
+				if m, ok := v.(map[string]any); ok {
+					sqlList = append(sqlList, extractSQLListFromJSONData(m)...)
+				}
+			}
+		}
+	}
+
+	return sqlList
+}
+
+func extractSQL(data any) string {
+	if data == nil {
+		return ""
+	}
+	switch data := data.(type) {
+	case string:
+		return data
+	case map[string]any:
+		switch {
+		case data["query"] != nil:
+			return extractSQL(data["query"])
+		case data["PLpgSQL_expr"] != nil:
+			return extractSQL(data["PLpgSQL_expr"])
+		}
+	}
+	return ""
+}
+
+func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
 	newQ := newQuerySpanExtractor(q.connectedDB, q.f)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
 	if err != nil {
