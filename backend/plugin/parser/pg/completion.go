@@ -154,9 +154,10 @@ type Completer struct {
 	referencesStack [][]base.TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references []base.TableReference
-	cteCache   map[int][]*base.VirtualTableReference
-	cteTables  []*base.VirtualTableReference
+	references         []base.TableReference
+	cteCache           map[int][]*base.VirtualTableReference
+	cteTables          []*base.VirtualTableReference
+	caretTokenIsQuoted bool
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, getMetadata base.GetDatabaseMetadataFunc, _ base.ListDatabaseNamesFunc) *Completer {
@@ -188,6 +189,14 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 }
 
 func (c *Completer) completion() ([]base.Candidate, error) {
+	// Check the caret token is quoted or not.
+	// This check should be done before checking the caret token is a separator or not.
+	if c.scanner.IsTokenType(pg.PostgreSQLLexerQuotedIdentifier) ||
+		c.scanner.IsTokenType(pg.PostgreSQLLexerInvalidQuotedIdentifier) ||
+		c.scanner.IsTokenType(pg.PostgreSQLLexerUnicodeQuotedIdentifier) {
+		c.caretTokenIsQuoted = true
+	}
+
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
 		caretIndex--
@@ -229,7 +238,7 @@ func (m CompletionMap) insertSchemas(c *Completer) {
 	for _, schema := range c.listAllSchemas() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeSchema,
-			Text: schema,
+			Text: c.quotedIdentifierIfNeeded(schema),
 		})
 	}
 }
@@ -241,7 +250,7 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 			for _, table := range c.cteTables {
 				m.Insert(base.Candidate{
 					Type: base.CandidateTypeTable,
-					Text: table.Table,
+					Text: c.quotedIdentifierIfNeeded(table.Table),
 				})
 			}
 			continue
@@ -249,13 +258,13 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 		for _, table := range c.listTables(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeTable,
-				Text: table,
+				Text: c.quotedIdentifierIfNeeded(table),
 			})
 		}
 		for _, fTable := range c.listForeignTables(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeForeignTable,
-				Text: fTable,
+				Text: c.quotedIdentifierIfNeeded(fTable),
 			})
 		}
 	}
@@ -266,13 +275,13 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 		for _, view := range c.listViews(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: view,
+				Text: c.quotedIdentifierIfNeeded(view),
 			})
 		}
 		for _, matView := range c.listMaterializedViews(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeMaterializedView,
-				Text: matView,
+				Text: c.quotedIdentifierIfNeeded(matView),
 			})
 		}
 	}
@@ -295,7 +304,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 					for _, column := range table.Columns {
 						m.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: column,
+							Text: c.quotedIdentifierIfNeeded(column),
 						})
 					}
 				}
@@ -322,7 +331,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 				}
 				m.Insert(base.Candidate{
 					Type:       base.CandidateTypeColumn,
-					Text:       column.Name,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
 					Comment:    comment,
 				})
@@ -392,7 +401,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		default:
 			keywordEntries.Insert(base.Candidate{
 				Type: base.CandidateTypeKeyword,
-				Text: entry,
+				Text: c.quotedIdentifierIfNeeded(entry),
 			})
 		}
 	}
@@ -462,12 +471,12 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							if len(reference.Alias) == 0 {
 								tableEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeTable,
-									Text: reference.Table,
+									Text: c.quotedIdentifierIfNeeded(reference.Table),
 								})
 							} else {
 								tableEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeTable,
-									Text: reference.Alias,
+									Text: c.quotedIdentifierIfNeeded(reference.Alias),
 								})
 							}
 						}
@@ -478,7 +487,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 						}
 						tableEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeTable,
-							Text: reference.Table,
+							Text: c.quotedIdentifierIfNeeded(reference.Table),
 						})
 					}
 				}
@@ -507,7 +516,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								for _, column := range reference.Columns {
 									columnEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeColumn,
-										Text: column,
+										Text: c.quotedIdentifierIfNeeded(column),
 									})
 								}
 							}
@@ -518,7 +527,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					for _, alias := range list {
 						columnEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: alias,
+							Text: c.quotedIdentifierIfNeeded(alias),
 						})
 					}
 					for _, reference := range c.references {
@@ -530,7 +539,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							for _, column := range reference.Columns {
 								columnEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeColumn,
-									Text: column,
+									Text: c.quotedIdentifierIfNeeded(column),
 								})
 							}
 						}
@@ -1165,4 +1174,16 @@ func (c *Completer) listViews(schema string) []string {
 		return nil
 	}
 	return schemaMeta.ListViewNames()
+}
+
+func (c *Completer) quotedIdentifierIfNeeded(s string) string {
+	if c.caretTokenIsQuoted {
+		return s
+	}
+	if strings.ToLower(s) != s {
+		return fmt.Sprintf(`"%s"`, s)
+	}
+
+	// TODO(rebelice): check reserved keywords here.
+	return s
 }
