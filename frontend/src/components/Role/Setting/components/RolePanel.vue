@@ -47,7 +47,7 @@
           </div>
         </div>
 
-        <div v-if="isDev()" class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-2">
           <div class="w-full flex flex-row justify-between items-center">
             <div class="textlabel">
               {{ $t("common.permissions") }}
@@ -165,7 +165,7 @@ const allowSave = computed(() => {
     if (!resourceIdField.value.resourceId) return false;
     if (!resourceIdField.value.isValidated) return false;
   }
-  if (isDev() && state.role.permissions.length === 0) {
+  if (state.role.permissions.length === 0) {
     return false;
   }
   return true;

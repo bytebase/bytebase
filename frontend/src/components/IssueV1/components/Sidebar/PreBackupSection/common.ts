@@ -22,11 +22,7 @@ export const usePreBackupContext = () => {
     if (engine !== Engine.MYSQL && engine !== Engine.TIDB) {
       return false;
     }
-    if (isDev()) {
-      return true;
-    }
-
-    return useActuatorV1Store().serverInfo?.preUpdateBackup || false;
+    return true;
   });
 
   const showPreBackupDisabled = computed((): boolean => {
