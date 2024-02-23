@@ -146,7 +146,9 @@ const prepareSheet = async () => {
     ) {
       return false;
     }
-  } catch {}
+  } catch {
+    // Nothing
+  }
 
   const sheetName = worksheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
