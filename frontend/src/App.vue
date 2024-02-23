@@ -1,5 +1,10 @@
 <template>
-  <CustomThemeProvider>
+  <NConfigProvider
+    :key="key"
+    :locale="generalLang"
+    :date-locale="dateLang"
+    :theme-overrides="themeOverrides"
+  >
     <Watermark />
 
     <NNotificationProvider
@@ -16,17 +21,24 @@
         </OverlayStackManager>
       </NDialogProvider>
     </NNotificationProvider>
-  </CustomThemeProvider>
+  </NConfigProvider>
 </template>
 
 <script lang="ts" setup>
-import { NDialogProvider, NNotificationProvider } from "naive-ui";
+import { cloneDeep, isEqual } from "lodash-es";
+import {
+  NConfigProvider,
+  NDialogProvider,
+  NNotificationProvider,
+} from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
 import { reactive, onErrorCaptured } from "vue";
-import { useRouter } from "vue-router";
+import { watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
-import CustomThemeProvider from "./CustomThemeProvider.vue";
+import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
+import { provideAppRootContext } from "./AppRootContext";
 import NotificationContext from "./NotificationContext.vue";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
@@ -45,7 +57,9 @@ interface LocalState {
   prevLoggedIn: boolean;
 }
 
+const route = useRoute();
 const router = useRouter();
+const { key } = provideAppRootContext();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 
@@ -93,6 +107,24 @@ window.addEventListener("bb.oauth.unknown", (event) => {
     module: "bytebase",
     style: "CRITICAL",
     title: t("oauth.unknown-event"),
+  });
+});
+
+// Preserve specific query fields when navigating between pages.
+watch(route, (current, prev) => {
+  const preservedQueryFields = ["mode", "project", "filter", "customTheme"];
+  const preservedQuery = cloneDeep(current.query);
+  for (const key of preservedQueryFields) {
+    if (preservedQuery[key] === undefined) {
+      preservedQuery[key] = prev.query[key];
+    }
+  }
+  if (isEqual(current.query, preservedQuery)) {
+    return;
+  }
+  router.replace({
+    ...current,
+    query: preservedQuery,
   });
 });
 </script>

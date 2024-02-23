@@ -32,10 +32,10 @@ import {
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
-import { customTheme } from "@/utils/customTheme";
 import { useFilterStore } from "./filter";
 import { useTabStore } from "./tab";
 import {
+  useActuatorV1Store,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -55,16 +55,18 @@ const defaultEnvironmentFactor: StatefulFactor = {
   disabled: false,
 };
 
-const defaultFactorList = (): StatefulFactor[] => {
-  if (customTheme.value === "lixiang") {
-    return [defaultEnvironmentFactor];
-  } else {
-    return [defaultProjectFactor];
-  }
-};
-
 export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
+  const actuatorStore = useActuatorV1Store();
   const { filter } = useFilterStore();
+
+  const defaultFactorList = (): StatefulFactor[] => {
+    if (actuatorStore.customTheme === "lixiang") {
+      return [defaultEnvironmentFactor];
+    } else {
+      return [defaultProjectFactor];
+    }
+  };
+
   const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
     "bb.sql-editor.tree-factor-list",
     defaultFactorList(),
@@ -103,6 +105,7 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
+
   const filteredDatabaseList = computed(() => {
     if (filter.database) {
       return databaseList.value.filter((database) => {
