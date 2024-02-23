@@ -30,18 +30,18 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, usePageMode } from "@/store";
+import { useActuatorV1Store, useCurrentUserV1, usePageMode } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
 } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName } from "@/utils";
-import { customTheme } from "@/utils/customTheme";
 import { ExtraActionOption, IssueStatusActionButtonGroup } from "../common";
 import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
+const actuatorStore = useActuatorV1Store();
 const currentUser = useCurrentUserV1();
 const pageMode = usePageMode();
 const { issue, phase, reviewContext, events, activeTask, activeStage } =
@@ -141,7 +141,9 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
 });
 
 const showIssueReviewActions = computed(() => {
-  return !(pageMode.value === "STANDALONE" && customTheme.value === "lixiang");
+  return !(
+    pageMode.value === "STANDALONE" && actuatorStore.customTheme === "lixiang"
+  );
 });
 
 const displayMode = computed(() => {

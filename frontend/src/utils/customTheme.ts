@@ -1,11 +1,8 @@
-import { useLocalStorage } from "@vueuse/core";
 import { hexToRgb } from "./css";
 
-export const customTheme = useLocalStorage<string>("bb.custom-theme", "");
-
-export const applyCustomTheme = () => {
+export const applyCustomTheme = (customTheme: string) => {
   const rootElement = document.documentElement;
-  if (customTheme.value === "lixiang") {
+  if (customTheme === "lixiang") {
     rootElement.style.setProperty(
       "--color-accent",
       hexToRgb("#00665f").join(" ")

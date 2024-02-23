@@ -126,11 +126,11 @@ import {
   useInstanceV1ByUID,
   useWebTerminalV1Store,
   usePageMode,
+  useActuatorV1Store,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
 import { TabMode, UNKNOWN_ID } from "@/types";
 import { formatEngineV1, keyboardShortcutStr } from "@/utils";
-import { customTheme } from "@/utils/customTheme";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -150,6 +150,7 @@ const emit = defineEmits<{
   (e: "clear-screen"): void;
 }>();
 
+const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useTabStore();
 const sqlEditorStore = useSQLEditorStore();
@@ -232,7 +233,7 @@ const showQueryContextSettingPopover = computed(() => {
   return (
     Boolean(selectedInstance.value) &&
     tabStore.currentTab.mode !== TabMode.Admin &&
-    customTheme.value === "lixiang"
+    actuatorStore.customTheme === "lixiang"
   );
 });
 

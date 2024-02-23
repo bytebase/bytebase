@@ -1,4 +1,3 @@
-import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
@@ -37,6 +36,7 @@ import {
   sizeToFit,
   urlfy,
 } from "./utils";
+import { applyCustomTheme } from "./utils/customTheme";
 
 protobufjs.util.Long = Long;
 protobufjs.configure();
@@ -159,16 +159,20 @@ app
 // We use finally because we always want to mount the app regardless of the error.
 const initActuator = async () => {
   const actuatorStore = useActuatorV1Store();
-
   const searchParams = new URLSearchParams(window.location.search);
-  let mode = searchParams.get("mode") as PageMode;
-  const cachedMode = useLocalStorage<PageMode>("bb.page-mode", "BUNDLED");
-  if (mode !== "BUNDLED" && mode !== "STANDALONE") {
-    mode = cachedMode.value;
+  const mode = searchParams.get("mode") as PageMode;
+  if (mode === "BUNDLED" || mode === "STANDALONE") {
+    actuatorStore.pageMode = mode;
   }
-
-  cachedMode.value = mode;
-  actuatorStore.pageMode = mode;
+  const customTheme = searchParams.get("customTheme");
+  if (customTheme) {
+    actuatorStore.customTheme = customTheme;
+    applyCustomTheme(customTheme);
+  }
+  const lang = searchParams.get("lang");
+  if (lang) {
+    i18n.global.locale.value = lang;
+  }
 
   actuatorStore.fetchServerInfo();
 };
