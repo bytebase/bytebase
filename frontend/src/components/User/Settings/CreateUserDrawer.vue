@@ -147,6 +147,8 @@ import {
   NSelect,
   NRadioGroup,
   NRadio,
+  SelectGroupOption,
+  SelectOption,
 } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -156,7 +158,13 @@ import {
   useRoleStore,
   useUserStore,
 } from "@/store";
-import { PRESET_WORKSPACE_ROLES, PresetRoleType, emptyUser } from "@/types";
+import {
+  PRESET_PROJECT_ROLES,
+  PRESET_ROLES,
+  PRESET_WORKSPACE_ROLES,
+  PresetRoleType,
+  emptyUser,
+} from "@/types";
 import {
   UpdateUserRequest,
   User,
@@ -187,13 +195,44 @@ const state = reactive<LocalState>({
   user: cloneDeep(props.user) || emptyUser(),
 });
 
-const availableRoleOptions = computed(() => {
-  const roles = useRoleStore().roleList.map((role) => role.name);
-  return roles.map((role) => ({
-    label: displayRoleTitle(role),
-    value: role,
-  }));
-});
+const availableRoleOptions = computed(
+  (): (SelectOption | SelectGroupOption)[] => {
+    const customRoles = useRoleStore()
+      .roleList.map((role) => role.name)
+      .filter((role) => !PRESET_ROLES.includes(role));
+    return [
+      {
+        type: "group",
+        key: "workspace-roles",
+        label: t("role.workspace-roles"),
+        children: PRESET_WORKSPACE_ROLES.map((role) => ({
+          label: displayRoleTitle(role),
+          value: role,
+        })),
+      },
+      {
+        type: "group",
+        key: "project-roles",
+        label: `${t("role.project-roles.self")} (${t(
+          "role.project-roles.apply-to-all-projects"
+        )})`,
+        children: PRESET_PROJECT_ROLES.map((role) => ({
+          label: displayRoleTitle(role),
+          value: role,
+        })),
+      },
+      {
+        type: "group",
+        key: "custom-roles",
+        label: t("role.custom-roles"),
+        children: customRoles.map((role) => ({
+          label: displayRoleTitle(role),
+          value: role,
+        })),
+      },
+    ];
+  }
+);
 
 const hasWorkspaceRole = computed(() => {
   return state.user.roles.some((role) => PRESET_WORKSPACE_ROLES.includes(role));
