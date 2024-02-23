@@ -112,16 +112,19 @@ window.addEventListener("bb.oauth.unknown", (event) => {
 
 // Preserve specific query fields when navigating between pages.
 watch(route, (current, prev) => {
-  const preservedQueryFields = ["mode", "project", "filter", "customTheme"];
+  // fields is the list of query fields that we want to preserve.
+  const fields = ["mode", "project", "filter", "customTheme"];
   const preservedQuery = cloneDeep(current.query);
-  for (const key of preservedQueryFields) {
+  for (const key of fields) {
     if (preservedQuery[key] === undefined) {
       preservedQuery[key] = prev.query[key];
     }
   }
+  // If the query is the same, we don't need to update the route.
   if (isEqual(current.query, preservedQuery)) {
     return;
   }
+  // Otherwise, replace current route with the preserved query.
   router.replace({
     ...current,
     query: preservedQuery,
