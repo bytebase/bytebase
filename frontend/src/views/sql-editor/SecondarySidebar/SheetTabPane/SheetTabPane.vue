@@ -24,14 +24,22 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { usePageMode } from "@/store";
+import {
+  usePageMode,
+  useTabStore,
+  useWorkSheetStore,
+  useCurrentUserV1,
+} from "@/store";
 import { useSheetContext } from "../../Sheet";
 import SheetList from "./SheetList";
 
 const { events: sheetEvents } = useSheetContext();
 const pageMode = usePageMode();
+const tabStore = useTabStore();
+const sheetStore = useWorkSheetStore();
+const me = useCurrentUserV1();
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
@@ -40,6 +48,25 @@ const sheetTab = ref<"my" | "shared" | "starred">("my");
 useEmitteryEventListener(sheetEvents, "add-sheet", () => {
   sheetTab.value = "my";
 });
+
+watch(
+  () => tabStore.currentTab,
+  (tab) => {
+    if (!tab.isSaved || !tab.sheetName) {
+      return;
+    }
+    const sheet = sheetStore.getSheetByName(tab.sheetName);
+    if (!sheet) {
+      return;
+    }
+    if (sheet.starred) {
+      sheetTab.value = "starred";
+    } else if (sheet.creator != `users/${me.value.email}`) {
+      sheetTab.value = "shared";
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="postcss">
