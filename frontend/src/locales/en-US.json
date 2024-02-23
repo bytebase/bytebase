@@ -3233,6 +3233,12 @@
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
     "import-from-role": "Import from role",
+    "workspace-roles": "Workspace roles",
+    "project-roles": {
+      "self": "Project roles",
+      "apply-to-all-projects": "Apply to all projects"
+    },
+    "custom-roles": "Custom roles",
     "workspace-admin": {
       "self": "Workspace Admin",
       "description": "Workspace Admin has all permissions within the workspace."
