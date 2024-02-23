@@ -110,7 +110,7 @@ import {
   WORKSPACE_PERMISSIONS,
 } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
-import { extractRoleResourceName, isDev } from "@/utils";
+import { extractRoleResourceName } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
