@@ -1,6 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
 import _ from "lodash-es";
-import { App } from "vue";
 import { createI18n } from "vue-i18n";
 
 const localPathPrefix = "../locales/";
@@ -87,8 +86,4 @@ export const te = i18n.global.te;
 
 export const curLocale = i18n.global.locale;
 
-const install = (app: App) => {
-  app.use(i18n);
-};
-
-export default install;
+export default i18n;
