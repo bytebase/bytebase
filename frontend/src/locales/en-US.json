@@ -2995,26 +2995,6 @@
           "export": "Request Export"
         }
       },
-      "condition": {
-        "self": "Condition",
-        "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
-        "add": "Add condition",
-        "add-group": "Add condition group",
-        "group": {
-          "or": {
-            "description": "Any of the following are true..."
-          },
-          "and": {
-            "description": "All of the following are true..."
-          },
-          "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
-        },
-        "input-value": "Input value",
-        "add-condition-in-group-placeholder": "Add {plus} to add condition",
-        "select-value": "Select value",
-        "input-value-press-enter": "Input value, press Enter to confirm",
-        "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition"
-      },
       "template": {
         "templates": "Templates",
         "load": "Load",
@@ -3359,6 +3339,26 @@
       "resource_instance_id": "Instance ID",
       "resource_database_name": "Database name",
       "resource_table_name": "Table name"
+    },
+    "condition": {
+      "self": "Condition",
+      "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
+      "add": "Add condition",
+      "add-group": "Add condition group",
+      "group": {
+        "or": {
+          "description": "Any of the following are true..."
+        },
+        "and": {
+          "description": "All of the following are true..."
+        },
+        "tooltip": "A condition group is a collection of conditions connected by operators \"And\" and \"Or\"."
+      },
+      "input-value": "Input value",
+      "add-condition-in-group-placeholder": "Add {plus} to add condition",
+      "select-value": "Select value",
+      "input-value-press-enter": "Input value, press Enter to confirm",
+      "add-root-condition-placeholder": "Click \"Add condition\" or \"Add condition group\" to add condition"
     }
   },
   "changelist": {

@@ -1,6 +1,9 @@
 import { uniq } from "lodash-es";
 import { Factor } from "./factor";
 
+export const NegativeOperatorList = ["!_"] as const;
+export type NegativeOperator = typeof NegativeOperatorList[number];
+
 export const LogicalOperatorList = ["_&&_", "_||_"] as const;
 export type LogicalOperator = typeof LogicalOperatorList[number];
 
@@ -10,7 +13,7 @@ export type EqualityOperator = typeof EqualityOperatorList[number];
 export const CompareOperatorList = ["_<_", "_<=_", "_>=_", "_>_"] as const;
 export type CompareOperator = typeof CompareOperatorList[number];
 
-export const CollectionOperatorList = ["@in"] as const;
+export const CollectionOperatorList = ["@in", "@not_in"] as const;
 export type CollectionOperator = typeof CollectionOperatorList[number];
 
 export const StringOperatorList = [
@@ -26,8 +29,11 @@ export type ConditionOperator =
   | CompareOperator
   | CollectionOperator
   | StringOperator;
-export type Operator = LogicalOperator | ConditionOperator;
+export type Operator = LogicalOperator | NegativeOperator | ConditionOperator;
 
+export const isNegativeOperator = (op: Operator): op is NegativeOperator => {
+  return NegativeOperatorList.includes(op as NegativeOperator);
+};
 export const isLogicalOperator = (op: Operator): op is LogicalOperator => {
   return LogicalOperatorList.includes(op as LogicalOperator);
 };
