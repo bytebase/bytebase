@@ -176,6 +176,7 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   usePageMode,
+  useActuatorV1Store,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
@@ -196,7 +197,6 @@ import {
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
 } from "@/utils";
-import { customTheme } from "@/utils/customTheme";
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
@@ -233,6 +233,7 @@ const state = reactive<LocalState>({
 
 const { dark, keyword } = useSQLResultViewContext();
 
+const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
 const tabStore = useTabStore();
 const instanceStore = useInstanceV1Store();
@@ -265,7 +266,7 @@ const showSearchFeature = computed(() => {
 });
 
 const showExportButton = computed(() => {
-  return customTheme.value !== "lixiang";
+  return actuatorStore.customTheme !== "lixiang";
 });
 
 const allowToExportData = computed(() => {
