@@ -75,9 +75,6 @@ func (s *LoggingService) ListLogs(ctx context.Context, request *v1pb.ListLogsReq
 		if err := unmarshalPageToken(request.PageToken, &pageToken); err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
-		if pageToken.Limit != request.PageSize {
-			return nil, status.Errorf(codes.InvalidArgument, "request page size does not match the page token")
-		}
 	} else {
 		pageToken.Limit = request.PageSize
 	}
