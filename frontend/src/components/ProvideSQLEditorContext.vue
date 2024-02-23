@@ -134,11 +134,20 @@ const prepareSheet = async () => {
   }
 
   const projectName = projectNameFromSheetSlug(sheetSlug);
-  const project = await projectStore.getOrFetchProjectByName(projectName);
-  if (
-    !hasProjectPermissionV2(project, currentUserV1.value, "bb.databases.query")
-  ) {
-    return false;
+
+  try {
+    const project = await projectStore.getOrFetchProjectByName(projectName);
+    if (
+      !hasProjectPermissionV2(
+        project,
+        currentUserV1.value,
+        "bb.databases.query"
+      )
+    ) {
+      return false;
+    }
+  } catch {
+    // Nothing
   }
 
   const sheetName = worksheetNameFromSlug(sheetSlug);
