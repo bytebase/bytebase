@@ -3232,6 +3232,12 @@
     "select-role": "Chọn vai trò",
     "expired-tip": "Vai trò này có thể đã hết hạn.",
     "import-from-role": "Nhập từ vai trò",
+    "workspace-roles": "Vai trò không gian làm việc",
+    "project-roles": {
+      "self": "Vai trò dự án",
+      "apply-to-all-projects": "Áp dụng cho tất cả các dự án"
+    },
+    "custom-roles": "Vai trò tùy chỉnh",
     "workspace-admin": {
       "self": "Quản trị viên không gian làm việc",
       "description": "Quản trị viên Workspace có tất cả các quyền trong không gian làm việc."
