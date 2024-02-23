@@ -1,7 +1,6 @@
-import { useActuatorV1Store, useProjectV1List, useRoleStore } from "@/store";
+import { useProjectV1List, useRoleStore } from "@/store";
 import {
   ComposedProject,
-  PresetRoleType,
   ProjectPermission,
   WorkspacePermission,
 } from "@/types";
@@ -34,27 +33,14 @@ export const hasProjectPermissionV2 = (
   }
 
   const roleStore = useRoleStore();
-  const actuatorStore = useActuatorV1Store();
-  const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
 
   // Check workspace-level permissions first.
-  if (isDevelopmentIAM) {
-    // For those users who have workspace-level project roles, they should have all project-level permissions.
-    const workspaceLevelPermissions = user.roles
-      .map((role) => roleStore.getRoleByName(role))
-      .flatMap((role) => (role ? role.permissions : []));
-    if (workspaceLevelPermissions.includes(permission)) {
-      return true;
-    }
-  } else {
-    // TODO(steven): Remove this block after fine-grained permissions are supported.
-    const privilegedRoles = [
-      PresetRoleType.WORKSPACE_ADMIN,
-      PresetRoleType.WORKSPACE_DBA,
-    ];
-    if (user.roles.some((role) => privilegedRoles.includes(role))) {
-      return true;
-    }
+  // For those users who have workspace-level project roles, they should have all project-level permissions.
+  const workspaceLevelPermissions = user.roles
+    .map((role) => roleStore.getRoleByName(role))
+    .flatMap((role) => (role ? role.permissions : []));
+  if (workspaceLevelPermissions.includes(permission)) {
+    return true;
   }
 
   // Check project-level permissions.

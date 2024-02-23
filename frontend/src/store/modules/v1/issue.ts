@@ -19,7 +19,6 @@ import {
 import { memberListInProjectV1 } from "@/utils";
 import { useUserStore } from "../user";
 import { useActivityV1Store } from "./activity";
-import { useActuatorV1Store } from "./actuator";
 import {
   experimentalFetchIssueByName,
   shallowComposeIssue,
@@ -127,11 +126,7 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
   };
 
   const listIssues = async ({ find, pageSize, pageToken }: ListIssueParams) => {
-    const isDevelopmentIAM = useActuatorV1Store().serverInfo?.iamGuard;
-    const request = isDevelopmentIAM
-      ? issueServiceClient.searchIssues
-      : issueServiceClient.listIssues;
-    const resp = await request({
+    const resp = await issueServiceClient.searchIssues({
       parent: find.project,
       filter: buildIssueFilter(find),
       query: find.query,
