@@ -47,7 +47,7 @@
           </div>
         </div>
 
-        <div v-if="isDev()" class="flex flex-col gap-y-2">
+        <div class="flex flex-col gap-y-2">
           <div class="w-full flex flex-row justify-between items-center">
             <div class="textlabel">
               {{ $t("common.permissions") }}
@@ -110,7 +110,7 @@ import {
   WORKSPACE_PERMISSIONS,
 } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
-import { extractRoleResourceName, isDev } from "@/utils";
+import { extractRoleResourceName } from "@/utils";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
@@ -165,7 +165,7 @@ const allowSave = computed(() => {
     if (!resourceIdField.value.resourceId) return false;
     if (!resourceIdField.value.isValidated) return false;
   }
-  if (isDev() && state.role.permissions.length === 0) {
+  if (state.role.permissions.length === 0) {
     return false;
   }
   return true;

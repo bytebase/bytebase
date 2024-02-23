@@ -157,6 +157,9 @@ func (driver *Driver) getVersion(ctx context.Context) (string, string, error) {
 }
 
 func (driver *Driver) getReadOnly() bool {
+	if driver.dbType == storepb.Engine_OCEANBASE {
+		return false
+	}
 	// MariaDB 5.5 doesn't support READ ONLY transactions.
 	// Error 1064 (42000): You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'READ ONLY' at line 1
 	v, err := semver.Make(driver.connectionCtx.EngineVersion)
