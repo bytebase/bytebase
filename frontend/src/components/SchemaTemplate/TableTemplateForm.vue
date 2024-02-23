@@ -17,7 +17,7 @@
               v-model:value="state.category"
               :options="categoryOptions"
               :placeholder="$t('schema-template.form.unclassified')"
-              :disabled="!readonly"
+              :disabled="readonly"
               :consistent-menu-width="true"
             />
           </div>
@@ -30,7 +30,7 @@
           <InstanceEngineRadioGrid
             v-model:engine="state.engine"
             :engine-list="engineList"
-            :disabled="!readonly"
+            :disabled="readonly"
             class="grid-cols-4 gap-2"
           />
         </div>
@@ -44,7 +44,7 @@
               :classification="state.table?.classification"
               :classification-config="classificationConfig"
             />
-            <div v-if="readonly" class="flex">
+            <div v-if="!readonly" class="flex">
               <MiniActionButton
                 v-if="state.table?.classification"
                 @click.prevent="state.table!.classification = ''"
@@ -71,7 +71,7 @@
             <NInput
               v-model:value="state.table!.name"
               placeholder="table name"
-              :disabled="!readonly"
+              :disabled="readonly"
             />
           </div>
 
@@ -84,13 +84,13 @@
               v-model:value="state.table!.userComment"
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 3 }"
-              :disabled="!readonly"
+              :disabled="readonly"
             />
           </div>
 
           <div class="col-span-4">
             <div
-              v-if="readonly"
+              v-if="!readonly"
               class="w-full py-2 flex items-center space-x-2"
             >
               <NButton size="small" :disabled="false" @click="onColumnAdd">
@@ -112,7 +112,7 @@
               </NButton>
             </div>
             <TableColumnEditor
-              :readonly="!readonly"
+              :readonly="!!readonly"
               :show-foreign-key="false"
               :table="state.table"
               :engine="state.engine"
@@ -135,7 +135,7 @@
             {{ $t("common.cancel") }}
           </NButton>
           <NButton
-            v-if="readonly"
+            v-if="!readonly"
             :disabled="submitDisabled"
             type="primary"
             @click.prevent="onSubmit"
