@@ -239,10 +239,12 @@ const contextMenuOptions = computed(() => {
         label: t("schema-editor.actions.restore"),
       });
     } else {
-      options.push({
-        key: "rename",
-        label: t("schema-editor.actions.rename"),
-      });
+      if (status !== "normal") {
+        options.push({
+          key: "rename",
+          label: t("schema-editor.actions.rename"),
+        });
+      }
       options.push({
         key: "drop",
         label: t("schema-editor.actions.drop-table"),
