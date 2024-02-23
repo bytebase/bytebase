@@ -125,7 +125,7 @@
                 <heroicons-solid:sparkles class="w-5 h-5" />
                 {{ $t(currentPlan) }}
               </div>
-              <NTooltip :disabled="!canUpgrade && !gitCommit">
+              <NTooltip>
                 <template #trigger>
                   <div
                     class="text-xs flex items-center gap-x-1 whitespace-nowrap"
@@ -143,10 +143,15 @@
                     {{ version }}
                   </div>
                 </template>
-                <span v-if="canUpgrade" class="whitespace-nowrap">
-                  {{ $t("settings.release.new-version-available") }}
-                </span>
-                <span v-if="gitCommit"> Git hash {{ gitCommit }} </span>
+                <template #default>
+                  <div class="flex flex-col gap-y-1">
+                    <div v-if="canUpgrade" class="whitespace-nowrap">
+                      {{ $t("settings.release.new-version-available") }}
+                    </div>
+                    <div>Git hash: {{ gitCommit }}</div>
+                    <div>FE Git hash: {{ gitCommitFE }}</div>
+                  </div>
+                </template>
               </NTooltip>
             </div>
           </div>
@@ -308,6 +313,10 @@ const version = computed(() => {
 
 const gitCommit = computed(() => {
   return `${actuatorStore.gitCommit.substring(0, 7)}`;
+});
+const gitCommitFE = computed(() => {
+  const commitHash = import.meta.env.BB_GIT_COMMIT_ID_FE as string | undefined;
+  return (commitHash ?? "unknown").substring(0, 7);
 });
 
 const currentPlan = computed((): string => {
