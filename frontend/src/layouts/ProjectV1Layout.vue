@@ -31,10 +31,11 @@
 
 <script lang="ts" setup>
 import { useLocalStorage } from "@vueuse/core";
-import { computed, onMounted } from "vue";
+import { computed, onMounted, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import HideInStandaloneMode from "@/components/misc/HideInStandaloneMode.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
@@ -73,11 +74,16 @@ const projectV1Store = useProjectV1Store();
 const activityV1Store = useActivityV1Store();
 const pageMode = usePageMode();
 const { t } = useI18n();
+const recentProjects = useRecentProjects();
 
 const project = computed(() => {
   return projectV1Store.getProjectByName(
     `${projectNamePrefix}${props.projectId}`
   );
+});
+
+watchEffect(() => {
+  recentProjects.setRecentProject(project.value.name);
 });
 
 const isDefaultProject = computed((): boolean => {
