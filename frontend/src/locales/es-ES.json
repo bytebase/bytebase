@@ -2991,26 +2991,6 @@
           "export": "Solicitar exportación"
         }
       },
-      "condition": {
-        "self": "Condición",
-        "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
-        "add": "Agregar condición",
-        "add-group": "Agregar grupo de condiciones",
-        "group": {
-          "or": {
-            "description": "Cualquiera de los siguientes es verdadero..."
-          },
-          "and": {
-            "description": "Todos los siguientes son verdaderos..."
-          },
-          "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
-        },
-        "input-value": "Valor de entrada",
-        "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
-        "select-value": "Seleccionar valor",
-        "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
-        "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
-      },
       "template": {
         "templates": "Plantillas",
         "load": "Cargar",
@@ -3356,6 +3336,26 @@
       "resource_database_name": "Nombre de la base de datos",
       "resource_table_name": "Nombre de la tabla",
       "table_rows": "Filas de la tabla"
+    },
+    "condition": {
+      "self": "Condición",
+      "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
+      "add": "Agregar condición",
+      "add-group": "Agregar grupo de condiciones",
+      "group": {
+        "or": {
+          "description": "Cualquiera de los siguientes es verdadero..."
+        },
+        "and": {
+          "description": "Todos los siguientes son verdaderos..."
+        },
+        "tooltip": "Un grupo de condiciones es una colección de condiciones conectadas por operadores \"Y\" y \"O\"."
+      },
+      "input-value": "Valor de entrada",
+      "add-condition-in-group-placeholder": "Agregar {plus} para agregar condición",
+      "select-value": "Seleccionar valor",
+      "input-value-press-enter": "Ingrese el valor, presione Enter para confirmar",
+      "add-root-condition-placeholder": "Haga clic en \"Agregar condición\" o \"Agregar grupo de condiciones\" para agregar una condición"
     }
   },
   "changelist": {

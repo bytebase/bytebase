@@ -52,6 +52,11 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
     if (isCollectionExpr(condition)) {
       const { operator, args } = condition;
       const [factor, values] = args;
+      if (operator === "@not_in") {
+        return wrapCallExpr("!_", [
+          wrapCallExpr("@in", [wrapIdentExpr(factor), wrapListExpr(values)]),
+        ]);
+      }
       return wrapCallExpr(operator, [
         wrapIdentExpr(factor),
         wrapListExpr(values),

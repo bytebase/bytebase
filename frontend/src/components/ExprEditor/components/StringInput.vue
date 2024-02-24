@@ -1,7 +1,7 @@
 <template>
   <NInput
     :value="value"
-    :placeholder="$t('custom-approval.risk-rule.condition.input-value')"
+    :placeholder="$t('cel.condition.input-value')"
     :disabled="!allowAdmin"
     size="small"
     style="min-width: 7rem; width: auto; overflow-x: hidden"

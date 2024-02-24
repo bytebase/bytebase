@@ -2993,26 +2993,6 @@
           "export": "エクスポートのリクエスト"
         }
       },
-      "condition": {
-        "self": "条件",
-        "description-tips": "条件は式を使用して構成できるルールです。たとえば、「環境がprodである」という条件は、「prod」環境で実行される問題に一致します。",
-        "add": "条件を追加する",
-        "add-group": "条件グループを追加する",
-        "group": {
-          "or": {
-            "description": "以下のいずれかが真の場合..."
-          },
-          "and": {
-            "description": "以下のすべてが真の場合..."
-          },
-          "tooltip": "条件グループは、演算子「And」と「Or」で接続された条件のコレクションです。"
-        },
-        "input-value": "入力値",
-        "add-condition-in-group-placeholder": "条件を追加するには{plus}を追加してください",
-        "select-value": "値を選択する",
-        "input-value-press-enter": "値を入力し、Enterキーを押して確認してください",
-        "add-root-condition-placeholder": "条件を追加するか、条件グループを追加するには「条件を追加」または「条件グループを追加」をクリックしてください"
-      },
       "template": {
         "templates": "テンプレート",
         "load": "ロード",
@@ -3357,6 +3337,26 @@
       "resource_database_name": "データベース名",
       "resource_table_name": "テーブル名",
       "table_rows": "テーブルの行"
+    },
+    "condition": {
+      "self": "条件",
+      "description-tips": "条件は式を使用して構成できるルールです。たとえば、「環境がprodである」という条件は、「prod」環境で実行される問題に一致します。",
+      "add": "条件を追加する",
+      "add-group": "条件グループを追加する",
+      "group": {
+        "or": {
+          "description": "以下のいずれかが真の場合..."
+        },
+        "and": {
+          "description": "以下のすべてが真の場合..."
+        },
+        "tooltip": "条件グループは、演算子「And」と「Or」で接続された条件のコレクションです。"
+      },
+      "input-value": "入力値",
+      "add-condition-in-group-placeholder": "条件を追加するには{plus}を追加してください",
+      "select-value": "値を選択する",
+      "input-value-press-enter": "値を入力し、Enterキーを押して確認してください",
+      "add-root-condition-placeholder": "条件を追加するか、条件グループを追加するには「条件を追加」または「条件グループを追加」をクリックしてください"
     }
   },
   "changelist": {

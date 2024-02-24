@@ -2990,26 +2990,6 @@
           "export": "申请导出数据"
         }
       },
-      "condition": {
-        "self": "条件",
-        "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
-        "add": "添加条件",
-        "add-group": "添加条件组",
-        "group": {
-          "or": {
-            "description": "以下任一为真…"
-          },
-          "and": {
-            "description": "以下全部为真…"
-          },
-          "tooltip": "条件组是一系列由「与」或「或」运算符连接的条件的集合。"
-        },
-        "input-value": "输入值",
-        "add-condition-in-group-placeholder": "点击{plus}添加条件",
-        "select-value": "选择值",
-        "input-value-press-enter": "输入值，按回车确认",
-        "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
-      },
       "template": {
         "templates": "模板",
         "load": "加载",
@@ -3353,6 +3333,26 @@
       "resource_instance_id": "实例 ID",
       "resource_database_name": "数据库名",
       "resource_table_name": "表名"
+    },
+    "condition": {
+      "self": "条件",
+      "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
+      "add": "添加条件",
+      "add-group": "添加条件组",
+      "group": {
+        "or": {
+          "description": "以下任一为真…"
+        },
+        "and": {
+          "description": "以下全部为真…"
+        },
+        "tooltip": "条件组是一系列由「与」或「或」运算符连接的条件的集合。"
+      },
+      "input-value": "输入值",
+      "add-condition-in-group-placeholder": "点击{plus}添加条件",
+      "select-value": "选择值",
+      "input-value-press-enter": "输入值，按回车确认",
+      "add-root-condition-placeholder": "点击「添加条件」或「添加条件组」以添加条件"
     }
   },
   "changelist": {

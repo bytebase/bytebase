@@ -2994,26 +2994,6 @@
           "export": "Yêu cầu xuất"
         }
       },
-      "condition": {
-        "self": "Tình trạng",
-        "description-tips": "Điều kiện là một quy tắc có thể được cấu hình thông qua một biểu thức. Ví dụ: điều kiện \"Môi trường là sản phẩm\" sẽ khớp với các sự cố được thực thi trong môi trường \"prod\".",
-        "add": "Thêm điều kiện",
-        "add-group": "Thêm nhóm điều kiện",
-        "group": {
-          "or": {
-            "description": "Bất kỳ điều nào sau đây là đúng..."
-          },
-          "and": {
-            "description": "Tất cả những điều sau đây đều đúng..."
-          },
-          "tooltip": "Nhóm điều kiện là tập hợp các điều kiện được kết nối bởi các toán tử \"And\" và \"Or\"."
-        },
-        "input-value": "Giá trị đầu vào",
-        "add-condition-in-group-placeholder": "Thêm {plus} để thêm điều kiện",
-        "select-value": "Chọn giá trị",
-        "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
-        "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện"
-      },
       "template": {
         "templates": "Mẫu",
         "load": "Trọng tải",
@@ -3358,6 +3338,26 @@
       "resource_database_name": "Tên cơ sở dữ liệu",
       "resource_table_name": "Tên bảng",
       "table_rows": "Hàng của bảng"
+    },
+    "condition": {
+      "self": "Tình trạng",
+      "description-tips": "Điều kiện là một quy tắc có thể được cấu hình thông qua một biểu thức. Ví dụ: điều kiện \"Môi trường là sản phẩm\" sẽ khớp với các sự cố được thực thi trong môi trường \"prod\".",
+      "add": "Thêm điều kiện",
+      "add-group": "Thêm nhóm điều kiện",
+      "group": {
+        "or": {
+          "description": "Bất kỳ điều nào sau đây là đúng..."
+        },
+        "and": {
+          "description": "Tất cả những điều sau đây đều đúng..."
+        },
+        "tooltip": "Nhóm điều kiện là tập hợp các điều kiện được kết nối bởi các toán tử \"And\" và \"Or\"."
+      },
+      "input-value": "Giá trị đầu vào",
+      "add-condition-in-group-placeholder": "Thêm {plus} để thêm điều kiện",
+      "select-value": "Chọn giá trị",
+      "input-value-press-enter": "Nhập giá trị, nhấn Enter để xác nhận",
+      "add-root-condition-placeholder": "Nhấp vào \"Thêm điều kiện\" hoặc \"Thêm nhóm điều kiện\" để thêm điều kiện"
     }
   },
   "changelist": {
