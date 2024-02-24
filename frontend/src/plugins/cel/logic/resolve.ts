@@ -25,6 +25,7 @@ import {
   isNumberFactor,
   isStringFactor,
   isTimestampFactor,
+  isNegativeOperator,
 } from "../types";
 
 // For simplify UI implementation, the "root" condition need to be a group.
@@ -41,7 +42,10 @@ export const wrapAsGroup = (
 
 // Convert common expr to simple expr
 export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
-  const dfs = (expr: CELExpr): ConditionGroupExpr | ConditionExpr => {
+  const dfs = (
+    expr: CELExpr,
+    negative: boolean = false
+  ): ConditionGroupExpr | ConditionExpr => {
     const { callExpr } = expr;
     if (!callExpr) {
       return emptySimpleExpr();
@@ -68,6 +72,9 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
       sub(right, false);
       return group;
     }
+    if (isNegativeOperator(operator)) {
+      return dfs(args[0], true);
+    }
     if (isEqualityOperator(operator)) {
       return resolveEqualityExpr(expr);
     }
@@ -78,7 +85,7 @@ export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
       return resolveStringExpr(expr);
     }
     if (isCollectionOperator(operator)) {
-      return resolveCollectionExpr(expr);
+      return resolveCollectionExpr(expr, negative);
     }
     throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
   };
@@ -136,10 +143,17 @@ const resolveStringExpr = (expr: CELExpr): StringExpr => {
   };
 };
 
-const resolveCollectionExpr = (expr: CELExpr): CollectionExpr => {
-  const operator = expr.callExpr!.function as CollectionOperator;
+const resolveCollectionExpr = (
+  expr: CELExpr,
+  negative: boolean = false
+): CollectionExpr => {
+  let operator = expr.callExpr!.function as CollectionOperator;
+  if (negative) {
+    operator = "@not_in";
+  }
   const [factorExpr, valuesExpr] = expr.callExpr!.args;
   const factor = getFactorName(factorExpr);
+
   if (isNumberFactor(factor)) {
     return {
       operator,

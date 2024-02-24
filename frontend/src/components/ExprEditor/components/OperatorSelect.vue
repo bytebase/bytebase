@@ -49,6 +49,7 @@ const OPERATOR_DICT = new Map([
   ["_<=_", "≤"],
   ["_>=_", "≥"],
   ["_>_", ">"],
+  ["@not_in", "not in"],
 ]);
 
 const options = computed(() => {

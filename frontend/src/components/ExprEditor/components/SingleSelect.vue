@@ -3,7 +3,7 @@
     :value="value"
     :options="options"
     :consistent-menu-width="false"
-    :placeholder="$t('custom-approval.risk-rule.condition.select-value')"
+    :placeholder="$t('cel.condition.select-value')"
     :disabled="!allowAdmin"
     size="small"
     style="min-width: 7rem; width: auto; overflow-x: hidden"
