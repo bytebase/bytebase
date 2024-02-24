@@ -54,7 +54,7 @@
     <div
       v-for="(item, index) in state.maskingRuleItemList"
       :key="item.rule.id"
-      class="flex items-start gap-x-5 pt-4"
+      class="flex items-start gap-x-5"
     >
       <div
         v-if="
