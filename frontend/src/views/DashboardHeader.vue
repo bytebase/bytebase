@@ -8,7 +8,7 @@
         size="small"
         @click="state.showProjectModal = true"
       >
-        <div class="w-32 text-left">
+        <div class="min-w-[8rem] text-left">
           <ProjectCol
             v-if="project.uid !== `${UNKNOWN_ID}`"
             mode="ALL_SHORT"
