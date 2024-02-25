@@ -52,11 +52,7 @@ func newQuerySpanExtractor(connectedDB string, connectedSchema string, f base.Ge
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	return nil, nil
-}
-
-func (extractor *querySpanExtractor) extractSensitiveFields(sql string) ([]base.QuerySpanResult, error) {
-	result, err := tsql.ParseTSQL(sql)
+	result, err := tsql.ParseTSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse tsql")
 	}
@@ -72,11 +68,16 @@ func (extractor *querySpanExtractor) extractSensitiveFields(sql string) ([]base.
 	// In order to decrease the maintainance cost, we use listener
 	// to handlet the select statement precisely.
 	listener := &tsqlSelectOnlyListener{
-		extractor: extractor,
+		extractor: q,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
+	if listener.err != nil {
+		return nil, errors.Wrapf(listener.err, "failed to extract sensitive fields from select statement")
+	}
 
-	return listener.result, listener.err
+	return &base.QuerySpan{
+		Results: listener.result,
+	}, nil
 }
 
 type tsqlSelectOnlyListener struct {
@@ -95,16 +96,11 @@ func (listener *tsqlSelectOnlyListener) EnterDml_clause(ctx *parser.Dml_clauseCo
 
 	result, err := listener.extractor.extractTSqlSensitiveFieldsFromSelectStatementStandalone(ctx.Select_statement_standalone())
 	if err != nil {
-		l.err = err
+		listener.err = err
 		return
 	}
 
-	for _, field := range result {
-		listener.result = append(listener.result, base.QuerySpanResult{
-			Name:              field.Name,
-			MaskingAttributes: field.MaskingAttributes,
-		})
-	}
+	listener.result = result.GetQuerySpanResult()
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatementStandalone extracts sensitive fields from select_statement_standalone.
@@ -331,14 +327,11 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecific
 				SourceColumns: make(base.SourceColumnSet, 0),
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
-			columnName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionElem)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionElem)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
-			result = append(result, base.FieldInfo{
-				Name:              columnName,
-				MaskingAttributes: maskingAttributes,
-			})
+			result.Columns = append(result.Columns, querySpanResult)
 		}
 	}
 
@@ -454,25 +447,33 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 	// SELECT TT1.id FROM blog.dbo.t1 AS TT1; -- OK
 	if asTableAlias := ctx.As_table_alias(); asTableAlias != nil {
 		asName := tsql.NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
-
-		for i := 0; i < len(result); i++ {
-			result[i].Table = asName
-			result[i].Schema = ""
-			result[i].Database = ""
+		result = &base.PseudoTable{
+			Name:    asName,
+			Columns: result.GetQuerySpanResult(),
 		}
 	}
 
 	if columnAliasList := ctx.Column_alias_list(); columnAliasList != nil {
 		allColumnAlias := columnAliasList.AllColumn_alias()
-		if len(allColumnAlias) != len(result) {
-			return nil, errors.Errorf("the number of column alias %d does not match the number of columns %d", len(allColumnAlias), len(result))
+		if len(allColumnAlias) != len(result.GetQuerySpanResult()) {
+			return nil, errors.Errorf("the number of column alias %d does not match the number of columns %d", len(allColumnAlias), len(result.GetQuerySpanResult()))
 		}
-		for i := 0; i < len(result); i++ {
+		for i := 0; i < len(allColumnAlias); i++ {
 			if allColumnAlias[i].Id_() != nil {
-				result[i].Name = NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				name := tsql.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				result = &base.PseudoTable{
+					Name:    result.GetTableName(),
+					Columns: result.GetQuerySpanResult(),
+				}
+				result.GetQuerySpanResult()[i].Name = name
 				continue
 			} else if allColumnAlias[i].STRING() != nil {
-				result[i].Name = allColumnAlias[i].STRING().GetText()
+				name := allColumnAlias[i].STRING().GetText()
+				result = &base.PseudoTable{
+					Name:    result.GetTableName(),
+					Columns: result.GetQuerySpanResult(),
+				}
+				result.GetQuerySpanResult()[i].Name = name
 				continue
 			}
 			panic("never reach here")
@@ -489,7 +490,7 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(
 
 	allSubquery := ctx.AllSubquery()
 	if len(allSubquery) > 0 {
-		left, err := extractor.extractTSqlSensitiveFieldsFromSubquery(allSubquery[0])
+		anchor, err := extractor.extractTSqlSensitiveFieldsFromSubquery(allSubquery[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `subquery` in `derived_table`")
 		}
@@ -497,17 +498,19 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(
 			// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 			// So we only need to extract the sensitive fields of the right part.
 			right, err := extractor.extractTSqlSensitiveFieldsFromSubquery(allSubquery[i])
+			rightQuerySpanResult := right.GetQuerySpanResult()
+			anchorQuerySpanResult := anchor.GetQuerySpanResult()
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, allSubquery[i].GetStart().GetLine())
 			}
-			if len(left) != len(right) {
-				return nil, errors.Wrapf(err, "the number of columns in the derived table statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(left), i+1, allSubquery[i].GetStart().GetLine(), len(right))
+			if len(anchorQuerySpanResult) != len(rightQuerySpanResult) {
+				return nil, errors.Wrapf(err, "the number of columns in the derived table statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(anchorQuerySpanResult), i+1, allSubquery[i].GetStart().GetLine(), len(rightQuerySpanResult))
 			}
-			for i := range right {
-				left[i].MaskingAttributes.TransmittedBy(right[i].MaskingAttributes)
+			for i := range rightQuerySpanResult {
+				anchorQuerySpanResult[i].SourceColumns, _ = base.MergeSourceColumnSet(anchorQuerySpanResult[i].SourceColumns, rightQuerySpanResult[i].SourceColumns)
 			}
 		}
-		return left, nil
+		return anchor, nil
 	}
 
 	if tableValueConstructor := ctx.Table_value_constructor(); tableValueConstructor != nil {
@@ -517,28 +520,27 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(
 	panic("never reach here")
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) ([]base.FieldInfo, error) {
+func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) (base.TableSource, error) {
 	if allExpressionList := ctx.AllExpression_list_(); len(allExpressionList) > 0 {
 		// The number of expression in each expression list should be the same.
 		// But we do not check, just use the first one, and engine will throw a compilation error if the number of expressions are not the same.
 		expressionList := allExpressionList[0]
-		var result []base.FieldInfo
-		for _, expression := range expressionList.AllExpression() {
-			columnName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to check if the expression is sensitive")
-			}
-			result = append(result, base.FieldInfo{
-				Name:              columnName,
-				MaskingAttributes: maskingAttributes,
-			})
+		pseudoTable := &base.PseudoTable{
+			Columns: make([]base.QuerySpanResult, 0, len(expressionList.AllExpression())),
 		}
-		return result, nil
+		for _, expression := range expressionList.AllExpression() {
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to extract sensitive fields from `expression` in `table_value_constructor`")
+			}
+			pseudoTable.Columns = append(pseudoTable.Columns, querySpanResult)
+		}
+		return pseudoTable, nil
 	}
 	panic("never reach here")
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) ([]base.FieldInfo, error) {
+func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) (*base.PseudoTable, error) {
 	return extractor.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
 }
 
@@ -567,7 +569,7 @@ func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IF
 	}
 	allDatabases, err := extractor.l(extractor.ctx)
 	if err != nil {
-		return nil, errors.Errorf("failed to list databases: %w", err)
+		return nil, errors.Errorf("failed to list databases: %v", err)
 	}
 
 	for _, databaseName := range allDatabases {
@@ -604,7 +606,7 @@ func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IF
 						return result
 					}(),
 				}
-				return normalizedDatabaseName, physicalTableSource, nil
+				return physicalTableSource, nil
 			}
 		}
 	}
@@ -619,7 +621,7 @@ func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IF
 func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (string, string, string) {
 	var database string
 	if d := tableName.GetDatabase(); d != nil {
-		normalizedD := NormalizeTSQLIdentifier(d)
+		normalizedD := tsql.NormalizeTSQLIdentifier(d)
 		if normalizedD != "" {
 			database = normalizedD
 		}
@@ -627,7 +629,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var schema string
 	if s := tableName.GetSchema(); s != nil {
-		normalizedS := NormalizeTSQLIdentifier(s)
+		normalizedS := tsql.NormalizeTSQLIdentifier(s)
 		if normalizedS != "" {
 			schema = normalizedS
 		}
@@ -635,7 +637,7 @@ func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (str
 
 	var table string
 	if t := tableName.GetTable(); t != nil {
-		normalizedT := NormalizeTSQLIdentifier(t)
+		normalizedT := tsql.NormalizeTSQLIdentifier(t)
 		if normalizedT != "" {
 			table = normalizedT
 		}
@@ -722,17 +724,17 @@ func (extractor *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(nor
 	return nil, errors.Errorf(`no matching table %q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
-func (extractor *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.FieldInfo, error) {
+func (extractor *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.QuerySpanResult, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
-		return base.FieldInfo{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
+		return base.QuerySpanResult{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
 	normalizedColumnName := tsql.NormalizeTSQLIdentifier(ctx.Id_())
 
 	return extractor.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.FieldInfo, error) {
+func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.QuerySpanResult, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -747,25 +749,25 @@ func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName
 	}
 	if normalizedTableName != "" {
 		if mask&maskColumnName == 0 {
-			return base.FieldInfo{}, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
+			return base.QuerySpanResult{}, errors.Errorf(`table name %s is specified without column name`, normalizedTableName)
 		}
 		mask |= maskTableName
 	}
 	if normalizedSchemaName != "" {
 		if mask&maskTableName == 0 {
-			return base.FieldInfo{}, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
+			return base.QuerySpanResult{}, errors.Errorf(`schema name %s is specified without table name`, normalizedSchemaName)
 		}
 		mask |= maskSchemaName
 	}
 	if normalizedDatabaseName != "" {
 		if mask&maskSchemaName == 0 {
-			return base.FieldInfo{}, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
+			return base.QuerySpanResult{}, errors.Errorf(`database name %s is specified without schema name`, normalizedDatabaseName)
 		}
 		mask |= maskDatabaseName
 	}
 
 	if mask == maskNone {
-		return base.FieldInfo{}, errors.Errorf(`no object name is specified`)
+		return base.QuerySpanResult{}, errors.Errorf(`no object name is specified`)
 	}
 
 	// We just need to iterate through the fromFieldList sequentially until we find the first matching object.
@@ -781,22 +783,24 @@ func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName
 	//
 	// Further more, users can not use the original table name if they specify the alias name:
 	// SELECT T1.C1 FROM T1 AS T3, T2; -- invalid identifier 'ADDRESS.ID'
-	for _, field := range extractor.tableSourcesFrom {
-		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, field.Database) {
+	for _, tableSource := range extractor.tableSourcesFrom {
+		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
 			continue
 		}
-		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, field.Schema) {
+		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
 			continue
 		}
-		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, field.Table) {
+		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
 			continue
 		}
-		if mask&maskColumnName != 0 && !extractor.isIdentifierEqual(normalizedColumnName, field.Name) {
-			continue
+		for _, column := range tableSource.GetQuerySpanResult() {
+			if mask&maskColumnName != 0 && !extractor.isIdentifierEqual(normalizedColumnName, column.Name) {
+				continue
+			}
+			return column, nil
 		}
-		return field, nil
 	}
-	return base.FieldInfo{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+	return base.QuerySpanResult{}, errors.Errorf(`no matching column %q.%q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
 // isIdentifierEqual compares the identifier with the given normalized parts, returns true if they are equal.
@@ -817,242 +821,248 @@ func (extractor *querySpanExtractor) isIdentifierEqual(a, b string) bool {
 	return true
 }
 
-// evalExpressionElemMaskingLevel returns true if the expression element is sensitive, and returns the column name.
+// getQuerySpanResultFromExpr returns true if the expression element is sensitive, and returns the column name.
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
-func (extractor *querySpanExtractor) evalExpressionElemMaskingLevel(ctx antlr.RuleContext) (string, base.MaskingAttributes, error) {
+func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (base.QuerySpanResult, error) {
 	if ctx == nil {
-		return "", base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          "",
+			SourceColumns: make(base.SourceColumnSet, 0),
+		}, nil
 	}
 	switch ctx := ctx.(type) {
 	case *parser.Expression_elemContext:
-		columName, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression element is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 		}
 		if columnAlias := ctx.Column_alias(); columnAlias != nil {
-			columName = tsql.NormalizeTSQLIdentifier(columnAlias.Id_())
+			querySpanResult.Name = tsql.NormalizeTSQLIdentifier(columnAlias.Id_())
 		} else if asColumnAlias := ctx.As_column_alias(); asColumnAlias != nil {
-			columName = tsql.NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
+			querySpanResult.Name = tsql.NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
 		}
-		return columName, maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ExpressionContext:
 		if ctx.Primitive_expression() != nil {
-			return extractor.evalExpressionElemMaskingLevel(ctx.Primitive_expression())
+			return extractor.getQuerySpanResultFromExpr(ctx.Primitive_expression())
 		}
 		if ctx.Function_call() != nil {
-			return extractor.evalExpressionElemMaskingLevel(ctx.Function_call())
+			return extractor.getQuerySpanResultFromExpr(ctx.Function_call())
 		}
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if valueCall := ctx.Value_call(); valueCall != nil {
-			return extractor.evalExpressionElemMaskingLevel(valueCall)
+			return extractor.getQuerySpanResultFromExpr(valueCall)
 		}
 		if queryCall := ctx.Query_call(); queryCall != nil {
-			return extractor.evalExpressionElemMaskingLevel(queryCall)
+			return extractor.getQuerySpanResultFromExpr(queryCall)
 		}
 		if existCall := ctx.Exist_call(); existCall != nil {
-			return extractor.evalExpressionElemMaskingLevel(existCall)
+			return extractor.getQuerySpanResultFromExpr(existCall)
 		}
 		if modifyCall := ctx.Modify_call(); modifyCall != nil {
-			return extractor.evalExpressionElemMaskingLevel(modifyCall)
+			return extractor.getQuerySpanResultFromExpr(modifyCall)
 		}
 		if hierarchyIDCall := ctx.Hierarchyid_call(); hierarchyIDCall != nil {
-			return extractor.evalExpressionElemMaskingLevel(hierarchyIDCall)
+			return extractor.getQuerySpanResultFromExpr(hierarchyIDCall)
 		}
 		if caseExpression := ctx.Case_expression(); caseExpression != nil {
-			return extractor.evalExpressionElemMaskingLevel(caseExpression)
+			return extractor.getQuerySpanResultFromExpr(caseExpression)
 		}
 		if fullColumnName := ctx.Full_column_name(); fullColumnName != nil {
-			return extractor.evalExpressionElemMaskingLevel(fullColumnName)
+			return extractor.getQuerySpanResultFromExpr(fullColumnName)
 		}
 		if bracketExpression := ctx.Bracket_expression(); bracketExpression != nil {
-			return extractor.evalExpressionElemMaskingLevel(bracketExpression)
+			return extractor.getQuerySpanResultFromExpr(bracketExpression)
 		}
 		if unaryOperationExpression := ctx.Unary_operator_expression(); unaryOperationExpression != nil {
-			return extractor.evalExpressionElemMaskingLevel(unaryOperationExpression)
+			return extractor.getQuerySpanResultFromExpr(unaryOperationExpression)
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			return extractor.evalExpressionElemMaskingLevel(overClause)
+			return extractor.getQuerySpanResultFromExpr(overClause)
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Unary_operator_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
-			return extractor.evalExpressionElemMaskingLevel(expression)
+			return extractor.getQuerySpanResultFromExpr(expression)
 		}
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Bracket_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
-			return extractor.evalExpressionElemMaskingLevel(expression)
+			return extractor.getQuerySpanResultFromExpr(expression)
 		}
 		if subquery := ctx.Subquery(); subquery != nil {
-			return extractor.evalExpressionElemMaskingLevel(subquery)
+			return extractor.getQuerySpanResultFromExpr(subquery)
 		}
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Case_expressionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if allSwitchSections := ctx.AllSwitch_section(); len(allSwitchSections) > 0 {
 			for _, switchSection := range allSwitchSections {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(switchSection)
+				querySpanExtractor, err := extractor.getQuerySpanResultFromExpr(switchSection)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanExtractor.SourceColumns)
 			}
 		}
 		if allSwitchSearchConditionSections := ctx.AllSwitch_search_condition_section(); len(allSwitchSearchConditionSections) > 0 {
 			for _, switchSearchConditionSection := range allSwitchSearchConditionSections {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(switchSearchConditionSection)
+				querySpanExtractor, err := extractor.getQuerySpanResultFromExpr(switchSearchConditionSection)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the case_expression is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanExtractor.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Switch_sectionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Switch_search_condition_sectionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if searchCondition := ctx.Search_condition(); searchCondition != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(searchCondition)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Search_conditionContext:
 		if predicate := ctx.Predicate(); predicate != nil {
-			return extractor.evalExpressionElemMaskingLevel(predicate)
+			return extractor.getQuerySpanResultFromExpr(predicate)
 		}
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allSearchConditions := ctx.AllSearch_condition(); len(allSearchConditions) > 0 {
 			for _, searchCondition := range allSearchConditions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(searchCondition)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(searchCondition)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the search_condition is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the search_condition is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.PredicateContext:
 		if subquery := ctx.Subquery(); subquery != nil {
-			return extractor.evalExpressionElemMaskingLevel(subquery)
+			return extractor.getQuerySpanResultFromExpr(subquery)
 		}
 		if freeTextPredicate := ctx.Freetext_predicate(); freeTextPredicate != nil {
-			return extractor.evalExpressionElemMaskingLevel(freeTextPredicate)
+			return extractor.getQuerySpanResultFromExpr(freeTextPredicate)
 		}
 
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the predicate is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the predicate is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the predicate is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Freetext_predicateContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if allCullColumnName := ctx.AllFull_column_name(); len(allCullColumnName) > 0 {
 			for _, fullColumnName := range allCullColumnName {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(fullColumnName)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &querySpanExtractor{
@@ -1063,55 +1073,70 @@ func (extractor *querySpanExtractor) evalExpressionElemMaskingLevel(ctx antlr.Ru
 			// outerTableSources: extractor.outerTableSources,
 			ctes: extractor.ctes,
 		}
-		fieldInfo, err := cloneExtractor.extractTSqlSensitiveFieldsFromSubquery(ctx)
+		tableSource, err := cloneExtractor.extractTSqlSensitiveFieldsFromSubquery(ctx)
 		// The expect behavior is the fieldInfo contains only one field, which is the column name,
 		// but in order to do not block user, we just return isSensitive if there is any sensitive field.
 		// return fieldInfo[0].sensitive, err
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the subquery is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the subquery is sensitive")
 		}
-		finalAttributes := base.NewDefaultMaskingAttributes()
-		for _, field := range fieldInfo {
-			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
 		}
-		return ctx.GetText(), finalAttributes, nil
+		for _, field := range tableSource.GetQuerySpanResult() {
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, field.SourceColumns)
+		}
+		return anchor, nil
 	case *parser.Hierarchyid_callContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Query_callContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Exist_callContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Modify_callContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Value_callContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Primitive_expressionContext:
 		if ctx.Primitive_constant() != nil {
-			_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Primitive_constant())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Primitive_constant())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the primitive constant is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the primitive constant is sensitive")
 			}
-			return ctx.GetText(), sensitive, nil
+			return querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Primitive_constantContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Function_callContext:
 		// In parser.g4, the function_callContext is defined as:
 		// 	function_call
@@ -1123,1814 +1148,2183 @@ func (extractor *querySpanExtractor) evalExpressionElemMaskingLevel(ctx antlr.Ru
 		// We just need to check the first token to see if it is a sensitive function.
 		panic("never reach here")
 	case *parser.RANKING_WINDOWED_FUNCContext:
-		return extractor.evalExpressionElemMaskingLevel(ctx.Ranking_windowed_function())
+		return extractor.getQuerySpanResultFromExpr(ctx.Ranking_windowed_function())
 	case *parser.Ranking_windowed_functionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Over_clauseContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if rowOrRangeClause := ctx.Row_or_range_clause(); rowOrRangeClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(rowOrRangeClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(rowOrRangeClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the over_clause is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Expression_list_Context:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the expression_list is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression_list is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Order_by_clauseContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, orderByExpression := range ctx.GetOrder_bys() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByExpression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByExpression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Order_by_expressionContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the order_by_expression is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the order_by_expression is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.Row_or_range_clauseContext:
 		if windowFrameExtent := ctx.Window_frame_extent(); windowFrameExtent != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFrameExtent)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFrameExtent)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the row_or_range_clause is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the row_or_range_clause is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Window_frame_extentContext:
 		if windowFramePreceding := ctx.Window_frame_preceding(); windowFramePreceding != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFramePreceding)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFramePreceding)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		}
 		if windowFrameBounds := ctx.AllWindow_frame_bound(); len(windowFrameBounds) > 0 {
-			finalAttributes := base.NewDefaultMaskingAttributes()
+			anchor := base.QuerySpanResult{
+				Name:          ctx.GetText(),
+				SourceColumns: make(base.SourceColumnSet),
+			}
 			for _, windowFrameBound := range windowFrameBounds {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(windowFrameBound)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFrameBound)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		panic("never reach here")
 	case *parser.Window_frame_boundContext:
 		if preceding := ctx.Window_frame_preceding(); preceding != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(preceding)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(preceding)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		} else if following := ctx.Window_frame_following(); following != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(following)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(following)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Window_frame_precedingContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Window_frame_followingContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.AGGREGATE_WINDOWED_FUNCContext:
-		return extractor.evalExpressionElemMaskingLevel(ctx.Aggregate_windowed_function())
+		return extractor.getQuerySpanResultFromExpr(ctx.Aggregate_windowed_function())
 	case *parser.Aggregate_windowed_functionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allDistinctExpression := ctx.All_distinct_expression(); allDistinctExpression != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(allDistinctExpression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(allDistinctExpression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.All_distinct_expressionContext:
-		_, sensitive, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the all_distinct_expression is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the all_distinct_expression is sensitive")
 		}
-		return ctx.GetText(), sensitive, nil
+		return querySpanResult, nil
 	case *parser.ANALYTIC_WINDOWED_FUNCContext:
-		return extractor.evalExpressionElemMaskingLevel(ctx.Analytic_windowed_function())
+		return extractor.getQuerySpanResultFromExpr(ctx.Analytic_windowed_function())
 	case *parser.Analytic_windowed_functionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(overClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expressionList)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(orderByClause)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByClause)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.BUILT_IN_FUNCContext:
-		return extractor.evalExpressionElemMaskingLevel(ctx.Built_in_functions())
+		return extractor.getQuerySpanResultFromExpr(ctx.Built_in_functions())
 	case *parser.APP_NAMEContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.APPLOCK_MODEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.APPLOCK_TESTContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the applock_test is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the applock_test is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ASSEMBLYPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.COL_LENGTHContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_length is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the col_length is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.COL_NAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the col_name is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the col_name is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.COLUMNPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATABASEPROPERTYEXContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DB_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the db_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the db_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DB_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the db_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the db_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILE_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILE_IDEXContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_idex is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_idex is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILE_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the file_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILEGROUP_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroup_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroup_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILEGROUP_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroup_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroup_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FILEGROUPPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.FILEPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.FILEPROPERTYEXContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.FULLTEXTCATALOGPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.FULLTEXTSERVICEPROPERTYContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the fulltextserviceproperty is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fulltextserviceproperty is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.INDEX_COLContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the index_col is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the index_col is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.INDEXKEY_PROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.INDEXPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.OBJECT_DEFINITIONContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_definition is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_definition is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.OBJECT_IDContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_id is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_id is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.OBJECT_NAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_name is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_name is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.OBJECT_SCHEMA_NAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.OBJECTPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.OBJECTPROPERTYEXContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.PARSENAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parsename is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the parsename is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.SCHEMA_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the schema_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the schema_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SCHEMA_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the schema_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the schema_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SERVERPROPERTYContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the serverproperty is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the serverproperty is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.STATS_DATEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stats_date is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stats_date is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.TYPE_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the type_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the type_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.TYPE_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the type_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the type_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.TYPEPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ASCIIContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ascii is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ascii is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CHARContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the char is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the char is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CHARINDEXContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the charindex is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the charindex is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.CONCATContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the concat is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.CONCAT_WSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DIFFERENCEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the difference is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the difference is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.FORMATContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the format is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the format is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.LEFTContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the left is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the left is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.LENContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the len is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the len is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.LOWERContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the lower is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the lower is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.LTRIMContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ltrim is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ltrim is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.NCHARContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the nchar is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the nchar is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.PATINDEXContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the patindex is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the patindex is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.QUOTENAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the quotename is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the quotename is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.REPLACEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replace is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the replace is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.REPLICATEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the replicate is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the replicate is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.REVERSEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the reverse is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the reverse is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.RIGHTContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the right is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the right is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.RTRIMContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the rtrim is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the rtrim is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SOUNDEXContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the soundex is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the soundex is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SPACEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the space is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the space is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.STRContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the str is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the str is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.STRINGAGGContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stringagg is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stringagg is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.STRING_ESCAPEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the string_escape is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the string_escape is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.STUFFContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the stuff is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stuff is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.SUBSTRINGContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the substring is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the substring is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.TRANSLATEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the translate is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the translate is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.TRIMContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the trim is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the trim is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.UNICODEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the unicode is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the unicode is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.UPPERContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the upper is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the upper is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.BINARY_CHECKSUMContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.CHECKSUMContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the checksum is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the checksum is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.COMPRESSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the compress is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the compress is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DECOMPRESSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the decompress is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the decompress is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FORMATMESSAGEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ISNULLContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isnull is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isnull is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ISNUMERICContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isnumeric is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isnumeric is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CASTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cast is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cast is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.TRY_CASTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the try_cast is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the try_cast is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CONVERTContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the convert is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the convert is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.COALESCEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the coalesce is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the coalesce is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.CURSOR_STATUSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cursor_status is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cursor_status is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CERT_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cert_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cert_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DATALENGTHContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datalength is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datalength is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.IDENT_CURRENTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_current is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_current is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.IDENT_INCRContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_incr is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_incr is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.IDENT_SEEDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the  ident_seed is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_seed is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SQL_VARIANT_PROPERTYContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sql_variant_property is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sql_variant_property is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DATE_BUCKETContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATEADDContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the dateadd is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the dateadd is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATEDIFFContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datediff is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATEDIFF_BIGContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATEFROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATENAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datename is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datename is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DATEPARTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datepart is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datepart is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DATETIME2FROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATETIMEFROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATETIMEOFFSETFROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATETRUNCContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the datetrunc is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetrunc is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DAYContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the day is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the day is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.EOMONTHContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the eomonth is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the eomonth is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ISDATEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isdate is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isdate is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.MONTHContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the month is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the month is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SMALLDATETIMEFROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.SWITCHOFFSETContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.TIMEFROMPARTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.TODATETIMEOFFSETContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.YEARContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the year is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the year is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.NULLIFContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the nullif is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the nullif is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.PARSEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the parse is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the parse is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.IIFContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the iif is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the iif is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ISJSONContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the isjson is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isjson is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.JSON_ARRAYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_array is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_array is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.JSON_VALUEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_value is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_value is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.JSON_QUERYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_query is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_query is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.JSON_MODIFYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_modify is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_modify is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.JSON_PATH_EXISTSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.ABSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the abs is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the abs is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ACOSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the acos is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the acos is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ASINContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the asin is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the asin is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ATANContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the atan is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the atan is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ATN2Context:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the atn2 is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the atn2 is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.CEILINGContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the ceiling is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ceiling is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.COSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cos is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cos is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.COTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the cot is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cot is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.DEGREESContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the degrees is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the degrees is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.EXPContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the exp is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the exp is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.FLOORContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the floor is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the floor is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.LOGContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the log is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the log is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.LOG10Context:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the log10 is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the log10 is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.POWERContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the power is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the power is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.RADIANSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the radians is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the radians is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.RANDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the rand is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the rand is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.ROUNDContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the round is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the round is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.MATH_SIGNContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the math_sign is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the math_sign is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SINContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sin is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sin is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SQRTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sqrt is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sqrt is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SQUAREContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the square is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the square is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.TANContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the tan is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the tan is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.GREATESTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the greatest is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the greatest is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.LEASTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the least is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the least is sensitive")
 			}
-			return ctx.GetText(), maskingAttributes, nil
+			return querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.CERTENCODEDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the certencoded is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the certencoded is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.CERTPRIVATEKEYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.DATABASE_PRINCIPAL_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the database_principal_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the database_principal_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.HAS_DBACCESSContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the has_dbaccess is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the has_dbaccess is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.HAS_PERMS_BY_NAMEContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.IS_MEMBERContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_member is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_member is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.IS_ROLEMEMBERContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.IS_SRVROLEMEMBERContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.LOGINPROPERTYContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.PERMISSIONSContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the permissions is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the permissions is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.PWDENCRYPTContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the pwdencrypt is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the pwdencrypt is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.PWDCOMPAREContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.SESSIONPROPERTYContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the sessionproperty is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sessionproperty is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SUSER_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SUSER_SNAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_sname is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_sname is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SUSER_SIDContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expression := range ctx.AllExpression() {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.USER_IDContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the user_id is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the user_id is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.USER_NAMEContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the user_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the user_name is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.SCALAR_FUNCTIONContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Expression_list_())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
 		if scalarFunctionName := ctx.Scalar_function_name(); scalarFunctionName != nil {
-			_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Scalar_function_name())
+			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Scalar_function_name())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
+				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
+			var change bool
+			anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
+			if !change {
+				return anchor, nil
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Scalar_function_nameContext:
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Freetext_functionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		anchor := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if allFullColumnName := ctx.AllFull_column_name(); len(allFullColumnName) > 0 {
 			for _, fullColumnName := range allFullColumnName {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(fullColumnName)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(fullColumnName)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
-			finalAttributes := base.NewDefaultMaskingAttributes()
+			anchor := base.QuerySpanResult{
+				Name:          ctx.GetText(),
+				SourceColumns: make(base.SourceColumnSet),
+			}
 			for _, expression := range allExpressions {
-				_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(expression)
+				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
+					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return anchor, nil
 	case *parser.Full_column_nameContext:
-		fieldInfo, err := extractor.tsqlIsFullColumnNameSensitive(ctx)
+		querySpanResult, err := extractor.tsqlIsFullColumnNameSensitive(ctx)
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.PARTITION_FUNCContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Partition_function().Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Partition_function().Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the partition_function is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the partition_function is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	case *parser.HIERARCHYID_METHODContext:
-		_, maskingAttributes, err := extractor.evalExpressionElemMaskingLevel(ctx.Hierarchyid_static_method().Expression())
+		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Hierarchyid_static_method().Expression())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
+			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
 		}
-		return ctx.GetText(), maskingAttributes, nil
+		return querySpanResult, nil
 	}
 	panic("never reach here")
 }
