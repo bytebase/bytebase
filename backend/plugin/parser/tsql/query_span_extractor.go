@@ -1,8 +1,9 @@
-package v2
+package tsql
 
 import (
 	"context"
 	"fmt"
+	"sort"
 	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 type querySpanExtractor struct {
@@ -52,7 +52,26 @@ func newQuerySpanExtractor(connectedDB string, connectedSchema string, f base.Ge
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	result, err := tsql.ParseTSQL(statement)
+	accessTables, err := getAccessTables(q.connectedDB, q.connectedSchema, statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get access tables")
+	}
+	// We do not support simultaneous access to the system table and the user table
+	// because we do not synchronize the schema of the system table.
+	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
+	// As a result, we exclude getting query span results for accessing only the system table.
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if mixed != nil {
+		return nil, mixed
+	}
+	if allSystems {
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
+	}
+
+	result, err := ParseTSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse tsql")
 	}
@@ -65,7 +84,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
-	// In order to decrease the maintainance cost, we use listener
+	// In order to decrease the maintenance cost, we use listener
 	// to handlet the select statement precisely.
 	listener := &tsqlSelectOnlyListener{
 		extractor: q,
@@ -76,7 +95,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
-		Results: listener.result,
+		SourceColumns: accessTables,
+		Results:       listener.result,
 	}, nil
 }
 
@@ -113,19 +133,17 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 		allCommonTableExpression := ctx.With_expression().AllCommon_table_expression()
 		// TSQL do not have `RECURSIVE` keyword, if we detect `UNION`, we will treat it as `RECURSIVE`.
 		for _, commonTableExpression := range allCommonTableExpression {
-			var result *base.PseudoTable
-			var err error
-			normalizedCTEName := tsql.NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
-
-			var anchorTable *base.PseudoTable
+			normalizedCTEName := NormalizeTSQLIdentifier(commonTableExpression.GetExpression_name())
+			var columns []base.QuerySpanResult
 			// If statement has more than one UNION, the first one is the anchor, and the rest are recursive.
 			recursiveCTE := false
 			queryExpression := commonTableExpression.Select_statement().Query_expression()
 			if queryExpression.Query_specification() != nil {
-				anchorTable, err = q.extractTSqlSensitiveFieldsFromQuerySpecification(queryExpression.Query_specification())
+				anchorTable, err := q.extractTSqlSensitiveFieldsFromQuerySpecification(queryExpression.Query_specification())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 				}
+				columns = anchorTable.GetQuerySpanResult()
 				if allSQLUnions := queryExpression.AllSql_union(); len(allSQLUnions) > 0 {
 					recursiveCTE = true
 					for i := 0; i < len(allSQLUnions)-1; i++ {
@@ -136,11 +154,11 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 							return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, allSQLUnions[i].GetStart().GetLine())
 						}
 						recursiveTableSourceQuerySpanResult := recursiveTableSource.GetQuerySpanResult()
-						if len(anchorTable.GetQuerySpanResult()) != len(recursiveTableSourceQuerySpanResult) {
-							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(anchorTable.GetQuerySpanResult()), i+1, allSQLUnions[i].GetStart().GetLine(), len(recursiveTableSourceQuerySpanResult))
+						if len(columns) != len(recursiveTableSourceQuerySpanResult) {
+							return nil, errors.Wrapf(err, "the number of columns in the query statement nearly line %d returns %d fields, but %d set operator near line %d returns %d fields", ctx.GetStart().GetLine(), len(columns), i+1, allSQLUnions[i].GetStart().GetLine(), len(recursiveTableSourceQuerySpanResult))
 						}
 						for j := range recursiveTableSourceQuerySpanResult {
-							anchorTable.Columns[j].SourceColumns, _ = base.MergeSourceColumnSet(anchorTable.Columns[j].SourceColumns, recursiveTableSourceQuerySpanResult[j].SourceColumns)
+							columns[j].SourceColumns, _ = base.MergeSourceColumnSet(columns[j].SourceColumns, recursiveTableSourceQuerySpanResult[j].SourceColumns)
 						}
 					}
 				}
@@ -148,21 +166,21 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 				if len(allQueryExpression) > 1 {
 					recursiveCTE = true
 				}
-				anchorTable, err = q.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpression[0])
+				anchorTable, err := q.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpression[0])
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 				}
+				columns = anchorTable.GetQuerySpanResult()
 			}
-			if !recursiveCTE {
-				result = anchorTable
-			} else {
+			if recursiveCTE {
 				tempCte := &base.PseudoTable{
 					Name:    normalizedCTEName,
-					Columns: anchorTable.GetQuerySpanResult(),
+					Columns: columns,
 				}
 				originalSize := len(q.ctes)
-				q.ctes = append(q.ctes, tempCte)
 				for {
+					q.ctes = q.ctes[:originalSize]
+					q.ctes = append(q.ctes, tempCte)
 					change := false
 					if queryExpression.Query_specification() != nil && len(queryExpression.AllSql_union()) > 0 {
 						recursiveTableSource, err := q.extractTSqlSensitiveFieldsFromQuerySpecification(queryExpression.AllSql_union()[len(queryExpression.AllSql_union())-1].Query_specification())
@@ -174,7 +192,9 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 							return nil, errors.Wrapf(err, "recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(recursiveTableSourceQuerySpanResult), len(tempCte.GetQuerySpanResult()), normalizedCTEName, queryExpression.AllSql_union()[len(queryExpression.AllSql_union())-1].Query_specification().GetStart().GetLine())
 						}
 						for i := 0; i < len(recursiveTableSourceQuerySpanResult); i++ {
-							tempCte.Columns[i].SourceColumns, change = base.MergeSourceColumnSet(tempCte.Columns[i].SourceColumns, recursiveTableSourceQuerySpanResult[i].SourceColumns)
+							var anyChange bool
+							tempCte.Columns[i].SourceColumns, anyChange = base.MergeSourceColumnSet(tempCte.Columns[i].SourceColumns, recursiveTableSourceQuerySpanResult[i].SourceColumns)
+							change = change || anyChange
 						}
 					} else if allQueryExpression := queryExpression.AllQuery_expression(); len(allQueryExpression) > 1 {
 						recursiveTableSource, err := q.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpression[len(allQueryExpression)-1])
@@ -186,29 +206,32 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 							return nil, errors.Wrapf(err, "recursive clause returns %d fields, but anchor clause returns %d fields in recursive CTE %q near line %d", len(recursiveTableSourceQuerySpanResult), len(tempCte.GetQuerySpanResult()), normalizedCTEName, allQueryExpression[len(allQueryExpression)-1].GetStart().GetLine())
 						}
 						for i := 0; i < len(recursiveTableSourceQuerySpanResult); i++ {
+							var anyChange bool
 							tempCte.Columns[i].SourceColumns, change = base.MergeSourceColumnSet(tempCte.Columns[i].SourceColumns, recursiveTableSourceQuerySpanResult[i].SourceColumns)
+							change = change || anyChange
 						}
 					}
-					q.ctes = q.ctes[:originalSize]
-					originalSize = len(q.ctes)
 					if !change {
 						break
 					}
 				}
 				q.ctes = q.ctes[:originalSize]
-				result = tempCte
+				columns = tempCte.Columns
 			}
 			if v := commonTableExpression.Column_name_list(); v != nil {
-				if len(result.GetQuerySpanResult()) != len(v.AllId_()) {
-					return nil, errors.Errorf("the number of column name list %d does not match the number of columns %d", len(v.AllId_()), len(result.GetQuerySpanResult()))
+				if len(columns) != len(v.AllId_()) {
+					return nil, errors.Errorf("the number of column name list %d does not match the number of columns %d", len(v.AllId_()), len(columns))
 				}
 				for i, columnName := range v.AllId_() {
-					normalizedColumnName := tsql.NormalizeTSQLIdentifier(columnName)
-					result.Columns[i].Name = normalizedColumnName
+					normalizedColumnName := NormalizeTSQLIdentifier(columnName)
+					columns[i].Name = normalizedColumnName
 				}
 			}
 			// Append to the extractor.schemaInfo.DatabaseList
-			q.ctes = append(q.ctes, result)
+			q.ctes = append(q.ctes, &base.PseudoTable{
+				Name:    normalizedCTEName,
+				Columns: columns,
+			})
 		}
 	}
 
@@ -216,12 +239,12 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatementStanda
 }
 
 // extractTSqlSensitiveFieldsFromSelectStatement extracts sensitive fields from select_statement.
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStatement(ctx parser.ISelect_statementContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
-	queryResult, err := extractor.extractTSqlSensitiveFieldsFromQueryExpression(ctx.Query_expression())
+	queryResult, err := q.extractTSqlSensitiveFieldsFromQueryExpression(ctx.Query_expression())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_expression` in `select_statement`")
 	}
@@ -229,26 +252,25 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromSelectStateme
 	return queryResult, nil
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQueryExpression(ctx parser.IQuery_expressionContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
 	if ctx.Query_specification() != nil {
-		anchor, err := extractor.extractTSqlSensitiveFieldsFromQuerySpecification(ctx.Query_specification())
+		anchor, err := q.extractTSqlSensitiveFieldsFromQuerySpecification(ctx.Query_specification())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 		}
-		querySpanResult := anchor.GetQuerySpanResult()
 		if allSQLUnions := ctx.AllSql_union(); len(allSQLUnions) > 0 {
 			for i, sqlUnion := range allSQLUnions {
 				// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 				// So we only need to extract the sensitive fields of the right part.
-				right, err := extractor.extractTSqlSensitiveFieldsFromQuerySpecification(sqlUnion.Query_specification())
+				right, err := q.extractTSqlSensitiveFieldsFromQuerySpecification(sqlUnion.Query_specification())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, sqlUnion.GetStart().GetLine())
 				}
-				querySpanResult, err = unionTableSources(anchor, right)
+				querySpanResult, err := unionTableSources(anchor, right)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to union the %d set operator near line %d", i+1, sqlUnion.GetStart().GetLine())
 				}
@@ -259,19 +281,18 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQueryExpressi
 	}
 
 	if allQueryExpressions := ctx.AllQuery_expression(); len(allQueryExpressions) > 0 {
-		anchor, err := extractor.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpressions[0])
+		anchor, err := q.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpressions[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `query_specification` in `query_expression`")
 		}
-		querySpanResult := anchor.GetQuerySpanResult()
 		for i := 1; i < len(allQueryExpressions); i++ {
 			// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 			// So we only need to extract the sensitive fields of the right part.
-			right, err := extractor.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpressions[i])
+			right, err := q.extractTSqlSensitiveFieldsFromQueryExpression(allQueryExpressions[i])
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract the %d set operator near line %d", i+1, allQueryExpressions[i].GetStart().GetLine())
 			}
-			querySpanResult, err = unionTableSources(anchor, right)
+			querySpanResult, err := unionTableSources(anchor, right)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to union the %d set operator near line %d", i+1, allQueryExpressions[i].GetStart().GetLine())
 			}
@@ -283,20 +304,20 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQueryExpressi
 	panic("never reach here")
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecification(ctx parser.IQuery_specificationContext) (*base.PseudoTable, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
 	if from := ctx.GetFrom(); from != nil {
-		fromFieldList, err := extractor.extractTSqlSensitiveFieldsFromTableSources(ctx.Table_sources())
+		fromFieldList, err := q.extractTSqlSensitiveFieldsFromTableSources(ctx.Table_sources())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_sources` in `query_specification`")
 		}
-		originalFromFieldList := len(extractor.tableSourcesFrom)
-		extractor.tableSourcesFrom = append(extractor.tableSourcesFrom, fromFieldList...)
+		originalFromFieldList := len(q.tableSourcesFrom)
+		q.tableSourcesFrom = append(q.tableSourcesFrom, fromFieldList...)
 		defer func() {
-			extractor.tableSourcesFrom = extractor.tableSourcesFrom[:originalFromFieldList]
+			q.tableSourcesFrom = q.tableSourcesFrom[:originalFromFieldList]
 		}()
 	}
 
@@ -309,7 +330,7 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecific
 			if tableName := asterisk.Table_name(); tableName != nil {
 				normalizedDatabaseName, normalizedSchemaName, normalizedTableName = splitTableNameIntoNormalizedParts(tableName)
 			}
-			left, err := extractor.tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+			left, err := q.tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get all fields of table %s.%s.%s", normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 			}
@@ -327,7 +348,7 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromQuerySpecific
 				SourceColumns: make(base.SourceColumnSet, 0),
 			})
 		} else if expressionElem := selectListElem.Expression_elem(); expressionElem != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionElem)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expressionElem)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 			}
@@ -362,37 +383,39 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSources(ctx pars
 	return result, nil
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(ctx parser.ITable_sourceContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
 	var columns []base.QuerySpanResult
-	anchor, err := extractor.extractTSqlSensitiveFieldsFromTableSourceItem(ctx.Table_source_item())
+	anchor, err := q.extractTSqlSensitiveFieldsFromTableSourceItem(ctx.Table_source_item())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source_item` in `table_source`")
 	}
+	name := anchor.GetTableName()
 	columns = append(columns, anchor.GetQuerySpanResult()...)
 
 	if allJoinParts := ctx.AllJoin_part(); len(allJoinParts) > 0 {
+		name = ""
 		// https://learn.microsoft.com/en-us/sql/relational-databases/performance/joins?view=sql-server-ver16
 		for _, joinPart := range allJoinParts {
 			if joinOn := joinPart.Join_on(); joinOn != nil {
-				right, err := extractor.extractTSqlSensitiveFieldsFromTableSource(joinOn.Table_source())
+				right, err := q.extractTSqlSensitiveFieldsFromTableSource(joinOn.Table_source())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `join_on`")
 				}
 				columns = append(columns, right.GetQuerySpanResult()...)
 			}
 			if crossJoin := joinPart.Cross_join(); crossJoin != nil {
-				right, err := extractor.extractTSqlSensitiveFieldsFromTableSourceItem(crossJoin.Table_source_item())
+				right, err := q.extractTSqlSensitiveFieldsFromTableSourceItem(crossJoin.Table_source_item())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `cross_join`")
 				}
 				columns = append(columns, right.GetQuerySpanResult()...)
 			}
 			if apply := joinPart.Apply_(); apply != nil {
-				right, err := extractor.extractTSqlSensitiveFieldsFromTableSourceItem(apply.Table_source_item())
+				right, err := q.extractTSqlSensitiveFieldsFromTableSourceItem(apply.Table_source_item())
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields from `table_source` in `apply`")
 				}
@@ -409,6 +432,7 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSource(c
 	}
 
 	return &base.PseudoTable{
+		Name:    name,
 		Columns: columns,
 	}, nil
 }
@@ -446,7 +470,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 	// SELECT t1.id FROM blog.dbo.t1 AS TT1; -- The multi-part identifier "t1.id" could not be bound.
 	// SELECT TT1.id FROM blog.dbo.t1 AS TT1; -- OK
 	if asTableAlias := ctx.As_table_alias(); asTableAlias != nil {
-		asName := tsql.NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
+		asName := NormalizeTSQLIdentifier(asTableAlias.Table_alias().Id_())
 		result = &base.PseudoTable{
 			Name:    asName,
 			Columns: result.GetQuerySpanResult(),
@@ -460,7 +484,7 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 		}
 		for i := 0; i < len(allColumnAlias); i++ {
 			if allColumnAlias[i].Id_() != nil {
-				name := tsql.NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
+				name := NormalizeTSQLIdentifier(allColumnAlias[i].Id_())
 				result = &base.PseudoTable{
 					Name:    result.GetTableName(),
 					Columns: result.GetQuerySpanResult(),
@@ -483,21 +507,21 @@ func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableSourceItem(ctx p
 	return result, nil
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(ctx parser.IDerived_tableContext) (base.TableSource, error) {
 	if ctx == nil {
 		return nil, nil
 	}
 
 	allSubquery := ctx.AllSubquery()
 	if len(allSubquery) > 0 {
-		anchor, err := extractor.extractTSqlSensitiveFieldsFromSubquery(allSubquery[0])
+		anchor, err := q.extractTSqlSensitiveFieldsFromSubquery(allSubquery[0])
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to extract sensitive fields from `subquery` in `derived_table`")
 		}
 		for i := 1; i < len(allSubquery); i++ {
 			// For UNION operator, the number of the columns in the result set is the same, and will use the left part's column name.
 			// So we only need to extract the sensitive fields of the right part.
-			right, err := extractor.extractTSqlSensitiveFieldsFromSubquery(allSubquery[i])
+			right, err := q.extractTSqlSensitiveFieldsFromSubquery(allSubquery[i])
 			rightQuerySpanResult := right.GetQuerySpanResult()
 			anchorQuerySpanResult := anchor.GetQuerySpanResult()
 			if err != nil {
@@ -514,13 +538,13 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromDerivedTable(
 	}
 
 	if tableValueConstructor := ctx.Table_value_constructor(); tableValueConstructor != nil {
-		return extractor.extractTSqlSensitiveFieldsFromTableValueConstructor(tableValueConstructor)
+		return q.extractTSqlSensitiveFieldsFromTableValueConstructor(tableValueConstructor)
 	}
 
 	panic("never reach here")
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueConstructor(ctx parser.ITable_value_constructorContext) (base.TableSource, error) {
 	if allExpressionList := ctx.AllExpression_list_(); len(allExpressionList) > 0 {
 		// The number of expression in each expression list should be the same.
 		// But we do not check, just use the first one, and engine will throw a compilation error if the number of expressions are not the same.
@@ -529,7 +553,7 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueCon
 			Columns: make([]base.QuerySpanResult, 0, len(expressionList.AllExpression())),
 		}
 		for _, expression := range expressionList.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to extract sensitive fields from `expression` in `table_value_constructor`")
 			}
@@ -540,11 +564,11 @@ func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromTableValueCon
 	panic("never reach here")
 }
 
-func (extractor *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) (*base.PseudoTable, error) {
-	return extractor.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
+func (q *querySpanExtractor) extractTSqlSensitiveFieldsFromSubquery(ctx parser.ISubqueryContext) (*base.PseudoTable, error) {
+	return q.extractTSqlSensitiveFieldsFromSelectStatement(ctx.Select_statement())
 }
 
-func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext) (base.TableSource, error) {
+func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_table_nameContext) (base.TableSource, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(fullTableName, "" /* Linked Server Name */, "", "")
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
@@ -555,41 +579,41 @@ func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IF
 	// also, we record the cte in ascending order, so we should check the ctes in descending order
 	// to find the nearest match.
 	if normalizedDatabaseName == "" && normalizedSchemaName == "" {
-		for _, cte := range extractor.ctes {
-			if extractor.isIdentifierEqual(normalizedTableName, cte.Name) {
+		for _, cte := range q.ctes {
+			if q.isIdentifierEqual(normalizedTableName, cte.Name) {
 				return cte, nil
 			}
 		}
 	}
 
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, "" /* Linked Server Name */, extractor.connectedDB, extractor.connectedSchema)
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableName(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
 	}
-	allDatabases, err := extractor.l(extractor.ctx)
+	allDatabases, err := q.l(q.ctx)
 	if err != nil {
 		return nil, errors.Errorf("failed to list databases: %v", err)
 	}
 
 	for _, databaseName := range allDatabases {
-		if normalizedDatabaseName != "" && !extractor.isIdentifierEqual(normalizedDatabaseName, databaseName) {
+		if normalizedDatabaseName != "" && !q.isIdentifierEqual(normalizedDatabaseName, databaseName) {
 			continue
 		}
-		_, database, err := extractor.f(extractor.ctx, databaseName)
+		_, database, err := q.f(q.ctx, databaseName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database %s metadata", databaseName)
 		}
 
 		allSchemaNames := database.ListSchemaNames()
 		for _, schemaName := range allSchemaNames {
-			if normalizedSchemaName != "" && !extractor.isIdentifierEqual(normalizedSchemaName, schemaName) {
+			if normalizedSchemaName != "" && !q.isIdentifierEqual(normalizedSchemaName, schemaName) {
 				continue
 			}
 			schemaSchema := database.GetSchema(schemaName)
 			allTableNames := schemaSchema.ListTableNames()
 			for _, tableName := range allTableNames {
-				if !extractor.isIdentifierEqual(normalizedTableName, tableName) {
+				if !q.isIdentifierEqual(normalizedTableName, tableName) {
 					continue
 				}
 				table := schemaSchema.GetTable(tableName)
@@ -617,73 +641,7 @@ func (extractor *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IF
 	}
 }
 
-// splitTableNameIntoNormalizedParts splits the table name into normalized 3 parts: database, schema, table.
-func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (string, string, string) {
-	var database string
-	if d := tableName.GetDatabase(); d != nil {
-		normalizedD := tsql.NormalizeTSQLIdentifier(d)
-		if normalizedD != "" {
-			database = normalizedD
-		}
-	}
-
-	var schema string
-	if s := tableName.GetSchema(); s != nil {
-		normalizedS := tsql.NormalizeTSQLIdentifier(s)
-		if normalizedS != "" {
-			schema = normalizedS
-		}
-	}
-
-	var table string
-	if t := tableName.GetTable(); t != nil {
-		normalizedT := tsql.NormalizeTSQLIdentifier(t)
-		if normalizedT != "" {
-			table = normalizedT
-		}
-	}
-	return database, schema, table
-}
-
-// normalizeFullTableName normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
-func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
-	if fullTableName == nil {
-		return "", "", "", ""
-	}
-	// TODO(zp): unify here and the related code in sql_service.go
-	linkedServer := normalizedFallbackLinkedServerName
-	if server := fullTableName.GetLinkedServer(); server != nil {
-		linkedServer = tsql.NormalizeTSQLIdentifier(server)
-	}
-
-	database := normalizedFallbackDatabaseName
-	if d := fullTableName.GetDatabase(); d != nil {
-		normalizedD := tsql.NormalizeTSQLIdentifier(d)
-		if normalizedD != "" {
-			database = normalizedD
-		}
-	}
-
-	schema := normalizedFallbackSchemaName
-	if s := fullTableName.GetSchema(); s != nil {
-		normalizedS := tsql.NormalizeTSQLIdentifier(s)
-		if normalizedS != "" {
-			schema = normalizedS
-		}
-	}
-
-	var table string
-	if t := fullTableName.GetTable(); t != nil {
-		normalizedT := tsql.NormalizeTSQLIdentifier(t)
-		if normalizedT != "" {
-			table = normalizedT
-		}
-	}
-
-	return linkedServer, database, schema, table
-}
-
-func (extractor *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName string) ([]base.QuerySpanResult, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -708,14 +666,14 @@ func (extractor *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(nor
 		mask |= maskDatabaseName
 	}
 
-	for _, tableSource := range extractor.tableSourcesFrom {
-		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
+	for _, tableSource := range q.tableSourcesFrom {
+		if mask&maskDatabaseName != 0 && !q.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
 			continue
 		}
-		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
+		if mask&maskSchemaName != 0 && !q.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
 			continue
 		}
-		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
+		if mask&maskTableName != 0 && !q.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
 			continue
 		}
 		return tableSource.GetQuerySpanResult(), nil
@@ -724,17 +682,17 @@ func (extractor *querySpanExtractor) tsqlGetAllFieldsOfTableInFromOrOuterCTE(nor
 	return nil, errors.Errorf(`no matching table %q.%q.%q`, normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 }
 
-func (extractor *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) tsqlIsFullColumnNameSensitive(ctx parser.IFull_column_nameContext) (base.QuerySpanResult, error) {
 	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizeFullTableName(ctx.Full_table_name(), "", "", "")
 	if normalizedLinkedServer != "" {
 		return base.QuerySpanResult{}, errors.Errorf("linked server is not supported yet, but found %q", ctx.GetText())
 	}
-	normalizedColumnName := tsql.NormalizeTSQLIdentifier(ctx.Id_())
+	normalizedColumnName := NormalizeTSQLIdentifier(ctx.Id_())
 
-	return extractor.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
+	return q.tsqlIsFieldSensitive(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 }
 
-func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName string, normalizedSchemaName string, normalizedTableName string, normalizedColumnName string) (base.QuerySpanResult, error) {
 	type maskType = uint8
 	const (
 		maskNone         maskType = 0
@@ -783,18 +741,18 @@ func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName
 	//
 	// Further more, users can not use the original table name if they specify the alias name:
 	// SELECT T1.C1 FROM T1 AS T3, T2; -- invalid identifier 'ADDRESS.ID'
-	for _, tableSource := range extractor.tableSourcesFrom {
-		if mask&maskDatabaseName != 0 && !extractor.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
+	for _, tableSource := range q.tableSourcesFrom {
+		if mask&maskDatabaseName != 0 && !q.isIdentifierEqual(normalizedDatabaseName, tableSource.GetDatabaseName()) {
 			continue
 		}
-		if mask&maskSchemaName != 0 && !extractor.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
+		if mask&maskSchemaName != 0 && !q.isIdentifierEqual(normalizedSchemaName, tableSource.GetSchemaName()) {
 			continue
 		}
-		if mask&maskTableName != 0 && !extractor.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
+		if mask&maskTableName != 0 && !q.isIdentifierEqual(normalizedTableName, tableSource.GetTableName()) {
 			continue
 		}
 		for _, column := range tableSource.GetQuerySpanResult() {
-			if mask&maskColumnName != 0 && !extractor.isIdentifierEqual(normalizedColumnName, column.Name) {
+			if mask&maskColumnName != 0 && !q.isIdentifierEqual(normalizedColumnName, column.Name) {
 				continue
 			}
 			return column, nil
@@ -805,8 +763,8 @@ func (extractor *querySpanExtractor) tsqlIsFieldSensitive(normalizedDatabaseName
 
 // isIdentifierEqual compares the identifier with the given normalized parts, returns true if they are equal.
 // It will consider the case sensitivity based on the current database.
-func (extractor *querySpanExtractor) isIdentifierEqual(a, b string) bool {
-	if !extractor.ignoreCaseSensitive {
+func (q *querySpanExtractor) isIdentifierEqual(a, b string) bool {
+	if !q.ignoreCaseSensitive {
 		return a == b
 	}
 	if len(a) != len(b) {
@@ -823,7 +781,7 @@ func (extractor *querySpanExtractor) isIdentifierEqual(a, b string) bool {
 
 // getQuerySpanResultFromExpr returns true if the expression element is sensitive, and returns the column name.
 // It is the closure of the expression_elemContext, it will recursively check the sub expression element.
-func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (base.QuerySpanResult, error) {
 	if ctx == nil {
 		return base.QuerySpanResult{
 			Name:          "",
@@ -832,22 +790,22 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 	}
 	switch ctx := ctx.(type) {
 	case *parser.Expression_elemContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression element is sensitive")
 		}
 		if columnAlias := ctx.Column_alias(); columnAlias != nil {
-			querySpanResult.Name = tsql.NormalizeTSQLIdentifier(columnAlias.Id_())
+			querySpanResult.Name = NormalizeTSQLIdentifier(columnAlias.Id_())
 		} else if asColumnAlias := ctx.As_column_alias(); asColumnAlias != nil {
-			querySpanResult.Name = tsql.NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
+			querySpanResult.Name = NormalizeTSQLIdentifier(asColumnAlias.Column_alias().Id_())
 		}
 		return querySpanResult, nil
 	case *parser.ExpressionContext:
 		if ctx.Primitive_expression() != nil {
-			return extractor.getQuerySpanResultFromExpr(ctx.Primitive_expression())
+			return q.getQuerySpanResultFromExpr(ctx.Primitive_expression())
 		}
 		if ctx.Function_call() != nil {
-			return extractor.getQuerySpanResultFromExpr(ctx.Function_call())
+			return q.getQuerySpanResultFromExpr(ctx.Function_call())
 		}
 		anchor := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -855,7 +813,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression is sensitive")
 				}
@@ -863,39 +821,39 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if valueCall := ctx.Value_call(); valueCall != nil {
-			return extractor.getQuerySpanResultFromExpr(valueCall)
+			return q.getQuerySpanResultFromExpr(valueCall)
 		}
 		if queryCall := ctx.Query_call(); queryCall != nil {
-			return extractor.getQuerySpanResultFromExpr(queryCall)
+			return q.getQuerySpanResultFromExpr(queryCall)
 		}
 		if existCall := ctx.Exist_call(); existCall != nil {
-			return extractor.getQuerySpanResultFromExpr(existCall)
+			return q.getQuerySpanResultFromExpr(existCall)
 		}
 		if modifyCall := ctx.Modify_call(); modifyCall != nil {
-			return extractor.getQuerySpanResultFromExpr(modifyCall)
+			return q.getQuerySpanResultFromExpr(modifyCall)
 		}
 		if hierarchyIDCall := ctx.Hierarchyid_call(); hierarchyIDCall != nil {
-			return extractor.getQuerySpanResultFromExpr(hierarchyIDCall)
+			return q.getQuerySpanResultFromExpr(hierarchyIDCall)
 		}
 		if caseExpression := ctx.Case_expression(); caseExpression != nil {
-			return extractor.getQuerySpanResultFromExpr(caseExpression)
+			return q.getQuerySpanResultFromExpr(caseExpression)
 		}
 		if fullColumnName := ctx.Full_column_name(); fullColumnName != nil {
-			return extractor.getQuerySpanResultFromExpr(fullColumnName)
+			return q.getQuerySpanResultFromExpr(fullColumnName)
 		}
 		if bracketExpression := ctx.Bracket_expression(); bracketExpression != nil {
-			return extractor.getQuerySpanResultFromExpr(bracketExpression)
+			return q.getQuerySpanResultFromExpr(bracketExpression)
 		}
 		if unaryOperationExpression := ctx.Unary_operator_expression(); unaryOperationExpression != nil {
-			return extractor.getQuerySpanResultFromExpr(unaryOperationExpression)
+			return q.getQuerySpanResultFromExpr(unaryOperationExpression)
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			return extractor.getQuerySpanResultFromExpr(overClause)
+			return q.getQuerySpanResultFromExpr(overClause)
 		}
 		return anchor, nil
 	case *parser.Unary_operator_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
-			return extractor.getQuerySpanResultFromExpr(expression)
+			return q.getQuerySpanResultFromExpr(expression)
 		}
 		return base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -903,10 +861,10 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}, nil
 	case *parser.Bracket_expressionContext:
 		if expression := ctx.Expression(); expression != nil {
-			return extractor.getQuerySpanResultFromExpr(expression)
+			return q.getQuerySpanResultFromExpr(expression)
 		}
 		if subquery := ctx.Subquery(); subquery != nil {
-			return extractor.getQuerySpanResultFromExpr(subquery)
+			return q.getQuerySpanResultFromExpr(subquery)
 		}
 		return base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -919,7 +877,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
@@ -928,7 +886,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allSwitchSections := ctx.AllSwitch_section(); len(allSwitchSections) > 0 {
 			for _, switchSection := range allSwitchSections {
-				querySpanExtractor, err := extractor.getQuerySpanResultFromExpr(switchSection)
+				querySpanExtractor, err := q.getQuerySpanResultFromExpr(switchSection)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
@@ -937,7 +895,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allSwitchSearchConditionSections := ctx.AllSwitch_search_condition_section(); len(allSwitchSearchConditionSections) > 0 {
 			for _, switchSearchConditionSection := range allSwitchSearchConditionSections {
-				querySpanExtractor, err := extractor.getQuerySpanResultFromExpr(switchSearchConditionSection)
+				querySpanExtractor, err := q.getQuerySpanResultFromExpr(switchSearchConditionSection)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the case_expression is sensitive")
 				}
@@ -952,7 +910,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_setion is sensitive")
 				}
@@ -966,7 +924,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if searchCondition := ctx.Search_condition(); searchCondition != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(searchCondition)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(searchCondition)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
@@ -977,7 +935,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switch_search_condition_section is sensitive")
 			}
@@ -990,7 +948,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		return anchor, nil
 	case *parser.Search_conditionContext:
 		if predicate := ctx.Predicate(); predicate != nil {
-			return extractor.getQuerySpanResultFromExpr(predicate)
+			return q.getQuerySpanResultFromExpr(predicate)
 		}
 		anchor := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -998,7 +956,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allSearchConditions := ctx.AllSearch_condition(); len(allSearchConditions) > 0 {
 			for _, searchCondition := range allSearchConditions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(searchCondition)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(searchCondition)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the search_condition is sensitive")
 				}
@@ -1008,10 +966,10 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		return anchor, nil
 	case *parser.PredicateContext:
 		if subquery := ctx.Subquery(); subquery != nil {
-			return extractor.getQuerySpanResultFromExpr(subquery)
+			return q.getQuerySpanResultFromExpr(subquery)
 		}
 		if freeTextPredicate := ctx.Freetext_predicate(); freeTextPredicate != nil {
-			return extractor.getQuerySpanResultFromExpr(freeTextPredicate)
+			return q.getQuerySpanResultFromExpr(freeTextPredicate)
 		}
 
 		anchor := base.QuerySpanResult{
@@ -1020,7 +978,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the predicate is sensitive")
 				}
@@ -1028,7 +986,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the predicate is sensitive")
 			}
@@ -1046,7 +1004,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
@@ -1055,7 +1013,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allCullColumnName := ctx.AllFull_column_name(); len(allCullColumnName) > 0 {
 			for _, fullColumnName := range allCullColumnName {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(fullColumnName)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(fullColumnName)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_predicate is sensitive")
 				}
@@ -1066,12 +1024,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &querySpanExtractor{
-			connectedDB:     extractor.connectedDB,
-			connectedSchema: extractor.connectedSchema,
-			f:               extractor.f,
-			l:               extractor.l,
+			connectedDB:     q.connectedDB,
+			connectedSchema: q.connectedSchema,
+			f:               q.f,
+			l:               q.l,
 			// outerTableSources: extractor.outerTableSources,
-			ctes: extractor.ctes,
+			ctes:                q.ctes,
+			ignoreCaseSensitive: q.ignoreCaseSensitive,
 		}
 		tableSource, err := cloneExtractor.extractTSqlSensitiveFieldsFromSubquery(ctx)
 		// The expect behavior is the fieldInfo contains only one field, which is the column name,
@@ -1095,7 +1054,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the hierarchyid_call is sensitive")
 				}
@@ -1125,7 +1084,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}, nil
 	case *parser.Primitive_expressionContext:
 		if ctx.Primitive_constant() != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Primitive_constant())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Primitive_constant())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the primitive constant is sensitive")
 			}
@@ -1148,14 +1107,14 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		// We just need to check the first token to see if it is a sensitive function.
 		panic("never reach here")
 	case *parser.RANKING_WINDOWED_FUNCContext:
-		return extractor.getQuerySpanResultFromExpr(ctx.Ranking_windowed_function())
+		return q.getQuerySpanResultFromExpr(ctx.Ranking_windowed_function())
 	case *parser.Ranking_windowed_functionContext:
 		anchor := base.QuerySpanResult{
 			Name:          ctx.GetText(),
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
@@ -1166,7 +1125,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ranking_windowed_function is sensitive")
 			}
@@ -1183,7 +1142,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
@@ -1194,7 +1153,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(orderByClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
@@ -1205,7 +1164,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if rowOrRangeClause := ctx.Row_or_range_clause(); rowOrRangeClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(rowOrRangeClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(rowOrRangeClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the over_clause is sensitive")
 			}
@@ -1222,7 +1181,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the expression_list is sensitive")
 			}
@@ -1239,7 +1198,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, orderByExpression := range ctx.GetOrder_bys() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByExpression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(orderByExpression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the order_by_clause is sensitive")
 			}
@@ -1251,14 +1210,14 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.Order_by_expressionContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the order_by_expression is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.Row_or_range_clauseContext:
 		if windowFrameExtent := ctx.Window_frame_extent(); windowFrameExtent != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFrameExtent)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(windowFrameExtent)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the row_or_range_clause is sensitive")
 			}
@@ -1267,7 +1226,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		panic("never reach here")
 	case *parser.Window_frame_extentContext:
 		if windowFramePreceding := ctx.Window_frame_preceding(); windowFramePreceding != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFramePreceding)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(windowFramePreceding)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 			}
@@ -1279,23 +1238,24 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 				SourceColumns: make(base.SourceColumnSet),
 			}
 			for _, windowFrameBound := range windowFrameBounds {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(windowFrameBound)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(windowFrameBound)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_extent is sensitive")
 				}
 				anchor.SourceColumns, _ = base.MergeSourceColumnSet(anchor.SourceColumns, querySpanResult.SourceColumns)
 			}
+			return anchor, nil
 		}
 		panic("never reach here")
 	case *parser.Window_frame_boundContext:
 		if preceding := ctx.Window_frame_preceding(); preceding != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(preceding)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(preceding)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
 			return querySpanResult, nil
 		} else if following := ctx.Window_frame_following(); following != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(following)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(following)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the window_frame_bound is sensitive")
 			}
@@ -1313,14 +1273,14 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}, nil
 	case *parser.AGGREGATE_WINDOWED_FUNCContext:
-		return extractor.getQuerySpanResultFromExpr(ctx.Aggregate_windowed_function())
+		return q.getQuerySpanResultFromExpr(ctx.Aggregate_windowed_function())
 	case *parser.Aggregate_windowed_functionContext:
 		anchor := base.QuerySpanResult{
 			Name:          ctx.GetText(),
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if allDistinctExpression := ctx.All_distinct_expression(); allDistinctExpression != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(allDistinctExpression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(allDistinctExpression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
@@ -1331,7 +1291,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
@@ -1342,7 +1302,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expression := ctx.Expression(); expression != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
@@ -1353,7 +1313,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the aggregate_windowed_function is sensitive")
 			}
@@ -1365,13 +1325,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.All_distinct_expressionContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the all_distinct_expression is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.ANALYTIC_WINDOWED_FUNCContext:
-		return extractor.getQuerySpanResultFromExpr(ctx.Analytic_windowed_function())
+		return q.getQuerySpanResultFromExpr(ctx.Analytic_windowed_function())
 	case *parser.Analytic_windowed_functionContext:
 		anchor := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -1379,7 +1339,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 				}
@@ -1387,7 +1347,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if overClause := ctx.Over_clause(); overClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(overClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(overClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
@@ -1398,7 +1358,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expressionList)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expressionList)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
@@ -1409,7 +1369,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if orderByClause := ctx.Order_by_clause(); orderByClause != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(orderByClause)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(orderByClause)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the analytic_windowed_function is sensitive")
 			}
@@ -1421,7 +1381,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.BUILT_IN_FUNCContext:
-		return extractor.getQuerySpanResultFromExpr(ctx.Built_in_functions())
+		return q.getQuerySpanResultFromExpr(ctx.Built_in_functions())
 	case *parser.APP_NAMEContext:
 		return base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -1433,7 +1393,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the applock_mode is sensitive")
 			}
@@ -1450,7 +1410,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the applock_test is sensitive")
 			}
@@ -1467,7 +1427,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the assemblyproperty is sensitive")
 			}
@@ -1484,7 +1444,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the col_length is sensitive")
 			}
@@ -1501,7 +1461,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the col_name is sensitive")
 			}
@@ -1518,7 +1478,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the columnproperty is sensitive")
 			}
@@ -1535,7 +1495,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the databasepropertyex is sensitive")
 			}
@@ -1547,43 +1507,43 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.DB_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the db_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DB_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the db_name is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FILE_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FILE_IDEXContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_idex is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FILE_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the file_name is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FILEGROUP_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroup_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FILEGROUP_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroup_name is sensitive")
 		}
@@ -1594,7 +1554,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filegroupproperty is sensitive")
 			}
@@ -1611,7 +1571,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fileproperty is sensitive")
 			}
@@ -1628,7 +1588,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the filepropertyex is sensitive")
 			}
@@ -1645,7 +1605,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fulltextcatalogproperty is sensitive")
 			}
@@ -1657,7 +1617,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.FULLTEXTSERVICEPROPERTYContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the fulltextserviceproperty is sensitive")
 		}
@@ -1668,7 +1628,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the index_col is sensitive")
 			}
@@ -1685,7 +1645,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the indexkey_property is sensitive")
 			}
@@ -1702,7 +1662,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the indexproperty is sensitive")
 			}
@@ -1714,7 +1674,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.OBJECT_DEFINITIONContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_definition is sensitive")
 		}
@@ -1725,7 +1685,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_id is sensitive")
 			}
@@ -1742,7 +1702,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_name is sensitive")
 			}
@@ -1759,7 +1719,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the object_schema_name is sensitive")
 			}
@@ -1776,7 +1736,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the objectproperty is sensitive")
 			}
@@ -1793,7 +1753,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the objectpropertyex is sensitive")
 			}
@@ -1810,7 +1770,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the parsename is sensitive")
 			}
@@ -1822,19 +1782,19 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.SCHEMA_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the schema_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SCHEMA_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the schema_name is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SERVERPROPERTYContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the serverproperty is sensitive")
 		}
@@ -1845,7 +1805,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stats_date is sensitive")
 			}
@@ -1857,13 +1817,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.TYPE_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the type_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.TYPE_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the type_name is sensitive")
 		}
@@ -1874,7 +1834,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the typeproperty is sensitive")
 			}
@@ -1886,13 +1846,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.ASCIIContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ascii is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.CHARContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the char is sensitive")
 		}
@@ -1903,7 +1863,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the charindex is sensitive")
 			}
@@ -1920,7 +1880,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the concat is sensitive")
 			}
@@ -1937,7 +1897,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the concat_ws is sensitive")
 			}
@@ -1954,7 +1914,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the difference is sensitive")
 			}
@@ -1971,7 +1931,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the format is sensitive")
 			}
@@ -1988,7 +1948,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the left is sensitive")
 			}
@@ -2000,25 +1960,25 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.LENContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the len is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.LOWERContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the lower is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.LTRIMContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ltrim is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.NCHARContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the nchar is sensitive")
 		}
@@ -2029,7 +1989,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the patindex is sensitive")
 			}
@@ -2046,7 +2006,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the quotename is sensitive")
 			}
@@ -2063,7 +2023,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the replace is sensitive")
 			}
@@ -2080,7 +2040,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the replicate is sensitive")
 			}
@@ -2092,7 +2052,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.REVERSEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the reverse is sensitive")
 		}
@@ -2103,7 +2063,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the right is sensitive")
 			}
@@ -2115,19 +2075,19 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.RTRIMContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the rtrim is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SOUNDEXContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the soundex is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SPACEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the space is sensitive")
 		}
@@ -2138,7 +2098,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the str is sensitive")
 			}
@@ -2155,7 +2115,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stringagg is sensitive")
 			}
@@ -2172,7 +2132,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the string_escape is sensitive")
 			}
@@ -2189,7 +2149,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the stuff is sensitive")
 			}
@@ -2206,7 +2166,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the substring is sensitive")
 			}
@@ -2223,7 +2183,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the translate is sensitive")
 			}
@@ -2240,7 +2200,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the trim is sensitive")
 			}
@@ -2252,13 +2212,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.UNICODEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the unicode is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.UPPERContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the upper is sensitive")
 		}
@@ -2269,7 +2229,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the binary_checksum is sensitive")
 			}
@@ -2286,7 +2246,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the checksum is sensitive")
 			}
@@ -2301,13 +2261,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}, nil
 	case *parser.COMPRESSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the compress is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DECOMPRESSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the decompress is sensitive")
 		}
@@ -2318,7 +2278,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the formatmessage is sensitive")
 			}
@@ -2335,7 +2295,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isnull is sensitive")
 			}
@@ -2347,19 +2307,19 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.ISNUMERICContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isnumeric is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.CASTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cast is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.TRY_CASTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the try_cast is sensitive")
 		}
@@ -2370,7 +2330,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the convert is sensitive")
 			}
@@ -2387,7 +2347,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the coalesce is sensitive")
 			}
@@ -2399,43 +2359,43 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.CURSOR_STATUSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cursor_status is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.CERT_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cert_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DATALENGTHContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datalength is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.IDENT_CURRENTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_current is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.IDENT_INCRContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_incr is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.IDENT_SEEDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the  ident_seed is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SQL_VARIANT_PROPERTYContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sql_variant_property is sensitive")
 		}
@@ -2446,7 +2406,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the date_bucket is sensitive")
 			}
@@ -2463,7 +2423,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the dateadd is sensitive")
 			}
@@ -2480,7 +2440,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datediff is sensitive")
 			}
@@ -2497,7 +2457,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datediff_big is sensitive")
 			}
@@ -2514,7 +2474,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datefromparts is sensitive")
 			}
@@ -2526,13 +2486,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.DATENAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datename is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DATEPARTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datepart is sensitive")
 		}
@@ -2543,7 +2503,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetime2fromparts is sensitive")
 			}
@@ -2560,7 +2520,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetimefromparts is sensitive")
 			}
@@ -2577,7 +2537,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetimeoffsetfromparts is sensitive")
 			}
@@ -2589,13 +2549,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.DATETRUNCContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the datetrunc is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DAYContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the day is sensitive")
 		}
@@ -2606,7 +2566,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the eomonth is sensitive")
 			}
@@ -2618,13 +2578,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.ISDATEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isdate is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.MONTHContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the month is sensitive")
 		}
@@ -2635,7 +2595,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the smalldatetimefromparts is sensitive")
 			}
@@ -2652,7 +2612,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the switchoffset is sensitive")
 			}
@@ -2669,7 +2629,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the timefromparts is sensitive")
 			}
@@ -2686,7 +2646,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the todatetimeoffset is sensitive")
 			}
@@ -2698,7 +2658,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.YEARContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the year is sensitive")
 		}
@@ -2709,7 +2669,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the nullif is sensitive")
 			}
@@ -2726,7 +2686,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the parse is sensitive")
 			}
@@ -2743,7 +2703,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the iif is sensitive")
 			}
@@ -2760,7 +2720,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the isjson is sensitive")
 			}
@@ -2777,7 +2737,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_array is sensitive")
 			}
@@ -2794,7 +2754,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_value is sensitive")
 			}
@@ -2811,7 +2771,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_query is sensitive")
 			}
@@ -2828,7 +2788,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_modify is sensitive")
 			}
@@ -2845,7 +2805,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the json_path_exists is sensitive")
 			}
@@ -2857,25 +2817,25 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.ABSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the abs is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.ACOSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the acos is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.ASINContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the asin is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.ATANContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the atan is sensitive")
 		}
@@ -2886,7 +2846,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the atn2 is sensitive")
 			}
@@ -2898,37 +2858,37 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.CEILINGContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the ceiling is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.COSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cos is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.COTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the cot is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.DEGREESContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the degrees is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.EXPContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the exp is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.FLOORContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the floor is sensitive")
 		}
@@ -2939,7 +2899,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the log is sensitive")
 			}
@@ -2951,7 +2911,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.LOG10Context:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the log10 is sensitive")
 		}
@@ -2962,7 +2922,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the power is sensitive")
 			}
@@ -2974,13 +2934,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.RADIANSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the radians is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.RANDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the rand is sensitive")
 		}
@@ -2991,7 +2951,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the round is sensitive")
 			}
@@ -3003,38 +2963,38 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.MATH_SIGNContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the math_sign is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SINContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sin is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SQRTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sqrt is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SQUAREContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the square is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.TANContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the tan is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.GREATESTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the greatest is sensitive")
 			}
@@ -3043,7 +3003,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		panic("never reach here")
 	case *parser.LEASTContext:
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the least is sensitive")
 			}
@@ -3051,7 +3011,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		panic("never reach here")
 	case *parser.CERTENCODEDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the certencoded is sensitive")
 		}
@@ -3062,7 +3022,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the certprivatekey is sensitive")
 			}
@@ -3074,13 +3034,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.DATABASE_PRINCIPAL_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the database_principal_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.HAS_DBACCESSContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the has_dbaccess is sensitive")
 		}
@@ -3091,7 +3051,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the has_perms_by_name is sensitive")
 			}
@@ -3103,7 +3063,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.IS_MEMBERContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_member is sensitive")
 		}
@@ -3114,7 +3074,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_rolemember is sensitive")
 			}
@@ -3131,7 +3091,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the is_srvrolemember is sensitive")
 			}
@@ -3148,7 +3108,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the loginproperty is sensitive")
 			}
@@ -3165,7 +3125,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the permissions is sensitive")
 			}
@@ -3177,7 +3137,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.PWDENCRYPTContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the pwdencrypt is sensitive")
 		}
@@ -3188,7 +3148,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the pwdcompare is sensitive")
 			}
@@ -3200,19 +3160,19 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.SESSIONPROPERTYContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the sessionproperty is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SUSER_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.SUSER_SNAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_sname is sensitive")
 		}
@@ -3223,7 +3183,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		for _, expression := range ctx.AllExpression() {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+			querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the suser_sid is sensitive")
 			}
@@ -3235,13 +3195,13 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.USER_IDContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the user_id is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.USER_NAMEContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the user_name is sensitive")
 		}
@@ -3252,7 +3212,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			SourceColumns: make(base.SourceColumnSet),
 		}
 		if expressionList := ctx.Expression_list_(); expressionList != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Expression_list_())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Expression_list_())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
@@ -3263,7 +3223,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if scalarFunctionName := ctx.Scalar_function_name(); scalarFunctionName != nil {
-			querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Scalar_function_name())
+			querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Scalar_function_name())
 			if err != nil {
 				return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the scalar_function is sensitive")
 			}
@@ -3286,7 +3246,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		if allFullColumnName := ctx.AllFull_column_name(); len(allFullColumnName) > 0 {
 			for _, fullColumnName := range allFullColumnName {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(fullColumnName)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(fullColumnName)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
@@ -3294,12 +3254,8 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 			}
 		}
 		if allExpressions := ctx.AllExpression(); len(allExpressions) > 0 {
-			anchor := base.QuerySpanResult{
-				Name:          ctx.GetText(),
-				SourceColumns: make(base.SourceColumnSet),
-			}
 			for _, expression := range allExpressions {
-				querySpanResult, err := extractor.getQuerySpanResultFromExpr(expression)
+				querySpanResult, err := q.getQuerySpanResultFromExpr(expression)
 				if err != nil {
 					return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the freetext_function is sensitive")
 				}
@@ -3308,19 +3264,19 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 		}
 		return anchor, nil
 	case *parser.Full_column_nameContext:
-		querySpanResult, err := extractor.tsqlIsFullColumnNameSensitive(ctx)
+		querySpanResult, err := q.tsqlIsFullColumnNameSensitive(ctx)
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the full_column_name is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.PARTITION_FUNCContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Partition_function().Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Partition_function().Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the partition_function is sensitive")
 		}
 		return querySpanResult, nil
 	case *parser.HIERARCHYID_METHODContext:
-		querySpanResult, err := extractor.getQuerySpanResultFromExpr(ctx.Hierarchyid_static_method().Expression())
+		querySpanResult, err := q.getQuerySpanResultFromExpr(ctx.Hierarchyid_static_method().Expression())
 		if err != nil {
 			return base.QuerySpanResult{}, errors.Wrapf(err, "failed to check if the hierarchyid_method is sensitive")
 		}
@@ -3329,7 +3285,7 @@ func (extractor *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleCo
 	panic("never reach here")
 }
 
-// unionTableSources union two or more table sources, return the original one if there is only one table source
+// unionTableSources union two or more table sources, return the original one if there is only one table source.
 func unionTableSources(tableSources ...base.TableSource) ([]base.QuerySpanResult, error) {
 	if len(tableSources) == 0 {
 		return nil, errors.New("no table source to union")
@@ -3349,4 +3305,116 @@ func unionTableSources(tableSources ...base.TableSource) ([]base.QuerySpanResult
 	}
 
 	return anchor, nil
+}
+
+// getAccessTables extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
+func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) (base.SourceColumnSet, error) {
+	parseResult, err := ParseTSQL(selectStatement)
+	if err != nil {
+		return nil, err
+	}
+	if parseResult == nil {
+		return nil, nil
+	}
+
+	l := &accessTableListener{
+		currentDatabase: currentNormalizedDatabase,
+		currentSchema:   currentNormalizedSchema,
+		resourceMap:     make(base.SourceColumnSet),
+	}
+
+	var result []base.SchemaResource
+	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].String() < result[j].String()
+	})
+
+	return l.resourceMap, nil
+}
+
+type accessTableListener struct {
+	*parser.BaseTSqlParserListener
+
+	currentDatabase string
+	currentSchema   string
+	resourceMap     base.SourceColumnSet
+}
+
+// EnterTable_source_item is called when the parser enters the table_source_item production.
+func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_itemContext) {
+	if fullTableName := ctx.Full_table_name(); fullTableName != nil {
+		var linkedServer string
+		if server := fullTableName.GetLinkedServer(); server != nil {
+			linkedServer = NormalizeTSQLIdentifier(server)
+		}
+
+		database := l.currentDatabase
+		if d := fullTableName.GetDatabase(); d != nil {
+			normalizedD := NormalizeTSQLIdentifier(d)
+			if normalizedD != "" {
+				database = normalizedD
+			}
+		}
+
+		schema := l.currentSchema
+		if s := fullTableName.GetSchema(); s != nil {
+			normalizedS := NormalizeTSQLIdentifier(s)
+			if normalizedS != "" {
+				schema = normalizedS
+			}
+		}
+
+		var table string
+		if t := fullTableName.GetTable(); t != nil {
+			normalizedT := NormalizeTSQLIdentifier(t)
+			if normalizedT != "" {
+				table = normalizedT
+			}
+		}
+
+		l.resourceMap[base.ColumnResource{
+			Server:   linkedServer,
+			Database: database,
+			Schema:   schema,
+			Table:    table,
+		}] = true
+	}
+
+	if rowsetFunction := ctx.Rowset_function(); rowsetFunction != nil {
+		return
+	}
+
+	// https://simonlearningsqlserver.wordpress.com/tag/changetable/
+	// It seems that the CHANGETABLE is only return some statistics, so we ignore it.
+	if changeTable := ctx.Change_table(); changeTable != nil {
+		return
+	}
+
+	// other...
+}
+
+// isMixedQuery checks whether the query accesses the user table and system table at the same time.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems bool, mixed error) {
+	userMsg, systemMsg := "", ""
+	for table := range m {
+		if msg := isSystemResource(table, ignoreCaseSensitive); msg != "" {
+			systemMsg = msg
+			continue
+		}
+		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
+		if systemMsg != "" {
+			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		}
+	}
+
+	if userMsg != "" && systemMsg != "" {
+		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	}
+
+	return userMsg == "" && systemMsg != "", nil
+}
+
+func isSystemResource(base.ColumnResource, bool) string {
+	// TODO(zp): fix me.
+	return ""
 }

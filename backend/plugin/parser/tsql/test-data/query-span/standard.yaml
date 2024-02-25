@@ -1,0 +1,674 @@
+- description: Simple select asterisk statement
+  statement: SELECT * FROM MyTable1;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: b
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+- description: Alias table source
+  statement: SELECT T1.* FROM MyTable1 AS T1;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: b
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+- description: Subquery in Select target list
+  statement: SELECT (SELECT MAX(d) FROM MyTable2) FROM MyTable1;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: SELECTMAX(d)FROMMyTable2
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: d
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable2
+      column: ""
+- description: Union
+  statement: SELECT a FROM MyTable1 UNION SELECT c FROM MyTable2;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: c
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable2
+      column: ""
+- description: Join
+  statement: SELECT a, b, c, d FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.d;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: b
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    - name: c
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: c
+    - name: d
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: d
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable2
+      column: ""
+- description: Table Source List
+  statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: b
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    - name: c
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: c
+    - name: d
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: d
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable2
+      column: ""
+- description: Test for subquery in from cluase with as alias.
+  statement: SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: a
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: b
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+- description: Test for CTE
+  statement: WITH tt1(aa, bb) AS ( SELECT a, b FROM MyTable1 ) SELECT tt1.aa, bb FROM
+    tt1;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: aa
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: bb
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: tt1
+      column: ""
+- description: Test for multiple CTE.
+  statement: |-
+    WITH tt1(aa, bb) AS (
+      SELECT a, b FROM MyTable1
+    ),
+    tt2(cc) AS (
+      SELECT c FROM MyTable2
+    )
+    SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "MyTable2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: aa
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+    - name: bb
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    - name: cc
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable2
+        column: c
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable2
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: tt1
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: tt2
+      column: ""
+- description: Test for recursive CTE
+  statement: |-
+    WITH cte_01 AS (
+      SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM MyTable1
+      UNION ALL
+      SELECT c1 * c2, c2 + c1, c3 * c2, n + 1 FROM cte_01 WHERE n < 5
+    )
+    SELECT * FROM cte_01;
+  connectedDatabase: db
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "dbo",
+          "tables":  [
+            {
+              "name":  "MyTable1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+    - name: c1
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    - name: c2
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+    - name: c3
+      sourcecolumns:
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: a
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: b
+      - server: ""
+        database: db
+        schema: dbo
+        table: MyTable1
+        column: c
+    - name: "n"
+      sourcecolumns: []
+    sourcecolumns:
+    - server: ""
+      database: db
+      schema: dbo
+      table: cte_01
+      column: ""
+    - server: ""
+      database: db
+      schema: dbo
+      table: mytable1
+      column: ""
