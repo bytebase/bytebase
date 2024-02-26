@@ -15,10 +15,14 @@ import { NDataTable, DataTableColumn, PaginationProps } from "naive-ui";
 import { computed, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import BranchBaseline from "@/components/Branch/BranchBaseline.vue";
-import { useBranchStore } from "@/store";
 import { Branch } from "@/types/proto/v1/branch_service";
+import AsyncBranchNameCell from "./cells/AsyncBranchNameCell.vue";
 import BranchNameCell from "./cells/BranchNameCell.vue";
 import BranchUpdatedCell from "./cells/BranchUpdatedCell.vue";
+
+defineOptions({
+  name: "BranchDataTable",
+});
 
 const props = defineProps<{
   branches: Branch[];
@@ -27,7 +31,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const branchStore = useBranchStore();
 
 const pagination = ref<PaginationProps>({
   pageSize: 5,
@@ -50,12 +53,9 @@ const columns = computed(() => {
       width: 256,
       hide: !props.showParentBranchColumn,
       render: (row: Branch) => {
-        const parentBranch = branchStore.getBranchByName(row.parentBranch);
-        if (!parentBranch) {
-          return "";
-        }
-        return h(BranchNameCell, {
-          branch: parentBranch,
+        if (!row.parentBranch) return null;
+        return h(AsyncBranchNameCell, {
+          name: row.parentBranch,
         });
       },
     },
