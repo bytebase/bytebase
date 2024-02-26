@@ -293,14 +293,19 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	var remainingSQLs []base.SingleSQL
-	var nonTransactionStmts []string
+
+	var nonTransactionAndSetRoleStmts []string
 	for _, singleSQL := range singleSQLs {
 		if isIgnoredStatement(singleSQL.Text) {
 			continue
 		}
 		if isNonTransactionStatement(singleSQL.Text) {
-			nonTransactionStmts = append(nonTransactionStmts, singleSQL.Text)
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
 			continue
+		}
+
+		if isSetRoleStatement(singleSQL.Text) {
+			nonTransactionAndSetRoleStmts = append(nonTransactionAndSetRoleStmts, singleSQL.Text)
 		}
 
 		if isSuperuserStatement(singleSQL.Text) {
@@ -399,10 +404,18 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			return 0, err
 		}
 	}
-
+	conn, err := driver.db.Conn(ctx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get connection")
+	}
+	defer conn.Close()
+	// USE SET SESSION ROLE to set the role for the current session.
+	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+	}
 	// Run non-transaction statements at the end.
-	for _, stmt := range nonTransactionStmts {
-		if _, err := driver.db.ExecContext(ctx, stmt); err != nil {
+	for _, stmt := range nonTransactionAndSetRoleStmts {
+		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			return 0, err
 		}
 	}
@@ -462,7 +475,13 @@ var (
 	// VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
 	// VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ].
 	vacuumReg = regexp.MustCompile(`(?i)VACUUM`)
+	// SET ROLE is a special statement that should be run before any other statements containing inside a transaction block or not.
+	setRoleReg = regexp.MustCompile(`(?i)SET\s+((SESSION|LOCAL)\s+)?ROLE`)
 )
+
+func isSetRoleStatement(stmt string) bool {
+	return len(setRoleReg.FindString(stmt)) > 0
+}
 
 func isNonTransactionStatement(stmt string) bool {
 	if len(dropDatabaseReg.FindString(stmt)) > 0 {
