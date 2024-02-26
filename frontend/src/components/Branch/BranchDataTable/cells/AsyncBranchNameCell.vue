@@ -40,7 +40,11 @@ const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
 
 const branch = computedAsync(async () => {
-  return branchStore.getBranchByName(props.name);
+  const anyView = branchStore.getBranchByName(props.name);
+  if (anyView) {
+    return anyView;
+  }
+  return branchStore.fetchBranchByName(props.name);
 }, undefined);
 
 const project = computed(() => {
