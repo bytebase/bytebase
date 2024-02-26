@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import { ResourceId } from "@/types";
+import { useCache } from "@/store/cache";
 import {
   ProtectionRule,
   ProtectionRule_Target,
@@ -9,35 +9,47 @@ import {
 } from "@/types/proto/v1/project_service";
 import { protectionRulesSuffix } from "./common";
 
+type ProjectProtectionRuleCacheKey = [
+  string /* project protection rules resource name */
+];
+
 export const useProjectProtectionRulesStore = defineStore(
-  "projec_protection_rules",
+  "project_protection_rules",
   () => {
-    const protectionRulesMapByName = reactive(
-      new Map<ResourceId, ProtectionRule[]>()
-    );
+    const cacheByName = useCache<
+      ProjectProtectionRuleCacheKey,
+      ProtectionRule[]
+    >("bb.project-protection-rules.by-name");
 
     const reset = () => {
-      protectionRulesMapByName.clear();
+      cacheByName.clear();
     };
 
     // Actions
     const fetchProjectProtectionRules = async (projectName: string) => {
+      const name = `${projectName}${protectionRulesSuffix}`;
       const data = await projectServiceClient.getProjectProtectionRules({
-        name: projectName + protectionRulesSuffix,
+        name,
       });
-      protectionRulesMapByName.set(data.name, data.rules);
       return data.rules;
     };
     const getProjectProtectionRules = (projectName: string) => {
-      return (
-        protectionRulesMapByName.get(projectName + protectionRulesSuffix) ?? []
-      );
+      const name = projectName + protectionRulesSuffix;
+      return cacheByName.getEntity([name]) ?? [];
     };
     const getOrFetchProjectProtectionRules = async (projectName: string) => {
-      if (protectionRulesMapByName.has(projectName + protectionRulesSuffix)) {
-        return getProjectProtectionRules(projectName);
+      const name = `${projectName}${protectionRulesSuffix}`;
+      const cachedRequest = cacheByName.getRequest([name]);
+      if (cachedRequest) {
+        return cachedRequest;
       }
-      return await fetchProjectProtectionRules(projectName);
+      const cachedEntity = cacheByName.getEntity([name]);
+      if (cachedEntity) {
+        return cachedEntity;
+      }
+      const request = fetchProjectProtectionRules(projectName);
+      cacheByName.setRequest([name], request);
+      return request;
     };
     const updateProjectProtectionRules = async (
       protectionRules: ProtectionRules
@@ -45,7 +57,7 @@ export const useProjectProtectionRulesStore = defineStore(
       const data = await projectServiceClient.updateProjectProtectionRules({
         protectionRules,
       });
-      protectionRulesMapByName.set(data.name, data.rules);
+      cacheByName.setEntity([data.name], data.rules);
       return data.rules;
     };
 
