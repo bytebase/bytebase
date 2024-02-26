@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
@@ -216,9 +217,10 @@ type Completer struct {
 	referencesStack [][]base.TableReference
 	// references is the flattened table references.
 	// It's helpful to look up the table reference.
-	references []base.TableReference
-	cteCache   map[int][]*base.VirtualTableReference
-	cteTables  []*base.VirtualTableReference
+	references         []base.TableReference
+	cteCache           map[int][]*base.VirtualTableReference
+	cteTables          []*base.VirtualTableReference
+	caretTokenIsQuoted bool
 }
 
 func NewCompleter(ctx context.Context, statement string, caretLine int, caretOffset int, defaultDatabase string, metadata base.GetDatabaseMetadataFunc, listDatabaseNames base.ListDatabaseNamesFunc) *Completer {
@@ -251,6 +253,12 @@ func NewCompleter(ctx context.Context, statement string, caretLine int, caretOff
 }
 
 func (c *Completer) completion() ([]base.Candidate, error) {
+	// Check the caret token is quoted or not.
+	// This check should be done before checking the caret token is a separator or not.
+	if c.scanner.IsTokenType(mysql.MySQLLexerBACK_TICK_QUOTED_ID) {
+		c.caretTokenIsQuoted = true
+	}
+
 	caretIndex := c.scanner.GetIndex()
 	if caretIndex > 0 && !c.noSeparatorRequired[c.scanner.GetPreviousTokenType(false /* skipHidden */)] {
 		caretIndex--
@@ -429,12 +437,12 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								if len(reference.Alias) == 0 {
 									tableEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeTable,
-										Text: reference.Table,
+										Text: c.quotedIdentifierIfNeeded(reference.Table),
 									})
 								} else {
 									tableEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeTable,
-										Text: reference.Alias,
+										Text: c.quotedIdentifierIfNeeded(reference.Alias),
 									})
 								}
 							}
@@ -445,7 +453,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 							tableEntries.Insert(base.Candidate{
 								Type: base.CandidateTypeTable,
-								Text: reference.Table,
+								Text: c.quotedIdentifierIfNeeded(reference.Table),
 							})
 						}
 					}
@@ -477,7 +485,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 								for _, column := range reference.Columns {
 									columnEntries.Insert(base.Candidate{
 										Type: base.CandidateTypeColumn,
-										Text: column,
+										Text: c.quotedIdentifierIfNeeded(column),
 									})
 								}
 							}
@@ -488,7 +496,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 					for _, alias := range list {
 						columnEntries.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: alias,
+							Text: c.quotedIdentifierIfNeeded(alias),
 						})
 					}
 					for _, reference := range c.references {
@@ -500,7 +508,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							for _, column := range reference.Columns {
 								columnEntries.Insert(base.Candidate{
 									Type: base.CandidateTypeColumn,
-									Text: column,
+									Text: c.quotedIdentifierIfNeeded(column),
 								})
 							}
 						}
@@ -1150,7 +1158,7 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 			for _, table := range c.cteTables {
 				m.Insert(base.Candidate{
 					Type: base.CandidateTypeTable,
-					Text: table.Table,
+					Text: c.quotedIdentifierIfNeeded(table.Table),
 				})
 			}
 			continue
@@ -1158,7 +1166,7 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 		for _, table := range c.listTables(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeTable,
-				Text: table,
+				Text: c.quotedIdentifierIfNeeded(table),
 			})
 		}
 	}
@@ -1169,7 +1177,7 @@ func (m CompletionMap) insertViews(c *Completer, schemas map[string]bool) {
 		for _, view := range c.listViews(schema) {
 			m.Insert(base.Candidate{
 				Type: base.CandidateTypeView,
-				Text: view,
+				Text: c.quotedIdentifierIfNeeded(view),
 			})
 		}
 	}
@@ -1184,7 +1192,7 @@ func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]
 					for _, column := range table.Columns {
 						m.Insert(base.Candidate{
 							Type: base.CandidateTypeColumn,
-							Text: column,
+							Text: c.quotedIdentifierIfNeeded(column),
 						})
 					}
 				}
@@ -1215,7 +1223,7 @@ func (m CompletionMap) insertColumns(c *Completer, databases, tables map[string]
 				}
 				m.Insert(base.Candidate{
 					Type:       base.CandidateTypeColumn,
-					Text:       column.Name,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
 					Comment:    comment,
 				})
@@ -1261,4 +1269,24 @@ func (c *Completer) listViews(database string) []string {
 	}
 
 	return c.metadataCache[database].GetSchema("").ListViewNames()
+}
+
+func (c *Completer) quotedIdentifierIfNeeded(s string) string {
+	if c.caretTokenIsQuoted {
+		return s
+	}
+	if c.lexer.IsReservedKeyword(s) {
+		return fmt.Sprintf("`%s`", s)
+	}
+	for _, r := range s {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' && r != '$' {
+			return fmt.Sprintf("`%s`", s)
+		}
+	}
+
+	if len(s) > 0 && unicode.IsDigit(rune(s[0])) {
+		return fmt.Sprintf("`%s`", s)
+	}
+
+	return s
 }
