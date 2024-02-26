@@ -3418,3 +3418,69 @@ func isSystemResource(base.ColumnResource, bool) string {
 	// TODO(zp): fix me.
 	return ""
 }
+
+// splitTableNameIntoNormalizedParts splits the table name into normalized 3 parts: database, schema, table.
+func splitTableNameIntoNormalizedParts(tableName parser.ITable_nameContext) (string, string, string) {
+	var database string
+	if d := tableName.GetDatabase(); d != nil {
+		normalizedD := NormalizeTSQLIdentifier(d)
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+
+	var schema string
+	if s := tableName.GetSchema(); s != nil {
+		normalizedS := NormalizeTSQLIdentifier(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+
+	var table string
+	if t := tableName.GetTable(); t != nil {
+		normalizedT := NormalizeTSQLIdentifier(t)
+		if normalizedT != "" {
+			table = normalizedT
+		}
+	}
+	return database, schema, table
+}
+
+// normalizeFullTableName normalizes the each part of the full table name, returns (linkedServer, database, schema, table).
+func normalizeFullTableName(fullTableName parser.IFull_table_nameContext, normalizedFallbackLinkedServerName, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, string, string, string) {
+	if fullTableName == nil {
+		return "", "", "", ""
+	}
+	// TODO(zp): unify here and the related code in sql_service.go
+	linkedServer := normalizedFallbackLinkedServerName
+	if server := fullTableName.GetLinkedServer(); server != nil {
+		linkedServer = NormalizeTSQLIdentifier(server)
+	}
+
+	database := normalizedFallbackDatabaseName
+	if d := fullTableName.GetDatabase(); d != nil {
+		normalizedD := NormalizeTSQLIdentifier(d)
+		if normalizedD != "" {
+			database = normalizedD
+		}
+	}
+
+	schema := normalizedFallbackSchemaName
+	if s := fullTableName.GetSchema(); s != nil {
+		normalizedS := NormalizeTSQLIdentifier(s)
+		if normalizedS != "" {
+			schema = normalizedS
+		}
+	}
+
+	var table string
+	if t := fullTableName.GetTable(); t != nil {
+		normalizedT := NormalizeTSQLIdentifier(t)
+		if normalizedT != "" {
+			table = normalizedT
+		}
+	}
+
+	return linkedServer, database, schema, table
+}
