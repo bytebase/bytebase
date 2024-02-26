@@ -40,7 +40,7 @@ type SchemaUpdateGhostSyncExecutor struct {
 
 // RunOnce will run SchemaUpdateGhostSync task once.
 // TODO: support cancellation.
-func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, taskContext context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
 		state.TaskRunExecutionStatus{
 			ExecutionStatus: v1pb.TaskRun_EXECUTING,
@@ -56,7 +56,7 @@ func (exec *SchemaUpdateGhostSyncExecutor) RunOnce(ctx context.Context, _ contex
 		return true, nil, err
 	}
 
-	return exec.runGhostMigration(ctx, task, statement, payload.Flags)
+	return exec.runGhostMigration(ctx, taskContext, task, statement, payload.Flags)
 }
 
 type sharedGhostState struct {
@@ -64,7 +64,7 @@ type sharedGhostState struct {
 	errCh            <-chan error
 }
 
-func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, task *store.TaskMessage, statement string, flags map[string]string) (terminated bool, result *api.TaskRunResultPayload, err error) {
+func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context, taskContext context.Context, task *store.TaskMessage, statement string, flags map[string]string) (terminated bool, result *api.TaskRunResultPayload, err error) {
 	syncDone := make(chan struct{})
 	// set buffer size to 1 to unblock the sender because there is no listner if the task is canceled.
 	// see PR #2919.
@@ -158,6 +158,9 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	case err := <-migrationError:
 		return true, nil, err
 	case <-ctx.Done():
+		migrationContext.PanicAbort <- errors.New("task canceled")
+		return true, nil, errors.New("task canceled")
+	case <-taskContext.Done():
 		migrationContext.PanicAbort <- errors.New("task canceled")
 		return true, nil, errors.New("task canceled")
 	}
