@@ -16,7 +16,6 @@ import { State } from "@/types/proto/v1/common";
 import { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useActuatorV1Store } from "./actuator";
 import { projectNamePrefix } from "./common";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -41,14 +40,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     });
   };
   const fetchProjectList = async (showDeleted = false) => {
-    const actuatorStore = useActuatorV1Store();
-    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
-    let request = isDevelopmentIAM
-      ? projectServiceClient.searchProjects
-      : projectServiceClient.listProjects;
-    if (hasWorkspacePermissionV2(currentUser.value, "bb.projects.list")) {
-      request = projectServiceClient.listProjects;
-    }
+    const request = hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.projects.list"
+    )
+      ? projectServiceClient.listProjects
+      : projectServiceClient.searchProjects;
     const { projects } = await request({ showDeleted });
     await upsertProjectMap(projects);
     return projects;
