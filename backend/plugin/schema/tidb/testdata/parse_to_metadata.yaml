@@ -4,6 +4,8 @@
         `a` int NOT NULL COMMENT 'this is comment',
         `b` VARCHAR(20) NOT NULL,
         `c` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+        `d` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `e` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
         KEY `idx` (((`a` + 20))),
         UNIQUE KEY `idx2` (`a`),
         KEY `idx_length` (`b`(10)),
@@ -34,6 +36,20 @@
                   "defaultExpression":  "CURRENT_TIMESTAMP(3)",
                   "onUpdate":  "CURRENT_TIMESTAMP(3)",
                   "type":  "timestamp(3)"
+                },
+                {
+                  "name":  "d",
+                  "position":  4,
+                  "defaultExpression":  "CURRENT_TIMESTAMP",
+                  "onUpdate":  "CURRENT_TIMESTAMP",
+                  "type":  "datetime"
+                },
+                {
+                  "name":  "e",
+                  "position":  5,
+                  "defaultExpression":  "CURRENT_TIMESTAMP",
+                  "onUpdate":  "CURRENT_TIMESTAMP",
+                  "type":  "datetime"
                 }
               ],
               "indexes":  [
