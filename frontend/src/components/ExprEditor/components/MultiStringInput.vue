@@ -39,6 +39,7 @@ const onUpdate = (values: string[]) => {
       values
         .join(",")
         .split(",")
+        .map((val) => val.trim())
         .filter((val) => val)
     )
   );
