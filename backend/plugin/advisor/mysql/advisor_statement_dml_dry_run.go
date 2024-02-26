@@ -74,39 +74,70 @@ type statementDmlDryRunChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
 	line       int
 	driver     *sql.DB
 	ctx        context.Context
 }
 
-func (checker *statementDmlDryRunChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
-}
-
 // EnterUpdateStatement is called when production updateStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
-	checker.handleStmt(ctx.GetStart().GetLine())
+	if ctx.GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	if ctx.GetParent().GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+		return
+	}
+	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
 }
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
-	checker.handleStmt(ctx.GetStart().GetLine())
+	if ctx.GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	if ctx.GetParent().GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+		return
+	}
+	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
 }
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
-	checker.handleStmt(ctx.GetStart().GetLine())
+	if ctx.GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
+		return
+	}
+	if ctx.GetParent().GetParent() == nil {
+		return
+	}
+	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+		return
+	}
+	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *statementDmlDryRunChecker) handleStmt(lineNumber int) {
-	if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", checker.text)); err != nil {
+func (checker *statementDmlDryRunChecker) handleStmt(text string, lineNumber int) {
+	if _, err := advisor.Query(checker.ctx, checker.driver, fmt.Sprintf("EXPLAIN %s", text)); err != nil {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.StatementDMLDryRunFailed,
 			Title:   checker.title,
-			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", checker.text, err.Error()),
+			Content: fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
 			Line:    checker.line + lineNumber,
 		})
 	}

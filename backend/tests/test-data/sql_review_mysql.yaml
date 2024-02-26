@@ -336,7 +336,7 @@
         }
       }
   run: false
-- statement: '        DELETE FROM tech_book'
+- statement: "        DELETE FROM tech_book"
   result:
     - |-
       {
@@ -352,7 +352,7 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"DELETE FROM tech_book;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
           "line": 1,
           "code": 208
@@ -385,7 +385,7 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\";\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book WHERE name like \"%abc\"\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
           "line": 1,
           "code": 208
@@ -402,7 +402,7 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t_copy SELECT * FROM t'
+- statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
     - |-
       {
@@ -428,7 +428,7 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"INSERT INTO t_copy SELECT * FROM t;\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
+        "content": "\"INSERT INTO t_copy SELECT * FROM t\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t_copy' doesn't exist",
         "sqlReviewReport": {
           "line": 1,
           "code": 208
@@ -455,13 +455,13 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
+- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
     - |-
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"INSERT INTO t VALUES (1, 1, now(), 1, now());\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
+        "content": "\"INSERT INTO t VALUES (1, 1, now(), 1, now())\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.t' doesn't exist",
         "sqlReviewReport": {
           "line": 1,
           "code": 208
@@ -484,7 +484,7 @@
       {
         "status": "ERROR",
         "title": "statement.dml-dry-run",
-        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase');\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
+        "content": "\"DELETE FROM tech_book WHERE id = (SELECT max(id) FROM tech_book WHERE name = 'bytebase')\" dry runs failed: Error 1146 (42S02): Table 'testsqlreview.tech_book' doesn't exist",
         "sqlReviewReport": {
           "line": 1,
           "code": 208
@@ -595,7 +595,7 @@
         }
       }
   run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
+- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
     - |-
       {
@@ -663,7 +663,7 @@
         }
       }
   run: false
-- statement: '        DROP TABLE user;'
+- statement: "        DROP TABLE user;"
   result:
     - |-
       {
