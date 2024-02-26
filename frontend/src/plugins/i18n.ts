@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import _ from "lodash-es";
+import { merge } from "lodash-es";
 import { createI18n } from "vue-i18n";
 
 const localPathPrefix = "../locales/";
@@ -53,14 +53,14 @@ const mergedLocalMessage = Object.entries(
   const name = key.slice(localPathPrefix.length, -5);
   const sections = name.split("/");
   if (sections.length === 1) {
-    map[name] = _.merge((value as any).default, map[name] || {});
+    map[name] = merge((value as any).default, map[name] || {});
   } else {
     const file = sections.slice(-1)[0];
     const sectionsName = sections[0];
     const existed = map[file] || {};
     map[file] = {
       ...existed,
-      [sectionsName]: _.merge(
+      [sectionsName]: merge(
         (value as any).default,
         existed[sectionsName] || {}
       ),
@@ -83,7 +83,5 @@ const i18n = createI18n({
 export const t = i18n.global.t;
 
 export const te = i18n.global.te;
-
-export const curLocale = i18n.global.locale;
 
 export default i18n;
