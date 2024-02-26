@@ -286,6 +286,9 @@ func restoreExpr(expr tidbast.ExprNode) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+	if result == "CURRENT_TIMESTAMP()" {
+		result = "CURRENT_TIMESTAMP"
+	}
 	return &result, nil
 }
 
