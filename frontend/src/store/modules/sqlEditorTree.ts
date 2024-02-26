@@ -606,6 +606,14 @@ const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
 };
 
 export const resolveOpeningDatabaseListFromTabList = () => {
+  const { filter } = useFilterStore();
+  // If filter.database is set, return the database node directly.
+  if (filter.database) {
+    const db = useDatabaseV1Store().getDatabaseByName(filter.database);
+    return [{ type: "database", target: db }];
+  }
+
+  // Otherwise, return the database nodes from the tab list.
   const { tabList } = useTabStore();
   return uniqBy(
     tabList.flatMap<NodeMeta<"database">>((tab) => {
