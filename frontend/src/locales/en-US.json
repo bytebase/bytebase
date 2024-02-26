@@ -3122,7 +3122,6 @@
     "avg-rows-examined": "Avg rows examined",
     "max-rows-sent": "Max rows sent",
     "avg-rows-sent": "Avg rows sent",
-    "rows-sent-avg": "Rows sent avg.",
     "query-start-time": "Query start time",
     "rows-examined": "Rows examined",
     "rows-sent": "Rows sent",

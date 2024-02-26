@@ -20,7 +20,6 @@
     "schema": "Schema",
     "database": "数据库",
     "index": "索引",
-    "insert": "插入",
     "system": "系统"
   },
   "template": {

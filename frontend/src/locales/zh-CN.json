@@ -801,6 +801,7 @@
       },
       "masking-level": {
         "self": "脱敏程度",
+        "selet-level": "选择脱敏程度",
         "masking_level_unspecified": "遵循全局",
         "none": "明文",
         "partial": "半脱敏",
@@ -1088,7 +1089,7 @@
       "reopen": "重开",
       "reopened": "重开",
       "action-n-issues": "{action} {n} 个工单",
-      "successfully-action-n-issues": "成功更新 {n} 个工单"
+      "successfully-updated-n-issues": "成功更新 {n} 个工单"
     },
     "sql-hint": {
       "change-will-apply-to-all-tasks-in-tenant-mode": "改动将会应用到其他所有任务",
@@ -1691,7 +1692,8 @@
       "more-version": "更多...",
       "character-sets-diff-found": "Schema 之间的字符集不同",
       "preview-issue": "预览工单",
-      "schema-change": "Schema 变化"
+      "schema-change": "Schema 变化",
+      "generated-ddl-statement": "生成的 DDL 语句"
     },
     "sensitive": "敏感",
     "access-denied": "您没有访问该数据库的权限",
@@ -1717,6 +1719,7 @@
         "duplicated-name": "保密变量名称重复",
         "name-pattern-mismatch": "秘密名称应该只由大写字母，数字和 _（下划线）组成",
         "cannot-be-changed-later": "创建之后无法修改",
+        "name-is-required": "变量名必需",
         "name-cannot-prefix-with-bytebase": "秘密名称不能以 'BYTEBASE_' 为前缀",
         "name-cannot-start-with-number": "秘密名称不能以数字开头"
       },
@@ -1741,7 +1744,7 @@
     },
     "recent": "最近访问",
     "partitioned": "分区",
-    "partition-tabled": "分区表",
+    "partition-tables": "分区表",
     "external-server-name": "外部服务器名称",
     "external-database-name": "外部数据库名称",
     "foreign-table-detail": "外部表详情"
@@ -2318,7 +2321,6 @@
       "create-table": "新建表",
       "rename": "重命名",
       "drop-table": "删除表",
-      "drop": "删除",
       "restore": "恢复",
       "add-column": "添加列",
       "add-from-template": "从模板添加",
@@ -2354,7 +2356,8 @@
       "not-null": "不可为空",
       "primary": "主键",
       "foreign-key": "外键",
-      "classification": "分类分级"
+      "classification": "分类分级",
+      "on-update": "更新时"
     },
     "default": {
       "no-default": "无默认值",
@@ -2936,8 +2939,10 @@
         "rename": "修改会话名称",
         "select-or-create": "选择或{create}一个会话以开始。",
         "exit-conversation-mode": "退出对话模式",
+        "history-conversations": "历史对话",
         "view-history-conversations": "查看历史对话",
         "new-conversation": "开启新对话",
+        "no-message": "无消息",
         "tips": {
           "suggest-prompt": "生成提示词...",
           "more": "更多",
