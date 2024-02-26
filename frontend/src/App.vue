@@ -102,7 +102,7 @@ onErrorCaptured((error: any /* , _, info */) => {
 // this event would be posted when an unknown state is returned by OAuth provider.
 // Add it here so the notification is displayed on the main window. The OAuth callback window is short lived
 // and would close before the notification has a chance to be displayed.
-window.addEventListener("bb.oauth.unknown", (event) => {
+window.addEventListener("bb.oauth.unknown", () => {
   notificationStore.pushNotification({
     module: "bytebase",
     style: "CRITICAL",
@@ -113,7 +113,7 @@ window.addEventListener("bb.oauth.unknown", (event) => {
 // Preserve specific query fields when navigating between pages.
 watch(route, (current, prev) => {
   // fields is the list of query fields that we want to preserve.
-  const fields = ["mode", "project", "filter", "customTheme"];
+  const fields = ["mode", "customTheme", "lang", "project", "filter"];
   const preservedQuery = cloneDeep(current.query);
   for (const key of fields) {
     if (preservedQuery[key] === undefined) {
