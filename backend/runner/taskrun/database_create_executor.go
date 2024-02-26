@@ -276,7 +276,10 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 		err := func() error {
 			plan, err := exec.store.GetPlan(ctx, &store.FindPlanMessage{PipelineID: issue.PipelineUID})
 			if err != nil {
-				return errors.Wrapf(err, "failed to get plan")
+				return errors.Wrapf(err, "failed to get plan for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
+			}
+			if plan == nil {
+				return errors.Wrapf(err, "plan not found for issue %d, pipeline %d", issue.UID, issue.PipelineUID)
 			}
 			if len(plan.Config.GetSteps()) != 1 {
 				return nil
@@ -295,12 +298,24 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 				return nil
 			}
 
+			// We somehow reconciled the plan before, so we just return.
 			tasks, err := exec.store.ListTasks(ctx, &api.TaskFind{
+				PipelineID: issue.PipelineUID,
+				DatabaseID: &createdDatabase.UID,
+			})
+			if err != nil {
+				return errors.Wrapf(err, "failed to list tasks for created database %q", createdDatabase.DatabaseName)
+			}
+			if len(tasks) > 0 {
+				return nil
+			}
+
+			tasks, err = exec.store.ListTasks(ctx, &api.TaskFind{
 				PipelineID: issue.PipelineUID,
 				DatabaseID: &peerDatabase.UID,
 			})
 			if err != nil {
-				return errors.Wrapf(err, "failed to list tasks")
+				return errors.Wrapf(err, "failed to list tasks for peer database %q", peerDatabase.DatabaseName)
 			}
 
 			var creates []*store.TaskMessage
