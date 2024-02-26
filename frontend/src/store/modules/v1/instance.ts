@@ -18,7 +18,6 @@ import { InstanceRole } from "@/types/proto/v1/instance_role_service";
 import { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
-import { useActuatorV1Store } from "./actuator";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
@@ -62,29 +61,20 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     return composedInstances;
   };
   const fetchInstanceList = async (showDeleted = false) => {
-    const actuatorStore = useActuatorV1Store();
-    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
-    let request = isDevelopmentIAM
-      ? instanceServiceClient.searchInstances
-      : instanceServiceClient.listInstances;
-    // If user has bb.instances.list permission, use listInstances API.
-    if (hasWorkspacePermissionV2(currentUser.value, "bb.instances.list")) {
-      request = instanceServiceClient.listInstances;
-    }
+    const request = hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.instances.list"
+    )
+      ? instanceServiceClient.listInstances
+      : instanceServiceClient.searchInstances;
     const { instances } = await request({ showDeleted });
     const composed = await upsertInstances(instances);
     return composed;
   };
   const fetchProjectInstanceList = async (project: string) => {
-    const actuatorStore = useActuatorV1Store();
-    const isDevelopmentIAM = actuatorStore.serverInfo?.iamGuard;
-    const { instances } = isDevelopmentIAM
-      ? await instanceServiceClient.searchInstances({
-          parent: `${projectNamePrefix}${project}`,
-        })
-      : await instanceServiceClient.listInstances({
-          parent: `${projectNamePrefix}${project}`,
-        });
+    const { instances } = await instanceServiceClient.searchInstances({
+      parent: `${projectNamePrefix}${project}`,
+    });
     const composed = await upsertInstances(instances);
     return composed;
   };
