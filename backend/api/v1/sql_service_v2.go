@@ -379,8 +379,6 @@ func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevel
 	if span == nil {
 		return nil, nil
 	}
-
-	noneMasker := masker.NewNoneMasker()
 	maskers := make([]masker.Masker, 0, len(span.Results))
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -404,13 +402,13 @@ func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevel
 	for _, spanResult := range span.Results {
 		// Likes constant expression, we use the none masker.
 		if len(spanResult.SourceColumns) == 0 {
-			maskers = append(maskers, noneMasker)
+			maskers = append(maskers, masker.NewNoneMasker())
 			continue
 		}
 		// If there are more than one source columns, we fall back to the default full masker,
 		// because we don't know how the data be made up.
 		if len(spanResult.SourceColumns) > 1 {
-			maskers = append(maskers, noneMasker)
+			maskers = append(maskers, masker.NewDefaultFullMasker())
 			continue
 		}
 
@@ -428,7 +426,7 @@ func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevel
 			return nil, errors.Wrapf(err, "failed to find database: %q", sourceColumn.Database)
 		}
 		if database == nil {
-			maskers = append(maskers, noneMasker)
+			maskers = append(maskers, masker.NewNoneMasker())
 			continue
 		}
 
@@ -439,7 +437,7 @@ func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevel
 			return nil, errors.Wrapf(err, "failed to find project: %q", database.ProjectID)
 		}
 		if project == nil {
-			maskers = append(maskers, noneMasker)
+			maskers = append(maskers, masker.NewNoneMasker())
 			continue
 		}
 
@@ -449,7 +447,7 @@ func (s *SQLService) getMaskersForQuerySpan(ctx context.Context, m *maskingLevel
 		}
 		// Span and metadata are not the same in real time, so we fall back to none masker.
 		if meta == nil {
-			maskers = append(maskers, noneMasker)
+			maskers = append(maskers, masker.NewNoneMasker())
 			continue
 		}
 
