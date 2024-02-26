@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { reactive, ref, unref, watchEffect } from "vue";
+import { ref, unref, watchEffect } from "vue";
 import { branchServiceClient } from "@/grpcweb";
 import { MaybeRef } from "@/types";
 import {
@@ -8,10 +8,21 @@ import {
   BranchView,
   RebaseBranchRequest,
 } from "@/types/proto/v1/branch_service";
+import { useCache } from "../cache";
 
-export const useBranchStore = defineStore("schema_design", () => {
-  const branchMapByName = reactive(new Map<string, Branch>());
-  const getBranchRequestCacheByName = new Map<string, Promise<Branch>>();
+type BranchCacheKey = [string /* name */, BranchView];
+
+export const useBranchStore = defineStore("branch", () => {
+  const cacheByName = useCache<BranchCacheKey, Branch>("bb.branch.by-name");
+
+  // Cache utils
+  const setBranchCache = (branch: Branch, view: BranchView) => {
+    if (view === BranchView.BRANCH_VIEW_FULL) {
+      // A FULL view branch should override its BASIC view
+      cacheByName.invalidateEntity([branch.name, BranchView.BRANCH_VIEW_BASIC]);
+    }
+    cacheByName.setEntity([branch.name, view], branch);
+  };
 
   // Actions
   const fetchBranchList = async (projectName: string) => {
@@ -19,6 +30,9 @@ export const useBranchStore = defineStore("schema_design", () => {
       parent: projectName,
       view: BranchView.BRANCH_VIEW_BASIC,
     });
+    branches.forEach((branch) =>
+      setBranchCache(branch, BranchView.BRANCH_VIEW_BASIC)
+    );
     return branches;
   };
 
@@ -32,7 +46,7 @@ export const useBranchStore = defineStore("schema_design", () => {
       branchId: branchId,
       branch,
     });
-    branchMapByName.set(createdBranch.name, createdBranch);
+    setBranchCache(createdBranch, BranchView.BRANCH_VIEW_FULL);
     return createdBranch;
   };
 
@@ -41,7 +55,7 @@ export const useBranchStore = defineStore("schema_design", () => {
       branch,
       updateMask,
     });
-    branchMapByName.set(updatedBranch.name, updatedBranch);
+    setBranchCache(updatedBranch, BranchView.BRANCH_VIEW_FULL);
     return updatedBranch;
   };
 
@@ -49,7 +63,7 @@ export const useBranchStore = defineStore("schema_design", () => {
     const branch = await branchServiceClient.mergeBranch(request, {
       silent: true,
     });
-    branchMapByName.set(branch.name, branch);
+    setBranchCache(branch, BranchView.BRANCH_VIEW_FULL);
     return branch;
   };
 
@@ -58,7 +72,7 @@ export const useBranchStore = defineStore("schema_design", () => {
       silent: true,
     });
     if (response.branch) {
-      branchMapByName.set(response.branch.name, response.branch);
+      setBranchCache(response.branch, BranchView.BRANCH_VIEW_FULL);
     }
     return response;
   };
@@ -69,13 +83,19 @@ export const useBranchStore = defineStore("schema_design", () => {
     silent = false
   ) => {
     if (useCache) {
-      const cachedEntity = branchMapByName.get(name);
+      const cachedEntity = cacheByName.getEntity([
+        name,
+        BranchView.BRANCH_VIEW_FULL,
+      ]);
       if (cachedEntity) {
         return cachedEntity;
       }
 
       // Avoid making duplicated requests concurrently.
-      const cachedRequest = getBranchRequestCacheByName.get(name);
+      const cachedRequest = cacheByName.getRequest([
+        name,
+        BranchView.BRANCH_VIEW_FULL,
+      ]);
       if (cachedRequest) {
         return cachedRequest;
       }
@@ -88,15 +108,24 @@ export const useBranchStore = defineStore("schema_design", () => {
         silent,
       }
     );
-    request.then((branch) => {
-      branchMapByName.set(branch.name, branch);
-    });
-    getBranchRequestCacheByName.set(name, request);
+    cacheByName.setRequest([name, BranchView.BRANCH_VIEW_FULL], request);
     return request;
   };
 
-  const getBranchByName = (name: string) => {
-    return branchMapByName.get(name);
+  /**
+   *
+   * @param name
+   * @param view default undefined to any (FULL -> BASIC)
+   * @returns
+   */
+  const getBranchByName = (name: string, view?: BranchView) => {
+    if (view === undefined) {
+      return (
+        cacheByName.getEntity([name, BranchView.BRANCH_VIEW_FULL]) ??
+        cacheByName.getEntity([name, BranchView.BRANCH_VIEW_BASIC])
+      );
+    }
+    return cacheByName.getEntity([name, view]);
   };
 
   const deleteBranch = async (name: string, force = false) => {
@@ -109,7 +138,8 @@ export const useBranchStore = defineStore("schema_design", () => {
         silent: true,
       }
     );
-    branchMapByName.delete(name);
+    cacheByName.invalidateEntity([name, BranchView.BRANCH_VIEW_FULL]);
+    cacheByName.invalidateEntity([name, BranchView.BRANCH_VIEW_BASIC]);
   };
 
   return {
