@@ -90,6 +90,18 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
     entityCacheMap.delete(key);
   };
 
+  const clear = () => {
+    // abort and invalidate all flying requests
+    for (const request of requestCacheMap.values()) {
+      if (!request.abortController.signal.aborted) {
+        request.abortController.abort();
+      }
+    }
+    // clear all cache entries
+    requestCacheMap.clear();
+    entityCacheMap.clear();
+  };
+
   return {
     requestCacheMap,
     entityCacheMap,
@@ -99,6 +111,7 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
     setEntity,
     invalidateRequest,
     invalidateEntity,
+    clear,
   };
 };
 
