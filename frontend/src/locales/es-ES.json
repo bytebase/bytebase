@@ -568,6 +568,7 @@
         "scopes-description": "Una lista separada por espacios de ámbitos que se llevarán al acceder a la URL de autenticación",
         "token-url-description": "La dirección API para obtener el token de acceso",
         "user-info-url-description": "La dirección API para obtener la información del usuario mediante el token de acceso",
+        "security-protocol": "Protocolo de seguridad",
         "connection-security": "Seguridad de la conexión",
         "connection-security-skip-tls-verify": "Omitir verificación TLS para certificados autofirmados",
         "user-information-mapping": "Mapeo de información del usuario",
@@ -1212,7 +1213,7 @@
     "transfer-out-db-title": "Transferir la base de datos",
     "request-export-permission": "Solicitar exportación",
     "request-query-permission": "Solicitar consulta",
-    "request-query-data": "Solicitar consulta"
+    "request-export-data": "Solicitar exportación"
   },
   "create-db": {
     "new-database-name": "Nuevo nombre de la base de datos",
@@ -1743,7 +1744,7 @@
     },
     "recent": "Reciente",
     "partitioned": "Particionado",
-    "partition-tabled": "Tabla particionada",
+    "partition-tables": "Tablas de particiones",
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
     "foreign-table-detail": "Detalle de la tabla externa"
@@ -2088,9 +2089,12 @@
         "gitlab-self-host-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada en toda la instancia.",
         "gitlab-com-application-id-label": "ID de aplicación para la aplicación OAuth de GitLab registrada.",
         "view-in-gitlab": "Ver en GitLab",
+        "view-in-azure": "Ver en Azure",
         "gitlab-self-host-secret-label": "Secreto para la aplicación OAuth de GitLab registrada en toda la instancia.",
         "gitlab-com-secret-label": "Secreto para la aplicación OAuth de GitLab registrada.",
+        "azure-secret-label": "Secreto de cliente para la aplicación Azure OAuth registrada.",
         "github-application-id-label": "ID de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
+        "azure-application-id-label": "Id. de cliente para la aplicación OAuth registrada en toda la organización de Azure.",
         "secret-label-github": "Secreto de cliente para la aplicación OAuth de GitHub registrada en toda la organización.",
         "delete-forbidden": "Para eliminar este proveedor, primero desenlaza todos los repositorios.",
         "delete": "Eliminar este proveedor de Git",
@@ -2352,7 +2356,8 @@
       "not-null": "No nulo",
       "primary": "Primaria",
       "foreign-key": "Clave foránea",
-      "classification": "Clasificación"
+      "classification": "Clasificación",
+      "on-update": "En actualización"
     },
     "default": {
       "no-default": "Sin valor predeterminado",
@@ -2935,7 +2940,6 @@
         "select-or-create": "Seleccione o {crear} una conversación para comenzar.",
         "exit-conversation-mode": "Salir del modo de chat",
         "history-conversations": "Historial de conversaciones",
-        "historial-de-conversaciones": "Ver historial de conversaciones",
         "new-conversation": "Comenzar nueva conversación",
         "no-message": "No hay mensajes en esta conversación",
         "tips": {
@@ -3118,7 +3122,6 @@
     "avg-rows-examined": "Promedio de filas examinadas",
     "max-rows-sent": "Máximo de filas enviadas",
     "avg-rows-sent": "Promedio de filas enviadas",
-    "rows-sent-avg": "Prom. de filas enviadas",
     "query-start-time": "Hora de inicio de la consulta",
     "rows-examined": "Filas examinadas",
     "rows-sent": "Filas enviadas",
@@ -3279,7 +3282,6 @@
     "self": "Diseñador de esquemas",
     "schema-design": "Esquema diseñar",
     "schema-design-list": "Lista de Diseñar esquema",
-    "existing-schema-design": "Diseño de esquema existente",
     "new-schema-design": "Nuevo diseño de esquema",
     "baseline-database": "Base de datos de referencia",
     "schema-version": "Versión del esquema",

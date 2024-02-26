@@ -2356,7 +2356,8 @@
       "not-null": "Có giá trị",
       "primary": "Sơ đẳng",
       "foreign-key": "Khóa ngoại",
-      "classification": "Phân loại"
+      "classification": "Phân loại",
+      "on-update": "Đang cập nhật"
     },
     "default": {
       "no-default": "Không có mặc định",
@@ -3121,7 +3122,6 @@
     "avg-rows-examined": "Hàng trung bình được kiểm tra",
     "max-rows-sent": "Số hàng tối đa đã được gửi",
     "avg-rows-sent": "Đã gửi hàng trung bình",
-    "rows-sent-avg": "Số hàng được gửi trung bình",
     "query-start-time": "Thời gian bắt đầu truy vấn",
     "rows-examined": "Hàng được kiểm tra",
     "rows-sent": "Hàng đã gửi",
