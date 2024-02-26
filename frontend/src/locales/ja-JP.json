@@ -1738,15 +1738,16 @@
       "select-target-project": "ターゲットプロジェクトを選択してください"
     },
     "transfer-database-to": "データベースをソースプロジェクトからターゲットプロジェクトに転送する",
-    "transfer-database-from-to": "分類",
+    "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
-      "self": "最近"
+      "self": "分類"
     },
-    "recent": "パーティション化",
-    "partitioned": "パーティションテーブル",
-    "partition-tables": "外部サーバー名",
-    "external-server-name": "外部データベース名",
-    "external-database-name": "外部テーブルの詳細"
+    "recent": "最近",
+    "partitioned": "パーティション",
+    "partition-tables": "パーティションテーブル",
+    "external-server-name": "外部サーバー名",
+    "external-database-name": "外部データベース名",
+    "foreign-table-detail": "外部テーブルの詳細"
   },
   "repository": {
     "our-webhook-link": "Bytebaseによって作成されたWebhookは{webhookLink}で見つけることができます。",
@@ -2355,7 +2356,8 @@
       "not-null": "非NULL",
       "primary": "プライマリ",
       "foreign-key": "外部キー",
-      "classification": "分類"
+      "classification": "分類",
+      "on-update": "更新時"
     },
     "default": {
       "no-default": "デフォルトなし",
@@ -3120,7 +3122,6 @@
     "avg-rows-examined": "平均行数の検査",
     "max-rows-sent": "最大行数の送信",
     "avg-rows-sent": "平均行数の送信",
-    "rows-sent-avg": "平均行数の送信",
     "query-start-time": "クエリ開始時間",
     "rows-examined": "行数の検査",
     "rows-sent": "行数の送信",
