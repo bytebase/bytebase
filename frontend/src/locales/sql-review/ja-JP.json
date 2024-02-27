@@ -459,6 +459,10 @@
     "system-procedure-disallow": {
       "title": "システムプロシージャの実行を禁止する",
       "description": "システムプロシージャは、データベースのメタデータを変更するために使用されるため、誤って実行するとデータベースの整合性が失われる可能性があります。提案エラーレベル：エラー"
+    },
+    "system-event-disallow": {
+      "title": "Không cho phép tạo sự kiện",
+      "description": "Quy tắc này cấm tạo sự kiện trong cơ sở dữ liệu. Các sự kiện hệ thống thường thực hiện các tác vụ tự động có thể ảnh hưởng đến môi trường cơ sở dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát về các hoạt động cơ sở dữ liệu và ngăn chặn các sự cố tiềm ẩn. Mức độ lỗi được đề xuất: Cảnh báo"
     }
   },
   "level": {

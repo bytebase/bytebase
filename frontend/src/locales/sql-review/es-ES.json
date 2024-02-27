@@ -459,6 +459,10 @@
     "system-procedure-disallow": {
       "title": "Prohibir la ejecución de procedimientos del sistema",
       "description": "Los procedimientos del sistema pueden realizar operaciones de alto riesgo, como la eliminación de datos, la modificación de la estructura de la base de datos, etc. Nivel de error sugerido: Error"
+    },
+    "system-event-disallow": {
+      "title": "Prohibir la creación de eventos",
+      "description": "Esta regla prohíbe la creación de eventos dentro de la base de datos. Los eventos del sistema a menudo realizan tareas automatizadas que podrían afectar el entorno de la base de datos. Al prohibir su creación, ayuda a mantener el control sobre las operaciones de la base de datos y previene posibles interrupciones. Nivel de error sugerido: Advertencia"
     }
   },
   "level": {
