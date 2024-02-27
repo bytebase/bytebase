@@ -17,6 +17,8 @@ export interface IssuePayloadApproval {
    */
   approvalFindingDone: boolean;
   approvalFindingError: string;
+  /** Format: risks/{name} */
+  risk: string;
 }
 
 export interface IssuePayloadApproval_Approver {
@@ -239,7 +241,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "" };
+  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "", risk: "" };
 }
 
 export const IssuePayloadApproval = {
@@ -255,6 +257,9 @@ export const IssuePayloadApproval = {
     }
     if (message.approvalFindingError !== "") {
       writer.uint32(34).string(message.approvalFindingError);
+    }
+    if (message.risk !== "") {
+      writer.uint32(42).string(message.risk);
     }
     return writer;
   },
@@ -294,6 +299,13 @@ export const IssuePayloadApproval = {
 
           message.approvalFindingError = reader.string();
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.risk = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -313,6 +325,7 @@ export const IssuePayloadApproval = {
         : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
+      risk: isSet(object.risk) ? globalThis.String(object.risk) : "",
     };
   },
 
@@ -330,6 +343,9 @@ export const IssuePayloadApproval = {
     if (message.approvalFindingError !== "") {
       obj.approvalFindingError = message.approvalFindingError;
     }
+    if (message.risk !== "") {
+      obj.risk = message.risk;
+    }
     return obj;
   },
 
@@ -342,6 +358,7 @@ export const IssuePayloadApproval = {
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
+    message.risk = object.risk ?? "";
     return message;
   },
 };

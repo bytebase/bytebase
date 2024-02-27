@@ -298,6 +298,7 @@ IssuePayloadApproval records the approval template used and the approval history
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, other fields are available. |
 | approval_finding_error | [string](#string) |  |  |
+| risk | [string](#string) |  | Format: risks/{name} |
 
 
 
