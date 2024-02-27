@@ -347,6 +347,7 @@
     - [ApprovalNode.Type](#bytebase-v1-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-v1-ApprovalStep-Type)
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
+    - [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueStatus](#bytebase-v1-IssueStatus)
   
@@ -5606,7 +5607,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | rollout | [string](#string) |  | The rollout associated with the issue. Can be empty. Format: projects/{project}/rollouts/{rollout} |
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
 | releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. If the policy is auto rollout, the releasers are the project owners and the issue creator. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
-| risk | [string](#string) |  | The risk of the issue. Can be empty. Format: risks/{name} |
+| risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
 
 
 
@@ -5851,6 +5852,20 @@ ANY means approving any node will proceed.
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
+
+
+
+<a name="bytebase-v1-Issue-RiskLevel"></a>
+
+### Issue.RiskLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
 
 
 

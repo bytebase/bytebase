@@ -310,10 +310,13 @@ message Issue {
   // - users/{email}
   repeated string releasers = 20;
 
-  // The risk of the issue.
-  // Can be empty.
-  // Format: risks/{name}
-  string risk = 21;
+  enum RiskLevel {
+    RISK_LEVEL_UNSPECIFIED = 0;
+    LOW = 1;
+    MODERATE = 2;
+    HIGH = 3;
+  }
+  RiskLevel risk_level = 21;
 }
 
 message GrantRequest {
