@@ -746,3 +746,8 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: system.event.disallow
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList: []
