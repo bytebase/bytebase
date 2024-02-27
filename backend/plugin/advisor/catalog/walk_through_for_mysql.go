@@ -563,6 +563,14 @@ func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	if ctx.ProcedureName() == nil {
 		return
 	}
+	// Skip other checks for now.
+}
+
+func (*mysqlListener) EnterCreateEvent(ctx *mysql.CreateEventContext) {
+	if ctx.EventName() == nil {
+		return
+	}
+	// Skip other checks for now.
 }
 
 func (d *DatabaseState) mysqlTargetDatabase(renamePair mysql.IRenamePairContext) string {

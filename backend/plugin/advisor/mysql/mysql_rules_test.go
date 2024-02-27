@@ -12,6 +12,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleMySQLEngine enforce the innodb engine.
 		advisor.SchemaRuleMySQLEngine,
 
+		// Naming related rules.
 		// advisor.SchemaRuleTableNaming enforce the table name format.
 		advisor.SchemaRuleTableNaming,
 		// advisor.SchemaRuleColumnNaming enforce the column name format.
@@ -27,6 +28,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleIdentifierNoKeyword enforce the identifier no keyword.
 		advisor.SchemaRuleIdentifierNoKeyword,
 
+		// Statement related rules.
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
 		// advisor.SchemaRuleStatementRequireWhere require 'WHERE' clause.
@@ -52,6 +54,11 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
 
+		// Database related rules.
+		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
+		advisor.SchemaRuleDropEmptyDatabase,
+
+		// Table related rules.
 		// advisor.SchemaRuleTableRequirePK require the table to have a primary key.
 		advisor.SchemaRuleTableRequirePK,
 		// advisor.SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -67,6 +74,7 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 		advisor.SchemaRuleTableNoDuplicateIndex,
 
+		// Column related rules.
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
 		advisor.SchemaRuleRequiredColumn,
 		// advisor.SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -97,17 +105,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
-		// advisor.SchemaRuleDisallowProcedure enforce the disallow procedure.
-		advisor.SchemaRuleDisallowProcedure,
 
-		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
-		advisor.SchemaRuleSchemaBackwardCompatibility,
-		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
-		advisor.SchemaRuleCurrentTimeColumnCountLimit,
-
-		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
-		advisor.SchemaRuleDropEmptyDatabase,
-
+		// Index related rules.
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
 		advisor.SchemaRuleIndexNoDuplicateColumn,
 		// advisor.SchemaRuleIndexKeyNumberLimit enforce the index key number limit.
@@ -120,11 +119,19 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTotalNumberLimit,
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
 
+		// System related rules.
+		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
+		advisor.SchemaRuleSchemaBackwardCompatibility,
+		// advisor.SchemaRuleCurrentTimeColumnCountLimit enforce the current column count limit.
+		advisor.SchemaRuleCurrentTimeColumnCountLimit,
 		// advisor.SchemaRuleCharsetAllowlist enforce the charset allowlist.
 		advisor.SchemaRuleCharsetAllowlist,
-
 		// advisor.SchemaRuleCollationAllowlist enforce the collation allowlist.
 		advisor.SchemaRuleCollationAllowlist,
+		// advisor.SchemaRuleDisallowProcedure enforce the disallow procedure.
+		advisor.SchemaRuleDisallowProcedure,
+		// advisor.SchemaRuleDisallowEvent enforce the disallow event.
+		advisor.SchemaRuleDisallowEvent,
 	}
 
 	for _, rule := range mysqlRules {
