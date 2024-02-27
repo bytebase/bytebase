@@ -77,6 +77,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       return state.serverInfo?.needAdminSetup || false;
     },
     needConfigureExternalUrl: (state) => {
+      if (!state.serverInfo) return false;
       const url = state.serverInfo?.externalUrl ?? "";
       return url === "" || url === EXTERNAL_URL_PLACEHOLDER;
     },
