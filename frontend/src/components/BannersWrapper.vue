@@ -44,7 +44,8 @@ const { isExpired, isTrialing, currentPlan, existTrialLicense } =
   storeToRefs(subscriptionStore);
 
 const shouldShowDemoBanner = computed(() => {
-  return actuatorStore.serverInfo?.demoName != "";
+  if (!actuatorStore.serverInfo) return false;
+  return actuatorStore.serverInfo.demoName !== "";
 });
 
 const shouldShowSubscriptionBanner = computed(() => {
