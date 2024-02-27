@@ -154,11 +154,19 @@
       </label>
     </div>
     <template v-if="dataSource.pendingCreate">
-      <SslCertificateForm :value="dataSource" @change="handleSSLChange" />
+      <SslCertificateForm
+        :value="dataSource"
+        :engine-type="basicInfo.engine"
+        @change="handleSSLChange"
+      />
     </template>
     <template v-else>
       <template v-if="dataSource.updateSsl">
-        <SslCertificateForm :value="dataSource" @change="handleSSLChange" />
+        <SslCertificateForm
+          :value="dataSource"
+          :engine-type="basicInfo.engine"
+          @change="handleSSLChange"
+        />
       </template>
       <template v-else>
         <NButton
