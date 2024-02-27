@@ -31,6 +31,7 @@ import {
   useCurrentUserV1,
   useWorkSheetStore,
   useDatabaseV1Store,
+  useFilterStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -229,31 +230,6 @@ const prepareConnectionSlug = async () => {
     return false;
   }
 
-  const connect = (connection: Connection) => {
-    const tab = tabStore.currentTab;
-    if (tab.sheetName) {
-      // Don't touch a saved sheet.
-      tabStore.addTab();
-      return;
-    }
-    const target: CoreTabInfo = {
-      connection,
-      mode: TabMode.ReadOnly,
-    };
-
-    if (isSimilarTab(target, tabStore.currentTab)) {
-      // Don't go further if the connection doesn't change.
-      return;
-    }
-    const name = getSuggestedTabNameFromConnection(target.connection);
-    tabStore.selectOrAddSimilarTab(
-      target,
-      /* beside */ false,
-      /* defaultTabName */ name
-    );
-    tabStore.updateCurrentTab(target);
-  };
-
   if (Number.isNaN(databaseId)) {
     // connected to instance
     const connection = await treeStore.fetchConnectionByInstanceId(
@@ -271,18 +247,31 @@ const prepareConnectionSlug = async () => {
   return true;
 };
 
-// Get sheetId from query.
 const setConnectionFromQuery = async () => {
   // Priority:
   // 1. idFromSlug in sheetSlug
   // 2. instanceId and databaseId in connectionSlug
-  // 3. disconnected
+  // 3. datanase in global filter
+  // 4. disconnected
 
   if (await prepareSheet()) {
     return;
   }
 
   if (await prepareConnectionSlug()) {
+    return;
+  }
+
+  const { filter } = useFilterStore();
+  if (filter.database) {
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      filter.database,
+      true
+    );
+    connect({
+      instanceId: database.instanceEntity.uid,
+      databaseId: database.uid,
+    });
     return;
   }
 
@@ -350,6 +339,31 @@ const syncURLWithConnection = () => {
     },
     { immediate: true }
   );
+};
+
+const connect = (connection: Connection) => {
+  const tab = tabStore.currentTab;
+  if (tab.sheetName) {
+    // Don't touch a saved sheet.
+    tabStore.addTab();
+    return;
+  }
+  const target: CoreTabInfo = {
+    connection,
+    mode: TabMode.ReadOnly,
+  };
+
+  if (isSimilarTab(target, tabStore.currentTab)) {
+    // Don't go further if the connection doesn't change.
+    return;
+  }
+  const name = getSuggestedTabNameFromConnection(target.connection);
+  tabStore.selectOrAddSimilarTab(
+    target,
+    /* beside */ false,
+    /* defaultTabName */ name
+  );
+  tabStore.updateCurrentTab(target);
 };
 
 onMounted(async () => {

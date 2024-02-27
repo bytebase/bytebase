@@ -11,7 +11,6 @@ import {
   WebStorageHelper,
   isDisconnectedTab,
 } from "@/utils";
-import { useFilterStore } from "./filter";
 import { useWebTerminalV1Store } from "./v1";
 import { useWorkSheetStore } from "./v1/worksheet";
 
@@ -39,7 +38,6 @@ type PersistentTabInfo = Pick<TabInfo, typeof PERSISTENT_TAB_FIELDS[number]>;
 
 export const useTabStore = defineStore("tab", () => {
   const storage = new WebStorageHelper("bb.sql-editor.tab-list", localStorage);
-  const { filter } = useFilterStore();
 
   // states
   // We store the tabIdList and the tabs separately.
@@ -178,17 +176,13 @@ export const useTabStore = defineStore("tab", () => {
   // Load session from local storage.
   // Reset if failed.
   const init = () => {
-    if (filter.project || filter.database) {
-      // Don't load tabs from local storage if the filter is specified.
-    } else {
-      // Load tabIdList and currentTabId
-      tabIdList.value = storage.load(KEYS.tabIdList, []);
-      currentTabId.value = storage.load(KEYS.currentTabId, INITIAL_TAB.id);
-      if (tabIdList.value.indexOf(currentTabId.value) < 0) {
-        // currentTabId is not in tabIdList accidentally
-        // fallback to the first tab
-        currentTabId.value = tabIdList.value[0];
-      }
+    // Load tabIdList and currentTabId
+    tabIdList.value = storage.load(KEYS.tabIdList, []);
+    currentTabId.value = storage.load(KEYS.currentTabId, INITIAL_TAB.id);
+    if (tabIdList.value.indexOf(currentTabId.value) < 0) {
+      // currentTabId is not in tabIdList accidentally
+      // fallback to the first tab
+      currentTabId.value = tabIdList.value[0];
     }
 
     // Fallback to the initial tab if tabIdList is empty.
