@@ -106,6 +106,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	// We choose the second way with the following reasons:
 	// 1. The statement may too long to be executed in the command line.
 	// 2. We cannot catch the error from the --eval option.
+	mongoshArgs := []string{
+		connectionURI,
+		// DocumentDB do not support retryWrites, so we set it to false.
+		"--retryWrites",
+		"false",
+		"--quiet",
+	}
+
+	if driver.connCfg.TLSConfig.SslCA != "" {
+		mongoshArgs = append(mongoshArgs, "--tls")
+		// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
+		// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
+		caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+		defer func() {
+			// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+			_ = os.Remove(caFileName)
+		}()
+		if err := os.WriteFile(caFileName, []byte(driver.connCfg.TLSConfig.SslCA), 0400); err != nil {
+			return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+		}
+		mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+	}
 
 	// First, we create a temporary file to store the statement.
 	tempDir := os.TempDir()
@@ -120,14 +142,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	if err := tempFile.Close(); err != nil {
 		return 0, errors.Wrap(err, "failed to close temporary file")
 	}
+	mongoshArgs = append(mongoshArgs, "--file", tempFile.Name())
 
-	// Then, we execute the statement in mongosh.
-	mongoshArgs := []string{
-		connectionURI,
-		"--quiet",
-		"--file",
-		tempFile.Name(),
-	}
 	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
 	var errContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
@@ -211,6 +227,9 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		"--quiet",
 		"--eval",
 		evalArg,
+		// DocumentDB do not support retryWrites, so we set it to false.
+		"--retryWrites",
+		"false",
 	}
 
 	if driver.connCfg.TLSConfig.SslCA != "" {
