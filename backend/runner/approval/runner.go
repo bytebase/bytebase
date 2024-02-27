@@ -138,30 +138,34 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		return true, nil
 	}
 
-	approvalTemplate, done, err := func() (*storepb.ApprovalTemplate, bool, error) {
+	approvalTemplate, riskLevel, done, err := func() (*storepb.ApprovalTemplate, storepb.IssuePayloadApproval_RiskLevel, bool, error) {
 		// no need to find if
 		// - feature is not enabled
 		// - approval setting rules are empty
 		if r.licenseService.IsFeatureEnabled(api.FeatureCustomApproval) != nil || len(approvalSetting.Rules) == 0 {
 			// nolint:nilerr
-			return nil, true, nil
+			return nil, 0, true, nil
 		}
 
 		riskLevel, riskSource, done, err := getIssueRisk(ctx, r.store, r.licenseService, r.dbFactory, issue, risks)
 		if err != nil {
 			err = errors.Wrap(err, "failed to get issue risk level")
-			return nil, false, err
+			return nil, 0, false, err
 		}
 		if !done {
-			return nil, false, nil
+			return nil, 0, false, nil
 		}
 
 		approvalTemplate, err := getApprovalTemplate(approvalSetting, riskLevel, riskSource)
 		if err != nil {
-			err = errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
+			return nil, 0, false, errors.Wrapf(err, "failed to get approval template, riskLevel: %v", riskLevel)
 		}
 
-		return approvalTemplate, true, err
+		riskLevelEnum, err := convertRiskLevel(riskLevel)
+		if err != nil {
+			return nil, 0, false, errors.Wrap(err, "failed to convert risk level")
+		}
+		return approvalTemplate, riskLevelEnum, true, nil
 	}()
 	if err != nil {
 		if updateErr := updateIssueApprovalPayload(ctx, r.store, issue, &storepb.IssuePayloadApproval{
@@ -188,6 +192,7 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 
 	payload.Approval = &storepb.IssuePayloadApproval{
 		ApprovalFindingDone: true,
+		RiskLevel:           riskLevel,
 		ApprovalTemplates:   nil,
 		Approvers:           nil,
 	}
@@ -744,4 +749,18 @@ func convertToSource(source store.RiskSource) v1pb.Risk_Source {
 		return v1pb.Risk_EXPORT
 	}
 	return v1pb.Risk_SOURCE_UNSPECIFIED
+}
+
+func convertRiskLevel(riskLevel int32) (storepb.IssuePayloadApproval_RiskLevel, error) {
+	switch riskLevel {
+	case 0:
+		return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, nil
+	case 100:
+		return storepb.IssuePayloadApproval_LOW, nil
+	case 200:
+		return storepb.IssuePayloadApproval_MODERATE, nil
+	case 300:
+		return storepb.IssuePayloadApproval_HIGH, nil
+	}
+	return storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED, errors.Errorf("unexpected risk level %d", riskLevel)
 }
