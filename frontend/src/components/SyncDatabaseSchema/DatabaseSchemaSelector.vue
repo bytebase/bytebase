@@ -126,6 +126,10 @@ interface LocalState {
 
 const state = reactive<LocalState>({
   showFeatureModal: false,
+  projectId: props.selectState?.projectId,
+  environmentId: props.selectState?.environmentId,
+  databaseId: props.selectState?.databaseId,
+  changeHistoryName: props.selectState?.changeHistory?.name,
 });
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
@@ -451,37 +455,27 @@ watch(
     emit("update", params);
   },
   {
-    immediate: true,
+    immediate: false,
   }
 );
 
 watch(
-  [() => props.selectState?.databaseId, () => props.selectState?.projectId],
-  async ([databaseId, projectId]) => {
-    if (databaseId) {
-      try {
-        const database = await databaseStore.getOrFetchDatabaseByUID(
-          databaseId
-        );
-        const environment = await environmentStore.getOrFetchEnvironmentByName(
-          database.effectiveEnvironment
-        );
-        state.projectId = projectId;
-        state.databaseId = database.uid;
-        state.environmentId = environment.uid;
-        state.changeHistoryName = props.selectState?.changeHistory?.name;
-      } catch (error) {
-        // do nothing.
-      }
-    } else if (projectId) {
-      state.projectId = projectId;
-      state.databaseId = undefined;
-      state.environmentId = undefined;
-      state.changeHistoryName = undefined;
-    }
+  [
+    () => props.selectState?.projectId,
+    () => props.selectState?.environmentId,
+    () => props.selectState?.databaseId,
+    () => props.selectState?.changeHistory?.name,
+    () => props.selectState?.isFetching,
+  ],
+  ([projectId, environmentId, databaseId, changeHistoryName, isFetching]) => {
+    if (isFetching) return;
+    state.projectId = projectId;
+    state.environmentId = environmentId;
+    state.databaseId = databaseId;
+    state.changeHistoryName = changeHistoryName;
   },
   {
-    immediate: true,
+    immediate: false,
   }
 );
 </script>
