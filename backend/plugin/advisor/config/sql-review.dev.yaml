@@ -217,3 +217,5 @@ ruleList:
     level: ERROR
   - type: system.event.disallow
     level: WARNING
+  - type: system.view.disallow
+    level: WARNING

@@ -183,6 +183,8 @@ const (
 	SchemaRuleDisallowProcedure SQLReviewRuleType = "system.procedure.disallow"
 	// SchemaRuleDisallowEvent disallow event.
 	SchemaRuleDisallowEvent SQLReviewRuleType = "system.event.disallow"
+	// SchemaRuleDisallowView disallow view.
+	SchemaRuleDisallowView SQLReviewRuleType = "system.view.disallow"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -1471,6 +1473,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleDisallowEvent:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLEventDisallowCreate, nil
+		}
+	case SchemaRuleDisallowView:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLViewDisallowCreate, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

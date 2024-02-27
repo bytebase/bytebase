@@ -463,6 +463,10 @@
     "system-event-disallow": {
       "title": "Prohibir la creación de eventos",
       "description": "Esta regla prohíbe la creación de eventos dentro de la base de datos. Los eventos del sistema a menudo realizan tareas automatizadas que podrían afectar el entorno de la base de datos. Al prohibir su creación, ayuda a mantener el control sobre las operaciones de la base de datos y previene posibles interrupciones. Nivel de error sugerido: Advertencia"
+    },
+    "system-view-disallow": {
+      "title": "Prohibir la creación de vistas",
+      "description": "Esta regla prohíbe la creación de vistas dentro de la base de datos. Las vistas proporcionan una representación virtual de los datos que puede simplificar las consultas y mejorar la seguridad de los datos. Al prohibir su creación, ayuda a mantener el control sobre el esquema de la base de datos y previene posibles riesgos de seguridad. Nivel de error sugerido: Advertencia"
     }
   },
   "level": {
