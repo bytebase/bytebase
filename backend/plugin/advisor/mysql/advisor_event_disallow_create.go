@@ -21,11 +21,11 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLEventDisallowCreate, &EventDisallowCreateAdvisor{})
 }
 
-// EventDisallowCreateAdvisor is the advisor checking for disallow table partition.
+// EventDisallowCreateAdvisor is the advisor checking for disallow creating event.
 type EventDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow table partition.
+// Check checks for disallow creating event.
 func (*EventDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
