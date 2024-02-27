@@ -401,7 +401,7 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 		default:
 			keywordEntries.Insert(base.Candidate{
 				Type: base.CandidateTypeKeyword,
-				Text: c.quotedIdentifierIfNeeded(entry),
+				Text: entry,
 			})
 		}
 	}
