@@ -6,7 +6,7 @@
       <Draggable
         id="tab-list"
         ref="tabListRef"
-        v-model="tabStore.tabIdList"
+        v-model="filteredTabIdList"
         item-key="id"
         animation="300"
         class="tab-list hide-scrollbar"
@@ -60,9 +60,14 @@ import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useTabStore, useActuatorV1Store } from "@/store";
+import {
+  useTabStore,
+  useActuatorV1Store,
+  useFilterStore,
+  useDatabaseV1Store,
+} from "@/store";
 import type { TabInfo } from "@/types";
-import { TabMode } from "@/types";
+import { TabMode, UNKNOWN_ID } from "@/types";
 import {
   defer,
   getSuggestedTabNameFromConnection,
@@ -81,6 +86,8 @@ type LocalState = {
 const tabStore = useTabStore();
 
 const { t } = useI18n();
+const { filter } = useFilterStore();
+const databaseStore = useDatabaseV1Store();
 const dialog = useDialog();
 
 const state = reactive<LocalState>({
@@ -100,6 +107,26 @@ const scrollState = reactive({
 
 const showProfileDropdown = computed(() => {
   return pageMode.value === "BUNDLED";
+});
+
+const filteredTabIdList = computed(() => {
+  // If a database is selected, only show tabs that are associated with the database.
+  if (filter.database) {
+    const database = databaseStore.getDatabaseByName(filter.database);
+    return tabStore.tabIdList.filter((id) => {
+      const tab = tabStore.getTabById(id);
+      if (
+        tab.connection.databaseId === String(UNKNOWN_ID) ||
+        tab.connection.databaseId === database.uid
+      ) {
+        return true;
+      } else {
+        return false;
+      }
+    });
+  }
+
+  return tabStore.tabIdList;
 });
 
 const handleSelectTab = async (tab: TabInfo) => {

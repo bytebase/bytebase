@@ -130,7 +130,7 @@ export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
     // If the current tab is "fresh new", update its connection directly.
     tabStore.updateCurrentTab(tab);
   } else {
-    // Otherwise select or add a new tab and set its connection
+    // Otherwise select or add a new tab and set its connection.
     const name = getSuggestedTabNameFromConnection(tab.connection);
     tabStore.selectOrAddSimilarTab(
       tab,
