@@ -50,8 +50,15 @@ func newDriver(dc db.DriverConfig) db.Driver {
 
 // Open opens a MongoDB driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	connectionURI := getMongoDBConnectionURI(connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get SSL config")
+	}
+	if tlsConfig != nil {
+		opts.SetTLSConfig(tlsConfig)
+	}
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
@@ -91,7 +98,7 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
 	// 1. Use the --eval option to execute the statement.
@@ -140,9 +147,9 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 	panic("not implemented")
 }
 
-// getMongoDBConnectionURI returns the MongoDB connection URI.
+// getBasicMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
-func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
+func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	u := &url.URL{
 		Scheme: "mongodb",
 		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
@@ -176,7 +183,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
 	// 2. We cannot catch the output if we use the --file option.

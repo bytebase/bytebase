@@ -72,7 +72,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 
 	a := require.New(t)
 	for _, tt := range tests {
-		got := getMongoDBConnectionURI(tt.connConfig)
+		got := getBasicMongoDBConnectionURI(tt.connConfig)
 		a.Equal(tt.want, got)
 	}
 }
