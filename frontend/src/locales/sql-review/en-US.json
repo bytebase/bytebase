@@ -459,6 +459,10 @@
     "system-procedure-disallow": {
       "title": "Disallow to create procedures",
       "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Error"
+    },
+    "system-event-disallow": {
+      "title": "Disallow to create events",
+      "description": "This rule prohibits the creation of events within the database. System events often perform automated tasks that could affect the database environment. By disallowing their creation, it helps maintain control over database operations and prevents potential disruptions. Suggested error level: Warning"
     }
   },
   "level": {
