@@ -149,6 +149,9 @@ const (
 
 	// 1501 ~ 1599 event error code.
 	DisallowEvent Code = 1501
+
+	// 1601 ~ 1699 view error code.
+	DisallowView Code = 1601
 )
 
 // Int returns the int type of code.

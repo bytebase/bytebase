@@ -751,3 +751,8 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: system.view.disallow
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList: []

@@ -157,6 +157,7 @@ export type RuleType =
   | "system.comment.length"
   | "system.procedure.disallow"
   | "system.event.disallow"
+  | "system.view.disallow"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"

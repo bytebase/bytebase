@@ -463,6 +463,10 @@
     "system-event-disallow": {
       "title": "Disallow to create events",
       "description": "This rule prohibits the creation of events within the database. System events often perform automated tasks that could affect the database environment. By disallowing their creation, it helps maintain control over database operations and prevents potential disruptions. Suggested error level: Warning"
+    },
+    "system-view-disallow": {
+      "title": "Disallow to create views",
+      "description": "This rule prohibits the creation of views within the database. Views provide a virtual representation of data that can simplify queries and enhance data security. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     }
   },
   "level": {
