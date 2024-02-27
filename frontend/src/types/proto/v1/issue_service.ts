@@ -272,12 +272,7 @@ export interface Issue {
    * - users/{email}
    */
   releasers: string[];
-  /**
-   * The risk of the issue.
-   * Can be empty.
-   * Format: risks/{name}
-   */
-  risk: string;
+  riskLevel: Issue_RiskLevel;
 }
 
 export enum Issue_Type {
@@ -314,6 +309,51 @@ export function issue_TypeToJSON(object: Issue_Type): string {
     case Issue_Type.GRANT_REQUEST:
       return "GRANT_REQUEST";
     case Issue_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export enum Issue_RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0,
+  LOW = 1,
+  MODERATE = 2,
+  HIGH = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function issue_RiskLevelFromJSON(object: any): Issue_RiskLevel {
+  switch (object) {
+    case 0:
+    case "RISK_LEVEL_UNSPECIFIED":
+      return Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED;
+    case 1:
+    case "LOW":
+      return Issue_RiskLevel.LOW;
+    case 2:
+    case "MODERATE":
+      return Issue_RiskLevel.MODERATE;
+    case 3:
+    case "HIGH":
+      return Issue_RiskLevel.HIGH;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Issue_RiskLevel.UNRECOGNIZED;
+  }
+}
+
+export function issue_RiskLevelToJSON(object: Issue_RiskLevel): string {
+  switch (object) {
+    case Issue_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return "RISK_LEVEL_UNSPECIFIED";
+    case Issue_RiskLevel.LOW:
+      return "LOW";
+    case Issue_RiskLevel.MODERATE:
+      return "MODERATE";
+    case Issue_RiskLevel.HIGH:
+      return "HIGH";
+    case Issue_RiskLevel.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -1587,7 +1627,7 @@ function createBaseIssue(): Issue {
     rollout: "",
     grantRequest: undefined,
     releasers: [],
-    risk: "",
+    riskLevel: 0,
   };
 }
 
@@ -1653,8 +1693,8 @@ export const Issue = {
     for (const v of message.releasers) {
       writer.uint32(162).string(v!);
     }
-    if (message.risk !== "") {
-      writer.uint32(170).string(message.risk);
+    if (message.riskLevel !== 0) {
+      writer.uint32(168).int32(message.riskLevel);
     }
     return writer;
   },
@@ -1807,11 +1847,11 @@ export const Issue = {
           message.releasers.push(reader.string());
           continue;
         case 21:
-          if (tag !== 170) {
+          if (tag !== 168) {
             break;
           }
 
-          message.risk = reader.string();
+          message.riskLevel = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1852,7 +1892,7 @@ export const Issue = {
       releasers: globalThis.Array.isArray(object?.releasers)
         ? object.releasers.map((e: any) => globalThis.String(e))
         : [],
-      risk: isSet(object.risk) ? globalThis.String(object.risk) : "",
+      riskLevel: isSet(object.riskLevel) ? issue_RiskLevelFromJSON(object.riskLevel) : 0,
     };
   },
 
@@ -1918,8 +1958,8 @@ export const Issue = {
     if (message.releasers?.length) {
       obj.releasers = message.releasers;
     }
-    if (message.risk !== "") {
-      obj.risk = message.risk;
+    if (message.riskLevel !== 0) {
+      obj.riskLevel = issue_RiskLevelToJSON(message.riskLevel);
     }
     return obj;
   },
@@ -1951,7 +1991,7 @@ export const Issue = {
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
     message.releasers = object.releasers?.map((e) => e) || [];
-    message.risk = object.risk ?? "";
+    message.riskLevel = object.riskLevel ?? 0;
     return message;
   },
 };

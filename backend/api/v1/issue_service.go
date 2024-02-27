@@ -1883,6 +1883,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Rollout:              "",
 		GrantRequest:         convertedGrantRequest,
 		Releasers:            releasers,
+		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
 	}
 
 	if issue.PlanUID != nil {
@@ -1902,6 +1903,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	if issuePayload.Approval != nil {
 		issueV1.ApprovalFindingDone = issuePayload.Approval.ApprovalFindingDone
 		issueV1.ApprovalFindingError = issuePayload.Approval.ApprovalFindingError
+		issueV1.RiskLevel = convertToIssueRiskLevel(issuePayload.Approval.RiskLevel)
 		for _, template := range issuePayload.Approval.ApprovalTemplates {
 			issueV1.ApprovalTemplates = append(issueV1.ApprovalTemplates, convertToApprovalTemplate(template))
 		}
@@ -2011,6 +2013,21 @@ func convertToIssueStatus(status api.IssueStatus) v1pb.IssueStatus {
 		return v1pb.IssueStatus_CANCELED
 	default:
 		return v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED
+	}
+}
+
+func convertToIssueRiskLevel(riskLevel storepb.IssuePayloadApproval_RiskLevel) v1pb.Issue_RiskLevel {
+	switch riskLevel {
+	case storepb.IssuePayloadApproval_RISK_LEVEL_UNSPECIFIED:
+		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
+	case storepb.IssuePayloadApproval_LOW:
+		return v1pb.Issue_LOW
+	case storepb.IssuePayloadApproval_MODERATE:
+		return v1pb.Issue_MODERATE
+	case storepb.IssuePayloadApproval_HIGH:
+		return v1pb.Issue_HIGH
+	default:
+		return v1pb.Issue_RISK_LEVEL_UNSPECIFIED
 	}
 }
 
