@@ -106,8 +106,12 @@
             <template v-if="basicInfo.engine !== Engine.SPANNER">
               <label for="host" class="textlabel block">
                 <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-                  {{ $t("instance.account-name") }}
+                  {{ $t("instance.account-locator") }}
                   <span class="text-red-600 mr-2">*</span>
+                  <LearnMoreLink
+                    url="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
+                    class="text-sm"
+                  />
                 </template>
                 <template v-else>
                   {{ $t("instance.host-or-socket") }}
@@ -119,7 +123,7 @@
                 required
                 :placeholder="
                   basicInfo.engine === Engine.SNOWFLAKE
-                    ? $t('instance.your-snowflake-account-name')
+                    ? $t('instance.your-snowflake-account-locator')
                     : $t('instance.sentence.host.snowflake')
                 "
                 class="mt-1 w-full"
