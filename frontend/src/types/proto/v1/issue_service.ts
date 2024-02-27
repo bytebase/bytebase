@@ -272,6 +272,12 @@ export interface Issue {
    * - users/{email}
    */
   releasers: string[];
+  /**
+   * The risk of the issue.
+   * Can be empty.
+   * Format: risks/{name}
+   */
+  risk: string;
 }
 
 export enum Issue_Type {
@@ -1581,6 +1587,7 @@ function createBaseIssue(): Issue {
     rollout: "",
     grantRequest: undefined,
     releasers: [],
+    risk: "",
   };
 }
 
@@ -1645,6 +1652,9 @@ export const Issue = {
     }
     for (const v of message.releasers) {
       writer.uint32(162).string(v!);
+    }
+    if (message.risk !== "") {
+      writer.uint32(170).string(message.risk);
     }
     return writer;
   },
@@ -1796,6 +1806,13 @@ export const Issue = {
 
           message.releasers.push(reader.string());
           continue;
+        case 21:
+          if (tag !== 170) {
+            break;
+          }
+
+          message.risk = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1835,6 +1852,7 @@ export const Issue = {
       releasers: globalThis.Array.isArray(object?.releasers)
         ? object.releasers.map((e: any) => globalThis.String(e))
         : [],
+      risk: isSet(object.risk) ? globalThis.String(object.risk) : "",
     };
   },
 
@@ -1900,6 +1918,9 @@ export const Issue = {
     if (message.releasers?.length) {
       obj.releasers = message.releasers;
     }
+    if (message.risk !== "") {
+      obj.risk = message.risk;
+    }
     return obj;
   },
 
@@ -1930,6 +1951,7 @@ export const Issue = {
       ? GrantRequest.fromPartial(object.grantRequest)
       : undefined;
     message.releasers = object.releasers?.map((e) => e) || [];
+    message.risk = object.risk ?? "";
     return message;
   },
 };
