@@ -215,3 +215,5 @@ ruleList:
       number: 64
   - type: system.procedure.disallow
     level: ERROR
+  - type: system.event.disallow
+    level: WARNING
