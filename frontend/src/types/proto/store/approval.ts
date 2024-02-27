@@ -17,8 +17,52 @@ export interface IssuePayloadApproval {
    */
   approvalFindingDone: boolean;
   approvalFindingError: string;
-  /** Format: risks/{name} */
-  risk: string;
+  riskLevel: IssuePayloadApproval_RiskLevel;
+}
+
+export enum IssuePayloadApproval_RiskLevel {
+  RISK_LEVEL_UNSPECIFIED = 0,
+  LOW = 1,
+  MODERATE = 2,
+  HIGH = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function issuePayloadApproval_RiskLevelFromJSON(object: any): IssuePayloadApproval_RiskLevel {
+  switch (object) {
+    case 0:
+    case "RISK_LEVEL_UNSPECIFIED":
+      return IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED;
+    case 1:
+    case "LOW":
+      return IssuePayloadApproval_RiskLevel.LOW;
+    case 2:
+    case "MODERATE":
+      return IssuePayloadApproval_RiskLevel.MODERATE;
+    case 3:
+    case "HIGH":
+      return IssuePayloadApproval_RiskLevel.HIGH;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return IssuePayloadApproval_RiskLevel.UNRECOGNIZED;
+  }
+}
+
+export function issuePayloadApproval_RiskLevelToJSON(object: IssuePayloadApproval_RiskLevel): string {
+  switch (object) {
+    case IssuePayloadApproval_RiskLevel.RISK_LEVEL_UNSPECIFIED:
+      return "RISK_LEVEL_UNSPECIFIED";
+    case IssuePayloadApproval_RiskLevel.LOW:
+      return "LOW";
+    case IssuePayloadApproval_RiskLevel.MODERATE:
+      return "MODERATE";
+    case IssuePayloadApproval_RiskLevel.HIGH:
+      return "HIGH";
+    case IssuePayloadApproval_RiskLevel.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface IssuePayloadApproval_Approver {
@@ -241,7 +285,7 @@ export function approvalNode_GroupValueToJSON(object: ApprovalNode_GroupValue): 
 }
 
 function createBaseIssuePayloadApproval(): IssuePayloadApproval {
-  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "", risk: "" };
+  return { approvalTemplates: [], approvers: [], approvalFindingDone: false, approvalFindingError: "", riskLevel: 0 };
 }
 
 export const IssuePayloadApproval = {
@@ -258,8 +302,8 @@ export const IssuePayloadApproval = {
     if (message.approvalFindingError !== "") {
       writer.uint32(34).string(message.approvalFindingError);
     }
-    if (message.risk !== "") {
-      writer.uint32(42).string(message.risk);
+    if (message.riskLevel !== 0) {
+      writer.uint32(40).int32(message.riskLevel);
     }
     return writer;
   },
@@ -300,11 +344,11 @@ export const IssuePayloadApproval = {
           message.approvalFindingError = reader.string();
           continue;
         case 5:
-          if (tag !== 42) {
+          if (tag !== 40) {
             break;
           }
 
-          message.risk = reader.string();
+          message.riskLevel = reader.int32() as any;
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -325,7 +369,7 @@ export const IssuePayloadApproval = {
         : [],
       approvalFindingDone: isSet(object.approvalFindingDone) ? globalThis.Boolean(object.approvalFindingDone) : false,
       approvalFindingError: isSet(object.approvalFindingError) ? globalThis.String(object.approvalFindingError) : "",
-      risk: isSet(object.risk) ? globalThis.String(object.risk) : "",
+      riskLevel: isSet(object.riskLevel) ? issuePayloadApproval_RiskLevelFromJSON(object.riskLevel) : 0,
     };
   },
 
@@ -343,8 +387,8 @@ export const IssuePayloadApproval = {
     if (message.approvalFindingError !== "") {
       obj.approvalFindingError = message.approvalFindingError;
     }
-    if (message.risk !== "") {
-      obj.risk = message.risk;
+    if (message.riskLevel !== 0) {
+      obj.riskLevel = issuePayloadApproval_RiskLevelToJSON(message.riskLevel);
     }
     return obj;
   },
@@ -358,7 +402,7 @@ export const IssuePayloadApproval = {
     message.approvers = object.approvers?.map((e) => IssuePayloadApproval_Approver.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;
     message.approvalFindingError = object.approvalFindingError ?? "";
-    message.risk = object.risk ?? "";
+    message.riskLevel = object.riskLevel ?? 0;
     return message;
   },
 };

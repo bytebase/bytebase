@@ -15,6 +15,7 @@
     - [ApprovalNode.Type](#bytebase-store-ApprovalNode-Type)
     - [ApprovalStep.Type](#bytebase-store-ApprovalStep-Type)
     - [IssuePayloadApproval.Approver.Status](#bytebase-store-IssuePayloadApproval-Approver-Status)
+    - [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel)
   
 - [store/activity.proto](#store_activity-proto)
     - [ActivityIssueApprovalNotifyPayload](#bytebase-store-ActivityIssueApprovalNotifyPayload)
@@ -298,7 +299,7 @@ IssuePayloadApproval records the approval template used and the approval history
 | approvers | [IssuePayloadApproval.Approver](#bytebase-store-IssuePayloadApproval-Approver) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, other fields are available. |
 | approval_finding_error | [string](#string) |  |  |
-| risk | [string](#string) |  | Format: risks/{name} |
+| risk_level | [IssuePayloadApproval.RiskLevel](#bytebase-store-IssuePayloadApproval-RiskLevel) |  |  |
 
 
 
@@ -383,6 +384,20 @@ ANY means approving any node will proceed.
 | PENDING | 1 |  |
 | APPROVED | 2 |  |
 | REJECTED | 3 |  |
+
+
+
+<a name="bytebase-store-IssuePayloadApproval-RiskLevel"></a>
+
+### IssuePayloadApproval.RiskLevel
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| RISK_LEVEL_UNSPECIFIED | 0 |  |
+| LOW | 1 |  |
+| MODERATE | 2 |  |
+| HIGH | 3 |  |
 
 
  

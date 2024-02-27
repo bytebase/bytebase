@@ -30,8 +30,13 @@ message IssuePayloadApproval {
 
   string approval_finding_error = 4;
 
-  // Format: risks/{name}
-  string risk = 5;
+  enum RiskLevel {
+    RISK_LEVEL_UNSPECIFIED = 0;
+    LOW = 1;
+    MODERATE = 2;
+    HIGH = 3;
+  }
+  RiskLevel risk_level = 5;
 }
 
 message ApprovalTemplate {
