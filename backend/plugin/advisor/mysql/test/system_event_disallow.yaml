@@ -1,0 +1,32 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE EVENT daily_backup
+    ON SCHEDULE
+      EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP
+    DO
+      INSERT INTO backup_table (backup_date, data)
+      SELECT NOW(), data
+      FROM main_table;
+  want:
+    - status: WARN
+      code: 1501
+      title: system.event.disallow
+      content: |-
+        Event is forbidden, but "CREATE EVENT daily_backup
+        ON SCHEDULE
+          EVERY 1 DAY
+        STARTS CURRENT_TIMESTAMP
+        DO
+          INSERT INTO backup_table (backup_date, data)
+          SELECT NOW(), data
+          FROM main_table;" creates
+      line: 1
+      details: ""

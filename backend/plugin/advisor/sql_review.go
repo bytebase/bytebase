@@ -175,15 +175,14 @@ const (
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
-
 	// SchemaRuleCollationAllowlist enforce the collation allowlist.
 	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
-
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
-
 	// SchemaRuleDisallowProcedure disallow procedure.
 	SchemaRuleDisallowProcedure SQLReviewRuleType = "system.procedure.disallow"
+	// SchemaRuleDisallowEvent disallow event.
+	SchemaRuleDisallowEvent SQLReviewRuleType = "system.event.disallow"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -1468,6 +1467,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleDisallowProcedure:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLDisallowProcedure, nil
+		}
+	case SchemaRuleDisallowEvent:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLEventDisallowCreate, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

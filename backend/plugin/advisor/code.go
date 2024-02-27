@@ -146,6 +146,9 @@ const (
 
 	// 1401 ~ 1499 procedure error code.
 	DisallowProcedure Code = 1401
+
+	// 1501 ~ 1599 event error code.
+	DisallowEvent Code = 1501
 )
 
 // Int returns the int type of code.
