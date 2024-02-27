@@ -94,13 +94,50 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	database := driver.client.Database(driver.databaseName)
-	collectionList, err := database.ListCollectionNames(ctx, bson.M{"type": "collection"})
+	collectionList, err := database.ListCollections(ctx, bson.M{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list collection names")
 	}
-	sort.Strings(collectionList)
+	var collectionNames []string
+	var viewNames []string
+	for collectionList.Next(ctx) {
+		var collection bson.M
+		if err := collectionList.Decode(&collection); err != nil {
+			return nil, errors.Wrap(err, "failed to decode collection")
+		}
+		var tp string
+		if t, ok := collection["type"]; ok {
+			if s, ok := t.(string); ok && s == "collection" {
+				tp = "collection"
+			}
+			if s, ok := t.(string); ok && s == "view" {
+				tp = "view"
+			}
+		}
+		name, ok := collection["name"]
+		if !ok {
+			return nil, errors.New("cannot get collection name from collection info")
+		}
+		collectionName, ok := name.(string)
+		if !ok {
+			return nil, errors.New("cannot convert collection name to string")
+		}
+		switch tp {
+		case "collection":
+			collectionNames = append(collectionNames, collectionName)
+		case "view":
+			viewNames = append(viewNames, collectionName)
+		}
+	}
+	if err := collectionList.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to list collection names")
+	}
+	if err := collectionList.Close(ctx); err != nil {
+		return nil, errors.Wrap(err, "failed to close collection list")
+	}
+	sort.Strings(collectionNames)
 
-	for _, collectionName := range collectionList {
+	for _, collectionName := range collectionNames {
 		if systemCollection[collectionName] {
 			continue
 		}
@@ -150,11 +187,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		})
 	}
 
-	viewList, err := database.ListCollectionNames(ctx, bson.M{"type": "view"})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list view names")
-	}
-	for _, viewName := range viewList {
+	for _, viewName := range viewNames {
 		schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{Name: viewName})
 	}
 
