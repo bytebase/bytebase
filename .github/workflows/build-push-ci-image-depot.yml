@@ -35,6 +35,7 @@ jobs:
         run: |
           cp backend/plugin/advisor/config/* frontend/src/types
           cp backend/enterprise/api/plan.yaml frontend/src/types
+          export BB_GIT_COMMIT_ID_FE=${{ env.GIT_COMMIT }}
           pnpm --dir ./frontend i && pnpm --dir ./frontend release
       - name: Login to DockerHub
         uses: docker/login-action@v3
