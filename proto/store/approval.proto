@@ -29,6 +29,9 @@ message IssuePayloadApproval {
   bool approval_finding_done = 3;
 
   string approval_finding_error = 4;
+
+  // Format: risks/{name}
+  string risk = 5;
 }
 
 message ApprovalTemplate {
