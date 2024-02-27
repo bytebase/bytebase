@@ -3,7 +3,11 @@
     v-model:value="state.type"
     class="!flex flex-row items-center gap-x-4 mt-2"
   >
-    <NRadio v-for="type in SslTypes" :key="type" :value="type">
+    <NRadio
+      v-for="type in sslTypeCandidatesOfEngine(props.engineType)"
+      :key="type"
+      :value="type"
+    >
       <span class="textlabel">{{ getSslTypeLabel(type) }}</span>
     </NRadio>
   </NRadioGroup>
@@ -60,9 +64,8 @@ import { NTabs, NTabPane, NRadio, NRadioGroup } from "naive-ui";
 import { PropType, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import DroppableTextarea from "@/components/misc/DroppableTextarea.vue";
+import { Engine } from "@/types/proto/v1/common";
 import { DataSource } from "@/types/proto/v1/instance_service";
-
-const SslTypes = ["NONE", "CA", "CA+KEY+CERT"] as const;
 
 type SslType = "NONE" | "CA" | "CA+KEY+CERT";
 
@@ -77,6 +80,10 @@ type LocalState = {
 const props = defineProps({
   value: {
     type: Object as PropType<WithSslOptions>,
+    required: true,
+  },
+  engineType: {
+    type: Object as PropType<Engine>,
     required: true,
   },
 });
@@ -150,5 +157,12 @@ function guessSslType(value: WithSslOptions): SslType {
     return "CA";
   }
   return "NONE";
+}
+
+function sslTypeCandidatesOfEngine(engineType: Engine): SslType[] {
+  if (engineType === Engine.MONGODB) {
+    return ["NONE", "CA"];
+  }
+  return ["NONE", "CA", "CA+KEY+CERT"];
 }
 </script>

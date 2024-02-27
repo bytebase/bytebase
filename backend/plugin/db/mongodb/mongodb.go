@@ -50,8 +50,15 @@ func newDriver(dc db.DriverConfig) db.Driver {
 
 // Open opens a MongoDB driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.ConnectionConfig) (db.Driver, error) {
-	connectionURI := getMongoDBConnectionURI(connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(connCfg)
 	opts := options.Client().ApplyURI(connectionURI)
+	tlsConfig, err := connCfg.TLSConfig.GetSslConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get SSL config")
+	}
+	if tlsConfig != nil {
+		opts.SetTLSConfig(tlsConfig)
+	}
 	client, err := mongo.Connect(ctx, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create MongoDB client")
@@ -91,7 +98,7 @@ func (*Driver) GetDB() *sql.DB {
 
 // Execute executes a statement, always returns 0 as the number of rows affected because we execute the statement by mongosh, it's hard to catch the row effected number.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB, we execute the statement in mongosh, which is a shell for MongoDB.
 	// There are some ways to execute the statement in mongosh:
 	// 1. Use the --eval option to execute the statement.
@@ -99,6 +106,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	// We choose the second way with the following reasons:
 	// 1. The statement may too long to be executed in the command line.
 	// 2. We cannot catch the error from the --eval option.
+	mongoshArgs := []string{
+		connectionURI,
+		// DocumentDB do not support retryWrites, so we set it to false.
+		"--retryWrites",
+		"false",
+		"--quiet",
+	}
+
+	if driver.connCfg.TLSConfig.SslCA != "" {
+		mongoshArgs = append(mongoshArgs, "--tls")
+		// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
+		// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
+		caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+		defer func() {
+			// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+			_ = os.Remove(caFileName)
+		}()
+		if err := os.WriteFile(caFileName, []byte(driver.connCfg.TLSConfig.SslCA), 0400); err != nil {
+			return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+		}
+		mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+	}
 
 	// First, we create a temporary file to store the statement.
 	tempDir := os.TempDir()
@@ -113,14 +142,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	if err := tempFile.Close(); err != nil {
 		return 0, errors.Wrap(err, "failed to close temporary file")
 	}
+	mongoshArgs = append(mongoshArgs, "--file", tempFile.Name())
 
-	// Then, we execute the statement in mongosh.
-	mongoshArgs := []string{
-		connectionURI,
-		"--quiet",
-		"--file",
-		tempFile.Name(),
-	}
 	mongoshCmd := exec.CommandContext(ctx, mongoutil.GetMongoshPath(driver.dbBinDir), mongoshArgs...)
 	var errContent bytes.Buffer
 	mongoshCmd.Stderr = &errContent
@@ -140,9 +163,9 @@ func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 	panic("not implemented")
 }
 
-// getMongoDBConnectionURI returns the MongoDB connection URI.
+// getBasicMongoDBConnectionURI returns the MongoDB connection URI.
 // https://www.mongodb.com/docs/manual/reference/connection-string/
-func getMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
+func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	u := &url.URL{
 		Scheme: "mongodb",
 		// In RFC, there can be no tailing slash('/') in the path if the path is empty and the query is not empty.
@@ -176,7 +199,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	statement = strings.Trim(statement, " \t\n\r\f;")
 	simpleStatement := isMongoStatement(statement)
 	startTime := time.Now()
-	connectionURI := getMongoDBConnectionURI(driver.connCfg)
+	connectionURI := getBasicMongoDBConnectionURI(driver.connCfg)
 	// For MongoDB query, we execute the statement in mongosh with flag --eval for the following reasons:
 	// 1. Query always short, so it's safe to execute in the command line.
 	// 2. We cannot catch the output if we use the --file option.
@@ -198,20 +221,38 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
 	evalArg = fmt.Sprintf(`'%s'`, evalArg)
 
-	fileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
-	defer func() {
-		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-		_ = os.Remove(fileName)
-	}()
 	mongoshArgs := []string{
 		mongoutil.GetMongoshPath(driver.dbBinDir),
 		connectionURI,
 		"--quiet",
 		"--eval",
 		evalArg,
-		">",
-		fileName,
+		// DocumentDB do not support retryWrites, so we set it to false.
+		"--retryWrites",
+		"false",
 	}
+
+	if driver.connCfg.TLSConfig.SslCA != "" {
+		mongoshArgs = append(mongoshArgs, "--tls")
+		// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
+		// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
+		caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+		defer func() {
+			// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+			_ = os.Remove(caFileName)
+		}()
+		if err := os.WriteFile(caFileName, []byte(driver.connCfg.TLSConfig.SslCA), 0400); err != nil {
+			return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+		}
+		mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+	}
+
+	queryResultFileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+	defer func() {
+		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+		_ = os.Remove(queryResultFileName)
+	}()
+	mongoshArgs = append(mongoshArgs, ">", queryResultFileName)
 
 	shellArgs := []string{
 		"-c",
@@ -226,15 +267,15 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
 
-	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(queryResultFileName, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file: %s", fileName)
+		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFileName)
 	}
 	defer f.Close()
 
 	content, err := io.ReadAll(f)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file: %s", fileName)
+		return nil, errors.Wrapf(err, "failed to read file: %s", queryResultFileName)
 	}
 
 	if simpleStatement {
