@@ -136,6 +136,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, errors.Wrap(err, "failed to close collection list")
 	}
 	sort.Strings(collectionNames)
+	sort.Strings(viewNames)
 
 	for _, collectionName := range collectionNames {
 		if systemCollection[collectionName] {

@@ -205,20 +205,35 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
 	evalArg = fmt.Sprintf(`'%s'`, evalArg)
 
-	fileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
-	defer func() {
-		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
-		_ = os.Remove(fileName)
-	}()
 	mongoshArgs := []string{
 		mongoutil.GetMongoshPath(driver.dbBinDir),
 		connectionURI,
 		"--quiet",
 		"--eval",
 		evalArg,
-		">",
-		fileName,
 	}
+
+	if driver.connCfg.TLSConfig.SslCA != "" {
+		mongoshArgs = append(mongoshArgs, "--tls")
+		// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
+		// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
+		caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+		defer func() {
+			// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+			_ = os.Remove(caFileName)
+		}()
+		if err := os.WriteFile(caFileName, []byte(driver.connCfg.TLSConfig.SslCA), 0400); err != nil {
+			return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+		}
+		mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+	}
+
+	queryResultFileName := fmt.Sprintf("mongodb-query-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+	defer func() {
+		// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+		_ = os.Remove(queryResultFileName)
+	}()
+	mongoshArgs = append(mongoshArgs, ">", queryResultFileName)
 
 	shellArgs := []string{
 		"-c",
@@ -233,15 +248,15 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		return nil, errors.Wrapf(err, "failed to execute statement in mongosh: \n stdout: %s\n stderr: %s", outContent.String(), errContent.String())
 	}
 
-	f, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
+	f, err := os.OpenFile(queryResultFileName, os.O_RDONLY, 0644)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file: %s", fileName)
+		return nil, errors.Wrapf(err, "failed to open file: %s", queryResultFileName)
 	}
 	defer f.Close()
 
 	content, err := io.ReadAll(f)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read file: %s", fileName)
+		return nil, errors.Wrapf(err, "failed to read file: %s", queryResultFileName)
 	}
 
 	if simpleStatement {
