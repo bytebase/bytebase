@@ -309,6 +309,11 @@ message Issue {
   // - roles/projectReleaser
   // - users/{email}
   repeated string releasers = 20;
+
+  // The risk of the issue.
+  // Can be empty.
+  // Format: risks/{name}
+  string risk = 21;
 }
 
 message GrantRequest {
