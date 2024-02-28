@@ -68,7 +68,7 @@ const emit = defineEmits<{
     config: ExecuteConfig,
     option?: ExecuteOption
   ): void;
-  (e: "history", direction: "up" | "down"): void;
+  (e: "history", direction: "up" | "down", editor: IStandaloneCodeEditor): void;
   (e: "clear-screen"): void;
 }>();
 
@@ -243,7 +243,7 @@ const handleEditorReady = (
       // - the cursor is at the first line
       // - then press "CtrlCmd + Up"
       // We trigger the "history" event
-      emit("history", "up");
+      emit("history", "up", editor);
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
@@ -256,7 +256,7 @@ const handleEditorReady = (
       // - the cursor is at the last line
       // - then press "CtrlCmd + Down"
       // We trigger the "history" event
-      emit("history", "down");
+      emit("history", "down", editor);
     },
     // Tell the editor this should be only
     // triggered when both of the two conditions are satisfied.
