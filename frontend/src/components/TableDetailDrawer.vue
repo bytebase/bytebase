@@ -72,6 +72,8 @@
                 <SQLEditorButtonV1
                   class="text-sm md:mr-4"
                   :database="database"
+                  :schema="schemaName"
+                  :table="tableName"
                   :label="true"
                   :disabled="!allowQuery"
                 />

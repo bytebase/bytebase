@@ -53,14 +53,15 @@
         <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
       </NButton>
       <NButton size="small">
-        <a
-          href="/sql-editor"
-          class="flex flex-row justify-center items-center"
+        <router-link
+          :to="{ name: SQL_EDITOR_HOME_MODULE }"
+          exact-active-class=""
           target="_blank"
+          class="flex flex-row justify-center items-center"
         >
           <heroicons-outline:terminal class="w-5 h-auto mr-1" />
           <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-        </a>
+        </router-link>
       </NButton>
       <router-link
         v-if="hasGetSettingPermission"
@@ -101,6 +102,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";

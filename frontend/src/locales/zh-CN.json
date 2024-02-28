@@ -1248,7 +1248,7 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "foreign-tables": "外部表",
+    "external-tables": "外部表",
     "create": "创建数据库"
   },
   "instance": {
@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "请输入标签页名称!",
     "copy-code": "复制代码",
+    "copy-url": "复制 URL",
     "notify": {
       "copy-code-succeed": "代码复制成功",
       "copy-share-link": "分享链接已拷贝到剪贴板",

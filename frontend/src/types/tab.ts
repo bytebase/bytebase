@@ -12,6 +12,8 @@ export type Connection = {
   instanceId: string;
   databaseId: string;
   dataSourceId?: string;
+  schema?: string;
+  table?: string;
 };
 
 export enum TabMode {

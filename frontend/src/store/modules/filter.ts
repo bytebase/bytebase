@@ -11,6 +11,10 @@ interface Filter {
   // Using in SQL Editor and other database related pages.
   // Format: "instances/{instance}/databases/{database}"
   database?: string;
+  // the schema name.
+  schema?: string;
+  // the table name.
+  table?: string;
 }
 
 export const useFilterStore = defineStore("filter", () => {
