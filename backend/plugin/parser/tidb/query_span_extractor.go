@@ -341,11 +341,12 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to extract table source from FROM clause")
 		}
+		previousTableSourcesFromLength := len(q.tableSourcesFrom)
+		defer func() {
+			q.tableSourcesFrom = q.tableSourcesFrom[:previousTableSourcesFromLength]
+		}()
 		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSource)
 		fromFieldList = append(fromFieldList, tableSource)
-		defer func() {
-			q.tableSourcesFrom = nil
-		}()
 	}
 
 	result := new(base.PseudoTable)

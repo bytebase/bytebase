@@ -463,8 +463,9 @@ func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgque
 
 func (q *querySpanExtractor) extractTableSourceFromSelect(node *pgquery.Node_SelectStmt) (base.TableSource, error) {
 	// We should reset the table sources from the FROM clause after exit the SELECT statement.
+	previousTableSourcesFromLength := len(q.tableSourcesFrom)
 	defer func() {
-		q.tableSourcesFrom = nil
+		q.tableSourcesFrom = q.tableSourcesFrom[:previousTableSourcesFromLength]
 	}()
 
 	// The WITH clause.
