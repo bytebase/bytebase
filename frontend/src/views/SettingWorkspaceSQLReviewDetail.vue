@@ -389,5 +389,5 @@ const onRemove = () => {
   });
 };
 
-useTitle(computed(() => reviewPolicy.value.name || "SQL Review"));
+useTitle(computed(() => reviewPolicy.value.name));
 </script>
