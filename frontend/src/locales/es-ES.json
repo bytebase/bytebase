@@ -1248,7 +1248,7 @@
     "start-to-sync-schema": "Comenzar a sincronizar el esquema",
     "failed-to-sync-schema": "No se pudo sincronizar el esquema",
     "successfully-synced-schema": "Esquema sincronizado correctamente",
-    "foreign-tables": "tabla externa",
+    "external-tables": "tabla externa",
     "create": "Crear base de datos"
   },
   "instance": {
@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "¡Ingrese la etiqueta de pestaña!",
     "copy-code": "Copiar código",
+    "copy-url": "Copiar URL",
     "notify": {
       "copy-code-succeed": "Copia de código exitosa",
       "copy-share-link": "El enlace compartido se copió al portapapeles.",

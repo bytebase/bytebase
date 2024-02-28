@@ -1236,7 +1236,7 @@
     "collections": "ビュー",
     "views": "拡張機能",
     "extensions": "外部テーブル",
-    "foreign-tables": "関数",
+    "external-tables": "関数",
     "functions": "ストリーム",
     "streams": "タスク",
     "tasks": "親",
@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "タブのラベルを入力してください",
     "copy-code": "コードをコピー",
+    "copy-url": "URLをコピー",
     "notify": {
       "copy-code-succeed": "コードのコピーに成功しました",
       "copy-share-link": "共有リンクがクリップボードにコピーされました",

@@ -1236,7 +1236,7 @@
     "collections": "Bộ sưu tập",
     "views": "Lượt xem",
     "extensions": "Tiện ích mở rộng",
-    "foreign-tables": "Bàn nước ngoài",
+    "external-tables": "Bàn nước ngoài",
     "functions": "Chức năng",
     "streams": "Dòng",
     "tasks": "Nhiệm vụ",
@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "Vui lòng nhập nhãn tab!",
     "copy-code": "Sao chép mã",
+    "copy-url": "Sao chép URL",
     "notify": {
       "copy-code-succeed": "Sao chép mã thành công",
       "copy-share-link": "Liên kết chia sẻ đã được sao chép vào Clipboard.",

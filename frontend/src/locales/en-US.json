@@ -1236,7 +1236,7 @@
     "collections": "Collections",
     "views": "Views",
     "extensions": "Extensions",
-    "foreign-tables": "Foreign tables",
+    "external-tables": "External tables",
     "functions": "Functions",
     "streams": "Streams",
     "tasks": "Tasks",
@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "Please input the tab label!",
     "copy-code": "Copy code",
+    "copy-url": "Copy URL",
     "notify": {
       "copy-code-succeed": "Copy code succeed",
       "copy-share-link": "The share link was copied to Clipboard.",
