@@ -612,11 +612,10 @@ const handleLoadSubTree = (option: TreeOption) => {
 
 const expandTableTab = (database: ComposedDatabase) => {
   const { schema, table } = tabStore.currentTab.connection;
-
-  if (!schema) {
-    return;
-  }
-  const schemaMetadata = dbSchemaV1Store.getSchemaByName(database.name, schema);
+  const schemaMetadata = dbSchemaV1Store.getSchemaByName(
+    database.name,
+    schema ?? ""
+  );
   if (!schemaMetadata) {
     return;
   }

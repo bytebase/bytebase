@@ -342,13 +342,12 @@ const syncURLWithConnection = () => {
             connectionSlug: makeConnectionV1Slug(instance, database),
           },
           query: {
-            filter:
-              schema && table
-                ? JSON.stringify({
-                    table,
-                    schema,
-                  })
-                : undefined,
+            filter: table
+              ? JSON.stringify({
+                  table,
+                  schema,
+                })
+              : undefined,
           },
         });
         return;
