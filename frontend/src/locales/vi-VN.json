@@ -317,7 +317,7 @@
       "statement-type": "Loại câu lệnh",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "Hàng bị ảnh hưởng",
+      "affected-rows": "Dòng bị ảnh hưởng ước tính",
       "sql-type": "kiểu SQL",
       "summary-report": "Báo cáo tổng hợp"
     },
