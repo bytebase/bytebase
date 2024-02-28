@@ -317,7 +317,7 @@
       "statement-type": "语句类型",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "影响行数",
+      "affected-rows": "预估影响行数",
       "sql-type": "SQL 类型",
       "summary-report": "概要报告"
     },
