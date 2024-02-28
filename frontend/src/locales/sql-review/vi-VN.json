@@ -458,7 +458,7 @@
     },
     "system-procedure-disallow-create": {
       "title": "Cấm thực thi các thủ tục hệ thống",
-      "description": "Cấm thực thi các thủ tục hệ thống. Mức độ lỗi đề xuất: Lỗi"
+      "description": "Cấm thực thi các thủ tục hệ thống. Mức độ lỗi đề xuất: Cảnh báo"
     },
     "system-event-disallow-create": {
       "title": "Không cho phép tạo sự kiện",

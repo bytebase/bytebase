@@ -458,7 +458,7 @@
     },
     "system-procedure-disallow-create": {
       "title": "Prohibir la ejecución de procedimientos del sistema",
-      "description": "Los procedimientos del sistema pueden realizar operaciones de alto riesgo, como la eliminación de datos, la modificación de la estructura de la base de datos, etc. Nivel de error sugerido: Error"
+      "description": "Los procedimientos del sistema pueden realizar operaciones de alto riesgo, como la eliminación de datos, la modificación de la estructura de la base de datos, etc. Nivel de error sugerido: Advertencia"
     },
     "system-event-disallow-create": {
       "title": "Prohibir la creación de eventos",
