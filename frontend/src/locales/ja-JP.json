@@ -317,7 +317,7 @@
       "statement-type": "ステートメントタイプ",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "影響を受ける行数",
+      "affected-rows": "推定される影響を受ける行数",
       "sql-type": "SQLタイプ",
       "summary-report": "サマリーレポート"
     },
