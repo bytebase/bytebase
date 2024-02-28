@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*DisallowProcedureAdvisor)(nil)
+	_ advisor.Advisor = (*FunctionDisallowCreateAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowProcedure, &DisallowProcedureAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLFunctionDisallowCreate, &FunctionDisallowCreateAdvisor{})
 }
 
-// DisallowProcedureAdvisor is the advisor checking for disallow procedure.
-type DisallowProcedureAdvisor struct {
+// FunctionDisallowCreateAdvisor is the advisor checking for disallow creating function.
+type FunctionDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow procedure.
-func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+// Check checks for disallow creating function.
+func (*FunctionDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -36,7 +36,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	if err != nil {
 		return nil, err
 	}
-	checker := &disallowProcedureChecker{
+	checker := &functionDisallowCreateChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -57,7 +57,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	return checker.adviceList, nil
 }
 
-type disallowProcedureChecker struct {
+type functionDisallowCreateChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
@@ -67,15 +67,14 @@ type disallowProcedureChecker struct {
 	text       string
 }
 
-func (checker *disallowProcedureChecker) EnterQuery(ctx *mysql.QueryContext) {
+func (checker *functionDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// EnterCreateProcedure is to check if the procedure is forbidden.
-func (checker *disallowProcedureChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+func (checker *functionDisallowCreateChecker) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
 	code := advisor.Ok
-	if ctx.ProcedureName() != nil {
-		code = advisor.DisallowCreateProcedure
+	if ctx.FunctionName() != nil {
+		code = advisor.DisallowCreateFunction
 	}
 
 	if code != advisor.Ok {
@@ -83,7 +82,7 @@ func (checker *disallowProcedureChecker) EnterCreateProcedure(ctx *mysql.CreateP
 			Status:  checker.level,
 			Code:    code,
 			Title:   checker.title,
-			Content: fmt.Sprintf("Procedure is forbidden, but \"%s\" creates", checker.text),
+			Content: fmt.Sprintf("Function is forbidden, but \"%s\" creates", checker.text),
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}

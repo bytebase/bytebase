@@ -236,6 +236,8 @@ const (
 	MySQLEventDisallowCreate Type = "bb.plugin.advisor.mysql.event.disallow-create"
 	// MySQLViewDisallowCreate is an advisor type for MySQL disallow create view.
 	MySQLViewDisallowCreate Type = "bb.plugin.advisor.mysql.view.disallow-create"
+	// MySQLFunctionDisallowCreate is an advisor type for MySQL disallow create function.
+	MySQLFunctionDisallowCreate Type = "bb.plugin.advisor.mysql.function.disallow-create"
 
 	// PostgreSQL Advisor.
 

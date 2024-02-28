@@ -219,3 +219,5 @@ ruleList:
     level: WARNING
   - type: system.view.disallow
     level: WARNING
+  - type: system.function.disallow-create
+    level: WARNING
