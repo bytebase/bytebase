@@ -30,7 +30,9 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { reactive } from "vue";
+import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
+import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
@@ -46,6 +48,8 @@ interface LocalState {
 const props = withDefaults(
   defineProps<{
     database?: ComposedDatabase;
+    table?: string;
+    schema?: string;
     label?: boolean;
     disabled?: boolean;
     tooltip?: boolean;
@@ -57,6 +61,8 @@ const props = withDefaults(
     disabled: false,
     tooltip: false,
     class: undefined,
+    table: undefined,
+    schema: undefined,
   }
 );
 
@@ -64,6 +70,7 @@ const emit = defineEmits<{
   (name: "failed", database: ComposedDatabase): void;
 }>();
 
+const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const pageMode = usePageMode();
 const state = reactive<LocalState>({
@@ -115,10 +122,21 @@ const gotoSQLEditor = () => {
       },
     ];
   }
-  const url = `/sql-editor/${connectionV1Slug(
-    database.instanceEntity,
-    database
-  )}`;
-  window.open(url);
+
+  const route = router.resolve({
+    name: SQL_EDITOR_DETAIL_MODULE,
+    params: {
+      connectionSlug: connectionV1Slug(database.instanceEntity, database),
+    },
+    query: {
+      filter: props.table
+        ? JSON.stringify({
+            table: props.table,
+            schema: props.schema,
+          })
+        : undefined,
+    },
+  });
+  window.open(route.fullPath);
 };
 </script>
