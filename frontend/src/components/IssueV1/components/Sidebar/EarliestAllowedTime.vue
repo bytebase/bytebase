@@ -60,6 +60,7 @@ import { useI18n } from "vue-i18n";
 import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import FeatureModal from "@/components/FeatureGuard/FeatureModal.vue";
 import {
+  isDeploymentConfigChangeTaskV1,
   isGroupingChangeTaskV1,
   latestTaskRunForTask,
   notifyNotEditableLegacyIssue,
@@ -86,8 +87,7 @@ dayjs.extend(isSameOrAfter);
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, isTenantMode, selectedTask, events } =
-  useIssueContext();
+const { isCreating, issue, selectedTask, events } = useIssueContext();
 const isUpdating = ref(false);
 const showFeatureModal = ref(false);
 
@@ -95,7 +95,7 @@ const shouldShowEarliestAllowedTime = computed(() => {
   if (!isDatabaseRelatedIssue(issue.value)) {
     return false;
   }
-  if (isTenantMode.value) {
+  if (isDeploymentConfigChangeTaskV1(issue.value, selectedTask.value)) {
     return false;
   }
   if (isGroupingChangeTaskV1(issue.value, selectedTask.value)) {
