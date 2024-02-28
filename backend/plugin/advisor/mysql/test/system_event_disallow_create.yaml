@@ -18,7 +18,7 @@
   want:
     - status: WARN
       code: 1501
-      title: system.event.disallow
+      title: system.event.disallow-create
       content: |-
         Event is forbidden, but "CREATE EVENT daily_backup
         ON SCHEDULE

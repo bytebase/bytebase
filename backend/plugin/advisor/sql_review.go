@@ -179,12 +179,12 @@ const (
 	SchemaRuleCollationAllowlist SQLReviewRuleType = "system.collation.allowlist"
 	// SchemaRuleCommentLength limit comment length.
 	SchemaRuleCommentLength SQLReviewRuleType = "system.comment.length"
-	// SchemaRuleDisallowProcedure disallow procedure.
-	SchemaRuleDisallowProcedure SQLReviewRuleType = "system.procedure.disallow"
-	// SchemaRuleDisallowEvent disallow event.
-	SchemaRuleDisallowEvent SQLReviewRuleType = "system.event.disallow"
-	// SchemaRuleDisallowView disallow view.
-	SchemaRuleDisallowView SQLReviewRuleType = "system.view.disallow"
+	// SchemaRuleProcedureDisallowCreate disallow create procedure.
+	SchemaRuleProcedureDisallowCreate SQLReviewRuleType = "system.procedure.disallow-create"
+	// SchemaRuleEventDisallowCreate disallow create event.
+	SchemaRuleEventDisallowCreate SQLReviewRuleType = "system.event.disallow-create"
+	// SchemaRuleViewDisallowCreate disallow create view.
+	SchemaRuleViewDisallowCreate SQLReviewRuleType = "system.view.disallow-create"
 	// SchemaRuleFunctionDisallowCreate disallow create function.
 	SchemaRuleFunctionDisallowCreate SQLReviewRuleType = "system.function.disallow-create"
 
@@ -1468,15 +1468,15 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCommentConvention, nil
 		}
-	case SchemaRuleDisallowProcedure:
+	case SchemaRuleProcedureDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
-			return MySQLDisallowProcedure, nil
+			return MySQLProcedureDisallowCreate, nil
 		}
-	case SchemaRuleDisallowEvent:
+	case SchemaRuleEventDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLEventDisallowCreate, nil
 		}
-	case SchemaRuleDisallowView:
+	case SchemaRuleViewDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLViewDisallowCreate, nil
 		}

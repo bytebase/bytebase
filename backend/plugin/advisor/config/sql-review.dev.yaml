@@ -213,11 +213,11 @@ ruleList:
     level: WARNING
     payload:
       number: 64
-  - type: system.procedure.disallow
-    level: ERROR
-  - type: system.event.disallow
+  - type: system.procedure.disallow-create
     level: WARNING
-  - type: system.view.disallow
+  - type: system.event.disallow-create
+    level: WARNING
+  - type: system.view.disallow-create
     level: WARNING
   - type: system.function.disallow-create
     level: WARNING

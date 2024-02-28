@@ -14,7 +14,7 @@
   want:
     - status: WARN
       code: 1401
-      title: system.procedure.disallow
+      title: system.procedure.disallow-create
       content: |-
         Procedure is forbidden, but "CREATE PROCEDURE simpleProcedure()
         BEGIN
