@@ -131,6 +131,7 @@
 </template>
 
 <script lang="ts" setup>
+import { useTitle } from "@vueuse/core";
 import { cloneDeep, groupBy } from "lodash-es";
 import { computed, reactive, toRef, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -387,4 +388,6 @@ const onRemove = () => {
     name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
   });
 };
+
+useTitle(computed(() => reviewPolicy.value.name));
 </script>
