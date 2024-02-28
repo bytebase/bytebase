@@ -44,7 +44,7 @@
             <RequiredStar />
           </span>
           <ExpirationSelector
-            class="grid-cols-4"
+            class="grid-cols-3 sm:grid-cols-4"
             :options="expireDaysOptions"
             :value="state.expireDays"
             @update="state.expireDays = $event"
@@ -119,6 +119,10 @@ interface LocalState {
   expireDays: number;
   description: string;
 }
+
+defineOptions({
+  name: "RequestQueryPanel",
+});
 
 const props = defineProps<{
   projectId?: string;
