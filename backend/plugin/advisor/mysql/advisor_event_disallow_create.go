@@ -74,7 +74,7 @@ func (checker *eventDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext) {
 func (checker *eventDisallowCreateChecker) EnterCreateEvent(ctx *mysql.CreateEventContext) {
 	code := advisor.Ok
 	if ctx.EventName() != nil {
-		code = advisor.DisallowEvent
+		code = advisor.DisallowCreateEvent
 	}
 
 	if code != advisor.Ok {
