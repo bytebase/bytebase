@@ -96,11 +96,6 @@ const actions = computed((): Action[] => {
 });
 
 const syncSchema = async () => {
-  pushNotification({
-    module: "bytebase",
-    style: "INFO",
-    title: t("db.start-to-sync-schema"),
-  });
   try {
     state.loading = true;
     await instanceStore.batchSyncInstance(
@@ -108,8 +103,8 @@ const syncSchema = async () => {
     );
     pushNotification({
       module: "bytebase",
-      style: "SUCCESS",
-      title: t("db.successfully-synced-schema"),
+      style: "INFO",
+      title: t("db.start-to-sync-schema"),
     });
   } catch {
     pushNotification({
