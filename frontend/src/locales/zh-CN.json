@@ -1248,7 +1248,7 @@
     "start-to-sync-schema": "开始同步 schema",
     "failed-to-sync-schema": "同步 schema 失败",
     "successfully-synced-schema": "Schema 同步完成",
-    "foreign-tables": "外部表",
+    "external-tables": "外部表",
     "create": "创建数据库"
   },
   "instance": {

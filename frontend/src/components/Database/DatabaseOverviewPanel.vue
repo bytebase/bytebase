@@ -127,7 +127,7 @@
             class="mt-6 w-full flex flex-row justify-between items-center mb-4"
           >
             <div class="text-lg leading-6 font-medium text-main">
-              {{ $t("db.foreign-tables") }}
+              {{ $t("db.external-tables") }}
             </div>
             <SearchBox
               :value="state.externalTableNameSearchKeyword"
