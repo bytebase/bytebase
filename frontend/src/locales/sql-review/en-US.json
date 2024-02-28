@@ -467,6 +467,10 @@
     "system-view-disallow-create": {
       "title": "Disallow to create views",
       "description": "This rule prohibits the creation of views within the database. Views provide a virtual representation of data that can simplify queries and enhance data security. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
+    },
+    "system-function-disallow-create": {
+      "title": "Disallow to create functions",
+      "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     }
   },
   "level": {
