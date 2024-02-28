@@ -60,10 +60,10 @@
       </div>
     </template>
 
-    <div class="w-full">
+    <div class="w-full flex flex-col gap-y-2">
       <span>{{ $t("common.expiration") }}</span>
       <ExpirationSelector
-        class="mt-2"
+        class="grid-cols-3 sm:grid-cols-4"
         :options="expireDaysOptions"
         :value="state.expireDays"
         @update="state.expireDays = $event"
