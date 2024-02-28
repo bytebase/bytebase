@@ -456,15 +456,15 @@
         }
       }
     },
-    "system-procedure-disallow": {
+    "system-procedure-disallow-create": {
       "title": "システムプロシージャの実行を禁止する",
-      "description": "システムプロシージャは、データベースのメタデータを変更するために使用されるため、誤って実行するとデータベースの整合性が失われる可能性があります。提案エラーレベル：エラー"
+      "description": "システムプロシージャは、データベースのメタデータを変更するために使用されるため、誤って実行するとデータベースの整合性が失われる可能性があります。提案エラーレベル：警告"
     },
-    "system-event-disallow": {
-      "title": "Không cho phép tạo sự kiện",
-      "description": "Quy tắc này cấm tạo sự kiện trong cơ sở dữ liệu. Các sự kiện hệ thống thường thực hiện các tác vụ tự động có thể ảnh hưởng đến môi trường cơ sở dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát về các hoạt động cơ sở dữ liệu và ngăn chặn các sự cố tiềm ẩn. Mức độ lỗi được đề xuất: Cảnh báo"
+    "system-event-disallow-create": {
+      "title": "イベントの作成は許可されていません",
+      "description": "このルールは、データベース内でのイベントの作成を禁止します。システム イベントは、多くの場合、データベース環境に影響を与える可能性のある自動タスクを実行します。イベントの作成を禁止することで、データベース操作の制御を維持し、潜在的な問題を防ぐことができます。推奨エラー レベル：警告"
     },
-    "system-view-disallow": {
+    "system-view-disallow-create": {
       "title": "ビューの作成を禁止",
       "description": "このルールは、データベース内でのビューの作成を禁止します。ビューは、クエリを単純化し、データのセキュリティを向上させることができるデータの仮想表現を提供します。その作成を禁止することで、データベーススキーマの管理を維持し、潜在的なセキュリティリスクを防ぐのに役立ちます。推奨されるエラーレベル：警告"
     }

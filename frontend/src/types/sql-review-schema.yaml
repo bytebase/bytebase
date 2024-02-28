@@ -741,17 +741,17 @@ ruleList:
         payload:
           type: NUMBER
           default: 64
-  - type: system.procedure.disallow
+  - type: system.procedure.disallow-create
     category: SYSTEM
     engineList:
       - MYSQL
     componentList: []
-  - type: system.event.disallow
+  - type: system.event.disallow-create
     category: SYSTEM
     engineList:
       - MYSQL
     componentList: []
-  - type: system.view.disallow
+  - type: system.view.disallow-create
     category: SYSTEM
     engineList:
       - MYSQL

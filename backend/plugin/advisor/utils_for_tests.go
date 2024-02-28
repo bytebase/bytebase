@@ -355,9 +355,9 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleIndexTypeNoBlob,
 		SchemaRuleIdentifierNoKeyword,
 		SchemaRuleTableNameNoKeyword,
-		SchemaRuleDisallowProcedure,
-		SchemaRuleDisallowEvent,
-		SchemaRuleDisallowView,
+		SchemaRuleProcedureDisallowCreate,
+		SchemaRuleEventDisallowCreate,
+		SchemaRuleViewDisallowCreate,
 		SchemaRuleFunctionDisallowCreate,
 		SchemaRuleStatementCreateSpecifySchema:
 	case SchemaRuleTableDropNamingConvention:
