@@ -40,10 +40,10 @@
       <div class="flex-1 flex items-stretch gap-x-4 overflow-hidden">
         <div class="flex-1 space-y-2 py-4 overflow-x-hidden overflow-y-auto">
           <h3 class="font-medium text-sm text-control">
-            {{ $t("custom-approval.risk-rule.condition.self") }}
+            {{ $t("cel.condition.self") }}
           </h3>
           <div class="text-sm text-control-light">
-            {{ $t("custom-approval.risk-rule.condition.description-tips") }}
+            {{ $t("cel.condition.description-tips") }}
             <LearnMoreLink
               url="https://www.bytebase.com/docs/administration/risk-center/#configuration?source=console"
               class="ml-1"
