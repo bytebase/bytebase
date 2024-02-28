@@ -45,12 +45,14 @@ jobs:
           cache-dependency-path: "frontend/pnpm-lock.yaml"
       - run: pnpm install --frozen-lockfile
         working-directory: frontend
+      - name: Copy config files
+        run: |
+          cp ../backend/plugin/advisor/config/* ./src/types
+          cp ../backend/enterprise/api/plan.yaml ./src/types
+        working-directory: frontend
       - name: Run pnpm test
         run: pnpm test
         working-directory: frontend
       - name: Run pnpm release build
-        run: |
-          cp ../backend/plugin/advisor/config/* ./src/types
-          cp ../backend/enterprise/api/plan.yaml ./src/types
-          pnpm release-docker
+        run: pnpm release-docker
         working-directory: frontend
