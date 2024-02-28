@@ -756,3 +756,8 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: system.function.disallow-create
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList: []
