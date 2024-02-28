@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*DisallowProcedureAdvisor)(nil)
+	_ advisor.Advisor = (*ProcedureDisallowCreateAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowProcedure, &DisallowProcedureAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLProcedureDisallowCreate, &ProcedureDisallowCreateAdvisor{})
 }
 
-// DisallowProcedureAdvisor is the advisor checking for disallow procedure.
-type DisallowProcedureAdvisor struct {
+// ProcedureDisallowCreateAdvisor is the advisor checking for disallow create procedure.
+type ProcedureDisallowCreateAdvisor struct {
 }
 
-// Check checks for disallow procedure.
-func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+// Check checks for disallow create procedure.
+func (*ProcedureDisallowCreateAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -36,7 +36,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	if err != nil {
 		return nil, err
 	}
-	checker := &disallowProcedureChecker{
+	checker := &procedureDisallowCreateChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -57,7 +57,7 @@ func (*DisallowProcedureAdvisor) Check(ctx advisor.Context, _ string) ([]advisor
 	return checker.adviceList, nil
 }
 
-type disallowProcedureChecker struct {
+type procedureDisallowCreateChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
@@ -67,12 +67,12 @@ type disallowProcedureChecker struct {
 	text       string
 }
 
-func (checker *disallowProcedureChecker) EnterQuery(ctx *mysql.QueryContext) {
+func (checker *procedureDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-// EnterCreateProcedure is to check if the procedure is forbidden.
-func (checker *disallowProcedureChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+// EnterCreateProcedure is to check if creating procedure is forbidden.
+func (checker *procedureDisallowCreateChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 	code := advisor.Ok
 	if ctx.ProcedureName() != nil {
 		code = advisor.DisallowCreateProcedure

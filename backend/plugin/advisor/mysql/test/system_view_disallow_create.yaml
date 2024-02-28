@@ -11,7 +11,7 @@
   want:
     - status: WARN
       code: 1601
-      title: system.view.disallow
+      title: system.view.disallow-create
       content: |-
         View is forbidden, but "CREATE VIEW get_one AS SELECT 1;" creates
       line: 1

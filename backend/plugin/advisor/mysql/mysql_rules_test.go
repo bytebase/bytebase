@@ -128,12 +128,12 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleCharsetAllowlist,
 		// advisor.SchemaRuleCollationAllowlist enforce the collation allowlist.
 		advisor.SchemaRuleCollationAllowlist,
-		// advisor.SchemaRuleDisallowProcedure enforce the disallow procedure.
-		advisor.SchemaRuleDisallowProcedure,
-		// advisor.SchemaRuleDisallowEvent enforce the disallow event.
-		advisor.SchemaRuleDisallowEvent,
-		// advisor.SchemaRuleDisallowView enforce the disallow view.
-		advisor.SchemaRuleDisallowView,
+		// advisor.SchemaRuleDisallowProcedure enforce the disallow create procedure.
+		advisor.SchemaRuleProcedureDisallowCreate,
+		// advisor.SchemaRuleDisallowEvent enforce the disallow create event.
+		advisor.SchemaRuleEventDisallowCreate,
+		// advisor.SchemaRuleDisallowView enforce the disallow create view.
+		advisor.SchemaRuleViewDisallowCreate,
 		// advisor.SchemaRuleFunctionDisallowCreate enforce the disallow create function.
 		advisor.SchemaRuleFunctionDisallowCreate,
 	}

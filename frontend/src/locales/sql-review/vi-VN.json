@@ -456,15 +456,15 @@
         }
       }
     },
-    "system-procedure-disallow": {
+    "system-procedure-disallow-create": {
       "title": "Cấm thực thi các thủ tục hệ thống",
-      "description": "Cấm thực thi các thủ tục hệ thống. Mức độ lỗi đề xuất: Lỗi"
+      "description": "Cấm thực thi các thủ tục hệ thống. Mức độ lỗi đề xuất: Cảnh báo"
     },
-    "system-event-disallow": {
+    "system-event-disallow-create": {
       "title": "Không cho phép tạo sự kiện",
       "description": "Quy tắc này cấm tạo sự kiện trong cơ sở dữ liệu. Các sự kiện hệ thống thường thực hiện các tác vụ tự động có thể ảnh hưởng đến môi trường cơ sở dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát về các hoạt động cơ sở dữ liệu và ngăn chặn các sự cố tiềm ẩn. Mức độ lỗi được đề xuất: Cảnh báo"
     },
-    "system-view-disallow": {
+    "system-view-disallow-create": {
       "title": "Không cho phép tạo view",
       "description": "Quy tắc này cấm tạo view trong cơ sở dữ liệu. View cung cấp một biểu diễn ảo của dữ liệu có thể đơn giản hóa các truy vấn và tăng cường bảo mật dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát về cấu trúc cơ sở dữ liệu và ngăn chặn các rủi ro bảo mật tiềm ẩn. Mức độ lỗi được đề xuất: Cảnh báo"
     }

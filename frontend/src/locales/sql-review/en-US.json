@@ -456,15 +456,15 @@
         }
       }
     },
-    "system-procedure-disallow": {
+    "system-procedure-disallow-create": {
       "title": "Disallow to create procedures",
-      "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Error"
+      "description": "This rule prohibits the execution of procedures within the database. System procedures often perform critical operations that could impact the stability and security of the database environment. By disallowing their execution, it helps prevent unintended changes and potential vulnerabilities. Suggested error level: Warning"
     },
-    "system-event-disallow": {
+    "system-event-disallow-create": {
       "title": "Disallow to create events",
       "description": "This rule prohibits the creation of events within the database. System events often perform automated tasks that could affect the database environment. By disallowing their creation, it helps maintain control over database operations and prevents potential disruptions. Suggested error level: Warning"
     },
-    "system-view-disallow": {
+    "system-view-disallow-create": {
       "title": "Disallow to create views",
       "description": "This rule prohibits the creation of views within the database. Views provide a virtual representation of data that can simplify queries and enhance data security. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     }
