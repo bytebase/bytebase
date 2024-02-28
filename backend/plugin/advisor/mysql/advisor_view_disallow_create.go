@@ -74,7 +74,7 @@ func (checker *viewDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext) {
 func (checker *viewDisallowCreateChecker) EnterCreateView(ctx *mysql.CreateViewContext) {
 	code := advisor.Ok
 	if ctx.ViewName() != nil {
-		code = advisor.DisallowView
+		code = advisor.DisallowCreateView
 	}
 
 	if code != advisor.Ok {

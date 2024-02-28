@@ -1,0 +1,30 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    CREATE FUNCTION add_two_numbers(a INT, b INT)
+    RETURNS INT
+    BEGIN
+      DECLARE result INT;
+      SET result = a + b;
+      RETURN result;
+    END;
+  want:
+    - status: WARN
+      code: 1701
+      title: system.function.disallow-create
+      content: |-
+        Function is forbidden, but "CREATE FUNCTION add_two_numbers(a INT, b INT)
+        RETURNS INT
+        BEGIN
+          DECLARE result INT;
+          SET result = a + b;
+          RETURN result;
+        END;" creates
+      line: 1
+      details: ""

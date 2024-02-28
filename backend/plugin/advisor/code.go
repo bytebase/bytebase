@@ -145,13 +145,16 @@ const (
 	CommentTooLong Code = 1301
 
 	// 1401 ~ 1499 procedure error code.
-	DisallowProcedure Code = 1401
+	DisallowCreateProcedure Code = 1401
 
 	// 1501 ~ 1599 event error code.
-	DisallowEvent Code = 1501
+	DisallowCreateEvent Code = 1501
 
 	// 1601 ~ 1699 view error code.
-	DisallowView Code = 1601
+	DisallowCreateView Code = 1601
+
+	// 1701 ~ 1799 function error code.
+	DisallowCreateFunction Code = 1701
 )
 
 // Int returns the int type of code.
