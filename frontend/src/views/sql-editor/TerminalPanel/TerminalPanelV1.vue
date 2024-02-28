@@ -79,6 +79,7 @@
 import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
+import { IStandaloneCodeEditor } from "@/components/MonacoEditor";
 import { useTabStore, useWebTerminalV1Store } from "@/store";
 import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
 import {
@@ -149,11 +150,25 @@ const handleClearScreen = () => {
   }
 };
 
-const handleHistory = (direction: "up" | "down") => {
+const handleHistory = (
+  direction: "up" | "down",
+  editor: IStandaloneCodeEditor
+) => {
   if (currentQuery.value.status !== "IDLE") {
     return;
   }
   moveHistory(direction);
+
+  requestAnimationFrame(() => {
+    const model = editor.getModel();
+    if (!model) return;
+    const lineNumber = model.getLineCount();
+    const column = model.getLineMaxColumn(lineNumber);
+    editor.setPosition({
+      lineNumber,
+      column,
+    });
+  });
 };
 
 const handleCancelQuery = async () => {

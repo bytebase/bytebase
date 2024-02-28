@@ -97,7 +97,7 @@
             <RequiredStar />
           </span>
           <ExpirationSelector
-            class="grid-cols-6"
+            class="grid-cols-3 sm:grid-cols-4 md:grid-cols-6"
             :options="expireDaysOptions"
             :value="state.expireDays"
             @update="state.expireDays = $event"
@@ -187,6 +187,10 @@ interface LocalState {
   statement: string;
   description: string;
 }
+
+defineOptions({
+  name: "RequestExportPanel",
+});
 
 const props = defineProps<{
   projectId?: string;

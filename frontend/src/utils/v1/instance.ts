@@ -172,6 +172,7 @@ export const instanceV1HasSSL = (
     Engine.DM,
     Engine.STARROCKS,
     Engine.DORIS,
+    Engine.MONGODB,
   ].includes(engine);
 };
 
