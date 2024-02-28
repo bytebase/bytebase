@@ -57,7 +57,6 @@ import {
   connectionV1Slug as makeConnectionV1Slug,
   isWorksheetReadableV1,
   getSuggestedTabNameFromConnection,
-  isSimilarTab,
   hasProjectPermissionV2,
 } from "@/utils";
 
