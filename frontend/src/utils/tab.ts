@@ -82,7 +82,7 @@ export const connectionForTab = (tab: TabInfo) => {
   return target;
 };
 
-export const isSameConnection = (a: Connection, b: Connection): boolean => {
+const isSameConnection = (a: Connection, b: Connection): boolean => {
   return a.instanceId === b.instanceId && a.databaseId === b.databaseId;
 };
 

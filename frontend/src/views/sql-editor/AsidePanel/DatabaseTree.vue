@@ -53,13 +53,15 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize, useMounted } from "@vueuse/core";
+import { useElementSize, useMounted, useClipboard } from "@vueuse/core";
 import { head } from "lodash-es";
 import { NTree, NDropdown, DropdownOption, TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { ref, computed, nextTick, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
@@ -68,6 +70,7 @@ import {
   useInstanceV1Store,
   useIsLoggedIn,
   useTabStore,
+  pushNotification,
 } from "@/store";
 import {
   idForSQLEditorTreeNodeTarget,
@@ -77,6 +80,7 @@ import type {
   ComposedDatabase,
   ComposedInstance,
   CoreTabInfo,
+  RichTableMetadata,
   SQLEditorTreeNode,
   SQLEditorTreeNodeTarget,
 } from "@/types";
@@ -101,6 +105,7 @@ import {
   isDescendantOf,
   tryConnectToCoreTab,
   wrapSQLIdentifier,
+  connectionV1Slug,
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
@@ -116,10 +121,11 @@ type Position = {
 };
 
 type DropdownOptionWithTreeNode = DropdownOption & {
-  node: SQLEditorTreeNode;
+  onSelect: () => void;
 };
 
 const { t } = useI18n();
+const router = useRouter();
 const { pageMode } = storeToRefs(useActuatorV1Store());
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
@@ -172,30 +178,78 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
     }
 
     const items: DropdownOptionWithTreeNode[] = [];
+
     if (isConnectableSQLEditorTreeNode(node)) {
       const instance = instanceOfSQLEditorTreeNode(node);
       if (instance && instanceV1HasReadonlyMode(instance)) {
         items.push({
           key: "connect",
           label: t("sql-editor.connect"),
-          node,
+          onSelect: () => setConnection(node),
         });
       }
       if (allowAdmin.value) {
         items.push({
           key: "connect-in-admin-mode",
           label: t("sql-editor.connect-in-admin-mode"),
-          node,
+          onSelect: () => setConnection(node, { mode: TabMode.Admin }),
         });
       }
     }
-    if (type === "database" && pageMode.value === "BUNDLED") {
-      const database = target as ComposedDatabase;
-      if (instanceV1HasAlterSchema(database.instanceEntity)) {
+    if (pageMode.value === "BUNDLED") {
+      if (type === "database") {
+        const database = target as ComposedDatabase;
+        if (instanceV1HasAlterSchema(database.instanceEntity)) {
+          items.push({
+            key: "alter-schema",
+            label: t("database.edit-schema"),
+            onSelect: () => {
+              const db = node.meta.target as ComposedDatabase;
+              editorEvents.emit("alter-schema", {
+                databaseUID: db.uid,
+                schema: "",
+                table: "",
+              });
+            },
+          });
+        }
+      } else if (type === "table") {
+        const { database, schema, table } = target as RichTableMetadata;
         items.push({
-          key: "alter-schema",
-          label: t("database.edit-schema"),
-          node,
+          key: "copy-url",
+          label: t("sql-editor.copy-url"),
+          onSelect: () => {
+            const { copy, copied } = useClipboard({
+              source: computed(() => {
+                const route = router.resolve({
+                  name: SQL_EDITOR_DETAIL_MODULE,
+                  params: {
+                    connectionSlug: connectionV1Slug(
+                      database.instanceEntity,
+                      database
+                    ),
+                  },
+                  query: {
+                    filter: JSON.stringify({
+                      table: table.name,
+                      schema: schema.name,
+                    }),
+                  },
+                });
+                return new URL(route.href, window.location.origin).href;
+              }),
+              legacy: true,
+            });
+            copy().then(() => {
+              if (copied.value) {
+                pushNotification({
+                  module: "bytebase",
+                  style: "INFO",
+                  title: t("common.copied"),
+                });
+              }
+            });
+          },
         });
       }
     }
@@ -306,18 +360,7 @@ const handleSelect = (key: string) => {
   if (!option) {
     return;
   }
-  if (key === "alter-schema") {
-    const db = option.node.meta.target as ComposedDatabase;
-    editorEvents.emit("alter-schema", {
-      databaseUID: db.uid,
-      schema: "",
-      table: "",
-    });
-  } else if (key === "connect") {
-    setConnection(option.node);
-  } else if (key === "connect-in-admin-mode") {
-    setConnection(option.node, { mode: TabMode.Admin });
-  }
+  option.onSelect();
   showDropdown.value = false;
 };
 
@@ -333,11 +376,11 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
       connection: {
         instanceId: database.instanceEntity.uid,
         databaseId: database.uid,
+        schema: schema.name,
+        table: table.name,
       },
       mode: TabMode.ReadOnly,
     };
-    coreTab.connection.instanceId = database.instanceEntity.uid;
-    coreTab.connection.databaseId = database.uid;
     tryConnectToCoreTab(coreTab);
     await nextTick();
   }
@@ -354,6 +397,14 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
     database: databaseMetadata,
     schema,
     table: tableMetadata,
+  });
+
+  tabStore.updateCurrentTab({
+    connection: {
+      ...tabStore.currentTab.connection,
+      schema: schema.name,
+      table: table.name,
+    },
   });
 };
 
@@ -407,6 +458,7 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
           ...tab,
           name: getSuggestedTabNameFromConnection(tab.connection),
           statement: query,
+          isSaved: false,
         },
         /* beside */ true
       );
@@ -550,11 +602,58 @@ const handleLoadSubTree = (option: TreeOption) => {
       .then(() => {
         if ((node.children?.length ?? 0) > 0) {
           treeStore.expandNodes(type, target);
+          expandTableTab(target as ComposedDatabase);
         }
       });
     return request;
   }
   return Promise.resolve();
+};
+
+const expandTableTab = (database: ComposedDatabase) => {
+  const { schema, table } = tabStore.currentTab.connection;
+  const schemaMetadata = dbSchemaV1Store.getSchemaByName(
+    database.name,
+    schema ?? ""
+  );
+  if (!schemaMetadata) {
+    return;
+  }
+  treeStore.expandNodes("schema", {
+    database: database,
+    schema: schemaMetadata,
+  });
+
+  if (!table) {
+    return;
+  }
+  treeStore.expandNodes("expandable-text", {
+    type: "table",
+    text: () => t("db.tables"),
+    expandable: true,
+  });
+
+  const tableMetadata = dbSchemaV1Store.getTableByName(
+    database.name,
+    table,
+    schema
+  );
+  if (!tableMetadata) {
+    return;
+  }
+  treeStore.expandNodes("table", {
+    database: database,
+    schema: schemaMetadata,
+    table: tableMetadata,
+  });
+
+  const databaseMetadata = dbSchemaV1Store.getDatabaseMetadata(database.name);
+  selectedDatabaseSchemaByDatabaseName.value.set(database.name, {
+    db: database,
+    database: databaseMetadata,
+    schema: schemaMetadata,
+    table: tableMetadata,
+  });
 };
 
 // Open corresponding tree node when the connection changed.

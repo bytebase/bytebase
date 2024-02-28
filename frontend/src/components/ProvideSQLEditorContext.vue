@@ -57,7 +57,6 @@ import {
   connectionV1Slug as makeConnectionV1Slug,
   isWorksheetReadableV1,
   getSuggestedTabNameFromConnection,
-  isSimilarTab,
   hasProjectPermissionV2,
 } from "@/utils";
 
@@ -75,6 +74,7 @@ const sqlEditorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
 const tabStore = useTabStore();
 const worksheetStore = useWorkSheetStore();
+const { filter } = useFilterStore();
 
 const prepareDatabases = async () => {
   // It will also be called when user logout
@@ -242,7 +242,11 @@ const prepareConnectionSlug = async () => {
       String(instanceId),
       String(databaseId)
     );
-    connect(connection);
+    connect({
+      ...connection,
+      schema: filter.schema,
+      table: filter.table,
+    });
   }
   return true;
 };
@@ -262,7 +266,6 @@ const setConnectionFromQuery = async () => {
     return;
   }
 
-  const { filter } = useFilterStore();
   if (filter.database) {
     const database = await databaseStore.getOrFetchDatabaseByName(
       filter.database,
@@ -271,6 +274,8 @@ const setConnectionFromQuery = async () => {
     connect({
       instanceId: database.instanceEntity.uid,
       databaseId: database.uid,
+      schema: filter.schema,
+      table: filter.table,
     });
     return;
   }
@@ -290,9 +295,11 @@ const syncURLWithConnection = () => {
     [
       () => connection.value.instanceId,
       () => connection.value.databaseId,
+      () => connection.value.schema,
+      () => connection.value.table,
       () => tabStore.currentTab.sheetName,
     ],
-    ([instanceId, databaseId, sheetName]) => {
+    ([instanceId, databaseId, schema, table, sheetName]) => {
       if (sheetName) {
         const sheet = worksheetStore.getSheetByName(sheetName);
         if (sheet) {
@@ -323,12 +330,23 @@ const syncURLWithConnection = () => {
             ...tabStore.currentTab.connection,
             instanceId: instance.uid,
             databaseId: database.uid,
+            table,
+            schema,
           },
         });
+
         router.replace({
           name: SQL_EDITOR_DETAIL_MODULE,
           params: {
             connectionSlug: makeConnectionV1Slug(instance, database),
+          },
+          query: {
+            filter: table
+              ? JSON.stringify({
+                  table,
+                  schema,
+                })
+              : undefined,
           },
         });
         return;
@@ -353,10 +371,6 @@ const connect = (connection: Connection) => {
     mode: TabMode.ReadOnly,
   };
 
-  if (isSimilarTab(target, tabStore.currentTab)) {
-    // Don't go further if the connection doesn't change.
-    return;
-  }
   const name = getSuggestedTabNameFromConnection(target.connection);
   tabStore.selectOrAddSimilarTab(
     target,

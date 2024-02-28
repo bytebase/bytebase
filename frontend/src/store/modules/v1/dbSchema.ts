@@ -247,6 +247,9 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   const getSchemaList = (database: string) => {
     return getCache(database)[0]?.schemas ?? [];
   };
+  const getSchemaByName = (database: string, schema: string) => {
+    return getSchemaList(database).find((metadata) => metadata.name === schema);
+  };
   const getTableList = (database: string, schema?: string) => {
     const [databaseMetadata] = getCache(database);
     if (!databaseMetadata) {
@@ -437,6 +440,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     getDatabaseMetadata,
     getOrFetchDatabaseMetadata,
     getSchemaList,
+    getSchemaByName,
     getTableList,
     getOrFetchTableList,
     getTableByName,

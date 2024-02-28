@@ -95,6 +95,8 @@
 import { useClipboard } from "@vueuse/core";
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useTabStore,
@@ -107,6 +109,7 @@ import { worksheetSlugV1 } from "@/utils";
 
 const { t } = useI18n();
 
+const router = useRouter();
 const tabStore = useTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
@@ -166,9 +169,14 @@ const sharedTabLink = computed(() => {
   if (!sheet.value) {
     return "";
   }
-  return `${window.location.origin}/sql-editor/sheet/${worksheetSlugV1(
-    sheet.value
-  )}`;
+
+  const route = router.resolve({
+    name: SQL_EDITOR_SHARE_MODULE,
+    params: {
+      sheetSlug: worksheetSlugV1(sheet.value),
+    },
+  });
+  return new URL(route.href, window.location.origin).href;
 });
 
 const { copy, copied } = useClipboard({
