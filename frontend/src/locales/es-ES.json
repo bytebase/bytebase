@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "¡Ingrese la etiqueta de pestaña!",
     "copy-code": "Copiar código",
+    "copy-url": "Copiar URL",
     "notify": {
       "copy-code-succeed": "Copia de código exitosa",
       "copy-share-link": "El enlace compartido se copió al portapapeles.",

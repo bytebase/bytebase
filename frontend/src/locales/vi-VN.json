@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "Vui lòng nhập nhãn tab!",
     "copy-code": "Sao chép mã",
+    "copy-url": "Sao chép URL",
     "notify": {
       "copy-code-succeed": "Sao chép mã thành công",
       "copy-share-link": "Liên kết chia sẻ đã được sao chép vào Clipboard.",

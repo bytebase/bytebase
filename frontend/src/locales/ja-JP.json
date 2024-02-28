@@ -2235,6 +2235,7 @@
     },
     "please-input-the-tab-label": "タブのラベルを入力してください",
     "copy-code": "コードをコピー",
+    "copy-url": "URLをコピー",
     "notify": {
       "copy-code-succeed": "コードのコピーに成功しました",
       "copy-share-link": "共有リンクがクリップボードにコピーされました",
