@@ -467,6 +467,10 @@
     "system-view-disallow-create": {
       "title": "Prohibir la creación de vistas",
       "description": "Esta regla prohíbe la creación de vistas dentro de la base de datos. Las vistas proporcionan una representación virtual de los datos que puede simplificar las consultas y mejorar la seguridad de los datos. Al prohibir su creación, ayuda a mantener el control sobre el esquema de la base de datos y previene posibles riesgos de seguridad. Nivel de error sugerido: Advertencia"
+    },
+    "system-function-disallow-create": {
+      "title": "Prohibición de crear funciones",
+      "description": "Esta regla prohíbe la creación de funciones dentro de la base de datos. Las funciones proporcionan lógica reutilizable que puede simplificar las consultas y mejorar la integridad de los datos. Al prohibir su creación, se ayuda a mantener el control sobre el esquema de la base de datos y se previenen posibles riesgos de seguridad. Nivel de error sugerido: Advertencia"
     }
   },
   "level": {
