@@ -3,7 +3,6 @@ package pg
 import (
 	"bufio"
 	"context"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"log/slog"
@@ -14,18 +13,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
-
-// sslCAThreshold is the block size for splitting sslCA.
-// we use 120kb as the threshold to avoid argument list too long error.
-// https://stackoverflow.com/questions/46897008/why-am-i-getting-e2big-from-exec-when-im-accounting-for-the-arguments-and-the
-const sslCAThreshold = 120 * 1024
 
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
@@ -103,21 +95,8 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--no-privileges")
 	args = append(args, database)
 
-	sslCAs := splitSslCA(driver.config.TLSConfig.SslCA)
-	dumpSuccess := false
-	var errs error
-	for _, sslCA := range sslCAs {
-		if err := driver.execPgDump(ctx, args, out, sslCA); err != nil {
-			errs = multierr.Append(errs, err)
-			slog.Warn("Failed to exec pg_dump", log.BBError(err))
-		} else {
-			dumpSuccess = true
-			slog.Info("pg dump successfully")
-			break
-		}
-	}
-	if !dumpSuccess {
-		return errors.Errorf("Failed to exec pg_dump, err: %v", errs)
+	if err := driver.execPgDump(ctx, args, out, driver.config.TLSConfig.SslCA); err != nil {
+		return errors.Wrapf(err, "failed to exec pg_dump")
 	}
 	return nil
 }
@@ -278,33 +257,4 @@ func (driver *Driver) Restore(ctx context.Context, sc io.Reader) error {
 		return err
 	}
 	return nil
-}
-
-// split large sslCA to multiple smaller sslCAs.
-func splitSslCA(sslca string) []string {
-	if len(sslca) < sslCAThreshold {
-		return []string{sslca}
-	}
-
-	var certs []string
-	var cert string
-	for block, rest := pem.Decode([]byte(sslca)); block != nil; block, rest = pem.Decode(rest) {
-		switch block.Type {
-		case "CERTIFICATE":
-			curCert := string(pem.EncodeToMemory(block))
-			if len(cert)+len(curCert) > sslCAThreshold {
-				certs = append(certs, cert)
-				cert = curCert
-			} else {
-				cert += curCert
-			}
-		default:
-			slog.Warn("unknown block type when spliting sslca")
-		}
-	}
-
-	if len(cert) > 0 {
-		certs = append(certs, cert)
-	}
-	return certs
 }
