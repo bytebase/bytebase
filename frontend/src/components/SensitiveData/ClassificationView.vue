@@ -150,16 +150,27 @@ const onFileChange = () => {
       return pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: `Read file error`,
-        description: "should has classifications array field",
+        title: "Data format error",
+        description: "Should has classifications array field",
       });
     }
     if (!Array.isArray(data.levels) || data.levels.length === 0) {
       return pushNotification({
         module: "bytebase",
         style: "CRITICAL",
-        title: `Read file error`,
-        description: "should has levels array field",
+        title: "Data format error",
+        description: "Should has levels array field",
+      });
+    }
+    if (
+      data.classifications.length !==
+      new Set(data.classifications.map((item) => item.id)).size
+    ) {
+      return pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Data format error",
+        description: "Should not contains duplicate classification id",
       });
     }
     state.classification =
@@ -177,7 +188,7 @@ const onFileChange = () => {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Read file error`,
+      title: "Read file error",
       description: String(fr.error),
     });
     return;
