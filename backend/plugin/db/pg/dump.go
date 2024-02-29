@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -124,20 +125,58 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer, sslCA string) error {
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
-	// Unlike MySQL, PostgreSQL does not support specifying commands in commands, we can do this by means of environment variables.
+	// Unlike MySQL, PostgreSQL does not support specifying password in commands, we can do this by means of environment variables.
 	if driver.config.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
-	if driver.config.TLSConfig.SslCert != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", driver.config.TLSConfig.SslCert))
-	}
+	sslMode := "disable"
 	if sslCA != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", sslCA))
+		sslMode = "verify-full"
+		caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(caTempFile.Name())
+		if _, err := caTempFile.WriteString(sslCA); err != nil {
+			return err
+		}
+		if err := caTempFile.Close(); err != nil {
+			return err
+		}
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
+	}
+	if driver.config.TLSConfig.SslCert != "" {
+		certTempFile, err := os.CreateTemp("", "pg-ssl-cert-")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(certTempFile.Name())
+		if _, err := certTempFile.WriteString(driver.config.TLSConfig.SslCert); err != nil {
+			return err
+		}
+		if err := certTempFile.Close(); err != nil {
+			return err
+		}
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLCERT=%s", certTempFile.Name()))
 	}
 	if driver.config.TLSConfig.SslKey != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", driver.config.TLSConfig.SslKey))
+		keyTempFile, err := os.CreateTemp("", "pg-ssl-key-")
+		if err != nil {
+			return err
+		}
+		defer os.Remove(keyTempFile.Name())
+		if _, err := keyTempFile.WriteString(driver.config.TLSConfig.SslKey); err != nil {
+			return err
+		}
+		if err := keyTempFile.Close(); err != nil {
+			return err
+		}
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", keyTempFile.Name()))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
+	if sslMode != "disable" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
+	}
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
