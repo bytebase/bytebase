@@ -170,15 +170,15 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 			columnList = append(columnList, columnName)
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
-			charLength := getVarcharLength(item.FieldDefinition().DataType())
+			length := getVarcharLength(item.FieldDefinition().DataType())
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			varcharLengthMap[columnName] = charLength
+			varcharLengthMap[columnName] = length
 			columnList = append(columnList, columnName)
 		default:
 			continue
 		}
 		for _, columnName := range columnList {
-			if charLength, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && charLength > checker.maximum {
+			if length, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && length > checker.maximum {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
 					Status:  checker.level,
 					Code:    advisor.VarcharLengthExceedsLimit,
