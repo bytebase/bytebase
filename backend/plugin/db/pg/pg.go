@@ -84,11 +84,6 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
-	// TODO(tianzhou): this work-around is no longer needed probably.
-	// https://neon.tech/docs/connect/connectivity-issues#c-set-verify-full-for-golang-based-clients
-	if strings.HasSuffix(config.Host, ".neon.tech") {
-		connStr += " sslmode=verify-full"
-	}
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
