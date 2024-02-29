@@ -17,21 +17,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ColumnTypeRestrictionAdvisor)(nil)
+	_ advisor.Advisor = (*ColumnTypeDisallowListAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
-// ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.
-type ColumnTypeRestrictionAdvisor struct {
+// ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.
+type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type restriction.
-func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -45,7 +45,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnTypeRestrictionChecker{
+	checker := &columnTypeDisallowListChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
 		typeRestriction: make(map[string]bool),
@@ -70,7 +70,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	return checker.adviceList, nil
 }
 
-type columnTypeRestrictionChecker struct {
+type columnTypeDisallowListChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine        int
@@ -80,7 +80,7 @@ type columnTypeRestrictionChecker struct {
 	typeRestriction map[string]bool
 }
 
-func (checker *columnTypeRestrictionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+func (checker *columnTypeDisallowListChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 	if ctx.TableName() == nil {
 		return
 	}
@@ -105,7 +105,7 @@ func (checker *columnTypeRestrictionChecker) EnterCreateTable(ctx *mysql.CreateT
 	}
 }
 
-func (checker *columnTypeRestrictionChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+func (checker *columnTypeDisallowListChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
 	if ctx.DataType() == nil {
 		return
 	}
@@ -123,7 +123,7 @@ func (checker *columnTypeRestrictionChecker) checkFieldDefinition(tableName, col
 }
 
 // EnterAlterTable is called when production alterTable is entered.
-func (checker *columnTypeRestrictionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+func (checker *columnTypeDisallowListChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	if ctx.AlterTableActions() == nil {
 		return
 	}
