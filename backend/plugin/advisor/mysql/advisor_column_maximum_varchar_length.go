@@ -164,7 +164,6 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
-			// oldColumnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
 			charLength := getVarcharLength(item.FieldDefinition().DataType())
 			charLengthMap[columnName] = charLength
@@ -199,7 +198,6 @@ func getVarcharLength(ctx mysql.IDataTypeContext) int {
 
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserVARCHAR_SYMBOL:
-		// for mysql: create table tt(a char) == create table tt(a char(1));
 		if ctx.FieldLength() == nil || ctx.FieldLength().Real_ulonglong_number() == nil {
 			return 1
 		}
