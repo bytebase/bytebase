@@ -729,31 +729,6 @@ func (s *SchedulerV2) createActivityForTaskRunStatusUpdate(ctx context.Context, 
 	}
 }
 
-// ClearRunningTaskRuns changes all RUNNING taskRuns to CANCELED.
-// When there are running taskRuns and Bytebase server is shutdown, these task executors are stopped, but the taskRuns' status are still RUNNING.
-// When Bytebase is restarted, the task scheduler will re-schedule those RUNNING tasks, which should be CANCELED instead.
-// So we change their status to CANCELED before starting the scheduler.
-// And corresponding taskRuns are also changed to CANCELED.
-func (s *SchedulerV2) ClearRunningTaskRuns(ctx context.Context) error {
-	runningTaskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
-		Status: &[]api.TaskRunStatus{api.TaskRunRunning},
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to list running task runs")
-	}
-
-	if len(runningTaskRuns) > 0 {
-		var taskRunIDs []int
-		for _, taskRun := range runningTaskRuns {
-			taskRunIDs = append(taskRunIDs, taskRun.ID)
-		}
-		if err := s.store.BatchCancelTaskRuns(ctx, taskRunIDs, api.SystemBotID); err != nil {
-			return errors.Wrapf(err, "failed to change task run %v's status to %s", taskRunIDs, api.TaskRunCanceled)
-		}
-	}
-	return nil
-}
-
 func tasksSkippedOrDone(tasks []*store.TaskMessage) (bool, error) {
 	for _, task := range tasks {
 		skipped, err := utils.GetTaskSkipped(task)
