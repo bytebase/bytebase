@@ -137,9 +137,6 @@ const (
 	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
 	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
 
-	// MySQLColumnMaximumVarcharLength is an advisor type for MySQL maximum varchar length.
-	MySQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mysql.column.maximum-varchar-length"
-
 	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
 	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
 
@@ -226,9 +223,6 @@ const (
 
 	// MySQLStatementAffectedRowLimit is an advisor type for MySQL UPDATE/DELETE affected row limit.
 	MySQLStatementAffectedRowLimit Type = "bb.plugin.advisor.mysql.statement.affected-row-limit"
-
-	// MySQLStatementMaximumLimitValue is an advisor type for MySQL statement maximum limit value.
-	MySQLStatementMaximumLimitValue Type = "bb.plugin.advisor.mysql.statement.maximum-limit-value"
 
 	// MySQLStatementDMLDryRun is an advisor type for MySQL DML dry run.
 	MySQLStatementDMLDryRun Type = "bb.plugin.advisor.mysql.statement.dml-dry-run"
