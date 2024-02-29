@@ -130,7 +130,7 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 		}
 
 		var columnList []string
-		charLengthMap := make(map[string]int)
+		varcharLengthMap := make(map[string]int)
 		switch {
 		// add column.
 		case item.ADD_SYMBOL() != nil:
@@ -141,8 +141,8 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 				}
 
 				columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-				charLength := getVarcharLength(item.FieldDefinition().DataType())
-				charLengthMap[columnName] = charLength
+				length := getVarcharLength(item.FieldDefinition().DataType())
+				varcharLengthMap[columnName] = length
 				columnList = append(columnList, columnName)
 			case item.OPEN_PAR_SYMBOL() != nil && item.TableElementList() != nil:
 				for _, tableElement := range item.TableElementList().AllTableElement() {
@@ -157,28 +157,28 @@ func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.Alt
 					}
 
 					_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-					charLength := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
-					charLengthMap[columnName] = charLength
+					length := getVarcharLength(tableElement.ColumnDefinition().FieldDefinition().DataType())
+					varcharLengthMap[columnName] = length
 					columnList = append(columnList, columnName)
 				}
 			}
 		// change column.
 		case item.CHANGE_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.Identifier() != nil && item.FieldDefinition() != nil:
 			columnName := mysqlparser.NormalizeMySQLIdentifier(item.Identifier())
-			charLength := getVarcharLength(item.FieldDefinition().DataType())
-			charLengthMap[columnName] = charLength
+			length := getVarcharLength(item.FieldDefinition().DataType())
+			varcharLengthMap[columnName] = length
 			columnList = append(columnList, columnName)
 		// modify column.
 		case item.MODIFY_SYMBOL() != nil && item.ColumnInternalRef() != nil && item.FieldDefinition() != nil:
 			charLength := getVarcharLength(item.FieldDefinition().DataType())
 			columnName := mysqlparser.NormalizeMySQLColumnInternalRef(item.ColumnInternalRef())
-			charLengthMap[columnName] = charLength
+			varcharLengthMap[columnName] = charLength
 			columnList = append(columnList, columnName)
 		default:
 			continue
 		}
 		for _, columnName := range columnList {
-			if charLength, ok := charLengthMap[columnName]; ok && checker.maximum > 0 && charLength > checker.maximum {
+			if charLength, ok := varcharLengthMap[columnName]; ok && checker.maximum > 0 && charLength > checker.maximum {
 				checker.adviceList = append(checker.adviceList, advisor.Advice{
 					Status:  checker.level,
 					Code:    advisor.VarcharLengthExceedsLimit,
