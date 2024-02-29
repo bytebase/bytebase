@@ -95,28 +95,29 @@ func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database st
 	args = append(args, "--no-privileges")
 	args = append(args, database)
 
-	if err := driver.execPgDump(ctx, args, out, driver.config.TLSConfig.SslCA); err != nil {
+	if err := driver.execPgDump(ctx, args, out); err != nil {
 		return errors.Wrapf(err, "failed to exec pg_dump")
 	}
 	return nil
 }
 
-func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer, sslCA string) error {
+func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writer) error {
 	pgDumpPath := filepath.Join(driver.dbBinDir, "pg_dump")
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 	// Unlike MySQL, PostgreSQL does not support specifying password in commands, we can do this by means of environment variables.
 	if driver.config.Password != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGPASSWORD=%s", driver.config.Password))
 	}
-	sslMode := "disable"
-	if sslCA != "" {
-		sslMode = "verify-full"
+	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
+
+	if driver.config.TLSConfig.SslCA != "" {
 		caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
 		if err != nil {
 			return err
 		}
 		defer os.Remove(caTempFile.Name())
-		if _, err := caTempFile.WriteString(sslCA); err != nil {
+		if _, err := caTempFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
 			return err
 		}
 		if err := caTempFile.Close(); err != nil {
@@ -153,9 +154,6 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLKEY=%s", keyTempFile.Name()))
 	}
 	cmd.Env = append(cmd.Env, "OPENSSL_CONF=/etc/ssl/")
-	if sslMode != "disable" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
-	}
 	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
