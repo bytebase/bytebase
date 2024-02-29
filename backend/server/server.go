@@ -380,9 +380,6 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.cancel = cancel
 	if !s.profile.Readonly {
 		// runnerWG waits for all goroutines to complete.
-		if err := s.taskSchedulerV2.ClearRunningTaskRuns(ctx); err != nil {
-			return errors.Wrap(err, "failed to clear existing RUNNING tasks before starting the task scheduler")
-		}
 		s.runnerWG.Add(1)
 		go s.taskSchedulerV2.Run(ctx, &s.runnerWG)
 		s.runnerWG.Add(1)
