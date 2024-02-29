@@ -569,6 +569,9 @@ ruleList:
   - type: column.maximum-varchar-length
     category: COLUMN
     engineList:
+      - MYSQL
+      - OCEANBASE
+      - MARIADB
       - ORACLE
       - OCEANBASE_ORACLE
       - SNOWFLAKE
