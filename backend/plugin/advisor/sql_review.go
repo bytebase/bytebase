@@ -1196,7 +1196,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleColumnTypeDisallowList:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			return MySQLColumnTypeRestriction, nil
+			return MySQLColumnTypeDisallowList, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnTypeDisallowList, nil
 		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:

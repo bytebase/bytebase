@@ -14,20 +14,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*ColumnTypeRestrictionAdvisor)(nil)
-	_ ast.Visitor     = (*columnTypeRestrictionChecker)(nil)
+	_ advisor.Advisor = (*ColumnTypeDisallowListAdvisor)(nil)
+	_ ast.Visitor     = (*columnTypeDisallowListChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeRestriction, &ColumnTypeRestrictionAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLColumnTypeDisallowList, &ColumnTypeDisallowListAdvisor{})
 }
 
-// ColumnTypeRestrictionAdvisor is the advisor checking for column type restriction.
-type ColumnTypeRestrictionAdvisor struct {
+// ColumnTypeDisallowListAdvisor is the advisor checking for column type restriction.
+type ColumnTypeDisallowListAdvisor struct {
 }
 
 // Check checks for column type restriction.
-func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*ColumnTypeDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -41,7 +41,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	if err != nil {
 		return nil, err
 	}
-	checker := &columnTypeRestrictionChecker{
+	checker := &columnTypeDisallowListChecker{
 		level:           level,
 		title:           string(ctx.Rule.Type),
 		typeRestriction: make(map[string]bool),
@@ -67,7 +67,7 @@ func (*ColumnTypeRestrictionAdvisor) Check(ctx advisor.Context, _ string) ([]adv
 	return checker.adviceList, nil
 }
 
-type columnTypeRestrictionChecker struct {
+type columnTypeDisallowListChecker struct {
 	adviceList      []advisor.Advice
 	level           advisor.Status
 	title           string
@@ -84,7 +84,7 @@ type columnTypeData struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *columnTypeRestrictionChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *columnTypeDisallowListChecker) Enter(in ast.Node) (ast.Node, bool) {
 	var columnList []columnTypeData
 	switch node := in.(type) {
 	case *ast.CreateTableStmt:
@@ -140,6 +140,6 @@ func (checker *columnTypeRestrictionChecker) Enter(in ast.Node) (ast.Node, bool)
 }
 
 // Leave implements the ast.Visitor interface.
-func (*columnTypeRestrictionChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*columnTypeDisallowListChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
