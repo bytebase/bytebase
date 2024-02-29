@@ -128,11 +128,11 @@ const (
 	// MySQLAutoIncrementColumnMustInteger is an advisor type for auto-increment column.
 	MySQLAutoIncrementColumnMustInteger Type = "bb.plugin.advisor.mysql.column.auto-increment-must-integer"
 
-	// MySQLColumnTypeRestriction is an advisor type for MySQL column type restriction.
-	MySQLColumnTypeRestriction Type = "bb.plugin.advisor.mysql.column.type-restriction"
-
 	// MySQLDisallowSetColumnCharset is an advisor type for MySQL disallow set column charset.
 	MySQLDisallowSetColumnCharset Type = "bb.plugin.advisor.mysql.column.disallow-set-charset"
+
+	// MySQLColumnTypeDisallowList is an advisor type for MySQL column type disallow list.
+	MySQLColumnTypeDisallowList Type = "bb.plugin.advisor.mysql.column.type-disallow-list"
 
 	// MySQLColumnMaximumCharacterLength is an advisor type for MySQL maximum character length.
 	MySQLColumnMaximumCharacterLength Type = "bb.plugin.advisor.mysql.column.maximum-character-length"
