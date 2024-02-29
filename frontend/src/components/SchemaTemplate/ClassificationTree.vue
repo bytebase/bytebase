@@ -79,9 +79,25 @@ const sortClassification = (
   item1: { id: string },
   item2: { id: string }
 ): number => {
-  const n1 = Number(item1.id.split("-").join(""));
-  const n2 = Number(item2.id.split("-").join(""));
-  return n1 - n2;
+  const id1s = item1.id.split("-");
+  const id2s = item2.id.split("-");
+
+  if (id1s.length !== id2s.length) {
+    return id1s.length - id2s.length;
+  }
+
+  for (let i = 0; i < id1s.length; i++) {
+    if (id1s[i] === id2s[i]) {
+      continue;
+    }
+    if (Number.isNaN(id1s[i]) || Number.isNaN(id1s[i])) {
+      return id1s[i].localeCompare(id2s[i]);
+    }
+    return Number(id1s[i]) - Number(id2s[i]);
+  }
+
+  // shouldn't has duplicate id
+  return 0;
 };
 
 const treeData = computed((): TreeNode[] => {
