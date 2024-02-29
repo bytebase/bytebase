@@ -10,6 +10,7 @@ WORKDIR /frontend-build
 
 COPY . .
 
+ENV BB_GIT_COMMIT_ID_FE="${RENDER_GIT_COMMIT}"
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
 
 FROM golang:1.21.6 as backend

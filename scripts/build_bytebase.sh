@@ -39,6 +39,7 @@ echo "Step 1 - building Bytebase frontend..."
 
 rm -rf ./backend/server/dist
 
+export BB_GIT_COMMIT_ID_FE=$(git rev-parse HEAD)
 if command -v pnpm > /dev/null
 then
    pnpm --dir ./frontend i && pnpm --dir ./frontend release
