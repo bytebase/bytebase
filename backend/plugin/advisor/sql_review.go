@@ -1218,6 +1218,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		}
 	case SchemaRuleColumnMaximumVarcharLength:
 		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+			return MySQLColumnMaximumVarcharLength, nil
 		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 			return OracleColumnMaximumVarcharLength, nil
 		case storepb.Engine_SNOWFLAKE:
