@@ -99,6 +99,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnDisallowSetCharset,
 		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum character length.
 		advisor.SchemaRuleColumnMaximumCharacterLength,
+		// advisor.SchemaRuleColumnMaximumCharacterLength enforce the maximum varchar length.
+		advisor.SchemaRuleColumnMaximumVarcharLength,
 		// advisor.SchemaRuleColumnAutoIncrementInitialValue enforce the initial auto-increment value.
 		advisor.SchemaRuleColumnAutoIncrementInitialValue,
 		// advisor.SchemaRuleColumnAutoIncrementMustUnsigned enforce the auto-increment column to be unsigned.
