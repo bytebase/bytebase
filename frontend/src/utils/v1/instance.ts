@@ -88,11 +88,11 @@ export const supportedEngineV1List = () => {
     Engine.SPANNER,
     Engine.REDSHIFT,
     Engine.MARIADB,
+    Engine.STARROCKS,
     Engine.RISINGWAVE,
   ];
   if (locale.value === "zh-CN") {
     engines.push(Engine.DM);
-    engines.push(Engine.STARROCKS);
     engines.push(Engine.DORIS);
   }
   return engines;
