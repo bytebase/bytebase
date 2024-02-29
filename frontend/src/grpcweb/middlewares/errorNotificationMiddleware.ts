@@ -38,13 +38,18 @@ export const errorNotificationMiddleware: ClientMiddleware<SilentRequestOptions>
 
     const handleError = async (error: unknown) => {
       if (error instanceof ClientError || error instanceof ServerError) {
-        const { ignoredCodes = [Status.NOT_FOUND] } = options;
+        const { ignoredCodes = [Status.NOT_FOUND, Status.UNAUTHENTICATED] } =
+          options;
         if (ignoredCodes.includes(error.code)) {
           // ignored
         } else {
+          const details = [error.message];
+          if (error.code === Status.UNKNOWN) {
+            details.push("The backend server may not available");
+          }
           maybePushNotification(
-            `Code ${error.code}: ${error.message}`,
-            error.details
+            `Code ${error.code}: ${Status[error.code]}`,
+            details.join("\n")
           );
         }
       } else {
