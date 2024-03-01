@@ -1114,7 +1114,7 @@
     "approval-flow": {
       "self": "Approval flow",
       "tooltip": "The approvers will review and approve the issue in the order specified in the flow. The issue can only be applied after all steps in the flow have been approved. You can configure a custom approval flow for each risk.",
-      "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval flow based on the type and risk level of the issue."
+      "pre-issue-created-tips": "After an issue is created, Bytebase will automatically match the corresponding custom approval based on the type and risk level of the issue."
     },
     "waiting-to-rollout": "Waiting to rollout",
     "waiting-for-review": "Waiting for review",
@@ -1469,7 +1469,7 @@
       "manual-by-project-owner": "Project owner",
       "manual-by-project-releaser": "Project releaser",
       "manual-by-issue-creator": "Issue creator",
-      "manual-by-last-approver": "Manual rollout by the last approver from the custom approval flow",
+      "manual-by-last-approver": "Manual rollout by the last approver from the custom approval",
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
       "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
       "manual-by-dba": "DBA",
@@ -2569,7 +2569,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Custom role",
-        "desc": "Defining custom roles. You may apply them to project members and used in custom approval flow."
+        "desc": "Defining custom roles. You may apply them to project members and used in custom approval."
       },
       "bb-feature-watermark": {
         "title": "Watermark",
@@ -3193,7 +3193,7 @@
   "role": {
     "self": "Role",
     "setting": {
-      "description": "Defining custom roles. You may apply them to project members and used in custom approval flow.",
+      "description": "Defining custom roles. You may apply them to project members and used in custom approval.",
       "add": "Add role",
       "edit": "Edit role",
       "title-placeholder": "Input role title",

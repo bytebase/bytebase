@@ -1113,8 +1113,8 @@
     "assignee-tooltip": "被指派人是负责处理问题的人，当问题分配给他们时，它会显示在他们的已分配问题列表中。",
     "approval-flow": {
       "self": "审批流",
-      "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批流。",
-      "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批流。"
+      "tooltip": "审批人需要按审批流指定的顺序审核和审批工单。只有审批流中所有步骤都完成审批后工单才可以执行。您可以为每个风险级别自定义审批。",
+      "pre-issue-created-tips": "在工单创建后，系统将根据工单的类型和风险等级自动匹配相应的自定义审批。"
     },
     "waiting-to-rollout": "等待发布",
     "waiting-for-review": "等待审核",
@@ -1469,7 +1469,7 @@
       "manual-by-project-owner": "项目所有者",
       "manual-by-project-releaser": "项目的发布者",
       "manual-by-issue-creator": "工单的创建者",
-      "manual-by-last-approver": "自定义审批流的最后一个审批人发布",
+      "manual-by-last-approver": "自定义审批的最后一个审批人发布",
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
       "manual-by-dba": "DBA",
@@ -2568,7 +2568,7 @@
       },
       "bb-feature-custom-role": {
         "title": "自定义角色",
-        "desc": "定义自定义角色，你可以将它们应用到项目成员上，用于配置自定义审批流。"
+        "desc": "定义自定义角色，你可以将它们应用到项目成员上，用于配置自定义审批。"
       },
       "bb-feature-watermark": {
         "title": "水印设置",
@@ -3193,7 +3193,7 @@
   "role": {
     "self": "角色",
     "setting": {
-      "description": "定义自定义角色，你可以将它们应用到项目成员上。",
+      "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
       "add": "添加角色",
       "edit": "编辑角色",
       "name-placeholder": "输入角色名称",

@@ -1113,8 +1113,8 @@
     "assignee-tooltip": "Los asignados son responsables de un problema y cuando se les asigna un problema, aparece en su lista de problemas asignados.",
     "approval-flow": {
       "self": "Flujo de aprobación",
-      "tooltip": "Los revisores aprobarán y revisarán la incidencia en el orden especificado en el flujo. La incidencia solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. Puedes configurar un flujo de aprobación personalizado para cada riesgo.",
-      "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con el flujo de aprobación personalizado correspondiente según el tipo y el nivel de riesgo del problema."
+      "tooltip": "Los aprobadores revisarán y aprobarán el problema en el orden especificado en el flujo. \nLa emisión solo se puede aplicar después de que se hayan aprobado todos los pasos del flujo. \nPuede configurar un flujo de aprobación personalizado para cada riesgo.",
+      "pre-issue-created-tips": "Después de crear un problema, Bytebase coincidirá automáticamente con la aprobación personalizada correspondiente según el tipo y nivel de riesgo del problema."
     },
     "waiting-to-rollout": "Esperando para implementar",
     "waiting-for-review": "Esperando revisión",
@@ -1469,7 +1469,7 @@
       "manual-by-project-owner": "Dueño del proyecto",
       "manual-by-project-releaser": "Liberador de proyecto",
       "manual-by-issue-creator": "Creador del problema",
-      "manual-by-last-approver": "Implementación manual por parte del último aprobador del flujo de aprobación personalizado",
+      "manual-by-last-approver": "Implementación manual por parte del último aprobador de la aprobación personalizada",
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
       "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
       "manual-by-dba": "DBA",
@@ -2569,7 +2569,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Roles personalizados",
-        "desc": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
+        "desc": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado."
       },
       "bb-feature-watermark": {
         "title": "Marca de agua",
@@ -3193,7 +3193,7 @@
   "role": {
     "self": "Rol",
     "setting": {
-      "description": "Definición de roles personalizados. Puede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
+      "description": "Definición de roles personalizados. \nPuede aplicarlos a los miembros del proyecto y utilizarlos en un flujo de aprobación personalizado.",
       "add": "Agregar rol",
       "edit": "Editar rol",
       "title-placeholder": "Ingrese el título del rol",
