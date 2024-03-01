@@ -51,7 +51,7 @@ func (*StatementCheckSetRoleVariable) Check(ctx advisor.Context, _ string) ([]ad
 			Code:    advisor.StatementCheckSetRoleVariable,
 			Title:   string(ctx.Rule.Type),
 			Content: "No SET ROLE statement found.",
-			Line:    stmts[0].LastLine(),
+			Line:    1,
 		}}, nil
 	}
 
