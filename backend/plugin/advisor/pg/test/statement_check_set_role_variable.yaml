@@ -1,0 +1,11 @@
+- statement: SET SESSION ROLE joe; SELECT * FROM t
+  want:
+    - status: SUCCESS
+      title: OK
+- statement: SELECT * FROM t
+  want:
+    - status: WARN
+      code: 217
+      title: statement.check-set-role-variable
+      content: No SET ROLE statement found.
+      line: 1

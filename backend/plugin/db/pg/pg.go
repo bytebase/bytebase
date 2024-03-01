@@ -84,11 +84,9 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	}
 
 	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
-	// TODO(tianzhou): this work-around is no longer needed probably.
-	// https://neon.tech/docs/connect/connectivity-issues#c-set-verify-full-for-golang-based-clients
-	if strings.HasSuffix(config.Host, ".neon.tech") {
-		connStr += " sslmode=verify-full"
-	}
+	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
+	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
+
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
 		return nil, err
@@ -96,13 +94,15 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	connConfig.Config.User = config.Username
 	connConfig.Config.Password = config.Password
 	connConfig.Config.Database = config.Database
-	if config.TLSConfig.SslCert != "" {
-		cfg, err := config.TLSConfig.GetSslConfig()
-		if err != nil {
-			return nil, err
-		}
+
+	cfg, err := config.TLSConfig.GetSslConfig()
+	if err != nil {
+		return nil, err
+	}
+	if cfg != nil {
 		connConfig.TLSConfig = cfg
 	}
+
 	if config.SSHConfig.Host != "" {
 		sshClient, err := util.GetSSHClient(config.SSHConfig)
 		if err != nil {

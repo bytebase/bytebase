@@ -2,6 +2,9 @@
 
 FROM node:20 as frontend
 
+# RENDER_GIT_COMMIT is a render.com provided env var during build.
+# https://render.com/docs/environment-variables
+ARG RENDER_GIT_COMMIT="unknown"
 ARG RELEASE="dev"
 
 RUN npm i -g pnpm
@@ -23,7 +26,6 @@ ARG GO_VERSION="1.21.6"
 ARG RENDER_GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
-
 ARG RELEASE="dev"
 
 # Need gcc for CGO_ENABLED=1

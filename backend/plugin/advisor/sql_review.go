@@ -99,6 +99,8 @@ const (
 	SchemaRuleStatementSelectFullTableScan = "statement.select-full-table-scan"
 	// SchemaRuleStatementCreateSpecifySchema disallow to create table without specifying schema.
 	SchemaRuleStatementCreateSpecifySchema = "statement.create-specify-schema"
+	// SchemaRuleStatementCheckSetRoleVariable require add a check for SET ROLE variable.
+	SchemaRuleStatementCheckSetRoleVariable = "statement.check-set-role-variable"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1465,6 +1467,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementCreateSpecifySchema:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLStatementCreateSpecifySchema, nil
+		}
+	case SchemaRuleStatementCheckSetRoleVariable:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementCheckSetRoleVariable, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {

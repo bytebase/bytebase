@@ -830,7 +830,19 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			return &ast.CommitStmt{}, nil
 		}
 	case *pgquery.Node_VariableSetStmt:
-		return &ast.VariableSetStmt{}, nil
+		args := []ast.ExpressionNode{}
+		for _, arg := range in.VariableSetStmt.Args {
+			exprNode, _, _, err := convertExpressionNode(arg)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, exprNode)
+		}
+		return &ast.VariableSetStmt{
+			Name:    in.VariableSetStmt.Name,
+			Args:    args,
+			IsLocal: in.VariableSetStmt.IsLocal,
+		}, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
@@ -1113,6 +1125,8 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 		switch val := in.AConst.Val.(type) {
 		case *pgquery.A_Const_Sval:
 			return &ast.StringDef{Value: val.Sval.Sval}, nil, nil, nil
+		case *pgquery.A_Const_Ival:
+			return &ast.IntegerDef{Value: val.Ival.Ival}, nil, nil, nil
 		default:
 			return &ast.UnconvertedExpressionDef{}, nil, nil, nil
 		}
