@@ -3181,7 +3181,8 @@
       "default-value": "Por defecto",
       "comment": "Comentario",
       "nullable": "Anulable",
-      "table-name": "Nombre de la tabla"
+      "table-name": "Nombre de la tabla",
+      "on-update": "En actualización"
     },
     "classification": {
       "self": "Clasificación de datos",
