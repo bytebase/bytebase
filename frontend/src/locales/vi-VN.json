@@ -1113,8 +1113,8 @@
     "assignee-tooltip": "Người được giao là những người chịu trách nhiệm về một vấn đề và khi một vấn đề được giao cho họ, vấn đề đó sẽ hiển thị trong danh sách các vấn đề được giao của họ.",
     "approval-flow": {
       "self": "Luồng phê duyệt",
-      "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. Vấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. Bạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
-      "pre-issue-created-tips": "Sau khi sự cố được tạo, Bytebase sẽ tự động khớp quy trình phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của sự cố."
+      "tooltip": "Người phê duyệt sẽ xem xét và phê duyệt vấn đề theo thứ tự được chỉ định trong quy trình. \nVấn đề chỉ có thể được áp dụng sau khi tất cả các bước trong quy trình đã được phê duyệt. \nBạn có thể định cấu hình luồng phê duyệt tùy chỉnh cho từng rủi ro.",
+      "pre-issue-created-tips": "Sau khi một vấn đề được tạo, Bytebase sẽ tự động khớp với phê duyệt tùy chỉnh tương ứng dựa trên loại và mức độ rủi ro của vấn đề."
     },
     "waiting-to-rollout": "Đang chờ triển khai",
     "waiting-for-review": "Đang chờ xem xét",
@@ -1469,7 +1469,7 @@
       "manual-by-project-owner": "Chủ dự án",
       "manual-by-project-releaser": "Người phát hành dự án",
       "manual-by-issue-creator": "Người tạo vấn đề",
-      "manual-by-last-approver": "Người phê duyệt cuối cùng triển khai thủ công từ quy trình phê duyệt tùy chỉnh",
+      "manual-by-last-approver": "Triển khai thủ công bởi người phê duyệt cuối cùng từ phê duyệt tùy chỉnh",
       "manual-by-dedicated-roles": "Triển khai thủ công theo vai trò chuyên dụng",
       "manual-by-dedicated-roles-info": "Cho phép bất kỳ vai trò nào đã chọn sau đây nhấp vào nút \"Triển khai\" và sau đó thay đổi sẽ được thực thi.",
       "manual-by-dba": "cơ sở dữ liệu",
@@ -2569,7 +2569,7 @@
       },
       "bb-feature-custom-role": {
         "title": "Vai trò tùy chỉnh",
-        "desc": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh."
+        "desc": "Xác định vai trò tùy chỉnh. \nBạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh."
       },
       "bb-feature-watermark": {
         "title": "Chữ ký ảnh",
@@ -3193,7 +3193,7 @@
   "role": {
     "self": "Vai trò",
     "setting": {
-      "description": "Xác định vai trò tùy chỉnh. Bạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh.",
+      "description": "Xác định vai trò tùy chỉnh. \nBạn có thể áp dụng chúng cho các thành viên dự án và sử dụng trong quy trình phê duyệt tùy chỉnh.",
       "add": "Thêm vai trò",
       "edit": "Chỉnh sửa vai trò",
       "title-placeholder": "Tiêu đề vai trò đầu vào",
