@@ -150,6 +150,7 @@ export type RuleType =
   | "statement.disallow-add-not-null"
   | "statement.select-full-table-scan"
   | "statement.create-specify-schema"
+  | "statement.check-set-role-variable"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
