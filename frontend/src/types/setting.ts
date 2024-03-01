@@ -1,5 +1,6 @@
 export type SettingName =
   | "bb.branding.logo"
+  | "bb.workspace.id"
   | "bb.app.im"
   | "bb.workspace.watermark"
   | "bb.workspace.profile"

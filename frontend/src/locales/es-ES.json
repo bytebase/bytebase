@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "ID del espacio de trabajo",
+        "id-description": "La identificación única del espacio de trabajo de solo lectura.",
         "branding": "Marca",
         "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración.",
         "logo": "Logo",
