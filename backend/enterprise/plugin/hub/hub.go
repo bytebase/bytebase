@@ -34,6 +34,7 @@ type claims struct {
 	Trialing      bool   `json:"trialing"`
 	Plan          string `json:"plan"`
 	OrgName       string `json:"orgName"`
+	WorkspaceID   string `json:"workspaceId"`
 	jwt.RegisteredClaims
 }
 
@@ -54,7 +55,7 @@ func NewProvider(providerConfig *plugin.ProviderConfig) (plugin.LicenseProvider,
 // StoreLicense will store the hub license.
 func (p *Provider) StoreLicense(ctx context.Context, patch *enterprise.SubscriptionPatch) error {
 	if patch.License != "" {
-		if _, err := p.parseLicense(patch.License); err != nil {
+		if _, err := p.parseLicense(ctx, patch.License); err != nil {
 			return err
 		}
 	}
@@ -100,7 +101,7 @@ func (p *Provider) fetchLicense(ctx context.Context) (*enterprise.License, error
 	if license == "" {
 		return nil, nil
 	}
-	result, err := p.parseLicense(license)
+	result, err := p.parseLicense(ctx, license)
 	if err != nil {
 		return nil, err
 	}
@@ -139,13 +140,13 @@ func (p *Provider) loadLicense(ctx context.Context) *enterprise.License {
 	return license
 }
 
-func (p *Provider) parseLicense(license string) (*enterprise.License, error) {
+func (p *Provider) parseLicense(ctx context.Context, license string) (*enterprise.License, error) {
 	claim := &claims{}
 	if err := parseJWTToken(license, p.config.Version, p.config.PublicKey, claim); err != nil {
 		return nil, common.Wrap(err, common.Invalid)
 	}
 
-	return p.parseClaims(claim)
+	return p.parseClaims(ctx, claim)
 }
 
 func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.License, error) {
@@ -158,7 +159,7 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}
 	if setting != nil && setting.Value != "" {
-		license, err := p.parseLicense(setting.Value)
+		license, err := p.parseLicense(ctx, setting.Value)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse enterprise license")
 		}
@@ -177,7 +178,7 @@ func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.Licen
 }
 
 // parseClaims will valid and parse JWT claims to license instance.
-func (p *Provider) parseClaims(claim *claims) (*enterprise.License, error) {
+func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.License, error) {
 	if p.config.Issuer != claim.Issuer {
 		return nil, common.Errorf(common.Invalid, "iss is not valid, expect %s but found '%v'", p.config.Issuer, claim.Issuer)
 	}
@@ -188,6 +189,16 @@ func (p *Provider) parseClaims(claim *claims) (*enterprise.License, error) {
 	planType, err := convertPlanType(claim.Plan)
 	if err != nil {
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
+	}
+
+	if claim.WorkspaceID != "" && planType == api.ENTERPRISE {
+		workspaceID, err := p.store.GetWorkspaceID(ctx)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get workspace id from setting")
+		}
+		if workspaceID != claim.WorkspaceID {
+			return nil, common.Errorf(common.Invalid, "the workspace id not match")
+		}
 	}
 
 	license := &enterprise.License{

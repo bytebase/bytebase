@@ -13,7 +13,6 @@ import (
 
 // GatewayResponseModifier is the response modifier for grpc gateway.
 type GatewayResponseModifier struct {
-	ExternalURL   string
 	TokenDuration time.Duration
 }
 
@@ -23,7 +22,13 @@ func (m *GatewayResponseModifier) Modify(ctx context.Context, response http.Resp
 	if !ok {
 		return errors.Errorf("failed to get ServerMetadata from context in the gateway response modifier")
 	}
-	isHTTPS := strings.HasPrefix(m.ExternalURL, "https")
+
+	isHTTPS := false
+	for _, v := range md.HeaderMD.Get(GatewayMetadataRequestOriginKey) {
+		if strings.HasPrefix(v, "https") {
+			isHTTPS = true
+		}
+	}
 	m.processMetadata(md, GatewayMetadataAccessTokenKey, AccessTokenCookieName, true /* httpOnly */, isHTTPS, response)
 	m.processMetadata(md, GatewayMetadataUserIDKey, UserIDCookieName, false /* httpOnly */, isHTTPS, response)
 	return nil

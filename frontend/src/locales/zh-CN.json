@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "工作空间 ID",
+        "id-description": "唯一且只读的工作空间 ID",
         "branding": "品牌",
         "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",
@@ -3179,7 +3181,8 @@
       "default-value": "默认值",
       "comment": "备注",
       "nullable": "可为空",
-      "table-name": "表名"
+      "table-name": "表名",
+      "on-update": "更新时"
     },
     "classification": {
       "self": "数据分类分级",

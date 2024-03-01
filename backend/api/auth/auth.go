@@ -47,6 +47,8 @@ const (
 	GatewayMetadataAccessTokenKey = "bytebase-access-token"
 	// GatewayMetadataUserIDKey is the gateway metadata key for user ID.
 	GatewayMetadataUserIDKey = "bytebase-user"
+	// GatewayMetadataRequestOriginKey is the gateway metadata key for the request origin header.
+	GatewayMetadataRequestOriginKey = "bytebase-request-origin"
 )
 
 // APIAuthInterceptor is the auth interceptor for gRPC server.
