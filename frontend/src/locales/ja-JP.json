@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "ワークスペースID",
+        "id-description": "一意の読み取り専用ワークスペース ID。",
         "branding": "ブランディング",
         "only-admin-can-edit": "設定の更新はワークスペース管理者のみが行えます。",
         "logo": "ロゴ",

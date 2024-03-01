@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "工作空间 ID",
+        "id-description": "唯一且只读的工作空间 ID",
         "branding": "品牌",
         "only-admin-can-edit": "仅管理员可以更改此设置",
         "logo": "Logo",

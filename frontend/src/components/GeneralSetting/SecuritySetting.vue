@@ -160,6 +160,9 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
+const hasRestrictIssueCreationFeature = featureToRef(
+  "bb.feature.access-control"
+);
 
 const watermarkEnabled = computed((): boolean => {
   return (
@@ -242,6 +245,10 @@ const handleWatermarkToggle = async (on: boolean) => {
 };
 
 const handleRestrictIssueCreationForSQLReviewToggle = async (on: boolean) => {
+  if (!hasRestrictIssueCreationFeature.value && on) {
+    state.featureNameForModal = "bb.feature.access-control";
+    return;
+  }
   await policyV1Store.createPolicy("", {
     type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
     resourceType: PolicyResourceType.WORKSPACE,
