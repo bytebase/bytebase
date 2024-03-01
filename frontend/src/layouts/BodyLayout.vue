@@ -148,7 +148,7 @@
                     <div v-if="canUpgrade" class="whitespace-nowrap">
                       {{ $t("settings.release.new-version-available") }}
                     </div>
-                    <div>Git hash: {{ gitCommit }}</div>
+                    <div>BE Git hash: {{ gitCommitBE }}</div>
                     <div>FE Git hash: {{ gitCommitFE }}</div>
                   </div>
                 </template>
@@ -311,7 +311,7 @@ const version = computed(() => {
   return v;
 });
 
-const gitCommit = computed(() => {
+const gitCommitBE = computed(() => {
   return `${actuatorStore.gitCommit.substring(0, 7)}`;
 });
 const gitCommitFE = computed(() => {
