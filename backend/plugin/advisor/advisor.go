@@ -538,11 +538,21 @@ const (
 	SyntaxModeSDL
 )
 
+// ChangeType is the user-specified change type.
+type ChangeType int
+
+const (
+	ChangeTypeUnspecified ChangeType = iota
+	// ChangeTypeGhost uses gh-ost.
+	ChangeTypeGhost
+)
+
 // Context is the context for advisor.
 type Context struct {
 	Charset    string
 	Collation  string
 	SyntaxMode SyntaxMode
+	ChangeType ChangeType
 
 	// SQL review rule special fields.
 	AST     any
