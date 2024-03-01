@@ -9,6 +9,7 @@
   >
     <div class="my-4 rounded-sm p-4 bg-gray-100 relative">
       <div
+        v-if="isSupported"
         class="absolute top-2 right-2 p-2 rounded bg-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-300 cursor-pointer"
         @click="handleCopy"
       >
@@ -100,20 +101,12 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
 const { t } = useI18n();
 
 const handleCopy = () => {
-  if (!isSupported.value) {
+  copyTextToClipboard(JSON.stringify(example, null, 2)).then(() => {
     pushNotification({
       module: "bytebase",
-      style: "CRITICAL",
-      title: "Copy to clipboard is not enabled in your browser.",
+      style: "SUCCESS",
+      title: t("settings.sensitive-data.classification.copy-succeed"),
     });
-    return;
-  }
-
-  copyTextToClipboard(JSON.stringify(example, null, 2));
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.sensitive-data.classification.copy-succeed"),
   });
 };
 </script>

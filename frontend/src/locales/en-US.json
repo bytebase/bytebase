@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "Workspace ID",
+        "id-description": "The unique, read-only workspace id.",
         "branding": "Branding",
         "only-admin-can-edit": "Only workspace admin can update the settings.",
         "logo": "Logo",
