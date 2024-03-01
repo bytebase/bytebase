@@ -151,7 +151,7 @@
             </div>
           </div>
 
-          <!-- default value -->
+          <!-- on update -->
           <div class="sm:col-span-2 sm:col-start-1">
             <label for="default-value" class="textlabel">
               {{ $t("schema-template.form.on-update") }}
