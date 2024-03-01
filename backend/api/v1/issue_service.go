@@ -1390,20 +1390,20 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "failed to get user email from %v, error: %v", request.Issue.Assignee, err)
 				}
-				user, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
+				assignee, err := s.store.GetUser(ctx, &store.FindUserMessage{Email: &assigneeEmail})
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to get user %v, error: %v", assigneeEmail, err)
 				}
-				if user == nil {
+				if assignee == nil {
 					return nil, status.Errorf(codes.NotFound, "user %v not found", request.Issue.Assignee)
 				}
 				patch.UpdateAssignee = true
-				patch.Assignee = user
+				patch.Assignee = assignee
 
 				payload := &api.ActivityIssueFieldUpdatePayload{
 					FieldID:   api.IssueFieldAssignee,
 					OldValue:  oldAssigneeID,
-					NewValue:  strconv.Itoa(user.ID),
+					NewValue:  strconv.Itoa(assignee.ID),
 					IssueName: issue.Title,
 				}
 				activityPayload, err := json.Marshal(payload)
