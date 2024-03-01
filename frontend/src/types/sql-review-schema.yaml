@@ -247,6 +247,11 @@ ruleList:
     engineList:
       - POSTGRES
     componentList: []
+  - type: statement.check-set-role-variable
+    category: STATEMENT
+    engineList:
+      - POSTGRES
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:
