@@ -3193,7 +3193,7 @@
   "role": {
     "self": "角色",
     "setting": {
-      "description": "定义自定义角色，你可以将它们应用到项目成员上。",
+      "description": "定义自定义角色，你可以将它们应用到项目成员和自定义审批。",
       "add": "添加角色",
       "edit": "编辑角色",
       "name-placeholder": "输入角色名称",
