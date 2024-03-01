@@ -2133,13 +2133,17 @@ func TestInsertStmt(t *testing.T) {
 					},
 					ValueList: [][]ast.ExpressionNode{
 						{
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 1,
+							},
 							&ast.StringDef{
 								Value: "a",
 							},
 						},
 						{
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 2,
+							},
 							&ast.StringDef{
 								Value: "b",
 							},
@@ -2190,11 +2194,21 @@ func TestInsertStmt(t *testing.T) {
 					},
 					ValueList: [][]ast.ExpressionNode{
 						{
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 1,
+							},
+							&ast.IntegerDef{
+								Value: 2,
+							},
+							&ast.IntegerDef{
+								Value: 3,
+							},
+							&ast.IntegerDef{
+								Value: 4,
+							},
+							&ast.IntegerDef{
+								Value: 5,
+							},
 						},
 					},
 				},
