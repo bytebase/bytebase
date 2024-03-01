@@ -37,6 +37,8 @@
         :database="sourceDatabase?.uid"
         :project="project.uid"
         :allowed-engine-type-list="headBranch ? [headBranch.engine] : undefined"
+        :filter="databaseFilter"
+        :loading="isPreparingDatabaseGroups"
         style="width: 100%"
         @update:database="$emit('update:source-database-uid', $event)"
       />
@@ -47,8 +49,9 @@
 <script setup lang="ts">
 import { MoveLeftIcon } from "lucide-vue-next";
 import { NRadioGroup } from "naive-ui";
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 import { DatabaseSelect } from "@/components/v2";
+import { useDatabaseInGroupFilter, useDatabaseV1Store } from "@/store";
 import { ComposedDatabase, ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { RebaseSourceType } from "./types";
@@ -69,6 +72,16 @@ defineEmits<{
   (event: "update:source-branch-name", branch: string | undefined): void;
   (event: "update:source-database-uid", uid: string | undefined): void;
 }>();
+
+const referencedDatabase = computed(() => {
+  const name = props.headBranch?.baselineDatabase;
+  if (!name) return undefined;
+  return useDatabaseV1Store().getDatabaseByName(name);
+});
+const { isPreparingDatabaseGroups, databaseFilter } = useDatabaseInGroupFilter(
+  toRef(props, "project"),
+  referencedDatabase
+);
 
 const sourceBranchOrDatabase = computed(() => {
   return props.sourceType === "BRANCH"
