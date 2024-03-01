@@ -3181,7 +3181,8 @@
       "default-value": "デフォルト",
       "comment": "コメント",
       "nullable": "NULL可能",
-      "table-name": "テーブル名"
+      "table-name": "テーブル名",
+      "on-update": "更新時"
     },
     "classification": {
       "self": "データ分類",

@@ -3181,7 +3181,8 @@
       "default-value": "Default",
       "comment": "Comment",
       "nullable": "Nullable",
-      "table-name": "Table name"
+      "table-name": "Table name",
+      "on-update": "On Update"
     },
     "classification": {
       "self": "Data classification",
