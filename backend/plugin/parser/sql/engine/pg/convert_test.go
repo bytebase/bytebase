@@ -2133,13 +2133,17 @@ func TestInsertStmt(t *testing.T) {
 					},
 					ValueList: [][]ast.ExpressionNode{
 						{
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 1,
+							},
 							&ast.StringDef{
 								Value: "a",
 							},
 						},
 						{
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 2,
+							},
 							&ast.StringDef{
 								Value: "b",
 							},
@@ -2190,11 +2194,21 @@ func TestInsertStmt(t *testing.T) {
 					},
 					ValueList: [][]ast.ExpressionNode{
 						{
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
-							&ast.UnconvertedExpressionDef{},
+							&ast.IntegerDef{
+								Value: 1,
+							},
+							&ast.IntegerDef{
+								Value: 2,
+							},
+							&ast.IntegerDef{
+								Value: 3,
+							},
+							&ast.IntegerDef{
+								Value: 4,
+							},
+							&ast.IntegerDef{
+								Value: 5,
+							},
 						},
 					},
 				},
@@ -3332,19 +3346,117 @@ func TestPGCreateTableSetLine(t *testing.T) {
 
 // TestVariableSetStmt is a helper test to help us to determine the statement whether is a variable set statement.
 func TestVariableSetStmt(t *testing.T) {
-	stmt := []string{
-		"SET max_execution_time = 1000",
-		"SET search_path TO my_schema, public;",
-		"SET datestyle TO postgres, dmy;",
-		"SET TIME ZONE 'PST8PDT';",
-		"SET TIME ZONE 'Europe/Rome';",
+	tests := []testData{
+		{
+			stmt: "SET max_execution_time = 1000;",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "max_execution_time",
+					Args: []ast.ExpressionNode{
+						&ast.IntegerDef{
+							Value: 1000,
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET TIME ZONE 'PST8PDT';",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "timezone",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "PST8PDT",
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET search_path TO my_schema, public;",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "search_path",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "my_schema",
+						},
+						&ast.StringDef{
+							Value: "public",
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET datestyle TO postgres, dmy;",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "datestyle",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "postgres",
+						},
+						&ast.StringDef{
+							Value: "dmy",
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET SESSION ROLE 'joe';",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "role",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "joe",
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET SESSION ROLE joe;",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "role",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "joe",
+						},
+					},
+				},
+			},
+		},
+		{
+			stmt: "SET LOCAL ROLE joe;",
+			want: []ast.Node{
+				&ast.VariableSetStmt{
+					Name: "role",
+					Args: []ast.ExpressionNode{
+						&ast.StringDef{
+							Value: "joe",
+						},
+					},
+					IsLocal: true,
+				},
+			},
+		},
 	}
 
-	for _, s := range stmt {
-		nodeList, err := Parse(ParseContext{}, s)
+	for _, test := range tests {
+		nodeList, err := Parse(ParseContext{}, test.stmt)
 		require.NoError(t, err)
 		require.Len(t, nodeList, 1)
-		_, ok := nodeList[0].(*ast.VariableSetStmt)
+		result, ok := nodeList[0].(*ast.VariableSetStmt)
 		require.True(t, ok)
+		want, ok := test.want[0].(*ast.VariableSetStmt)
+		require.True(t, ok)
+		require.Equal(t, want.Name, result.Name)
+		require.Equal(t, want.Args, result.Args)
+		require.Equal(t, want.IsLocal, result.IsLocal)
 	}
 }
