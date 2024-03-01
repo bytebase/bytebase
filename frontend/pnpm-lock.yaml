@@ -345,7 +345,7 @@ devDependencies:
     version: 2.7.1
   protobufjs:
     specifier: ^7.2.5
-    version: 7.2.5
+    version: 7.2.6
   rollup:
     specifier: 4.9.6
     version: 4.9.6
@@ -561,8 +561,8 @@ packages:
       - '@vue/composition-api'
     dev: false
 
-  /@clack/core@0.3.3:
-    resolution: {integrity: sha512-5ZGyb75BUBjlll6eOa1m/IZBxwk91dooBWhPSL67sWcLS0zt9SnswRL0l26TVdBhb0wnWORRxUn//uH6n4z7+A==}
+  /@clack/core@0.3.4:
+    resolution: {integrity: sha512-H4hxZDXgHtWTwV3RAVenqcC4VbJZNegbBjlPvzOzCouXtS2y3sDvlO3IsbrPNWuLWPPlYVYPghQdSF64683Ldw==}
     dependencies:
       picocolors: 1.0.0
       sisteransi: 1.0.5
@@ -571,7 +571,7 @@ packages:
   /@clack/prompts@0.7.0:
     resolution: {integrity: sha512-0MhX9/B4iL6Re04jPrttDm+BsP8y6mS7byuv0BvXgdXhbV5PdlsHt55dvNsuBCPZ7xq1oTAOOuotR9NFbQyMSA==}
     dependencies:
-      '@clack/core': 0.3.3
+      '@clack/core': 0.3.4
       picocolors: 1.0.0
       sisteransi: 1.0.5
     dev: false
@@ -4806,7 +4806,7 @@ packages:
     dependencies:
       long: 5.2.3
       nice-grpc-common: 2.0.2
-      protobufjs: 7.2.5
+      protobufjs: 7.2.6
     dev: false
 
   /nice-grpc-web@3.3.2(ws@8.15.1):
@@ -5368,8 +5368,8 @@ packages:
     resolution: {integrity: sha512-3ouUOpQhtgrbOa17J7+uxOTpITYWaGP7/AhoR3+A+/1e9skrzelGi/dXzEYyvbxubEF6Wn2ypscTKiKJFFn1ag==}
     dev: false
 
-  /protobufjs@7.2.5:
-    resolution: {integrity: sha512-gGXRSXvxQ7UiPgfw8gevrfRWcTlSbOFg+p/N+JVJEK5VhueL2miT6qTymqAmjr1Q5WbOCyJbyrk6JfWKwlFn6A==}
+  /protobufjs@7.2.6:
+    resolution: {integrity: sha512-dgJaEDDL6x8ASUZ1YqWciTRrdOuYNzoOf27oHNfdyvKqHr5i0FV7FSLU+aIeFjyFgVxrpTOtQUi0BLLBymZaBw==}
     engines: {node: '>=12.0.0'}
     requiresBuild: true
     dependencies:
@@ -6014,7 +6014,7 @@ packages:
     resolution: {integrity: sha512-TYyJ7+H+7Jsqawdv+mfsEpZPTIj9siDHS6EMCzG/z3b/PZiphsX+mWtqFfFVe5/N0Th6V3elK9lQqjnrgTOfrg==}
     dependencies:
       long: 5.2.3
-      protobufjs: 7.2.5
+      protobufjs: 7.2.6
     dev: true
 
   /ts-proto@1.165.1:
@@ -6022,7 +6022,7 @@ packages:
     hasBin: true
     dependencies:
       case-anything: 2.1.13
-      protobufjs: 7.2.5
+      protobufjs: 7.2.6
       ts-poet: 6.6.0
       ts-proto-descriptors: 1.15.0
     dev: true
