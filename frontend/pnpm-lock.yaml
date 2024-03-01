@@ -314,8 +314,8 @@ devDependencies:
     specifier: 10.4.17
     version: 10.4.17(postcss@8.4.35)
   code-inspector-plugin:
-    specifier: ^0.7.0
-    version: 0.7.0
+    specifier: ^0.9.2
+    version: 0.9.2
   eslint:
     specifier: 8.57.0
     version: 8.57.0
@@ -2287,16 +2287,6 @@ packages:
       path-browserify: 1.0.1
     dev: true
 
-  /@vue/compiler-core@3.4.16:
-    resolution: {integrity: sha512-HXgyy7gen4FNJS8Hz2q/NNBEdzD3QInhDTWaP2/mS0TlmV9CnjmXip7TZ0ROYiQM4FgXZCCJvh74yDikFkPpkQ==}
-    dependencies:
-      '@babel/parser': 7.23.9
-      '@vue/shared': 3.4.16
-      entities: 4.5.0
-      estree-walker: 2.0.2
-      source-map-js: 1.0.2
-    dev: true
-
   /@vue/compiler-core@3.4.19:
     resolution: {integrity: sha512-gj81785z0JNzRcU0Mq98E56e4ltO1yf8k5PQ+tV/7YHnbZkrM0fyFyuttnN8ngJZjbpofWE/m4qjKBiLl8Ju4w==}
     dependencies:
@@ -2305,13 +2295,6 @@ packages:
       entities: 4.5.0
       estree-walker: 2.0.2
       source-map-js: 1.0.2
-
-  /@vue/compiler-dom@3.4.16:
-    resolution: {integrity: sha512-lvs9ankPzLEuIC5aB72ntLUcwVGmgY7ASkXDRvo9+lUMWOOCqnAmM/64AZPeVAZ4EnjocCE40OUN+ZboNe4ygA==}
-    dependencies:
-      '@vue/compiler-core': 3.4.16
-      '@vue/shared': 3.4.16
-    dev: true
 
   /@vue/compiler-dom@3.4.19:
     resolution: {integrity: sha512-vm6+cogWrshjqEHTzIDCp72DKtea8Ry/QVpQRYoyTIg9k7QZDX6D8+HGURjtmatfgM8xgCFtJJaOlCaRYRK3QA==}
@@ -2382,8 +2365,8 @@ packages:
     dependencies:
       '@volar/language-core': 1.11.1
       '@volar/source-map': 1.11.1
-      '@vue/compiler-dom': 3.4.16
-      '@vue/shared': 3.4.16
+      '@vue/compiler-dom': 3.4.19
+      '@vue/shared': 3.4.19
       computeds: 0.0.1
       minimatch: 9.0.3
       muggle-string: 0.3.1
@@ -2418,10 +2401,6 @@ packages:
       '@vue/compiler-ssr': 3.4.19
       '@vue/shared': 3.4.19
       vue: 3.4.19(typescript@5.3.3)
-
-  /@vue/shared@3.4.16:
-    resolution: {integrity: sha512-HKCjeaxR+R95dCw1BDaytcHdlzZj9lxj7RlFnxWtcKq670t8oSeMsbPlkzkNc2V6IUzHaMtUxdBcdREAhb+7NA==}
-    dev: true
 
   /@vue/shared@3.4.19:
     resolution: {integrity: sha512-/KliRRHMF6LoiThEy+4c1Z4KB/gbPrGjWwJR+crg2otgrf/egKzRaCPvJ51S5oetgsgXLfc4Rm5ZgrKHZrtMSw==}
@@ -2859,23 +2838,23 @@ packages:
     engines: {node: '>= 0.10'}
     dev: false
 
-  /code-inspector-core@0.7.0:
-    resolution: {integrity: sha512-+ZveH7qlXjyccXMWVxKVaMzLYSAfsbtkxTERWXl40gUkgDlGDKdBzWrohLdhmVZvOsj5lfnmlS1VjYd3THRc6w==}
+  /code-inspector-core@0.9.2:
+    resolution: {integrity: sha512-ZZ6Wwk0Pj7hBO0NKIEd2PaRkIlT5ug+Zefd2Xuqxp+nQ8V25CbprnzhoZJ+lOmHfG/+JjnFN7TqPsecDJ2kQ7g==}
     dependencies:
-      '@vue/compiler-dom': 3.4.16
+      '@vue/compiler-dom': 3.4.19
       chalk: 4.1.2
       portfinder: 1.0.32
     transitivePeerDependencies:
       - supports-color
     dev: true
 
-  /code-inspector-plugin@0.7.0:
-    resolution: {integrity: sha512-NvkUEFW9uVwdV2uywGfh/6p1jJL/Gj+NRWaCkQ1UlnPMqu0AhlRSOu2th/RZdP70VaCCvTMRM4/RXPJyWk/XPg==}
+  /code-inspector-plugin@0.9.2:
+    resolution: {integrity: sha512-etAk1ETOHWBX9huec8tq8Y/yaQmrAjvJB75dO3qeeWX8Zkq9ZjpcT3TxYVTDXRjBgRnq/EYXCj78oM6mfMYQug==}
     dependencies:
       chalk: 4.1.1
-      code-inspector-core: 0.7.0
-      vite-code-inspector-plugin: 0.7.0
-      webpack-code-inspector-plugin: 0.7.0
+      code-inspector-core: 0.9.2
+      vite-code-inspector-plugin: 0.9.2
+      webpack-code-inspector-plugin: 0.9.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -6205,10 +6184,10 @@ packages:
       - supports-color
     dev: true
 
-  /vite-code-inspector-plugin@0.7.0:
-    resolution: {integrity: sha512-VGidJEwfiT1PrpQzj0UXqBm7IT+//C1e5Rgf/QirGdypegcM67+QCIjn9gSlZq0n8oEQSqp2Xk1dzHW4KlPC0g==}
+  /vite-code-inspector-plugin@0.9.2:
+    resolution: {integrity: sha512-UIuZd+RPYJkwbq01Y0eYs1SE0JFC5hd6eJmpjLXDqp0SqJQ0XjwAHjbVKXt3Ybkx8InfPs9HHLFzyCMfy+8EvA==}
     dependencies:
-      code-inspector-core: 0.7.0
+      code-inspector-core: 0.9.2
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -6606,10 +6585,10 @@ packages:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
     dev: false
 
-  /webpack-code-inspector-plugin@0.7.0:
-    resolution: {integrity: sha512-tHpiah0AT/w9sTdgW/RzRkZrV1nxb5EyPqlgw/Ku2sePjnz/9RbIVlll2GZiXjnnslWEXXLz5ummrn+PggPVSQ==}
+  /webpack-code-inspector-plugin@0.9.2:
+    resolution: {integrity: sha512-ctCZeTyBrBgYb+1bWCYhidNfkiIuKRRl5mHNtbMATuN179f3urSEcdPLNVNON0V6qsx+n6toqx8VSr7D/Q/llg==}
     dependencies:
-      code-inspector-core: 0.7.0
+      code-inspector-core: 0.9.2
     transitivePeerDependencies:
       - supports-color
     dev: true
