@@ -27,6 +27,9 @@
         {{ getColumnDefaultValuePlaceholder(item.column!) }}
       </div>
       <div class="bb-grid-cell">
+        {{ item.column?.onUpdate }}
+      </div>
+      <div class="bb-grid-cell">
         {{ item.column?.userComment }}
       </div>
       <div class="bb-grid-cell">
@@ -108,6 +111,11 @@ const columnList = computed((): BBGridColumn[] => {
     },
     {
       title: t("schema-template.form.default-value"),
+      width: "minmax(min-content, auto)",
+      class: "capitalize",
+    },
+    {
+      title: t("schema-template.form.on-update"),
       width: "minmax(min-content, auto)",
       class: "capitalize",
     },
