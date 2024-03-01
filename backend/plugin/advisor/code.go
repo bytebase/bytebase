@@ -41,6 +41,7 @@ const (
 	StatementCheckSelectFullTableScanFailed Code = 214
 	StatementHasTableFullScan               Code = 215
 	StatementCreateWithoutSchemaName        Code = 216
+	StatementCheckSetRoleVariable           Code = 217
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

@@ -367,6 +367,9 @@ const (
 	// PostgreSQLStatementCreateSpecifySchema is an advisor type for PostgreSQL to specify schema when creating.
 	PostgreSQLStatementCreateSpecifySchema Type = "bb.plugin.advisor.postgresql.statement.create-specify-schema"
 
+	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
+	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
