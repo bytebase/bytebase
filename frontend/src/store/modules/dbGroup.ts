@@ -597,7 +597,6 @@ export const useDatabaseInGroupFilter = (
       return true;
     }
 
-    console.log("groupsContainRefDB", groupsContainRefDB.value);
     if (groupsContainRefDB.value.length === 0) {
       // the referenced DB is not in any group
       // allow all databases
