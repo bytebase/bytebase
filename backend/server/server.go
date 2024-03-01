@@ -233,7 +233,7 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	secret, externalURL, tokenDuration, err := s.getInitSetting(ctx, storeInstance)
+	secret, tokenDuration, err := s.getInitSetting(ctx, storeInstance)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
@@ -248,9 +248,9 @@ func NewServer(ctx context.Context, profile config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.e = echo.New()
 
-	// Note: the gateway response modifier takes the external url on server startup. If the external URL is changed,
+	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{ExternalURL: externalURL, TokenDuration: tokenDuration}
+	gatewayModifier := auth.GatewayResponseModifier{TokenDuration: tokenDuration}
 	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	if profile.BackupBucket != "" {
