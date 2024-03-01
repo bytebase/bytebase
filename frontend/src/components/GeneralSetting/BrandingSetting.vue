@@ -13,9 +13,32 @@
     </div>
     <div class="flex-1 lg:px-4">
       <div class="mb-4 mt-4 lg:mt-0">
-        <p>
+        <label class="flex items-center gap-x-2">
+          <span class="font-medium">
+            {{ $t("settings.general.workspace.id") }}
+          </span>
+        </label>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.id-description") }}
+        </div>
+        <div class="mb-4 flex space-x-2">
+          <NInput
+            ref="workspaceIdField"
+            :value="workspaceId"
+            class="mb-4 w-full"
+            @click="selectWorkspaceId"
+          />
+          <NButton
+            v-if="isSupported"
+            :disabled="!workspaceId"
+            @click="handleCopyId"
+          >
+            <heroicons-outline:clipboard-document class="w-4 h-4" />
+          </NButton>
+        </div>
+        <span class="font-medium">
           {{ $t("settings.general.workspace.logo") }}
-        </p>
+        </span>
         <p class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.logo-aspect") }}
         </p>
@@ -115,8 +138,9 @@
 </template>
 
 <script lang="ts" setup>
+import { useClipboard } from "@vueuse/core";
 import { NPopconfirm } from "naive-ui";
-import { computed, reactive, watchEffect } from "vue";
+import { computed, reactive, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
@@ -148,6 +172,7 @@ const convertFileToBase64 = (file: File) =>
 
 const settingV1Store = useSettingV1Store();
 const { t } = useI18n();
+const workspaceIdField = ref<HTMLInputElement | null>(null);
 
 const state = reactive<LocalState>({
   displayName: "",
@@ -164,6 +189,31 @@ watchEffect(() => {
 const valid = computed((): boolean => {
   return !!state.displayName || !!state.logoFile;
 });
+
+const workspaceId = computed(() => {
+  return (
+    settingV1Store.getSettingByName("bb.workspace.id")?.value?.stringValue ?? ""
+  );
+});
+
+const selectWorkspaceId = () => {
+  workspaceIdField.value?.select();
+};
+
+const { copy: copyTextToClipboard, isSupported } = useClipboard({
+  legacy: true,
+});
+
+const handleCopyId = () => {
+  selectWorkspaceId();
+  copyTextToClipboard(workspaceId.value).then(() => {
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: t("common.copied"),
+    });
+  });
+};
 
 const allowDelete = computed(() => {
   return settingV1Store.brandingLogo !== "";

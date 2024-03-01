@@ -57,6 +57,7 @@ func NewSettingService(
 // Some settings contain secret info so we only return settings that are needed by the client.
 var whitelistSettings = []api.SettingName{
 	api.SettingBrandingLogo,
+	api.SettingWorkspaceID,
 	api.SettingAppIM,
 	api.SettingWatermark,
 	api.SettingPluginOpenAIKey,

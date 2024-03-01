@@ -591,6 +591,8 @@
     },
     "general": {
       "workspace": {
+        "id": "ID không gian làm việc",
+        "id-description": "Id không gian làm việc duy nhất, chỉ đọc.",
         "branding": "Xây dựng thương hiệu",
         "only-admin-can-edit": "Chỉ quản trị viên không gian làm việc mới có thể cập nhật cài đặt.",
         "logo": "Logo",
