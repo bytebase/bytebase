@@ -663,9 +663,19 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 
 	if request.Web {
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, status.Errorf(codes.Unauthenticated, "failed to parse metadata from incoming context")
+		}
+		// Pass the request origin header to response.
+		var origin string
+		for _, v := range md.Get("grpcgateway-origin") {
+			origin = v
+		}
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey: accessToken,
-			auth.GatewayMetadataUserIDKey:      fmt.Sprintf("%d", loginUser.ID),
+			auth.GatewayMetadataAccessTokenKey:   accessToken,
+			auth.GatewayMetadataUserIDKey:        fmt.Sprintf("%d", loginUser.ID),
+			auth.GatewayMetadataRequestOriginKey: origin,
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
