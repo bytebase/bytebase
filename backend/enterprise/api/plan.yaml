@@ -63,8 +63,8 @@ planList:
     unitPrice: 0
     trialPrice: 0
     freeSeatCount: 20
-    freeInstanceCount: 5
-    maximumInstanceCount: 5
+    freeInstanceCount: 10
+    maximumInstanceCount: 10
     maximumSeatCount: 20
     maximumTaskCount: -1
     maximumEnvironmentCount: -1
