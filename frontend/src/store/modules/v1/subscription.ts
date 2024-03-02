@@ -4,10 +4,9 @@ import { computed, Ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { subscriptionServiceClient } from "@/grpcweb";
 import {
+  PLANS,
   FeatureType,
   planTypeToString,
-  instanceCountLimit,
-  userCountLimit,
   instanceLimitFeature,
 } from "@/types";
 import { Instance } from "@/types/proto/v1/instance_service";
@@ -33,18 +32,16 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
   }),
   getters: {
     instanceCountLimit(state): number {
-      let plan = this.currentPlan;
-      if (this.isTrialing) {
-        plan = PlanType.FREE;
-      }
-      return instanceCountLimit.get(plan) ?? 0;
+      return (
+        PLANS.find((plan) => plan.type === this.currentPlan)
+          ?.maximumInstanceCount ?? 0
+      );
     },
     userCountLimit(state): number {
-      let plan = this.currentPlan;
-      if (this.isTrialing) {
-        plan = PlanType.FREE;
-      }
-      return userCountLimit.get(plan) ?? 0;
+      return (
+        PLANS.find((plan) => plan.type === this.currentPlan)
+          ?.maximumSeatCount ?? 0
+      );
     },
     instanceLicenseCount(state): number {
       const count = state.subscription?.instanceCount ?? 0;
