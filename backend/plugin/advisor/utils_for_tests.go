@@ -359,7 +359,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleEventDisallowCreate,
 		SchemaRuleViewDisallowCreate,
 		SchemaRuleFunctionDisallowCreate,
-		SchemaRuleStatementCreateSpecifySchema:
+		SchemaRuleStatementCreateSpecifySchema,
+		SchemaRuleStatementCheckSetRoleVariable:
 	case SchemaRuleTableDropNamingConvention:
 		payload, err = json.Marshal(NamingRulePayload{
 			Format: "_delete$",

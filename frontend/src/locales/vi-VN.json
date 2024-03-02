@@ -3181,7 +3181,8 @@
       "default-value": "Mặc định",
       "comment": "Bình luận",
       "nullable": "Có thể rỗng",
-      "table-name": "Tên bảng"
+      "table-name": "Tên bảng",
+      "on-update": "Đang cập nhật"
     },
     "classification": {
       "self": "Phân loại dữ liệu",

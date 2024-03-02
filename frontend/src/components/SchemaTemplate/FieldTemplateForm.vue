@@ -151,6 +151,16 @@
             </div>
           </div>
 
+          <!-- on update -->
+          <div class="sm:col-span-2 sm:col-start-1">
+            <label for="default-value" class="textlabel">
+              {{ $t("schema-template.form.on-update") }}
+            </label>
+            <div class="flex flex-row items-center relative">
+              <NInput v-model:value="state.column!.onUpdate" />
+            </div>
+          </div>
+
           <!-- comment -->
           <div class="sm:col-span-4 sm:col-start-1">
             <label for="comment" class="textlabel">

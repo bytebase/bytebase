@@ -1,6 +1,7 @@
+import { computedAsync } from "@vueuse/core";
 import { isEqual } from "lodash-es";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { MaybeRef, computed, ref, unref } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import {
   ConditionGroupExpr,
@@ -14,12 +15,18 @@ import {
   ComposedDatabaseGroup,
   ComposedSchemaGroup,
   ComposedDatabase,
+  ComposedProject,
 } from "@/types";
 import { unknownEnvironment } from "@/types";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
+import {
+  DatabaseGroup,
+  DatabaseGroupView,
+  SchemaGroup,
+  TenantMode,
+} from "@/types/proto/v1/project_service";
 import {
   batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
@@ -529,3 +536,75 @@ export const useDBGroupStore = defineStore("db-group", () => {
     fetchSchemaGroupMatchList,
   };
 });
+
+export const useDatabaseInGroupFilter = (
+  project: MaybeRef<ComposedProject>,
+  referenceDatabase: MaybeRef<ComposedDatabase | undefined>
+) => {
+  const isPreparingDatabaseGroups = ref(false);
+
+  const databaseGroups = computedAsync(
+    async () => {
+      if (unref(project).tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
+        return [];
+      }
+
+      const response = await projectServiceClient.listDatabaseGroups({
+        parent: unref(project).name,
+      });
+      return Promise.all(
+        response.databaseGroups.map((group) => {
+          return projectServiceClient.getDatabaseGroup({
+            name: group.name,
+            view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+          });
+        })
+      );
+    },
+    [],
+    {
+      evaluating: isPreparingDatabaseGroups,
+    }
+  );
+
+  const groupsContainRefDB = computed(() => {
+    const dbGroups = databaseGroups.value;
+    const referenceDB = unref(referenceDatabase);
+    if (!referenceDB) {
+      return dbGroups;
+    }
+    return dbGroups.filter((group) => {
+      return !!group.matchedDatabases.find(
+        (match) => match.name === referenceDB.name
+      );
+    });
+  });
+
+  const databaseFilter = (db: ComposedDatabase) => {
+    if (isPreparingDatabaseGroups.value) {
+      return false;
+    }
+    const dbGroups = databaseGroups.value;
+    if (!dbGroups) {
+      // dbGroups not configured
+      // allow all databases
+      return true;
+    }
+    const referenceDB = unref(referenceDatabase);
+    if (!referenceDB) {
+      // No ref DB
+      // allow all databases
+      return true;
+    }
+
+    if (groupsContainRefDB.value.length === 0) {
+      // the referenced DB is not in any group
+      // allow all databases
+      return true;
+    }
+    return groupsContainRefDB.value
+      .flatMap((group) => group.matchedDatabases.map((match) => match.name))
+      .includes(db.name);
+  };
+  return { isPreparingDatabaseGroups, databaseFilter };
+};

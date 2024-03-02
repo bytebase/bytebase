@@ -61,6 +61,8 @@ ruleList:
     level: WARNING
   - type: statement.create-specify-schema
     level: WARNING
+  - type: statement.check-set-role-variable
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
