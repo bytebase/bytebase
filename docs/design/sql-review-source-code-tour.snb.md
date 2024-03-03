@@ -83,4 +83,4 @@ https://sourcegraph.com/github.com/bytebase/bytebase@12faead/-/blob/backend/plug
 ## Further Readings
 
 - [Source Code Tour](https://sourcegraph.com/github.com/bytebase/bytebase/-/blob/docs/design/source-code-tour.snb.md)
-- [SQL Advisor User Doc](https://bytebase.com/docs/sql-review/sql-advisor/overview)
+- [SQL Review User Doc](https://bytebase.com/docs/sql-review/overview)
