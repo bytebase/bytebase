@@ -123,6 +123,7 @@
 Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **only database CI/CD project** included by the [CNCF Landscape](https://landscape.cncf.io/?selected=bytebase) and [Platform Engineering](https://platformengineering.org/tools/bytebase). The Bytebase family consists of these tools:
 
 - [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
+- [Bytebase API](https://www.bytebase.com/docs/api/overview): Provide both gRPC and RESTful API to manipulate every aspect of Bytebase.
 - [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate database changes into the existing CI/CD workflow.
 - [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 - [Terraform Bytebase Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs): The Terraform
@@ -311,7 +312,9 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 <br />
 
-# Bytebase vs Flyway, Liquibase
+# Bytebase vs Alternatives
+
+## Bytebase vs Flyway, Liquibase
 
 - [Bytebase vs Liquibase](https://www.bytebase.com/blog/bytebase-vs-liquibase/)
 - [Bytebase vs Flyway](https://www.bytebase.com/blog/bytebase-vs-flyway/)
@@ -326,7 +329,7 @@ tool that can support their PostgreSQL and ClickHouse use cases.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,liquibase/liquibase,flyway/flyway&type=Date)](https://star-history.com/#bytebase/bytebase&liquibase/liquibase&flyway/flyway&Date)
 
-# Bytebase vs Yearning, Archery
+## Bytebase vs Yearning, Archery
 
 Either Yearning or Archery provides a DBA operation portal. While Bytebase provides a collaboration
 workspace for DBAs and Developers, and brings DevOps practice to the Database Change Management (DCM).
@@ -337,6 +340,32 @@ Another key difference is Yearning, Archery are open source projects maintained 
 by a [fully staffed team](https://www.bytebase.com/about#team) [releasing new version every 2 weeks](https://www.bytebase.com/changelog).
 
 [![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,cookieY/Yearning,hhyo/Archery&type=Date)](https://star-history.com/#bytebase/bytebase&cookieY/Yearning&hhyo/Archery&Date)
+
+## Bytebase vs Metabase
+
+Metabase is a data visualization and business intelligence (BI) tool. It's built for data teams and business analysts to make sense of the data.
+
+Bytebase is a database development platform. It's built for the developer teams to perform database operations during the application development lifecycle.
+
+- [Bytebase vs Metabase](https://www.bytebase.com/blog/bytebase-vs-metabase/)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,metabase/metabase&type=Date)](https://star-history.com/#bytebase/bytebase&metabase/metabase&Date)
+
+## Bytebase vs CloudBeaver
+
+Both have web-based SQL clients. Additionally, Bytebase offers review workflow, more collaboration and security features.
+
+- [Bytebase vs CloudBeaver](https://www.bytebase.com/blog/bytebase-vs-cloudbeaver/)
+
+[![Star History Chart](https://api.star-history.com/svg?repos=bytebase/bytebase,dbeaver/cloudbeaver&type=Date)](https://star-history.com/#bytebase/bytebase&dbeaver/cloudbeaver&Date)
+
+
+## Bytebase vs DBeaver / Navicat
+
+SQL GUI Client such as MySQL Workbench, pgAdmin, DBeaver, Navicat provide a GUI to interact with the database. Bytebase not only provides a GUI client, it can also enforce centralized data access control for data security and governance.
+
+- [Bytebase vs DBeaver](https://www.bytebase.com/blog/bytebase-vs-dbeaver/)
+- [Bytebase vs Navicat](https://www.bytebase.com/blog/bytebase-vs-navicat/)
 
 # 👨‍👩‍👧‍👦 Community
 
