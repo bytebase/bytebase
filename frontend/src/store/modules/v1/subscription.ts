@@ -32,16 +32,22 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
   }),
   getters: {
     instanceCountLimit(state): number {
-      return (
+      const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
-          ?.maximumInstanceCount ?? 0
-      );
+          ?.maximumInstanceCount ?? 0;
+      if (limit < 0) {
+        return Number.MAX_VALUE;
+      }
+      return limit;
     },
     userCountLimit(state): number {
-      return (
+      const limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
-          ?.maximumSeatCount ?? 0
-      );
+          ?.maximumSeatCount ?? 0;
+      if (limit < 0) {
+        return Number.MAX_VALUE;
+      }
+      return limit;
     },
     instanceLicenseCount(state): number {
       const count = state.subscription?.instanceCount ?? 0;
