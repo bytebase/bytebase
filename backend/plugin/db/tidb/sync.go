@@ -297,19 +297,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		}
 		column.Nullable = nullableBool
 		if defaultStr.Valid {
-			if strings.Contains(extra, "DEFAULT_GENERATED") {
-				if needParentheses(defaultStr.String) {
+			// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+			if needParentheses(defaultStr.String) {
+				if strings.Contains(extra, "DEFAULT_GENERATED") {
 					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
 				} else {
-					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+					column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 				}
 			} else {
-				// In TiDB 7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
-				if needParentheses(defaultStr.String) {
-					column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
-				} else {
-					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
-				}
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
 			}
 		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 			// TODO(zp): refactor column default value.
