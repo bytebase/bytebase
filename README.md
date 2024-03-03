@@ -312,7 +312,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 
 <br />
 
-# Bytebase vs Alternatives
+# 🤺 Bytebase vs Alternatives
 
 ## Bytebase vs Flyway, Liquibase
 
