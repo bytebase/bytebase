@@ -15,7 +15,7 @@ This is the next version of demo data for https://demo.bytebase.com.
 
 # How to use
 
-Append `--demo next` to the start command.
+Append `--demo default` to the start command.
 
 Demo only works when using embedded PostgreSQL (without supplying [--pg](https://www.bytebase.com/docs/reference/command-line/#pg-string)). This is to prevent accidentally deleting the existing data.
 
@@ -34,20 +34,20 @@ docker run --init \
   bytebase/bytebase:2.12.0 \
   --data /var/opt/bytebase \
   --port 8080 \
-  --demo next
+  --demo default
 ```
 
 ## Run on render
 
 1. Set the [PORT env](https://render.com/docs/environment-variables#all-services-1) to 8080.
 1. Use [/scripts/Dockerfile.render-demo](https://github.com/bytebase/bytebase/blob/main/scripts/Dockerfile.render-demo) as the Dockerfile.
-1. Supply `bytebase --port 8080 --data /var/opt/bytebase --demo next` to the Docker Command.
+1. Supply `bytebase --port 8080 --data /var/opt/bytebase --demo default` to the Docker Command.
 
 # How to update demo data
 
 1. Demo data is using the dev build because our demo runs in dev mode.
 
-1. Start Bytebase with `--demo next`, and do whatever you want.
+1. Start Bytebase with `--demo default`, and do whatever you want.
 
 1. Dump with the following command.
 
