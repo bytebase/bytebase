@@ -136,7 +136,7 @@
             </template>
           </NTabs>
         </template>
-        <template v-else-if="!projectId">
+        <template v-else>
           <NTabs v-model:value="state.databaseSelectedTab">
             <NTabPane :tab="$t('common.database')" name="DATABASE">
               <div class="space-y-3">

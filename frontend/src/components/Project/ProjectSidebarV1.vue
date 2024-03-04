@@ -174,7 +174,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           title: t("common.groups"),
           path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
           type: "div",
-          hide: !isTenantProject.value,
         },
         {
           title: t("common.deployment-config"),
@@ -186,7 +185,6 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
           title: t("common.change-history"),
           path: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
           type: "div",
-          hide: isTenantProject.value,
         },
         {
           title: startCase(t("slow-query.slow-queries")),
