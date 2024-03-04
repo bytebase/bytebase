@@ -564,8 +564,8 @@
     - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
-    - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
+    - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
     - [Value](#bytebase-v1-Value)
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
@@ -9191,22 +9191,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-SetSettingRequest"></a>
-
-### SetSettingRequest
-The request message for updating a setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
-| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
-
-
-
-
-
-
 <a name="bytebase-v1-Setting"></a>
 
 ### Setting
@@ -9219,6 +9203,23 @@ The schema of setting.
 
 - `setting/{setting_name}` For example, &#34;settings/bb.branding.logo&#34; |
 | value | [Value](#bytebase-v1-Value) |  | The value of the setting. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSettingRequest"></a>
+
+### UpdateSettingRequest
+The request message for updating or creating a setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
+| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
+| allow_missing | [bool](#bool) |  |  |
 
 
 
@@ -9395,7 +9396,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----------- | ------------ | ------------- | ------------|
 | ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) |  |
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
-| SetSetting | [SetSettingRequest](#bytebase-v1-SetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
+| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
 
  
 

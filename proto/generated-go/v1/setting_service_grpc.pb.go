@@ -19,9 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	SettingService_ListSettings_FullMethodName = "/bytebase.v1.SettingService/ListSettings"
-	SettingService_GetSetting_FullMethodName   = "/bytebase.v1.SettingService/GetSetting"
-	SettingService_SetSetting_FullMethodName   = "/bytebase.v1.SettingService/SetSetting"
+	SettingService_ListSettings_FullMethodName  = "/bytebase.v1.SettingService/ListSettings"
+	SettingService_GetSetting_FullMethodName    = "/bytebase.v1.SettingService/GetSetting"
+	SettingService_UpdateSetting_FullMethodName = "/bytebase.v1.SettingService/UpdateSetting"
 )
 
 // SettingServiceClient is the client API for SettingService service.
@@ -30,7 +30,7 @@ const (
 type SettingServiceClient interface {
 	ListSettings(ctx context.Context, in *ListSettingsRequest, opts ...grpc.CallOption) (*ListSettingsResponse, error)
 	GetSetting(ctx context.Context, in *GetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
-	SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*Setting, error)
+	UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...grpc.CallOption) (*Setting, error)
 }
 
 type settingServiceClient struct {
@@ -59,9 +59,9 @@ func (c *settingServiceClient) GetSetting(ctx context.Context, in *GetSettingReq
 	return out, nil
 }
 
-func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingRequest, opts ...grpc.CallOption) (*Setting, error) {
+func (c *settingServiceClient) UpdateSetting(ctx context.Context, in *UpdateSettingRequest, opts ...grpc.CallOption) (*Setting, error) {
 	out := new(Setting)
-	err := c.cc.Invoke(ctx, SettingService_SetSetting_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, SettingService_UpdateSetting_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (c *settingServiceClient) SetSetting(ctx context.Context, in *SetSettingReq
 type SettingServiceServer interface {
 	ListSettings(context.Context, *ListSettingsRequest) (*ListSettingsResponse, error)
 	GetSetting(context.Context, *GetSettingRequest) (*Setting, error)
-	SetSetting(context.Context, *SetSettingRequest) (*Setting, error)
+	UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error)
 	mustEmbedUnimplementedSettingServiceServer()
 }
 
@@ -88,8 +88,8 @@ func (UnimplementedSettingServiceServer) ListSettings(context.Context, *ListSett
 func (UnimplementedSettingServiceServer) GetSetting(context.Context, *GetSettingRequest) (*Setting, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSetting not implemented")
 }
-func (UnimplementedSettingServiceServer) SetSetting(context.Context, *SetSettingRequest) (*Setting, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SetSetting not implemented")
+func (UnimplementedSettingServiceServer) UpdateSetting(context.Context, *UpdateSettingRequest) (*Setting, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateSetting not implemented")
 }
 func (UnimplementedSettingServiceServer) mustEmbedUnimplementedSettingServiceServer() {}
 
@@ -140,20 +140,20 @@ func _SettingService_GetSetting_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SettingService_SetSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SetSettingRequest)
+func _SettingService_UpdateSetting_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSettingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SettingServiceServer).SetSetting(ctx, in)
+		return srv.(SettingServiceServer).UpdateSetting(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SettingService_SetSetting_FullMethodName,
+		FullMethod: SettingService_UpdateSetting_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SettingServiceServer).SetSetting(ctx, req.(*SetSettingRequest))
+		return srv.(SettingServiceServer).UpdateSetting(ctx, req.(*UpdateSettingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -174,8 +174,8 @@ var SettingService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SettingService_GetSetting_Handler,
 		},
 		{
-			MethodName: "SetSetting",
-			Handler:    _SettingService_SetSetting_Handler,
+			MethodName: "UpdateSetting",
+			Handler:    _SettingService_UpdateSetting_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -319,7 +319,8 @@ func (ctl *controller) StartServer(ctx context.Context, config *config) (context
 }
 
 func (ctl *controller) initWorkspaceProfile(ctx context.Context) error {
-	_, err := ctl.settingServiceClient.SetSetting(ctx, &v1pb.SetSettingRequest{
+	_, err := ctl.settingServiceClient.UpdateSetting(ctx, &v1pb.UpdateSettingRequest{
+		AllowMissing: true,
 		Setting: &v1pb.Setting{
 			Name: fmt.Sprintf("settings/%s", api.SettingWorkspaceProfile),
 			Value: &v1pb.Value{
