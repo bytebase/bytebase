@@ -2,7 +2,7 @@
   <BBGrid
     :column-list="COLUMN_LIST"
     :data-source="databaseGroupList"
-    :row-clickable="true"
+    :row-clickable="rowClickable"
     :show-placeholder="true"
     row-key="name"
     class="border"
@@ -32,6 +32,7 @@ import { ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
+  rowClickable?: boolean;
   databaseGroupList: ComposedDatabaseGroup[];
   showEdit?: boolean;
 }>();
