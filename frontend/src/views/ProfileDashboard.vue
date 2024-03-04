@@ -52,12 +52,9 @@
           <h1 v-else class="pb-1.5 text-2xl font-bold text-main truncate">
             {{ user.title }}
           </h1>
-          <span
+          <ServiceAccountTag
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-          >
-            {{ $t("settings.members.service-account") }}
-          </span>
+          />
         </div>
       </div>
     </div>
