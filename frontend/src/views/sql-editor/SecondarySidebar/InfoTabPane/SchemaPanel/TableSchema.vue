@@ -7,7 +7,7 @@
       >
         <heroicons-outline:table class="h-4 w-4 mr-1 flex-shrink-0" />
         <span v-if="schema.name" class="text-sm">{{ schema.name }}.</span>
-        <span class="text-sm">{{ table.name }}</span>
+        <span class="text-sm truncate">{{ table.name }}</span>
       </div>
 
       <div class="flex justify-end gap-x-0.5">

@@ -1749,7 +1749,8 @@
     "partition-tables": "Bảng phân vùng",
     "external-server-name": "Tên máy chủ bên ngoài",
     "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
-    "foreign-table-detail": "Chi tiết bảng nước ngoài"
+    "foreign-table-detail": "Chi tiết bảng nước ngoài",
+    "view-definition": "Xem định nghĩa"
   },
   "repository": {
     "our-webhook-link": "Bạn có thể tìm thấy webhook do Bytebase tạo tại {webhookLink}.",

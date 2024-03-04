@@ -7,7 +7,7 @@
         @click="handleClickHeader"
       >
         <heroicons-outline:database class="h-4 w-4 mr-1 flex-shrink-0" />
-        <span class="text-sm">{{ database.databaseName }}</span>
+        <span class="text-sm truncate">{{ database.databaseName }}</span>
       </div>
       <div class="flex justify-end gap-x-0.5">
         <HideInStandaloneMode>
