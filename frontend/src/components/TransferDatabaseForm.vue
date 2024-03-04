@@ -142,7 +142,7 @@ const state = reactive<LocalState>({
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {
-  await databaseStore.fetchDatabaseList({
+  await databaseStore.searchOrListDatabases({
     parent: "instances/-",
   });
 };
