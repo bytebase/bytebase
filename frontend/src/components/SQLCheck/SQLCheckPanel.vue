@@ -8,10 +8,11 @@
     container-class="!pt-0 -mt-px"
     @close="$emit('close')"
   >
-    <PlanCheckDetail
-      :plan-check-run="planCheckRun"
-      :environment="environment"
-    />
+    <PlanCheckDetail :plan-check-run="planCheckRun" :environment="environment">
+      <template #row-extra="{ row }">
+        <slot name="row-extra" :row="row" />
+      </template>
+    </PlanCheckDetail>
 
     <div
       v-if="confirm"
@@ -45,6 +46,7 @@ import {
 } from "@/types/proto/v1/rollout_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { Defer } from "@/utils";
+import PlanCheckDetail from "../IssueV1/components/PlanCheckSection/PlanCheckBar/PlanCheckDetail.vue";
 
 const { advices, database } = defineProps<{
   database: ComposedDatabase;
