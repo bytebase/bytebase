@@ -197,10 +197,7 @@ const state = reactive<LocalState>({
 
 const availableRoleOptions = computed(
   (): (SelectOption | SelectGroupOption)[] => {
-    const customRoles = useRoleStore()
-      .roleList.map((role) => role.name)
-      .filter((role) => !PRESET_ROLES.includes(role));
-    return [
+    const roleGroups = [
       {
         type: "group",
         key: "workspace-roles",
@@ -221,7 +218,12 @@ const availableRoleOptions = computed(
           value: role,
         })),
       },
-      {
+    ];
+    const customRoles = useRoleStore()
+      .roleList.map((role) => role.name)
+      .filter((role) => !PRESET_ROLES.includes(role));
+    if (customRoles.length > 0) {
+      roleGroups.push({
         type: "group",
         key: "custom-roles",
         label: t("role.custom-roles"),
@@ -229,8 +231,9 @@ const availableRoleOptions = computed(
           label: displayRoleTitle(role),
           value: role,
         })),
-      },
-    ];
+      });
+    }
+    return roleGroups;
   }
 );
 
