@@ -85,7 +85,7 @@ import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
   hasWorkspacePermissionV2,
-  hasWorkspaceLevelProjectPermission,
+  hasWorkspaceLevelProjectPermissionInAnyProject,
 } from "@/utils";
 
 interface LocalState {
@@ -123,7 +123,7 @@ const environment = computed(() => {
 });
 
 watchEffect(() => {
-  databaseStore.fetchDatabaseList({
+  databaseStore.searchOrListDatabases({
     parent: instance.value.name,
   });
 });
@@ -146,7 +146,10 @@ const allowSyncInstance = computed(() => {
 const allowCreateDatabase = computed(() => {
   return (
     instance.value.state === State.ACTIVE &&
-    hasWorkspaceLevelProjectPermission(currentUser.value, "bb.issues.create") &&
+    hasWorkspaceLevelProjectPermissionInAnyProject(
+      currentUser.value,
+      "bb.issues.create"
+    ) &&
     instanceV1HasCreateDatabase(instance.value)
   );
 });
@@ -155,7 +158,7 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      return databaseStore.fetchDatabaseList({
+      return databaseStore.searchOrListDatabases({
         parent: instance.value.name,
       });
     });
