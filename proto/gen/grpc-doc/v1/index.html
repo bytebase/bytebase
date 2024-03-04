@@ -2344,11 +2344,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SetSettingRequest"><span class="badge">M</span>SetSettingRequest</a>
+                  <a href="#bytebase.v1.Setting"><span class="badge">M</span>Setting</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Setting"><span class="badge">M</span>Setting</a>
+                  <a href="#bytebase.v1.UpdateSettingRequest"><span class="badge">M</span>UpdateSettingRequest</a>
                 </li>
               
                 <li>
@@ -25325,38 +25325,6 @@ Not used. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SetSettingRequest">SetSettingRequest</h3>
-        <p>The request message for updating a setting.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>setting</td>
-                  <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                  <td></td>
-                  <td><p>The setting to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>validate_only is a flag to indicate whether to validate the setting value,
-server would not persist the setting value if it is true. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Setting">Setting</h3>
         <p>The schema of setting.</p>
 
@@ -25382,6 +25350,45 @@ For example, &#34;settings/bb.branding.logo&#34; </p></td>
                   <td><a href="#bytebase.v1.Value">Value</a></td>
                   <td></td>
                   <td><p>The value of the setting. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</h3>
+        <p>The request message for updating or creating a setting.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>setting</td>
+                  <td><a href="#bytebase.v1.Setting">Setting</a></td>
+                  <td></td>
+                  <td><p>The setting to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validate_only</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>validate_only is a flag to indicate whether to validate the setting value,
+server would not persist the setting value if it is true. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -25839,8 +25846,8 @@ The external URL is used for:
               </tr>
             
               <tr>
-                <td>SetSetting</td>
-                <td><a href="#bytebase.v1.SetSettingRequest">SetSettingRequest</a></td>
+                <td>UpdateSetting</td>
+                <td><a href="#bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
                 <td><p></p></td>
               </tr>
@@ -25886,7 +25893,7 @@ The external URL is used for:
               
               
               <tr>
-                <td>SetSetting</td>
+                <td>UpdateSetting</td>
                 <td>PATCH</td>
                 <td>/v1/{setting.name=settings/*}</td>
                 <td>setting</td>
