@@ -288,7 +288,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "project not found for id: %v", projectID)
 	}
 
-	planID, err := common.GetPlanID(request.Plan)
+	planID, err := common.GetPlanID(request.GetRollout().GetPlan())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}

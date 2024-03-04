@@ -64,7 +64,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 	if err != nil {
 		return err
 	}
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	if err != nil {
 		return err
 	}
@@ -136,7 +136,7 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 	if err != nil {
 		return err
 	}
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	if err != nil {
 		return err
 	}
