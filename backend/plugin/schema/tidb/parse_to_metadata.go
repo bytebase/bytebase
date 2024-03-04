@@ -25,7 +25,7 @@ const (
 	autoRandSymbol      = "AUTO_RANDOM"
 )
 
-func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
+func ParseToMetadata(_, schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	stmts, err := tidbparser.ParseTiDB(schema, "", "")
 	if err != nil {
 		return nil, err

@@ -19,7 +19,7 @@ func init() {
 }
 
 // ParseToMetadata converts a schema string to database metadata.
-func ParseToMetadata(schema string) (*storepb.DatabaseSchemaMetadata, error) {
+func ParseToMetadata(_, schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	list, err := mysqlparser.ParseMySQL(schema)
 	if err != nil {
 		return nil, err

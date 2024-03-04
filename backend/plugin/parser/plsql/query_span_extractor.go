@@ -312,7 +312,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
 			if element.ASTERISK() != nil {
-				schemaName, tableName := normalizeTableViewName(q.defaultSchema, element.Tableview_name())
+				schemaName, tableName := NormalizeTableViewName(q.defaultSchema, element.Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
 					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
@@ -1206,7 +1206,7 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
-		schema, table := normalizeTableViewName(q.defaultSchema, tableViewName)
+		schema, table := NormalizeTableViewName(q.defaultSchema, tableViewName)
 		return q.plsqlFindTableSchema(schema, table)
 	}
 

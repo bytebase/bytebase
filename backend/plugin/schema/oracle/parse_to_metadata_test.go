@@ -1,4 +1,4 @@
-package tidb
+package oracle
 
 import (
 	"io"
@@ -14,12 +14,11 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-type parseToMetadataTest struct {
-	Schema   string
-	Metadata string
-}
-
 func TestParseToMetadata(t *testing.T) {
+	type transformTest struct {
+		Schema   string
+		Metadata string
+	}
 	const (
 		record = false
 	)
@@ -31,14 +30,14 @@ func TestParseToMetadata(t *testing.T) {
 	yamlFile, err := os.Open(filepath)
 	a.NoError(err)
 
-	tests := []parseToMetadataTest{}
+	tests := []transformTest{}
 	byteValue, err := io.ReadAll(yamlFile)
 	a.NoError(yamlFile.Close())
 	a.NoError(err)
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := ParseToMetadata("", t.Schema)
+		result, err := ParseToMetadata("TEST_SCHEMA", t.Schema)
 		a.NoError(err)
 		if record {
 			tests[i].Metadata = protojson.MarshalOptions{Multiline: true, Indent: "  "}.Format(result)
