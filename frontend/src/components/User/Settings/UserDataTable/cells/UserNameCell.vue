@@ -11,24 +11,11 @@
           >
             {{ user.title }}
           </router-link>
-          <span
-            v-if="currentUserV1.name === user.name"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-          >
-            {{ $t("settings.members.yourself") }}
-          </span>
-          <span
-            v-if="user.name === SYSTEM_BOT_USER_NAME"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-          >
-            {{ $t("settings.members.system-bot") }}
-          </span>
-          <span
+          <YouTag v-if="currentUserV1.name === user.name" />
+          <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" />
+          <ServiceAccountTag
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-          >
-            {{ $t("settings.members.service-account") }}
-          </span>
+          />
           <span
             v-if="user.mfaEnabled"
             class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-green-800 text-green-100"

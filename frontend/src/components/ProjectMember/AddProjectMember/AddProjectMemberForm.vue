@@ -16,6 +16,7 @@
         style="width: 100%"
         :multiple="true"
         :include-all-users="true"
+        :include-service-account="true"
       />
     </div>
     <div class="w-full">
