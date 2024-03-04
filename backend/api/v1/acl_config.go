@@ -21,7 +21,7 @@ var ownerAndDBAMethods = map[string]bool{
 	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
 	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
 	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
-	v1pb.SettingService_SetSetting_FullMethodName:              true,
+	v1pb.SettingService_UpdateSetting_FullMethodName:           true,
 	v1pb.RoleService_CreateRole_FullMethodName:                 true,
 	v1pb.RoleService_UpdateRole_FullMethodName:                 true,
 	v1pb.RoleService_DeleteRole_FullMethodName:                 true,
@@ -176,7 +176,7 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.RolloutService_RunPlanChecks_FullMethodName:                                       iam.PermissionPlanCheckRunsRun,
 	v1pb.SettingService_ListSettings_FullMethodName:                                        iam.PermissionSettingsList,
 	v1pb.SettingService_GetSetting_FullMethodName:                                          iam.PermissionSettingsGet,
-	v1pb.SettingService_SetSetting_FullMethodName:                                          iam.PermissionSettingsSet,
+	v1pb.SettingService_UpdateSetting_FullMethodName:                                       iam.PermissionSettingsSet,
 
 	v1pb.OrgPolicyService_ListPolicies_FullMethodName: iam.PermissionPoliciesList,
 	v1pb.OrgPolicyService_GetPolicy_FullMethodName:    iam.PermissionPoliciesGet,

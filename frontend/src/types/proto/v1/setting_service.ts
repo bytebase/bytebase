@@ -50,8 +50,8 @@ export interface GetSettingResponse {
   setting: Setting | undefined;
 }
 
-/** The request message for updating a setting. */
-export interface SetSettingRequest {
+/** The request message for updating or creating a setting. */
+export interface UpdateSettingRequest {
   /** The setting to update. */
   setting:
     | Setting
@@ -61,6 +61,7 @@ export interface SetSettingRequest {
    * server would not persist the setting value if it is true.
    */
   validateOnly: boolean;
+  allowMissing: boolean;
 }
 
 /** The schema of setting. */
@@ -789,25 +790,28 @@ export const GetSettingResponse = {
   },
 };
 
-function createBaseSetSettingRequest(): SetSettingRequest {
-  return { setting: undefined, validateOnly: false };
+function createBaseUpdateSettingRequest(): UpdateSettingRequest {
+  return { setting: undefined, validateOnly: false, allowMissing: false };
 }
 
-export const SetSettingRequest = {
-  encode(message: SetSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateSettingRequest = {
+  encode(message: UpdateSettingRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.setting !== undefined) {
       Setting.encode(message.setting, writer.uint32(10).fork()).ldelim();
     }
     if (message.validateOnly === true) {
       writer.uint32(16).bool(message.validateOnly);
     }
+    if (message.allowMissing === true) {
+      writer.uint32(24).bool(message.allowMissing);
+    }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): SetSettingRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateSettingRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSetSettingRequest();
+    const message = createBaseUpdateSettingRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -825,6 +829,13 @@ export const SetSettingRequest = {
 
           message.validateOnly = reader.bool();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -834,14 +845,15 @@ export const SetSettingRequest = {
     return message;
   },
 
-  fromJSON(object: any): SetSettingRequest {
+  fromJSON(object: any): UpdateSettingRequest {
     return {
       setting: isSet(object.setting) ? Setting.fromJSON(object.setting) : undefined,
       validateOnly: isSet(object.validateOnly) ? globalThis.Boolean(object.validateOnly) : false,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
     };
   },
 
-  toJSON(message: SetSettingRequest): unknown {
+  toJSON(message: UpdateSettingRequest): unknown {
     const obj: any = {};
     if (message.setting !== undefined) {
       obj.setting = Setting.toJSON(message.setting);
@@ -849,18 +861,22 @@ export const SetSettingRequest = {
     if (message.validateOnly === true) {
       obj.validateOnly = message.validateOnly;
     }
+    if (message.allowMissing === true) {
+      obj.allowMissing = message.allowMissing;
+    }
     return obj;
   },
 
-  create(base?: DeepPartial<SetSettingRequest>): SetSettingRequest {
-    return SetSettingRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateSettingRequest>): UpdateSettingRequest {
+    return UpdateSettingRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<SetSettingRequest>): SetSettingRequest {
-    const message = createBaseSetSettingRequest();
+  fromPartial(object: DeepPartial<UpdateSettingRequest>): UpdateSettingRequest {
+    const message = createBaseUpdateSettingRequest();
     message.setting = (object.setting !== undefined && object.setting !== null)
       ? Setting.fromPartial(object.setting)
       : undefined;
     message.validateOnly = object.validateOnly ?? false;
+    message.allowMissing = object.allowMissing ?? false;
     return message;
   },
 };
@@ -4068,9 +4084,9 @@ export const SettingServiceDefinition = {
         },
       },
     },
-    setSetting: {
-      name: "SetSetting",
-      requestType: SetSettingRequest,
+    updateSetting: {
+      name: "UpdateSetting",
+      requestType: UpdateSettingRequest,
       requestStream: false,
       responseType: Setting,
       responseStream: false,
