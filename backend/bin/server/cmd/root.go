@@ -61,7 +61,10 @@ var (
 		// Used for Bytebase command line config
 		port        int
 		externalURL string
-		dataDir     string
+		// pgURL must follow PostgreSQL connection URIs pattern.
+		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+		pgURL   string
+		dataDir string
 		// When we are running in readonly mode:
 		// - The data file will be opened in readonly mode, no applicable migration or seeding will be applied.
 		// - Requests other than GET will be rejected
@@ -73,9 +76,6 @@ var (
 		// empty means no demo.
 		demoName string
 		debug    bool
-		// pgURL must follow PostgreSQL connection URIs pattern.
-		// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-		pgURL string
 		// disableMetric is the flag to disable the metric collector.
 		disableMetric bool
 		// disableSample is the flag to disable the sample instance.
@@ -121,7 +121,11 @@ func init() {
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
 	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "directory where Bytebase stores data. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
+	// Support environment variable for deploying to render.com using its blueprint file.
+	// Render blueprint allows to specify a postgres database along with a service.
+	// It allows to pass the postgres connection string as an ENV to the service.
+	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url (must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
+	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
 	// Must be one of the subpath name in the ../migrator/demo directory
@@ -129,10 +133,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
 	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", true, "whether to enable lsp in SQL Editor")
 	rootCmd.PersistentFlags().BoolVar(&flags.preUpdateBackup, "pre-update-backup", true, "whether to enable feature of data backup prior to data update")
-	// Support environment variable for deploying to render.com using its blueprint file.
-	// Render blueprint allows to specify a postgres database along with a service.
-	// It allows to pass the postgres connection string as an ENV to the service.
-	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url(must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
 
