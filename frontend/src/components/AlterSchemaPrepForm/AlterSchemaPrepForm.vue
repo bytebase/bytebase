@@ -69,12 +69,9 @@
                   :checked="state.databaseSelectedTab === 'DATABASE_GROUP'"
                   value="DATABASE_GROUP"
                   name="database-tab"
-                  @update:checked="handleDatabaseGroupTabSelect"
+                  @update:checked="state.databaseSelectedTab = 'DATABASE_GROUP'"
                 >
-                  <div class="flex flex-row items-center">
-                    <span class="mr-1">{{ $t("database-group.self") }}</span>
-                    <FeatureBadge feature="bb.feature.database-grouping" />
-                  </div>
+                  <renderDatabaseGroupTabTitle />
                 </NRadio>
               </div>
               <div v-if="state.databaseSelectedTab === 'DATABASE'">
@@ -200,7 +197,7 @@
                 />
               </div>
             </NTabPane>
-            <NTabPane :tab="$t('database-group.self')" name="DATABASE_GROUP">
+            <NTabPane :tab="renderDatabaseGroupTabTitle" name="DATABASE_GROUP">
               <div class="space-y-3">
                 <AdvancedSearchBox
                   v-model:params="state.params"
@@ -311,9 +308,10 @@ import {
   NInputGroupLabel,
   NCheckbox,
 } from "naive-ui";
-import { computed, reactive, PropType, ref, watch } from "vue";
-import { watchEffect } from "vue";
+import { computed, reactive, PropType, ref, watch, watchEffect, h } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   hasFeature,
@@ -383,7 +381,7 @@ const props = defineProps({
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
-
+const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
@@ -412,6 +410,17 @@ const state = reactive<LocalState>({
     scopes: [],
   },
 });
+
+const hasDatabaseGroupFeature = computed(() => {
+  return hasFeature("bb.feature.database-grouping");
+});
+
+const renderDatabaseGroupTabTitle = () => {
+  return h("div", { class: "flex flex-row items-center space-x-1" }, [
+    h("span", t("database-group.self")),
+    h(FeatureBadge, { feature: "bb.feature.database-grouping" }),
+  ]);
+};
 
 const selectedProject = computed(() => {
   if (props.projectId) {
@@ -697,6 +706,11 @@ const selectDatabaseGroup = async (
   databaseGroupName: string,
   showModal = false
 ) => {
+  if (!hasDatabaseGroupFeature.value) {
+    featureModalContext.value.feature = "bb.feature.database-grouping";
+    return;
+  }
+
   state.selectedDatabaseGroupName = databaseGroupName;
 
   if (showModal) {
@@ -709,15 +723,6 @@ const selectDatabaseGroup = async (
 
 const isDatabaseSelected = (database: ComposedDatabase): boolean => {
   return state.selectedDatabaseUidList.has(database.uid);
-};
-
-const handleDatabaseGroupTabSelect = () => {
-  if (!hasFeature("bb.feature.database-grouping")) {
-    state.databaseSelectedTab = "DATABASE";
-    featureModalContext.value.feature = "bb.feature.database-grouping";
-    return;
-  }
-  state.databaseSelectedTab = "DATABASE_GROUP";
 };
 
 const generateTenant = async () => {
