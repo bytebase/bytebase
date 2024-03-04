@@ -183,7 +183,7 @@ func (t *transformerListener) EnterCreate_index(ctx *plsqlparser.Create_indexCon
 		return
 	}
 
-	_, tableName := plsql.NormalizeTableViewName(indexDefine.Tableview_name())
+	_, tableName := plsql.NormalizeTableViewName("", indexDefine.Tableview_name())
 
 	schema := t.state.schemas[schemaName]
 	if schema == nil {

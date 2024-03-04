@@ -125,17 +125,22 @@ func NormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
 	return "", NormalizeIdentifierContext(indexName.Identifier())
 }
 
-// NormalizeTableName returns the normalized table name from the given context.
-func NormalizeTableViewName(name parser.ITableview_nameContext) (string, string) {
-	if name == nil {
+// NormalizeTableViewName normalizes the table name and schema name.
+// Return empty string if it's xml table.
+func NormalizeTableViewName(currentSchema string, ctx parser.ITableview_nameContext) (string, string) {
+	if ctx.Identifier() == nil {
 		return "", ""
 	}
 
-	if name.Id_expression() == nil {
-		return "", NormalizeIdentifierContext(name.Identifier())
+	identifier := NormalizeIdentifierContext(ctx.Identifier())
+
+	if ctx.Id_expression() == nil {
+		return currentSchema, identifier
 	}
 
-	return NormalizeIdentifierContext(name.Identifier()), NormalizeIDExpression(name.Id_expression())
+	idExpression := NormalizeIDExpression(ctx.Id_expression())
+
+	return identifier, idExpression
 }
 
 // NormalizeColumnName returns the normalized column name from the given context.
