@@ -78,7 +78,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 	a.NoError(err)
@@ -170,7 +170,7 @@ func TestPITRGeneral(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	// Restore stage.
@@ -251,7 +251,7 @@ func TestPITRDropDatabase(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	// Restore stage.
@@ -316,7 +316,7 @@ func TestPITRTwice(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	// Restore stage.
@@ -387,7 +387,7 @@ func TestPITRTwice(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err = ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	// Restore stage.
@@ -486,7 +486,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
@@ -544,7 +544,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	err = ctl.rolloutAndWaitTask(ctx, issue.Name, rollout.Name)
