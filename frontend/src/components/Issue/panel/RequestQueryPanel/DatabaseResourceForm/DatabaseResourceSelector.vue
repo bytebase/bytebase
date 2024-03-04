@@ -80,7 +80,7 @@ watch(
     const project = await useProjectV1Store().getOrFetchProjectByUID(
       props.projectId
     );
-    const databaseList = await databaseStore.fetchDatabaseList({
+    const databaseList = await databaseStore.searchOrListDatabases({
       parent: "instances/-",
       filter: `project == "${project.name}"`,
     });

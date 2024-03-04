@@ -49,7 +49,7 @@ import workspaceSettingRoutes, {
 } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
 import {
-  hasWorkspaceLevelProjectPermission,
+  hasWorkspaceLevelProjectPermissionInAnyProject,
   hasWorkspacePermissionV2,
 } from "@/utils";
 
@@ -266,7 +266,10 @@ const hasRoutePermission = (routeName: string) => {
   } else if (route.meta?.requiredProjectPermissionList) {
     const requiredPermissions = route.meta.requiredProjectPermissionList();
     return requiredPermissions.every((permission) =>
-      hasWorkspaceLevelProjectPermission(currentUser.value, permission)
+      hasWorkspaceLevelProjectPermissionInAnyProject(
+        currentUser.value,
+        permission
+      )
     );
   }
 
