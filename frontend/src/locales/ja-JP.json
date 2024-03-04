@@ -1749,7 +1749,8 @@
     "partition-tables": "パーティションテーブル",
     "external-server-name": "外部サーバー名",
     "external-database-name": "外部データベース名",
-    "foreign-table-detail": "外部テーブルの詳細"
+    "foreign-table-detail": "外部テーブルの詳細",
+    "view-definition": "ビュー定義"
   },
   "repository": {
     "our-webhook-link": "Bytebaseによって作成されたWebhookは{webhookLink}で見つけることができます。",
