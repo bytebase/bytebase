@@ -496,7 +496,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 			},
 		})
 		a.NoError(err)
-		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Plan: plan.Name})
+		rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 		a.NoError(err)
 		err = ctl.waitRollout(ctx, issue.Name, rollout.Name)
 		a.NoError(err)
