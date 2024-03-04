@@ -51,8 +51,28 @@ export const hasProjectPermissionV2 = (
   return permissions.includes(permission);
 };
 
-// hasWorkspaceLevelProjectPermission checks if the user has the given permission on any project in the workspace.
+// hasWorkspaceLevelProjectPermission checks if the user has the given permission on workspace-level-assigned project roles
 export const hasWorkspaceLevelProjectPermission = (
+  user: User,
+  permission: ProjectPermission
+): boolean => {
+  const roleStore = useRoleStore();
+  const workspaceLevelRoles = user.roles.map((roleName) =>
+    roleStore.getRoleByName(roleName)
+  );
+  // For those users who have workspace-level project roles, they should have all project-level permissions.
+  const workspaceLevelPermissions = workspaceLevelRoles.flatMap((role) =>
+    role ? role.permissions : []
+  );
+  if (workspaceLevelPermissions.includes(permission)) {
+    return true;
+  }
+
+  return false;
+};
+
+// hasWorkspaceLevelProjectPermission checks if the user has the given permission on ANY project in the workspace.
+export const hasWorkspaceLevelProjectPermissionInAnyProject = (
   user: User,
   permission: ProjectPermission
 ): boolean => {
