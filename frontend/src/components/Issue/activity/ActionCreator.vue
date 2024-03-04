@@ -10,11 +10,7 @@
     <span class="font-medium text-main whitespace-nowrap">
       {{ user?.title }}
     </span>
-    <span
-      class="ml-0.5 inline-flex items-center px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-    >
-      {{ $t("settings.members.system-bot") }}
-    </span>
+    <SystemBotTag />
   </div>
 </template>
 
