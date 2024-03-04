@@ -189,7 +189,7 @@
 import { head } from "lodash-es";
 import { NSelect } from "naive-ui";
 import { computed, reactive, watch, PropType } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { BBTableSectionDataSource } from "@/bbkit/types";
 import AnomalyTable from "@/components/AnomalyCenter/AnomalyTable.vue";
 import DBExtensionDataTable from "@/components/DBExtensionDataTable.vue";
@@ -224,11 +224,23 @@ const props = defineProps({
   },
 });
 const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({
   selectedSchemaName: "",
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
+
+watch(
+  () => state.selectedSchemaName,
+  (schema) => {
+    router.push({
+      query: {
+        schema: schema ? schema : undefined,
+      },
+    });
+  }
+);
 
 const { allowGetSchema } = useDatabaseDetailContext();
 
