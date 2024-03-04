@@ -156,6 +156,9 @@ const (
 
 	// 1701 ~ 1799 function error code.
 	DisallowCreateFunction Code = 1701
+
+	// 1801 ~ 1899 advice error code.
+	AdviseOnlineMigration Code = 1801
 )
 
 // Int returns the int type of code.
