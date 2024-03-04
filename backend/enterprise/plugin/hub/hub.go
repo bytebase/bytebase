@@ -191,7 +191,7 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 		return nil, common.Errorf(common.Invalid, "plan type %q is not valid", planType)
 	}
 
-	if claim.WorkspaceID != "" && planType == api.ENTERPRISE {
+	if claim.WorkspaceID != "" && planType == api.ENTERPRISE && !claim.Trialing {
 		workspaceID, err := p.store.GetWorkspaceID(ctx)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get workspace id from setting")
