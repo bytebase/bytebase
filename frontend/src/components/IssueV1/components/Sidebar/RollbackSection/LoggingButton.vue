@@ -2,7 +2,7 @@
   <div
     class="select-none inline-flex items-center gap-x-1 h-[30px] text-control bg-white focus:ring-control focus:outline-none focus-visible:ring-2 focus:ring-offset-2"
   >
-    <BBSpin :size="2" />
+    <BBSpin :size="20" />
     <span class="text-sm leading-5 font-medium">{{
       $t("task.rollback.generating")
     }}</span>

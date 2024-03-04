@@ -6,7 +6,7 @@
       </span>
       <template v-else>
         <template v-if="isValidating">
-          <BBSpin :size="2" />
+          <BBSpin :size="20" />
           <span>{{ $t("branch.merge-rebase.validating-branch") }}</span>
         </template>
         <template v-else-if="validationState">
