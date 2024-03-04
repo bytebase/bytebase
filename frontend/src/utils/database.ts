@@ -1,36 +1,8 @@
 import { keyBy } from "lodash-es";
-import { User } from "@/types/proto/v1/auth_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Environment as EnvironmentV1 } from "@/types/proto/v1/environment_service";
-import type { Database, DataSourceType, Environment } from "../types";
-import { hasWorkspacePermissionV2 } from "./iam";
-import { isDev, semverCompare } from "./util";
-
-export function allowDatabaseAccess(
-  database: Database,
-  user: User,
-  type: DataSourceType
-): boolean {
-  // "ADMIN" data source should only be used by the system, thus it shouldn't
-  // touch this method at all. If it touches somehow, we will reject it and
-  // log a warning
-  if (type == "ADMIN") {
-    if (isDev()) {
-      console.trace(
-        "Should not check database access against ADMIN connection"
-      );
-    } else {
-      console.warn("Should not check database access against ADMIN connection");
-    }
-    return false;
-  }
-
-  if (hasWorkspacePermissionV2(user, "bb.instances.update")) {
-    return true;
-  }
-
-  return false;
-}
+import type { Database, Environment } from "../types";
+import { semverCompare } from "./util";
 
 // Sort the list to put prod items first.
 export function sortDatabaseList(

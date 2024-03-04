@@ -22,6 +22,7 @@ import {
   ListDatabasesRequest,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
+  SearchDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import {
   extractDatabaseResourceName,
@@ -70,16 +71,25 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
-  const fetchDatabaseList = async (args: Partial<ListDatabasesRequest>) => {
-    const request = hasWorkspaceLevelProjectPermission(
+  const listDatabases = async (args: Partial<ListDatabasesRequest>) => {
+    const { databases } = await databaseServiceClient.listDatabases(args);
+    const composedDatabaseList = await upsertDatabaseMap(databases);
+    return composedDatabaseList;
+  };
+  const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
+    const { databases } = await databaseServiceClient.searchDatabases(args);
+    const composedDatabaseList = await upsertDatabaseMap(databases);
+    return composedDatabaseList;
+  };
+  const searchOrListDatabases = async (
+    args: Partial<ListDatabasesRequest | SearchDatabasesRequest>
+  ) => {
+    return hasWorkspaceLevelProjectPermission(
       currentUser.value,
       "bb.databases.list"
     )
-      ? databaseServiceClient.listDatabases
-      : databaseServiceClient.searchDatabases;
-    const { databases } = await request(args);
-    const composedDatabaseList = await upsertDatabaseMap(databases);
-    return composedDatabaseList;
+      ? listDatabases(args)
+      : searchDatabases(args);
   };
   const syncDatabase = async (database: string) => {
     await databaseServiceClient.syncDatabase({
@@ -207,7 +217,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   return {
     reset,
     databaseList,
-    fetchDatabaseList,
+    searchOrListDatabases,
+    listDatabases,
+    searchDatabases,
     syncDatabase,
     databaseListByUser,
     databaseListByProject,
@@ -228,7 +240,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
 });
 
 export const useSearchDatabaseV1List = (
-  args: MaybeRef<Partial<ListDatabasesRequest>>
+  args: MaybeRef<Partial<SearchDatabasesRequest>>
 ) => {
   const store = useDatabaseV1Store();
   const ready = ref(false);
@@ -237,7 +249,7 @@ export const useSearchDatabaseV1List = (
     () => JSON.stringify(unref(args)),
     () => {
       ready.value = false;
-      store.fetchDatabaseList(unref(args)).then((list) => {
+      store.searchDatabases(unref(args)).then((list) => {
         databaseList.value = list;
         ready.value = true;
       });
