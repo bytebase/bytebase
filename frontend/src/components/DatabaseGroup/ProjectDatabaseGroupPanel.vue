@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full">
+  <div class="w-full space-y-4">
+    <FeatureAttention feature="bb.feature.database-grouping" />
+
     <DatabaseGroupTable
       :database-group-list="databaseGroupList"
       :show-edit="allowEdit"
