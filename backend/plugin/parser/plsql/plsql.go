@@ -125,6 +125,60 @@ func NormalizeIndexName(indexName parser.IIndex_nameContext) (string, string) {
 	return "", NormalizeIdentifierContext(indexName.Identifier())
 }
 
+// NormalizeTableName returns the normalized table name from the given context.
+func NormalizeTableViewName(name parser.ITableview_nameContext) (string, string) {
+	if name == nil {
+		return "", ""
+	}
+
+	if name.Id_expression() == nil {
+		return "", NormalizeIdentifierContext(name.Identifier())
+	}
+
+	return NormalizeIdentifierContext(name.Identifier()), NormalizeIDExpression(name.Id_expression())
+}
+
+// NormalizeColumnName returns the normalized column name from the given context.
+func NormalizeColumnName(columnName parser.IColumn_nameContext) (string, string, string) {
+	if columnName == nil {
+		return "", "", ""
+	}
+
+	var list []string
+	list = append(list, NormalizeIdentifierContext(columnName.Identifier()))
+
+	for _, idExpression := range columnName.AllId_expression() {
+		list = append(list, NormalizeIDExpression(idExpression))
+	}
+
+	switch len(list) {
+	case 1:
+		return "", "", list[0]
+	case 2:
+		return "", list[0], list[1]
+	default:
+		return list[0], list[1], list[2]
+	}
+}
+
+// NormalizeSchemaName returns the normalized schema name from the given context.
+func NormalizeSchemaName(schemaName parser.ISchema_nameContext) string {
+	if schemaName == nil {
+		return ""
+	}
+
+	return NormalizeIdentifierContext(schemaName.Identifier())
+}
+
+// NormalizeTableName returns the normalized table name from the given context.
+func NormalizeTableName(tableName parser.ITable_nameContext) string {
+	if tableName == nil {
+		return ""
+	}
+
+	return NormalizeIdentifierContext(tableName.Identifier())
+}
+
 // EquivalentType returns true if the given type is equivalent to the given text.
 func EquivalentType(tp parser.IDatatypeContext, text string) (bool, error) {
 	tree, _, err := ParsePLSQL(fmt.Sprintf(`CREATE TABLE t(a %s);`, text))

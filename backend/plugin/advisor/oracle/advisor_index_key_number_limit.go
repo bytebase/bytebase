@@ -81,7 +81,7 @@ func (l *indexKeyNumberLimitListener) generateAdvice() ([]advisor.Advice, error)
 
 // EnterTable_index_clause is called when production table_index_clause is entered.
 func (l *indexKeyNumberLimitListener) EnterTable_index_clause(ctx *parser.Table_index_clauseContext) {
-	keys := len(ctx.AllIndex_expr())
+	keys := len(ctx.AllIndex_expr_option())
 	if keys > l.max {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,

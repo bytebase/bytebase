@@ -531,7 +531,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	var newHeadConfig *storepb.DatabaseConfig
 	if request.MergedSchema != "" {
 		newHeadSchema = request.MergedSchema
-		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), newHeadSchema)
+		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), "" /* defaultSchemaName */, newHeadSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}

@@ -178,7 +178,7 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("%d", len(ctx.Table_index_clause().AllIndex_expr()))); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("%d", len(ctx.Table_index_clause().AllIndex_expr_option()))); err != nil {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
