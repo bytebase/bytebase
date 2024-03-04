@@ -3277,6 +3277,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. |
+| permission | [string](#string) |  | By default, the permission &#34;bb.databases.get&#34; is used. Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. |
 
 
 
