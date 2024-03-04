@@ -153,7 +153,9 @@ export const experimentalCreateIssueByPlan = async (
   await hooks?.issueCreated?.(createdIssue, createdPlan);
   const createdRollout = await rolloutServiceClient.createRollout({
     parent: project.name,
-    plan: createdPlan.name,
+    rollout: {
+      plan: createdPlan.name,
+    },
   });
   createdIssue.rollout = createdRollout.name;
   await hooks?.rolloutCreated?.(createdIssue, createdPlan, createdRollout);

@@ -268,7 +268,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	}
 	rollout, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-		Plan:   plan.Name,
+		Rollout: &v1pb.Rollout{
+			Plan: plan.Name,
+		},
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create rollout for sample project")
