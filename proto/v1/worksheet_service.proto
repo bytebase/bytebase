@@ -39,7 +39,7 @@ service WorksheetService {
 
   rpc UpdateWorksheetOrganizer(UpdateWorksheetOrganizerRequest) returns (WorksheetOrganizer) {
     option (google.api.http) = {
-      put: "/v1/{organizer.worksheet=worksheets/*}/organizer"
+      patch: "/v1/{organizer.worksheet=worksheets/*}/organizer"
       body: "organizer"
     };
     option (google.api.method_signature) = "organizer,update_mask";
