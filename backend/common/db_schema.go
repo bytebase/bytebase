@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var getClassificationFromCommentReg = regexp.MustCompile("^[0-9]+-[0-9]+-[0-9]+")
+var getClassificationFromCommentReg = regexp.MustCompile("^[0-9]+(-([0-9])+){0,}")
 
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string) (string, string) {
