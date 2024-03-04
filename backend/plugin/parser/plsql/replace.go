@@ -124,13 +124,13 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 	// table name as prefix
 	switch {
 	case ctx.Table_index_clause() != nil:
-		_, tableName := normalizeTableViewName("", ctx.Table_index_clause().Tableview_name())
+		_, tableName := NormalizeTableViewName("", ctx.Table_index_clause().Tableview_name())
 		if _, err := buf.WriteString(tableName); err != nil {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
 	case ctx.Bitmap_join_index_clause() != nil:
-		_, tableName := normalizeTableViewName("", ctx.Bitmap_join_index_clause().Tableview_name(0))
+		_, tableName := NormalizeTableViewName("", ctx.Bitmap_join_index_clause().Tableview_name(0))
 		if _, err := buf.WriteString(tableName); err != nil {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
@@ -178,7 +178,7 @@ func getNormalizeIndexName(ctx *parser.Create_indexContext) string {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("%d", len(ctx.Table_index_clause().AllIndex_expr()))); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("%d", len(ctx.Table_index_clause().AllIndex_expr_option()))); err != nil {
 			slog.Debug("Failed to write byte", log.BBError(err))
 			return ""
 		}
