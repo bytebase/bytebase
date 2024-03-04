@@ -40,3 +40,28 @@ func TestSnowSqlExtractOrdinaryIdentifier(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSnowSQL(t *testing.T) {
+	testCase := []struct {
+		sql string
+		err string
+	}{
+		{
+			sql: `SELECT t.a, t.b FRO table_name t;`,
+			err: "Syntax error at line 1:31 \nrelated text: SELECT t.a, t.b FRO table_name t",
+		},
+		{
+			sql: `SELECT t.a, t.b FROM table_name }t;`,
+			err: "Syntax error at line 1:32 \nrelated text: SELECT t.a, t.b FROM table_name }",
+		},
+	}
+
+	for _, tc := range testCase {
+		_, err := ParseSnowSQL(tc.sql)
+		if tc.err != "" {
+			require.EqualError(t, err, tc.err, tc.sql)
+		} else {
+			require.NoError(t, err, tc.sql)
+		}
+	}
+}
