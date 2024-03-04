@@ -919,13 +919,13 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		// no-op.
 	default:
 		if characterSet == "" {
-			return errors.Errorf("character set missing for %s", string(dbType))
+			return errors.Errorf("character set missing for %s", dbType.String())
 		}
 		// For postgres, we don't explicitly specify a default since the default might be UNSET (denoted by "C").
 		// If that's the case, setting an explicit default such as "en_US.UTF-8" might fail if the instance doesn't
 		// install it.
 		if collation == "" {
-			return errors.Errorf("collation missing for %s", string(dbType))
+			return errors.Errorf("collation missing for %s", dbType.String())
 		}
 	}
 	return nil
