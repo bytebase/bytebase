@@ -1680,7 +1680,9 @@ func (s *Service) createIssueFromMigrationDetailsV2(ctx context.Context, project
 	}
 	if _, err := s.rolloutService.CreateRollout(childCtx, &v1pb.CreateRolloutRequest{
 		Parent: fmt.Sprintf("projects/%s", project.ResourceID),
-		Plan:   plan.Name,
+		Rollout: &v1pb.Rollout{
+			Plan: plan.Name,
+		},
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create rollout")
 	}

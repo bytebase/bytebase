@@ -7653,7 +7653,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
-| plan | [string](#string) |  | The plan used to create rollout. |
+| rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
 
 
 

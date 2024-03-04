@@ -2075,7 +2075,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 		},
 	})
 	a.NoError(err)
-	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Plan: plan.Name})
+	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, &v1pb.CreateRolloutRequest{Parent: ctl.project.Name, Rollout: &v1pb.Rollout{Plan: plan.Name}})
 	a.NoError(err)
 
 	// Skip the task.
