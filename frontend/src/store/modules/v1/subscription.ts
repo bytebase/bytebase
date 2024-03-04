@@ -134,7 +134,11 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       return this.canUpgradeTrial;
     },
     canUpgradeTrial(state): boolean {
-      return this.isSelfHostLicense && this.currentPlan < PlanType.ENTERPRISE;
+      return (
+        this.isSelfHostLicense &&
+        this.isTrialing &&
+        this.currentPlan < PlanType.ENTERPRISE
+      );
     },
     isSelfHostLicense(state): boolean {
       return import.meta.env.MODE.toLowerCase() !== "release-aws";
