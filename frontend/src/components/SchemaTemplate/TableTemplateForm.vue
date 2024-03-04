@@ -19,6 +19,7 @@
               :placeholder="$t('schema-template.form.unclassified')"
               :disabled="readonly"
               :consistent-menu-width="true"
+              :allow-filter="true"
             />
           </div>
         </div>

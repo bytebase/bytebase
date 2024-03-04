@@ -17,6 +17,7 @@
               :placeholder="$t('schema-template.form.unclassified')"
               :disabled="readonly"
               :consistent-menu-width="true"
+              :allow-filter="true"
             />
           </div>
         </div>
@@ -115,6 +116,7 @@
                     : dataTypeOptions
                 "
                 :disabled="readonly"
+                :allow-filter="true"
                 placeholder="column type"
                 @update:value="state.column!.type = $event"
               />
@@ -131,6 +133,7 @@
                 :value="getColumnDefaultDisplayString(state.column!)||null"
                 :options="defaultValueOptions"
                 :disabled="readonly"
+                :allow-filter="true"
                 :placeholder="getColumnDefaultValuePlaceholder(state.column!)"
                 @update:value="handleColumnDefaultChange"
               />

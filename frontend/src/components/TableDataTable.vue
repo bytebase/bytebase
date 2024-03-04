@@ -21,9 +21,9 @@
 
 <script lang="ts" setup>
 import { DataTableColumn, NDataTable } from "naive-ui";
-import { computed, PropType, reactive, onMounted, h } from "vue";
+import { computed, PropType, reactive, onMounted, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ClassificationLevelBadge from "@/components/SchemaTemplate/ClassificationLevelBadge.vue";
 import { useSettingV1Store } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
@@ -57,6 +57,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({});
 const settingStore = useSettingV1Store();
 
@@ -66,6 +67,18 @@ onMounted(() => {
     state.selectedTableName = table;
   }
 });
+
+watch(
+  () => state.selectedTableName,
+  (table) => {
+    router.push({
+      query: {
+        table,
+        schema: props.schemaName ? props.schemaName : undefined,
+      },
+    });
+  }
+);
 
 const classificationConfig = computed(() => {
   return settingStore.getProjectClassification(
