@@ -49,7 +49,7 @@
       </span>
       <template v-else>
         <template v-if="isValidating">
-          <BBSpin class="!w-4 !h-4" />
+          <BBSpin :size="2" />
           <span>{{ $t("branch.merge-rebase.validating-branch") }}</span>
         </template>
         <template v-else-if="validationState">

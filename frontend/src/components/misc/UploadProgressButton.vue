@@ -20,7 +20,7 @@
             {{ `${Math.round(percent)}%` }}
           </span>
         </NProgress>
-        <BBSpin v-else class="!w-4 !h-4" />
+        <BBSpin v-else :size="2" />
       </template>
     </template>
 
