@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	snowflake "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
+	"github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
 type querySpanExtractor struct {
@@ -74,8 +74,13 @@ func (l *selectOnlyListener) EnterSelect_stmt(ctx *parser.Dml_commandContext) {
 		return
 	}
 
-	// TODO(zp): Implement the logic to extract the query span from the select statement.
-	return
+	result, err := l.q.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
+	if err != nil {
+		l.err = err
+	}
+	l.result = &base.QuerySpan{
+		Results: result.GetQuerySpanResult(),
+	}
 }
 
 func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsQueryStatement(ctx parser.IQuery_statementContext) (*base.PseudoTable, error) {
@@ -297,26 +302,23 @@ func (q *querySpanExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.RuleCont
 			return q.evalSnowSQLExprMaskingAttributes(v)
 		}
 
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expr := range ctx.AllExpr() {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.Subquery(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 
 		if v := ctx.Case_expression(); v != nil {
@@ -350,33 +352,30 @@ func (q *querySpanExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.RuleCont
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.Full_column_nameContext:
 		normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName := normalizedFullColumnName(ctx)
 		querySpanResult, err := q.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, normalizedColumnName)
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return querySpanResult.Name, querySpanResult.MaskingAttributes, nil
+		return querySpanResult.Name, querySpanResult, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.currentDatabase, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.connectedDB, "PUBLIC")
 		fieldInfo, err := q.snowflakeGetField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
+		return fieldInfo.Name, fieldInfo, nil
 	case *parser.Trim_expressionContext:
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
@@ -385,244 +384,234 @@ func (q *querySpanExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.RuleCont
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.Json_literalContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.AllKv_pair(); len(v) > 0 {
 			for _, kvPair := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(kvPair)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", kvPair.GetText(), kvPair.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.Kv_pairContext:
 		if v := ctx.Value(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
 		panic("never reach here")
 	case *parser.Arr_literalContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.AllValue(); len(v) > 0 {
 			for _, value := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(value)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", value.GetText(), value.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.ValueContext:
 		return q.evalSnowSQLExprMaskingAttributes(ctx.Expr())
 	case *parser.Bracket_expressionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.Subquery(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			return ctx.GetText(), finalAttributes, nil
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Iff_exprContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(ctx.Search_condition())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			for _, expr := range ctx.AllExpr() {
 				_, finalAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, finalAttributes.SourceColumns)
 			}
-			return ctx.GetText(), finalAttributes, nil
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Case_expressionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		for _, expr := range ctx.AllExpr() {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.AllSwitch_section(); len(v) > 0 {
 			for _, switchSection := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(switchSection)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSection.GetText(), switchSection.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
-			return ctx.GetText(), finalAttributes, nil
+			return ctx.GetText(), querySpanResult, nil
 		}
 		if v := ctx.AllSwitch_search_condition_section(); len(v) > 0 {
 			for _, switchSearchConditionSection := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(switchSearchConditionSection)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", switchSearchConditionSection.GetText(), switchSearchConditionSection.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
-			return ctx.GetText(), finalAttributes, nil
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Switch_sectionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
-			return ctx.GetText(), finalAttributes, nil
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Switch_search_condition_sectionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Search_condition(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			_, maskingAttributes, err = q.evalSnowSQLExprMaskingAttributes(ctx.Expr())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr().GetText(), ctx.Expr().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			return ctx.GetText(), finalAttributes, nil
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Search_conditionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Predicate(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Predicate().GetText(), ctx.Predicate().GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Predicate().GetText(), ctx.Predicate().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.AllSearch_condition(); len(v) > 0 {
 			for _, searchCondition := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(searchCondition)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", searchCondition.GetText(), searchCondition.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
-			return ctx.GetText(), finalAttributes, nil
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.PredicateContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.AllExpr(); len(v) > 0 {
 			for _, expr := range v {
 				_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 				if err != nil {
-					return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+					return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 				}
-				finalAttributes.TransmittedByInExpression(maskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					return ctx.GetText(), finalAttributes, nil
-				}
+				querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			}
 		}
 		if v := ctx.Subquery(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.SubqueryContext:
 		fields, err := q.extractSnowsqlSensitiveFieldsQueryStatement(ctx.Query_statement())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.GetText(), ctx.GetStart().GetLine())
 		}
-		finalAttributes := base.NewDefaultMaskingAttributes()
-		for _, field := range fields {
-			finalAttributes.TransmittedByInExpression(field.MaskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
 		}
-		return ctx.GetText(), finalAttributes, nil
+		for _, querySpanResult := range fields.GetQuerySpanResult() {
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, querySpanResult.SourceColumns)
+		}
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.Primitive_expressionContext:
 		if v := ctx.Id_(); v != nil {
 			return q.evalSnowSQLExprMaskingAttributes(v)
 		}
-		return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+		return ctx.GetText(), base.QuerySpanResult{
+			Name: ctx.GetText(),
+		}, nil
 	case *parser.Function_callContext:
 		if v := ctx.Ranking_windowed_function(); v != nil {
 			return q.evalSnowSQLExprMaskingAttributes(v)
@@ -631,19 +620,21 @@ func (q *querySpanExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.RuleCont
 			return q.evalSnowSQLExprMaskingAttributes(v)
 		}
 		if v := ctx.Object_name(); v != nil {
-			return v.GetText(), base.NewDefaultMaskingAttributes(), nil
+			return v.GetText(), base.QuerySpanResult{
+				Name: ctx.GetText(),
+			}, nil
 		}
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
@@ -652,120 +643,121 @@ func (q *querySpanExtractor) evalSnowSQLExprMaskingAttributes(ctx antlr.RuleCont
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
 		if ctx.STAR() != nil {
-			return ctx.GetText(), base.NewDefaultMaskingAttributes(), nil
+			return ctx.GetText(), base.QuerySpanResult{}, nil
 		}
 		if v := ctx.Expr(); v != nil {
-			finalAttributes := base.NewDefaultMaskingAttributes()
+			querySpanResult := base.QuerySpanResult{
+				Name:          ctx.GetText(),
+				SourceColumns: make(base.SourceColumnSet),
+			}
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			_, maskingAttributes, err = q.evalSnowSQLExprMaskingAttributes(ctx.Order_by_clause())
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Order_by_clause().GetText(), ctx.Order_by_clause().GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			return ctx.GetText(), finalAttributes, nil
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Ranking_windowed_functionContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
 		if v := ctx.Over_clause(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			return ctx.GetText(), finalAttributes, nil
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Over_clauseContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		if v := ctx.Partition_by(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		if v := ctx.Order_by_expr(); v != nil {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(v)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", v.GetText(), v.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			return ctx.GetText(), finalAttributes, nil
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
+			return ctx.GetText(), querySpanResult, nil
 		}
 		panic("never reach here")
 	case *parser.Partition_byContext:
 		_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(ctx.Expr_list())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list().GetText(), ctx.Expr_list().GetStart().GetLine())
 		}
 		return ctx.GetText(), maskingAttributes, nil
 	case *parser.Order_by_exprContext:
 		_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(ctx.Expr_list_sorted())
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", ctx.Expr_list_sorted().GetText(), ctx.Expr_list_sorted().GetStart().GetLine())
 		}
 		return ctx.GetText(), maskingAttributes, nil
 	case *parser.Expr_listContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.Expr_list_sortedContext:
-		finalAttributes := base.NewDefaultMaskingAttributes()
+		querySpanResult := base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}
 		allExpr := ctx.AllExpr()
 		for _, expr := range allExpr {
 			_, maskingAttributes, err := q.evalSnowSQLExprMaskingAttributes(expr)
 			if err != nil {
-				return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
+				return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the expression %q is sensitive near line %d", expr.GetText(), expr.GetStart().GetLine())
 			}
-			finalAttributes.TransmittedByInExpression(maskingAttributes)
-			if finalAttributes.IsNeverChangeInTransmission() {
-				return ctx.GetText(), finalAttributes, nil
-			}
+			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 		}
-		return ctx.GetText(), finalAttributes, nil
+		return ctx.GetText(), querySpanResult, nil
 	case *parser.Id_Context:
 		normalizedColumnName := snowflake.NormalizeSnowSQLObjectNamePart(ctx)
 		fieldInfo, err := q.snowflakeGetField("", "", "", normalizedColumnName)
 		if err != nil {
-			return "", base.NewEmptyMaskingAttributes(), errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
+			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the column %q is sensitive near line %d", normalizedColumnName, ctx.GetStart().GetLine())
 		}
-		return fieldInfo.Name, fieldInfo.MaskingAttributes, nil
+		return fieldInfo.Name, fieldInfo, nil
 	}
 	panic("never reach here")
 }
@@ -898,7 +890,7 @@ func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.I
 		return nil, nil
 	}
 
-	var result []base.FieldInfo
+	var result []base.QuerySpanResult
 
 	if objectName := ctx.Object_name(); objectName != nil {
 		_, tableSource, err := q.snowsqlFindTableSchema(objectName, q.connectedDB, "PUBLIC")
@@ -964,14 +956,14 @@ func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.I
 			result = append(result[:valueColumnIndex], result[valueColumnIndex+1:]...)
 
 			for _, literal := range v.AllLiteral() {
-				result = append(result, base.FieldInfo{
-					Name:              literal.GetText(),
-					MaskingAttributes: pivotColumnInOriginalResult.MaskingAttributes,
+				result = append(result, base.QuerySpanResult{
+					Name:          literal.GetText(),
+					SourceColumns: pivotColumnInOriginalResult.SourceColumns,
 				})
 			}
 		} else if v := ctx.Pivot_unpivot(); v.UNPIVOT() != nil {
 			var strippedColumnIndices []int
-			var strippedColumnInOriginalResult []base.FieldInfo
+			var strippedColumnInOriginalResult []base.QuerySpanResult
 			for idx, columnName := range v.Column_list().AllColumn_name() {
 				normalizedColumnName := snowflake.NormalizeSnowSQLObjectNamePart(columnName.Id_())
 				for i, field := range result {
@@ -987,12 +979,9 @@ func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.I
 				result = append(result[:strippedColumnIndices[idx]], result[strippedColumnIndices[idx]+1:]...)
 			}
 
-			finalAttributes := base.NewDefaultMaskingAttributes()
+			sourceColumns := make(base.SourceColumnSet)
 			for _, field := range strippedColumnInOriginalResult {
-				finalAttributes.TransmittedBy(field.MaskingAttributes)
-				if finalAttributes.IsNeverChangeInTransmission() {
-					break
-				}
+				sourceColumns, _ = base.MergeSourceColumnSet(sourceColumns, field.SourceColumns)
 			}
 
 			valueColumnName := v.Id_(0)
@@ -1001,12 +990,12 @@ func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.I
 			nameColumnName := v.Column_name().Id_()
 			normalizedNameColumnName := snowflake.NormalizeSnowSQLObjectNamePart(nameColumnName)
 
-			result = append(result, base.FieldInfo{
-				Name:              normalizedNameColumnName,
-				MaskingAttributes: base.NewDefaultMaskingAttributes(),
-			}, base.FieldInfo{
-				Name:              normalizedValueColumnName,
-				MaskingAttributes: finalAttributes,
+			result = append(result, base.QuerySpanResult{
+				Name:          normalizedNameColumnName,
+				SourceColumns: make(base.SourceColumnSet),
+			}, base.QuerySpanResult{
+				Name:          normalizedValueColumnName,
+				SourceColumns: sourceColumns,
 			})
 		}
 	}
@@ -1015,18 +1004,16 @@ func (q *querySpanExtractor) extractSnowsqlSensitiveFieldsObjectRef(ctx parser.I
 	if ctx.As_alias() != nil {
 		id := ctx.As_alias().Alias().Id_()
 		aliasName := snowflake.NormalizeSnowSQLObjectNamePart(id)
-		for i := 0; i < len(result); i++ {
-			result[i].Table = aliasName
-			// We can safely set the database and schema to empty string because the
-			// user cannot use the original table name to access the column.
-			// For example, the following query is illegal:
-			// SELECT T1.A FROM T1 AS T2;
-			result[i].Schema = ""
-			result[i].Database = ""
-		}
+		return &base.PseudoTable{
+			Name:    aliasName,
+			Columns: result,
+		}, nil
 	}
 
-	return result, nil
+	return &base.PseudoTable{
+		Name:    "",
+		Columns: result,
+	}, nil
 }
 
 func (q *querySpanExtractor) snowsqlFindTableSchema(objectName parser.IObject_nameContext, normalizedFallbackDatabaseName, normalizedFallbackSchemaName string) (string, base.TableSource, error) {
