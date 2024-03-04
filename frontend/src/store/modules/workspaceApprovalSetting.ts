@@ -46,7 +46,8 @@ export const useWorkspaceApprovalSettingStore = defineStore(
 
     const updateConfig = async () => {
       const setting = await buildWorkspaceApprovalSetting(config.value);
-      await settingServiceClient.setSetting({
+      await settingServiceClient.updateSetting({
+        allowMissing: true,
         setting: {
           name: SETTING_NAME,
           value: {
