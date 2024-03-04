@@ -1749,7 +1749,8 @@
     "partition-tables": "Partition tables",
     "external-server-name": "External Server Name",
     "external-database-name": "External Database Name",
-    "foreign-table-detail": "Foreign table detail"
+    "foreign-table-detail": "Foreign table detail",
+    "view-definition": "View definition"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",

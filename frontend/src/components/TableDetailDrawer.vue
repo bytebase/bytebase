@@ -77,6 +77,31 @@
                   :label="true"
                   :disabled="!allowQuery"
                 />
+                <NPopover
+                  trigger="click"
+                  placement="bottom"
+                  @update:show="(show: boolean) => show"
+                >
+                  <template #trigger>
+                    <NButton
+                      quaternary
+                      size="tiny"
+                      class="!px-1"
+                      v-bind="$attrs"
+                    >
+                      <span class="textlabel"
+                        >{{ $t("database.view-definition") }}
+                      </span>
+                      <CodeIcon class="ml-1 w-4 h-4" />
+                    </NButton>
+                  </template>
+                  <TableSchemaViewer
+                    class="!w-[32rem] !h-[20rem]"
+                    :database="database"
+                    :schema="schemaName"
+                    :table="tableName"
+                  />
+                </NPopover>
               </dl>
             </div>
           </div>
@@ -205,7 +230,10 @@
 
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
+import { CodeIcon } from "lucide-vue-next";
+import { NButton, NPopover } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import {
   DatabaseV1Name,
   InstanceV1Name,
