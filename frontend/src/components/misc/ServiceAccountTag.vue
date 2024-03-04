@@ -1,6 +1,6 @@
 <template>
-  <NTag size="small" round type="success">
-    {{ $t("common.you") }}
+  <NTag size="small" round type="info">
+    {{ $t("settings.members.service-account") }}
   </NTag>
 </template>
 

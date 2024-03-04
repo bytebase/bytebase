@@ -41,6 +41,9 @@
                 >{{ projectMember.user.title }}</router-link
               >
               <YouTag v-if="currentUserV1.name === projectMember.user.name" />
+              <ServiceAccountTag
+                v-if="projectMember.user.userType === UserType.SERVICE_ACCOUNT"
+              />
             </template>
             <template v-else>
               <span class="text-gray-800 pt-2.5">{{
@@ -144,9 +147,11 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { type BBGridColumn, type BBGridRow, BBGrid } from "@/bbkit";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { ALL_USERS_USER_EMAIL, ComposedProject, PRESET_ROLES } from "@/types";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
 import {
