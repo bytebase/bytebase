@@ -168,6 +168,11 @@ export interface SearchDatabasesRequest {
    * For example, "project = projects/{project}" can be used to list databases in a project.
    */
   filter: string;
+  /**
+   * By default, the permission "bb.databases.get" is used.
+   * Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
+   */
+  permission: string;
 }
 
 export interface SearchDatabasesResponse {
@@ -1773,7 +1778,7 @@ export const ListDatabasesResponse = {
 };
 
 function createBaseSearchDatabasesRequest(): SearchDatabasesRequest {
-  return { pageSize: 0, pageToken: "", filter: "" };
+  return { pageSize: 0, pageToken: "", filter: "", permission: "" };
 }
 
 export const SearchDatabasesRequest = {
@@ -1786,6 +1791,9 @@ export const SearchDatabasesRequest = {
     }
     if (message.filter !== "") {
       writer.uint32(26).string(message.filter);
+    }
+    if (message.permission !== "") {
+      writer.uint32(34).string(message.permission);
     }
     return writer;
   },
@@ -1818,6 +1826,13 @@ export const SearchDatabasesRequest = {
 
           message.filter = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.permission = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1832,6 +1847,7 @@ export const SearchDatabasesRequest = {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+      permission: isSet(object.permission) ? globalThis.String(object.permission) : "",
     };
   },
 
@@ -1846,6 +1862,9 @@ export const SearchDatabasesRequest = {
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
+    if (message.permission !== "") {
+      obj.permission = message.permission;
+    }
     return obj;
   },
 
@@ -1857,6 +1876,7 @@ export const SearchDatabasesRequest = {
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.filter = object.filter ?? "";
+    message.permission = object.permission ?? "";
     return message;
   },
 };

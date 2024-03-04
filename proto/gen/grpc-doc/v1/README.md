@@ -3277,6 +3277,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. |
+| permission | [string](#string) |  | By default, the permission &#34;bb.databases.get&#34; is used. Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. |
 
 
 
@@ -7652,7 +7653,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent project where this rollout will be created. Format: projects/{project} |
-| plan | [string](#string) |  | The plan used to create rollout. |
+| rollout | [Rollout](#bytebase-v1-Rollout) |  | The rollout to create. |
 
 
 

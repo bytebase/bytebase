@@ -27,7 +27,7 @@ service RolloutService {
       post: "/v1/{parent=projects/*}/plans"
       body: "plan"
     };
-    option (google.api.method_signature) = "";
+    option (google.api.method_signature) = "parent,plan";
   }
 
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
@@ -46,9 +46,9 @@ service RolloutService {
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/rollouts"
-      body: "plan"
+      body: "rollout"
     };
-    option (google.api.method_signature) = "";
+    option (google.api.method_signature) = "parent,rollout";
   }
 
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
@@ -459,8 +459,8 @@ message CreateRolloutRequest {
   // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // The plan used to create rollout.
-  string plan = 2 [(google.api.field_behavior) = REQUIRED];
+  // The rollout to create.
+  Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message PreviewRolloutRequest {
@@ -511,7 +511,7 @@ message Rollout {
 
   // The plan that this rollout is based on.
   // Format: projects/{project}/plans/{plan}
-  string plan = 3;
+  string plan = 3 [(google.api.field_behavior) = REQUIRED];
 
   string title = 4;
 

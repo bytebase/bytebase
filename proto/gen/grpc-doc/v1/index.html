@@ -9621,6 +9621,14 @@ the call that provided the page token. </p></td>
 For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. </p></td>
                 </tr>
               
+                <tr>
+                  <td>permission</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>By default, the permission &#34;bb.databases.get&#34; is used.
+Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -21343,10 +21351,10 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>plan</td>
-                  <td><a href="#string">string</a></td>
+                  <td>rollout</td>
+                  <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
                   <td></td>
-                  <td><p>The plan used to create rollout. </p></td>
+                  <td><p>The rollout to create. </p></td>
                 </tr>
               
             </tbody>
@@ -23820,7 +23828,7 @@ Format: projects/{project}/plans/{plan} </p></td>
                 <td>CreateRollout</td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/rollouts</td>
-                <td>plan</td>
+                <td>rollout</td>
               </tr>
               
             
