@@ -13,12 +13,7 @@
     >
       {{ $t("custom-approval.issue-review.you") }}
     </span>
-    <span
-      v-if="step.approver?.name === SYSTEM_BOT_USER_NAME"
-      class="ml-1 px-1 py-0.5 rounded-lg text-xs font-semibold bg-green-100 text-green-800"
-    >
-      {{ $t("settings.members.system-bot") }}
-    </span>
+    <SystemBotTag v-if="step.approver?.name === SYSTEM_BOT_USER_NAME" />
   </div>
 </template>
 
