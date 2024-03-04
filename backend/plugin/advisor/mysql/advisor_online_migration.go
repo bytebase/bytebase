@@ -76,7 +76,7 @@ func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.A
 				Status:  checker.level,
 				Code:    advisor.AdviseOnlineMigration,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Estimated table row count of %q is %d, consider using gh-ost to migrate", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows),
+				Content: fmt.Sprintf("Estimated table row count of %q is %d, greater than the set value %d. Consider using gh-ost to migrate", fmt.Sprintf("%s.%s", resource.Schema, resource.Table), tableRows, minRows),
 			})
 		}
 	}
