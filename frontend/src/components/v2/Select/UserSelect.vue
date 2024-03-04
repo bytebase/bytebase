@@ -31,6 +31,7 @@ import { computed, watch, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
+import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import { useProjectV1Store, useUserStore } from "@/store";
 import {
   SYSTEM_BOT_USER_NAME,
@@ -260,7 +261,7 @@ const renderAvatar = (user: User) => {
 
 const renderLabel = (option: SelectOption) => {
   if (option.type === "group") {
-    return option.label;
+    return option.label as string;
   }
   const { user } = option as UserSelectOption;
   const avatar = renderAvatar(user);
@@ -268,9 +269,12 @@ const renderLabel = (option: SelectOption) => {
     user.name === SYSTEM_BOT_USER_NAME
       ? t("settings.members.system-bot")
       : user.title;
-  const children = [h("span", {}, title)];
+  const children = [h("span", { class: "max-w-[10rem] truncate" }, title)];
   if (user.name !== UNKNOWN_USER_NAME && user.name !== SYSTEM_BOT_USER_NAME) {
     children.push(h("span", { class: "text-gray-400" }, `(${user.email})`));
+  }
+  if (user.userType === UserType.SERVICE_ACCOUNT) {
+    children.push(h(ServiceAccountTag));
   }
   return h(
     "div",
