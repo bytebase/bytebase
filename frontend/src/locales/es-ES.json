@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
-      "hide-default-parameters": "Ocultar parámetros predeterminados"
+      "hide-default-parameters": "Ocultar parámetros predeterminados",
+      "enable": "Habilitar la migración en línea"
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
