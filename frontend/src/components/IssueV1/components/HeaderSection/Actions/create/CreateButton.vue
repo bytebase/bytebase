@@ -119,7 +119,9 @@ const doCreateIssue = async () => {
 
     const createdRollout = await rolloutServiceClient.createRollout({
       parent: issue.value.project,
-      plan: createdPlan.name,
+      rollout: {
+        plan: createdPlan.name,
+      },
     });
 
     createdIssue.rollout = createdRollout.name;
