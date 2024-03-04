@@ -3,6 +3,7 @@
     <DatabaseGroupTable
       :database-group-list="databaseGroupList"
       :show-edit="allowEdit"
+      :row-clickable="hasDatabaseGroupFeature"
       @edit="handleConfigureDatabaseGroup"
     />
   </div>
@@ -14,12 +15,18 @@
     :database-group="state.editingDatabaseGroup"
     @close="state.showDatabaseGroupPanel = false"
   />
+
+  <FeatureModal
+    :open="state.showFeatureModal"
+    feature="bb.feature.database-grouping"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
-import { useDBGroupStore } from "@/store";
+import { useDBGroupStore, hasFeature } from "@/store";
 import { ComposedProject } from "@/types";
 import { DatabaseGroup } from "@/types/proto/v1/project_service";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
@@ -27,6 +34,7 @@ import DatabaseGroupTable from "./DatabaseGroupTable.vue";
 
 interface LocalState {
   showDatabaseGroupPanel: boolean;
+  showFeatureModal: boolean;
   editingDatabaseGroup?: DatabaseGroup;
 }
 
@@ -37,7 +45,12 @@ const props = defineProps<{
 
 const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
+  showFeatureModal: false,
   showDatabaseGroupPanel: false,
+});
+
+const hasDatabaseGroupFeature = computed(() => {
+  return hasFeature("bb.feature.database-grouping");
 });
 
 const databaseGroupList = computed(() => {
@@ -49,6 +62,10 @@ onMounted(async () => {
 });
 
 const handleConfigureDatabaseGroup = (databaseGroup: DatabaseGroup) => {
+  if (!hasDatabaseGroupFeature.value) {
+    state.showFeatureModal = true;
+    return;
+  }
   state.editingDatabaseGroup = cloneDeep(databaseGroup);
   state.showDatabaseGroupPanel = true;
 };
