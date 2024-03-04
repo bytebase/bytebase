@@ -196,6 +196,10 @@ message SearchDatabasesRequest {
   // Filter is used to filter databases returned in the list.
   // For example, "project = projects/{project}" can be used to list databases in a project.
   string filter = 3;
+
+  // By default, the permission "bb.databases.get" is used.
+  // Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
+  string permission = 4;
 }
 
 message SearchDatabasesResponse {
