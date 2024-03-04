@@ -18,7 +18,7 @@ var (
 )
 
 type getDesignSchema func(string, *storepb.DatabaseSchemaMetadata) (string, error)
-type parseToMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
+type parseToMetadata func(string, string) (*storepb.DatabaseSchemaMetadata, error)
 type checkColumnType func(string) bool
 
 func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
@@ -47,12 +47,12 @@ func RegisterParseToMetadatas(engine storepb.Engine, f parseToMetadata) {
 	parseToMetadatas[engine] = f
 }
 
-func ParseToMetadata(engine storepb.Engine, schema string) (*storepb.DatabaseSchemaMetadata, error) {
+func ParseToMetadata(engine storepb.Engine, defaultSchemaName, schema string) (*storepb.DatabaseSchemaMetadata, error) {
 	f, ok := parseToMetadatas[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	metadata, err := f(schema)
+	metadata, err := f(defaultSchemaName, schema)
 	if err != nil {
 		return nil, err
 	}

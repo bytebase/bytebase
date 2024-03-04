@@ -1749,7 +1749,8 @@
     "partition-tables": "Tablas de particiones",
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
-    "foreign-table-detail": "Detalle de la tabla externa"
+    "foreign-table-detail": "Detalle de la tabla externa",
+    "view-definition": "Ver definición"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",

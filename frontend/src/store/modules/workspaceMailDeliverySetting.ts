@@ -34,7 +34,8 @@ export const useWorkspaceMailDeliverySettingStore = defineStore(
     const updateMailDeliverySetting = async (
       value: SMTPMailDeliverySettingValue
     ) => {
-      const setting = await settingServiceClient.setSetting({
+      const setting = await settingServiceClient.updateSetting({
+        allowMissing: true,
         setting: {
           name: SETTING_NAME,
           value: {
@@ -48,7 +49,8 @@ export const useWorkspaceMailDeliverySettingStore = defineStore(
     const validateMailDeliverySetting = async (
       value: SMTPMailDeliverySettingValue
     ) => {
-      await settingServiceClient.setSetting({
+      await settingServiceClient.updateSetting({
+        allowMissing: true,
         setting: {
           name: SETTING_NAME,
           value: {
