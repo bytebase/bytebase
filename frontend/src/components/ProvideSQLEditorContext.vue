@@ -89,9 +89,10 @@ const prepareDatabases = async () => {
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.fetchDatabaseList({
+    await databaseStore.searchOrListDatabases({
       parent: "instances/-",
-      filter: filter,
+      filter,
+      permission: "bb.databases.query",
     })
   ).filter((db) => db.syncState === State.ACTIVE);
 
