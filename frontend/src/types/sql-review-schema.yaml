@@ -774,3 +774,8 @@ ruleList:
     category: ADVICE
     engineList:
       - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 100000000
