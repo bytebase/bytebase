@@ -21,7 +21,7 @@ func newDatabaseState() *databaseState {
 	}
 }
 
-// nolint: unused.
+// nolint
 func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseState {
 	state := newDatabaseState()
 	state.name = database.Name
@@ -65,7 +65,7 @@ func newSchemaState(id int, name string) *schemaState {
 	}
 }
 
-// nolint: unused.
+// nolint
 func convertToSchemaState(id int, schema *storepb.SchemaMetadata) *schemaState {
 	state := newSchemaState(id, schema.Name)
 	for i, table := range schema.Tables {
@@ -115,7 +115,7 @@ func newTableState(id int, name string) *tableState {
 	}
 }
 
-// nolint: unused.
+// nolint
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	for i, column := range table.Columns {
@@ -221,7 +221,7 @@ func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 	return result
 }
 
-// nolint: unused.
+// nolint
 func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:       id,
@@ -266,7 +266,7 @@ func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {
 	}
 }
 
-// nolint: unused.
+// nolint
 func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
 	return &indexState{
 		id:      id,
