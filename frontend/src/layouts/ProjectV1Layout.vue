@@ -194,9 +194,6 @@ const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
 };
 
 const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
-  if (project.value.tenantMode !== TenantMode.TENANT_MODE_ENABLED) {
-    return [];
-  }
   if (project.value.state !== State.ACTIVE) {
     return [];
   }
