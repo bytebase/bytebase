@@ -9,6 +9,7 @@
       :key="selectedTask.uid"
       :get-statement="getStatement"
       :database="database"
+      :change-type="changeType"
       :button-props="{
         size: 'tiny',
       }"
@@ -42,7 +43,10 @@ import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
 import { Defer } from "@/utils/util";
+import { isGhostEnabledForTask } from "../Sidebar/GhostSection/common";
+import OnlineMigrationAdviceExtra from "./OnlineMigrationAdviceExtra.vue";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
 const { issue, selectedTask, events } = useIssueContext();
@@ -77,4 +81,11 @@ const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
     confirm.resolve(false);
   }
 };
+
+const changeType = computed((): CheckRequest_ChangeType | undefined => {
+  if (isGhostEnabledForTask(issue.value, selectedTask.value)) {
+    return CheckRequest_ChangeType.DDL_GHOST;
+  }
+  return undefined;
+});
 </script>
