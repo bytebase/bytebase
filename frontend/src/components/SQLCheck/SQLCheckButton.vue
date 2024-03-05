@@ -59,16 +59,16 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { ButtonProps, NButton, NPopover } from "naive-ui";
 import { computed, onUnmounted, ref } from "vue";
 import { onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { sqlServiceClient } from "@/grpcweb";
 import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
-import { useCurrentUserV1, usePolicyByParentAndType } from "@/store";
+import { useCurrentUserV1, useSQLReviewStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { Defer, VueStyle, defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
@@ -99,19 +99,22 @@ const advices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
 
-const reviewPolicy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: props.database.effectiveEnvironment,
-    policyType: PolicyType.SQL_REVIEW,
-  }))
-);
+const reviewPolicy = computedAsync(async () => {
+  return await useSQLReviewStore().getOrFetchReviewPolicyByEnvironmentName(
+    props.database.effectiveEnvironment
+  );
+}, undefined);
 
 const hasManageSQLReviewPolicyPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
 });
 
 const noReviewPolicyTips = computed(() => {
-  if (!reviewPolicy.value?.sqlReviewPolicy) {
+  if (
+    !reviewPolicy.value ||
+    !reviewPolicy.value.enforce ||
+    reviewPolicy.value.ruleList.length === 0
+  ) {
     if (hasManageSQLReviewPolicyPermission.value) {
       return "issue.sql-check.no-configured-sql-review-policy.admin";
     } else {
