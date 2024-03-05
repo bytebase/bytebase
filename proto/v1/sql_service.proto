@@ -25,7 +25,7 @@ service SQLService {
     };
   }
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
-    option (google.api.http) = {post: "/v1:adminExecute"};
+    option (google.api.http) = {get: "/v1:adminExecute"};
   }
   rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
     option (google.api.http) = {
