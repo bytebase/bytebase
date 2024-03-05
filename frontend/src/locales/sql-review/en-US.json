@@ -20,7 +20,8 @@
     "schema": "Schema",
     "database": "Database",
     "index": "Index",
-    "system": "System"
+    "system": "System",
+    "advice": "Advice"
   },
   "template": {
     "bb-sql-review-prod": "Advanced Template",
@@ -475,6 +476,10 @@
     "system-function-disallow-create": {
       "title": "Disallow to create functions",
       "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
+    },
+    "advice-online-migration": {
+      "title": "Advise enabling online migration",
+      "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning"
     }
   },
   "level": {
