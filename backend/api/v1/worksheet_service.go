@@ -106,7 +106,7 @@ func (s *WorksheetService) CreateWorksheet(ctx context.Context, request *v1pb.Cr
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert worksheet: %v", err))
 	}
-	worksheet, err := s.store.CreateSheet(ctx, storeWorksheetCreate)
+	worksheet, err := s.store.CreateWorkSheet(ctx, storeWorksheetCreate)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create worksheet: %v", err))
 	}
@@ -127,11 +127,9 @@ func (s *WorksheetService) GetWorksheet(ctx context.Context, request *v1pb.GetWo
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid worksheet id %d, must be positive integer", worksheetUID))
 	}
 
-	ws := store.SheetFromBytebase
-	find := &store.FindSheetMessage{
+	find := &store.FindWorkSheetMessage{
 		UID:      &worksheetUID,
 		LoadFull: true,
-		Source:   &ws,
 	}
 	worksheet, err := s.findWorksheet(ctx, find)
 	if err != nil {
@@ -160,10 +158,7 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	ws := store.SheetFromBytebase
-	worksheetFind := &store.FindSheetMessage{
-		Source: &ws,
-	}
+	worksheetFind := &store.FindWorkSheetMessage{}
 	// TODO(zp): It is difficult to find all the worksheets visible to a principal atomically
 	// without adding a new store layer method, which has two parts:
 	// 1. creator = principal && visibility in (PROJECT, PUBLIC, PRIVATE)
@@ -196,10 +191,10 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			switch spec.operator {
 			case comparatorTypeEqual:
 				worksheetFind.CreatorID = &user.ID
-				worksheetFind.Visibilities = []store.SheetVisibility{store.ProjectSheet, store.PublicSheet, store.PrivateSheet}
+				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectWorkSheet, store.PublicWorkSheet, store.PrivateWorkSheet}
 			case comparatorTypeNotEqual:
 				worksheetFind.ExcludedCreatorID = &user.ID
-				worksheetFind.Visibilities = []store.SheetVisibility{store.ProjectSheet, store.PublicSheet}
+				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectWorkSheet, store.PublicWorkSheet}
 				worksheetFind.PrincipalID = &user.ID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
@@ -216,21 +211,11 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for starred", spec.value))
 			}
-		case "source":
-			switch spec.operator {
-			case comparatorTypeEqual:
-				source := store.SheetSource(spec.value)
-				worksheetFind.Source = &source
-			case comparatorTypeNotEqual:
-				source := store.SheetSource(spec.value)
-				worksheetFind.NotSource = &source
-			}
-
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid filter key %q", spec.key))
 		}
 	}
-	worksheetList, err := s.store.ListSheets(ctx, worksheetFind, principalID)
+	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to list worksheets: %v", err))
 	}
@@ -285,10 +270,8 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	ws := store.SheetFromBytebase
-	worksheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-		UID:    &worksheetUID,
-		Source: &ws,
+	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+		UID: &worksheetUID,
 	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get worksheet: %v", err))
@@ -304,7 +287,7 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.PermissionDenied, "cannot write worksheet %s", worksheet.Title)
 	}
 
-	worksheetPatch := &store.PatchSheetMessage{
+	worksheetPatch := &store.PatchWorkSheetMessage{
 		UID:       worksheet.UID,
 		UpdaterID: principalID,
 	}
@@ -327,7 +310,7 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
 	}
-	storeWorksheet, err := s.store.PatchSheet(ctx, worksheetPatch)
+	storeWorksheet, err := s.store.PatchWorkSheet(ctx, worksheetPatch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update worksheet: %v", err))
 	}
@@ -350,10 +333,8 @@ func (s *WorksheetService) DeleteWorksheet(ctx context.Context, request *v1pb.De
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	ws := store.SheetFromBytebase
-	worksheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-		UID:    &worksheetUID,
-		Source: &ws,
+	worksheet, err := s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+		UID: &worksheetUID,
 	}, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get worksheet: %v", err))
@@ -386,10 +367,8 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid worksheet id %d, must be positive integer", worksheetUID))
 	}
 
-	ws := store.SheetFromBytebase
-	worksheet, err := s.findWorksheet(ctx, &store.FindSheetMessage{
-		UID:    &worksheetUID,
-		Source: &ws,
+	worksheet, err := s.findWorksheet(ctx, &store.FindWorkSheetMessage{
+		UID: &worksheetUID,
 	})
 	if err != nil {
 		return nil, err
@@ -433,12 +412,12 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	}, nil
 }
 
-func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
+func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWorkSheetMessage) (*store.WorkSheetMessage, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	worksheet, err := s.store.GetSheet(ctx, find, principalID)
+	worksheet, err := s.store.GetWorkSheet(ctx, find, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get worksheet: %v", err))
 	}
@@ -453,7 +432,7 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindSh
 // PRIVATE: the creator only.
 // PROJECT: the creator or project role can manage worksheet, workspace Owner and DBA.
 // PUBLIC: the creator only.
-func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.SheetMessage) (bool, error) {
+func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
@@ -463,7 +442,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 		return true, nil
 	}
 
-	if worksheet.Visibility == store.ProjectSheet {
+	if worksheet.Visibility == store.ProjectWorkSheet {
 		projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
 		if err != nil {
 			return false, err
@@ -482,18 +461,18 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 // PRIVATE: the creator only.
 // PROJECT: the creator and members in the project.
 // PUBLIC: everyone in the workspace.
-func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.SheetMessage) (bool, error) {
+func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
 	switch worksheet.Visibility {
-	case store.PrivateSheet:
+	case store.PrivateWorkSheet:
 		return worksheet.CreatorID == user.ID, nil
-	case store.PublicSheet:
+	case store.PublicWorkSheet:
 		return true, nil
-	case store.ProjectSheet:
+	case store.ProjectWorkSheet:
 		if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
 			return true, nil
 		}
@@ -514,7 +493,7 @@ func (s *WorksheetService) findProjectRoles(ctx context.Context, projectUID int,
 	return utils.GetUserRolesMap(user, policy)
 }
 
-func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.SheetMessage) (*v1pb.Worksheet, error) {
+func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, worksheet *store.WorkSheetMessage) (*v1pb.Worksheet, error) {
 	databaseParent := ""
 	if worksheet.DatabaseUID != nil {
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -531,11 +510,11 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 
 	visibility := v1pb.Worksheet_VISIBILITY_UNSPECIFIED
 	switch worksheet.Visibility {
-	case store.PublicSheet:
+	case store.PublicWorkSheet:
 		visibility = v1pb.Worksheet_VISIBILITY_PUBLIC
-	case store.ProjectSheet:
+	case store.ProjectWorkSheet:
 		visibility = v1pb.Worksheet_VISIBILITY_PROJECT
-	case store.PrivateSheet:
+	case store.PrivateWorkSheet:
 		visibility = v1pb.Worksheet_VISIBILITY_PRIVATE
 	}
 
@@ -568,37 +547,35 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 	}, nil
 }
 
-func convertToStoreWorksheetMessage(projectUID int, databaseUID *int, creatorID int, worksheet *v1pb.Worksheet) (*store.SheetMessage, error) {
+func convertToStoreWorksheetMessage(projectUID int, databaseUID *int, creatorID int, worksheet *v1pb.Worksheet) (*store.WorkSheetMessage, error) {
 	visibility, err := convertToStoreWorksheetVisibility(worksheet.Visibility)
 	if err != nil {
 		return nil, err
 	}
 
-	worksheetMessage := &store.SheetMessage{
+	worksheetMessage := &store.WorkSheetMessage{
 		ProjectUID:  projectUID,
 		DatabaseUID: databaseUID,
 		CreatorID:   creatorID,
 		Title:       worksheet.Title,
 		Statement:   string(worksheet.Content),
 		Visibility:  visibility,
-		Source:      store.SheetFromBytebase,
-		Type:        store.SheetForSQL,
 	}
 
 	return worksheetMessage, nil
 }
 
-func convertToStoreWorksheetVisibility(visibility v1pb.Worksheet_Visibility) (store.SheetVisibility, error) {
+func convertToStoreWorksheetVisibility(visibility v1pb.Worksheet_Visibility) (store.WorkSheetVisibility, error) {
 	switch visibility {
 	case v1pb.Worksheet_VISIBILITY_UNSPECIFIED:
-		return store.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
+		return store.WorkSheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
 	case v1pb.Worksheet_VISIBILITY_PUBLIC:
-		return store.PublicSheet, nil
+		return store.PublicWorkSheet, nil
 	case v1pb.Worksheet_VISIBILITY_PROJECT:
-		return store.ProjectSheet, nil
+		return store.ProjectWorkSheet, nil
 	case v1pb.Worksheet_VISIBILITY_PRIVATE:
-		return store.PrivateSheet, nil
+		return store.PrivateWorkSheet, nil
 	default:
-		return store.SheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
+		return store.WorkSheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
 	}
 }
