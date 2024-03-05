@@ -541,21 +541,13 @@ const (
 	SyntaxModeSDL
 )
 
-// ChangeType is the user-specified change type.
-type ChangeType int
-
-const (
-	ChangeTypeUnspecified ChangeType = iota
-	ChangeTypeOnlineMigration
-)
-
 // Context is the context for advisor.
 type Context struct {
 	Charset    string
 	Collation  string
 	DBSchema   *storepb.DatabaseSchemaMetadata
 	SyntaxMode SyntaxMode
-	ChangeType ChangeType
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
 
 	// SQL review rule special fields.
 	AST     any

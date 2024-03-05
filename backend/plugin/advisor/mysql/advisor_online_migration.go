@@ -31,7 +31,7 @@ type OnlineMigrationAdvisor struct {
 
 // Check checks for using gh-ost to migrate large tables.
 func (*OnlineMigrationAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	if ctx.ChangeType == advisor.ChangeTypeOnlineMigration {
+	if ctx.ChangeType == storepb.PlanCheckRunConfig_DDL_GHOST {
 		return []advisor.Advice{
 			{
 				Status:  advisor.Success,

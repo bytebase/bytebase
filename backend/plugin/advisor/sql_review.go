@@ -409,13 +409,14 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
-	Charset   string
-	Collation string
-	DBSchema  *storepb.DatabaseSchemaMetadata
-	DbType    storepb.Engine
-	Catalog   catalog.Catalog
-	Driver    *sql.DB
-	Context   context.Context
+	Charset    string
+	Collation  string
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
+	DBSchema   *storepb.DatabaseSchemaMetadata
+	DbType     storepb.Engine
+	Catalog    catalog.Catalog
+	Driver     *sql.DB
+	Context    context.Context
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -724,6 +725,7 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 				Charset:         checkContext.Charset,
 				Collation:       checkContext.Collation,
 				DBSchema:        checkContext.DBSchema,
+				ChangeType:      checkContext.ChangeType,
 				AST:             ast,
 				Statements:      statements,
 				Rule:            rule,
