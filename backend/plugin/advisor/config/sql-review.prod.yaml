@@ -223,3 +223,7 @@ ruleList:
     level: WARNING
   - type: system.function.disallow-create
     level: WARNING
+  - type: advice.online-migration
+    level: ERROR
+    payload:
+      number: 100000000

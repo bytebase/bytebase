@@ -21,6 +21,7 @@ message PlanCheckRunConfig {
     DDL = 1;
     DML = 2;
     SDL = 3;
+    DDL_GHOST = 4;
   }
 }
 

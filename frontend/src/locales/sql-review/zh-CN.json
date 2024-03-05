@@ -20,7 +20,8 @@
     "schema": "Schema",
     "database": "数据库",
     "index": "索引",
-    "system": "系统"
+    "system": "系统",
+    "advice": "建议"
   },
   "template": {
     "bb-sql-review-prod": "进阶模板",
@@ -475,6 +476,10 @@
     "system-function-disallow-create": {
       "title": "禁止创建函数",
       "description": "该规则禁止在数据库中创建函数。函数提供可重用的逻辑，可以简化查询并增强数据完整性。通过禁止创建它们，有助于保持对数据库架构的控制，并预防潜在的安全风险。建议的错误级别：警告"
+    },
+    "advice-online-migration": {
+      "title": "建议启用在线大表变更", 
+      "description": "如果迁移的表行数超过您的设置，建议启用在线迁移。建议的错误级别: 警告"
     }
   },
   "level": {
