@@ -2417,7 +2417,7 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		ok, err := s.hasDatabaseAccessRights(user, projectPolicy, attributes, isExport)
+		ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -2429,47 +2429,51 @@ func (s *SQLService) checkQueryRights(
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
-	return func() (bool, error) {
-		wantPermission := iam.PermissionDatabasesQuery
-		if isExport {
-			wantPermission = iam.PermissionDatabasesExport
-		}
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+	wantPermission := iam.PermissionDatabasesQuery
+	if isExport {
+		wantPermission = iam.PermissionDatabasesExport
+	}
 
-		for _, role := range user.Roles {
-			permissions := s.iamManager.GetPermissions(common.FormatRole(role.String()))
-			if slices.Contains(permissions, wantPermission) {
-				return true, nil
-			}
+	for _, role := range user.Roles {
+		permissions, err := s.iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get permissions")
 		}
+		if slices.Contains(permissions, wantPermission) {
+			return true, nil
+		}
+	}
 
-		for _, binding := range projectPolicy.Bindings {
-			role := common.FormatRole(binding.Role.String())
-			permissions := s.iamManager.GetPermissions(role)
-			if !slices.Contains(permissions, wantPermission) {
-				continue
-			}
-			hasUser := false
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					hasUser = true
-					break
-				}
-			}
-			if !hasUser {
-				continue
-			}
-			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
-			if err != nil {
-				slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
-				continue
-			}
-			if ok {
-				return true, nil
+	for _, binding := range projectPolicy.Bindings {
+		role := common.FormatRole(binding.Role.String())
+		permissions, err := s.iamManager.GetPermissions(ctx, role)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get permissions")
+		}
+		if !slices.Contains(permissions, wantPermission) {
+			continue
+		}
+		hasUser := false
+		for _, member := range binding.Members {
+			if member.ID == user.ID || member.Email == api.AllUsers {
+				hasUser = true
+				break
 			}
 		}
-		return false, nil
-	}()
+		if !hasUser {
+			continue
+		}
+		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
+		if err != nil {
+			slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
+			continue
+		}
+		if ok {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {

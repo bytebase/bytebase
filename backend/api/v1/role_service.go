@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -40,9 +42,13 @@ func (s *RoleService) ListRoles(ctx context.Context, _ *v1pb.ListRolesRequest) (
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
+	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert roles: %v", err)
+	}
 
 	return &v1pb.ListRolesResponse{
-		Roles: convertToRoles(s.iamManager, roleMessages),
+		Roles: roles,
 	}, nil
 }
 
@@ -75,7 +81,11 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create role: %v", err)
 	}
-	return convertToRole(s.iamManager, roleMessage), nil
+	role, err := convertToRole(ctx, s.iamManager, roleMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to role: %v", err)
+	}
+	return role, nil
 }
 
 // UpdateRole updates an existing role.
@@ -127,7 +137,11 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update role: %v", err)
 	}
-	return convertToRole(s.iamManager, roleMessage), nil
+	convertedRole, err := convertToRole(ctx, s.iamManager, roleMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to role: %v", err)
+	}
+	return convertedRole, nil
 }
 
 // DeleteRole deletes an existing role.
@@ -148,7 +162,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
 	if has {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", common.FormatRole(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
 	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
@@ -156,35 +170,34 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 	return &emptypb.Empty{}, nil
 }
 
-func convertToRoles(iamManager *iam.Manager, roleMessages []*store.RoleMessage) []*v1pb.Role {
+func convertToRoles(ctx context.Context, iamManager *iam.Manager, roleMessages []*store.RoleMessage) ([]*v1pb.Role, error) {
 	var roles []*v1pb.Role
 	for _, roleMessage := range roleMessages {
-		roles = append(roles, convertToRole(iamManager, roleMessage))
+		role, err := convertToRole(ctx, iamManager, roleMessage)
+		if err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
 	}
-	return roles
+	return roles, nil
 }
 
-func convertToRole(iamManager *iam.Manager, role *store.RoleMessage) *v1pb.Role {
-	name := convertToRoleName(role.ResourceID)
-	permissions := []string{}
-	// Add default permissions for workspace preset roles.
-	for _, permission := range iamManager.GetPermissions(name) {
-		permissions = append(permissions, string(permission))
+func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.RoleMessage) (*v1pb.Role, error) {
+	name := common.FormatRole(role.ResourceID)
+	permissions, err := iamManager.GetPermissions(ctx, name)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get permissions")
 	}
-	// Add custom permissions for custom roles.
-	if role.Permissions != nil {
-		permissions = append(permissions, role.Permissions.Permissions...)
+	convertedPermissions := []string{}
+	for _, permission := range permissions {
+		convertedPermissions = append(convertedPermissions, string(permission))
 	}
 	return &v1pb.Role{
 		Name:        name,
 		Title:       role.Name,
 		Description: role.Description,
-		Permissions: permissions,
-	}
-}
-
-func convertToRoleName(role string) string {
-	return fmt.Sprintf("%s%s", common.RolePrefix, role)
+		Permissions: convertedPermissions,
+	}, nil
 }
 
 func validatePermissions(permissions []string) bool {

@@ -52,6 +52,9 @@ func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID i
 
 // GetRole returns a role by ID.
 func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, error) {
+	if v, ok := s.rolesCache.Get(resourceID); ok {
+		return v, nil
+	}
 	query := `
 		SELECT
 			creator_id, name, description, permissions
@@ -72,6 +75,7 @@ func (s *Store) GetRole(ctx context.Context, resourceID string) (*RoleMessage, e
 	}
 	role.Permissions = &rolePermissions
 	role.ResourceID = resourceID
+	s.rolesCache.Add(resourceID, &role)
 	return &role, nil
 }
 
@@ -199,6 +203,7 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description, &permissions); err != nil {
 		return nil, err
 	}
+	s.rolesCache.Remove(patch.ResourceID)
 	var rolePermissions storepb.RolePermissions
 	if err := protojson.Unmarshal(permissions, &rolePermissions); err != nil {
 		return nil, err
@@ -216,5 +221,6 @@ func (s *Store) DeleteRole(ctx context.Context, resourceID string) error {
 	if _, err := s.db.db.ExecContext(ctx, query, resourceID); err != nil {
 		return err
 	}
+	s.rolesCache.Remove(resourceID)
 	return nil
 }

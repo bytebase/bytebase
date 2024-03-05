@@ -358,9 +358,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	roleMessages, err := s.store.ListRoles(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
-	if err := validateIAMPolicy(request.Policy, convertToRoles(s.iamManager, roleMessages)); err != nil {
+	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
+	}
+	if err := validateIAMPolicy(request.Policy, roles); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
