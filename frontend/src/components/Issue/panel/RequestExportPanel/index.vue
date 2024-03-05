@@ -18,11 +18,7 @@
           <ProjectSelect
             class="!w-60 shrink-0"
             :project="state.projectId"
-            :allowed-project-role-list="[
-              PresetRoleType.PROJECT_OWNER,
-              PresetRoleType.PROJECT_DEVELOPER,
-              PresetRoleType.PROJECT_VIEWER,
-            ]"
+            :filter="filterProject"
             @update:project="handleProjectSelect"
           />
         </div>
@@ -163,6 +159,7 @@ import {
   UNKNOWN_ID,
   dialectOfEngineV1,
   PresetRoleType,
+  ComposedProject,
 } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -170,6 +167,7 @@ import { Engine } from "@/types/proto/v1/common";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
   extractProjectResourceName,
+  hasProjectPermissionV2,
   issueSlug,
   memberListInProjectV1,
 } from "@/utils";
@@ -275,6 +273,10 @@ onMounted(async () => {
     state.statement = props.statement;
   }
 });
+
+const filterProject = (project: ComposedProject) => {
+  return hasProjectPermissionV2(project, currentUser.value, "bb.databases.get");
+};
 
 const handleProjectSelect = async (projectId: string | undefined) => {
   state.projectId = projectId;
