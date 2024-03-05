@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	base.RegisterGetQuerySpan(storepb.Engine_MSSQL, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_SNOWFLAKE, GetQuerySpan)
 }
 
 // GetQuerySpan returns the query span for the given statement.
