@@ -113,7 +113,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
@@ -162,12 +162,14 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 	adviceList, err := advisor.SQLReviewCheck(renderedStatement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:   dbSchema.GetMetadata().CharacterSet,
-		Collation: dbSchema.GetMetadata().Collation,
-		DbType:    instance.Engine,
-		Catalog:   catalog,
-		Driver:    connection,
-		Context:   ctx,
+		Charset:    dbSchema.GetMetadata().CharacterSet,
+		Collation:  dbSchema.GetMetadata().Collation,
+		DBSchema:   dbSchema.GetMetadata(),
+		ChangeType: changeType,
+		DbType:     instance.Engine,
+		Catalog:    catalog,
+		Driver:     connection,
+		Context:    ctx,
 	})
 	if err != nil {
 		return nil, err
@@ -255,7 +257,7 @@ func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context,
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}

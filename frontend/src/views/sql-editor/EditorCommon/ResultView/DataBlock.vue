@@ -17,7 +17,7 @@
           :key="header.index"
           class="flex items-center text-gray-500 dark:text-gray-300 text-sm"
         >
-          <div class="w-28 text-left flex items-center font-medium">
+          <div class="min-w-[7rem] text-left flex items-center font-medium">
             {{ header.column.columnDef.header }}
             <SensitiveDataIcon
               v-if="isSensitiveColumn(header.index)"

@@ -545,7 +545,7 @@ func postMigration(ctx context.Context, stores *store.Store, activityManager *ac
 	if sheetID != nil && task.DatabaseID != nil {
 		sheet, err := stores.GetSheet(ctx, &store.FindSheetMessage{
 			UID: sheetID,
-		}, api.SystemBotID)
+		})
 		if err != nil {
 			slog.Error("Failed to get sheet from store", slog.Int("sheetID", *sheetID), log.BBError(err))
 		} else if sheet.Payload != nil && (sheet.Payload.DatabaseConfig != nil || sheet.Payload.BaselineDatabaseConfig != nil) {

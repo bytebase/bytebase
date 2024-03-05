@@ -614,6 +614,7 @@
     - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -9622,6 +9623,7 @@ Type of the SheetPayload.
 | statement | [string](#string) |  |  |
 | database | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{databaseName} |
 | metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
+| change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
 
 
 
@@ -9917,6 +9919,20 @@ Type of the SheetPayload.
 | SUCCESS | 1 |  |
 | WARNING | 2 |  |
 | ERROR | 3 |  |
+
+
+
+<a name="bytebase-v1-CheckRequest-ChangeType"></a>
+
+### CheckRequest.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DDL_GHOST | 2 |  |
+| DML | 3 |  |
 
 
  

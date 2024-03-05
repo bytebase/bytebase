@@ -230,3 +230,7 @@ ruleList:
         - RAND
         - UUID
         - SLEEP
+  - type: advice.online-migration
+    level: ERROR
+    payload:
+      number: 100000000

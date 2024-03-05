@@ -301,7 +301,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 		Type:       store.PlanCheckDatabaseConnect,
 		Config: &storepb.PlanCheckRunConfig{
 			SheetUid:           int32(sheetUID),
-			ChangeDatabaseType: storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED,
+			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceUid:        int32(instance.UID),
 			DatabaseName:       database.DatabaseName,
 			DatabaseGroupUid:   nil,
@@ -377,10 +377,10 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 
 func convertToChangeDatabaseType(t storepb.PlanConfig_ChangeDatabaseConfig_Type) storepb.PlanCheckRunConfig_ChangeDatabaseType {
 	switch t {
-	case
-		storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE,
-		storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE:
 		return storepb.PlanCheckRunConfig_DDL
+	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST:
+		return storepb.PlanCheckRunConfig_DDL_GHOST
 	case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
 		return storepb.PlanCheckRunConfig_SDL
 	case storepb.PlanConfig_ChangeDatabaseConfig_DATA:

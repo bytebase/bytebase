@@ -971,7 +971,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 						UID: &sheetUID,
-					}, api.SystemBotID)
+					})
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
 					}
@@ -1318,9 +1318,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 					ProjectUID: project.UID,
 					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
 					Statement:  c.Statement,
-					Visibility: store.ProjectSheet,
-					Source:     store.SheetFromBytebaseArtifact,
-					Type:       store.SheetForSQL,
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)

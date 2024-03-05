@@ -2123,6 +2123,7 @@ Type is the database change type.
 | DDL | 1 |  |
 | DML | 2 |  |
 | SDL | 3 |  |
+| DDL_GHOST | 4 |  |
 
 
 

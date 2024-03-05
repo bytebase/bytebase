@@ -70,6 +70,8 @@
         >
           {{ row.link.title }}
         </a>
+
+        <slot name="row-extra" :row="row" />
       </div>
     </div>
   </div>
@@ -127,7 +129,7 @@ type PreviewSQLReviewRule = {
   payload: PayloadValueType[];
 };
 
-type TableRow = {
+export type PlanCheckDetailTableRow = {
   checkResult: PlanCheckRun_Result;
   category: string;
   title: string;
@@ -256,7 +258,7 @@ const errorCodeLink = (
 };
 
 const tableRows = computed(() => {
-  return checkResultList.value.map<TableRow>((checkResult) => {
+  return checkResultList.value.map<PlanCheckDetailTableRow>((checkResult) => {
     const [category, title] = categoryAndTitle(checkResult);
     const link = errorCodeLink(checkResult);
     return {

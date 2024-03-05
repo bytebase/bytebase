@@ -23,6 +23,14 @@
         </template>
         <SQLCheckBadge v-else :is-running="isRunning" :advices="advices" />
       </template>
+
+      <template #row-extra="{ row, confirm }">
+        <OnlineMigrationAdviceExtra
+          v-if="row.checkResult.title === 'advice.online-migration'"
+          :row="row"
+          @toggle="handleToggleOnlineMigration($event, confirm)"
+        />
+      </template>
     </SQLCheckButton>
   </div>
 </template>
@@ -34,9 +42,10 @@ import { useIssueContext, databaseForTask } from "@/components/IssueV1/logic";
 import { SQLCheckButton } from "@/components/SQLCheck";
 import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
+import { Defer } from "@/utils/util";
 import SQLCheckBadge from "./SQLCheckBadge.vue";
 
-const { issue, selectedTask } = useIssueContext();
+const { issue, selectedTask, events } = useIssueContext();
 const { sheetStatement } = useTaskSheet();
 const database = computed(() => {
   return databaseForTask(issue.value, selectedTask.value);
@@ -59,4 +68,13 @@ const show = computed(() => {
   }
   return false;
 });
+
+const handleToggleOnlineMigration = (on: boolean, confirm: Defer<boolean>) => {
+  if (on) {
+    events.emit("toggle-online-migration", {
+      on: true,
+    });
+    confirm.resolve(false);
+  }
+};
 </script>
