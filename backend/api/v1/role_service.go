@@ -162,7 +162,7 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
 	if has {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", convertToRoleName(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %s", common.FormatRole(roleID), fmt.Sprintf("%s%s", common.ProjectNamePrefix, project))
 	}
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
@@ -183,7 +183,7 @@ func convertToRoles(ctx context.Context, iamManager *iam.Manager, roleMessages [
 }
 
 func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.RoleMessage) (*v1pb.Role, error) {
-	name := convertToRoleName(role.ResourceID)
+	name := common.FormatRole(role.ResourceID)
 	permissions, err := iamManager.GetPermissions(ctx, name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get permissions")
@@ -198,10 +198,6 @@ func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.Rol
 		Description: role.Description,
 		Permissions: convertedPermissions,
 	}, nil
-}
-
-func convertToRoleName(role string) string {
-	return fmt.Sprintf("%s%s", common.RolePrefix, role)
 }
 
 func validatePermissions(permissions []string) bool {
