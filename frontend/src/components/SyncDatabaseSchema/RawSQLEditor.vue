@@ -237,13 +237,10 @@ const handleUpdateSheet = useDebounceFn(async (statement: string) => {
     return;
   }
 
-  await sheetStore.patchSheet(
-    {
-      name: sheet.value.name,
-      content: new TextEncoder().encode(statement),
-    },
-    ["content"]
-  );
+  await sheetStore.patchSheetContent({
+    name: sheet.value.name,
+    content: new TextEncoder().encode(statement),
+  });
 }, 1000);
 
 const update = (sheetId?: number) => {
