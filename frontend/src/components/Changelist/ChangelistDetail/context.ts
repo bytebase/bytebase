@@ -25,7 +25,11 @@ import {
   Changelist,
   Changelist_Change as Change,
 } from "@/types/proto/v1/changelist_service";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractUserResourceName,
+  hasPermissionToCreateChangeDatabaseIssueInProject,
+  hasProjectPermissionV2,
+} from "@/utils";
 
 export type ChangelistDetailEvents = Emittery<{
   "reorder-cancel": undefined;
@@ -95,7 +99,10 @@ export const provideChangelistDetailContext = () => {
     return checkPermission("bb.changelists.delete");
   });
   const allowApply = computed(() => {
-    return hasProjectPermissionV2(project.value, me.value, "bb.issues.create");
+    return hasPermissionToCreateChangeDatabaseIssueInProject(
+      project.value,
+      me.value
+    );
   });
   const allowEdit = computed(() => {
     return checkPermission("bb.changelists.update");
