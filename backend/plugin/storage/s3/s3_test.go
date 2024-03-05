@@ -32,7 +32,7 @@ func TestS3Operations(t *testing.T) {
 	client, err := NewClient(ctx, region, bucket, credentials)
 	a.NoError(err)
 
-	t.Run("ListObjects", func(t *testing.T) {
+	t.Run("ListObjects", func(_ *testing.T) {
 		list, err := client.ListObjects(ctx, "backup/")
 		a.NoError(err)
 		for _, obj := range list {
@@ -40,7 +40,7 @@ func TestS3Operations(t *testing.T) {
 		}
 	})
 
-	t.Run("UploadObjects", func(t *testing.T) {
+	t.Run("UploadObjects", func(_ *testing.T) {
 		buf := make([]byte, 10*1024*1024)
 		blob := bytes.NewReader(buf)
 		resp, err := client.UploadObject(ctx, "backup/test/blob", blob)
@@ -48,7 +48,7 @@ func TestS3Operations(t *testing.T) {
 		slog.Info("Uploaded", slog.String("name", *resp.Key))
 	})
 
-	t.Run("DownloadObjects", func(t *testing.T) {
+	t.Run("DownloadObjects", func(_ *testing.T) {
 		file, err := os.CreateTemp(t.TempDir(), "blob")
 		a.NoError(err)
 		n, err := client.DownloadObject(ctx, "backup/test/blob", file)
@@ -56,7 +56,7 @@ func TestS3Operations(t *testing.T) {
 		slog.Info("Downloaded", slog.Int64("length", n))
 	})
 
-	t.Run("DeleteObjects", func(t *testing.T) {
+	t.Run("DeleteObjects", func(_ *testing.T) {
 		resp, err := client.DeleteObjects(ctx, "backup/test/blob")
 		a.NoError(err)
 		slog.Info("Deleted", slog.Any("meta", resp.ResultMetadata))

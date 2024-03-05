@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	upgrader   = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+	upgrader   = websocket.Upgrader{CheckOrigin: func(_ *http.Request) bool { return true }}
 	newHandler = func(s *store.Store) (jsonrpc2.Handler, io.Closer) {
 		return NewHandler(s), io.NopCloser(strings.NewReader(""))
 	}
