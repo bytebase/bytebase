@@ -19,13 +19,13 @@
               selectedRole.permissions.length
             }})
           </p>
-          <div class="max-h-[10em] overflow-auto">
+          <div class="max-h-[10em] overflow-auto border rounded p-2">
             <p
               v-for="permission in selectedRole.permissions"
               :key="permission"
-              class="text-sm"
+              class="text-sm leading-5"
             >
-              {{ permission }}
+              {{ displayPermissionTitle(permission) }}
             </p>
           </div>
         </div>
@@ -51,6 +51,7 @@ import { NSelect, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRoleStore } from "@/store";
 import { displayRoleTitle, displayRoleDescription } from "@/utils";
+import { displayPermissionTitle } from "@/utils/permission";
 
 interface LocalState {
   selectedRole?: string;
