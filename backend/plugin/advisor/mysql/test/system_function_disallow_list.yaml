@@ -1,0 +1,44 @@
+- statement: CREATE TABLE t(a int);
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: SELECT RAND();
+  want:
+    - status: WARN
+      code: 1702
+      title: system.function.disallow-list
+      content: |-
+        Function "RAND" is disallowed, but "SELECT RAND();" uses
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE employee (
+      id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+      name VARCHAR(255),
+      age INT
+    );
+  want:
+    - status: WARN
+      code: 1702
+      title: system.function.disallow-list
+      content: |-
+        Function "UUID" is disallowed, but "CREATE TABLE employee (
+          id VARCHAR(36) DEFAULT (UUID()) PRIMARY KEY,
+          name VARCHAR(255),
+          age INT
+        );" uses
+      line: 2
+      details: ""
+- statement: SELECT SLEEP(5);
+  want:
+    - status: WARN
+      code: 1702
+      title: system.function.disallow-list
+      content: |-
+        Function "SLEEP" is disallowed, but "SELECT SLEEP(5);" uses
+      line: 1
+      details: ""
