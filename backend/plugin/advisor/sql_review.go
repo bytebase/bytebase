@@ -189,6 +189,8 @@ const (
 	SchemaRuleViewDisallowCreate SQLReviewRuleType = "system.view.disallow-create"
 	// SchemaRuleFunctionDisallowCreate disallow create function.
 	SchemaRuleFunctionDisallowCreate SQLReviewRuleType = "system.function.disallow-create"
+	// SchemaRuleFunctionDisallowList enforce the function disallow list.
+	SchemaRuleFunctionDisallowList SQLReviewRuleType = "system.function.disallow-list"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -1491,6 +1493,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowCreate, nil
+		}
+	case SchemaRuleFunctionDisallowList:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLFunctionDisallowList, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
