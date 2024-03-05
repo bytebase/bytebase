@@ -16,18 +16,18 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*FunctionDisallowListAdvisor)(nil)
+	_ advisor.Advisor = (*FunctionDisallowedListAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLFunctionDisallowList, &FunctionDisallowListAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLFunctionDisallowedList, &FunctionDisallowedListAdvisor{})
 }
 
-// FunctionDisallowListAdvisor is the advisor checking for disallow function list.
-type FunctionDisallowListAdvisor struct {
+// FunctionDisallowedListAdvisor is the advisor checking for disallowed function list.
+type FunctionDisallowedListAdvisor struct {
 }
 
-func (*FunctionDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*FunctionDisallowedListAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -41,7 +41,7 @@ func (*FunctionDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 	if err != nil {
 		return nil, err
 	}
-	checker := &functionDisallowListChecker{
+	checker := &functionDisallowedListChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -65,7 +65,7 @@ func (*FunctionDisallowListAdvisor) Check(ctx advisor.Context, _ string) ([]advi
 	return checker.adviceList, nil
 }
 
-type functionDisallowListChecker struct {
+type functionDisallowedListChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine     int
@@ -76,11 +76,11 @@ type functionDisallowListChecker struct {
 	disallowList []string
 }
 
-func (checker *functionDisallowListChecker) EnterQuery(ctx *mysql.QueryContext) {
+func (checker *functionDisallowedListChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-func (checker *functionDisallowListChecker) EnterFunctionCall(ctx *mysql.FunctionCallContext) {
+func (checker *functionDisallowedListChecker) EnterFunctionCall(ctx *mysql.FunctionCallContext) {
 	pi := ctx.PureIdentifier()
 	if pi != nil {
 		functionName := pi.IDENTIFIER().GetText()

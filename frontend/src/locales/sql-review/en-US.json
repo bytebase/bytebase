@@ -477,6 +477,15 @@
       "title": "Disallow to create functions",
       "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
     },
+    "system-function-disallowed-list": {
+      "title": "Prohibit the use of certain functions",
+      "description": "This rule restricts the usage of specific functions within the database. By disallowing the use of these functions, it helps maintain data consistency and security. Suggested error level: Warning",
+      "component": {
+        "list": {
+          "title": "Disallow list"
+        }
+      }
+    },
     "advice-online-migration": {
       "title": "Advise enabling online migration",
       "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning"
