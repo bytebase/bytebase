@@ -1190,43 +1190,24 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		dataShare = maybeDatabase.DataShare
 	}
 
-	if s.profile.DevelopmentIAM {
-		if isAdmin {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
-			}
-			if !ok {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
-			}
-		}
-		// Check if the environment is open for query privileges.
-		result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+	if isAdmin {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
 		if err != nil {
+			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
+		}
+		if !ok {
+			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
+		}
+	}
+	// Check if the environment is open for query privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+	if err != nil {
+		return nil, nil, nil, advisor.Success, nil, nil, err
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
 			return nil, nil, nil, advisor.Success, nil, nil, err
-		}
-		if !result {
-			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, err
-			}
-		}
-	} else if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		// Check if the caller is admin for exporting with admin mode.
-		if isAdmin && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
-			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-		}
-
-		// Check if the environment is open for query privileges.
-		result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-		if err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, err
-		}
-		if !result {
-			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, err
-			}
 		}
 	}
 
@@ -2359,13 +2340,6 @@ func (s *SQLService) checkQueryRights(
 	instance *store.InstanceMessage,
 	isExport bool,
 ) error {
-	// Owner and DBA have all rights.
-	if !s.profile.DevelopmentIAM {
-		if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
-			return nil
-		}
-	}
-
 	// TODO(d): use a Redshift extraction for shared database.
 	extractingStatement := statement
 	if datashare {
@@ -2456,84 +2430,46 @@ func (s *SQLService) checkQueryRights(
 }
 
 func (s *SQLService) hasDatabaseAccessRights(user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
-	if s.profile.DevelopmentIAM {
-		return func() (bool, error) {
-			wantPermission := iam.PermissionDatabasesQuery
-			if isExport {
-				wantPermission = iam.PermissionDatabasesExport
-			}
+	return func() (bool, error) {
+		wantPermission := iam.PermissionDatabasesQuery
+		if isExport {
+			wantPermission = iam.PermissionDatabasesExport
+		}
 
-			for _, role := range user.Roles {
-				permissions := s.iamManager.GetPermissions(common.FormatRole(role.String()))
-				if slices.Contains(permissions, wantPermission) {
-					return true, nil
-				}
+		for _, role := range user.Roles {
+			permissions := s.iamManager.GetPermissions(common.FormatRole(role.String()))
+			if slices.Contains(permissions, wantPermission) {
+				return true, nil
 			}
+		}
 
-			for _, binding := range projectPolicy.Bindings {
-				role := common.FormatRole(binding.Role.String())
-				permissions := s.iamManager.GetPermissions(role)
-				if !slices.Contains(permissions, wantPermission) {
-					continue
-				}
-				hasUser := false
-				for _, member := range binding.Members {
-					if member.ID == user.ID || member.Email == api.AllUsers {
-						hasUser = true
-						break
-					}
-				}
-				if !hasUser {
-					continue
-				}
-				ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
-				if err != nil {
-					slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
-					continue
-				}
-				if ok {
-					return true, nil
-				}
+		for _, binding := range projectPolicy.Bindings {
+			role := common.FormatRole(binding.Role.String())
+			permissions := s.iamManager.GetPermissions(role)
+			if !slices.Contains(permissions, wantPermission) {
+				continue
 			}
-			return false, nil
-		}()
-	}
-
-	// TODO(rebelice): implement table-level query permission check and refactor this function.
-	// Project IAM policy evaluation.
-	pass := false
-	for _, binding := range projectPolicy.Bindings {
-		// Project owner has all permissions.
-		if binding.Role == api.ProjectOwner {
+			hasUser := false
 			for _, member := range binding.Members {
 				if member.ID == user.ID || member.Email == api.AllUsers {
-					pass = true
+					hasUser = true
 					break
 				}
 			}
-		}
-		if !((isExport && binding.Role == api.ProjectExporter) || (!isExport && binding.Role == api.ProjectQuerier)) {
-			continue
-		}
-		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
+			if !hasUser {
 				continue
 			}
-			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
+			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
 			if err != nil {
-				slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
-				break
+				slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
+				continue
 			}
 			if ok {
-				pass = true
-				break
+				return true, nil
 			}
 		}
-		if pass {
-			break
-		}
-	}
-	return pass, nil
+		return false, nil
+	}()
 }
 
 func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {

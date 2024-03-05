@@ -117,9 +117,6 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, databaseMessage.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
-	}
 
 	database, err := s.convertToDatabase(ctx, databaseMessage)
 	if err != nil {
@@ -129,6 +126,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 }
 
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
+	fmt.Printf("Barny0: search database\n")
 	find := &store.FindDatabaseMessage{}
 	if request.Filter != "" {
 		projectFilter, err := getProjectFilter(request.Filter)
@@ -193,16 +191,9 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if s.profile.DevelopmentIAM {
-		databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
-		}
-	} else {
-		databaseMessages, err = s.filterDatabases(ctx, databaseMessages)
-		if err != nil {
-			return nil, err
-		}
+	databaseMessages, err = filterDatabasesV2(ctx, s.store, s.iamManager, databaseMessages, iam.PermissionDatabasesList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
 	response := &v1pb.ListDatabasesResponse{}
 	for _, databaseMessage := range databaseMessages {
@@ -216,6 +207,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
+	fmt.Printf("Barny1: %s\n", needPermission.String())
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
@@ -231,6 +223,9 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
 		}
 		filteredDatabases = append(filteredDatabases, filteredProjectDatabases...)
+	}
+	for _, db := range filteredDatabases {
+		fmt.Printf("Barny2: %s\n", db.DatabaseName)
 	}
 	return filteredDatabases, nil
 }
@@ -309,57 +304,6 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	return filteredDatabases, nil
 }
 
-// TODO(p0ny): remove this function after iam migration.
-func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	if isOwnerOrDBA(user) {
-		return databases, nil
-	}
-	var filteredDatabases []*store.DatabaseMessage
-	projectDatabases := make(map[string][]*store.DatabaseMessage)
-	for _, database := range databases {
-		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
-	}
-	for projectID, dbs := range projectDatabases {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		filteredDBs := filterPolicyDatabases(user.ID, policy, dbs)
-		filteredDatabases = append(filteredDatabases, filteredDBs...)
-	}
-
-	return filteredDatabases, nil
-}
-
-func filterPolicyDatabases(userID int, policy *store.IAMPolicyMessage, databases []*store.DatabaseMessage) []*store.DatabaseMessage {
-	var filteredDatabases []*store.DatabaseMessage
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID != userID && member.Email != api.AllUsers {
-				continue
-			}
-			if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
-				return databases
-			}
-			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
-			if len(expressionDBs) == 0 {
-				return databases
-			}
-			for _, database := range databases {
-				databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
-				if expressionDBs[databaseName] {
-					filteredDatabases = append(filteredDatabases, database)
-				}
-			}
-		}
-	}
-	return filteredDatabases
-}
-
 var databaseNamePattern = regexp.MustCompile(`"instances/[^/]+/databases/[^"]+"`)
 
 func getDatabasesFromExpression(expression string) map[string]bool {
@@ -401,9 +345,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, databaseMessage.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
 	}
 
 	var project *store.ProjectMessage
@@ -519,9 +460,6 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionChangeDatabase); err != nil {
-		return nil, err
-	}
 	if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
 		return nil, err
 	}
@@ -560,9 +498,6 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		}
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-		}
-		if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-			return nil, err
 		}
 		if projectURI != "" && projectURI != req.Database.Project {
 			return nil, status.Errorf(codes.InvalidArgument, "database should use the same project")
@@ -637,9 +572,6 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &database.ProjectID,
@@ -763,9 +695,6 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
-	}
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
@@ -823,9 +752,6 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
@@ -897,9 +823,6 @@ func (s *DatabaseService) GetBackupSetting(ctx context.Context, request *v1pb.Ge
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
-	}
 	backupSetting, err := s.store.GetBackupSettingV2(ctx, database.UID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -936,9 +859,6 @@ func (s *DatabaseService) UpdateBackupSetting(ctx context.Context, request *v1pb
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
 	}
 	backupSetting, err := s.validateAndConvertToStoreBackupSetting(ctx, request.Setting, database)
 	if err != nil {
@@ -980,9 +900,6 @@ func (s *DatabaseService) ListBackups(ctx context.Context, request *v1pb.ListBac
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
 	}
 
 	rowStatus := api.Normal
@@ -1028,9 +945,6 @@ func (s *DatabaseService) CreateBackup(ctx context.Context, request *v1pb.Create
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
 	}
 
 	existedBackupList, err := s.store.ListBackupV2(ctx, &store.FindBackupMessage{
@@ -1080,9 +994,6 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
 	}
 
 	var limit, offset int
@@ -1181,9 +1092,6 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionManageGeneral); err != nil {
-		return nil, err
 	}
 
 	truncateSize := 4 * 1024 * 1024
@@ -1589,9 +1497,6 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
-	}
 
 	return &v1pb.ListSecretsResponse{
 		Secrets: stripeAndConvertToServiceSecrets(database.Secrets, database.InstanceID, database.DatabaseName),
@@ -1635,9 +1540,6 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
 	}
 
 	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
@@ -1742,9 +1644,6 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
-	if err := s.checkDatabasePermission(ctx, database.ProjectID, api.ProjectPermissionAdminDatabase); err != nil {
-		return nil, err
-	}
 
 	// We retrieve the secret from the database, convert secrets to map, upsert the new secret and store it back.
 	// But if two processes are doing this at the same time, the second one will override the first one.
@@ -1777,53 +1676,6 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 	}
 
 	return &emptypb.Empty{}, nil
-}
-
-// TODO(p0ny): remove this function after iam migration.
-func (s *DatabaseService) checkDatabasePermission(ctx context.Context, projectID string, permission api.ProjectPermissionType) error {
-	if s.profile.DevelopmentIAM {
-		return nil
-	}
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return status.Errorf(codes.Internal, "user not found")
-	}
-	if isOwnerOrDBA(user) {
-		return nil
-	}
-
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return status.Errorf(codes.Internal, "principal ID not found")
-	}
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-
-	if permission == api.ProjectPermissionManageGeneral {
-		if !isProjectMember(principalID, policy) {
-			return status.Errorf(codes.PermissionDenied, "permission denied")
-		}
-		return nil
-	}
-
-	projectRoles := make(map[api.Role]bool)
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == principalID || member.Email == api.AllUsers {
-				projectRoles[api.Role(binding.Role)] = true
-				break
-			}
-		}
-	}
-
-	if !api.ProjectPermission(permission, s.licenseService.GetEffectivePlan(), projectRoles) {
-		return status.Errorf(codes.PermissionDenied, "permission denied")
-	}
-
-	return nil
 }
 
 type totalValue struct {
@@ -1950,22 +1802,12 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		canAccessDBs = databases
 	case api.WorkspaceMember:
 		for _, database := range databases {
-			if s.profile.DevelopmentIAM {
-				ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
-				}
-				if ok {
-					canAccessDBs = append(canAccessDBs, database)
-				}
-			} else {
-				policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &database.ProjectID})
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to find project policy %q", err.Error())
-				}
-				if isProjectOwnerOrDeveloper(user.ID, policy) {
-					canAccessDBs = append(canAccessDBs, database)
-				}
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionSlowQueriesList, user, database.ProjectID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission, err: %v", err.Error())
+			}
+			if ok {
+				canAccessDBs = append(canAccessDBs, database)
 			}
 		}
 	default:

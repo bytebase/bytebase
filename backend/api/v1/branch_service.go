@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
@@ -62,11 +61,6 @@ func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRe
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	if !s.profile.DevelopmentIAM {
-		if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-			return nil, err
-		}
-	}
 
 	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: true})
 	if err != nil {
@@ -92,11 +86,6 @@ func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBran
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
 		return nil, err
-	}
-	if !s.profile.DevelopmentIAM {
-		if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-			return nil, err
-		}
 	}
 
 	branchFind := &store.FindBranchMessage{
@@ -138,11 +127,6 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
 		return nil, err
-	}
-	if !s.profile.DevelopmentIAM {
-		if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-			return nil, err
-		}
 	}
 
 	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: false})
@@ -279,21 +263,17 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if branch.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if branch.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to update branch")
-		}
-	} else if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-		return nil, err
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update branch")
 	}
 
 	if request.Etag != "" && request.Etag != fmt.Sprintf("%d", branch.UpdatedTime.UnixMilli()) {
@@ -371,21 +351,17 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if baseBranch.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if baseBranch.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
-		}
-	} else if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-		return nil, err
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to merge branch")
 	}
 
 	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
@@ -396,16 +372,12 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if err != nil {
 		return nil, err
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionBranchesGet, user, headProjectID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to get head branch")
-		}
-	} else if err := s.checkBranchPermission(ctx, headProjectID); err != nil {
-		return nil, err
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionBranchesGet, user, headProjectID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to get head branch")
 	}
 	headBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &headProjectID, ResourceID: &headBranchID, LoadFull: true})
 	if err != nil {
@@ -500,21 +472,17 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if baseBranch.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, baseProject.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if baseBranch.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to rebase branch")
-		}
-	} else if err := s.checkBranchPermission(ctx, baseProject.ResourceID); err != nil {
-		return nil, err
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesUpdate, user, baseProject.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to rebase branch")
 	}
 	if err := s.checkProtectionRules(ctx, baseProject, baseBranchID, baseBranch.Config.SourceDatabase != "", user); err != nil {
 		return nil, err
@@ -693,21 +661,17 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if branch.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesDelete, user, project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if branch.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete branch")
-		}
-	} else if err := s.checkBranchPermission(ctx, project.ResourceID); err != nil {
-		return nil, err
+		return s.iamManager.CheckPermission(ctx, iam.PermissionBranchesDelete, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete branch")
 	}
 	if err := s.checkProtectionRules(ctx, project, branchID, branch.Config.SourceDatabase != "", user); err != nil {
 		return nil, err
@@ -803,32 +767,6 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 	return project, nil
-}
-
-// TODO(p0ny): remove this function after iam migration.
-func (s *BranchService) checkBranchPermission(ctx context.Context, projectID string) error {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return status.Errorf(codes.Internal, "user not found")
-	}
-	if isOwnerOrDBA(user) {
-		return nil
-	}
-
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	for _, binding := range policy.Bindings {
-		if binding.Role == api.ProjectDeveloper || binding.Role == api.ProjectOwner {
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					return nil
-				}
-			}
-		}
-	}
-	return status.Errorf(codes.PermissionDenied, "permission denied")
 }
 
 func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, databaseSource bool, user *store.UserMessage) error {
