@@ -230,7 +230,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 	return filteredDatabases, nil
 }
 
-// roles/projectQuerier and roles/projectExporter are too tedious to handle in the iam manager.
 func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
 	policy, err := s.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{
 		ProjectID: &projectID,
@@ -250,6 +249,10 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
+		permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
+		if !slices.Contains(permissions, needPermission) {
+			continue
+		}
 		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to eval binding condition")
@@ -261,16 +264,17 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 			if member.ID != user.ID && member.Email != api.AllUsers {
 				continue
 			}
-			permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
-			if slices.Contains(permissions, needPermission) {
-				return databases, nil
-			}
+			return databases, nil
 		}
 	}
 
 	expressionDBsFromAllRoles := make(map[string]bool)
 	for _, binding := range policy.Bindings {
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
+			continue
+		}
+		permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
+		if !slices.Contains(permissions, needPermission) {
 			continue
 		}
 		ok, err := common.EvalBindingCondition(binding.Condition.GetExpression(), time.Now())
