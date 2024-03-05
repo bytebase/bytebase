@@ -244,8 +244,8 @@ const (
 	MySQLViewDisallowCreate Type = "bb.plugin.advisor.mysql.view.disallow-create"
 	// MySQLFunctionDisallowCreate is an advisor type for MySQL disallow create function.
 	MySQLFunctionDisallowCreate Type = "bb.plugin.advisor.mysql.function.disallow-create"
-	// MySQLFunctionDisallowList is an advisor type for MySQL function disallow list.
-	MySQLFunctionDisallowList Type = "bb.plugin.advisor.mysql.function.disallow-list"
+	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
+	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
 	// PostgreSQL Advisor.
 
