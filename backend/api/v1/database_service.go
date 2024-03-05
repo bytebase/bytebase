@@ -239,7 +239,10 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	}
 
 	for _, role := range user.Roles {
-		permissions := iamManager.GetPermissions(common.FormatRole(role.String()))
+		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get permissions")
+		}
 		if slices.Contains(permissions, needPermission) {
 			return databases, nil
 		}
@@ -249,7 +252,10 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role == api.ProjectQuerier || binding.Role == api.ProjectExporter {
 			continue
 		}
-		permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
+		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get permissions")
+		}
 		if !slices.Contains(permissions, needPermission) {
 			continue
 		}
@@ -273,7 +279,10 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 		if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
 			continue
 		}
-		permissions := iamManager.GetPermissions(common.FormatRole(binding.Role.String()))
+		permissions, err := iamManager.GetPermissions(ctx, common.FormatRole(binding.Role.String()))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get permissions")
+		}
 		if !slices.Contains(permissions, needPermission) {
 			continue
 		}
