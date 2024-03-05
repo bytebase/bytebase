@@ -161,6 +161,7 @@ export type RuleType =
   | "system.event.disallow-create"
   | "system.view.disallow-create"
   | "system.function.disallow-create"
+  | "system.function.disallowed-list"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
