@@ -158,7 +158,7 @@ const doSaveChange = async () => {
       name: sheet.value.name,
     });
     setSheetStatement(patch, statement.value);
-    await sheetStore.patchSheet(patch, ["content"]);
+    await sheetStore.patchSheetContent(patch);
 
     pushNotification({
       module: "bytebase",
