@@ -17,20 +17,25 @@
 
 <script lang="ts" setup>
 import { ref, nextTick } from "vue";
-import { useTabStore } from "@/store";
+import { TabInfo } from "@/types";
+
+const props = defineProps<{
+  tab: TabInfo;
+}>();
 
 const emit = defineEmits<{
   (e: "close"): void;
-  (e: "confirm", title: string): void;
+  (e: "confirm", tab: TabInfo): void;
 }>();
 
-const tabStore = useTabStore();
-
-const sheetTitle = ref(tabStore.currentTab.name);
+const sheetTitle = ref(props.tab.name);
 const sheetNameInputRef = ref();
 
 const handleSaveSheet = () => {
-  emit("confirm", sheetTitle.value);
+  emit("confirm", {
+    ...props.tab,
+    name: sheetTitle.value,
+  });
 };
 
 nextTick(() => {

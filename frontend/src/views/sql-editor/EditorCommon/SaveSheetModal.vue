@@ -1,18 +1,22 @@
 <template>
   <BBModal
-    v-if="state.showModal"
+    v-if="state.pendingEditTab"
     :title="$t('sql-editor.save-sheet')"
     @close="close"
   >
-    <SaveSheetForm @close="close" @confirm="doSaveSheet" />
+    <SaveSheetForm
+      :tab="state.pendingEditTab"
+      @close="close"
+      @confirm="doSaveSheet"
+    />
   </BBModal>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { reactive } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useDatabaseV1Store, useWorkSheetStore, useTabStore } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, TabInfo } from "@/types";
 import {
   Worksheet,
   Worksheet_Visibility,
@@ -23,7 +27,7 @@ import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
-  showModal: boolean;
+  pendingEditTab?: TabInfo;
 };
 
 const tabStore = useTabStore();
@@ -32,75 +36,67 @@ const worksheetV1Store = useWorkSheetStore();
 const { events: sheetEvents } = useSheetContext();
 const { events: editorEvents } = useSQLEditorContext();
 
-const state = reactive<LocalState>({
-  showModal: false,
-});
+const state = reactive<LocalState>({});
 
-const allowSave = computed((): boolean => {
-  const tab = tabStore.currentTab;
-  if (tab.statement === "") {
-    return false;
-  }
-  if (tab.isSaved) {
-    return false;
-  }
-  // Temporarily disable saving and sharing if we are connected to an instance
-  // but not a database.
-  if (tab.connection.databaseId === String(UNKNOWN_ID)) {
-    return false;
-  }
-  return true;
-});
+const doSaveSheet = async (tab: TabInfo) => {
+  const { name, statement, sheetName } = tab;
 
-const doSaveSheet = async (title: string) => {
-  const { name, statement, sheetName } = tabStore.currentTab;
-  title = title || name;
+  if (name === "" || statement === "") {
+    return;
+  }
 
   const sheetId = Number(extractWorksheetUID(sheetName ?? ""));
 
-  const conn = tabStore.currentTab.connection;
-  const database = await databaseStore.getOrFetchDatabaseByUID(
-    conn.databaseId,
-    true /* silent */
-  );
-
-  let sheet: Worksheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
-    sheet = await worksheetV1Store.patchSheet(
+    const sheet = await worksheetV1Store.patchSheet(
       {
         name: sheetName,
-        title,
+        title: name,
         content: new TextEncoder().encode(statement),
       },
       ["title", "content"]
     );
+    if (sheet) {
+      const tab = tabStore.tabList.find((t) => t.sheetName === sheet.name);
+      if (tab) {
+        tabStore.updateTab(tab.id, {
+          isSaved: true,
+          name,
+        });
+      }
+    }
   } else {
-    sheet = await worksheetV1Store.createSheet(
+    if (tab.connection.databaseId === String(UNKNOWN_ID)) {
+      return false;
+    }
+    const database = await databaseStore.getOrFetchDatabaseByUID(
+      tab.connection.databaseId,
+      true /* silent */
+    );
+    const sheet = await worksheetV1Store.createSheet(
       Worksheet.fromPartial({
-        title: title,
+        title: name,
         project: database.project,
         content: new TextEncoder().encode(statement),
         database: database.name,
         visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
       })
     );
+    if (tabStore.currentTabId === tab.id) {
+      tabStore.updateCurrentTab({
+        sheetName: sheet.name,
+        isSaved: true,
+        name,
+      });
+    }
   }
 
-  if (sheet) {
-    tabStore.updateCurrentTab({
-      sheetName: sheet.name,
-      isSaved: true,
-      name: title,
-    });
-
-    // Refresh "my" sheet list.
-    sheetEvents.emit("refresh", { views: ["my"] });
-  }
-  state.showModal = false;
+  // Refresh "my" sheet list.
+  sheetEvents.emit("refresh", { views: ["my"] });
+  state.pendingEditTab = undefined;
 };
 
-const needSheetTitle = (title: string) => {
-  const tab = tabStore.currentTab;
+const needSheetTitle = (tab: TabInfo) => {
   if (tab.sheetName) {
     // If the sheet is saved, we don't need to show the name popup.
     return false;
@@ -108,25 +104,21 @@ const needSheetTitle = (title: string) => {
   return true;
 };
 
-const trySaveSheet = (title: string) => {
-  if (!allowSave.value) {
+const trySaveSheet = (tab: TabInfo, editTitle?: boolean) => {
+  if (needSheetTitle(tab) || editTitle) {
+    state.pendingEditTab = tab;
     return;
   }
+  state.pendingEditTab = undefined;
 
-  if (needSheetTitle(title)) {
-    state.showModal = true;
-    return;
-  }
-  state.showModal = false;
-
-  doSaveSheet(title);
+  doSaveSheet(tab);
 };
 
 const close = () => {
-  state.showModal = false;
+  state.pendingEditTab = undefined;
 };
 
-useEmitteryEventListener(editorEvents, "save-sheet", ({ title }) => {
-  trySaveSheet(title);
+useEmitteryEventListener(editorEvents, "save-sheet", ({ tab, editTitle }) => {
+  trySaveSheet(tab, editTitle);
 });
 </script>

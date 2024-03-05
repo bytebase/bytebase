@@ -28,8 +28,13 @@ import {
   Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto/v1/worksheet_service";
-import { isWorksheetWritableV1 } from "@/utils";
+import {
+  isWorksheetWritableV1,
+  getDefaultTab,
+  getSheetStatement,
+} from "@/utils";
 import { useSheetContext, type SheetViewMode } from "../";
+import { useSQLEditorContext } from "../../context";
 
 const props = defineProps<{
   view: SheetViewMode;
@@ -43,6 +48,7 @@ const { t } = useI18n();
 const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
 const { events } = useSheetContext();
+const { events: editorEvents } = useSQLEditorContext();
 
 const options = computed(() => {
   const options: DropdownOption[] = [];
@@ -62,10 +68,16 @@ const options = computed(() => {
 
   const canWriteSheet = isWorksheetWritableV1(sheet);
   if (canWriteSheet) {
-    options.push({
-      key: "delete",
-      label: t("common.delete"),
-    });
+    options.push(
+      {
+        key: "delete",
+        label: t("common.delete"),
+      },
+      {
+        key: "rename",
+        label: t("sql-editor.tab.context-menu.actions.rename"),
+      }
+    );
   }
   if (view === "shared") {
     options.push({
@@ -142,6 +154,16 @@ const handleAction = async (key: string) => {
       negativeText: t("common.cancel"),
       positiveText: t("common.confirm"),
       showIcon: true,
+    });
+  } else if (key === "rename") {
+    editorEvents.emit("save-sheet", {
+      tab: {
+        ...getDefaultTab(),
+        sheetName: sheet.name,
+        name: sheet.title,
+        statement: getSheetStatement(sheet),
+      },
+      editTitle: true,
     });
   }
 };
