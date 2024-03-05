@@ -126,7 +126,6 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 }
 
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
-	fmt.Printf("Barny0: search database\n")
 	find := &store.FindDatabaseMessage{}
 	if request.Filter != "" {
 		projectFilter, err := getProjectFilter(request.Filter)
@@ -207,7 +206,6 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 }
 
 func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	fmt.Printf("Barny1: %s\n", needPermission.String())
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
@@ -223,9 +221,6 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
 		}
 		filteredDatabases = append(filteredDatabases, filteredProjectDatabases...)
-	}
-	for _, db := range filteredDatabases {
-		fmt.Printf("Barny2: %s\n", db.DatabaseName)
 	}
 	return filteredDatabases, nil
 }
