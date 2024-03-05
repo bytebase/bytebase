@@ -71,7 +71,6 @@ type Profile struct {
 
 	Lsp             bool
 	PreUpdateBackup bool
-	DevelopmentIAM  bool
 	ExecuteDetail   bool
 }
 

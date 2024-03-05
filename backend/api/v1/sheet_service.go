@@ -162,27 +162,25 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	}
 
 	// Check the bb.issues.get permission.
-	if s.profile.DevelopmentIAM {
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "user not found")
-		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &sheet.ProjectUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
-		}
-		ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
-		}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		UID: &sheet.ProjectUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
+	}
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
