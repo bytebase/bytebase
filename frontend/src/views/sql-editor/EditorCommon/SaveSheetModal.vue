@@ -47,9 +47,8 @@ const doSaveSheet = async (tab: TabInfo) => {
 
   const sheetId = Number(extractWorksheetUID(sheetName ?? ""));
 
-  let sheet: Worksheet | undefined;
   if (sheetId !== UNKNOWN_ID) {
-    sheet = await worksheetV1Store.patchSheet(
+    const sheet = await worksheetV1Store.patchSheet(
       {
         name: sheetName,
         title: name,
@@ -57,6 +56,15 @@ const doSaveSheet = async (tab: TabInfo) => {
       },
       ["title", "content"]
     );
+    if (sheet) {
+      const tab = tabStore.tabList.find((t) => t.sheetName === sheet.name);
+      if (tab) {
+        tabStore.updateTab(tab.id, {
+          isSaved: true,
+          name,
+        });
+      }
+    }
   } else {
     if (tab.connection.databaseId === String(UNKNOWN_ID)) {
       return false;
@@ -65,7 +73,7 @@ const doSaveSheet = async (tab: TabInfo) => {
       tab.connection.databaseId,
       true /* silent */
     );
-    sheet = await worksheetV1Store.createSheet(
+    const sheet = await worksheetV1Store.createSheet(
       Worksheet.fromPartial({
         title: name,
         project: database.project,
@@ -74,9 +82,6 @@ const doSaveSheet = async (tab: TabInfo) => {
         visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
       })
     );
-  }
-
-  if (sheet && tabStore.currentTabId === tab.id) {
     tabStore.updateCurrentTab({
       sheetName: sheet.name,
       isSaved: true,
