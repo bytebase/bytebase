@@ -201,6 +201,7 @@ roles:
       - bb.externalVersionControls.get
       - bb.externalVersionControls.list
       - bb.externalVersionControls.searchProjects
+      - bb.policies.get
       - bb.policies.list
       - bb.risks.list
       - bb.roles.list
