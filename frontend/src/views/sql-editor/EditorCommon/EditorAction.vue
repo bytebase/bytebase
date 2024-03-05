@@ -272,7 +272,7 @@ const handleClearScreen = () => {
 
 const handleClickSave = () => {
   events.emit("save-sheet", {
-    title: tabStore.currentTab.name,
+    tab: tabStore.currentTab,
   });
 };
 
