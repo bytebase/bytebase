@@ -770,6 +770,15 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: system.function.disallowed-list
+    category: SYSTEM
+    engineList:
+      - MYSQL
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
   - type: advice.online-migration
     category: ADVICE
     engineList:

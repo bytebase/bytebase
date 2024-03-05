@@ -477,6 +477,15 @@
       "title": "Không cho phép tạo hàm",
       "description": "Quy tắc này cấm việc tạo các hàm trong cơ sở dữ liệu. Các hàm cung cấp logic có thể tái sử dụng giúp đơn giản hóa các truy vấn và tăng cường tính toàn vẹn dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát đối với cấu trúc cơ sở dữ liệu và ngăn ngừa các rủi ro bảo mật tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo"
     },
+    "system-function-disallowed-list": {
+      "title": "Cấm sử dụng một số hàm",
+      "description": "Quy tắc này hạn chế việc sử dụng các hàm cụ thể trong cơ sở dữ liệu. Bằng cách cấm sử dụng các hàm này, nó giúp duy trì tính nhất quán và bảo mật dữ liệu. Mức độ lỗi đề xuất: Cảnh báo",
+      "component": {
+        "list": {
+          "title": "Danh sách không cho phép"
+        }
+      }
+    },
     "advice-online-migration": {
       "title": "Khuyến nghị bật di chuyển trực tuyến",
       "description": "Nếu số lượng hàng bảng được di chuyển vượt quá cài đặt của bạn, hãy bật di chuyển trực tuyến. Mức lỗi được đề xuất: Cảnh báo"

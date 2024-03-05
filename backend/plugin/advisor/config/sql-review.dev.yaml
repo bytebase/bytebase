@@ -223,7 +223,7 @@ ruleList:
     level: WARNING
   - type: system.function.disallow-create
     level: WARNING
-  - type: system.function.disallow-list
+  - type: system.function.disallowed-list
     level: WARNING
     payload:
       list:
