@@ -58,9 +58,6 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	if user == nil {
 		return nil, status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user) {
-		return handler(ctx, request)
-	}
 
 	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
 		return nil, err
@@ -90,9 +87,6 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 	if user == nil {
 		return status.Errorf(codes.Unauthenticated, "unauthenticated for method %q", serverInfo.FullMethod)
 	}
-	if !in.profile.DevelopmentIAM && isOwnerOrDBA(user) {
-		return handler(request, ss)
-	}
 
 	if err := in.aclInterceptorDo(ctx, serverInfo.FullMethod, request, user); err != nil {
 		return err
@@ -111,47 +105,7 @@ func (s overrideStream) Context() context.Context {
 }
 
 func (in *ACLInterceptor) aclInterceptorDo(ctx context.Context, fullMethod string, request any, user *store.UserMessage) error {
-	if in.profile.DevelopmentIAM {
-		return in.checkIAMPermission(ctx, fullMethod, request, user)
-	}
-
-	if isOwnerAndDBAMethod(fullMethod) {
-		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can access method %q", fullMethod)
-	}
-
-	if isProjectOwnerMethod(fullMethod) {
-		projectIDs, err := getProjectIDs(request)
-		if err != nil {
-			return status.Errorf(codes.PermissionDenied, err.Error())
-		}
-		for _, projectID := range projectIDs {
-			projectRoles, err := in.getProjectRoles(ctx, user, projectID)
-			if err != nil {
-				return status.Errorf(codes.PermissionDenied, err.Error())
-			}
-			if !projectRoles[api.ProjectOwner] {
-				return status.Errorf(codes.PermissionDenied, "only the owner of project %q can access method %q", projectID, fullMethod)
-			}
-		}
-	}
-
-	if isTransferDatabaseMethods(fullMethod) {
-		projectIDs, err := in.getTransferDatabaseToProjects(ctx, request)
-		if err != nil {
-			return status.Errorf(codes.PermissionDenied, err.Error())
-		}
-		for _, projectID := range projectIDs {
-			projectRoles, err := in.getProjectRoles(ctx, user, projectID)
-			if err != nil {
-				return status.Errorf(codes.PermissionDenied, err.Error())
-			}
-			if !projectRoles[api.ProjectOwner] {
-				return status.Errorf(codes.PermissionDenied, "only project owner can transfer database to project %q", projectID)
-			}
-		}
-	}
-
-	return nil
+	return in.checkIAMPermission(ctx, fullMethod, request, user)
 }
 
 func (in *ACLInterceptor) getUser(ctx context.Context) (*store.UserMessage, error) {

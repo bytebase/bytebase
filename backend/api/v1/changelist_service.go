@@ -128,10 +128,7 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 	}
 
 	projectIDs, err := func() (*[]string, error) {
-		if s.profile.DevelopmentIAM {
-			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
-		}
-		return nil, nil
+		return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
 	}()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
@@ -205,20 +202,17 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if changelist.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsUpdate, user, project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if changelist.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to update changelist")
-		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsUpdate, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update changelist")
 	}
 
 	update := &store.UpdateChangelistMessage{
@@ -281,20 +275,17 @@ func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if changelist.CreatorID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsDelete, user, project.ResourceID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if changelist.CreatorID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete changelist")
-		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionChangelistsDelete, user, project.ResourceID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete changelist")
 	}
 
 	if err := s.store.DeleteChangelist(ctx, project.ResourceID, changelistID); err != nil {
