@@ -20,7 +20,8 @@
     "schema": "Esquema",
     "database": "Base de datos",
     "index": "Índice",
-    "system": "Sistema"
+    "system": "Sistema",
+    "advice": "Consejo"
   },
   "template": {
     "bb-sql-review-prod": "Plantilla Avanzada",
@@ -475,6 +476,10 @@
     "system-function-disallow-create": {
       "title": "Prohibición de crear funciones",
       "description": "Esta regla prohíbe la creación de funciones dentro de la base de datos. Las funciones proporcionan lógica reutilizable que puede simplificar las consultas y mejorar la integridad de los datos. Al prohibir su creación, se ayuda a mantener el control sobre el esquema de la base de datos y se previenen posibles riesgos de seguridad. Nivel de error sugerido: Advertencia"
+    },
+    "advice-online-migration": {
+      "title": "Se recomienda habilitar la migración en línea",
+      "description": "Se recomienda habilitar la migración en línea si el recuento de filas de la tabla migrada supera su configuración. Nivel de error sugerido: Advertencia"
     }
   },
   "level": {

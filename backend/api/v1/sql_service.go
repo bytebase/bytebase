@@ -934,7 +934,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	if request.Metadata != nil {
 		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
 	}
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database, overideMetadata)
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
 	}
@@ -1212,7 +1212,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	}
 
 	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase, nil /* Override Metadata */)
+	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */)
 	if err != nil {
 		return nil, nil, nil, adviceStatus, adviceList, nil, err
 	}
@@ -1715,7 +1715,7 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return advisor.Success, nil, nil
 	}
@@ -1764,10 +1764,10 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
 		instance.Engine,
-		dbMetadata.CharacterSet,
-		dbMetadata.Collation,
+		dbMetadata,
 		environment.UID,
 		statement,
+		changeType,
 		catalog,
 		connection,
 		currentSchema,
@@ -1812,10 +1812,10 @@ func convertAdviceStatus(status advisor.Status) v1pb.Advice_Status {
 func (s *SQLService) sqlCheck(
 	ctx context.Context,
 	dbType storepb.Engine,
-	dbCharacterSet string,
-	dbCollation string,
+	dbSchema *storepb.DatabaseSchemaMetadata,
 	environmentID int,
 	statement string,
+	changeType v1pb.CheckRequest_ChangeType,
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentSchema string,
@@ -1831,8 +1831,10 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:         dbCharacterSet,
-		Collation:       dbCollation,
+		Charset:         dbSchema.CharacterSet,
+		Collation:       dbSchema.Collation,
+		ChangeType:      convertChangeType(changeType),
+		DBSchema:        dbSchema,
 		DbType:          dbType,
 		Catalog:         catalog,
 		Driver:          driver,
@@ -2656,4 +2658,17 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 	return &v1pb.DifferPreviewResponse{
 		Schema: schema,
 	}, nil
+}
+
+func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+	switch t {
+	case v1pb.CheckRequest_DDL:
+		return storepb.PlanCheckRunConfig_DDL
+	case v1pb.CheckRequest_DDL_GHOST:
+		return storepb.PlanCheckRunConfig_DDL_GHOST
+	case v1pb.CheckRequest_DML:
+		return storepb.PlanCheckRunConfig_DML
+	default:
+		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+	}
 }

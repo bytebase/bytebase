@@ -8,6 +8,7 @@ categoryList:
   - COLUMN
   - SYSTEM
   - DATABASE
+  - ADVICE
 ruleList:
   - type: engine.mysql.use-innodb
     category: ENGINE
@@ -769,3 +770,12 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: advice.online-migration
+    category: ADVICE
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 100000000

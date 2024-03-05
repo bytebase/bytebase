@@ -54,7 +54,11 @@
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
       @close="confirmDialog = undefined"
-    />
+    >
+      <template #row-extra="{ row }">
+        <slot name="row-extra" :row="row" :confirm="confirmDialog" />
+      </template>
+    </SQLCheckPanel>
   </div>
 </template>
 

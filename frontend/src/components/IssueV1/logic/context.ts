@@ -20,6 +20,7 @@ export type IssueEvents = Emittery<{
   "perform-issue-review-action": { action: IssueReviewAction };
   "perform-issue-status-action": { action: IssueStatusAction };
   "perform-task-rollout-action": { action: TaskRolloutAction; tasks: Task[] };
+  "toggle-online-migration": { on: boolean };
 }>;
 
 export type ReviewContext = {

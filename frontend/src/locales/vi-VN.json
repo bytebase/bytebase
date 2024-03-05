@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "Hiển thị thông số mặc định",
-      "hide-default-parameters": "Ẩn thông số mặc định"
+      "hide-default-parameters": "Ẩn thông số mặc định",
+      "enable": "Cho phép di chuyển trực tuyến"
     },
     "prior-backup-tips": "Sao lưu trước dữ liệu bị ảnh hưởng"
   },
