@@ -129,14 +129,6 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 				return nil, status.Errorf(codes.PermissionDenied, "permission denied to get issue, user does not have permission %q", p)
 			}
 		}
-	} else {
-		ok, err := isUserAtLeastProjectMember(ctx, s.store, issue.Project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check if the user can get issue, error: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-		}
 	}
 
 	issueV1, err := convertToIssue(ctx, s.store, issue)
@@ -2074,38 +2066,6 @@ func convertGrantRequest(ctx context.Context, s *store.Store, v *v1pb.GrantReque
 		Condition:  v.Condition,
 		Expiration: v.Expiration,
 	}, nil
-}
-
-// TODO(p0ny): remove this function after iam migration.
-func getProjectIDsFilter(ctx context.Context, s *store.Store, requestProjectID string) (*[]string, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	if isOwnerOrDBA(user) {
-		if requestProjectID == "-" {
-			return nil, nil
-		}
-		return &[]string{requestProjectID}, nil
-	}
-
-	userBelongingProjectIDs, err := getUserBelongingProjects(ctx, s, user.ID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get user belonging projects")
-	}
-
-	if requestProjectID == "-" {
-		var lst []string
-		for id := range userBelongingProjectIDs {
-			lst = append(lst, id)
-		}
-		return &lst, nil
-	}
-	if !userBelongingProjectIDs[requestProjectID] {
-		return &[]string{}, nil
-	}
-	return &[]string{requestProjectID}, nil
 }
 
 // 1. if the user is the issue creator

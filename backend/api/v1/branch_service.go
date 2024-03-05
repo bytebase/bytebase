@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store"
@@ -768,32 +767,6 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 	return project, nil
-}
-
-// TODO(p0ny): remove this function after iam migration.
-func (s *BranchService) checkBranchPermission(ctx context.Context, projectID string) error {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return status.Errorf(codes.Internal, "user not found")
-	}
-	if isOwnerOrDBA(user) {
-		return nil
-	}
-
-	policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	for _, binding := range policy.Bindings {
-		if binding.Role == api.ProjectDeveloper || binding.Role == api.ProjectOwner {
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					return nil
-				}
-			}
-		}
-	}
-	return status.Errorf(codes.PermissionDenied, "permission denied")
 }
 
 func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, databaseSource bool, user *store.UserMessage) error {

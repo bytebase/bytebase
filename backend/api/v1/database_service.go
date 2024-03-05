@@ -304,57 +304,6 @@ func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *i
 	return filteredDatabases, nil
 }
 
-// TODO(p0ny): remove this function after iam migration.
-func (s *DatabaseService) filterDatabases(ctx context.Context, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	if isOwnerOrDBA(user) {
-		return databases, nil
-	}
-	var filteredDatabases []*store.DatabaseMessage
-	projectDatabases := make(map[string][]*store.DatabaseMessage)
-	for _, database := range databases {
-		projectDatabases[database.ProjectID] = append(projectDatabases[database.ProjectID], database)
-	}
-	for projectID, dbs := range projectDatabases {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &projectID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		filteredDBs := filterPolicyDatabases(user.ID, policy, dbs)
-		filteredDatabases = append(filteredDatabases, filteredDBs...)
-	}
-
-	return filteredDatabases, nil
-}
-
-func filterPolicyDatabases(userID int, policy *store.IAMPolicyMessage, databases []*store.DatabaseMessage) []*store.DatabaseMessage {
-	var filteredDatabases []*store.DatabaseMessage
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID != userID && member.Email != api.AllUsers {
-				continue
-			}
-			if binding.Role != api.ProjectQuerier && binding.Role != api.ProjectExporter {
-				return databases
-			}
-			expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
-			if len(expressionDBs) == 0 {
-				return databases
-			}
-			for _, database := range databases {
-				databaseName := fmt.Sprintf("instances/%s/databases/%s", database.InstanceID, database.DatabaseName)
-				if expressionDBs[databaseName] {
-					filteredDatabases = append(filteredDatabases, database)
-				}
-			}
-		}
-	}
-	return filteredDatabases
-}
-
 var databaseNamePattern = regexp.MustCompile(`"instances/[^/]+/databases/[^"]+"`)
 
 func getDatabasesFromExpression(expression string) map[string]bool {

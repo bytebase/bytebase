@@ -3024,18 +3024,6 @@ func validateMember(member string) error {
 	return errors.Errorf("invalid user %s", member)
 }
 
-// TODO(p0ny): remove this function after iam migration.
-func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == userID || member.Email == api.AllUsers {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {
 	return &v1pb.ProjectGitOpsInfo{
 		Name:               fmt.Sprintf("%s%s/gitOpsInfo", common.ProjectNamePrefix, repository.ProjectResourceID),
