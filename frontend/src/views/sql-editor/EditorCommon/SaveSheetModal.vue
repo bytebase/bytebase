@@ -82,11 +82,13 @@ const doSaveSheet = async (tab: TabInfo) => {
         visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
       })
     );
-    tabStore.updateCurrentTab({
-      sheetName: sheet.name,
-      isSaved: true,
-      name,
-    });
+    if (tabStore.currentTabId === tab.id) {
+      tabStore.updateCurrentTab({
+        sheetName: sheet.name,
+        isSaved: true,
+        name,
+      });
+    }
   }
 
   // Refresh "my" sheet list.
