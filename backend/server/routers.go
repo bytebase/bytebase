@@ -77,7 +77,7 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
-	e.POST("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
+	e.GET("/v1:adminExecute", echo.WrapHandler(wsproxy.WebsocketProxy(
 		mux,
 		wsproxy.WithTokenCookieName("access-token"),
 		// 10M.
