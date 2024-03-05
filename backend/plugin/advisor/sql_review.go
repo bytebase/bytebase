@@ -1504,6 +1504,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowList:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowList, nil
+		}
 	case SchemaRuleOnlineMigration:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLOnlineMigration, nil
