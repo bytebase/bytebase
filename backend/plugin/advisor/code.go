@@ -156,6 +156,7 @@ const (
 
 	// 1701 ~ 1799 function error code.
 	DisallowCreateFunction Code = 1701
+	DisabledFunction       Code = 1702
 
 	// 1801 ~ 1899 advice error code.
 	AdviseOnlineMigration Code = 1801

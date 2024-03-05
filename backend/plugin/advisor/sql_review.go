@@ -189,6 +189,8 @@ const (
 	SchemaRuleViewDisallowCreate SQLReviewRuleType = "system.view.disallow-create"
 	// SchemaRuleFunctionDisallowCreate disallow create function.
 	SchemaRuleFunctionDisallowCreate SQLReviewRuleType = "system.function.disallow-create"
+	// SchemaRuleFunctionDisallowList enforce the function disallow list.
+	SchemaRuleFunctionDisallowList SQLReviewRuleType = "system.function.disallow-list"
 
 	// SchemaRuleOnlineMigration advises using online migration to migrate large tables.
 	SchemaRuleOnlineMigration SQLReviewRuleType = "advice.online-migration"
@@ -1498,6 +1500,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowCreate, nil
+		}
+	case SchemaRuleFunctionDisallowList:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLFunctionDisallowList, nil
 		}
 	case SchemaRuleOnlineMigration:
 		if engine == storepb.Engine_MYSQL {

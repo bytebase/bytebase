@@ -223,6 +223,13 @@ ruleList:
     level: WARNING
   - type: system.function.disallow-create
     level: WARNING
+  - type: system.function.disallow-list
+    level: WARNING
+    payload:
+      list:
+        - RAND
+        - UUID
+        - SLEEP
   - type: advice.online-migration
     level: ERROR
     payload:
