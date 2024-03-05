@@ -192,11 +192,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &testDatabase.UID,
 
-		Title:      "Alter table to test sample instance for sample issue",
-		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
+		Title:     "Alter table to test sample instance for sample issue",
+		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
@@ -208,11 +205,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
 
-		Title:      "Alter table to prod sample instance for sample issue",
-		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
+		Title:     "Alter table to prod sample instance for sample issue",
+		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")
