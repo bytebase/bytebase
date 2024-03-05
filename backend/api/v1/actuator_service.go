@@ -147,7 +147,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		Debug:              slog.Default().Enabled(ctx, slog.LevelDebug),
 		Lsp:                s.profile.Lsp,
 		PreUpdateBackup:    s.profile.PreUpdateBackup,
-		IamGuard:           s.profile.DevelopmentIAM,
 		UnlicensedFeatures: unlicensedFeaturesString,
 	}
 
