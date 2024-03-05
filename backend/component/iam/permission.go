@@ -212,6 +212,14 @@ func PermissionExist(p Permission) bool {
 	}
 }
 
+func NewPermission(s string) Permission {
+	p := Permission(s)
+	if !PermissionExist(p) {
+		panic("invalid permission: " + s)
+	}
+	return p
+}
+
 type PermissionLevel string
 
 const (

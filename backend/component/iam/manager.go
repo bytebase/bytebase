@@ -20,26 +20,6 @@ import (
 //go:embed acl.yaml
 var aclYaml []byte
 
-// TODO(p0ny): stop hardcoding custom role permissions once we allow editing it.
-var customRolePermissions = []Permission{
-	PermissionChangeHistoriesGet,
-	PermissionChangeHistoriesList,
-	PermissionDatabasesGet,
-	PermissionDatabasesGetSchema,
-	PermissionDatabasesList,
-	PermissionIssueCommentsCreate,
-	PermissionIssuesGet,
-	PermissionIssuesList,
-	PermissionPlanCheckRunsList,
-	PermissionPlanCheckRunsRun,
-	PermissionPlansGet,
-	PermissionPlansList,
-	PermissionProjectsGet,
-	PermissionProjectsGetIAMPolicy,
-	PermissionRolloutsGet,
-	PermissionTaskRunsList,
-}
-
 type acl struct {
 	Roles []struct {
 		Name        string   `yaml:"name"`
@@ -48,8 +28,8 @@ type acl struct {
 }
 
 type Manager struct {
-	roles map[string][]Permission
-	store *store.Store
+	predefinedRoles map[string][]Permission
+	store           *store.Store
 }
 
 func NewManager(store *store.Store) (*Manager, error) {
@@ -58,16 +38,16 @@ func NewManager(store *store.Store) (*Manager, error) {
 		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
 	}
 
-	roles := make(map[string][]Permission)
+	predefinedRoles := make(map[string][]Permission)
 	for _, binding := range predefinedACL.Roles {
 		for _, permission := range binding.Permissions {
-			roles[binding.Name] = append(roles[binding.Name], Permission(permission))
+			predefinedRoles[binding.Name] = append(predefinedRoles[binding.Name], NewPermission(permission))
 		}
 	}
 
 	return &Manager{
-		roles: roles,
-		store: store,
+		predefinedRoles: predefinedRoles,
+		store:           store,
 	}, nil
 }
 
@@ -80,54 +60,82 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 		return false, errors.Wrapf(err, "failed to get project roles")
 	}
 
-	return m.hasPermission(p, workspaceRoles, projectRoles), nil
+	return m.hasPermission(ctx, p, workspaceRoles, projectRoles)
 }
 
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(role string) []Permission {
-	if permissions, ok := m.roles[role]; ok {
-		return permissions
+func (m *Manager) GetPermissions(ctx context.Context, roleName string) ([]Permission, error) {
+	if permissions, ok := m.predefinedRoles[roleName]; ok {
+		return permissions, nil
 	}
-	return customRolePermissions
+	roleID, err := common.GetRoleID(roleName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get role id from %q", roleName)
+	}
+	role, err := m.store.GetRole(ctx, roleID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get role %q", roleID)
+	}
+	var permissions []Permission
+	for _, permission := range role.Permissions.GetPermissions() {
+		permissions = append(permissions, NewPermission(permission))
+	}
+	return permissions, nil
 }
 
-func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) bool {
-	return m.hasPermissionOnWorkspace(p, workspaceRoles) ||
-		m.hasPermissionOnEveryProject(p, projectRoles)
+func (m *Manager) hasPermission(ctx context.Context, p Permission, workspaceRoles []string, projectRoles [][]string) (bool, error) {
+	ok, err := m.hasPermissionOnWorkspace(ctx, p, workspaceRoles)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check permission on workspace")
+	}
+	if ok {
+		return true, nil
+	}
+	ok, err = m.hasPermissionOnEveryProject(ctx, p, projectRoles)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check permission on every project")
+	}
+	return ok, nil
 }
 
-func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) bool {
+func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, workspaceRoles []string) (bool, error) {
 	for _, role := range workspaceRoles {
-		permissions := m.GetPermissions(role)
+		permissions, err := m.GetPermissions(ctx, role)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get permissions")
+		}
 		if slices.Contains(permissions, p) {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
-func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) bool {
+func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission, projectRoles [][]string) (bool, error) {
 	if GetPermissionLevel(p) == PermissionLevelWorkspace {
-		return false
+		return false, nil
 	}
 	if len(projectRoles) == 0 {
-		return false
+		return false, nil
 	}
 	for _, projectRole := range projectRoles {
 		has := false
 		for _, role := range projectRole {
-			permissions := m.GetPermissions(role)
+			permissions, err := m.GetPermissions(ctx, role)
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to get permissions")
+			}
 			if slices.Contains(permissions, p) {
 				has = true
 				break
 			}
 		}
 		if !has {
-			return false
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
 func (*Manager) getWorkspaceRoles(user *store.UserMessage) []string {
