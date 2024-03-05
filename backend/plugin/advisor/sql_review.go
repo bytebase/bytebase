@@ -190,6 +190,9 @@ const (
 	// SchemaRuleFunctionDisallowCreate disallow create function.
 	SchemaRuleFunctionDisallowCreate SQLReviewRuleType = "system.function.disallow-create"
 
+	// SchemaRuleOnlineMigration advises using online migration to migrate large tables.
+	SchemaRuleOnlineMigration SQLReviewRuleType = "advice.online-migration"
+
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
 	// ColumnListTemplateToken is the token for column name list.
@@ -406,12 +409,14 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
-	Charset   string
-	Collation string
-	DbType    storepb.Engine
-	Catalog   catalog.Catalog
-	Driver    *sql.DB
-	Context   context.Context
+	Charset    string
+	Collation  string
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
+	DBSchema   *storepb.DatabaseSchemaMetadata
+	DbType     storepb.Engine
+	Catalog    catalog.Catalog
+	Driver     *sql.DB
+	Context    context.Context
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -719,6 +724,8 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 			Context{
 				Charset:         checkContext.Charset,
 				Collation:       checkContext.Collation,
+				DBSchema:        checkContext.DBSchema,
+				ChangeType:      checkContext.ChangeType,
 				AST:             ast,
 				Statements:      statements,
 				Rule:            rule,
@@ -1491,6 +1498,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowCreate, nil
+		}
+	case SchemaRuleOnlineMigration:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLOnlineMigration, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

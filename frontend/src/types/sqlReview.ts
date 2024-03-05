@@ -23,7 +23,8 @@ export type CategoryType =
   | "SCHEMA"
   | "DATABASE"
   | "INDEX"
-  | "SYSTEM";
+  | "SYSTEM"
+  | "ADVICE";
 
 export const LEVEL_LIST = [
   SQLReviewRuleLevel.ERROR,
@@ -166,7 +167,8 @@ export type RuleType =
   | "index.total-number-limit"
   | "index.primary-key-type-allowlist"
   | "index.create-concurrently"
-  | "index.pk-type-limit";
+  | "index.pk-type-limit"
+  | "advice.online-migration";
 
 // The naming format rule payload.
 // Used by the backend.
@@ -653,6 +655,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "index.key-number-limit":
     case "index.total-number-limit":
     case "system.comment.length":
+    case "advice.online-migration":
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -789,6 +792,7 @@ const mergeIndividualConfigAsRule = (
     case "index.key-number-limit":
     case "index.total-number-limit":
     case "system.comment.length":
+    case "advice.online-migration":
       if (!numberPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }

@@ -20,6 +20,7 @@ export enum PlanCheckRunConfig_ChangeDatabaseType {
   DDL = 1,
   DML = 2,
   SDL = 3,
+  DDL_GHOST = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -37,6 +38,9 @@ export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): Plan
     case 3:
     case "SDL":
       return PlanCheckRunConfig_ChangeDatabaseType.SDL;
+    case 4:
+    case "DDL_GHOST":
+      return PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -54,6 +58,8 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
       return "DML";
     case PlanCheckRunConfig_ChangeDatabaseType.SDL:
       return "SDL";
+    case PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST:
+      return "DDL_GHOST";
     case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -20,7 +20,8 @@
     "schema": "Lược đồ",
     "database": "Cơ sở dữ liệu",
     "index": "Mục lục",
-    "system": "Hệ thống"
+    "system": "Hệ thống",
+    "advice": "Khuyến nghị "
   },
   "template": {
     "bb-sql-review-prod": "Mẫu nâng cao",
@@ -475,6 +476,10 @@
     "system-function-disallow-create": {
       "title": "Không cho phép tạo hàm",
       "description": "Quy tắc này cấm việc tạo các hàm trong cơ sở dữ liệu. Các hàm cung cấp logic có thể tái sử dụng giúp đơn giản hóa các truy vấn và tăng cường tính toàn vẹn dữ liệu. Bằng cách không cho phép tạo chúng, nó giúp duy trì kiểm soát đối với cấu trúc cơ sở dữ liệu và ngăn ngừa các rủi ro bảo mật tiềm ẩn. Mức độ lỗi đề xuất: Cảnh báo"
+    },
+    "advice-online-migration": {
+      "title": "Khuyến nghị bật di chuyển trực tuyến",
+      "description": "Nếu số lượng hàng bảng được di chuyển vượt quá cài đặt của bạn, hãy bật di chuyển trực tuyến. Mức lỗi được đề xuất: Cảnh báo"
     }
   },
   "level": {

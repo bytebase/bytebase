@@ -49,7 +49,7 @@ import { allowGhostForTask, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();
 const me = useCurrentUserV1();
-const { isCreating, issue, selectedTask: task } = useIssueContext();
+const { isCreating, issue, selectedTask: task, events } = useIssueContext();
 const { viewType, toggleGhost, showFeatureModal, showMissingInstanceLicense } =
   useIssueGhostContext();
 const isUpdating = ref(false);
@@ -122,6 +122,12 @@ const toggleChecked = async (on: boolean) => {
     isUpdating.value = false;
   }
 };
+
+events.on("toggle-online-migration", ({ on }) => {
+  if (on) {
+    toggleChecked(on);
+  }
+});
 </script>
 
 <style lang="postcss" scoped>

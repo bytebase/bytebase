@@ -71,6 +71,9 @@ const (
 	// MySQLUseInnoDB is an advisor type for MySQL InnoDB Engine.
 	MySQLUseInnoDB Type = "bb.plugin.advisor.mysql.use-innodb"
 
+	// MySQLOnlineMigration is an advisor type for MySQL using online migration to migrate large tables.
+	MySQLOnlineMigration Type = "bb.plugin.advisor.mysql.online-migration"
+
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 
@@ -542,7 +545,9 @@ const (
 type Context struct {
 	Charset    string
 	Collation  string
+	DBSchema   *storepb.DatabaseSchemaMetadata
 	SyntaxMode SyntaxMode
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
 
 	// SQL review rule special fields.
 	AST     any
