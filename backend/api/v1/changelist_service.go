@@ -127,9 +127,7 @@ func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.L
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projectIDs, err := func() (*[]string, error) {
-		return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
-	}()
+	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionChangelistsList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
