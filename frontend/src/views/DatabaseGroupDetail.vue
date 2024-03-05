@@ -152,7 +152,7 @@ import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
 import { DatabaseGroup, SchemaGroup } from "@/types/proto/v1/project_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 
 interface LocalState {
   isLoaded: boolean;
@@ -175,6 +175,7 @@ const props = defineProps<{
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const subscriptionV1Store = useSubscriptionV1Store();
+const me = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   isLoaded: false,
@@ -207,13 +208,12 @@ const schemaGroupList = computed(() => {
   );
 });
 const environment = computed(() => databaseGroup.value?.environment);
-const hasPermissionToCreateIssue = computed(() =>
-  hasProjectPermissionV2(
+const hasPermissionToCreateIssue = computed(() => {
+  return hasPermissionToCreateChangeDatabaseIssueInProject(
     project.value,
-    useCurrentUserV1().value,
-    "bb.issues.create"
-  )
-);
+    me.value
+  );
+});
 
 onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value);

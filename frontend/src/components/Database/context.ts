@@ -15,6 +15,7 @@ import {
   instanceV1SupportSlowQuery,
   isArchivedDatabaseV1,
   instanceV1HasBackupRestore,
+  hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 
 export type DatabaseDetailContext = {
@@ -104,17 +105,16 @@ export const provideDatabaseDetailContext = (
     checkPermission("bb.databases.getSchema")
   );
 
-  const allowCreateIssue = computed(() => checkPermission("bb.issues.create"));
   const allowChangeData = computed(() => {
     return (
       database.value.project !== DEFAULT_PROJECT_V1_NAME &&
-      allowUpdateDatabase.value &&
-      allowCreateIssue.value
+      hasPermissionToCreateChangeDatabaseIssue(database.value, me.value)
     );
   });
   const allowAlterSchema = computed(() => {
     return (
-      allowChangeData.value &&
+      database.value.project !== DEFAULT_PROJECT_V1_NAME &&
+      hasPermissionToCreateChangeDatabaseIssue(database.value, me.value) &&
       instanceV1HasAlterSchema(database.value.instanceEntity)
     );
   });

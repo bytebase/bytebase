@@ -16,7 +16,10 @@ import {
   PolicyType,
   policyTypeToJSON,
 } from "@/types/proto/v1/org_policy_service";
-import { hasProjectPermissionV2 } from "../iam";
+import {
+  hasPermissionToCreateChangeDatabaseIssue,
+  hasProjectPermissionV2,
+} from "../iam";
 import { isDev, semverCompare } from "../util";
 import {
   extractProjectResourceName,
@@ -99,9 +102,7 @@ export const isDatabaseV1Alterable = (
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.issues.create")
-  ) {
+  if (hasPermissionToCreateChangeDatabaseIssue(database, user)) {
     return true;
   }
 
