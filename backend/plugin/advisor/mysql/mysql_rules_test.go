@@ -138,6 +138,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleViewDisallowCreate,
 		// advisor.SchemaRuleFunctionDisallowCreate enforce the disallow create function.
 		advisor.SchemaRuleFunctionDisallowCreate,
+		// advisor.SchemaRuleFunctionDisallowList enforce the function disallow list.
+		advisor.SchemaRuleFunctionDisallowList,
 	}
 
 	for _, rule := range mysqlRules {
