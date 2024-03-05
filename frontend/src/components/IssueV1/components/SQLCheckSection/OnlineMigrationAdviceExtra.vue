@@ -1,10 +1,9 @@
 <template>
-  <template v-if="allowEnableGhost">
-    <span class="border-r border-control-border ml-1"></span>
-    <span class="normal-link ml-1 inline-block" @click="enableGhost">
+  <div v-if="allowEnableGhost">
+    <div class="normal-link inline-block" @click="enableGhost">
       {{ $t("task.online-migration.enable") }}
-    </span>
-  </template>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">

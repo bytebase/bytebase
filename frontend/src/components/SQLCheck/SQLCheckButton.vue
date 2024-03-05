@@ -73,7 +73,11 @@ import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspace
 import { useCurrentUserV1, useSQLReviewStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
+import {
+  Advice,
+  Advice_Status,
+  CheckRequest_ChangeType,
+} from "@/types/proto/v1/sql_service";
 import { Defer, VueStyle, defer, hasWorkspacePermissionV2 } from "@/utils";
 import ErrorList from "../misc/ErrorList.vue";
 import SQLCheckPanel from "./SQLCheckPanel.vue";
@@ -86,11 +90,13 @@ const props = withDefaults(
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
     buttonStyle?: VueStyle;
+    changeType?: CheckRequest_ChangeType;
   }>(),
   {
     databaseMetadata: undefined,
     buttonProps: undefined,
     buttonStyle: undefined,
+    changeType: undefined,
   }
 );
 
@@ -137,11 +143,12 @@ const runCheckInternal = async (
   statement: string,
   databaseMetadata: DatabaseMetadata | undefined
 ) => {
-  const { database } = props;
+  const { database, changeType } = props;
   const result = await sqlServiceClient.check({
     statement,
     database: database.name,
     metadata: databaseMetadata,
+    changeType,
   });
   return result;
 };
