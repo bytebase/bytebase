@@ -111,6 +111,7 @@ import {
 } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
+import { displayPermissionTitle } from "@/utils/permission";
 import { useCustomRoleSettingContext } from "../context";
 import ImportPermissionFromRoleModal from "./ImportPermissionFromRoleModal.vue";
 
@@ -153,7 +154,7 @@ const resourceId = computed({
 
 const permissionOptions = computed(() => {
   return [...WORKSPACE_PERMISSIONS, ...PROJECT_PERMISSIONS].sort().map((p) => ({
-    label: p,
+    label: displayPermissionTitle(p),
     value: p,
   }));
 });

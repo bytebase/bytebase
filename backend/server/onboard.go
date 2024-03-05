@@ -174,19 +174,15 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	// Create a standalone sample SQL sheet.
 	// This is different from another sample SQL sheet created below, which is created as part of
 	// creating a schema change issue.
-	sheetCreate := &store.SheetMessage{
+	if _, err = s.store.CreateWorkSheet(ctx, &store.WorkSheetMessage{
 		CreatorID:   userID,
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
 		Title:       "Sample Sheet",
 		Statement:   "SELECT * FROM salary;",
-		Visibility:  store.ProjectSheet,
-		Source:      store.SheetFromBytebase,
-		Type:        store.SheetForSQL,
-	}
-	_, err = s.store.CreateSheet(ctx, sheetCreate)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create sample sheet")
+		Visibility:  store.ProjectWorkSheet,
+	}); err != nil {
+		return errors.Wrapf(err, "failed to create sample work sheet")
 	}
 
 	// Create a schema update issue and start with creating the sheet for the schema update.
@@ -196,11 +192,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &testDatabase.UID,
 
-		Title:      "Alter table to test sample instance for sample issue",
-		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
+		Title:     "Alter table to test sample instance for sample issue",
+		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create test sheet for sample project")
@@ -212,11 +205,8 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		ProjectUID:  project.UID,
 		DatabaseUID: &prodDatabase.UID,
 
-		Title:      "Alter table to prod sample instance for sample issue",
-		Statement:  "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
+		Title:     "Alter table to prod sample instance for sample issue",
+		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
 	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to create prod sheet for sample project")

@@ -139,7 +139,7 @@ const handleChangeSelection = (value: string) => {
 };
 
 const handleSaveSheet = () => {
-  editorEvents.emit("save-sheet", { title: tabStore.currentTab.name });
+  editorEvents.emit("save-sheet", { tab: tabStore.currentTab });
 };
 
 const runQueryAction = (explain = false) => {

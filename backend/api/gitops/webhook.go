@@ -1915,9 +1915,6 @@ func (s *Service) prepareIssueFromSDLFile(ctx context.Context, oauthContext *com
 		ProjectUID: repoInfo.project.UID,
 		Title:      file,
 		Statement:  sdl,
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
 		Payload:    sheetPayload,
 	})
 	if err != nil {
@@ -1988,9 +1985,6 @@ func (s *Service) prepareIssueFromFile(
 				ProjectUID: repoInfo.project.UID,
 				Title:      fileInfo.item.FileName,
 				Statement:  content,
-				Visibility: store.ProjectSheet,
-				Source:     store.SheetFromBytebaseArtifact,
-				Type:       store.SheetForSQL,
 				Payload:    sheetPayload,
 			})
 			if err != nil {
@@ -2025,9 +2019,6 @@ func (s *Service) prepareIssueFromFile(
 			ProjectUID: repoInfo.project.UID,
 			Title:      fileInfo.item.FileName,
 			Statement:  migrationFile.Statement,
-			Visibility: store.ProjectSheet,
-			Source:     store.SheetFromBytebaseArtifact,
-			Type:       store.SheetForSQL,
 			Payload:    sheetPayload,
 		})
 		if err != nil {
@@ -2076,9 +2067,6 @@ func (s *Service) prepareIssueFromFile(
 			ProjectUID: repoInfo.project.UID,
 			Title:      fileInfo.item.FileName,
 			Statement:  content,
-			Visibility: store.ProjectSheet,
-			Source:     store.SheetFromBytebaseArtifact,
-			Type:       store.SheetForSQL,
 			Payload:    sheetPayload,
 		})
 		if err != nil {
@@ -2154,9 +2142,6 @@ func (s *Service) tryUpdateTasksFromModifiedFile(ctx context.Context, databases 
 			ProjectUID: issue.Project.UID,
 			Title:      fileName,
 			Statement:  statement,
-			Visibility: store.ProjectSheet,
-			Source:     store.SheetFromBytebaseArtifact,
-			Type:       store.SheetForSQL,
 			Payload:    sheetPayload,
 		})
 		if err != nil {

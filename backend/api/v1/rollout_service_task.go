@@ -220,9 +220,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			ProjectUID: project.UID,
 			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
-			Visibility: store.ProjectSheet,
-			Source:     store.SheetFromBytebaseArtifact,
-			Type:       store.SheetForSQL,
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create database creation sheet")

@@ -127,11 +127,11 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     return getOrFetchSheetByName(`projects/-/sheets/${uid}`, view);
   };
 
-  const patchSheet = async (sheet: Partial<Sheet>, updateMask: string[]) => {
+  const patchSheetContent = async (sheet: Partial<Sheet>) => {
     if (!sheet.name) return;
     const updated = await sheetServiceClient.updateSheet({
       sheet,
-      updateMask,
+      updateMask: ["content"],
     });
     setCache(updated, "FULL");
     return updated;
@@ -144,7 +144,7 @@ export const useSheetV1Store = defineStore("sheet_v1", () => {
     getOrFetchSheetByName,
     getSheetByUID,
     getOrFetchSheetByUID,
-    patchSheet,
+    patchSheetContent,
   };
 });
 

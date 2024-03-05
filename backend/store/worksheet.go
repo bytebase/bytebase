@@ -14,26 +14,20 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SheetSource is the type of sheet origin source.
-type SheetSource string
+// WorkSheetVisibility is the visibility of a sheet.
+type WorkSheetVisibility string
 
 const (
-	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
-	SheetFromBytebase SheetSource = "BYTEBASE"
-	// SheetFromBytebaseArtifact is the artifact sheet.
-	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
+	// PrivateWorkSheet is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
+	PrivateWorkSheet WorkSheetVisibility = "PRIVATE"
+	// ProjectWorkSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	ProjectWorkSheet WorkSheetVisibility = "PROJECT"
+	// PublicWorkSheet is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
+	PublicWorkSheet WorkSheetVisibility = "PUBLIC"
 )
 
-// SheetType is the type of sheet.
-type SheetType string
-
-const (
-	// SheetForSQL is the sheet that used for saving SQL statements.
-	SheetForSQL SheetType = "SQL"
-)
-
-// SheetMessage is the message for a sheet.
-type SheetMessage struct {
+// WorkSheetMessage is the message for a sheet.
+type WorkSheetMessage struct {
 	ProjectUID int
 	// The DatabaseUID is optional.
 	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
@@ -43,66 +37,61 @@ type SheetMessage struct {
 	CreatorID int
 	UpdaterID int
 
-	Title     string
-	Statement string
-	Payload   *storepb.SheetPayload
+	Title      string
+	Statement  string
+	Visibility WorkSheetVisibility
 
 	// Output only fields
 	UID         int
 	Size        int64
 	CreatedTime time.Time
 	UpdatedTime time.Time
+	Starred     bool
+	Pinned      bool
 
 	// Internal fields
 	createdTs int64
 	updatedTs int64
 }
 
-// FindSheetMessage is the API message for finding sheets.
-type FindSheetMessage struct {
+// FindWorkSheetMessage is the API message for finding sheets.
+type FindWorkSheetMessage struct {
 	UID *int
 
 	// Used to find the creator's sheet list.
 	// When finding shared PROJECT/PUBLIC sheets, this value should be empty.
 	// It does not make sense to set both `CreatorID` and `ExcludedCreatorID`.
 	CreatorID *int
+	// Used to find the sheets that are not created by the creator.
+	ExcludedCreatorID *int
 
 	// LoadFull is used if we want to load the full sheet.
 	LoadFull bool
 
-	// Related fields
-	ProjectUID *int
+	// Domain fields
+	Visibilities []WorkSheetVisibility
+
+	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// For now, we only need the starred sheets.
+	OrganizerPrincipalIDStarred    *int
+	OrganizerPrincipalIDNotStarred *int
+	// Used to find a sheet list from projects containing PrincipalID as an active member.
+	// When finding a shared PROJECT/PUBLIC sheets, this value should be present.
+	PrincipalID *int
 }
 
-// PatchSheetMessage is the message to patch a sheet.
-type PatchSheetMessage struct {
-	UID       int
-	UpdaterID int
-	Statement *string
+// PatchWorkSheetMessage is the message to patch a sheet.
+type PatchWorkSheetMessage struct {
+	UID        int
+	UpdaterID  int
+	Title      *string
+	Statement  *string
+	Visibility *string
 }
 
-// GetSheetStatementByID gets the statement of a sheet by ID.
-func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if v, ok := s.sheetCache.Get(id); ok {
-		return v, nil
-	}
-
-	sheet, err := s.GetSheet(ctx, &FindSheetMessage{UID: &id, LoadFull: true})
-	if err != nil {
-		return "", err
-	}
-	if sheet == nil {
-		return "", errors.Errorf("sheet not found with id %d", id)
-	}
-
-	statement := sheet.Statement
-	s.sheetCache.Add(id, statement)
-	return statement, nil
-}
-
-// GetSheet gets a sheet.
-func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
-	sheets, err := s.listSheets(ctx, find)
+// GetWorkSheet gets a sheet.
+func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) (*WorkSheetMessage, error) {
+	sheets, err := s.ListWorkSheets(ctx, find, currentPrincipalID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,26 +106,41 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 	return sheet, nil
 }
 
-// listSheets returns a list of sheets.
-func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
+// ListWorkSheets returns a list of sheets.
+func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) ([]*WorkSheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, SheetFromBytebaseArtifact)
+	where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, SheetFromBytebase)
 	where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, SheetForSQL)
 
-	// Standard fields
 	if v := find.UID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.id = $%d", len(args)+1)), append(args, *v)
 	}
+
+	// Standard fields
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-
-	// Related fields
-	if v := find.ProjectUID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.project_id = $%d", len(args)+1)), append(args, *v)
+	if v := find.ExcludedCreatorID; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.creator_id != $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Domain fields
+	visibilitiesWhere := []string{}
+	for _, v := range find.Visibilities {
+		visibilitiesWhere, args = append(visibilitiesWhere, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, v)
+	}
+	if len(visibilitiesWhere) > 0 {
+		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
+	}
+	if v := find.PrincipalID; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
+	}
+	if v := find.OrganizerPrincipalIDStarred; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+	}
+	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
+		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
+	}
 	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
 		statementField = "sheet.statement"
@@ -159,10 +163,13 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			sheet.database_id,
 			sheet.name,
 			%s,
-			sheet.payload,
-			OCTET_LENGTH(sheet.statement)
+			sheet.visibility,
+			OCTET_LENGTH(sheet.statement),
+			COALESCE(sheet_organizer.starred, FALSE),
+			COALESCE(sheet_organizer.pinned, FALSE)
 		FROM sheet
-		WHERE %s`, statementField, strings.Join(where, " AND ")),
+		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = sheet.id AND sheet_organizer.principal_id = %d
+		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -170,10 +177,9 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	}
 	defer rows.Close()
 
-	var sheets []*SheetMessage
+	var sheets []*WorkSheetMessage
 	for rows.Next() {
-		var sheet SheetMessage
-		var payload []byte
+		var sheet WorkSheetMessage
 		if err := rows.Scan(
 			&sheet.UID,
 			&sheet.CreatorID,
@@ -184,16 +190,13 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			&sheet.DatabaseUID,
 			&sheet.Title,
 			&sheet.Statement,
-			&payload,
+			&sheet.Visibility,
 			&sheet.Size,
+			&sheet.Starred,
+			&sheet.Pinned,
 		); err != nil {
 			return nil, err
 		}
-		sheetPayload := &storepb.SheetPayload{}
-		if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
-			return nil, err
-		}
-		sheet.Payload = sheetPayload
 
 		sheets = append(sheets, &sheet)
 	}
@@ -212,12 +215,9 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	return sheets, nil
 }
 
-// CreateSheet creates a new sheet.
-func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMessage, error) {
-	if create.Payload == nil {
-		create.Payload = &storepb.SheetPayload{}
-	}
-	payload, err := protojson.Marshal(create.Payload)
+// CreateWorkSheet creates a new sheet.
+func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (*WorkSheetMessage, error) {
+	payload, err := protojson.Marshal(&storepb.SheetPayload{})
 	if err != nil {
 		return nil, err
 	}
@@ -252,8 +252,8 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.DatabaseUID,
 		create.Title,
 		create.Statement,
-		ProjectWorkSheet,
-		SheetFromBytebaseArtifact,
+		create.Visibility,
+		SheetFromBytebase,
 		SheetForSQL,
 		payload,
 	).Scan(
@@ -277,14 +277,15 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	return create, nil
 }
 
-// PatchSheet updates a sheet.
-func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
+// PatchWorkSheet updates a sheet.
+func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) (*WorkSheetMessage, error) {
+	// return s.PatchSheet(ctx, &PatchSheetMessage{})
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	sheet, err := patchSheetImpl(ctx, tx, patch)
+	sheet, err := patchWorkSheetImpl(ctx, tx, patch)
 	if err != nil {
 		return nil, err
 	}
@@ -292,50 +293,38 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	if v := patch.Statement; v != nil {
-		s.sheetCache.Add(patch.UID, *v)
-	}
+	s.sheetCache.Remove(patch.UID)
 	return sheet, nil
 }
 
-// DeleteSheet deletes an existing sheet by ID.
-func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = $1`, sheetUID); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	s.sheetCache.Remove(sheetUID)
-	return nil
+// DeleteWorkSheet deletes an existing sheet by ID.
+func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
+	return s.DeleteSheet(ctx, sheetUID)
 }
 
-// patchSheetImpl updates a sheet's name/statement/visibility/payload/database_id/project_id.
-func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
+// patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
+func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) (*WorkSheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
+	if v := patch.Title; v != nil {
+		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
+	}
 	if v := patch.Statement; v != nil {
 		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := patch.Visibility; v != nil {
+		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
 
 	args = append(args, patch.UID)
 
-	var sheet SheetMessage
-	var payload []byte
+	var sheet WorkSheetMessage
 	databaseID := sql.NullInt32{}
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 		UPDATE sheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), payload, OCTET_LENGTH(statement)
+		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, OCTET_LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
@@ -348,7 +337,7 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		&databaseID,
 		&sheet.Title,
 		&sheet.Statement,
-		&payload,
+		&sheet.Visibility,
 		&sheet.Size,
 	); err != nil {
 		if err == sql.ErrNoRows {
@@ -356,11 +345,6 @@ func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*She
 		}
 		return nil, err
 	}
-	sheetPayload := &storepb.SheetPayload{}
-	if err := protojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
-		return nil, err
-	}
-	sheet.Payload = sheetPayload
 
 	if databaseID.Valid {
 		value := int(databaseID.Int32)
