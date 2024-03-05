@@ -343,7 +343,7 @@ func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string
 	}
 
 	if sheetUID := int(run.Config.GetSheetUid()); sheetUID != 0 {
-		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheet")
 		}

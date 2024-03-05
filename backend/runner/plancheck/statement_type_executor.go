@@ -11,7 +11,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -92,7 +91,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
@@ -213,7 +212,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}

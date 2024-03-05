@@ -81,7 +81,7 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	}
 
 	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID}, api.SystemBotID)
+	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
 	}
