@@ -5,43 +5,6 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var ownerAndDBAMethods = map[string]bool{
-	v1pb.EnvironmentService_CreateEnvironment_FullMethodName:   true,
-	v1pb.EnvironmentService_UpdateEnvironment_FullMethodName:   true,
-	v1pb.EnvironmentService_DeleteEnvironment_FullMethodName:   true,
-	v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName: true,
-	v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName: true,
-	v1pb.InstanceService_CreateInstance_FullMethodName:         true,
-	v1pb.InstanceService_UpdateInstance_FullMethodName:         true,
-	v1pb.InstanceService_DeleteInstance_FullMethodName:         true,
-	v1pb.InstanceService_UndeleteInstance_FullMethodName:       true,
-	v1pb.InstanceService_AddDataSource_FullMethodName:          true,
-	v1pb.InstanceService_RemoveDataSource_FullMethodName:       true,
-	v1pb.InstanceService_UpdateDataSource_FullMethodName:       true,
-	v1pb.RiskService_CreateRisk_FullMethodName:                 true,
-	v1pb.RiskService_UpdateRisk_FullMethodName:                 true,
-	v1pb.RiskService_DeleteRisk_FullMethodName:                 true,
-	v1pb.SettingService_UpdateSetting_FullMethodName:           true,
-	v1pb.RoleService_CreateRole_FullMethodName:                 true,
-	v1pb.RoleService_UpdateRole_FullMethodName:                 true,
-	v1pb.RoleService_DeleteRole_FullMethodName:                 true,
-	v1pb.ActuatorService_UpdateActuatorInfo_FullMethodName:     true,
-	v1pb.ActuatorService_ListDebugLog_FullMethodName:           true,
-}
-
-var projectOwnerMethods = map[string]bool{
-	v1pb.ProjectService_UpdateProject_FullMethodName:           true,
-	v1pb.ProjectService_DeleteProject_FullMethodName:           true,
-	v1pb.ProjectService_UndeleteProject_FullMethodName:         true,
-	v1pb.ProjectService_SetIamPolicy_FullMethodName:            true,
-	v1pb.SubscriptionService_UpdateSubscription_FullMethodName: true,
-}
-
-var transferDatabaseMethods = map[string]bool{
-	v1pb.DatabaseService_UpdateDatabase_FullMethodName:       true,
-	v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName: true,
-}
-
 var methodPermissionMap = map[string]iam.Permission{
 	v1pb.SQLService_AdminExecute_FullMethodName:           iam.PermissionInstancesAdminExecute,
 	v1pb.InstanceService_ListInstances_FullMethodName:     iam.PermissionInstancesList,
@@ -199,16 +162,4 @@ var methodPermissionMap = map[string]iam.Permission{
 	v1pb.IdentityProviderService_DeleteIdentityProvider_FullMethodName:   iam.PermissionIdentityProvidersDelete,
 	v1pb.IdentityProviderService_UndeleteIdentityProvider_FullMethodName: iam.PermissionIdentityProvidersUndelete,
 	v1pb.IdentityProviderService_TestIdentityProvider_FullMethodName:     iam.PermissionIdentityProvidersUpdate,
-}
-
-func isOwnerAndDBAMethod(methodName string) bool {
-	return ownerAndDBAMethods[methodName]
-}
-
-func isProjectOwnerMethod(methodName string) bool {
-	return projectOwnerMethods[methodName]
-}
-
-func isTransferDatabaseMethods(methodName string) bool {
-	return transferDatabaseMethods[methodName]
 }
