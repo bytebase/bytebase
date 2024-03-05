@@ -251,6 +251,52 @@ export interface CheckRequest {
    * If not provided, the database metadata will be fetched from the database.
    */
   metadata: DatabaseMetadata | undefined;
+  changeType: CheckRequest_ChangeType;
+}
+
+export enum CheckRequest_ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = 0,
+  DDL = 1,
+  DDL_GHOST = 2,
+  DML = 3,
+  UNRECOGNIZED = -1,
+}
+
+export function checkRequest_ChangeTypeFromJSON(object: any): CheckRequest_ChangeType {
+  switch (object) {
+    case 0:
+    case "CHANGE_TYPE_UNSPECIFIED":
+      return CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED;
+    case 1:
+    case "DDL":
+      return CheckRequest_ChangeType.DDL;
+    case 2:
+    case "DDL_GHOST":
+      return CheckRequest_ChangeType.DDL_GHOST;
+    case 3:
+    case "DML":
+      return CheckRequest_ChangeType.DML;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return CheckRequest_ChangeType.UNRECOGNIZED;
+  }
+}
+
+export function checkRequest_ChangeTypeToJSON(object: CheckRequest_ChangeType): string {
+  switch (object) {
+    case CheckRequest_ChangeType.CHANGE_TYPE_UNSPECIFIED:
+      return "CHANGE_TYPE_UNSPECIFIED";
+    case CheckRequest_ChangeType.DDL:
+      return "DDL";
+    case CheckRequest_ChangeType.DDL_GHOST:
+      return "DDL_GHOST";
+    case CheckRequest_ChangeType.DML:
+      return "DML";
+    case CheckRequest_ChangeType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
 }
 
 export interface CheckResponse {
@@ -1838,7 +1884,7 @@ export const PrettyResponse = {
 };
 
 function createBaseCheckRequest(): CheckRequest {
-  return { statement: "", database: "", metadata: undefined };
+  return { statement: "", database: "", metadata: undefined, changeType: 0 };
 }
 
 export const CheckRequest = {
@@ -1851,6 +1897,9 @@ export const CheckRequest = {
     }
     if (message.metadata !== undefined) {
       DatabaseMetadata.encode(message.metadata, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.changeType !== 0) {
+      writer.uint32(32).int32(message.changeType);
     }
     return writer;
   },
@@ -1883,6 +1932,13 @@ export const CheckRequest = {
 
           message.metadata = DatabaseMetadata.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.changeType = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1897,6 +1953,7 @@ export const CheckRequest = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       database: isSet(object.database) ? globalThis.String(object.database) : "",
       metadata: isSet(object.metadata) ? DatabaseMetadata.fromJSON(object.metadata) : undefined,
+      changeType: isSet(object.changeType) ? checkRequest_ChangeTypeFromJSON(object.changeType) : 0,
     };
   },
 
@@ -1911,6 +1968,9 @@ export const CheckRequest = {
     if (message.metadata !== undefined) {
       obj.metadata = DatabaseMetadata.toJSON(message.metadata);
     }
+    if (message.changeType !== 0) {
+      obj.changeType = checkRequest_ChangeTypeToJSON(message.changeType);
+    }
     return obj;
   },
 
@@ -1924,6 +1984,7 @@ export const CheckRequest = {
     message.metadata = (object.metadata !== undefined && object.metadata !== null)
       ? DatabaseMetadata.fromPartial(object.metadata)
       : undefined;
+    message.changeType = object.changeType ?? 0;
     return message;
   },
 };

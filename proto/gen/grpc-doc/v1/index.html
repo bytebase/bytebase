@@ -2530,6 +2530,10 @@
                   <a href="#bytebase.v1.Advice.Status"><span class="badge">E</span>Advice.Status</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.CheckRequest.ChangeType"><span class="badge">E</span>CheckRequest.ChangeType</a>
+                </li>
+              
               
               
                 <li>
@@ -26487,6 +26491,13 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
 If not provided, the database metadata will be fetched from the database. </p></td>
                 </tr>
               
+                <tr>
+                  <td>change_type</td>
+                  <td><a href="#bytebase.v1.CheckRequest.ChangeType">CheckRequest.ChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -27171,6 +27182,41 @@ The types come from the Golang SQL driver. </p></td>
             
               <tr>
                 <td>ERROR</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.CheckRequest.ChangeType">CheckRequest.ChangeType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL_GHOST</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
