@@ -394,8 +394,8 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
-	worksheetOrganizerUpsert := &store.SheetOrganizerMessage{
-		SheetUID:     worksheetUID,
+	worksheetOrganizerUpsert := &store.WorksheetOrganizerMessage{
+		WorksheetUID: worksheetUID,
 		PrincipalUID: principalID,
 	}
 
@@ -405,7 +405,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 		}
 	}
 
-	organizer, err := s.store.UpsertSheetOrganizerV2(ctx, worksheetOrganizerUpsert)
+	organizer, err := s.store.UpsertWorksheetOrganizer(ctx, worksheetOrganizerUpsert)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to upsert organizer for worksheet %s with error: %v", request.Organizer.Worksheet, err)
 	}

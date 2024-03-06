@@ -1,0 +1,8 @@
+ALTER TABLE sheet_organizer DROP COLUMN pinned;
+DROP INDEX idx_sheet_organizer_unique_sheet_id_principal_id;
+DROP INDEX idx_sheet_organizer_principal_id;
+ALTER TABLE sheet_organizer RENAME TO worksheet_organizer;
+ALTER TABLE worksheet_organizer RENAME COLUMN sheet_id TO worksheet_id;
+CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON worksheet_organizer(worksheet_id, principal_id);
+CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
+ALTER SEQUENCE sheet_organizer_id_seq RENAME TO worksheet_organizer_id_seq;
