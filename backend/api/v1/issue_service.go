@@ -1804,6 +1804,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		GrantRequest:         convertedGrantRequest,
 		Releasers:            releasers,
 		RiskLevel:            v1pb.Issue_RISK_LEVEL_UNSPECIFIED,
+		TaskStatusCount:      issue.TaskStatusCount,
 	}
 
 	if issue.PlanUID != nil {

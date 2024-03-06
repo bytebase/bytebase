@@ -333,6 +333,7 @@
     - [GrantRequest](#bytebase-v1-GrantRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
+    - [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry)
     - [IssueComment](#bytebase-v1-IssueComment)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
@@ -5616,6 +5617,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
 | releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. If the policy is auto rollout, the releasers are the project owners and the issue creator. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
 | risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
+| task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 
 
 
@@ -5632,6 +5634,22 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | ----- | ---- | ----- | ----------- |
 | status | [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status) |  | The new status. |
 | principal | [string](#string) |  | Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-Issue-TaskStatusCountEntry"></a>
+
+### Issue.TaskStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
 
 
 

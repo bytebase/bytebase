@@ -273,6 +273,18 @@ export interface Issue {
    */
   releasers: string[];
   riskLevel: Issue_RiskLevel;
+  /**
+   * The status count of the issue.
+   * Keys are the following:
+   * - NOT_STARTED
+   * - SKIPPED
+   * - PENDING
+   * - RUNNING
+   * - DONE
+   * - FAILED
+   * - CANCELED
+   */
+  taskStatusCount: { [key: string]: number };
 }
 
 export enum Issue_Type {
@@ -409,6 +421,11 @@ export function issue_Approver_StatusToJSON(object: Issue_Approver_Status): stri
     default:
       return "UNRECOGNIZED";
   }
+}
+
+export interface Issue_TaskStatusCountEntry {
+  key: string;
+  value: number;
 }
 
 export interface GrantRequest {
@@ -1628,6 +1645,7 @@ function createBaseIssue(): Issue {
     grantRequest: undefined,
     releasers: [],
     riskLevel: 0,
+    taskStatusCount: {},
   };
 }
 
@@ -1696,6 +1714,9 @@ export const Issue = {
     if (message.riskLevel !== 0) {
       writer.uint32(168).int32(message.riskLevel);
     }
+    Object.entries(message.taskStatusCount).forEach(([key, value]) => {
+      Issue_TaskStatusCountEntry.encode({ key: key as any, value }, writer.uint32(178).fork()).ldelim();
+    });
     return writer;
   },
 
@@ -1853,6 +1874,16 @@ export const Issue = {
 
           message.riskLevel = reader.int32() as any;
           continue;
+        case 22:
+          if (tag !== 178) {
+            break;
+          }
+
+          const entry22 = Issue_TaskStatusCountEntry.decode(reader, reader.uint32());
+          if (entry22.value !== undefined) {
+            message.taskStatusCount[entry22.key] = entry22.value;
+          }
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1893,6 +1924,12 @@ export const Issue = {
         ? object.releasers.map((e: any) => globalThis.String(e))
         : [],
       riskLevel: isSet(object.riskLevel) ? issue_RiskLevelFromJSON(object.riskLevel) : 0,
+      taskStatusCount: isObject(object.taskStatusCount)
+        ? Object.entries(object.taskStatusCount).reduce<{ [key: string]: number }>((acc, [key, value]) => {
+          acc[key] = Number(value);
+          return acc;
+        }, {})
+        : {},
     };
   },
 
@@ -1961,6 +1998,15 @@ export const Issue = {
     if (message.riskLevel !== 0) {
       obj.riskLevel = issue_RiskLevelToJSON(message.riskLevel);
     }
+    if (message.taskStatusCount) {
+      const entries = Object.entries(message.taskStatusCount);
+      if (entries.length > 0) {
+        obj.taskStatusCount = {};
+        entries.forEach(([k, v]) => {
+          obj.taskStatusCount[k] = Math.round(v);
+        });
+      }
+    }
     return obj;
   },
 
@@ -1992,6 +2038,15 @@ export const Issue = {
       : undefined;
     message.releasers = object.releasers?.map((e) => e) || [];
     message.riskLevel = object.riskLevel ?? 0;
+    message.taskStatusCount = Object.entries(object.taskStatusCount ?? {}).reduce<{ [key: string]: number }>(
+      (acc, [key, value]) => {
+        if (value !== undefined) {
+          acc[key] = globalThis.Number(value);
+        }
+        return acc;
+      },
+      {},
+    );
     return message;
   },
 };
@@ -2066,6 +2121,80 @@ export const Issue_Approver = {
     const message = createBaseIssue_Approver();
     message.status = object.status ?? 0;
     message.principal = object.principal ?? "";
+    return message;
+  },
+};
+
+function createBaseIssue_TaskStatusCountEntry(): Issue_TaskStatusCountEntry {
+  return { key: "", value: 0 };
+}
+
+export const Issue_TaskStatusCountEntry = {
+  encode(message: Issue_TaskStatusCountEntry, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.key !== "") {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== 0) {
+      writer.uint32(16).int32(message.value);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Issue_TaskStatusCountEntry {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseIssue_TaskStatusCountEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.value = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Issue_TaskStatusCountEntry {
+    return {
+      key: isSet(object.key) ? globalThis.String(object.key) : "",
+      value: isSet(object.value) ? globalThis.Number(object.value) : 0,
+    };
+  },
+
+  toJSON(message: Issue_TaskStatusCountEntry): unknown {
+    const obj: any = {};
+    if (message.key !== "") {
+      obj.key = message.key;
+    }
+    if (message.value !== 0) {
+      obj.value = Math.round(message.value);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Issue_TaskStatusCountEntry>): Issue_TaskStatusCountEntry {
+    return Issue_TaskStatusCountEntry.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Issue_TaskStatusCountEntry>): Issue_TaskStatusCountEntry {
+    const message = createBaseIssue_TaskStatusCountEntry();
+    message.key = object.key ?? "";
+    message.value = object.value ?? 0;
     return message;
   },
 };
@@ -3577,6 +3706,10 @@ function numberToLong(number: number) {
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
   _m0.configure();
+}
+
+function isObject(value: any): boolean {
+  return typeof value === "object" && value !== null;
 }
 
 function isSet(value: any): boolean {
