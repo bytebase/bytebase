@@ -111,7 +111,7 @@ func TestTruncateString(t *testing.T) {
 	a := assert.New(t)
 	for i := range tests {
 		test := tests[i]
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.name, func(_ *testing.T) {
 			got, truncated := TruncateString(test.str, test.limit)
 			a.Equal(test.want, got)
 			a.Equal(test.truncated, truncated)

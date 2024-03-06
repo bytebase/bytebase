@@ -17,7 +17,7 @@ func newVersionCmd() *cobra.Command {
 	versionCmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version of bb",
-		Run: func(cmd *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			fmt.Printf("bb version: %s\n", version)
 			fmt.Printf("Golang version: %s\n", goversion)
 			fmt.Printf("Git commit hash: %s\n", gitcommit)

@@ -78,7 +78,7 @@ func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Connectio
 		}
 		d.sshClient = sshClient
 
-		options.Dialer = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		options.Dialer = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err

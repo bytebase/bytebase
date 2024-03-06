@@ -42,7 +42,7 @@ func TestArchiveProject(t *testing.T) {
 	})
 	a.NoError(err)
 
-	t.Run("ArchiveProjectWithDatbase", func(t *testing.T) {
+	t.Run("ArchiveProjectWithDatbase", func(_ *testing.T) {
 		databaseName := "db1"
 		err = ctl.createDatabaseV2(ctx, ctl.project, instance, nil /* environment */, databaseName, "", nil)
 		a.NoError(err)
@@ -53,7 +53,7 @@ func TestArchiveProject(t *testing.T) {
 		a.Error(err)
 	})
 
-	t.Run("ArchiveProjectWithOpenIssue", func(t *testing.T) {
+	t.Run("ArchiveProjectWithOpenIssue", func(_ *testing.T) {
 		plan, err := ctl.rolloutServiceClient.CreatePlan(ctx, &v1pb.CreatePlanRequest{
 			Parent: ctl.project.Name,
 			Plan: &v1pb.Plan{

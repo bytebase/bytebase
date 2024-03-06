@@ -33,7 +33,7 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 		LogMethod: true,
 		LogStatus: true,
 		LogError:  true,
-		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(_ echo.Context, values middleware.RequestLoggerValues) error {
 			if values.Error != nil {
 				slog.Error("echo request logger", "method", values.Method, "uri", values.URI, "status", values.Status, log.BBError(values.Error))
 			}
@@ -61,10 +61,10 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 			id := ctx.RealIP()
 			return id, nil
 		},
-		ErrorHandler: func(context echo.Context, err error) error {
+		ErrorHandler: func(context echo.Context, _ error) error {
 			return context.JSON(http.StatusForbidden, nil)
 		},
-		DenyHandler: func(context echo.Context, identifier string, err error) error {
+		DenyHandler: func(context echo.Context, _ string, _ error) error {
 			return context.JSON(http.StatusTooManyRequests, nil)
 		},
 	}))
@@ -88,11 +88,11 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 	// GRPC web proxy.
 	options := []grpcweb.Option{
 		grpcweb.WithCorsForRegisteredEndpointsOnly(false),
-		grpcweb.WithOriginFunc(func(origin string) bool {
+		grpcweb.WithOriginFunc(func(_ string) bool {
 			return true
 		}),
 		grpcweb.WithWebsockets(true),
-		grpcweb.WithWebsocketOriginFunc(func(req *http.Request) bool {
+		grpcweb.WithWebsocketOriginFunc(func(_ *http.Request) bool {
 			return true
 		}),
 	}
