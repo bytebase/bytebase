@@ -95,7 +95,8 @@ func (l *whereRequireChecker) EnterUpdate_statement(ctx *parser.Update_statement
 
 // EnterQuery_Specification is called when production query_Specification is entered.
 func (l *whereRequireChecker) EnterQuery_specification(ctx *parser.Query_specificationContext) {
-	if ctx.WHERE() == nil {
+	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+	if ctx.WHERE() == nil && ctx.FROM() != nil {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.StatementNoWhere,

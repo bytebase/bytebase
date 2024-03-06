@@ -63,3 +63,11 @@
       content: WHERE clause is required for query specification.
       line: 3
       details: ""
+- statement: SELECT 1;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
