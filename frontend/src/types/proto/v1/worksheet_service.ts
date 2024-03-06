@@ -58,7 +58,6 @@ export interface UpdateWorksheetOrganizerRequest {
    * Fields are specified relative to the worksheet organizer.
    * Only support update the following fields for now:
    * - `starred`
-   * - `pinned`
    */
   updateMask: string[] | undefined;
 }
@@ -71,8 +70,6 @@ export interface WorksheetOrganizer {
   worksheet: string;
   /** starred means if the worksheet is starred. */
   starred: boolean;
-  /** pinned means if the worksheet is pinned. */
-  pinned: boolean;
 }
 
 export interface DeleteWorksheetRequest {
@@ -482,7 +479,7 @@ export const UpdateWorksheetOrganizerRequest = {
 };
 
 function createBaseWorksheetOrganizer(): WorksheetOrganizer {
-  return { worksheet: "", starred: false, pinned: false };
+  return { worksheet: "", starred: false };
 }
 
 export const WorksheetOrganizer = {
@@ -492,9 +489,6 @@ export const WorksheetOrganizer = {
     }
     if (message.starred === true) {
       writer.uint32(16).bool(message.starred);
-    }
-    if (message.pinned === true) {
-      writer.uint32(24).bool(message.pinned);
     }
     return writer;
   },
@@ -520,13 +514,6 @@ export const WorksheetOrganizer = {
 
           message.starred = reader.bool();
           continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.pinned = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -540,7 +527,6 @@ export const WorksheetOrganizer = {
     return {
       worksheet: isSet(object.worksheet) ? globalThis.String(object.worksheet) : "",
       starred: isSet(object.starred) ? globalThis.Boolean(object.starred) : false,
-      pinned: isSet(object.pinned) ? globalThis.Boolean(object.pinned) : false,
     };
   },
 
@@ -552,9 +538,6 @@ export const WorksheetOrganizer = {
     if (message.starred === true) {
       obj.starred = message.starred;
     }
-    if (message.pinned === true) {
-      obj.pinned = message.pinned;
-    }
     return obj;
   },
 
@@ -565,7 +548,6 @@ export const WorksheetOrganizer = {
     const message = createBaseWorksheetOrganizer();
     message.worksheet = object.worksheet ?? "";
     message.starred = object.starred ?? false;
-    message.pinned = object.pinned ?? false;
     return message;
   },
 };

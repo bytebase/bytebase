@@ -10083,7 +10083,7 @@ When paginating, all other parameters provided to `SearchWorksheets` must match 
 | organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer to update.
 
 The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: worksheets/{worksheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` |
 
 
 
@@ -10143,7 +10143,6 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | ----- | ---- | ----- | ----------- |
 | worksheet | [string](#string) |  | The name of the worksheet. Format: worksheets/{worksheet} |
 | starred | [bool](#bool) |  | starred means if the worksheet is starred. |
-| pinned | [bool](#bool) |  | pinned means if the worksheet is pinned. |
 
 
 

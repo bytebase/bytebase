@@ -47,7 +47,6 @@ type WorkSheetMessage struct {
 	CreatedTime time.Time
 	UpdatedTime time.Time
 	Starred     bool
-	Pinned      bool
 
 	// Internal fields
 	createdTs int64
@@ -71,7 +70,7 @@ type FindWorkSheetMessage struct {
 	// Domain fields
 	Visibilities []WorkSheetVisibility
 
-	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// Used to find (un)starred sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
 	OrganizerPrincipalIDNotStarred *int
@@ -163,8 +162,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			%s,
 			worksheet.visibility,
 			OCTET_LENGTH(worksheet.statement),
-			COALESCE(sheet_organizer.starred, FALSE),
-			COALESCE(sheet_organizer.pinned, FALSE)
+			COALESCE(sheet_organizer.starred, FALSE)
 		FROM worksheet
 		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = worksheet.id AND sheet_organizer.principal_id = %d
 		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
@@ -191,7 +189,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.Visibility,
 			&sheet.Size,
 			&sheet.Starred,
-			&sheet.Pinned,
 		); err != nil {
 			return nil, err
 		}
@@ -361,13 +358,11 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 
 	if err := tx.QueryRowContext(ctx, `
 		SELECT
-			COALESCE(sheet_organizer.starred, FALSE),
-			COALESCE(sheet_organizer.pinned, FALSE)
+			COALESCE(sheet_organizer.starred, FALSE)
 		FROM sheet_organizer
 		WHERE sheet_organizer.sheet_id = $1
 	`, sheet.UID).Scan(
 		&sheet.Starred,
-		&sheet.Pinned,
 	); err != nil {
 		return nil, err
 	}

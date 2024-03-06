@@ -310,6 +310,7 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
 	}
+	fmt.Printf("Barny1: %+v\n", worksheetPatch)
 	storeWorksheet, err := s.store.PatchWorkSheet(ctx, worksheetPatch)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update worksheet: %v", err))
@@ -395,8 +396,6 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 		switch path {
 		case "starred":
 			worksheetOrganizerUpsert.Starred = request.Organizer.Starred
-		case "pinned":
-			worksheetOrganizerUpsert.Pinned = request.Organizer.Pinned
 		}
 	}
 
@@ -408,7 +407,6 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	return &v1pb.WorksheetOrganizer{
 		Worksheet: request.Organizer.Worksheet,
 		Starred:   organizer.Starred,
-		Pinned:    organizer.Pinned,
 	}, nil
 }
 

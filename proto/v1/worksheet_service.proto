@@ -91,7 +91,6 @@ message UpdateWorksheetOrganizerRequest {
   // Fields are specified relative to the worksheet organizer.
   // Only support update the following fields for now:
   // - `starred`
-  // - `pinned`
   google.protobuf.FieldMask update_mask = 2;
 }
 
@@ -102,9 +101,6 @@ message WorksheetOrganizer {
 
   // starred means if the worksheet is starred.
   bool starred = 2;
-
-  // pinned means if the worksheet is pinned.
-  bool pinned = 3;
 }
 
 message DeleteWorksheetRequest {
