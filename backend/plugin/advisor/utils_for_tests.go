@@ -328,6 +328,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementInsertDisallowOrderByRand,
 		SchemaRuleStatementDMLDryRun,
 		SchemaRuleStatementDisallowUsingFilesort,
+		SchemaRuleStatementDisallowUsingTemporary,
 		SchemaRuleTableRequirePK,
 		SchemaRuleTableNoFK,
 		SchemaRuleTableDisallowPartition,
