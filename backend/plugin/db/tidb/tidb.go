@@ -75,7 +75,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, connCfg db.
 		}
 		driver.sshClient = sshClient
 		// Now we register the dialer with the ssh connection as a parameter.
-		mysql.RegisterDialContext("mysql+tcp", func(ctx context.Context, addr string) (net.Conn, error) {
+		mysql.RegisterDialContext("mysql+tcp", func(_ context.Context, addr string) (net.Conn, error) {
 			return sshClient.Dial("tcp", addr)
 		})
 		protocol = "mysql+tcp"
