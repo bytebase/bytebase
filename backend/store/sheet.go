@@ -14,14 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SheetSource is the type of sheet origin source.
-type SheetSource string
-
-const (
-	// SheetFromBytebaseArtifact is the artifact sheet.
-	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
-)
-
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
 	ProjectUID int
@@ -218,10 +210,9 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			database_id,
 			name,
 			statement,
-			source,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
 	`
 
@@ -238,7 +229,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.DatabaseUID,
 		create.Title,
 		create.Statement,
-		SheetFromBytebaseArtifact,
 		payload,
 	).Scan(
 		&create.UID,

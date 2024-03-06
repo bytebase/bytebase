@@ -1,3 +1,4 @@
+-- Create worksheet table.
 CREATE TABLE worksheet (
     id SERIAL PRIMARY KEY,
     row_status row_status NOT NULL DEFAULT 'NORMAL',
@@ -13,12 +14,45 @@ CREATE TABLE worksheet (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_worksheet_creator_id ON worksheet(creator_id);
-
-CREATE INDEX idx_worksheet_project_id ON worksheet(project_id);
+CREATE INDEX idx_worksheet_creator_id_project_id ON worksheet(creator_id, project_id);
 
 CREATE TRIGGER update_worksheet_updated_ts
 BEFORE
 UPDATE
     ON worksheet FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
+
+-- Migrate sheet with BYTEBASE source to the worksheet table.
+INSERT INTO worksheet
+    (id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, statement, visibility, payload)
+SELECT
+    sheet.id,
+    sheet.creator_id,
+    sheet.created_ts,
+    sheet.updater_id,
+    sheet.updated_ts,
+    sheet.project_id,
+    sheet.database_id,
+    sheet.name,
+    sheet.statement,
+    sheet.visibility,
+    sheet.payload
+FROM sheet
+WHERE sheet.source = 'BYTEBASE';
+
+-- Change fk for sheet_organizer.
+ALTER TABLE sheet_organizer DROP CONSTRAINT sheet_organizer_sheet_id_fkey;
+ALTER TABLE sheet_organizer ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES worksheet (id);
+
+-- Remove worksheet from sheet.
+DELETE FROM sheet WHERE sheet.source = 'BYTEBASE';
+
+-- Drop legacy fields for sheet.
+ALTER TABLE sheet DROP CONSTRAINT sheet_visibility_check;
+ALTER TABLE sheet DROP COLUMN visibility;
+
+ALTER TABLE sheet DROP CONSTRAINT sheet_type_check;
+ALTER TABLE sheet DROP COLUMN type;
+
+ALTER TABLE sheet DROP CONSTRAINT sheet_source_check;
+ALTER TABLE sheet DROP COLUMN source;

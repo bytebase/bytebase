@@ -1061,7 +1061,6 @@ CREATE TABLE sheet (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    source TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -1098,9 +1097,7 @@ CREATE TABLE worksheet (
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
-CREATE INDEX idx_worksheet_creator_id ON worksheet(creator_id);
-
-CREATE INDEX idx_worksheet_project_id ON worksheet(project_id);
+CREATE INDEX idx_worksheet_creator_id_project_id ON worksheet(creator_id, project_id);
 
 ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
 

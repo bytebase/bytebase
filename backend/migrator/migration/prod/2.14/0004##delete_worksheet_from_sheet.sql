@@ -1,1 +1,0 @@
-DELETE FROM sheet WHERE sheet.source = 'BYTEBASE';
