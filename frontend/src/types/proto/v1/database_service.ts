@@ -528,7 +528,7 @@ export interface TablePartitionMetadata {
 /**
  * Type is the type of a table partition, some database engines may not support all types.
  * Only avilable for the following database engines now:
- * MySQL: RANGE, LIST, HASH, COLUMNS, KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+ * MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
  * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
@@ -536,8 +536,9 @@ export enum TablePartitionMetadata_Type {
   RANGE = 1,
   LIST = 2,
   HASH = 3,
-  COLUMNS = 4,
+  LINEAR_HASH = 4,
   KEY = 5,
+  LINEAR_KEY = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -556,11 +557,14 @@ export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartition
     case "HASH":
       return TablePartitionMetadata_Type.HASH;
     case 4:
-    case "COLUMNS":
-      return TablePartitionMetadata_Type.COLUMNS;
+    case "LINEAR_HASH":
+      return TablePartitionMetadata_Type.LINEAR_HASH;
     case 5:
     case "KEY":
       return TablePartitionMetadata_Type.KEY;
+    case 6:
+    case "LINEAR_KEY":
+      return TablePartitionMetadata_Type.LINEAR_KEY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -578,10 +582,12 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
       return "LIST";
     case TablePartitionMetadata_Type.HASH:
       return "HASH";
-    case TablePartitionMetadata_Type.COLUMNS:
-      return "COLUMNS";
+    case TablePartitionMetadata_Type.LINEAR_HASH:
+      return "LINEAR_HASH";
     case TablePartitionMetadata_Type.KEY:
       return "KEY";
+    case TablePartitionMetadata_Type.LINEAR_KEY:
+      return "LINEAR_KEY";
     case TablePartitionMetadata_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
