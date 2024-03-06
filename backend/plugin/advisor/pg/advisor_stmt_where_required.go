@@ -80,7 +80,7 @@ func (checker *whereRequirementChecker) Visit(node ast.Node) ast.Visitor {
 		}
 	// SELECT
 	case *ast.SelectStmt:
-		if n.WhereClause == nil {
+		if n.WhereClause == nil && len(n.FromClause) > 0 {
 			code = advisor.StatementNoWhere
 		}
 	}

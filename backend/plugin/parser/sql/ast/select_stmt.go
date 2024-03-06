@@ -1,5 +1,9 @@
 package ast
 
+import (
+	pgquery "github.com/pganalyze/pg_query_go/v4"
+)
+
 // SetOperationType is the type for set operations.
 type SetOperationType int
 
@@ -44,6 +48,8 @@ type SelectStmt struct {
 	PatternLikeList []*PatternLikeDef
 	// SubqueryList is the list of the subquery nodes.
 	SubqueryList []*SubqueryDef
+	// FromClause is the raw pgquery from clause nodes.
+	FromClause []*pgquery.Node
 }
 
 // ByItemDef is the struct for item in order by or group by.
