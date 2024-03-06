@@ -17,6 +17,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/google/uuid"
+
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	resourcemysql "github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -51,6 +53,7 @@ func TestRestoreToNewDatabase(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
 								CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
 									Target:       instance.Name,
@@ -144,6 +147,7 @@ func TestPITRGeneral(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: database.Name,
@@ -225,6 +229,7 @@ func TestPITRDropDatabase(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: database.Name,
@@ -290,6 +295,7 @@ func TestPITRTwice(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: database.Name,
@@ -361,6 +367,7 @@ func TestPITRTwice(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: database.Name,
@@ -454,6 +461,7 @@ func TestPITRToNewDatabaseInAnotherInstance(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: sourceDB.Name,
@@ -518,6 +526,7 @@ func TestPITRInvalidTimePoint(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: database.Name,

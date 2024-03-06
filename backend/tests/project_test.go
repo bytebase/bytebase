@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -61,6 +62,7 @@ func TestArchiveProject(t *testing.T) {
 					{
 						Specs: []*v1pb.Plan_Spec{
 							{
+								Id: uuid.NewString(),
 								Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
 									CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
 										Target:   instance.Name,
