@@ -97,8 +97,7 @@ type DatabaseCountMetric struct {
 // SheetCountMetric is the API message for sheet count metric.
 type SheetCountMetric struct {
 	RowStatus  api.RowStatus
-	Visibility api.SheetVisibility
-	Source     api.SheetSource
+	Visibility string
 	Count      int
 }
 

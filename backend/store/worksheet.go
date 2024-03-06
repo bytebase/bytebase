@@ -109,19 +109,17 @@ func (s *Store) GetWorkSheet(ctx context.Context, find *FindWorkSheetMessage, cu
 // ListWorkSheets returns a list of sheets.
 func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, currentPrincipalID int) ([]*WorkSheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, SheetFromBytebase)
-	where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, SheetForSQL)
 
 	if v := find.UID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.id = $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Standard fields
 	if v := find.CreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.creator_id = $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
 	if v := find.ExcludedCreatorID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.creator_id != $%d", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.creator_id != $%d", len(args)+1)), append(args, *v)
 	}
 
 	// Domain fields
@@ -133,17 +131,17 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		where = append(where, fmt.Sprintf("(%s)", strings.Join(visibilitiesWhere, " OR ")))
 	}
 	if v := find.PrincipalID; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("sheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
 	}
-	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
+	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
-		statementField = "sheet.statement"
+		statementField = "worksheet.statement"
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -154,21 +152,21 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
-			sheet.id,
-			sheet.creator_id,
-			sheet.created_ts,
-			sheet.updater_id,
-			sheet.updated_ts,
-			sheet.project_id,
-			sheet.database_id,
-			sheet.name,
+			worksheet.id,
+			worksheet.creator_id,
+			worksheet.created_ts,
+			worksheet.updater_id,
+			worksheet.updated_ts,
+			worksheet.project_id,
+			worksheet.database_id,
+			worksheet.name,
 			%s,
-			sheet.visibility,
-			OCTET_LENGTH(sheet.statement),
+			worksheet.visibility,
+			OCTET_LENGTH(worksheet.statement),
 			COALESCE(sheet_organizer.starred, FALSE),
 			COALESCE(sheet_organizer.pinned, FALSE)
-		FROM sheet
-		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = sheet.id AND sheet_organizer.principal_id = %d
+		FROM worksheet
+		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = worksheet.id AND sheet_organizer.principal_id = %d
 		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
 		args...,
 	)
@@ -223,7 +221,7 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 	}
 
 	query := `
-		INSERT INTO sheet (
+		INSERT INTO worksheet (
 			creator_id,
 			updater_id,
 			project_id,
@@ -231,11 +229,9 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 			name,
 			statement,
 			visibility,
-			source,
-			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
 	`
 
@@ -253,8 +249,6 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 		create.Title,
 		create.Statement,
 		create.Visibility,
-		SheetFromBytebase,
-		SheetForSQL,
 		payload,
 	).Scan(
 		&create.UID,
@@ -279,7 +273,6 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 
 // PatchWorkSheet updates a sheet.
 func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) (*WorkSheetMessage, error) {
-	// return s.PatchSheet(ctx, &PatchSheetMessage{})
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -293,13 +286,22 @@ func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
-	s.sheetCache.Remove(patch.UID)
 	return sheet, nil
 }
 
 // DeleteWorkSheet deletes an existing sheet by ID.
 func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
-	return s.DeleteSheet(ctx, sheetUID)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM worksheet WHERE id = $1`, sheetUID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
@@ -321,10 +323,21 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 	databaseID := sql.NullInt32{}
 
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
-		UPDATE sheet
+		UPDATE worksheet
 		SET `+strings.Join(set, ", ")+`
 		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), visibility, OCTET_LENGTH(statement)
+		RETURNING
+			id,
+			creator_id,
+			created_ts,
+			updater_id,
+			updated_ts,
+			project_id,
+			database_id,
+			name,
+			LEFT(statement, %d),
+			visibility,
+			OCTET_LENGTH(statement)
 	`, len(args), common.MaxSheetSize),
 		args...,
 	).Scan(
@@ -343,6 +356,19 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.UID)}
 		}
+		return nil, err
+	}
+
+	if err := tx.QueryRowContext(ctx, `
+		SELECT
+			COALESCE(sheet_organizer.starred, FALSE),
+			COALESCE(sheet_organizer.pinned, FALSE)
+		FROM sheet_organizer
+		WHERE sheet_organizer.sheet_id = $1
+	`, sheet.UID).Scan(
+		&sheet.Starred,
+		&sheet.Pinned,
+	); err != nil {
 		return nil, err
 	}
 

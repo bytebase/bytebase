@@ -14,24 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// SheetSource is the type of sheet origin source.
-type SheetSource string
-
-const (
-	// SheetFromBytebase is the sheet created by Bytebase. e.g. SQL Editor.
-	SheetFromBytebase SheetSource = "BYTEBASE"
-	// SheetFromBytebaseArtifact is the artifact sheet.
-	SheetFromBytebaseArtifact SheetSource = "BYTEBASE_ARTIFACT"
-)
-
-// SheetType is the type of sheet.
-type SheetType string
-
-const (
-	// SheetForSQL is the sheet that used for saving SQL statements.
-	SheetForSQL SheetType = "SQL"
-)
-
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
 	ProjectUID int
@@ -120,8 +102,6 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 // listSheets returns a list of sheets.
 func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*SheetMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
-	where, args = append(where, fmt.Sprintf("sheet.source = $%d", len(args)+1)), append(args, SheetFromBytebaseArtifact)
-	where, args = append(where, fmt.Sprintf("sheet.type = $%d", len(args)+1)), append(args, SheetForSQL)
 
 	// Standard fields
 	if v := find.UID; v != nil {
@@ -230,12 +210,9 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			database_id,
 			name,
 			statement,
-			visibility,
-			source,
-			type,
 			payload
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
 	`
 
@@ -252,9 +229,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.DatabaseUID,
 		create.Title,
 		create.Statement,
-		ProjectWorkSheet,
-		SheetFromBytebaseArtifact,
-		SheetForSQL,
 		payload,
 	).Scan(
 		&create.UID,
@@ -318,7 +292,7 @@ func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
 	return nil
 }
 
-// patchSheetImpl updates a sheet's name/statement/visibility/payload/database_id/project_id.
+// patchSheetImpl updates a sheet's name/statement/payload/database_id/project_id.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Statement; v != nil {

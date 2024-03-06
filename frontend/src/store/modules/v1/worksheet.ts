@@ -152,6 +152,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     setListCache(worksheets);
     return worksheets;
   };
+
   const fetchStarredSheetList = async () => {
     const { worksheets } = await worksheetServiceClient.searchWorksheets({
       filter: `starred = true`,
@@ -193,10 +194,12 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const fullViewWorksheet = getSheetByName(organizer.worksheet, "FULL");
     if (fullViewWorksheet) {
       fullViewWorksheet.starred = organizer.starred;
+      setCache(fullViewWorksheet, "FULL");
     }
     const basicViewWorksheet = getSheetByName(organizer.worksheet, "BASIC");
     if (basicViewWorksheet) {
       basicViewWorksheet.starred = organizer.starred;
+      setCache(basicViewWorksheet, "BASIC");
     }
   };
 
