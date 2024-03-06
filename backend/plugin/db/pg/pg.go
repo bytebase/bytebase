@@ -110,7 +110,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		}
 		driver.sshClient = sshClient
 
-		connConfig.Config.DialFunc = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		connConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err

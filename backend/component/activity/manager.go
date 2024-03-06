@@ -706,7 +706,7 @@ func (m *Manager) getWebhookContext(ctx context.Context, activity *store.Activit
 			role := api.Role(strings.TrimPrefix(val.Role, "roles/"))
 			usersGetter = getUsersFromProjectRole(m.store, role, meta.Issue.Project.ResourceID)
 		case *storepb.ApprovalNode_ExternalNodeId:
-			usersGetter = func(ctx context.Context) ([]*store.UserMessage, error) {
+			usersGetter = func(_ context.Context) ([]*store.UserMessage, error) {
 				return nil, nil
 			}
 		default:
