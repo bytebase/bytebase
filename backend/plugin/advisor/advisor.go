@@ -197,6 +197,9 @@ const (
 	// MySQLIndexTotalNumberLimit is an advisor type for MySQL index total number limit.
 	MySQLIndexTotalNumberLimit Type = "bb.plugin.advisor.mysql.index.total-number-limit"
 
+	// MySQLIndexTypeAllowList is an advisor type for MySQL index type allowlist.
+	MySQLIndexTypeAllowList Type = "bb.plugin.advisor.mysql.index.type-allow-list"
+
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 

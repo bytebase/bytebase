@@ -174,6 +174,8 @@ const (
 	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
 	// SchemaRuleCreateIndexConcurrently require creating indexes concurrently.
 	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
+	// SchemaRuleIndexTypeAllowList enforce the index type allowlist.
+	SchemaRuleIndexTypeAllowList SQLReviewRuleType = "index.type-allow-list"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -1401,6 +1403,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleCreateIndexConcurrently:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCreateIndexConcurrently, nil
+		}
+	case SchemaRuleIndexTypeAllowList:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLIndexTypeAllowList, nil
 		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
