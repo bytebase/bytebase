@@ -15,21 +15,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*DisallowLimitAdvisor)(nil)
+	_ advisor.Advisor = (*StatementDisallowLimitAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_MARIADB, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
 }
 
-// DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
-type DisallowLimitAdvisor struct {
+// StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
+type StatementDisallowLimitAdvisor struct {
 }
 
 // Check checks for no LIMIT clause in INSERT/UPDATE statement.
-func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql parser result")
@@ -39,7 +39,7 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	if err != nil {
 		return nil, err
 	}
-	checker := &disallowLimitChecker{
+	checker := &statementDisallowLimitChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -60,7 +60,7 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	return checker.adviceList, nil
 }
 
-type disallowLimitChecker struct {
+type statementDisallowLimitChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine     int
@@ -72,36 +72,36 @@ type disallowLimitChecker struct {
 	line         int
 }
 
-func (checker *disallowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
+func (checker *statementDisallowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
-func (checker *disallowLimitChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+func (checker *statementDisallowLimitChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
 		checker.handleLimitClause(advisor.DeleteUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
 // EnterUpdateStatement is called when production updateStatement is entered.
-func (checker *disallowLimitChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+func (checker *statementDisallowLimitChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
 	if ctx.SimpleLimitClause() != nil && ctx.SimpleLimitClause().LIMIT_SYMBOL() != nil {
 		checker.handleLimitClause(advisor.UpdateUseLimit, ctx.GetStart().GetLine())
 	}
 }
 
 // EnterInsertStatement is called when production insertStatement is entered.
-func (checker *disallowLimitChecker) EnterInsertStatement(_ *mysql.InsertStatementContext) {
+func (checker *statementDisallowLimitChecker) EnterInsertStatement(_ *mysql.InsertStatementContext) {
 	checker.isInsertStmt = true
 }
 
 // ExitInsertStatement is called when production insertStatement is exited.
-func (checker *disallowLimitChecker) ExitInsertStatement(_ *mysql.InsertStatementContext) {
+func (checker *statementDisallowLimitChecker) ExitInsertStatement(_ *mysql.InsertStatementContext) {
 	checker.isInsertStmt = false
 }
 
 // EnterQueryExpression is called when production queryExpression is entered.
-func (checker *disallowLimitChecker) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
+func (checker *statementDisallowLimitChecker) EnterQueryExpression(ctx *mysql.QueryExpressionContext) {
 	if !checker.isInsertStmt {
 		return
 	}
@@ -110,7 +110,7 @@ func (checker *disallowLimitChecker) EnterQueryExpression(ctx *mysql.QueryExpres
 	}
 }
 
-func (checker *disallowLimitChecker) handleLimitClause(code advisor.Code, lineNumber int) {
+func (checker *statementDisallowLimitChecker) handleLimitClause(code advisor.Code, lineNumber int) {
 	checker.adviceList = append(checker.adviceList, advisor.Advice{
 		Status:  checker.level,
 		Code:    code,
