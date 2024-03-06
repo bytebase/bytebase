@@ -111,7 +111,7 @@
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
     --
-    -- Table structure for table `wahaha`
+    -- Table structure for `wahaha`
     --
     CREATE TABLE `wahaha` (
       `id` int NOT NULL,
@@ -523,7 +523,7 @@
     );
 
     --
-    -- Table structure for table `t2`
+    -- Table structure for `t2`
     --
     CREATE TABLE `t2` (
       `b` int,
@@ -533,7 +533,7 @@
     );
 
     --
-    -- Table structure for table `t5`
+    -- Table structure for `t5`
     --
     CREATE TABLE `t5` (
       `a` int NOT NULL COMMENT 'this is comment',
