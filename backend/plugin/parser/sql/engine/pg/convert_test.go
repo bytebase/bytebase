@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -43,7 +44,11 @@ func runTests(t *testing.T, tests []testData) {
 				}
 			}
 		}
-		require.Equal(t, test.want, res, test.stmt)
+		wantJSON, err := json.Marshal(test.want)
+		require.NoError(t, err)
+		gotJSON, err := json.Marshal(res)
+		require.NoError(t, err)
+		require.Equal(t, string(wantJSON), string(gotJSON), test.stmt)
 	}
 }
 
