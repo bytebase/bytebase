@@ -1183,7 +1183,8 @@
     },
     "unfinished-resolved-issue-tips": "Sự cố này được đánh dấu là \"Xong\" nhưng một số tác vụ của nó không được thực thi thành công.",
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
-    "preview": "Vấn đề xem trước"
+    "preview": "Vấn đề xem trước",
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
