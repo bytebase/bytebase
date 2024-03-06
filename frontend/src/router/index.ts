@@ -6,7 +6,6 @@ import {
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
-  useOnboardingStateStore,
   useTabStore,
   useCurrentUserV1,
   usePageMode,
@@ -38,10 +37,7 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
-import sqlEditorRoutes, {
-  SQL_EDITOR_HOME_MODULE,
-  SQL_EDITOR_SHARE_MODULE,
-} from "./sqlEditor";
+import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -170,22 +166,6 @@ router.beforeEach((to, from, next) => {
     if (user && !user.mfaEnabled) {
       next({
         name: AUTH_2FA_SETUP_MODULE,
-        replace: true,
-      });
-      return;
-    }
-  }
-
-  if (to.name === SQL_EDITOR_HOME_MODULE) {
-    const onboardingStateStore = useOnboardingStateStore();
-    if (onboardingStateStore.getStateByKey("sql-editor")) {
-      // Open the "Sample Sheet" when the first time onboarding SQL Editor
-      onboardingStateStore.consume("sql-editor");
-      next({
-        name: SQL_EDITOR_SHARE_MODULE,
-        params: {
-          sheetSlug: "project-sample-101",
-        },
         replace: true,
       });
       return;
