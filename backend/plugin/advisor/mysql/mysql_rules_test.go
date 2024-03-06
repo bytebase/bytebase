@@ -119,7 +119,10 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTypeNoBlob,
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
+		// advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
+		// advisor.SchemaRuleIndexTypeAllowList enforce the index type allowlist.
+		advisor.SchemaRuleIndexTypeAllowList,
 
 		// System related rules.
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
