@@ -393,8 +393,7 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	}
 
 	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "starred":
+		if path == "starred" {
 			worksheetOrganizerUpsert.Starred = request.Organizer.Starred
 		}
 	}
