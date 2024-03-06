@@ -277,14 +277,14 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		column.Nullable = nullableBool
 		if defaultStr.Valid {
 			// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
-			if needParentheses(defaultStr.String) {
-				if strings.Contains(extra, "DEFAULT_GENERATED") {
-					column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
-				} else {
-					column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
-				}
-			} else {
+			switch {
+			case isCurrentTimestampLike(defaultStr.String):
 				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+			case strings.Contains(extra, "DEFAULT_GENERATED"):
+				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+			default:
+				// For non-generated and non CURRENT_XXX default value, use string.
+				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
 			}
 		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
 			// TODO(zp): refactor column default value.
@@ -459,14 +459,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	return databaseMetadata, err
 }
 
-func needParentheses(s string) bool {
-	if strings.EqualFold(s, "CURRENT_TIMESTAMP") {
-		return false
+func isCurrentTimestampLike(s string) bool {
+	upper := strings.ToUpper(s)
+	if strings.HasPrefix(upper, "CURRENT_TIMESTAMP") {
+		return true
 	}
-	if strings.EqualFold(s, "CURRENT_DATE") {
-		return false
+	if strings.HasPrefix(upper, "CURRENT_DATE") {
+		return true
 	}
-	return true
+	return false
 }
 
 func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
