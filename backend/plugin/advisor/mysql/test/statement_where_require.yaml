@@ -92,3 +92,12 @@
           );" requires WHERE clause
       line: 5
       details: ""
+- statement: |
+    SELECT CURDATE();
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

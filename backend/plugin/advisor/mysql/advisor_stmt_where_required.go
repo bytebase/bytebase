@@ -86,6 +86,10 @@ func (checker *whereRequirementChecker) EnterUpdateStatement(ctx *mysql.UpdateSt
 }
 
 func (checker *whereRequirementChecker) EnterQuerySpecification(ctx *mysql.QuerySpecificationContext) {
+	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+	if ctx.FromClause() == nil {
+		return
+	}
 	if ctx.WhereClause() == nil || ctx.WhereClause().WHERE_SYMBOL() == nil {
 		checker.handleWhereClause(ctx.GetStart().GetLine())
 	}
