@@ -58,4 +58,4 @@ ALTER TABLE sheet DROP CONSTRAINT sheet_source_check;
 ALTER TABLE sheet DROP COLUMN source;
 
 -- Reset workspace id sequence.
-SELECT setval('worksheet_id_seq', (SELECT MAX(id) FROM worksheet)+1);
+SELECT setval('worksheet_id_seq', GREATEST((SELECT MAX(id) FROM worksheet), 101));
