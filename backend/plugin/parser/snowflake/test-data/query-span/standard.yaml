@@ -1,0 +1,465 @@
+- description: Alias
+  statement: SELECT A AS X, B AS Z, C, T.D FROM T1 T;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T3",
+              "columns":  [
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "F"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: X
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: Z
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+        - name: D
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: D
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+- description: If do not specify the JOIN type explicitly, the default JOIN type is CROSS JOIN.
+  statement: SELECT * FROM T1, T2, T3;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T3",
+              "columns":  [
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "F"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+        - name: D
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: D
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: A
+        - name: E
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: E
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: C
+        - name: D
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: D
+        - name: E
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: E
+        - name: F
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: F
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T3
+          column: ""
+- description: Natural Join
+  statement: SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T3",
+              "columns":  [
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "F"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: E
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: E
+        - name: F
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: F
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T3
+          column: ""
+- description: Column name projection
+  statement: SELECT A, B FROM T1;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+- description: Simple select asterisk statement
+  statement: SELECT * FROM T1;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+        - name: D
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: D
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
