@@ -98,7 +98,12 @@ func (l *whereRequireChecker) EnterQuery_statement(ctx *parser.Query_statementCo
 	if ctx.Select_statement() == nil {
 		return
 	}
-	if ctx.Select_statement().Select_optional_clauses() == nil || ctx.Select_statement().Select_optional_clauses().Where_clause() == nil {
+	optional := ctx.Select_statement().Select_optional_clauses()
+	if optional == nil {
+		return
+	}
+	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+	if optional.Where_clause() == nil && optional.From_clause() != nil {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
 			Code:    advisor.StatementNoWhere,

@@ -80,7 +80,8 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 		}
 	// SELECT
 	case *ast.SelectStmt:
-		if node.Where == nil {
+		// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+		if node.Where == nil && node.From != nil {
 			code = advisor.StatementNoWhere
 		}
 	}
