@@ -96,7 +96,7 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 				Status:  checker.level,
 				Code:    advisor.Internal,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Failed to check full table scan: %s, with error: %s", query, err),
+				Content: fmt.Sprintf("Failed to check using filesort: %s, with error: %s", query, err),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
 		} else if hasUsingFilesort {
