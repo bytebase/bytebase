@@ -203,8 +203,6 @@ type UpdateSheetRequest struct {
 	// Only support update the following fields for now:
 	// - `title`
 	// - `statement`
-	// - `starred`
-	// - `visibility`
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 }
 
