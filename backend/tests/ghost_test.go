@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
+
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
@@ -275,6 +277,7 @@ func TestGhostTenant(t *testing.T) {
 	step := &v1pb.Plan_Step{
 		Specs: []*v1pb.Plan_Spec{
 			{
+				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Target: fmt.Sprintf("%s/deploymentConfigs/default", ctl.project.Name),
@@ -313,6 +316,7 @@ func TestGhostTenant(t *testing.T) {
 	step = &v1pb.Plan_Step{
 		Specs: []*v1pb.Plan_Spec{
 			{
+				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 						Target: fmt.Sprintf("%s/deploymentConfigs/default", ctl.project.Name),
