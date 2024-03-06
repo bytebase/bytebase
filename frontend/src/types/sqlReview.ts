@@ -605,7 +605,8 @@ export const convertPolicyRuleToRuleTemplate = (
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
-    case "system.collation.allowlist": {
+    case "system.collation.allowlist":
+    case "system.function.disallowed-list": {
       const stringArrayComponent = ruleTemplate.componentList[0];
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
@@ -762,7 +763,8 @@ const mergeIndividualConfigAsRule = (
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
     case "system.charset.allowlist":
-    case "system.collation.allowlist": {
+    case "system.collation.allowlist":
+    case "system.function.disallowed-list": {
       if (!stringArrayPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
