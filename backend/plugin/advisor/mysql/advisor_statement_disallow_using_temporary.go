@@ -23,7 +23,7 @@ func init() {
 	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowUsingTemporary, &StatementDisallowUsingTemporaryAdvisor{})
 }
 
-// StatementDisallowUsingTemporaryAdvisor is the advisor checking for using filesort.
+// StatementDisallowUsingTemporaryAdvisor is the advisor checking for using temporary.
 type StatementDisallowUsingTemporaryAdvisor struct {
 }
 
@@ -104,7 +104,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 				Status:  checker.level,
 				Code:    advisor.StatementHasUsingFilesort,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Using filesort detected on table(s): %s", tables),
+				Content: fmt.Sprintf("Using temporary detected on table(s): %s", tables),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
 		}
