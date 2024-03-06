@@ -46,8 +46,6 @@ export interface UpdateSheetRequest {
    * Only support update the following fields for now:
    * - `title`
    * - `statement`
-   * - `starred`
-   * - `visibility`
    */
   updateMask: string[] | undefined;
 }
