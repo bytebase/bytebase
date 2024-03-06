@@ -1,0 +1,106 @@
+- description: Union and Intersect
+  statement: SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            },
+            {
+              "name":  "T2",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "E"
+                }
+              ]
+            },
+            {
+              "name":  "T3",
+              "columns":  [
+                {
+                  "name":  "E"
+                },
+                {
+                  "name":  "F"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: A
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: E
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T2
+              column: E
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T3
+              column: F
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T2
+          column: ""
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T3
+          column: ""

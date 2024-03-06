@@ -1,0 +1,68 @@
+- description: Uncorrelated Subquery In From Clause
+  statement: SELECT A, B, C, D FROM (SELECT * FROM T1) T;
+  connectedDatabase: SNOWFLAKE
+  ignoreCaseSensitive: true
+  metadata: |-
+    {
+      "name":  "SNOWFLAKE",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                },
+                {
+                  "name":  "C"
+                },
+                {
+                  "name":  "D"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: B
+        - name: C
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: C
+        - name: D
+          sourcecolumns:
+            - server: ""
+              database: SNOWFLAKE
+              schema: PUBLIC
+              table: T1
+              column: D
+    sourcecolumns:
+        - server: ""
+          database: SNOWFLAKE
+          schema: PUBLIC
+          table: T1
+          column: ""
