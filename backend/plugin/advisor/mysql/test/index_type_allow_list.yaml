@@ -1,0 +1,46 @@
+- statement: |-
+    CREATE TABLE customers (
+      id INT PRIMARY KEY,
+      email VARCHAR(100),
+      INDEX idx_email (email)
+    );
+  want:
+    - status: SUCCESS
+      title: OK
+- statement: |-
+    CREATE TABLE orders (
+        id INT PRIMARY KEY,
+        order_number INT,
+        customer VARCHAR(50)
+    );
+    CREATE INDEX idx_customer ON orders (customer, (order_number * 2));
+    CREATE INDEX idx_customer_duplicate ON orders (customer, (order_number * 2));
+  want:
+    - status: SUCCESS
+      title: OK
+- statement: |-
+    CREATE TABLE locations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      geom GEOMETRY NOT NULL
+    );
+    CREATE SPATIAL INDEX spatial_index_name ON locations(geom);
+  want:
+    - status: WARN
+      code: 816
+      title: index.type-allow-list
+      content: "Index type `SPATIAL` is not allowed"
+      line: 5
+      details: ""
+- statement: |-
+    CREATE TABLE locations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      description TEXT NOT NULL
+    );
+    CREATE FULLTEXT INDEX fulltext_index_name ON locations(description);
+  want:
+    - status: WARN
+      code: 816
+      title: index.type-allow-list
+      content: "Index type `FULLTEXT` is not allowed"
+      line: 5
+      details: ""
