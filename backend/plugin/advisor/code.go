@@ -125,6 +125,7 @@ const (
 	IndexCountExceedsLimit     Code = 813
 	CreateIndexUnconcurrently  Code = 814
 	DuplicateIndexInTable      Code = 815
+	IndexTypeNotAllowed        Code = 816
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
