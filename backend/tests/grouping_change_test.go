@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/exp/slices"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -801,6 +802,7 @@ ALTER TABLE singleton ADD COLUMN num INT;`,
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Target: databaseGroup.Name,

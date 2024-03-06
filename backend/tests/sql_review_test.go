@@ -16,6 +16,7 @@ import (
 	// Import pg driver.
 	// init() in pgx will register it's pgx driver.
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -463,6 +464,7 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Target: database.Name,
