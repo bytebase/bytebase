@@ -1312,7 +1312,7 @@ func convertSelectStmt(in *pgquery.SelectStmt) (*ast.SelectStmt, error) {
 			selectStmt.SubqueryList = append(selectStmt.SubqueryList, subselect)
 		}
 	}
-	selectStmt.FromClause = in.FromClause
+	selectStmt.SetFromClause(in.FromClause)
 
 	// Convert WHERE clause
 	if in.WhereClause != nil {

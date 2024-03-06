@@ -48,8 +48,18 @@ type SelectStmt struct {
 	PatternLikeList []*PatternLikeDef
 	// SubqueryList is the list of the subquery nodes.
 	SubqueryList []*SubqueryDef
-	// FromClause is the raw pgquery from clause nodes.
-	FromClause []*pgquery.Node
+	// fromClause is the raw pgquery from clause nodes.
+	fromClause []*pgquery.Node
+}
+
+// SetFromClause sets the from clause for select statement.
+func (ss *SelectStmt) SetFromClause(fromClause []*pgquery.Node) {
+	ss.fromClause = fromClause
+}
+
+// GetFromClause gets the from clause for select statement.
+func (ss *SelectStmt) GetFromClause() []*pgquery.Node {
+	return ss.fromClause
 }
 
 // ByItemDef is the struct for item in order by or group by.
