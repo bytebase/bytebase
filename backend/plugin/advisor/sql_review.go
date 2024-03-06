@@ -103,6 +103,8 @@ const (
 	SchemaRuleStatementCheckSetRoleVariable = "statement.check-set-role-variable"
 	// SchemaRuleStatementDisallowUsingFilesort disallow using filesort in execution plan.
 	SchemaRuleStatementDisallowUsingFilesort = "statement.disallow-using-filesort"
+	// SchemaRuleStatementDisallowUsingTemporary disallow using temporary in execution plan.
+	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1374,6 +1376,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowUsingFilesort:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingFilesort, nil
+		}
+	case SchemaRuleStatementDisallowUsingTemporary:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementDisallowUsingTemporary, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {

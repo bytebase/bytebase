@@ -65,6 +65,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-using-filesort
     level: WARNING
+  - type: statement.disallow-using-temporary
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:

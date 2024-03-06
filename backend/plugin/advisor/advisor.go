@@ -218,6 +218,9 @@ const (
 	// MySQLStatementDisallowUsingFilesort is an advisor type for MySQL disallow using filesort in execution plan.
 	MySQLStatementDisallowUsingFilesort Type = "bb.plugin.advisor.mysql.statement.disallow-using-filesort"
 
+	// MySQLStatementDisallowUsingTemporary is an advisor type for MySQL disallow using temporary in execution plan.
+	MySQLStatementDisallowUsingTemporary Type = "bb.plugin.advisor.mysql.statement.disallow-using-temporary"
+
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 

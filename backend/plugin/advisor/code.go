@@ -44,6 +44,7 @@ const (
 	StatementCheckSetRoleVariable           Code = 217
 	StatementExplainQueryFailed             Code = 218
 	StatementHasUsingFilesort               Code = 219
+	StatementHasUsingTemporary              Code = 220
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
