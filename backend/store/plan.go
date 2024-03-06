@@ -135,7 +135,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	}
 	query := fmt.Sprintf(`
 		SELECT
-			plan.id,	
+			plan.id,
 			plan.creator_id,
 			plan.created_ts,
 			plan.updater_id,
