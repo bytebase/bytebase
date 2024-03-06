@@ -1,6 +1,6 @@
 <template>
   <NPerformantEllipsis v-if="showText" :line-clamp="1">
-    {{ columnClassification?.title ?? classification ?? placeholder }}
+    {{ columnClassification?.title || classification || placeholder }}
   </NPerformantEllipsis>
   <span v-if="level" :class="['px-1 py-0.5 rounded text-xs', levelColor]">
     {{ level.title }}
