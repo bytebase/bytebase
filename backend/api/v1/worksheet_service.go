@@ -291,7 +291,6 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 		UID:       worksheet.UID,
 		UpdaterID: principalID,
 	}
-
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -310,11 +309,20 @@ func (s *WorksheetService) UpdateWorksheet(ctx context.Context, request *v1pb.Up
 			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
 		}
 	}
-	storeWorksheet, err := s.store.PatchWorkSheet(ctx, worksheetPatch)
-	if err != nil {
+	if err := s.store.PatchWorkSheet(ctx, worksheetPatch); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update worksheet: %v", err))
 	}
-	v1pbWorksheet, err := s.convertToAPIWorksheetMessage(ctx, storeWorksheet)
+
+	worksheet, err = s.store.GetWorkSheet(ctx, &store.FindWorkSheetMessage{
+		UID: &worksheetUID,
+	}, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get worksheet: %v", err))
+	}
+	if worksheet == nil {
+		return nil, status.Errorf(codes.NotFound, "worksheet %q not found", request.Worksheet.Name)
+	}
+	v1pbWorksheet, err := s.convertToAPIWorksheetMessage(ctx, worksheet)
 	if err != nil {
 		return nil, err
 	}
@@ -392,11 +400,8 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	}
 
 	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "starred":
+		if path == "starred" {
 			worksheetOrganizerUpsert.Starred = request.Organizer.Starred
-		case "pinned":
-			worksheetOrganizerUpsert.Pinned = request.Organizer.Pinned
 		}
 	}
 
@@ -408,7 +413,6 @@ func (s *WorksheetService) UpdateWorksheetOrganizer(ctx context.Context, request
 	return &v1pb.WorksheetOrganizer{
 		Worksheet: request.Organizer.Worksheet,
 		Starred:   organizer.Starred,
-		Pinned:    organizer.Pinned,
 	}, nil
 }
 
