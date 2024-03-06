@@ -16,18 +16,18 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*StatementDisallowUsingFilesortAdvisor)(nil)
+	_ advisor.Advisor = (*StatementDisallowUsingTemporaryAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowUsingFilesort, &StatementDisallowUsingFilesortAdvisor{})
+	advisor.Register(storepb.Engine_MYSQL, advisor.MySQLStatementDisallowUsingTemporary, &StatementDisallowUsingTemporaryAdvisor{})
 }
 
-// StatementDisallowUsingFilesortAdvisor is the advisor checking for using filesort.
-type StatementDisallowUsingFilesortAdvisor struct {
+// StatementDisallowUsingTemporaryAdvisor is the advisor checking for using temporary.
+type StatementDisallowUsingTemporaryAdvisor struct {
 }
 
-func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to mysql ParseResult")
@@ -38,7 +38,7 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ strin
 		return nil, err
 	}
 
-	checker := &disallowUsingFilesortChecker{
+	checker := &disallowUsingTemporaryChecker{
 		level:  level,
 		title:  string(ctx.Rule.Type),
 		driver: ctx.Driver,
@@ -63,7 +63,7 @@ func (*StatementDisallowUsingFilesortAdvisor) Check(ctx advisor.Context, _ strin
 	return checker.adviceList, nil
 }
 
-type disallowUsingFilesortChecker struct {
+type disallowUsingTemporaryChecker struct {
 	*mysql.BaseMySQLParserListener
 
 	baseLine   int
@@ -74,7 +74,7 @@ type disallowUsingFilesortChecker struct {
 	ctx        context.Context
 }
 
-func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
 	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
 		return
 	}
@@ -90,7 +90,7 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	} else {
-		hasUsingFilesort, tables, err := hasUsingFilesortInExtraColumn(res)
+		hasUsingTemporary, tables, err := hasUsingTemporaryInExtraColumn(res)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
@@ -99,19 +99,19 @@ func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.Sel
 				Content: fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
-		} else if hasUsingFilesort {
+		} else if hasUsingTemporary {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementHasUsingFilesort,
+				Code:    advisor.StatementHasUsingTemporary,
 				Title:   checker.title,
-				Content: fmt.Sprintf("Using filesort detected on table(s): %s", tables),
+				Content: fmt.Sprintf("Using temporary detected on table(s): %s", tables),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
 		}
 	}
 }
 
-func hasUsingFilesortInExtraColumn(res []any) (bool, string, error) {
+func hasUsingTemporaryInExtraColumn(res []any) (bool, string, error) {
 	if len(res) != 3 {
 		return false, "", errors.Errorf("expected 3 but got %d", len(res))
 	}
@@ -153,7 +153,7 @@ func hasUsingFilesortInExtraColumn(res []any) (bool, string, error) {
 		if len(row) != 12 {
 			return false, "", errors.Errorf("expected 12 but got %d", len(row))
 		}
-		if row[11] == "Using filesort" {
+		if row[11] == "Using temporary" {
 			tables = append(tables, row[2].(string))
 		}
 	}
