@@ -3485,7 +3485,8 @@ TablePartitionMetadata is the metadata for table partitions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table partition. |
 | type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
-| expression | [string](#string) |  | The expression is the expression of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
+| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
 | subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 
 
@@ -3733,7 +3734,10 @@ The type of the backup.
 <a name="bytebase-v1-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
-
+Type is the type of a table partition, some database engines may not support all types.
+Only avilable for the following database engines now:
+MySQL: RANGE, LIST, HASH, COLUMNS, KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -3741,6 +3745,8 @@ The type of the backup.
 | RANGE | 1 |  |
 | LIST | 2 |  |
 | HASH | 3 |  |
+| COLUMNS | 4 |  |
+| KEY | 5 |  |
 
 
 
