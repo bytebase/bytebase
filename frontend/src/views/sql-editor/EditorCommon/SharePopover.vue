@@ -144,7 +144,7 @@ const allowChangeAccess = computed(() => {
 const currentAccess = ref<AccessOption>(accessOptions.value[0]);
 const isShowAccessPopover = ref(false);
 
-const updateSheet = () => {
+const updateWorksheet = () => {
   if (sheet.value) {
     worksheetV1Store.patchSheet(
       {
@@ -160,7 +160,7 @@ const handleChangeAccess = (option: AccessOption) => {
   // only creator can change access
   if (allowChangeAccess.value) {
     currentAccess.value = option;
-    updateSheet();
+    updateWorksheet();
   }
   isShowAccessPopover.value = false;
 };
