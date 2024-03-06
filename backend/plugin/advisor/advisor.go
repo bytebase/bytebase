@@ -215,6 +215,9 @@ const (
 	// MySQLStatementDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
 	MySQLStatementDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
 
+	// MySQLStatementDisallowUsingFilesort is an advisor type for MySQL disallow using filesort in execution plan.
+	MySQLStatementDisallowUsingFilesort Type = "bb.plugin.advisor.mysql.statement.disallow-using-filesort"
+
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
 
