@@ -1106,18 +1106,17 @@ UPDATE
     ON worksheet FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
--- sheet_organizer table stores the sheet status for a principal.
-CREATE TABLE sheet_organizer (
+-- worksheet_organizer table stores the sheet status for a principal.
+CREATE TABLE worksheet_organizer (
     id SERIAL PRIMARY KEY,
-    sheet_id INTEGER NOT NULL REFERENCES worksheet (id) ON DELETE CASCADE,
+    worksheet_id INTEGER NOT NULL REFERENCES worksheet (id) ON DELETE CASCADE,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
-    starred BOOLEAN NOT NULL DEFAULT false,
-    pinned BOOLEAN NOT NULL DEFAULT false
+    starred BOOLEAN NOT NULL DEFAULT false
 );
 
-CREATE UNIQUE INDEX idx_sheet_organizer_unique_sheet_id_principal_id ON sheet_organizer(sheet_id, principal_id);
+CREATE UNIQUE INDEX idx_worksheet_organizer_unique_sheet_id_principal_id ON worksheet_organizer(worksheet_id, principal_id);
 
-CREATE INDEX idx_sheet_organizer_principal_id ON sheet_organizer(principal_id);
+CREATE INDEX idx_worksheet_organizer_principal_id ON worksheet_organizer(principal_id);
 
 -- external_approval stores approval instances of third party applications.
 CREATE TABLE external_approval ( 

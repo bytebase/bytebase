@@ -133,10 +133,10 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 		where, args = append(where, fmt.Sprintf("worksheet.project_id IN (SELECT project_id FROM project_member WHERE principal_id = $%d)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = true)", len(args)+1)), append(args, *v)
 	}
 	if v := find.OrganizerPrincipalIDNotStarred; v != nil {
-		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT sheet_id FROM sheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
+		where, args = append(where, fmt.Sprintf("worksheet.id IN (SELECT worksheet_id FROM worksheet_organizer WHERE principal_id = $%d AND starred = false)", len(args)+1)), append(args, *v)
 	}
 	statementField := fmt.Sprintf("LEFT(worksheet.statement, %d)", common.MaxSheetSize)
 	if find.LoadFull {
@@ -162,9 +162,9 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			%s,
 			worksheet.visibility,
 			OCTET_LENGTH(worksheet.statement),
-			COALESCE(sheet_organizer.starred, FALSE)
+			COALESCE(worksheet_organizer.starred, FALSE)
 		FROM worksheet
-		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = worksheet.id AND sheet_organizer.principal_id = %d
+		LEFT JOIN worksheet_organizer ON worksheet_organizer.worksheet_id = worksheet.id AND worksheet_organizer.principal_id = %d
 		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
 		args...,
 	)
@@ -323,4 +323,57 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 		return err
 	}
 	return nil
+}
+
+// WorksheetOrganizerMessage is the store message for worksheet organizer.
+type WorksheetOrganizerMessage struct {
+	UID int
+
+	// Related fields
+	WorksheetUID int
+	PrincipalUID int
+	Starred      bool
+}
+
+// UpsertWorksheetOrganizer upserts a new SheetOrganizerMessage.
+func (s *Store) UpsertWorksheetOrganizer(ctx context.Context, organizer *WorksheetOrganizerMessage) (*WorksheetOrganizerMessage, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	query := `
+	  INSERT INTO worksheet_organizer (
+			worksheet_id,
+			principal_id,
+			starred
+		)
+		VALUES ($1, $2, $3)
+		ON CONFLICT(worksheet_id, principal_id) DO UPDATE SET
+			starred = EXCLUDED.starred
+		RETURNING id, worksheet_id, principal_id, starred
+	`
+	var worksheetOrganizer WorksheetOrganizerMessage
+	if err := tx.QueryRowContext(ctx, query,
+		organizer.WorksheetUID,
+		organizer.PrincipalUID,
+		organizer.Starred,
+	).Scan(
+		&worksheetOrganizer.UID,
+		&worksheetOrganizer.WorksheetUID,
+		&worksheetOrganizer.PrincipalUID,
+		&worksheetOrganizer.Starred,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+		}
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return &worksheetOrganizer, nil
 }
