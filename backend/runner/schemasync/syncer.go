@@ -7,11 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -425,6 +427,11 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 			model.NewDBSchema(databaseMetadata, rawDump, nil /* config */),
 			api.SystemBotID,
 		); err != nil {
+			if strings.Contains(err.Error(), "escape sequence") {
+				if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+					slog.Error("unsupproted Unicode escape sequence", slog.String("metadata", string(metadataBytes)))
+				}
+			}
 			return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
 		}
 	}
