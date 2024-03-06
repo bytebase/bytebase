@@ -1542,7 +1542,7 @@
     "transfer-project": "Transfer Project",
     "unassign": "Unassign",
     "unassign-alert-title": "Unassign databases",
-    "unassign-alert-description": "Selected databases will transfer out from their project",
+    "unassign-alert-description": "The selected databases will be removed from the project",
     "edit-schema": "Edit Schema",
     "edit-schema-in-vcs": "Edit Schema in VCS",
     "edit-labels": "Edit Labels",

@@ -1541,7 +1541,7 @@
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-title": "取消分配数据库",
-    "unassign-alert-description": "选定的数据库将从其项目中转出",
+    "unassign-alert-description": "选定的数据库将从项目中移除",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
     "edit-labels": "编辑标签",

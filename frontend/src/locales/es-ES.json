@@ -1542,7 +1542,7 @@
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
-    "unassign-alert-description": "Las bases de datos seleccionadas se transferirán desde su proyecto.",
+    "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "edit-schema": "Modificar esquema",
     "edit-schema-in-vcs": "Modificar esquema en VCS",
     "edit-labels": "Editar etiquetas",
