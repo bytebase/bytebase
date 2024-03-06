@@ -1061,9 +1061,6 @@ CREATE TABLE sheet (
     database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
     statement TEXT NOT NULL,
-    visibility TEXT NOT NULL CHECK (visibility IN ('PRIVATE', 'PROJECT', 'PUBLIC')) DEFAULT 'PRIVATE',
-    source TEXT NOT NULL CONSTRAINT sheet_source_check CHECK (source IN ('BYTEBASE', 'GITLAB', 'GITHUB', 'BITBUCKET', 'AZURE_DEVOPS', 'BYTEBASE_ARTIFACT')) DEFAULT 'BYTEBASE',
-    type TEXT NOT NULL CHECK (type IN ('SQL')) DEFAULT 'SQL',
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -1085,10 +1082,35 @@ UPDATE
     ON sheet FOR EACH ROW
 EXECUTE FUNCTION trigger_update_updated_ts();
 
+CREATE TABLE worksheet (
+    id SERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
+    creator_id INTEGER NOT NULL REFERENCES principal (id),
+    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    updater_id INTEGER NOT NULL REFERENCES principal (id),
+    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    project_id INTEGER NOT NULL REFERENCES project (id),
+    database_id INTEGER NULL REFERENCES db (id),
+    name TEXT NOT NULL,
+    statement TEXT NOT NULL,
+    visibility TEXT NOT NULL,
+    payload JSONB NOT NULL DEFAULT '{}'
+);
+
+CREATE INDEX idx_worksheet_creator_id_project_id ON worksheet(creator_id, project_id);
+
+ALTER SEQUENCE worksheet_id_seq RESTART WITH 101;
+
+CREATE TRIGGER update_worksheet_updated_ts
+BEFORE
+UPDATE
+    ON worksheet FOR EACH ROW
+EXECUTE FUNCTION trigger_update_updated_ts();
+
 -- sheet_organizer table stores the sheet status for a principal.
 CREATE TABLE sheet_organizer (
     id SERIAL PRIMARY KEY,
-    sheet_id INTEGER NOT NULL REFERENCES sheet (id) ON DELETE CASCADE,
+    sheet_id INTEGER NOT NULL REFERENCES worksheet (id) ON DELETE CASCADE,
     principal_id INTEGER NOT NULL REFERENCES principal (id),
     starred BOOLEAN NOT NULL DEFAULT false,
     pinned BOOLEAN NOT NULL DEFAULT false
