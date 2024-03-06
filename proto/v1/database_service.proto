@@ -527,21 +527,41 @@ message TablePartitionMetadata {
   // The name is the name of a table partition.
   string name = 1;
 
+  // Type is the type of a table partition, some database engines may not support all types.
+  // Only avilable for the following database engines now:
+  // MySQL: RANGE, LIST, HASH, COLUMNS, KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+  // PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
   enum Type {
     TYPE_UNSPECIFIED = 0;
     RANGE = 1;
     LIST = 2;
     HASH = 3;
+    COLUMNS = 4;
+    KEY = 5;
   }
 
   // The type of a table partition.
   Type type = 2;
 
   // The expression is the expression of a table partition.
+  // For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
+  // For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+  // PARTITION BY
+  //    { [LINEAR] HASH(expr)
+  //    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
+  //    | RANGE{(expr) | COLUMNS(column_list)}
+  //    | LIST{(expr) | COLUMNS(column_list)} }.
   string expression = 3;
 
+  // The value is the value of a table partition.
+  // For MySQL, the value is for RANGE and LIST partition types,
+  // - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+  // - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+  // - For others, it's an empty string.
+  string value = 4;
+
   // The subpartitions is the list of subpartitions in a table partition.
-  repeated TablePartitionMetadata subpartitions = 4;
+  repeated TablePartitionMetadata subpartitions = 5;
 }
 
 // ColumnMetadata is the metadata for columns.

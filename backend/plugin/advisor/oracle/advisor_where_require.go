@@ -2,6 +2,8 @@
 package oracle
 
 import (
+	"strings"
+
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
@@ -97,6 +99,13 @@ func (l *whereRequireListener) EnterDelete_statement(ctx *parser.Delete_statemen
 
 // EnterQuery_block is called when production query_block is entered.
 func (l *whereRequireListener) EnterQuery_block(ctx *parser.Query_blockContext) {
+	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
+	if ctx.From_clause() == nil || ctx.From_clause().Table_ref_list() == nil {
+		return
+	}
+	if strings.ToLower(ctx.From_clause().Table_ref_list().GetText()) == "dual" {
+		return
+	}
 	if ctx.Where_clause() == nil {
 		l.adviceList = append(l.adviceList, advisor.Advice{
 			Status:  l.level,
