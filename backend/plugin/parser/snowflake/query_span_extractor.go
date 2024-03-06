@@ -291,14 +291,14 @@ func (q *querySpanExtractor) extractPseudoTableFromSelectStatement(ctx parser.IS
 					return nil, errors.Wrapf(err, "failed to parse column position %q to integer near line %d", columnElem.Column_position().Num().GetText(), columnElem.Column_position().Num().GetStart().GetLine())
 				}
 				if columnPosition < 1 {
-					return nil, errors.Wrapf(err, "column position %d is invalid because it is less than 1 near line %d", columnPosition, columnElem.Column_position().Num().GetStart().GetLine())
+					return nil, errors.Errorf("column position %d is invalid because it is less than 1 near line %d", columnPosition, columnElem.Column_position().Num().GetStart().GetLine())
 				}
 				left, err := q.getAllFieldsOfTableInFromOrOuterCTE(normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to extract sensitive fields of the query statement near line %d", ctx.GetStart().GetLine())
 				}
 				if columnPosition > len(left) {
-					return nil, errors.Wrapf(err, "column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns for %q.%q.%q", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(left), normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
+					return nil, errors.Errorf("column position is invalid because want to try get the %d column near line %d, but FROM clause only returns %d columns for %q.%q.%q", columnPosition, columnElem.Column_position().Num().GetStart().GetLine(), len(left), normalizedDatabaseName, normalizedSchemaName, normalizedTableName)
 				}
 				result.Columns = append(result.Columns, left[columnPosition-1])
 			}
@@ -423,7 +423,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Try_cast_exprContext:
 		if v := ctx.Expr(); v != nil {
 			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
@@ -432,7 +432,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Json_literalContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -456,7 +456,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Arr_literalContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -495,7 +495,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Iff_exprContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -516,7 +516,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Case_expressionContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -549,7 +549,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Switch_sectionContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -565,7 +565,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Switch_search_condition_sectionContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -584,7 +584,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Search_conditionContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -607,7 +607,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.PredicateContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -683,7 +683,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			}
 			return ctx.GetText(), maskingAttributes, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Aggregate_functionContext:
 		if v := ctx.Expr_list(); v != nil {
 			_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(v)
@@ -712,7 +712,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Ranking_windowed_functionContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -733,7 +733,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Over_clauseContext:
 		querySpanResult := base.QuerySpanResult{
 			Name:          ctx.GetText(),
@@ -755,7 +755,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 			querySpanResult.SourceColumns, _ = base.MergeSourceColumnSet(querySpanResult.SourceColumns, maskingAttributes.SourceColumns)
 			return ctx.GetText(), querySpanResult, nil
 		}
-		panic("never reach here")
+		return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 	case *parser.Partition_byContext:
 		_, maskingAttributes, err := q.extractQuerySpanResultResultFromExpr(ctx.Expr_list())
 		if err != nil {
@@ -804,7 +804,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 		}
 		return fieldInfo.Name, fieldInfo, nil
 	}
-	panic("never reach here")
+	return "", base.QuerySpanResult{}, errors.Errorf("never reach here")
 }
 
 func (q *querySpanExtractor) extractTableSourceFromFromClause(ctx parser.IFrom_clauseContext) (base.TableSource, error) {
