@@ -1183,7 +1183,8 @@
     },
     "unfinished-resolved-issue-tips": "この問題は「完了」とマークされていますが、一部のタスクが正常に実行されていません。",
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
-    "preview": "問題のプレビュー"
+    "preview": "問題のプレビュー",
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",
