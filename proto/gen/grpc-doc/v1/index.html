@@ -10829,7 +10829,7 @@ The API will default to the BASIC view.</p></td>
         </table>
       
         <h3 id="bytebase.v1.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
-        <p>Type is the type of a table partition, some database engines may not support all types.</p><p>Only avilable for the following database engines now:</p><p>MySQL: RANGE, LIST, HASH, COLUMNS, KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)</p><p>PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
+        <p>Type is the type of a table partition, some database engines may not support all types.</p><p>Only avilable for the following database engines now:</p><p>MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)</p><p>PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -10861,7 +10861,7 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>COLUMNS</td>
+                <td>LINEAR_HASH</td>
                 <td>4</td>
                 <td><p></p></td>
               </tr>
@@ -10869,6 +10869,12 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>KEY</td>
                 <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LINEAR_KEY</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
