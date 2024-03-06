@@ -101,6 +101,8 @@ const (
 	SchemaRuleStatementCreateSpecifySchema = "statement.create-specify-schema"
 	// SchemaRuleStatementCheckSetRoleVariable require add a check for SET ROLE variable.
 	SchemaRuleStatementCheckSetRoleVariable = "statement.check-set-role-variable"
+	// SchemaRuleStatementDisallowUsingFilesort disallow using filesort in execution plan.
+	SchemaRuleStatementDisallowUsingFilesort = "statement.disallow-using-filesort"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1368,6 +1370,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementDisallowCommit, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDisallowCommit, nil
+		}
+	case SchemaRuleStatementDisallowUsingFilesort:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementDisallowUsingFilesort, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
