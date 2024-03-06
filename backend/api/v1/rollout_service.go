@@ -1184,8 +1184,17 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 
 func validateSteps(steps []*v1pb.Plan_Step) error {
 	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
+	seenID := map[string]bool{}
 	for _, step := range steps {
 		for _, spec := range step.Specs {
+			id := spec.GetId()
+			if id == "" {
+				return errors.Errorf("spec id cannot be empty")
+			}
+			if seenID[id] {
+				return errors.Errorf("found duplicate spec id %q", spec.GetId())
+			}
+			seenID[id] = true
 			if config := spec.GetChangeDatabaseConfig(); config != nil {
 				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
 					databaseTarget++

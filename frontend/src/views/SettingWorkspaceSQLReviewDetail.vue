@@ -90,7 +90,7 @@
     />
     <div
       v-if="state.rulesUpdated"
-      class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky bottom-0 z-10"
+      class="w-full mt-4 py-4 border-t border-block-border flex justify-between bg-white sticky -bottom-4 z-10"
     >
       <NButton @click.prevent="onCancelChanges">
         <span> {{ $t("common.cancel") }}</span>

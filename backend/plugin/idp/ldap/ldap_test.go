@@ -207,10 +207,10 @@ ZboOWVe3icTy64BT3OQhmg==
 
 	server := ldapserver.NewServer()
 	routes := ldapserver.NewRouteMux()
-	routes.Bind(func(w ldapserver.ResponseWriter, m *ldapserver.Message) {
+	routes.Bind(func(w ldapserver.ResponseWriter, _ *ldapserver.Message) {
 		w.Write(ldapserver.NewBindResponse(ldapserver.LDAPResultSuccess))
 	})
-	routes.Search(func(w ldapserver.ResponseWriter, m *ldapserver.Message) {
+	routes.Search(func(w ldapserver.ResponseWriter, _ *ldapserver.Message) {
 		e := ldapserver.NewSearchResultEntry(uid)
 		e.AddAttribute("uid", message.AttributeValue(uid))
 		e.AddAttribute("displayName", message.AttributeValue(displayName))

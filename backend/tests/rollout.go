@@ -17,6 +17,7 @@ func (ctl *controller) changeDatabase(ctx context.Context, project *v1pb.Project
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target:        database.Name,

@@ -1046,7 +1046,7 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 }
 
 func getTableAnnouncement(name string) string {
-	return fmt.Sprintf("\n--\n-- Table structure for table `%s`\n--\n", name)
+	return fmt.Sprintf("\n--\n-- Table structure for `%s`\n--\n", name)
 }
 
 // getDataTypePlainText returns the plain text of the data type,

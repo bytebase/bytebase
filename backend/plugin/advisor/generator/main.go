@@ -36,7 +36,7 @@ var (
 	cmd = &cobra.Command{
 		Use:   "generator",
 		Short: "This is a SQL review rule generator",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			// Get AdvisorComment, AdvisorName, CheckerName, FileName and TestName
 			var advisorComment, advisorName, checkerName, fileName, testName string
 			var fileNameTokenList, advisorNameTokenList []string

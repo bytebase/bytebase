@@ -459,9 +459,17 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		payload, err = json.Marshal(StringArrayTypeRulePayload{
 			List: []string{"serial", "bigserial", "int", "bigint"},
 		})
+	case SchemaRuleIndexTypeAllowList:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{"BTREE", "HASH"},
+		})
 	case SchemaRuleIdentifierCase:
 		payload, err = json.Marshal(NamingCaseRulePayload{
 			Upper: true,
+		})
+	case SchemaRuleFunctionDisallowList:
+		payload, err = json.Marshal(StringArrayTypeRulePayload{
+			List: []string{"rand", "uuid", "sleep"},
 		})
 	default:
 		return "", errors.Errorf("unknown SQL review type for default payload: %s", ruleTp)

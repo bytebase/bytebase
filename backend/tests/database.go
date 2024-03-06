@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -31,6 +32,7 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
 								CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
 									Target:       instance.Name,
@@ -98,6 +100,7 @@ func (ctl *controller) createDatabaseFromBackup(ctx context.Context, project *v1
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_RestoreDatabaseConfig{
 								RestoreDatabaseConfig: &v1pb.Plan_RestoreDatabaseConfig{
 									Target: fmt.Sprintf("%s/databases/%s", instance.Name, databaseName),

@@ -174,6 +174,8 @@ const (
 	SchemaRuleIndexPrimaryKeyTypeAllowlist SQLReviewRuleType = "index.primary-key-type-allowlist"
 	// SchemaRuleCreateIndexConcurrently require creating indexes concurrently.
 	SchemaRuleCreateIndexConcurrently SQLReviewRuleType = "index.create-concurrently"
+	// SchemaRuleIndexTypeAllowList enforce the index type allowlist.
+	SchemaRuleIndexTypeAllowList SQLReviewRuleType = "index.type-allow-list"
 
 	// SchemaRuleCharsetAllowlist enforce the charset allowlist.
 	SchemaRuleCharsetAllowlist SQLReviewRuleType = "system.charset.allowlist"
@@ -189,6 +191,11 @@ const (
 	SchemaRuleViewDisallowCreate SQLReviewRuleType = "system.view.disallow-create"
 	// SchemaRuleFunctionDisallowCreate disallow create function.
 	SchemaRuleFunctionDisallowCreate SQLReviewRuleType = "system.function.disallow-create"
+	// SchemaRuleFunctionDisallowList enforce the disallowed function list.
+	SchemaRuleFunctionDisallowList SQLReviewRuleType = "system.function.disallowed-list"
+
+	// SchemaRuleOnlineMigration advises using online migration to migrate large tables.
+	SchemaRuleOnlineMigration SQLReviewRuleType = "advice.online-migration"
 
 	// TableNameTemplateToken is the token for table name.
 	TableNameTemplateToken = "{{table}}"
@@ -406,12 +413,14 @@ func UnmarshalNamingCaseRulePayload(payload string) (*NamingCaseRulePayload, err
 
 // SQLReviewCheckContext is the context for SQL review check.
 type SQLReviewCheckContext struct {
-	Charset   string
-	Collation string
-	DbType    storepb.Engine
-	Catalog   catalog.Catalog
-	Driver    *sql.DB
-	Context   context.Context
+	Charset    string
+	Collation  string
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
+	DBSchema   *storepb.DatabaseSchemaMetadata
+	DbType     storepb.Engine
+	Catalog    catalog.Catalog
+	Driver     *sql.DB
+	Context    context.Context
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -719,6 +728,8 @@ func SQLReviewCheck(statements string, ruleList []*storepb.SQLReviewRule, checkC
 			Context{
 				Charset:         checkContext.Charset,
 				Collation:       checkContext.Collation,
+				DBSchema:        checkContext.DBSchema,
+				ChangeType:      checkContext.ChangeType,
 				AST:             ast,
 				Statements:      statements,
 				Rule:            rule,
@@ -1393,6 +1404,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCreateIndexConcurrently, nil
 		}
+	case SchemaRuleIndexTypeAllowList:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLIndexTypeAllowList, nil
+		}
 	case SchemaRuleStatementInsertRowLimit:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -1419,7 +1434,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowLimit:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			return MySQLDisallowLimit, nil
+			return MySQLStatementDisallowLimit, nil
 		}
 	case SchemaRuleStatementDisallowOrderBy:
 		switch engine {
@@ -1491,6 +1506,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleFunctionDisallowCreate:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLFunctionDisallowCreate, nil
+		}
+	case SchemaRuleFunctionDisallowList:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLFunctionDisallowedList, nil
+		}
+	case SchemaRuleOnlineMigration:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLOnlineMigration, nil
 		}
 	}
 	return Fake, errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

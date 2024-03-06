@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -88,6 +89,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target:          database.Name,
@@ -130,6 +132,7 @@ func TestCreateRollbackIssueMySQL(t *testing.T) {
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target: database.Name,
@@ -235,6 +238,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target: database.Name,
@@ -288,6 +292,7 @@ func TestCreateRollbackIssueMySQLByPatch(t *testing.T) {
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target: database.Name,
@@ -393,6 +398,7 @@ func TestRollbackCanceled(t *testing.T) {
 		{
 			Specs: []*v1pb.Plan_Spec{
 				{
+					Id: uuid.NewString(),
 					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 							Target:          database.Name,
