@@ -317,6 +317,17 @@ message Issue {
     HIGH = 3;
   }
   RiskLevel risk_level = 21;
+
+  // The status count of the issue.
+  // Keys are the following:
+  // - NOT_STARTED
+  // - SKIPPED
+  // - PENDING
+  // - RUNNING
+  // - DONE
+  // - FAILED
+  // - CANCELED
+  map<string, int32> task_status_count = 22;
 }
 
 message GrantRequest {
