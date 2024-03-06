@@ -90,7 +90,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	} else {
-		hasUsingFilesort, tables, err := hasUsingTemporaryInExtraColumn(res)
+		hasUsingTemporary, tables, err := hasUsingTemporaryInExtraColumn(res)
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
@@ -99,10 +99,10 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 				Content: fmt.Sprintf("Failed to check extra column: %s, with error: %s", query, err),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
 			})
-		} else if hasUsingFilesort {
+		} else if hasUsingTemporary {
 			checker.adviceList = append(checker.adviceList, advisor.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementHasUsingFilesort,
+				Code:    advisor.StatementHasUsingTemporary,
 				Title:   checker.title,
 				Content: fmt.Sprintf("Using temporary detected on table(s): %s", tables),
 				Line:    checker.baseLine + ctx.GetStart().GetLine(),
