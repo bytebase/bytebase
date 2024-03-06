@@ -53,6 +53,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
 		advisor.SchemaRuleStatementDMLDryRun,
+		// advisor.SchemaRuleStatementDisallowUsingFilesort disallow the using filesort.
+		advisor.SchemaRuleStatementDisallowUsingFilesort,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
