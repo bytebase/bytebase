@@ -199,7 +199,7 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
     const basicViewWorksheet = getSheetByName(organizer.worksheet, "BASIC");
     if (basicViewWorksheet) {
       basicViewWorksheet.starred = organizer.starred;
-      setCache(basicViewWorksheet, "FULL");
+      setCache(basicViewWorksheet, "BASIC");
     }
   };
 
