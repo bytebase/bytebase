@@ -19,7 +19,6 @@ type SheetOrganizerMessage struct {
 	SheetUID     int
 	PrincipalUID int
 	Starred      bool
-	Pinned       bool
 }
 
 // FindSheetOrganizerMessage is the store message to find sheet organizer.
@@ -41,27 +40,23 @@ func (s *Store) UpsertSheetOrganizerV2(ctx context.Context, organizer *SheetOrga
 	  INSERT INTO sheet_organizer (
 			sheet_id,
 			principal_id,
-			starred,
-			pinned
+			starred
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3)
 		ON CONFLICT(sheet_id, principal_id) DO UPDATE SET
-			starred = EXCLUDED.starred,
-			pinned = EXCLUDED.pinned
-		RETURNING id, sheet_id, principal_id, starred, pinned
+			starred = EXCLUDED.starred
+		RETURNING id, sheet_id, principal_id, starred
 	`
 	var sheetOrganizer SheetOrganizerMessage
 	if err := tx.QueryRowContext(ctx, query,
 		organizer.SheetUID,
 		organizer.PrincipalUID,
 		organizer.Starred,
-		organizer.Pinned,
 	).Scan(
 		&sheetOrganizer.UID,
 		&sheetOrganizer.SheetUID,
 		&sheetOrganizer.PrincipalUID,
 		&sheetOrganizer.Starred,
-		&sheetOrganizer.Pinned,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -93,8 +88,7 @@ func (s *Store) FindSheetOrganizerV2(ctx context.Context, find *FindSheetOrganiz
 		id,
 		sheet_id,
 		principal_id,
-		starred,
-		pinned
+		starred
 	FROM sheet_organizer
 	WHERE `+strings.Join(where, " AND "),
 		args...,
@@ -112,7 +106,6 @@ func (s *Store) FindSheetOrganizerV2(ctx context.Context, find *FindSheetOrganiz
 			&sheetOrganizer.SheetUID,
 			&sheetOrganizer.PrincipalUID,
 			&sheetOrganizer.Starred,
-			&sheetOrganizer.Pinned,
 		); err != nil {
 			return nil, err
 		}

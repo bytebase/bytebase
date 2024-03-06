@@ -47,7 +47,6 @@ type WorkSheetMessage struct {
 	CreatedTime time.Time
 	UpdatedTime time.Time
 	Starred     bool
-	Pinned      bool
 
 	// Internal fields
 	createdTs int64
@@ -71,7 +70,7 @@ type FindWorkSheetMessage struct {
 	// Domain fields
 	Visibilities []WorkSheetVisibility
 
-	// Used to find (un)starred/pinned sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
+	// Used to find (un)starred sheet list, could be PRIVATE/PROJECT/PUBLIC sheet.
 	// For now, we only need the starred sheets.
 	OrganizerPrincipalIDStarred    *int
 	OrganizerPrincipalIDNotStarred *int
@@ -163,8 +162,7 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			%s,
 			worksheet.visibility,
 			OCTET_LENGTH(worksheet.statement),
-			COALESCE(sheet_organizer.starred, FALSE),
-			COALESCE(sheet_organizer.pinned, FALSE)
+			COALESCE(sheet_organizer.starred, FALSE)
 		FROM worksheet
 		LEFT JOIN sheet_organizer ON sheet_organizer.sheet_id = worksheet.id AND sheet_organizer.principal_id = %d
 		WHERE %s`, statementField, currentPrincipalID, strings.Join(where, " AND ")),
@@ -191,7 +189,6 @@ func (s *Store) ListWorkSheets(ctx context.Context, find *FindWorkSheetMessage, 
 			&sheet.Visibility,
 			&sheet.Size,
 			&sheet.Starred,
-			&sheet.Pinned,
 		); err != nil {
 			return nil, err
 		}
@@ -272,21 +269,20 @@ func (s *Store) CreateWorkSheet(ctx context.Context, create *WorkSheetMessage) (
 }
 
 // PatchWorkSheet updates a sheet.
-func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) (*WorkSheetMessage, error) {
+func (s *Store) PatchWorkSheet(ctx context.Context, patch *PatchWorkSheetMessage) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
+		return errors.Wrapf(err, "failed to begin transaction")
 	}
 
-	sheet, err := patchWorkSheetImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, err
+	if err := patchWorkSheetImpl(ctx, tx, patch); err != nil {
+		return err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
+		return errors.Wrapf(err, "failed to commit transaction")
 	}
-	return sheet, nil
+	return nil
 }
 
 // DeleteWorkSheet deletes an existing sheet by ID.
@@ -305,7 +301,7 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 }
 
 // patchWorkSheetImpl updates a sheet's name/statement/visibility/database_id/project_id.
-func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) (*WorkSheetMessage, error) {
+func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessage) error {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}
 	if v := patch.Title; v != nil {
 		set, args = append(set, fmt.Sprintf("name = $%d", len(args)+1)), append(args, *v)
@@ -316,68 +312,15 @@ func patchWorkSheetImpl(ctx context.Context, tx *Tx, patch *PatchWorkSheetMessag
 	if v := patch.Visibility; v != nil {
 		set, args = append(set, fmt.Sprintf("visibility = $%d", len(args)+1)), append(args, *v)
 	}
-
 	args = append(args, patch.UID)
 
-	var sheet WorkSheetMessage
-	databaseID := sql.NullInt32{}
-
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	query := fmt.Sprintf(`
 		UPDATE worksheet
 		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING
-			id,
-			creator_id,
-			created_ts,
-			updater_id,
-			updated_ts,
-			project_id,
-			database_id,
-			name,
-			LEFT(statement, %d),
-			visibility,
-			OCTET_LENGTH(statement)
-	`, len(args), common.MaxSheetSize),
-		args...,
-	).Scan(
-		&sheet.UID,
-		&sheet.CreatorID,
-		&sheet.createdTs,
-		&sheet.UpdaterID,
-		&sheet.updatedTs,
-		&sheet.ProjectUID,
-		&databaseID,
-		&sheet.Title,
-		&sheet.Statement,
-		&sheet.Visibility,
-		&sheet.Size,
+		WHERE id = $%d`, len(args))
+	if _, err := tx.ExecContext(ctx, query, args...,
 	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.UID)}
-		}
-		return nil, err
+		return err
 	}
-
-	if err := tx.QueryRowContext(ctx, `
-		SELECT
-			COALESCE(sheet_organizer.starred, FALSE),
-			COALESCE(sheet_organizer.pinned, FALSE)
-		FROM sheet_organizer
-		WHERE sheet_organizer.sheet_id = $1
-	`, sheet.UID).Scan(
-		&sheet.Starred,
-		&sheet.Pinned,
-	); err != nil {
-		return nil, err
-	}
-
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheet.DatabaseUID = &value
-	}
-	sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-	sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
-
-	return &sheet, nil
+	return nil
 }
