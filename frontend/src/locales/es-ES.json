@@ -1183,7 +1183,8 @@
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
-    "preview": "Problema de vista previa"
+    "preview": "Problema de vista previa",
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",

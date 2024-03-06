@@ -1183,7 +1183,8 @@
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
-    "preview": "预览工单"
+    "preview": "预览工单",
+    "task-summary-tooltip": "{failed} 个任务失败"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
