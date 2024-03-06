@@ -1542,7 +1542,7 @@
     "transfer-project": "Dự án chuyển nhượng",
     "unassign": "Bỏ chỉ định",
     "unassign-alert-title": "Bỏ gán cơ sở dữ liệu",
-    "unassign-alert-description": "Cơ sở dữ liệu được chọn sẽ chuyển ra khỏi dự án của họ",
+    "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ được gỡ bỏ khỏi dự án",
     "edit-schema": "Chỉnh sửa lược đồ",
     "edit-schema-in-vcs": "Chỉnh sửa lược đồ trong VCS",
     "edit-labels": "Chỉnh sửa nhãn",

@@ -1542,7 +1542,7 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "アンアサイン",
     "unassign-alert-title": "データベースのアンアサイン",
-    "unassign-alert-description": "選択したデータベースはプロジェクトから転送されます",
+    "unassign-alert-description": "選択されたデータベースはプロジェクトから削除されます",
     "edit-schema": "スキーマの編集",
     "edit-schema-in-vcs": "VCSでスキーマを編集する",
     "edit-labels": "ラベルの編集",
