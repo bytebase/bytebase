@@ -1082,7 +1082,7 @@ ViewMetadata is the metadata for views.
 ### TablePartitionMetadata.Type
 Type is the type of a table partition, some database engines may not support all types.
 Only avilable for the following database engines now:
-MySQL: RANGE, LIST, HASH, COLUMNS, KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
 PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
@@ -1091,8 +1091,9 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | RANGE | 1 |  |
 | LIST | 2 |  |
 | HASH | 3 |  |
-| COLUMNS | 4 |  |
+| LINEAR_HASH | 4 |  |
 | KEY | 5 |  |
+| LINEAR_KEY | 6 |  |
 
 
 
