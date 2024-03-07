@@ -384,8 +384,12 @@
       "description": "在会话开始时未正确设置角色语句可能导致未经授权的访问或权限分配不当，可能危及数据安全性和完整性。错误等级：警告"
     },
     "statement-disallow-using-temporary": {
-      "title": "禁止使用临时表",
+      "title": "禁止 Using temporary",
       "description": "禁止 Using temporary 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。建议错误等级：警告"
+    },
+    "statement-disallow-using-filesort": {
+      "title": "禁止 Using filesort",
+      "description": "禁止 Using filesort 可以帮助优化查询性能，减少系统资源的消耗，提高系统的稳定性和可靠性。通常，通过合适的索引、查询优化和数据模型设计，可以避免或减少文件排序的需要。建议错误等级：警告"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",

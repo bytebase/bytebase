@@ -387,6 +387,10 @@
       "title": "Prohibit using temporary tables",
       "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggestion error level: Warning"
     },
+    "statement-disallow-using-filesort": {
+      "title": "Prohibit using filesort",
+      "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
