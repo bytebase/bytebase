@@ -113,11 +113,14 @@ func getTables(ctx context.Context, tx *sql.Tx, schemaName string) (map[string][
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
 		var schemaName string
-		var count sql.NullInt64
+		// https://github.com/rana/ora/issues/57#issuecomment-179909837
+		// NUMBER in Oracle can hold 38 decimal digits, so int64 is not enough with its 19 decimal digits.
+		// float64 is a little bit better - not precise enough, but won't overflow.
+		var count sql.NullFloat64
 		if err := rows.Scan(&schemaName, &table.Name, &count); err != nil {
 			return nil, err
 		}
-		table.RowCount = count.Int64
+		table.RowCount = int64(count.Float64)
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
