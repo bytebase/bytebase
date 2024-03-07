@@ -152,6 +152,7 @@ export type RuleType =
   | "statement.select-full-table-scan"
   | "statement.create-specify-schema"
   | "statement.check-set-role-variable"
+  | "statement.disallow-using-temporary"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"

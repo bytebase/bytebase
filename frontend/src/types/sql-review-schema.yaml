@@ -253,6 +253,11 @@ ruleList:
     engineList:
       - POSTGRES
     componentList: []
+  - type: statement.disallow-using-temporary
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:
