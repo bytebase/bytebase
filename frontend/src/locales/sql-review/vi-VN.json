@@ -383,6 +383,10 @@
       "title": "Kiểm tra xem Lệnh Thiết lập Vai trò có ở đầu không",
       "description": "Nếu không thiết lập lệnh vai trò đúng cách ở đầu phiên làm việc, có thể dẫn đến truy cập không được ủy quyền hoặc gán quyền không đúng cách, tiềm ẩn nguy cơ đe dọa bảo mật và tính toàn vẹn của dữ liệu. Cấp độ lỗi: Cảnh báo"
     },
+    "statement-disallow-using-temporary": {
+      "title": "Cấm sử dụng bảng tạm",
+      "description": "Bảng tạm có thể gây ra tình trạng khóa cấp độ bảng và tiêu tốn một lượng lớn tài nguyên. Mức độ lỗi đề xuất: Lỗi"
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
