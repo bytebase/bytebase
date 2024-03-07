@@ -505,7 +505,12 @@
     },
     "advice-online-migration": {
       "title": "Khuyến nghị bật di chuyển trực tuyến",
-      "description": "Nếu số lượng hàng bảng được di chuyển vượt quá cài đặt của bạn, hãy bật di chuyển trực tuyến. Mức lỗi được đề xuất: Cảnh báo"
+      "description": "Nếu số lượng hàng bảng được di chuyển vượt quá cài đặt của bạn, hãy bật di chuyển trực tuyến. Mức lỗi được đề xuất: Cảnh báo",
+      "component": {
+        "number": {
+          "title": "Giá trị ngưỡng"
+        }
+      }
     }
   },
   "level": {
