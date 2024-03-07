@@ -1184,6 +1184,7 @@
     "unfinished-resolved-issue-tips": "この問題は「完了」とマークされていますが、一部のタスクが正常に実行されていません。",
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
     "preview": "問題のプレビュー",
+    "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
     "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
   },
   "alter-schema": {
