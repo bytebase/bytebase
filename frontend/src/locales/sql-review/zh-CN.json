@@ -434,6 +434,15 @@
       "title": "强制并行索引创建",
       "description": "在 PostgreSQL 11 及以上版本中，使用普通方式创建索引将导致表锁定无法写入数据，使用 \"CONCURRENTLY\" 模式可以实现无锁创建索引，不影响表的正常访问。建议错误等级：警告"
     },
+    "index-type-allow-list": {
+      "title": "可允许的索引类型列表",
+      "description": "不同的索引类型具有不同的性能特征。例如，B-tree 索引适用于范围查询，而哈希索引适用于相等查询。建议错误级别：警告",
+      "component": {
+        "list": {
+          "title": "允许的索引类型"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "允许使用的字符集（Charset）列表",
       "description": "字符集决定了表中可以存储哪些字符，使用错误的字符集可能导致应用中的某些字符无法正确存储与显示，例如中文与 Emoji 表情。建议错误等级：错误",

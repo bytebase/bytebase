@@ -434,6 +434,15 @@
       "title": "Aplicar creación de índices concurrentes",
       "description": "En PostgreSQL 11 y versiones posteriores, usar la declaración estándar para crear un índice causará un bloqueo de tabla y no permitirá escribir. Usar el modo \"CONCURRENTLY\" puede evitar este problema. Nivel de error sugerido: Advertencia"
     },
+    "index-type-allow-list": {
+      "title": "Lista de tipos de índice permitidos",
+      "description": "Los diferentes tipos de índice tienen diferentes características de rendimiento. Por ejemplo, los índices B-tree son adecuados para consultas de rango, mientras que los índices hash son adecuados para consultas de igualdad. Nivel de error de sugerencia: Advertencia",
+      "component": {
+        "list": {
+          "title": "Lista permitida"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Lista permitida de juegos de caracteres",
       "description": "El juego de caracteres determina qué caracteres se pueden almacenar en la tabla. El uso de un juego de caracteres incorrecto puede hacer que ciertos caracteres de la aplicación no se puedan almacenar ni mostrar correctamente, como los caracteres CJK y Emoji. Nivel de error sugerido: Error",
