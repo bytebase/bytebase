@@ -245,14 +245,21 @@ const (
 	// MySQLStatementSelectFullTableScan is an advisor type for checking MySQL select full table scan or not.
 	MySQLStatementSelectFullTableScan Type = "bb.plugin.advisor.mysql.statement.select-full-table-scan"
 
+	// MySQLStatementWhereNoEqualNull is an advisor type for checking MySQL no equal null in WHERE clause.
+	MySQLStatementWhereNoEqualNull Type = "bb.plugin.advisor.mysql.statement.where.no-equal-null"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
+
 	// MySQLEventDisallowCreate is an advisor type for MySQL disallow create event.
 	MySQLEventDisallowCreate Type = "bb.plugin.advisor.mysql.event.disallow-create"
+
 	// MySQLViewDisallowCreate is an advisor type for MySQL disallow create view.
 	MySQLViewDisallowCreate Type = "bb.plugin.advisor.mysql.view.disallow-create"
+
 	// MySQLFunctionDisallowCreate is an advisor type for MySQL disallow create function.
 	MySQLFunctionDisallowCreate Type = "bb.plugin.advisor.mysql.function.disallow-create"
+
 	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
 	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
