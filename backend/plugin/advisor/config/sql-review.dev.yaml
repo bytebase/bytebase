@@ -205,6 +205,12 @@ ruleList:
         - BIGINT
   - type: index.create-concurrently
     level: WARNING
+  - type: index.type-allow-list
+    level: WARNING
+    payload:
+      list:
+        - BTREE
+        - HASH
   - type: system.charset.allowlist
     level: WARNING
     payload:

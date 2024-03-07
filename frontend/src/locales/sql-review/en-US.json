@@ -434,6 +434,15 @@
       "title": "Enforce concurrent index creation",
       "description": "In PostgreSQL 11 and above, using the standard statement to create an index will cause table locking and unable to write. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggestion error level: Warning"
     },
+    "index-type-allow-list": {
+      "title": "Allowable list of index types",
+      "description": "Different index types have different performance characteristics. For example, B-tree indexes are suitable for range queries, while hash indexes are suitable for equality queries. Suggestion error level: Warning",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Allowable list of Charset",
       "description": "The character set determines which characters can be stored in the table. Using the wrong character set may result in certain characters in the application being unable to be stored and displayed correctly, such as CJK and Emoji. Suggested error level: Error",
