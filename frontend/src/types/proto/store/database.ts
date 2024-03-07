@@ -302,17 +302,20 @@ export interface TablePartitionMetadata {
 /**
  * Type is the type of a table partition, some database engines may not support all types.
  * Only avilable for the following database engines now:
- * MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+ * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+ * TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
  * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
  */
 export enum TablePartitionMetadata_Type {
   TYPE_UNSPECIFIED = 0,
   RANGE = 1,
-  LIST = 2,
-  HASH = 3,
-  LINEAR_HASH = 4,
-  KEY = 5,
-  LINEAR_KEY = 6,
+  RANGE_COLUMNS = 2,
+  LIST = 3,
+  LIST_COLUMNS = 4,
+  HASH = 5,
+  LINEAR_HASH = 6,
+  KEY = 7,
+  LINEAR_KEY = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -325,18 +328,24 @@ export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartition
     case "RANGE":
       return TablePartitionMetadata_Type.RANGE;
     case 2:
+    case "RANGE_COLUMNS":
+      return TablePartitionMetadata_Type.RANGE_COLUMNS;
+    case 3:
     case "LIST":
       return TablePartitionMetadata_Type.LIST;
-    case 3:
+    case 4:
+    case "LIST_COLUMNS":
+      return TablePartitionMetadata_Type.LIST_COLUMNS;
+    case 5:
     case "HASH":
       return TablePartitionMetadata_Type.HASH;
-    case 4:
+    case 6:
     case "LINEAR_HASH":
       return TablePartitionMetadata_Type.LINEAR_HASH;
-    case 5:
+    case 7:
     case "KEY":
       return TablePartitionMetadata_Type.KEY;
-    case 6:
+    case 8:
     case "LINEAR_KEY":
       return TablePartitionMetadata_Type.LINEAR_KEY;
     case -1:
@@ -352,8 +361,12 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
       return "TYPE_UNSPECIFIED";
     case TablePartitionMetadata_Type.RANGE:
       return "RANGE";
+    case TablePartitionMetadata_Type.RANGE_COLUMNS:
+      return "RANGE_COLUMNS";
     case TablePartitionMetadata_Type.LIST:
       return "LIST";
+    case TablePartitionMetadata_Type.LIST_COLUMNS:
+      return "LIST_COLUMNS";
     case TablePartitionMetadata_Type.HASH:
       return "HASH";
     case TablePartitionMetadata_Type.LINEAR_HASH:
