@@ -263,6 +263,11 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: statement.where.no-equal-null
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:
