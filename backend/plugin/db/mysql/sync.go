@@ -606,6 +606,8 @@ func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadat
 	switch strings.ToUpper(tp) {
 	case "RANGE":
 		return storepb.TablePartitionMetadata_RANGE
+	case "RANGE COLUMNS":
+		return storepb.TablePartitionMetadata_RANGE_COLUMNS
 	case "LIST":
 		return storepb.TablePartitionMetadata_LIST
 	case "HASH":
