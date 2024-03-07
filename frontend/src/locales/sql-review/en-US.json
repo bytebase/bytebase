@@ -383,6 +383,10 @@
       "title": "Check if Set Role statement at the beginning",
       "description": "Failure to set the role statement properly at the beginning of a session may lead to unauthorized access or improper permissions assignment, potentially compromising data security and integrity. Suggestion error level: Warning"
     },
+    "statement-disallow-using-temporary": {
+      "title": "Prohibit using temporary tables",
+      "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggestion error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
