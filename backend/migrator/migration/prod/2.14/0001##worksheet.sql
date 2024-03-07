@@ -41,6 +41,7 @@ FROM sheet
 WHERE sheet.source = 'BYTEBASE';
 
 -- Change fk for sheet_organizer.
+DELETE FROM sheet_organizer USING sheet WHERE sheet_organizer.sheet_id = sheet.id AND sheet.source != 'BYTEBASE';
 ALTER TABLE sheet_organizer DROP CONSTRAINT sheet_organizer_sheet_id_fkey;
 ALTER TABLE sheet_organizer ADD CONSTRAINT sheet_organizer_sheet_id_fkey FOREIGN KEY (sheet_id) REFERENCES worksheet (id);
 
