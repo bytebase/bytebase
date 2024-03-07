@@ -391,6 +391,10 @@
       "title": "Prohibit using filesort",
       "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Warning"
     },
+    "statement-where-no-equal-null": {
+      "title": "Prohibit using NULL equality comparison in WHERE clause",
+      "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
