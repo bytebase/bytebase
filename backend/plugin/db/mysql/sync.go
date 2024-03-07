@@ -610,6 +610,8 @@ func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadat
 		return storepb.TablePartitionMetadata_RANGE_COLUMNS
 	case "LIST":
 		return storepb.TablePartitionMetadata_LIST
+	case "LIST COLUMNS":
+		return storepb.TablePartitionMetadata_LIST_COLUMNS
 	case "HASH":
 		return storepb.TablePartitionMetadata_HASH
 	case "KEY":
