@@ -67,6 +67,8 @@ ruleList:
     level: WARNING
   - type: statement.disallow-using-temporary
     level: WARNING
+  - type: statement.where.no-equal-null
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
