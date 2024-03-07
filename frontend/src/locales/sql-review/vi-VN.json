@@ -387,6 +387,10 @@
       "title": "Cấm sử dụng bảng tạm",
       "description": "Bảng tạm có thể gây ra tình trạng khóa cấp độ bảng và tiêu tốn một lượng lớn tài nguyên. Mức độ lỗi đề xuất: Lỗi"
     },
+    "statement-disallow-using-filesort": {
+      "title": "Cấm sử dụng sắp xếp tệp",
+      "description": "Sắp xếp tệp có thể gây tốn tài nguyên không cần thiết và cũng có thể gây ra kết quả không mong muốn trong ứng dụng khi bảng thêm hoặc xóa cột. Mức độ lỗi đề xuất: Lỗi"
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
