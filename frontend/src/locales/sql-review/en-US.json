@@ -505,7 +505,12 @@
     },
     "advice-online-migration": {
       "title": "Advise enabling online migration",
-      "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning"
+      "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning",
+      "component": {
+        "number": {
+          "title": "Threshold value"
+        }
+      }
     }
   },
   "level": {

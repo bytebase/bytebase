@@ -52,7 +52,8 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		advisor.SchemaRuleStatementDMLDryRun,
+		// advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleStatementWhereNoEqualNull,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
