@@ -105,6 +105,8 @@ const (
 	SchemaRuleStatementDisallowUsingFilesort = "statement.disallow-using-filesort"
 	// SchemaRuleStatementDisallowUsingTemporary disallow using temporary in execution plan.
 	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
+	// SchemaRuleStatementWhereNoEqualNull check the WHERE clause no equal null.
+	SchemaRuleStatementWhereNoEqualNull = "statement.where.no-equal-null"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1498,6 +1500,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementCheckSetRoleVariable:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLStatementCheckSetRoleVariable, nil
+		}
+	case SchemaRuleStatementWhereNoEqualNull:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementWhereNoEqualNull, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
