@@ -25,6 +25,11 @@ export interface DataSourceOptions {
   sshObfuscatedPassword: string;
   /** The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK"). */
   sshObfuscatedPrivateKey: string;
+  /**
+   * PKCS#8 private key in PEM format. If it's empty string, no private key is required.
+   * Used for authentication when connecting to the data source.
+   */
+  authenticationPrivateKeyObfuscated: string;
 }
 
 function createBaseDataSourceOptions(): DataSourceOptions {
@@ -38,6 +43,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     sshUser: "",
     sshObfuscatedPassword: "",
     sshObfuscatedPrivateKey: "",
+    authenticationPrivateKeyObfuscated: "",
   };
 }
 
@@ -69,6 +75,9 @@ export const DataSourceOptions = {
     }
     if (message.sshObfuscatedPrivateKey !== "") {
       writer.uint32(74).string(message.sshObfuscatedPrivateKey);
+    }
+    if (message.authenticationPrivateKeyObfuscated !== "") {
+      writer.uint32(82).string(message.authenticationPrivateKeyObfuscated);
     }
     return writer;
   },
@@ -143,6 +152,13 @@ export const DataSourceOptions = {
 
           message.sshObfuscatedPrivateKey = reader.string();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.authenticationPrivateKeyObfuscated = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -166,6 +182,9 @@ export const DataSourceOptions = {
       sshObfuscatedPassword: isSet(object.sshObfuscatedPassword) ? globalThis.String(object.sshObfuscatedPassword) : "",
       sshObfuscatedPrivateKey: isSet(object.sshObfuscatedPrivateKey)
         ? globalThis.String(object.sshObfuscatedPrivateKey)
+        : "",
+      authenticationPrivateKeyObfuscated: isSet(object.authenticationPrivateKeyObfuscated)
+        ? globalThis.String(object.authenticationPrivateKeyObfuscated)
         : "",
     };
   },
@@ -199,6 +218,9 @@ export const DataSourceOptions = {
     if (message.sshObfuscatedPrivateKey !== "") {
       obj.sshObfuscatedPrivateKey = message.sshObfuscatedPrivateKey;
     }
+    if (message.authenticationPrivateKeyObfuscated !== "") {
+      obj.authenticationPrivateKeyObfuscated = message.authenticationPrivateKeyObfuscated;
+    }
     return obj;
   },
 
@@ -216,6 +238,7 @@ export const DataSourceOptions = {
     message.sshUser = object.sshUser ?? "";
     message.sshObfuscatedPassword = object.sshObfuscatedPassword ?? "";
     message.sshObfuscatedPrivateKey = object.sshObfuscatedPrivateKey ?? "";
+    message.authenticationPrivateKeyObfuscated = object.authenticationPrivateKeyObfuscated ?? "";
     return message;
   },
 };
