@@ -351,6 +351,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
+	partitionTables := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
+	// Query partition info.
+	if driver.GetType() == storepb.Engine_MYSQL {
+		partitionTables, err = driver.listPartitionTables(ctx, driver.databaseName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Query table info.
 	tableQuery := `
 		SELECT
@@ -408,6 +417,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 				DataFree:      dataFree,
 				CreateOptions: createOptions,
 				Comment:       comment,
+				Partitions:    partitionTables[key],
 			}
 			if tableCollation.Valid {
 				tableMetadata.Collation = tableCollation.String
@@ -468,6 +478,147 @@ func isCurrentTimestampLike(s string) bool {
 		return true
 	}
 	return false
+}
+
+func (driver *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+	const query string = `
+		SELECT
+			TABLE_NAME,
+			PARTITION_NAME,
+			SUBPARTITION_NAME,
+			PARTITION_METHOD,
+			SUBPARTITION_METHOD,
+			PARTITION_EXPRESSION,
+			SUBPARTITION_EXPRESSION,
+			PARTITION_DESCRIPTION
+		FROM INFORMATION_SCHEMA.PARTITIONS
+		WHERE TABLE_SCHEMA = ? AND PARTITION_NAME IS NOT NULL
+		ORDER BY TABLE_NAME ASC, PARTITION_NAME ASC, SUBPARTITION_NAME ASC, PARTITION_ORDINAL_POSITION ASC, SUBPARTITION_ORDINAL_POSITION ASC;
+	`
+	// Prepare the query statement.
+	stmt, err := driver.db.PrepareContext(ctx, query)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to prepare query: %s", query)
+	}
+	defer stmt.Close()
+	rows, err := stmt.QueryContext(ctx, databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute query: %s", query)
+	}
+	defer rows.Close()
+
+	type partitionKey struct {
+		tableName     string
+		partitionName string
+	}
+
+	partitionMap := make(map[partitionKey]int)
+	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
+
+	for rows.Next() {
+		var tableName, partitionName, partitionMethod string
+		var subpartitionName, subpartitionMethod, subpartitionExpression, partitionExpression, partitionDescription sql.NullString
+		if err := rows.Scan(
+			&tableName,
+			&partitionName,
+			&subpartitionName,
+			&partitionMethod,
+			&subpartitionMethod,
+			&partitionExpression,
+			&subpartitionExpression,
+			&partitionDescription,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan row")
+		}
+		partitionKey := partitionKey{tableName: tableName, partitionName: partitionName}
+		tableKey := db.TableKey{Schema: "", Table: tableName}
+
+		if _, ok := partitionMap[partitionKey]; !ok {
+			// Partition
+			tp := convertToStorepbTablePartitionType(partitionMethod)
+			if tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+				slog.Warn("unknown partition type", slog.String("partitionMethod", partitionMethod))
+				continue
+			}
+			// For the key partition, it can take zero or more columns, the partition expression is null if taken zero columns.
+			expression := ""
+			if partitionExpression.Valid {
+				expression = partitionExpression.String
+			}
+
+			value := ""
+			if partitionDescription.Valid {
+				value = partitionDescription.String
+			}
+
+			partition := &storepb.TablePartitionMetadata{
+				Name:          partitionName,
+				Type:          tp,
+				Expression:    expression,
+				Value:         value,
+				Subpartitions: []*storepb.TablePartitionMetadata{},
+			}
+			partitionMap[partitionKey] = len(result[tableKey])
+			result[tableKey] = append(result[tableKey], partition)
+		}
+
+		if subpartitionName.Valid {
+			tp := convertToStorepbTablePartitionType(subpartitionMethod.String)
+			if tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+				slog.Warn("unknown subpartition type", slog.String("subpartitionMethod", subpartitionMethod.String))
+				continue
+			}
+			// For the key partition, it can take zero or more columns, the partition expression is null if taken zero columns.
+			expression := ""
+			if partitionExpression.Valid {
+				expression = subpartitionExpression.String
+			}
+
+			value := ""
+			if partitionDescription.Valid {
+				value = partitionDescription.String
+			}
+
+			subPartition := &storepb.TablePartitionMetadata{
+				Name:          subpartitionName.String,
+				Type:          tp,
+				Expression:    expression,
+				Value:         value,
+				Subpartitions: []*storepb.TablePartitionMetadata{},
+			}
+
+			if idx, ok := partitionMap[partitionKey]; !ok {
+				slog.Warn("subpartition without partition", slog.String("tableName", tableName), slog.String("partitionName", partitionName), slog.String("subpartitionName", subpartitionName.String))
+			} else {
+				result[tableKey][idx].Subpartitions = append(result[tableKey][idx].Subpartitions, subPartition)
+			}
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "failed to scan row")
+	}
+
+	return result, nil
+}
+
+func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadata_Type {
+	switch strings.ToUpper(tp) {
+	case "RANGE":
+		return storepb.TablePartitionMetadata_RANGE
+	case "LIST":
+		return storepb.TablePartitionMetadata_LIST
+	case "HASH":
+		return storepb.TablePartitionMetadata_HASH
+	case "KEY":
+		return storepb.TablePartitionMetadata_KEY
+	case "LINEAR HASH":
+		return storepb.TablePartitionMetadata_LINEAR_HASH
+	case "LINEAR KEY":
+		return storepb.TablePartitionMetadata_LINEAR_KEY
+	default:
+		return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	}
 }
 
 func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
