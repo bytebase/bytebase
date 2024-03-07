@@ -391,6 +391,10 @@
       "title": "Cấm sử dụng sắp xếp tệp",
       "description": "Sắp xếp tệp có thể gây tốn tài nguyên không cần thiết và cũng có thể gây ra kết quả không mong muốn trong ứng dụng khi bảng thêm hoặc xóa cột. Mức độ lỗi đề xuất: Lỗi"
     },
+    "statement-where-no-equal-null": {
+      "title": "Cấm sử dụng so sánh bằng NULL trong mệnh đề WHERE",
+      "description": "Kết quả của việc so sánh bằng NULL luôn là NULL, có thể gây ra các kết quả không mong muốn. Cấp độ lỗi gợi ý: Cảnh báo"
+    },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",
       "description": "Một số thay đổi có thể ảnh hưởng đến các ứng dụng đang chạy, chẳng hạn như sửa đổi tên đối tượng cơ sở dữ liệu, thêm các ràng buộc mới, v.v. Quy tắc này có thể tránh những thay đổi bất cẩn dẫn đến lỗi ứng dụng hiện có. Mức độ lỗi đề xuất: Cảnh báo"
