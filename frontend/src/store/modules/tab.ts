@@ -87,7 +87,7 @@ export const useTabStore = defineStore("tab", () => {
       storage.remove(KEYS.tab(id));
 
       if (tab.mode === TabMode.Admin) {
-        useWebTerminalV1Store().clearQueryStateByTab(tab);
+        useWebTerminalV1Store().clearQueryStateByTab(id);
       }
     }
   };

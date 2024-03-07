@@ -27,6 +27,7 @@ export * from "./sqlAdvice";
 export * from "./store";
 export * from "./vcs";
 export * from "./sqlEditor";
+export * from "./sqlEditorTab";
 export * from "./sqlEditorTree";
 export * from "./tab";
 export * from "./sheet";

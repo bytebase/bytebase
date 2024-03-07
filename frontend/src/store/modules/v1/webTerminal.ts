@@ -45,8 +45,8 @@ export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
     return qs;
   };
 
-  const clearQueryStateByTab = (tab: TabInfo) => {
-    map.value.delete(tab.id);
+  const clearQueryStateByTab = (id: string) => {
+    map.value.delete(id);
   };
 
   return { getQueryStateByTab, clearQueryStateByTab };

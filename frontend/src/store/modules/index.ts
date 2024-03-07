@@ -6,6 +6,7 @@ export * from "./slowQueryPolicy";
 export * from "./router";
 export * from "./sqlEditor";
 export * from "./sqlEditorTree";
+export * from "./sqlEditorTab";
 export * from "./tab";
 export * from "./uistate";
 export * from "./sqlReview";
