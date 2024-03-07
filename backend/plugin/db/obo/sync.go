@@ -113,11 +113,11 @@ func getTables(ctx context.Context, tx *sql.Tx, schemaName string) (map[string][
 	for rows.Next() {
 		table := &storepb.TableMetadata{}
 		var schemaName string
-		var count sql.NullInt64
+		var count sql.NullFloat64
 		if err := rows.Scan(&schemaName, &table.Name, &count); err != nil {
 			return nil, err
 		}
-		table.RowCount = count.Int64
+		table.RowCount = int64(count.Float64)
 		key := db.TableKey{Schema: schemaName, Table: table.Name}
 		table.Columns = columnMap[key]
 		table.Indexes = indexMap[key]
