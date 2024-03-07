@@ -154,6 +154,7 @@ export type RuleType =
   | "statement.check-set-role-variable"
   | "statement.disallow-using-temporary"
   | "statement.disallow-using-filesort"
+  | "statement.where.no-equal-null"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
