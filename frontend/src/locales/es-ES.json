@@ -1184,6 +1184,7 @@
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
+    "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
   },
   "alter-schema": {
