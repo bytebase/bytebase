@@ -434,6 +434,15 @@
       "title": "Thực thi việc tạo chỉ mục đồng thời",
       "description": "Trong PostgreSQL 11 trở lên, việc sử dụng câu lệnh chuẩn để tạo chỉ mục sẽ khiến bảng bị khóa và không thể ghi. Sử dụng chế độ \"ĐỒNG HÀNH\" có thể tránh được sự cố này. Mức độ lỗi đề xuất: Cảnh báo"
     },
+    "index-type-allow-list": {
+      "title": "Danh sách loại chỉ mục cho phép",
+      "description": "Các loại chỉ mục khác nhau có các đặc điểm về hiệu suất khác nhau. Ví dụ, chỉ mục B-tree phù hợp cho các truy vấn phạm vi, trong khi chỉ mục băm phù hợp cho các truy vấn bằng nhau. Cấp độ lỗi gợi ý: Cảnh báo",
+      "component": {
+        "list": {
+          "title": "Danh sách cho phép"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Danh sách Charset được phép",
       "description": "Bộ ký tự xác định những ký tự nào có thể được lưu trữ trong bảng. Việc sử dụng bộ ký tự sai có thể khiến một số ký tự nhất định trong ứng dụng không thể được lưu trữ và hiển thị chính xác, chẳng hạn như CJK và Emoji. Mức độ lỗi đề xuất: Lỗi",

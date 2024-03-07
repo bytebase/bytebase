@@ -604,6 +604,7 @@ export const convertPolicyRuleToRuleTemplate = (
     }
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
+    case "index.type-allow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
     case "system.function.disallowed-list": {
@@ -762,6 +763,7 @@ const mergeIndividualConfigAsRule = (
     case "column.required":
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
+    case "index.type-allow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
     case "system.function.disallowed-list": {

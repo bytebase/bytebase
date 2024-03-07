@@ -715,6 +715,15 @@ ruleList:
     engineList:
       - POSTGRES
     componentList: []
+  - type: index.type-allow-list
+    category: INDEX
+    engineList:
+      - MYSQL
+    componentList:
+      - key: list
+        payload:
+          type: STRING_ARRAY
+          default: []
   - type: system.charset.allowlist
     category: SYSTEM
     engineList:
