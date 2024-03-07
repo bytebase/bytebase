@@ -351,10 +351,13 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
+	partitionTables := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
 	// Query partition info.
-	partitionTables, err := driver.listPartitionTables(ctx, driver.databaseName)
-	if err != nil {
-		return nil, err
+	if driver.GetType() == storepb.Engine_MYSQL {
+		partitionTables, err = driver.listPartitionTables(ctx, driver.databaseName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Query table info.
@@ -489,7 +492,7 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 			SUBPARTITION_EXPRESSION,
 			PARTITION_DESCRIPTION
 		FROM INFORMATION_SCHEMA.PARTITIONS
-		WHERE TABLE_SCHEMA = ?
+		WHERE TABLE_SCHEMA = ? AND PARTITION_NAME IS NOT NULL
 		ORDER BY TABLE_NAME ASC, PARTITION_NAME ASC, SUBPARTITION_NAME ASC, PARTITION_ORDINAL_POSITION ASC, SUBPARTITION_ORDINAL_POSITION ASC;
 	`
 	// Prepare the query statement.
