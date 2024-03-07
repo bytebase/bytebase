@@ -1184,6 +1184,7 @@
     "unfinished-resolved-issue-tips": "Sự cố này được đánh dấu là \"Xong\" nhưng một số tác vụ của nó không được thực thi thành công.",
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
     "preview": "Vấn đề xem trước",
+    "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
     "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
   },
   "alter-schema": {
