@@ -93,7 +93,7 @@ func (checker *statementWhereNoEqualNullChecker) EnterPrimaryExprCompare(ctx *my
 			Status:  checker.level,
 			Code:    advisor.StatementWhereNoEqualNull,
 			Title:   checker.title,
-			Content: fmt.Sprintf("WHERE clause contains no equal null: %s", checker.text),
+			Content: fmt.Sprintf("WHERE clause contains equal null: %s", checker.text),
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
