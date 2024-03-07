@@ -505,7 +505,12 @@
     },
     "advice-online-migration": {
       "title": "建议启用在线大表变更",
-      "description": "如果迁移的表行数超过您的设置，建议启用在线迁移。建议的错误级别: 警告"
+      "description": "如果迁移的表行数超过您的设置，建议启用在线迁移。建议的错误级别: 警告",
+      "component": {
+        "number": {
+          "title": "阈值"
+        }
+      }
     }
   },
   "level": {
