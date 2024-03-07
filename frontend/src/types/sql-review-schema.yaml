@@ -258,6 +258,11 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: statement.disallow-using-filesort
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:

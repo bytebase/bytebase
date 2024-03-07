@@ -153,6 +153,7 @@ export type RuleType =
   | "statement.create-specify-schema"
   | "statement.check-set-role-variable"
   | "statement.disallow-using-temporary"
+  | "statement.disallow-using-filesort"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
