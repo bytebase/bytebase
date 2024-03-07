@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var getClassificationFromCommentReg = regexp.MustCompile("^[0-9]+(-([0-9])+){0,}")
+var getClassificationFromCommentReg = regexp.MustCompile("^(([0-9]+)-)+")
 
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string) (string, string) {
@@ -13,7 +13,8 @@ func GetClassificationAndUserComment(comment string) (string, string) {
 	if classification == "" {
 		return "", comment
 	}
-	userComment := strings.TrimPrefix(strings.TrimPrefix(comment, classification), "-")
+	userComment := strings.TrimPrefix(comment, classification)
+	classification = strings.TrimSuffix(classification, "-")
 	return classification, userComment
 }
 
