@@ -3,7 +3,10 @@ package snowflake
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"database/sql"
+	"encoding/pem"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -75,6 +78,22 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 		User:     config.Username,
 		Password: config.Password,
 	}
+	if config.AuthenticationPrivateKey != "" {
+		block, _ := pem.Decode([]byte(config.AuthenticationPrivateKey))
+		if block == nil || block.Type != "PRIVATE KEY" {
+			return "", "", errors.Errorf("failed to get private key PEM block")
+		}
+		privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "failed to parse pkcs 8 private key")
+		}
+		rsaKey, ok := privateKey.(*rsa.PrivateKey)
+		if !ok {
+			return "", "", errors.Errorf("expected RSA private key, got %T", privateKey)
+		}
+		snowConfig.PrivateKey = rsaKey
+	}
+
 	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
 	if strings.Contains(config.Host, "@") {
 		parts := strings.Split(config.Host, "@")
