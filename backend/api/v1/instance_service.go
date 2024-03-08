@@ -793,6 +793,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			obfuscated := common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
 			patch.SSHObfuscatedPrivateKey = &obfuscated
 			dataSource.SSHObfuscatedPrivateKey = obfuscated
+		case "authentication_private_key":
+			obfuscated := common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
+			patch.AuthenticationPrivateKeyObfuscated = &obfuscated
+			dataSource.AuthenticationPrivateKeyObfuscated = obfuscated
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
