@@ -14,6 +14,11 @@ func TestClassification(t *testing.T) {
 		userComment    string
 	}{
 		{
+			rawComment:     "1abc",
+			classification: "",
+			userComment:    "1abc",
+		},
+		{
 			rawComment:     "abc",
 			classification: "",
 			userComment:    "abc",
@@ -34,12 +39,12 @@ func TestClassification(t *testing.T) {
 			userComment:    "abc",
 		},
 		{
-			rawComment:     "1-2",
+			rawComment:     "1",
 			classification: "1",
-			userComment:    "2",
+			userComment:    "",
 		},
 		{
-			rawComment:     "1-2-",
+			rawComment:     "1-2",
 			classification: "1-2",
 			userComment:    "",
 		},
