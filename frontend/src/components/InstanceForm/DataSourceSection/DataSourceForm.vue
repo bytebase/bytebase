@@ -92,8 +92,10 @@
         <DroppableTextarea
           v-model:value="dataSource.authenticationPrivateKey"
           :resizable="false"
-          class="w-full h-24 whitespace-pre-wrap"
-          placeholder="PEM PKCS#8 RSA PRIVATE KEY - write only"
+          class="w-full h-32 whitespace-pre-wrap"
+          placeholder="-----BEGIN PRIVATE KEY-----
+MIIEvQ...
+-----END PRIVATE KEY-----"
           :allow-edit="allowEdit"
         />
       </div>
