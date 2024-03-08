@@ -2191,7 +2191,8 @@
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
     "admin": "主库",
-    "read-only": "从库"
+    "read-only": "从库",
+    "snowflake-keypair-tip": "密钥对认证"
   },
   "setting": {
     "project": {

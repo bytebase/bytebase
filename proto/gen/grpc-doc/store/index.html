@@ -3712,6 +3712,14 @@ The hostname of the SSH server agent. </p></td>
                   <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
                 </tr>
               
+                <tr>
+                  <td>authentication_private_key_obfuscated</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
+Used for authentication when connecting to the data source. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

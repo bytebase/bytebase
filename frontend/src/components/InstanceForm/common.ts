@@ -24,6 +24,7 @@ export type EditDataSource = DataSource & {
   useEmptyPassword?: boolean;
   updateSsl?: boolean;
   updateSsh?: boolean;
+  updateAuthenticationPrivateKey?: boolean;
 };
 
 export type DataSourceEditState = {
