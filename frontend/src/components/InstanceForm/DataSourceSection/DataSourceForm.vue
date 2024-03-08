@@ -76,6 +76,21 @@
     />
   </template>
 
+  <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+    <div class="mt-2 sm:col-span2 sm:col-start-1">
+      <span> Private key </span>
+      <div>
+        <DroppableTextarea
+          v-model:value="dataSource.authenticationPrivateKey"
+          :resizable="false"
+          class="w-full h-24 whitespace-pre-wrap"
+          placeholder="PEM PKCS#8 RSA PRIVATE KEY - write only"
+          :allow-edit="allowEdit"
+        />
+      </div>
+    </div>
+  </template>
+
   <template v-if="showAuthenticationDatabase">
     <div class="sm:col-span-2 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
@@ -221,7 +236,8 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props */
 import { NButton, NCheckbox, NInput } from "naive-ui";
-import { DataSourceOptions } from "@/types";
+import { watch } from "vue";
+import { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
@@ -330,4 +346,16 @@ const handleSSHChange = (
   Object.assign(ds, value);
   ds.updateSsh = true;
 };
+
+watch(
+  () => props.dataSource.authenticationPrivateKey,
+  () => {
+    const ds = props.dataSource;
+    console.log(
+      "ds.authenticationPrivateKey changed",
+      ds.updateAuthenticationPrivateKey
+    );
+    ds.updateAuthenticationPrivateKey = true;
+  }
+);
 </script>

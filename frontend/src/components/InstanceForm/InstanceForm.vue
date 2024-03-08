@@ -1004,6 +1004,7 @@ const testConnection = async (
           throw new Error("should never reach this line");
         }
         const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
+        console.log(updateMask);
         await instanceServiceClient.updateDataSource(
           {
             instance: instance.name,
@@ -1037,10 +1038,18 @@ const calcDataSourceUpdateMask = (
   original: DataSource,
   editState: EditDataSource
 ) => {
+  console.log("editing", editing);
+  console.log("original", original);
   const updateMask = new Set(
     calcUpdateMask(editing, original, true /* toSnakeCase */)
   );
-  const { useEmptyPassword, updateSsh, updateSsl } = editState;
+  console.log("update mask 0", updateMask);
+  const {
+    useEmptyPassword,
+    updateSsh,
+    updateSsl,
+    updateAuthenticationPrivateKey,
+  } = editState;
   if (useEmptyPassword) {
     // We need to implicitly set "password" need to be updated
     // if the "use empty password" option if checked
@@ -1059,6 +1068,9 @@ const calcDataSourceUpdateMask = (
     updateMask.add("ssh_password");
     updateMask.add("ssh_private_key");
   }
+  if (updateAuthenticationPrivateKey) {
+    updateMask.add("authentication_private_key");
+  }
 
   return Array.from(updateMask);
 };
@@ -1074,7 +1086,8 @@ const extractDataSourceFromEdit = (
       "updatedPassword",
       "useEmptyPassword",
       "updateSsl",
-      "updateSsh"
+      "updateSsh",
+      "updateAuthenticationPrivateKey"
     )
   );
   if (edit.updatedPassword) {
