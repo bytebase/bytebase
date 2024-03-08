@@ -92,6 +92,7 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 			return "", "", errors.Errorf("expected RSA private key, got %T", privateKey)
 		}
 		snowConfig.PrivateKey = rsaKey
+		snowConfig.Authenticator = snow.AuthTypeJwt
 	}
 
 	// Host can also be account e.g. xma12345, or xma12345@host_ip where host_ip is the proxy server IP.
@@ -110,6 +111,9 @@ func buildSnowflakeDSN(config db.ConnectionConfig) (string, string, error) {
 		return "", "", errors.Wrapf(err, "failed to build Snowflake DSN")
 	}
 	snowConfig.Password = "xxxxxx"
+	if snowConfig.PrivateKey != nil {
+		snowConfig.PrivateKey = nil
+	}
 	redactedDSN, err := snow.DSN(snowConfig)
 	if err != nil {
 		// nolint
