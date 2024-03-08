@@ -134,13 +134,13 @@ func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetad
 	query := ""
 	if schemaName == "" {
 		query = fmt.Sprintf(`
-		SELECT OWNER, TABLE_NAME, NUM_ROWS
+		SELECT OWNER, TABLE_NAME, CAST(NUM_ROWS as INTEGER)
 		FROM all_tables
 		WHERE OWNER NOT IN (%s) 
 		ORDER BY OWNER, TABLE_NAME`, systemSchema)
 	} else {
 		query = fmt.Sprintf(`
-		SELECT OWNER, TABLE_NAME, NUM_ROWS
+		SELECT OWNER, TABLE_NAME, CAST(NUM_ROWS as INTEGER)
 		FROM all_tables
 		WHERE OWNER = '%s'
 		ORDER BY TABLE_NAME`, schemaName)
