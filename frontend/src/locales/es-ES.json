@@ -2191,7 +2191,8 @@
       "none": "Ninguno"
     },
     "admin": "Admin",
-    "read-only": "Solo lectura"
+    "read-only": "Solo lectura",
+    "snowflake-keypair-tip": "Autenticación de par de claves"
   },
   "setting": {
     "project": {
