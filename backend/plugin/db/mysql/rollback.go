@@ -15,6 +15,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/resources/mysqlutil"
@@ -57,7 +58,7 @@ func (txn BinlogTransaction) GetRollbackSQL(tables map[string][]string) (string,
 // The binlog file names and positions are used to specify the binlog events range for rollback SQL generation.
 // tableCatalog is a map from table names to column names. It is used to map positional placeholders in the binlog events to the actual columns to generate valid SQL statements.
 // TODO(dragonly): parse/filter/generate rollback SQL in stream. Limit the generated SQL size to 8MB for now.
-func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit int, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
+func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogFileNameList []string, binlogPosStart, binlogPosEnd int64, threadID string, tableCatalog map[string][]string) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
@@ -100,7 +101,7 @@ func (driver *Driver) GenerateRollbackSQL(ctx context.Context, binlogSizeLimit i
 		return "", errors.Wrap(err, "failed to run mysqlbinlog")
 	}
 
-	txnList, err := ParseBinlogStream(ctx, pr, threadID, binlogSizeLimit)
+	txnList, err := ParseBinlogStream(ctx, pr, threadID, common.MaxBinlogSizeLimit)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to parse binlog stream")
 	}
