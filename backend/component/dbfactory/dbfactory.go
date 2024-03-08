@@ -168,6 +168,10 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
+	authenticationPrivateKey, err := common.Unobfuscate(dataSource.AuthenticationPrivateKeyObfuscated, d.secret)
+	if err != nil {
+		return nil, err
+	}
 	updatedPassword, err := secret.ReplaceExternalSecret(password)
 	if err != nil {
 		return nil, err
@@ -197,18 +201,19 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 				SslCert: sslCert,
 				SslKey:  sslKey,
 			},
-			Host:                   dataSource.Host,
-			Port:                   dataSource.Port,
-			Database:               databaseName,
-			ConnectionDatabase:     connectionDatabase,
-			SRV:                    dataSource.SRV,
-			AuthenticationDatabase: dataSource.AuthenticationDatabase,
-			SID:                    dataSource.SID,
-			ServiceName:            dataSource.ServiceName,
-			SSHConfig:              sshConfig,
-			ReadOnly:               readOnly,
-			SchemaTenantMode:       schemaTenantMode,
-			ConnectionContext:      connectionContext,
+			Host:                     dataSource.Host,
+			Port:                     dataSource.Port,
+			Database:                 databaseName,
+			ConnectionDatabase:       connectionDatabase,
+			SRV:                      dataSource.SRV,
+			AuthenticationDatabase:   dataSource.AuthenticationDatabase,
+			SID:                      dataSource.SID,
+			ServiceName:              dataSource.ServiceName,
+			SSHConfig:                sshConfig,
+			ReadOnly:                 readOnly,
+			SchemaTenantMode:         schemaTenantMode,
+			ConnectionContext:        connectionContext,
+			AuthenticationPrivateKey: authenticationPrivateKey,
 		},
 	)
 	if err != nil {
