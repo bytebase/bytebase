@@ -1004,7 +1004,6 @@ const testConnection = async (
           throw new Error("should never reach this line");
         }
         const updateMask = calcDataSourceUpdateMask(ds, original, editingDS);
-        console.log(updateMask);
         await instanceServiceClient.updateDataSource(
           {
             instance: instance.name,
@@ -1038,12 +1037,9 @@ const calcDataSourceUpdateMask = (
   original: DataSource,
   editState: EditDataSource
 ) => {
-  console.log("editing", editing);
-  console.log("original", original);
   const updateMask = new Set(
     calcUpdateMask(editing, original, true /* toSnakeCase */)
   );
-  console.log("update mask 0", updateMask);
   const {
     useEmptyPassword,
     updateSsh,

@@ -360,10 +360,6 @@ watch(
   () => props.dataSource.authenticationPrivateKey,
   () => {
     const ds = props.dataSource;
-    console.log(
-      "ds.authenticationPrivateKey changed",
-      ds.updateAuthenticationPrivateKey
-    );
     ds.updateAuthenticationPrivateKey = true;
   }
 );
