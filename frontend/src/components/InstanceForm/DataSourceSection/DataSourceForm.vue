@@ -77,8 +77,17 @@
   </template>
 
   <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
-    <div class="mt-2 sm:col-span2 sm:col-start-1">
-      <span> Private key </span>
+    <div class="mt-2 sm:col-span-2 sm:col-start-1">
+      <div class="textlabel block">{{ $t("data-source.ssh.private-key") }}</div>
+      <div class="flex space-x-2 text-sm mb-1">
+        <div class="text-gray-400">
+          {{ $t("data-source.snowflake-keypair-tip") }}
+        </div>
+        <LearnMoreLink
+          url="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+          class="ml-1 text-sm"
+        />
+      </div>
       <div>
         <DroppableTextarea
           v-model:value="dataSource.authenticationPrivateKey"

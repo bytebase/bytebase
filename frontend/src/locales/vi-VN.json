@@ -2191,7 +2191,8 @@
     "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
     "admin": "Quản trị viên",
-    "read-only": "RO"
+    "read-only": "RO",
+    "snowflake-keypair-tip": "Xác thực cặp khóa"
   },
   "setting": {
     "project": {
