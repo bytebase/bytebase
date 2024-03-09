@@ -1,10 +1,11 @@
 import { watchThrottled } from "@vueuse/core";
 import { head, pick } from "lodash-es";
-import { defineStore } from "pinia";
+import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import "@/types";
 import { SQLEditorTab } from "@/types/sqlEditorTab";
 import { WebStorageHelper, defaultSQLEditorTab } from "@/utils";
+import { useSQLEditorV2Store } from "./sqlEditorV2";
 import { useWebTerminalV1Store } from "./v1";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
@@ -35,7 +36,7 @@ const getStorage = (project: string) => {
   return new WebStorageHelper(keyPrefixWithProject(project), localStorage);
 };
 
-export const useSQLEditorTabsByProject = (project: string) => {
+const useSQLEditorTabsByProject = (project: string) => {
   const storage = getStorage(project);
   // We store the tabIdList and the tabs separately.
   // This index-entity modeling enables us to update one tab entity at a time,
@@ -230,7 +231,8 @@ export const useSQLEditorTabsByProject = (project: string) => {
 
 export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
   // states
-  const project = ref<string>(""); // empty to "ALL" projects for high-privileged users
+  // use a map to ensure each project has only one `useSQLEditorTabsByProject` instance
+  const { project } = storeToRefs(useSQLEditorV2Store());
   const tabsByProject = new Map<
     string /* projects/{project} */,
     ReturnType<typeof useSQLEditorTabsByProject>
@@ -251,7 +253,6 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
   };
 
   return {
-    project,
     current,
     resetAll,
   };

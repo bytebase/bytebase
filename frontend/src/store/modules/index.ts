@@ -5,6 +5,7 @@ export * from "./notification";
 export * from "./slowQueryPolicy";
 export * from "./router";
 export * from "./sqlEditor";
+export * from "./sqlEditorV2";
 export * from "./sqlEditorTree";
 export * from "./sqlEditorTab";
 export * from "./tab";

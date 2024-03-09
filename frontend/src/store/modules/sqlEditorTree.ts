@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep, head, isFunction, orderBy, uniqBy } from "lodash-es";
-import { defineStore } from "pinia";
+import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
 import {
@@ -33,6 +33,7 @@ import {
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "./filter";
+import { useSQLEditorV2Store } from "./sqlEditorV2";
 import { useTabStore } from "./tab";
 import {
   useActuatorV1Store,
@@ -101,7 +102,8 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   );
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
-  const databaseList = ref<ComposedDatabase[]>([]);
+  // just re-expose `databaseList` in sqlEditor store
+  const { databaseList } = storeToRefs(useSQLEditorV2Store());
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );

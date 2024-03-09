@@ -38,86 +38,93 @@
         </teleport>
       </template>
       <Pane class="relative flex flex-col">
-        <TabList />
+        <template v-if="false">
+          <TabList />
 
-        <div class="w-full flex-1 overflow-hidden">
-          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
-            <Splitpanes
-              v-if="allowReadOnlyMode"
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane class="flex flex-row overflow-hidden">
-                <div class="h-full flex-1 overflow-hidden">
-                  <Splitpanes
-                    vertical
-                    class="default-theme"
-                    :dbl-click-splitter="false"
-                  >
-                    <Pane>
-                      <EditorPanel />
-                    </Pane>
-                    <Pane
-                      v-if="showSecondarySidebar && windowWidth >= 1024"
-                      :size="25"
+          <div class="w-full flex-1 overflow-hidden">
+            <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
+              <Splitpanes
+                v-if="allowReadOnlyMode"
+                horizontal
+                class="default-theme"
+                :dbl-click-splitter="false"
+              >
+                <Pane class="flex flex-row overflow-hidden">
+                  <div class="h-full flex-1 overflow-hidden">
+                    <Splitpanes
+                      vertical
+                      class="default-theme"
+                      :dbl-click-splitter="false"
                     >
-                      <SecondarySidebar />
-                    </Pane>
-                  </Splitpanes>
-                </div>
+                      <Pane>
+                        <EditorPanel />
+                      </Pane>
+                      <Pane
+                        v-if="showSecondarySidebar && windowWidth >= 1024"
+                        :size="25"
+                      >
+                        <SecondarySidebar />
+                      </Pane>
+                    </Splitpanes>
+                  </div>
 
-                <div
-                  v-if="windowWidth >= 1024"
-                  class="h-full border-l shrink-0"
+                  <div
+                    v-if="windowWidth >= 1024"
+                    class="h-full border-l shrink-0"
+                  >
+                    <SecondaryGutterBar />
+                  </div>
+                </Pane>
+                <Pane v-if="!isDisconnected" class="relative" :size="40">
+                  <ResultPanel />
+                </Pane>
+              </Splitpanes>
+
+              <div
+                v-else
+                class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+              >
+                <img
+                  src="../../assets/illustration/403.webp"
+                  class="max-h-[40%]"
+                />
+                <i18n-t
+                  class="textinfolabel flex items-center"
+                  keypath="sql-editor.allow-admin-mode-only"
+                  tag="div"
                 >
-                  <SecondaryGutterBar />
-                </div>
-              </Pane>
-              <Pane v-if="!isDisconnected" class="relative" :size="40">
-                <ResultPanel />
-              </Pane>
-            </Splitpanes>
+                  <template #instance>
+                    <InstanceV1Name :instance="instance" :link="false" />
+                  </template>
+                </i18n-t>
+                <AdminModeButton />
+              </div>
+            </template>
 
+            <TerminalPanelV1
+              v-if="tabStore.currentTab.mode === TabMode.Admin"
+            />
             <div
               v-else
-              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
+              class="w-full h-full flex flex-col items-center justify-center"
             >
               <img
                 src="../../assets/illustration/403.webp"
                 class="max-h-[40%]"
               />
-              <i18n-t
-                class="textinfolabel flex items-center"
-                keypath="sql-editor.allow-admin-mode-only"
-                tag="div"
-              >
-                <template #instance>
-                  <InstanceV1Name :instance="instance" :link="false" />
-                </template>
-              </i18n-t>
-              <AdminModeButton />
-            </div>
-          </template>
-
-          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
-          <div
-            v-else
-            class="w-full h-full flex flex-col items-center justify-center"
-          >
-            <img src="../../assets/illustration/403.webp" class="max-h-[40%]" />
-            <div class="textinfolabel">
-              {{ $t("database.access-denied") }}
+              <div class="textinfolabel">
+                {{ $t("database.access-denied") }}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-if="isFetchingSheet"
-          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-        >
-          <BBSpin />
-        </div>
+          <div
+            v-if="isFetchingSheet"
+            class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
+          >
+            <BBSpin />
+          </div>
+        </template>
       </Pane>
     </Splitpanes>
 

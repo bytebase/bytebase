@@ -2,16 +2,10 @@
   <div class="relative h-screen overflow-hidden flex flex-col">
     <BannersWrapper v-if="showBanners" />
     <!-- Suspense is experimental, be aware of the potential change -->
-    <Suspense>
-      <div v-if="ready" class="text-xs font-mono">
-        <ProvideSQLEditorContextV2>
-          <!-- <router-view /> -->
-          haha
-        </ProvideSQLEditorContextV2>
-        <div>ready: {{ ready }}</div>
-        <div>fullPath: {{ $route.fullPath }}</div>
-        <div>match: {{ $route.matched }}</div>
-      </div>
+    <Suspense v-if="ready">
+      <ProvideSQLEditorContextV2>
+        <router-view />
+      </ProvideSQLEditorContextV2>
     </Suspense>
   </div>
 </template>
@@ -19,6 +13,7 @@
 <script lang="ts" setup>
 import { computed, ref } from "vue";
 import { onMounted } from "vue";
+import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
 import ProvideSQLEditorContextV2 from "@/components/ProvideSQLEditorContextV2.vue";
 import {
@@ -33,6 +28,7 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 
+const router = useRouter();
 const pageMode = usePageMode();
 
 const showBanners = computed(() => {
@@ -44,6 +40,8 @@ const ready = ref(false);
 // We may tweak the resource loading here, and pre-load some frontend component
 // resources, and make a loading screen here in the future.
 const prepare = async () => {
+  await router.isReady();
+
   const policyV1Store = usePolicyV1Store();
   // Prepare roles, workspace policies and settings.
   await Promise.all([
