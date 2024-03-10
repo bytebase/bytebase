@@ -41,6 +41,7 @@
         <TabList />
         <div class="w-full flex-1 overflow-hidden">
           <GettingStarted v-if="!currentTab" />
+          <DisconnectedPlaceholder v-else-if="isDisconnected" />
           <template v-else>
             <template
               v-if="
@@ -177,6 +178,7 @@ import {
   isDisconnectedSQLEditorTab,
 } from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
+import DisconnectedPlaceholder from "./DisconnectedPlaceholder.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import GettingStarted from "./GettingStarted.vue";
