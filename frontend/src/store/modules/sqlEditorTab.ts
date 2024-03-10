@@ -41,6 +41,10 @@ const getStorage = (project: string) => {
   return new WebStorageHelper(keyPrefixWithProject(project), localStorage);
 };
 
+// `tabsById` stores all PersistentTabs across all
+const tabsById = new Map<string, SQLEditorTab>();
+const watchedTabIds = new Set<string>();
+
 const useSQLEditorTabsByProject = (project: string) => {
   const storage = getStorage(project);
   // We store the tabIdList and the tabs separately.
@@ -51,11 +55,9 @@ const useSQLEditorTabsByProject = (project: string) => {
   // `currentTabId` stores current `tab.id` in the project
   // default to empty string, which means no tab is selected
   const currentTabId = ref<string>("");
-  // `tabs` stores all PersistentTabs in the project
-  const tabs = ref(new Map<string, SQLEditorTab>());
 
   const tabById = (id: string) => {
-    return tabs.value.get(id);
+    return tabsById.get(id);
   };
   const tabList = computed(() => {
     return tabIdList.value.map((id) => {
@@ -63,7 +65,7 @@ const useSQLEditorTabsByProject = (project: string) => {
     });
   });
   const currentTab = computed(() => {
-    return tabs.value.get(currentTabId.value);
+    return tabsById.get(currentTabId.value);
   });
 
   // actions
@@ -87,7 +89,7 @@ const useSQLEditorTabsByProject = (project: string) => {
       tabIdList.value.push(id);
     }
     currentTabId.value = id;
-    tabs.value.set(id, newTab);
+    tabsById.set(id, newTab);
 
     watchTab(newTab, true /* immediate */);
     throw new Error("not implemented");
@@ -97,7 +99,7 @@ const useSQLEditorTabsByProject = (project: string) => {
     const position = tabIdList.value.indexOf(id);
     if (position < 0) return;
     tabIdList.value.splice(position, 1);
-    tabs.value.delete(id);
+    tabsById.delete(id);
     storage.remove(KEYS.tab(id));
 
     if (tab.mode === "ADMIN") {
@@ -164,6 +166,9 @@ const useSQLEditorTabsByProject = (project: string) => {
   // watch the field changes of a tab, store it to localStorage
   // when needed, but not to frequently (for performance consideration)
   const watchTab = (tab: SQLEditorTab, immediate: boolean) => {
+    if (watchedTabIds.has(tab.id)) {
+      return;
+    }
     const dirtyFields = [
       () => tab.title,
       () => tab.sheet,
@@ -184,6 +189,8 @@ const useSQLEditorTabsByProject = (project: string) => {
       },
       { deep: true, immediate, throttle: 100, trailing: true }
     );
+
+    watchedTabIds.add(tab.id);
   };
   // Load tabs session from localStorage
   // Reset if failed
@@ -194,6 +201,12 @@ const useSQLEditorTabsByProject = (project: string) => {
     // Load tabs
     const validTabIdList: string[] = [];
     storedTabIdList.forEach((id) => {
+      const exitedTab = tabsById.get(id);
+      if (exitedTab) {
+        validTabIdList.push(id);
+        return;
+      }
+
       const storedTab = storage.load<PersistentTab | undefined>(
         KEYS.tab(id),
         undefined
@@ -205,7 +218,7 @@ const useSQLEditorTabsByProject = (project: string) => {
         id,
       });
       watchTab(tab, false /* !immediate */);
-      tabs.value.set(id, tab);
+      tabsById.set(id, tab);
       validTabIdList.push(id);
     });
     tabIdList.value = validTabIdList;
@@ -214,7 +227,7 @@ const useSQLEditorTabsByProject = (project: string) => {
     if (tabIdList.value.length === 0) {
       const initialTab = defaultSQLEditorTab();
       watchTab(initialTab, false);
-      tabs.value.set(initialTab.id, initialTab);
+      tabsById.set(initialTab.id, initialTab);
       tabIdList.value.push(initialTab.id);
     }
 

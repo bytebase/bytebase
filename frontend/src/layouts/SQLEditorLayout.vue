@@ -1,5 +1,10 @@
 <template>
   <div class="relative h-screen overflow-hidden flex flex-col">
+    <ul
+      id="sql-editor-debug"
+      class="text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400 z-[999999]"
+    ></ul>
+
     <BannersWrapper v-if="showBanners" />
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense v-if="ready">

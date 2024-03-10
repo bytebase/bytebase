@@ -1,17 +1,20 @@
 <template>
-  <slot />
-  <ul
-    class="text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-white/50 border border-gray-400"
-  >
-    <li>project: {{ sqlEditorStore.project }}</li>
-    <li>strictProject: {{ sqlEditorStore.strictProject }}</li>
+  <teleport to="#sql-editor-debug">
+    <li>[ProvideContext]project: {{ sqlEditorStore.project }}</li>
+    <li>[ProvideContext]strictProject: {{ sqlEditorStore.strictProject }}</li>
     <li>
-      projectContextReady:
+      [ProvideContext]projectContextReady:
       {{ sqlEditorStore.projectContextReady }}
     </li>
-    <li>databaseCount: {{ sqlEditorStore.databaseList.length }}</li>
-    <li>allowViewALLProjects: {{ sqlEditorStore.allowViewALLProjects }}</li>
-  </ul>
+    <li>
+      [ProvideContext]databaseCount: {{ sqlEditorStore.databaseList.length }}
+    </li>
+    <li>
+      [ProvideContext]allowViewALLProjects:
+      {{ sqlEditorStore.allowViewALLProjects }}
+    </li>
+  </teleport>
+  <slot />
 </template>
 
 <script lang="ts" setup>

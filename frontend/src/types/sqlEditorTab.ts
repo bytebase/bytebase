@@ -15,6 +15,7 @@ export type SQLEditorTabStatus =
   | "DIRTY" // edited
   | "CLEAN"; // saved to a remote sheet
 
+// STANDARD not supported by backend so far
 export type SQLEditorTabMode = "STANDARD" | "READONLY" | "ADMIN";
 export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "READONLY";
 

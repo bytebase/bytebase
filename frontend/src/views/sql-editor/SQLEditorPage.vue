@@ -39,9 +39,14 @@
       </template>
       <Pane class="relative flex flex-col">
         <TabList />
-        <template v-if="false">
-          <div class="w-full flex-1 overflow-hidden">
-            <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
+        <div class="w-full flex-1 overflow-hidden">
+          <GettingStarted v-if="!currentTab" />
+          <template v-else>
+            <template
+              v-if="
+                currentTab.mode === 'READONLY' || currentTab.mode === 'STANDARD'
+              "
+            >
               <Splitpanes
                 v-if="allowReadOnlyMode"
                 horizontal
@@ -100,9 +105,7 @@
               </div>
             </template>
 
-            <TerminalPanelV1
-              v-if="tabStore.currentTab.mode === TabMode.Admin"
-            />
+            <TerminalPanelV1 v-if="currentTab.mode === 'ADMIN'" />
             <div
               v-else
               class="w-full h-full flex flex-col items-center justify-center"
@@ -115,15 +118,15 @@
                 {{ $t("database.access-denied") }}
               </div>
             </div>
-          </div>
+          </template>
+        </div>
 
-          <div
-            v-if="isFetchingSheet"
-            class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
-          >
-            <BBSpin />
-          </div>
-        </template>
+        <div
+          v-if="isFetchingSheet"
+          class="flex items-center justify-center absolute inset-0 bg-white/50 z-20"
+        >
+          <BBSpin />
+        </div>
       </Pane>
     </Splitpanes>
 
@@ -137,11 +140,17 @@
 
     <SchemaEditorModal
       v-if="alterSchemaState.showModal"
-      :database-id-list="alterSchemaState.databaseIdList.map((id) => `${id}`)"
+      :database-id-list="alterSchemaState.databaseIdList"
       :new-window="true"
       alter-type="SINGLE_DB"
       @close="alterSchemaState.showModal = false"
     />
+
+    <teleport to="#sql-editor-debug">
+      <li>[Page]isDisconnected: {{ isDisconnected }}</li>
+      <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
+      <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
+    </teleport>
   </div>
 </template>
 
@@ -157,19 +166,20 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useActuatorV1Store,
   useDatabaseV1Store,
-  useInstanceV1ByUID,
-  useSQLEditorStore,
-  useTabStore,
+  useInstanceV1Store,
+  useSQLEditorTabStore,
+  useSQLEditorV2Store,
 } from "@/store";
-import { DatabaseId, TabMode } from "@/types";
 import {
   allowUsingSchemaEditorV1,
   extractProjectResourceName,
   instanceV1HasReadonlyMode,
+  isDisconnectedSQLEditorTab,
 } from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
+import GettingStarted from "./GettingStarted.vue";
 import ResultPanel from "./ResultPanel";
 import {
   provideSecondarySidebarContext,
@@ -188,7 +198,7 @@ type LocalState = {
 
 type AlterSchemaState = {
   showModal: boolean;
-  databaseIdList: DatabaseId[];
+  databaseIdList: string[];
 };
 
 const state = reactive<LocalState>({
@@ -196,10 +206,10 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
-const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
-const sqlEditorStore = useSQLEditorStore();
+const editorStore = useSQLEditorV2Store();
+const tabStore = useSQLEditorTabStore();
 // provide context for SQL Editor
 const { events: editorEvents } = provideSQLEditorContext();
 // provide context for sheets
@@ -207,18 +217,23 @@ const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
-
-const isDisconnected = computed(() => tabStore.isDisconnected);
-const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
+const currentTab = computed(() => tabStore.current.currentTab.value);
+const isDisconnected = computed(() => {
+  const curr = currentTab.value;
+  return curr && isDisconnectedSQLEditorTab(curr);
+});
+const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
 
-const { instance } = useInstanceV1ByUID(
-  computed(() => tabStore.currentTab.connection.instanceId)
-);
+const instance = computed(() => {
+  return useInstanceV1Store().getInstanceByName(
+    currentTab.value?.connection.instance ?? ""
+  );
+});
 
 const allowReadOnlyMode = computed(() => {
-  if (isDisconnected.value) return true;
+  if (isDisconnected.value) return false;
 
   return instanceV1HasReadonlyMode(instance.value);
 });
@@ -235,7 +250,7 @@ useEmitteryEventListener(
     const database = databaseStore.getDatabaseByUID(databaseUID);
     if (allowUsingSchemaEditorV1([database])) {
       // TODO: support open selected database tab directly in Schema Editor.
-      alterSchemaState.databaseIdList = [databaseUID].map((uid) => Number(uid));
+      alterSchemaState.databaseIdList = [databaseUID];
       alterSchemaState.showModal = true;
     } else {
       const exampleSQL = ["ALTER TABLE"];
