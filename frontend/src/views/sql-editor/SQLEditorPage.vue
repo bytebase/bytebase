@@ -157,6 +157,7 @@
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
+import { storeToRefs } from "pinia";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -210,7 +211,7 @@ const state = reactive<LocalState>({
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
-const editorStore = useSQLEditorV2Store();
+const _editorStore = useSQLEditorV2Store();
 const tabStore = useSQLEditorTabStore();
 // provide context for SQL Editor
 const { events: editorEvents } = provideSQLEditorContext();
@@ -218,8 +219,8 @@ const { events: editorEvents } = provideSQLEditorContext();
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
+const { currentTab } = storeToRefs(tabStore);
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
-const currentTab = computed(() => tabStore.current.currentTab.value);
 const isDisconnected = computed(() => {
   const curr = currentTab.value;
   return curr && isDisconnectedSQLEditorTab(curr);

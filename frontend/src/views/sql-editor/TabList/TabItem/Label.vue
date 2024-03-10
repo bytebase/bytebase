@@ -58,13 +58,11 @@ const worksheetV1Store = useWorkSheetStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
 
-const isCurrentTab = computed(
-  () => props.tab.id === tabStore.current.currentTabId.value
-);
+const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 
 useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
   if (tab.id === props.tab.id) {
-    tabStore.current.setCurrent(tab.id);
+    tabStore.setCurrentTabId(tab.id);
     beginEdit();
   }
 });

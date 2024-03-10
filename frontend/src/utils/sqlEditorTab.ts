@@ -133,7 +133,7 @@ export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
 
 export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
   const tabStore = useSQLEditorTabStore();
-  const currentTab = tabStore.current.currentTab.value;
+  const currentTab = tabStore.currentTab;
   if (currentTab) {
     if (isSimilarSQLEditorTab(tab, currentTab)) {
       // Don't go further if the connection doesn't change.
@@ -141,17 +141,17 @@ export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
     }
     if (currentTab.status === "NEW") {
       // If the current tab is "fresh new", update its connection directly.
-      tabStore.current.updateCurrent(tab);
+      tabStore.updateCurrentTab(tab);
       return;
     }
   }
 
   // Otherwise select or add a new tab and set its connection.
   const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
-  tabStore.current.selectOrAddSimilarNewTab(
+  tabStore.selectOrAddSimilarNewTab(
     tab,
     false /* beside */,
     title /* defaultTabTitle */
   );
-  tabStore.current.updateCurrent(tab);
+  tabStore.updateCurrentTab(tab);
 };

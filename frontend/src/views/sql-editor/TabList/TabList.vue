@@ -23,13 +23,13 @@
           #item="{ element: id, index }: { element: string, index: number }"
         >
           <TabItem
-            :tab="tabStore.current.tabById(id)!"
+            :tab="tabStore.tabById(id)!"
             :index="index"
             :data-tab-id="id"
             @select="(tab) => handleSelectTab(tab)"
             @close="(tab, index) => handleRemoveTab(tab, index)"
             @contextmenu.stop.prevent="
-              contextMenuRef?.show(tabStore.current.tabById(id)!, index, $event)
+              contextMenuRef?.show(tabStore.tabById(id)!, index, $event)
             "
           />
         </template>
@@ -109,8 +109,8 @@ const showProfileDropdown = computed(() => {
 const filteredTabIdList = computed(() => {
   // If a database is selected, only show tabs that are associated with the database.
   if (filter.database) {
-    return tabStore.current.tabIdList.value.filter((id) => {
-      const tab = tabStore.current.tabById(id);
+    return tabStore.tabIdList.filter((id) => {
+      const tab = tabStore.tabById(id);
       if (
         !tab?.connection.database ||
         tab.connection.database === filter.database
@@ -122,20 +122,20 @@ const filteredTabIdList = computed(() => {
     });
   }
 
-  return tabStore.current.tabIdList.value;
+  return tabStore.tabIdList;
 });
 
 const handleSelectTab = async (tab: SQLEditorTab) => {
-  tabStore.current.setCurrent(tab.id);
+  tabStore.setCurrentTabId(tab.id);
 };
 
 const handleAddTab = () => {
-  const currentTab = tabStore.current.currentTab.value;
+  const currentTab = tabStore.currentTab;
   const connection = currentTab?.connection
     ? { ...currentTab.connection }
     : emptySQLEditorConnection();
   const title = suggestedTabTitleForSQLEditorConnection(connection);
-  tabStore.current.addTab({
+  tabStore.addTab({
     title,
     connection,
     // The newly created tab is "clean"
@@ -156,7 +156,7 @@ const handleRemoveTab = async (
     tab.status === "DIRTY"
   ) {
     if (focusWhenConfirm) {
-      tabStore.current.setCurrent(tab.id);
+      tabStore.setCurrentTabId(tab.id);
     }
     const $dialog = dialog.create({
       title: t("sql-editor.hint-tips.confirm-to-close-unsaved-sheet.title"),
@@ -185,19 +185,16 @@ const handleRemoveTab = async (
   }
 
   function remove(index: number) {
-    if (tabStore.current.tabList.value.length === 1) {
+    if (tabStore.tabList.length === 1) {
       // Ensure at least 1 tab
-      tabStore.current.addTab();
+      tabStore.addTab();
     }
 
-    tabStore.current.removeTab(tab);
+    tabStore.removeTab(tab);
 
     // select a tab near the removed tab.
-    const nextIndex = Math.min(
-      index,
-      tabStore.current.tabList.value.length - 1
-    );
-    const nextTab = tabStore.current.tabList.value[nextIndex];
+    const nextIndex = Math.min(index, tabStore.tabList.length - 1);
+    const nextTab = tabStore.tabList[nextIndex];
     handleSelectTab(nextTab);
 
     nextTick(recalculateScrollState);
@@ -247,7 +244,7 @@ const recalculateScrollState = () => {
 };
 
 watch(
-  () => tabStore.current.currentTabId.value,
+  () => tabStore.currentTabId,
   (id) => {
     requestAnimationFrame(() => {
       // Scroll the selected tab into view if needed.
@@ -271,7 +268,7 @@ useEmitteryEventListener(
   context.events,
   "close-tab",
   async ({ tab, index, action }) => {
-    const tabList = tabStore.current.tabList.value;
+    const { tabList } = tabStore;
 
     const remove = async (tab: SQLEditorTab, index: number) => {
       await handleRemoveTab(tab, index, true);

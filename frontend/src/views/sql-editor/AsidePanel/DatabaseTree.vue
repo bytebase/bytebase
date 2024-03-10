@@ -259,7 +259,7 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
 
 // Highlight the current tab's connection node.
 const selectedKeys = computed(() => {
-  const connection = tabStore.current.currentTab.value?.connection;
+  const connection = tabStore.currentTab?.connection;
   if (!connection) {
     return [];
   }
@@ -374,8 +374,10 @@ const handleClickoutside = () => {
 const maybeSelectTable = async (node: SQLEditorTreeNode) => {
   const target = node.meta.target as SQLEditorTreeNodeTarget<"table">;
   const { database, schema, table } = target;
-  const curr = tabStore.current.currentTab.value;
-  if (!curr || database.name !== curr.connection.database) {
+  if (
+    !tabStore.currentTab ||
+    tabStore.currentTab.connection.database !== database.name
+  ) {
     const coreTab: CoreSQLEditorTab = {
       connection: {
         instance: database.instance,
@@ -404,11 +406,10 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
     table: tableMetadata,
   });
 
-  const current = tabStore.current.currentTab.value;
-  if (current) {
-    tabStore.current.updateCurrent({
+  if (tabStore.currentTab) {
+    tabStore.updateCurrentTab({
       connection: {
-        ...current.connection,
+        ...tabStore.currentTab.connection,
         schema: schema.name,
         table: table.name,
       },
@@ -419,9 +420,11 @@ const maybeSelectTable = async (node: SQLEditorTreeNode) => {
 const maybeSelectExternalTable = async (node: SQLEditorTreeNode) => {
   const target = node.meta.target as SQLEditorTreeNodeTarget<"external-table">;
   const { database, schema, externalTable } = target;
-  const curr = tabStore.current.currentTab.value;
 
-  if (!curr || database.name !== curr.connection.database) {
+  if (
+    !tabStore.currentTab ||
+    tabStore.currentTab.connection.database !== database.name
+  ) {
     const coreTab: CoreSQLEditorTab = {
       connection: {
         instance: database.instance,
@@ -458,13 +461,12 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
       sheet: "",
     };
-    const curr = tabStore.current.currentTab.value;
-    if (curr && curr.status === "NEW") {
+    if (tabStore.currentTab && tabStore.currentTab.status === "NEW") {
       // If the current tab is "fresh new", update its connection directly.
-      tabStore.current.updateCurrent(tab);
+      tabStore.updateCurrentTab(tab);
     } else {
       // Otherwise select or add a new tab and set its connection
-      tabStore.current.addTab(
+      tabStore.addTab(
         {
           ...tab,
           title: suggestedTabTitleForSQLEditorConnection(tab.connection),
@@ -622,11 +624,10 @@ const handleLoadSubTree = (option: TreeOption) => {
 };
 
 const expandTableTab = (database: ComposedDatabase) => {
-  const curr = tabStore.current.currentTab.value;
-  if (!curr) {
+  if (!tabStore.currentTab) {
     return;
   }
-  const { schema, table } = curr.connection;
+  const { schema, table } = tabStore.currentTab.connection;
   const schemaMetadata = dbSchemaV1Store.getSchemaByName(
     database.name,
     schema ?? ""
@@ -675,8 +676,8 @@ const expandTableTab = (database: ComposedDatabase) => {
 watch(
   [
     isLoggedIn,
-    () => tabStore.current.currentTab.value?.connection.instance,
-    () => tabStore.current.currentTab.value?.connection.database,
+    () => tabStore.currentTab?.connection.instance,
+    () => tabStore.currentTab?.connection.database,
     () => treeStore.state,
   ],
   ([isLoggedIn, instanceName, databaseName, treeState]) => {

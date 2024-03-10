@@ -63,9 +63,7 @@ const state = reactive<LocalState>({
 
 const tabStore = useSQLEditorTabStore();
 
-const isCurrentTab = computed(
-  () => props.tab.id === tabStore.current.currentTabId.value
-);
+const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 </script>
 
 <style scoped lang="postcss">
