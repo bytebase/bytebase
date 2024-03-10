@@ -55,7 +55,6 @@ watch([project, projectContextReady], ([project, ready]) => {
 });
 
 const handleSwitchProject = (uid: string | undefined) => {
-  console.log("[handleSwitchProject]", uid);
   if (!uid || uid === String(UNKNOWN_ID)) {
     project.value = "";
   } else {
