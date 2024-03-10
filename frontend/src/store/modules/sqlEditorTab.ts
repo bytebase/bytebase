@@ -172,6 +172,14 @@ const useSQLEditorTabsByProject = (project: string) => {
     });
     tabIdList.value = validTabIdList;
 
+    // if tabIdList is empty, push a default empty tab
+    if (tabIdList.value.length === 0) {
+      const initialTab = defaultSQLEditorTab();
+      watchTab(initialTab, false);
+      tabs.value.set(initialTab.id, initialTab);
+      tabIdList.value.push(initialTab.id);
+    }
+
     // Load currentTabId
     const firstTabId = head(tabIdList.value) ?? "";
     currentTabId.value = storage.load<string>(KEYS.currentTabId, firstTabId);
@@ -257,3 +265,17 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     resetAll,
   };
 });
+
+export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
+  const tabList = useSQLEditorTabStore().current.tabList;
+
+  if (tabList.value.length > 1) {
+    // Not the only one tab
+    return true;
+  }
+  if (tabList.value.length === 1) {
+    // It's the only one tab, and it's closable if it's a sheet tab
+    return !!tab.sheet;
+  }
+  return false;
+};

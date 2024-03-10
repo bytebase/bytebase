@@ -9,13 +9,13 @@
       :class="state.editing && 'invisible'"
       @dblclick="beginEdit"
     >
-      {{ state.name }}
+      {{ state.title }}
     </NEllipsis>
 
     <input
       v-if="state.editing"
       ref="inputRef"
-      v-model="state.name"
+      v-model="state.title"
       type="text"
       class="edit"
       @blur="confirmEdit"
@@ -28,18 +28,18 @@
 import { NEllipsis } from "naive-ui";
 import { computed, nextTick, PropType, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useWorkSheetStore, useTabStore } from "@/store";
-import type { TabInfo } from "@/types";
+import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
+import type { SQLEditorTab } from "@/types";
 import { useTabListContext } from "../context";
 
 type LocalState = {
   editing: boolean;
-  name: string;
+  title: string;
 };
 
 const props = defineProps({
   tab: {
-    type: Object as PropType<TabInfo>,
+    type: Object as PropType<SQLEditorTab>,
     required: true,
   },
   index: {
@@ -50,26 +50,28 @@ const props = defineProps({
 
 const state = reactive<LocalState>({
   editing: false,
-  name: props.tab.name,
+  title: props.tab.title,
 });
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const inputRef = ref<HTMLInputElement>();
 const { events } = useTabListContext();
 
-const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
+const isCurrentTab = computed(
+  () => props.tab.id === tabStore.current.currentTabId.value
+);
 
 useEmitteryEventListener(events, "rename-tab", ({ tab }) => {
   if (tab.id === props.tab.id) {
-    tabStore.setCurrentTabId(tab.id);
+    tabStore.current.setCurrent(tab.id);
     beginEdit();
   }
 });
 
 const beginEdit = () => {
   state.editing = true;
-  state.name = props.tab.name;
+  state.title = props.tab.title;
   nextTick(() => {
     inputRef.value?.focus();
   });
@@ -78,17 +80,17 @@ const beginEdit = () => {
 const confirmEdit = () => {
   const { tab } = props;
 
-  const name = state.name.trim();
-  if (name === "") {
+  const title = state.title.trim();
+  if (title === "") {
     return cancelEdit();
   }
 
-  tab.name = name;
-  if (tab.sheetName) {
+  tab.title = title;
+  if (tab.sheet) {
     worksheetV1Store.patchSheet(
       {
-        name: tab.sheetName,
-        title: name,
+        name: tab.sheet,
+        title,
       },
       ["title"]
     );
@@ -99,13 +101,13 @@ const confirmEdit = () => {
 
 const cancelEdit = () => {
   state.editing = false;
-  state.name = props.tab.name;
+  state.title = props.tab.title;
 };
 
 watch(
-  () => props.tab.name,
-  (name) => {
-    state.name = name;
+  () => props.tab.title,
+  (title) => {
+    state.title = title;
   }
 );
 watch(isCurrentTab, (value) => {

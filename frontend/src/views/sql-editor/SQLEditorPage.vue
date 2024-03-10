@@ -38,9 +38,8 @@
         </teleport>
       </template>
       <Pane class="relative flex flex-col">
+        <TabList />
         <template v-if="false">
-          <TabList />
-
           <div class="w-full flex-1 overflow-hidden">
             <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
               <Splitpanes

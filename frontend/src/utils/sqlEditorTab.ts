@@ -1,6 +1,13 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { SQLEditorConnection, SQLEditorTab } from "@/types";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import {
+  ComposedDatabase,
+  ComposedInstance,
+  SQLEditorConnection,
+  SQLEditorTab,
+  UNKNOWN_ID,
+} from "@/types";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
@@ -49,25 +56,27 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
 //   return "DIRTY";
 // };
 
-// export const connectionForTab = (tab: TabInfo) => {
-//   const target: {
-//     instance: ComposedInstance | undefined;
-//     database: ComposedDatabase | undefined;
-//   } = {
-//     instance: undefined,
-//     database: undefined,
-//   };
-//   const { instanceId, databaseId } = tab.connection;
-//   if (databaseId !== String(UNKNOWN_ID)) {
-//     const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
-//     target.database = database;
-//     target.instance = database.instanceEntity;
-//   } else if (instanceId !== String(UNKNOWN_ID)) {
-//     const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-//     target.instance = instance;
-//   }
-//   return target;
-// };
+export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
+  const target: {
+    instance: ComposedInstance | undefined;
+    database: ComposedDatabase | undefined;
+  } = {
+    instance: undefined,
+    database: undefined,
+  };
+  const { connection } = tab;
+  if (connection.database) {
+    const database = useDatabaseV1Store().getDatabaseByName(
+      connection.database
+    );
+    target.database = database;
+    target.instance = database.instanceEntity;
+  } else if (connection.instance) {
+    const instance = useInstanceV1Store().getInstanceByUID(connection.instance);
+    target.instance = instance;
+  }
+  return target;
+};
 
 // const isSameConnection = (a: Connection, b: Connection): boolean => {
 //   return a.instanceId === b.instanceId && a.databaseId === b.databaseId;
@@ -81,18 +90,20 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
 //   );
 // };
 
-// export const getSuggestedTabNameFromConnection = (conn: Connection) => {
-//   const instance = useInstanceV1Store().getInstanceByUID(conn.instanceId);
-//   const database = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
-//   const parts: string[] = [];
-//   if (database.uid !== String(UNKNOWN_ID)) {
-//     parts.push(database.databaseName);
-//   } else if (instance.uid !== String(UNKNOWN_ID)) {
-//     parts.push(instance.title);
-//   }
-//   parts.push(getDefaultTabName());
-//   return parts.join(" ");
-// };
+export const suggestedTabNameForSQLEditorConnection = (
+  conn: SQLEditorConnection
+) => {
+  const instance = useInstanceV1Store().getInstanceByName(conn.instance);
+  const database = useDatabaseV1Store().getDatabaseByName(conn.database);
+  const parts: string[] = [];
+  if (database.uid !== String(UNKNOWN_ID)) {
+    parts.push(database.databaseName);
+  } else if (instance.uid !== String(UNKNOWN_ID)) {
+    parts.push(instance.title);
+  }
+  parts.push(defaultSQLEditorTabTitle());
+  return parts.join(" ");
+};
 
 // export const isDisconnectedTab = (tab: TabInfo) => {
 //   const { instanceId, databaseId } = tab.connection;

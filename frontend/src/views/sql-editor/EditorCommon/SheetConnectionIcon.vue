@@ -9,13 +9,13 @@
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";
-import { TabInfo } from "@/types";
+import { SQLEditorTab } from "@/types";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { connectionForTab } from "@/utils";
+import { connectionForSQLEditorTab } from "@/utils";
 
 const props = defineProps<{
   sheet?: Worksheet;
-  tab?: TabInfo;
+  tab?: SQLEditorTab;
 }>();
 
 const instance = computed(() => {
@@ -26,7 +26,7 @@ const instance = computed(() => {
       .instanceEntity;
   }
   if (tab) {
-    return connectionForTab(tab).instance;
+    return connectionForSQLEditorTab(tab).instance;
   }
   return undefined;
 });
