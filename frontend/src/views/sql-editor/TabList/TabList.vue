@@ -69,7 +69,7 @@ import type { SQLEditorTab } from "@/types";
 import {
   defer,
   emptySQLEditorConnection,
-  suggestedTabNameForSQLEditorConnection,
+  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
@@ -134,7 +134,7 @@ const handleAddTab = () => {
   const connection = currentTab?.connection
     ? { ...currentTab.connection }
     : emptySQLEditorConnection();
-  const title = suggestedTabNameForSQLEditorConnection(connection);
+  const title = suggestedTabTitleForSQLEditorConnection(connection);
   tabStore.current.addTab({
     title,
     connection,

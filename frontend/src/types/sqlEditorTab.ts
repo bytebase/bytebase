@@ -16,6 +16,7 @@ export type SQLEditorTabStatus =
   | "CLEAN"; // saved to a remote sheet
 
 export type SQLEditorTabMode = "STANDARD" | "READONLY" | "ADMIN";
+export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "READONLY";
 
 export type SQLEditorQuery = {
   connection: SQLEditorConnection; // the connection snapshot of the query
@@ -38,7 +39,7 @@ export type SQLEditorTabQueryContext = {
   results: Map<string /* database or instance */, SQLResultSetV1>;
 };
 
-export interface SQLEditorTab {
+export type SQLEditorTab = {
   // basic fields
   id: string; // uuid
   title: string; // display title, should be synced with sheet's title once saved
@@ -53,4 +54,9 @@ export interface SQLEditorTab {
   // won't be saved to localStorage
   queryContext?: SQLEditorTabQueryContext;
   batchContext?: BatchQueryContext;
-}
+};
+
+export type CoreSQLEditorTab = Pick<
+  SQLEditorTab,
+  "sheet" | "connection" | "mode"
+>;

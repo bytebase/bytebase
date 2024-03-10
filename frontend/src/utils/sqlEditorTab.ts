@@ -1,13 +1,20 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useSQLEditorTabStore,
+} from "@/store";
 import {
   ComposedDatabase,
   ComposedInstance,
+  CoreSQLEditorTab,
+  DEFAULT_SQL_EDITOR_TAB_MODE,
   SQLEditorConnection,
   SQLEditorTab,
   UNKNOWN_ID,
 } from "@/types";
+import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
   return {
@@ -16,7 +23,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     connection: emptySQLEditorConnection(),
     statement: "",
     status: "NEW",
-    mode: "STANDARD",
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     sheet: "",
     editMode: "SQL-EDITOR",
   };
@@ -78,19 +85,25 @@ export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
   return target;
 };
 
-// const isSameConnection = (a: Connection, b: Connection): boolean => {
-//   return a.instanceId === b.instanceId && a.databaseId === b.databaseId;
-// };
+const isSameSQLEditorConnection = (
+  a: SQLEditorConnection,
+  b: SQLEditorConnection
+): boolean => {
+  return a.instance === b.instance && a.database === b.database;
+};
 
-// export const isSimilarTab = (a: CoreTabInfo, b: CoreTabInfo): boolean => {
-//   return (
-//     isSameConnection(a.connection, b.connection) &&
-//     a.sheetName === b.sheetName &&
-//     a.mode === b.mode
-//   );
-// };
+export const isSimilarSQLEditorTab = (
+  a: CoreSQLEditorTab,
+  b: CoreSQLEditorTab
+): boolean => {
+  return (
+    isSameSQLEditorConnection(a.connection, b.connection) &&
+    a.sheet === b.sheet &&
+    a.mode === b.mode
+  );
+};
 
-export const suggestedTabNameForSQLEditorConnection = (
+export const suggestedTabTitleForSQLEditorConnection = (
   conn: SQLEditorConnection
 ) => {
   const instance = useInstanceV1Store().getInstanceByName(conn.instance);
@@ -105,36 +118,40 @@ export const suggestedTabNameForSQLEditorConnection = (
   return parts.join(" ");
 };
 
-// export const isDisconnectedTab = (tab: TabInfo) => {
-//   const { instanceId, databaseId } = tab.connection;
-//   if (instanceId === String(UNKNOWN_ID)) {
-//     return true;
-//   }
-//   const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-//   if (instanceV1AllowsCrossDatabaseQuery(instance)) {
-//     // Connecting to instance directly.
-//     return false;
-//   }
-//   return databaseId === String(UNKNOWN_ID);
-// };
+export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
+  const { connection } = tab;
+  if (!connection.instance) {
+    return true;
+  }
+  const instance = useInstanceV1Store().getInstanceByName(connection.instance);
+  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
+    // Connecting to instance directly.
+    return false;
+  }
+  return connection.database === "";
+};
 
-// export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
-//   const tabStore = useTabStore();
-//   if (isSimilarTab(tab, tabStore.currentTab)) {
-//     // Don't go further if the connection doesn't change.
-//     return;
-//   }
-//   if (tabStore.currentTab.isFreshNew) {
-//     // If the current tab is "fresh new", update its connection directly.
-//     tabStore.updateCurrentTab(tab);
-//   } else {
-//     // Otherwise select or add a new tab and set its connection.
-//     const name = getSuggestedTabNameFromConnection(tab.connection);
-//     tabStore.selectOrAddSimilarTab(
-//       tab,
-//       false /* beside */,
-//       name /* defaultTabName */
-//     );
-//     tabStore.updateCurrentTab(tab);
-//   }
-// };
+export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
+  const tabStore = useSQLEditorTabStore();
+  const currentTab = tabStore.current.currentTab.value;
+  if (currentTab) {
+    if (isSimilarSQLEditorTab(tab, currentTab)) {
+      // Don't go further if the connection doesn't change.
+      return;
+    }
+    if (currentTab.status === "NEW") {
+      // If the current tab is "fresh new", update its connection directly.
+      tabStore.current.updateCurrent(tab);
+      return;
+    }
+  }
+
+  // Otherwise select or add a new tab and set its connection.
+  const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
+  tabStore.current.selectOrAddSimilarNewTab(
+    tab,
+    false /* beside */,
+    title /* defaultTabTitle */
+  );
+  tabStore.current.updateCurrent(tab);
+};

@@ -3,8 +3,13 @@ import { head, pick } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
 import "@/types";
-import { SQLEditorTab } from "@/types/sqlEditorTab";
-import { WebStorageHelper, defaultSQLEditorTab } from "@/utils";
+import { CoreSQLEditorTab, SQLEditorTab } from "@/types/sqlEditorTab";
+import {
+  WebStorageHelper,
+  defaultSQLEditorTab,
+  isDisconnectedSQLEditorTab,
+  isSimilarSQLEditorTab,
+} from "@/utils";
 import { useSQLEditorV2Store } from "./sqlEditorV2";
 import { useWebTerminalV1Store } from "./v1";
 
@@ -111,6 +116,39 @@ const useSQLEditorTabsByProject = (project: string) => {
   };
   const setCurrent = (id: string) => {
     currentTabId.value = id;
+  };
+  const selectOrAddSimilarNewTab = (
+    tab: CoreSQLEditorTab,
+    beside = false,
+    defaultTitle?: string
+  ) => {
+    const curr = currentTab.value;
+    if (curr) {
+      if (isDisconnectedSQLEditorTab(curr)) {
+        if (defaultTitle) {
+          curr.title = defaultTitle;
+        }
+        return;
+      }
+
+      if (isSimilarSQLEditorTab(tab, curr)) {
+        return;
+      }
+    }
+    const similarNewTab = tabList.value.find(
+      (tmp) => tmp.status === "NEW" && isSimilarSQLEditorTab(tmp, tab)
+    );
+    if (similarNewTab) {
+      setCurrent(similarNewTab.id);
+    } else {
+      addTab(
+        {
+          ...tab,
+          title: defaultTitle,
+        },
+        beside
+      );
+    }
   };
   // clean persistent tabs that are not in the `tabIdList` anymore
   const _cleanup = (tabIdList: string[]) => {
@@ -233,6 +271,7 @@ const useSQLEditorTabsByProject = (project: string) => {
     updateTab,
     updateCurrent,
     setCurrent,
+    selectOrAddSimilarNewTab,
     reset,
   };
 };
