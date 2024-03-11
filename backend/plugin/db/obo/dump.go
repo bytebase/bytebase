@@ -323,7 +323,7 @@ type tableMeta struct {
 	FreeListGroups         sql.NullInt64
 	Logging                sql.NullString
 	BackedUp               sql.NullString
-	NumRows                sql.NullInt64
+	NumRows                sql.NullFloat64
 	Blocks                 sql.NullInt64
 	EmptyBlocks            sql.NullInt64
 	AvgSpace               sql.NullInt64
@@ -895,7 +895,7 @@ type mergedIndexMeta struct {
 	Uniqueness           sql.NullString
 	Logging              sql.NullString
 	TablespaceName       sql.NullString
-	NumRows              sql.NullInt64
+	NumRows              sql.NullFloat64
 	LastAnalyzed         sql.NullTime
 	Degree               sql.NullString
 	Instances            sql.NullString
@@ -1036,7 +1036,7 @@ type indexMeta struct {
 	Uniqueness           sql.NullString
 	Logging              sql.NullString
 	TablespaceName       sql.NullString
-	NumRows              sql.NullInt64
+	NumRows              sql.NullFloat64
 	LastAnalyzed         sql.NullTime
 	Degree               sql.NullString
 	Instances            sql.NullString
@@ -1112,7 +1112,7 @@ SELECT
   T.FREELIST_GROUPS,
   T.LOGGING,
   T.BACKED_UP,
-  CAST(T.NUM_ROWS as INTEGER),
+  T.NUM_ROWS,
   T.BLOCKS,
   T.EMPTY_BLOCKS,
   T.AVG_SPACE,
@@ -1263,7 +1263,7 @@ SELECT
 	I.UNIQUENESS,
 	I.LOGGING,
 	I.TABLESPACE_NAME,
-	CAST(I.NUM_ROWS as INTEGER),
+	I.NUM_ROWS,
 	I.LAST_ANALYZED,
 	I.DEGREE,
 	I.INSTANCES,
