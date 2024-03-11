@@ -41,84 +41,51 @@
         <TabList />
         <div class="w-full flex-1 overflow-hidden">
           <GettingStarted v-if="!currentTab" />
-          <DisconnectedPlaceholder v-else-if="isDisconnected" />
           <template v-else>
-            <template
+            <Splitpanes
               v-if="
                 currentTab.mode === 'READONLY' || currentTab.mode === 'STANDARD'
               "
+              horizontal
+              class="default-theme"
+              :dbl-click-splitter="false"
             >
-              <Splitpanes
-                v-if="allowReadOnlyMode"
-                horizontal
-                class="default-theme"
-                :dbl-click-splitter="false"
-              >
-                <Pane class="flex flex-row overflow-hidden">
-                  <div class="h-full flex-1 overflow-hidden">
-                    <Splitpanes
-                      vertical
-                      class="default-theme"
-                      :dbl-click-splitter="false"
-                    >
-                      <Pane>
-                        <EditorPanel />
-                      </Pane>
-                      <Pane
-                        v-if="showSecondarySidebar && windowWidth >= 1024"
-                        :size="25"
-                      >
-                        <SecondarySidebar />
-                      </Pane>
-                    </Splitpanes>
-                  </div>
-
-                  <div
-                    v-if="windowWidth >= 1024"
-                    class="h-full border-l shrink-0"
+              <Pane class="flex flex-row overflow-hidden">
+                <div class="h-full flex-1 overflow-hidden">
+                  <Splitpanes
+                    vertical
+                    class="default-theme"
+                    :dbl-click-splitter="false"
                   >
-                    <SecondaryGutterBar />
-                  </div>
-                </Pane>
-                <Pane v-if="!isDisconnected" class="relative" :size="40">
-                  <ResultPanel />
-                </Pane>
-              </Splitpanes>
+                    <Pane>
+                      <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
+                      <ReadonlyModeNotSupported v-else />
+                    </Pane>
+                    <Pane
+                      v-if="showSecondarySidebar && windowWidth >= 1024"
+                      :size="25"
+                    >
+                      <SecondarySidebar />
+                    </Pane>
+                  </Splitpanes>
+                </div>
 
-              <div
-                v-else
-                class="w-full h-full flex flex-col items-center justify-center gap-y-2"
-              >
-                <img
-                  src="../../assets/illustration/403.webp"
-                  class="max-h-[40%]"
-                />
-                <i18n-t
-                  class="textinfolabel flex items-center"
-                  keypath="sql-editor.allow-admin-mode-only"
-                  tag="div"
+                <div
+                  v-if="windowWidth >= 1024"
+                  class="h-full border-l shrink-0"
                 >
-                  <template #instance>
-                    <InstanceV1Name :instance="instance" :link="false" />
-                  </template>
-                </i18n-t>
-                <AdminModeButton />
-              </div>
-            </template>
+                  <SecondaryGutterBar />
+                </div>
+              </Pane>
+              <Pane class="relative" :size="40">
+                <ResultPanel v-if="!isDisconnected" />
+                <Disconnected v-else />
+              </Pane>
+            </Splitpanes>
 
-            <TerminalPanelV1 v-if="currentTab.mode === 'ADMIN'" />
-            <div
-              v-else
-              class="w-full h-full flex flex-col items-center justify-center"
-            >
-              <img
-                src="../../assets/illustration/403.webp"
-                class="max-h-[40%]"
-              />
-              <div class="textinfolabel">
-                {{ $t("database.access-denied") }}
-              </div>
-            </div>
+            <TerminalPanelV1 v-else-if="currentTab.mode === 'ADMIN'" />
+
+            <AccessDenied v-else />
           </template>
         </div>
 
@@ -162,7 +129,7 @@ import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
@@ -177,11 +144,12 @@ import {
   extractProjectResourceName,
   instanceV1HasReadonlyMode,
 } from "@/utils";
+import AccessDenied from "./AccessDenied.vue";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
-import DisconnectedPlaceholder from "./DisconnectedPlaceholder.vue";
-import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
+import Disconnected from "./Disconnected.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import GettingStarted from "./GettingStarted.vue";
+import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
 import {
   provideSecondarySidebarContext,
@@ -226,7 +194,7 @@ const { width: windowWidth } = useWindowSize();
 
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 
-const allowReadOnlyMode = computed(() => {
+const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
 
   return instanceV1HasReadonlyMode(instance.value);
