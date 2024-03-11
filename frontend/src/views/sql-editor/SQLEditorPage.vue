@@ -167,8 +167,8 @@ import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useActuatorV1Store,
+  useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
-  useInstanceV1Store,
   useSQLEditorTabStore,
   useSQLEditorV2Store,
 } from "@/store";
@@ -224,11 +224,7 @@ const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
 
-const instance = computed(() => {
-  return useInstanceV1Store().getInstanceByName(
-    currentTab.value?.connection.instance ?? ""
-  );
-});
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const allowReadOnlyMode = computed(() => {
   if (isDisconnected.value) return false;
@@ -280,7 +276,7 @@ useEmitteryEventListener(
 );
 </script>
 
-<style>
+<style lang="postcss">
 @import "splitpanes/dist/splitpanes.css";
 
 /* splitpanes pane style */

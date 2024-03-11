@@ -123,14 +123,10 @@ import {
   useActuatorV1Store,
   useSQLEditorTabStore,
   useSQLEditorV2Store,
-  useInstanceV1Store,
+  useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
 import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
-import {
-  emptySQLEditorConnection,
-  formatEngineV1,
-  keyboardShortcutStr,
-} from "@/utils";
+import { formatEngineV1, keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -165,10 +161,6 @@ const pageMode = usePageMode();
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
-const connection = computed(
-  () => currentTab.value?.connection ?? emptySQLEditorConnection()
-);
-
 const isEmptyStatement = computed(() => {
   const tab = currentTab.value;
   if (!tab) {
@@ -179,9 +171,7 @@ const isEmptyStatement = computed(() => {
 const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
-const instance = computed(() => {
-  return useInstanceV1Store().getInstanceByName(connection.value.instance);
-});
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 const instanceEngine = computed(() => {
   return formatEngineV1(instance.value);
 });
@@ -295,8 +285,7 @@ const handleExplainQuery = () => {
 };
 
 const handleFormatSQL = () => {
-  // TODO: emit format content event
-  // editorStore.setShouldFormatContent(true);
+  events.emit("format-content");
 };
 
 const handleClearScreen = () => {

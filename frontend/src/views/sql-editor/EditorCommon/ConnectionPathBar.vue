@@ -78,35 +78,19 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import {
-  useDatabaseV1Store,
-  useInstanceV1Store,
+  useConnectionOfCurrentSQLEditorTab,
   useSQLEditorTabStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import { emptySQLEditorConnection } from "@/utils";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import ReadonlyDatasourceHint from "./ReadonlyDatasourceHint.vue";
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
-const connection = computed(
-  () => currentTab.value?.connection ?? emptySQLEditorConnection()
-);
 
-const instance = computed(() => {
-  return useInstanceV1Store().getInstanceByName(connection.value.instance);
-});
-
-const database = computed(() => {
-  return useDatabaseV1Store().getDatabaseByName(connection.value.database);
-});
-
-const environment = computed(() => {
-  return connection.value.database
-    ? instance.value.environmentEntity
-    : database.value.effectiveEnvironmentEntity;
-});
+const { instance, database, environment } =
+  useConnectionOfCurrentSQLEditorTab();
 
 const isProductionEnvironment = computed(() => {
   if (!currentTab.value) {

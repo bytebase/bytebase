@@ -15,6 +15,7 @@ type SQLEditorEvents = Emittery<{
     schema: string;
     table: string;
   };
+  "format-content": undefined;
 }>;
 
 export type SelectedDatabaseSchema = {

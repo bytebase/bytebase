@@ -7,11 +7,16 @@ import { CoreSQLEditorTab, SQLEditorTab } from "@/types/sqlEditorTab";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
+  emptySQLEditorConnection,
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
 } from "@/utils";
 import { useSQLEditorV2Store } from "./sqlEditorV2";
-import { useWebTerminalV1Store } from "./v1";
+import {
+  useDatabaseV1Store,
+  useInstanceV1Store,
+  useWebTerminalV1Store,
+} from "./v1";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 const KEYS = {
@@ -321,4 +326,27 @@ export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
     return !!tab.sheet;
   }
   return false;
+};
+
+export const useConnectionOfCurrentSQLEditorTab = () => {
+  const store = useSQLEditorTabStore();
+  const connection = computed(() => {
+    return store.currentTab?.connection ?? emptySQLEditorConnection();
+  });
+
+  const instance = computed(() => {
+    return useInstanceV1Store().getInstanceByName(connection.value.instance);
+  });
+
+  const database = computed(() => {
+    return useDatabaseV1Store().getDatabaseByName(connection.value.database);
+  });
+
+  const environment = computed(() => {
+    return connection.value.database
+      ? instance.value.environmentEntity
+      : database.value.effectiveEnvironmentEntity;
+  });
+
+  return { connection, instance, database, environment };
 };
