@@ -6,8 +6,10 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	mysql "github.com/bytebase/mysql-parser"
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 func (d *DatabaseState) mysqlWalkThrough(stmt string) error {
@@ -1316,6 +1318,35 @@ func mysqlCheckDefault(columnName string, fieldDefinition mysql.IFieldDefinition
 		}
 	}
 
-	// todo: check column type with default value.
+	return checkDefaultConvert(columnName, fieldDefinition)
+}
+
+func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefinitionContext) *WalkThroughError {
+	if fieldDefinition == nil {
+		return nil
+	}
+	list, err := tidb.ParseTiDB(fmt.Sprintf("CREATE TABLE t(%s %s)", columnName, fieldDefinition.GetParser().GetTokenStream().GetTextFromRuleContext(fieldDefinition)), "", "")
+	if err != nil {
+		// For now, we do not handle this case.
+		// nolint:nilerr
+		return nil
+	}
+	if len(list) != 1 {
+		return nil
+	}
+	createTable, ok := list[0].(*tidbast.CreateTableStmt)
+	if !ok {
+		return nil
+	}
+	if len(createTable.Cols) != 1 {
+		return nil
+	}
+	col := createTable.Cols[0]
+	for _, option := range col.Options {
+		if option.Tp == tidbast.ColumnOptionDefaultValue {
+			return checkDefault(columnName, col.Tp, option.Expr)
+		}
+	}
+
 	return nil
 }
