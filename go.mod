@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.50.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/mysql-parser v0.0.0-20240220070334-5b2c6e79084d
-	github.com/bytebase/plsql-parser v0.0.0-20240304071926-f5bf8763c4b6
+	github.com/bytebase/plsql-parser v0.0.0-20240311082012-3f6b21c94406
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
