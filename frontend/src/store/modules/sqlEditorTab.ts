@@ -241,7 +241,6 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
   // watch the field changes of a tab, store it to localStorage
   // when needed, but not to frequently (for performance consideration)
   const watchTab = (tab: SQLEditorTab, immediate: boolean) => {
-    console.log("watchTab", tab, immediate);
     const dirtyFields = [
       () => tab.title,
       () => tab.sheet,
@@ -251,7 +250,6 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     ];
     // set `tab.status` to "DIRTY" when it's changed
     watch(dirtyFields, () => {
-      console.log(tab.id, "is now dirty");
       tab.status = "DIRTY";
     });
 
@@ -259,7 +257,6 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab,
       (persistentTab) => {
-        console.log("should store", persistentTab);
         storage.save<PersistentTab>(KEYS.tab(persistentTab.id), persistentTab);
       },
       { deep: true, immediate, throttle: 100, trailing: true }
