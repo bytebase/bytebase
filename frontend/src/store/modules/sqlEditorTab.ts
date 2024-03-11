@@ -84,12 +84,11 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     tabIdListMapByProject.value[project] = validTabIdList;
 
     // Load currentTabId
-    const firstTabId = head(validTabIdList) ?? "";
     const storedCurrentTabId = currentTabIdMapByProject.value[project];
     if (!storedCurrentTabId || !validTabIdList.includes(storedCurrentTabId)) {
       // storedCurrentTabId is not in tabIdList
       // fallback to the first tab or nothing
-      currentTabIdMapByProject.value[project] = firstTabId;
+      currentTabIdMapByProject.value[project] = head(validTabIdList) ?? "";
     }
 
     initializedProjects.add(project);
