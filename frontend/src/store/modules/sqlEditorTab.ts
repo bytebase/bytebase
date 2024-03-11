@@ -282,6 +282,13 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     initAll();
   };
 
+  // some shortcuts
+  const isDisconnected = computed(() => {
+    const tab = currentTab.value;
+    if (!tab) return true;
+    return isDisconnectedSQLEditorTab(tab);
+  });
+
   return {
     tabIdList,
     tabList,
@@ -298,6 +305,7 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     reset,
     tabIdListMapByProject,
     currentTabIdMapByProject,
+    isDisconnected,
   };
 });
 

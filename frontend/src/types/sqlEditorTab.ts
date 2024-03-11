@@ -48,6 +48,7 @@ export type SQLEditorTab = {
   connection: SQLEditorConnection;
   status: SQLEditorTabStatus;
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
+  selectedStatement: string;
   mode: SQLEditorTabMode;
   editMode: SQLEditorEditMode;
 

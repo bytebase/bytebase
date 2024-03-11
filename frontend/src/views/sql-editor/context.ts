@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import { InjectionKey, inject, provide, Ref, ref } from "vue";
-import { ComposedDatabase, TabInfo } from "@/types";
+import { ComposedDatabase, SQLEditorTab } from "@/types";
 import {
   DatabaseMetadata,
   ExternalTableMetadata,
@@ -9,7 +9,7 @@ import {
 } from "@/types/proto/v1/database_service";
 
 type SQLEditorEvents = Emittery<{
-  "save-sheet": { tab: TabInfo; editTitle?: boolean };
+  "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
   "alter-schema": {
     databaseUID: string;
     schema: string;

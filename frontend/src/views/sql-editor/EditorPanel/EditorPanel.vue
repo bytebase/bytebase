@@ -1,46 +1,44 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
-    <template v-if="tab.editMode === 'SQL-EDITOR'">
-      <EditorAction @execute="handleExecute" />
+    <template v-if="tab">
+      <template v-if="tab.editMode === 'SQL-EDITOR'">
+        <EditorAction @execute="handleExecute" />
 
-      <ConnectionPathBar />
+        <ConnectionPathBar />
+
+        <Suspense>
+          <SQLEditor @execute="handleExecute" />
+          <template #fallback>
+            <div
+              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+            >
+              <BBSpin />
+            </div>
+          </template>
+        </Suspense>
+      </template>
 
       <Suspense>
-        <SQLEditor @execute="handleExecute" />
-        <template #fallback>
-          <div
-            class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-          >
-            <BBSpin />
-          </div>
-        </template>
+        <AIChatToSQL
+          v-if="!isDisconnected && showAIChatBox"
+          :allow-config="pageMode === 'BUNDLED'"
+          @apply-statement="handleApplyStatement"
+        />
       </Suspense>
+
+      <ExecutingHintModal />
+
+      <SaveSheetModal />
     </template>
-
-    <Suspense>
-      <AIChatToSQL
-        v-if="!tabStore.isDisconnected && showAIChatBox"
-        :allow-config="pageMode === 'BUNDLED'"
-        @apply-statement="handleApplyStatement"
-      />
-    </Suspense>
-
-    <ExecutingHintModal />
-
-    <SaveSheetModal />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import {
-  useCurrentTab,
-  useInstanceV1Store,
-  useTabStore,
-  usePageMode,
-} from "@/store";
+import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
 import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
 import { formatEngineV1 } from "@/utils";
 import {
@@ -53,8 +51,8 @@ import { useSQLEditorContext } from "../context";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
-const tabStore = useTabStore();
-const tab = useCurrentTab();
+const tabStore = useSQLEditorTabStore();
+const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { showAIChatBox } = useSQLEditorContext();
 const pageMode = usePageMode();
 
@@ -77,6 +75,9 @@ const handleApplyStatement = async (
   conn: Connection,
   run: boolean
 ) => {
+  if (!tab.value) {
+    return;
+  }
   tab.value.statement = statement;
   if (run) {
     const instanceStore = useInstanceV1Store();

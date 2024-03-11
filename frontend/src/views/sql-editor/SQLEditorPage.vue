@@ -176,7 +176,6 @@ import {
   allowUsingSchemaEditorV1,
   extractProjectResourceName,
   instanceV1HasReadonlyMode,
-  isDisconnectedSQLEditorTab,
 } from "@/utils";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import DisconnectedPlaceholder from "./DisconnectedPlaceholder.vue";
@@ -219,12 +218,8 @@ const { events: editorEvents } = provideSQLEditorContext();
 const { showPanel: showSheetPanel } = provideSheetContext();
 const { show: showSecondarySidebar } = provideSecondarySidebarContext();
 
-const { currentTab } = storeToRefs(tabStore);
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
-const isDisconnected = computed(() => {
-  const curr = currentTab.value;
-  return curr && isDisconnectedSQLEditorTab(curr);
-});
 const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();

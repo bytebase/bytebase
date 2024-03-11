@@ -1,6 +1,7 @@
 import Emittery from "emittery";
 import { ComputedRef, Ref } from "vue";
-import { ExecuteConfig, ExecuteOption, TabInfo } from "../tab";
+import { SQLEditorTab } from "../sqlEditorTab";
+import { ExecuteConfig, ExecuteOption } from "../tab";
 import { SQLResultSetV1 } from "./sql";
 
 /**
@@ -51,7 +52,7 @@ export type StreamingQueryController = {
 };
 
 export type WebTerminalQueryState = {
-  tab: TabInfo;
+  tab: SQLEditorTab;
   queryItemList: Ref<WebTerminalQueryItemV1[]>;
   controller: StreamingQueryController;
   timer: QueryTimer;

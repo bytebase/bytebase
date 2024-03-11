@@ -8,7 +8,7 @@ import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import {
   SQLResultSetV1,
   StreamingQueryController,
-  TabInfo,
+  SQLEditorTab,
   UNKNOWN_ID,
   WebTerminalQueryItemV1,
   WebTerminalQueryParamsV1,
@@ -35,7 +35,7 @@ const MAX_QUERY_ITEM_COUNT = 20;
 export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
   const map = ref(new Map<string, WebTerminalQueryState>());
 
-  const getQueryStateByTab = (tab: TabInfo) => {
+  const getQueryStateByTab = (tab: SQLEditorTab) => {
     const existed = map.value.get(tab.id);
     if (existed) return existed;
 
@@ -52,7 +52,7 @@ export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
   return { getQueryStateByTab, clearQueryStateByTab };
 });
 
-const createQueryState = (tab: TabInfo): WebTerminalQueryState => {
+const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
   return {
     tab,
     queryItemList: ref([createInitialQueryItemByTab(tab)]),
@@ -61,7 +61,9 @@ const createQueryState = (tab: TabInfo): WebTerminalQueryState => {
   };
 };
 
-const createInitialQueryItemByTab = (tab: TabInfo): WebTerminalQueryItemV1 => {
+const createInitialQueryItemByTab = (
+  tab: SQLEditorTab
+): WebTerminalQueryItemV1 => {
   return createQueryItemV1(tab.statement);
 };
 
@@ -74,7 +76,7 @@ export const createQueryItemV1 = (
   status,
 });
 
-const createStreamingQueryController = (tab: TabInfo) => {
+const createStreamingQueryController = (tab: SQLEditorTab) => {
   const status: StreamingQueryController["status"] = ref("DISCONNECTED");
   const events: StreamingQueryController["events"] = markRaw(new Emittery());
   const input$ = fromEventPattern<WebTerminalQueryParamsV1>(
@@ -289,7 +291,7 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
 };
 
 const mapRequest = (
-  tab: TabInfo,
+  tab: SQLEditorTab,
   params: WebTerminalQueryParamsV1
 ): AdminExecuteRequest => {
   const { option, query } = params;

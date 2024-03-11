@@ -22,6 +22,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     title: defaultSQLEditorTabTitle(),
     connection: emptySQLEditorConnection(),
     statement: "",
+    selectedStatement: "",
     status: "NEW",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     sheet: "",
