@@ -122,7 +122,16 @@ export const isDisconnectedTab = (tab: TabInfo) => {
 
 export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
   const tabStore = useTabStore();
-  if (isSimilarTab(tab, tabStore.currentTab)) {
+
+  if (!tabStore.currentTabId) {
+    tabStore.addTab({
+      name: getSuggestedTabNameFromConnection(tab.connection),
+      connection: tab.connection,
+      // The newly created tab is "clean" so its connection can be changed
+      isFreshNew: true,
+    });
+    return;
+  } else if (isSimilarTab(tab, tabStore.currentTab)) {
     // Don't go further if the connection doesn't change.
     return;
   }
