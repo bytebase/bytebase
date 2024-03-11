@@ -1328,6 +1328,7 @@ func checkDefaultConvert(columnName string, fieldDefinition mysql.IFieldDefiniti
 	list, err := tidb.ParseTiDB(fmt.Sprintf("CREATE TABLE t(%s %s)", columnName, fieldDefinition.GetParser().GetTokenStream().GetTextFromRuleContext(fieldDefinition)), "", "")
 	if err != nil {
 		// For now, we do not handle this case.
+		// nolint:nilerr
 		return nil
 	}
 	if len(list) != 1 {
