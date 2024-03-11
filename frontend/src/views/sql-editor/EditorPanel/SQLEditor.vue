@@ -65,6 +65,7 @@ const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { currentTab } = storeToRefs(tabStore);
+const pendingFormatContentCommand = ref(false);
 
 const content = computed(() => currentTab.value?.statement ?? "");
 const advices = computed((): AdviceOption[] => {
@@ -186,8 +187,20 @@ const handleEditorReady = (
     handleSaveSheet();
   });
 
-  useEmitteryEventListener(editorEvents, "format-content", () => {
-    formatEditorContent(editor, dialect.value);
-  });
+  watch(
+    pendingFormatContentCommand,
+    (pending) => {
+      if (pending) {
+        formatEditorContent(editor, dialect.value);
+        nextTick(() => {
+          pendingFormatContentCommand.value = false;
+        });
+      }
+    },
+    { immediate: true }
+  );
 };
+useEmitteryEventListener(editorEvents, "format-content", () => {
+  pendingFormatContentCommand.value = true;
+});
 </script>

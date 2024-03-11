@@ -77,9 +77,12 @@
                   <SecondaryGutterBar />
                 </div>
               </Pane>
-              <Pane class="relative" :size="40">
-                <ResultPanel v-if="!isDisconnected" />
-                <Disconnected v-else />
+              <Pane
+                v-if="!isDisconnected && allowReadonlyMode"
+                class="relative"
+                :size="40"
+              >
+                <ResultPanel />
               </Pane>
             </Splitpanes>
 
@@ -137,7 +140,6 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
   useSQLEditorTabStore,
-  useSQLEditorV2Store,
 } from "@/store";
 import {
   allowUsingSchemaEditorV1,
@@ -146,7 +148,6 @@ import {
 } from "@/utils";
 import AccessDenied from "./AccessDenied.vue";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
-import Disconnected from "./Disconnected.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import GettingStarted from "./GettingStarted.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
@@ -178,7 +179,6 @@ const state = reactive<LocalState>({
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
-const _editorStore = useSQLEditorV2Store();
 const tabStore = useSQLEditorTabStore();
 // provide context for SQL Editor
 const { events: editorEvents } = provideSQLEditorContext();
