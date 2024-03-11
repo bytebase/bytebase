@@ -525,6 +525,7 @@ type partitionState struct {
 	subPartition *partitionStateWrapper
 }
 
+// nolint
 func (p *partitionStateWrapper) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
 	partitions := make([]*storepb.TablePartitionMetadata, 0, len(p.partitions))
 	partitionStates := make([]*partitionState, 0, len(p.partitions))
@@ -602,7 +603,6 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 		}
 		if _, err := buf.WriteString(subTp); err != nil {
 			return err
-
 		}
 		if _, err := buf.WriteString(fmt.Sprintf(" (%s)", subExpr)); err != nil {
 			return err
