@@ -5,30 +5,33 @@
         <EditorAction @execute="handleExecute" />
 
         <ConnectionPathBar />
+        <ConnectionHolder v-if="isDisconnected" />
+        <template v-else>
+          <ConnectionPathBar />
+          <Suspense>
+            <SQLEditor @execute="handleExecute" />
+            <template #fallback>
+              <div
+                class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+              >
+                <BBSpin />
+              </div>
+            </template>
+          </Suspense>
+        </template>
 
         <Suspense>
-          <SQLEditor @execute="handleExecute" />
-          <template #fallback>
-            <div
-              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-            >
-              <BBSpin />
-            </div>
-          </template>
+          <AIChatToSQL
+            v-if="!isDisconnected && showAIChatBox"
+            :allow-config="pageMode === 'BUNDLED'"
+            @apply-statement="handleApplyStatement"
+          />
         </Suspense>
+
+        <ExecutingHintModal />
+
+        <SaveSheetModal />
       </template>
-
-      <Suspense>
-        <AIChatToSQL
-          v-if="!isDisconnected && showAIChatBox"
-          :allow-config="pageMode === 'BUNDLED'"
-          @apply-statement="handleApplyStatement"
-        />
-      </Suspense>
-
-      <ExecutingHintModal />
-
-      <SaveSheetModal />
     </template>
   </div>
 </template>
@@ -46,6 +49,7 @@ import {
   ConnectionPathBar,
   ExecutingHintModal,
   SaveSheetModal,
+  ConnectionHolder,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
 

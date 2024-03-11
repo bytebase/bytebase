@@ -1040,7 +1040,12 @@ const calcDataSourceUpdateMask = (
   const updateMask = new Set(
     calcUpdateMask(editing, original, true /* toSnakeCase */)
   );
-  const { useEmptyPassword, updateSsh, updateSsl } = editState;
+  const {
+    useEmptyPassword,
+    updateSsh,
+    updateSsl,
+    updateAuthenticationPrivateKey,
+  } = editState;
   if (useEmptyPassword) {
     // We need to implicitly set "password" need to be updated
     // if the "use empty password" option if checked
@@ -1059,6 +1064,9 @@ const calcDataSourceUpdateMask = (
     updateMask.add("ssh_password");
     updateMask.add("ssh_private_key");
   }
+  if (updateAuthenticationPrivateKey) {
+    updateMask.add("authentication_private_key");
+  }
 
   return Array.from(updateMask);
 };
@@ -1074,7 +1082,8 @@ const extractDataSourceFromEdit = (
       "updatedPassword",
       "useEmptyPassword",
       "updateSsl",
-      "updateSsh"
+      "updateSsh",
+      "updateAuthenticationPrivateKey"
     )
   );
   if (edit.updatedPassword) {

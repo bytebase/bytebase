@@ -58,8 +58,16 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 }
 
 // needSemicolon returns true if the given statement needs a semicolon.
-// The go-ora driver requires semicolon for anonymous block,
+// The go-ora driver requires semicolon for anonymous block and create procedure/function/package type of statements,
 // but does not support semicolon for other statements.
 func needSemicolon(stmt parser.IUnit_statementContext) bool {
-	return stmt.Anonymous_block() != nil
+	switch {
+	case stmt.Anonymous_block() != nil,
+		stmt.Create_procedure_body() != nil,
+		stmt.Create_function_body() != nil,
+		stmt.Create_package() != nil,
+		stmt.Create_package_body() != nil:
+		return true
+	}
+	return false
 }

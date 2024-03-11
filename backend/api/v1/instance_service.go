@@ -793,6 +793,10 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			obfuscated := common.Obfuscate(request.DataSource.SshPrivateKey, s.secret)
 			patch.SSHObfuscatedPrivateKey = &obfuscated
 			dataSource.SSHObfuscatedPrivateKey = obfuscated
+		case "authentication_private_key":
+			obfuscated := common.Obfuscate(request.DataSource.AuthenticationPrivateKey, s.secret)
+			patch.AuthenticationPrivateKeyObfuscated = &obfuscated
+			dataSource.AuthenticationPrivateKeyObfuscated = obfuscated
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1038,25 +1042,26 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	}
 
 	return &store.DataSourceMessage{
-		ID:                      dataSource.Id,
-		Type:                    dsType,
-		Username:                dataSource.Username,
-		ObfuscatedPassword:      common.Obfuscate(dataSource.Password, s.secret),
-		ObfuscatedSslCa:         common.Obfuscate(dataSource.SslCa, s.secret),
-		ObfuscatedSslCert:       common.Obfuscate(dataSource.SslCert, s.secret),
-		ObfuscatedSslKey:        common.Obfuscate(dataSource.SslKey, s.secret),
-		Host:                    dataSource.Host,
-		Port:                    dataSource.Port,
-		Database:                dataSource.Database,
-		SRV:                     dataSource.Srv,
-		AuthenticationDatabase:  dataSource.AuthenticationDatabase,
-		SID:                     dataSource.Sid,
-		ServiceName:             dataSource.ServiceName,
-		SSHHost:                 dataSource.SshHost,
-		SSHPort:                 dataSource.SshPort,
-		SSHUser:                 dataSource.SshUser,
-		SSHObfuscatedPassword:   common.Obfuscate(dataSource.SshPassword, s.secret),
-		SSHObfuscatedPrivateKey: common.Obfuscate(dataSource.SshPrivateKey, s.secret),
+		ID:                                 dataSource.Id,
+		Type:                               dsType,
+		Username:                           dataSource.Username,
+		ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),
+		ObfuscatedSslCa:                    common.Obfuscate(dataSource.SslCa, s.secret),
+		ObfuscatedSslCert:                  common.Obfuscate(dataSource.SslCert, s.secret),
+		ObfuscatedSslKey:                   common.Obfuscate(dataSource.SslKey, s.secret),
+		Host:                               dataSource.Host,
+		Port:                               dataSource.Port,
+		Database:                           dataSource.Database,
+		SRV:                                dataSource.Srv,
+		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
+		SID:                                dataSource.Sid,
+		ServiceName:                        dataSource.ServiceName,
+		SSHHost:                            dataSource.SshHost,
+		SSHPort:                            dataSource.SshPort,
+		SSHUser:                            dataSource.SshUser,
+		SSHObfuscatedPassword:              common.Obfuscate(dataSource.SshPassword, s.secret),
+		SSHObfuscatedPrivateKey:            common.Obfuscate(dataSource.SshPrivateKey, s.secret),
+		AuthenticationPrivateKeyObfuscated: common.Obfuscate(dataSource.AuthenticationPrivateKey, s.secret),
 	}, nil
 }
 

@@ -25,4 +25,8 @@ message DataSourceOptions {
   string ssh_obfuscated_password = 8;
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
   string ssh_obfuscated_private_key = 9;
+
+  // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
+  // Used for authentication when connecting to the data source.
+  string authentication_private_key_obfuscated = 10;
 }

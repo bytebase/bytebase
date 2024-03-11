@@ -333,7 +333,8 @@ type ConnectionConfig struct {
 	SSHConfig   SSHConfig
 	// SchemaTenantMode is the Oracle specific mode.
 	// If true, bytebase will treat the schema as a database.
-	SchemaTenantMode bool
+	SchemaTenantMode         bool
+	AuthenticationPrivateKey string
 
 	ConnectionContext ConnectionContext
 }

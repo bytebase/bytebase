@@ -4,7 +4,7 @@
     :class="[
       {
         admin: tab.mode === 'ADMIN',
-        closable,
+        closable: true,
       },
       tab.status,
     ]"
@@ -23,7 +23,6 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import { isSQLEditorTabClosable } from "@/store";
 import type { SQLEditorTab } from "@/types";
 
 type LocalState = {
@@ -51,12 +50,8 @@ defineEmits<{
   (e: "close", tab: SQLEditorTab, index: number): void;
 }>();
 
-const closable = computed(() => {
-  return isSQLEditorTabClosable(props.tab);
-});
-
 const icon = computed((): IconType | undefined => {
-  if (state.hovering && closable.value) {
+  if (state.hovering) {
     return "close";
   }
   const { mode, status } = props.tab;
@@ -77,7 +72,9 @@ const icon = computed((): IconType | undefined => {
 .icon {
   @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
 }
-
+.suffix.closable {
+  cursor: pointer;
+}
 .suffix.closable.dirty .icon {
   @apply text-accent;
 }

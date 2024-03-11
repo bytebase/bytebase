@@ -35,6 +35,8 @@ type DataSourceMessage struct {
 	SSHUser                 string
 	SSHObfuscatedPassword   string
 	SSHObfuscatedPrivateKey string
+	// Authentication
+	AuthenticationPrivateKeyObfuscated string
 	// (deprecated) Output only.
 	UID int
 }
@@ -42,26 +44,27 @@ type DataSourceMessage struct {
 // Copy returns a copy of the data source message.
 func (m *DataSourceMessage) Copy() *DataSourceMessage {
 	return &DataSourceMessage{
-		ID:                      m.ID,
-		Type:                    m.Type,
-		Username:                m.Username,
-		ObfuscatedPassword:      m.ObfuscatedPassword,
-		ObfuscatedSslCa:         m.ObfuscatedSslCa,
-		ObfuscatedSslCert:       m.ObfuscatedSslCert,
-		ObfuscatedSslKey:        m.ObfuscatedSslKey,
-		Host:                    m.Host,
-		Port:                    m.Port,
-		Database:                m.Database,
-		SRV:                     m.SRV,
-		AuthenticationDatabase:  m.AuthenticationDatabase,
-		SID:                     m.SID,
-		ServiceName:             m.ServiceName,
-		SSHHost:                 m.SSHHost,
-		SSHPort:                 m.SSHPort,
-		SSHUser:                 m.SSHUser,
-		SSHObfuscatedPassword:   m.SSHObfuscatedPassword,
-		SSHObfuscatedPrivateKey: m.SSHObfuscatedPrivateKey,
-		UID:                     m.UID,
+		ID:                                 m.ID,
+		Type:                               m.Type,
+		Username:                           m.Username,
+		ObfuscatedPassword:                 m.ObfuscatedPassword,
+		ObfuscatedSslCa:                    m.ObfuscatedSslCa,
+		ObfuscatedSslCert:                  m.ObfuscatedSslCert,
+		ObfuscatedSslKey:                   m.ObfuscatedSslKey,
+		Host:                               m.Host,
+		Port:                               m.Port,
+		Database:                           m.Database,
+		SRV:                                m.SRV,
+		AuthenticationDatabase:             m.AuthenticationDatabase,
+		SID:                                m.SID,
+		ServiceName:                        m.ServiceName,
+		SSHHost:                            m.SSHHost,
+		SSHPort:                            m.SSHPort,
+		SSHUser:                            m.SSHUser,
+		SSHObfuscatedPassword:              m.SSHObfuscatedPassword,
+		SSHObfuscatedPrivateKey:            m.SSHObfuscatedPrivateKey,
+		UID:                                m.UID,
+		AuthenticationPrivateKeyObfuscated: m.AuthenticationPrivateKeyObfuscated,
 	}
 }
 
@@ -91,6 +94,8 @@ type UpdateDataSourceMessage struct {
 	SSHUser                 *string
 	SSHObfuscatedPassword   *string
 	SSHObfuscatedPrivateKey *string
+	// Authentication
+	AuthenticationPrivateKeyObfuscated *string
 }
 
 func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) ([]*DataSourceMessage, error) {
@@ -151,6 +156,7 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, instanceID string) (
 		dataSourceMessage.SSHUser = dataSourceOptions.SshUser
 		dataSourceMessage.SSHObfuscatedPassword = dataSourceOptions.SshObfuscatedPassword
 		dataSourceMessage.SSHObfuscatedPrivateKey = dataSourceOptions.SshObfuscatedPrivateKey
+		dataSourceMessage.AuthenticationPrivateKeyObfuscated = dataSourceOptions.AuthenticationPrivateKeyObfuscated
 
 		dataSourceMessages = append(dataSourceMessages, &dataSourceMessage)
 	}
@@ -273,6 +279,9 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	if v := patch.SSHObfuscatedPrivateKey; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('sshObfuscatedPrivateKey', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
 	}
+	if v := patch.AuthenticationPrivateKeyObfuscated; v != nil {
+		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('authenticationPrivateKeyObfuscated', to_jsonb($%d::TEXT))", len(args)+1)), append(args, *v)
+	}
 	if len(optionSet) != 0 {
 		set = append(set, fmt.Sprintf(`options = options || %s`, strings.Join(optionSet, "||")))
 	}
@@ -312,15 +321,16 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanceUID, creatorID int, dataSource *DataSourceMessage) error {
 	// We flatten the data source fields in DataSourceMessage, so we need to compose them in store layer before INSERT.
 	dataSourceOptions := storepb.DataSourceOptions{
-		Srv:                     dataSource.SRV,
-		AuthenticationDatabase:  dataSource.AuthenticationDatabase,
-		Sid:                     dataSource.SID,
-		ServiceName:             dataSource.ServiceName,
-		SshHost:                 dataSource.SSHHost,
-		SshPort:                 dataSource.SSHPort,
-		SshUser:                 dataSource.SSHUser,
-		SshObfuscatedPassword:   dataSource.SSHObfuscatedPassword,
-		SshObfuscatedPrivateKey: dataSource.SSHObfuscatedPrivateKey,
+		Srv:                                dataSource.SRV,
+		AuthenticationDatabase:             dataSource.AuthenticationDatabase,
+		Sid:                                dataSource.SID,
+		ServiceName:                        dataSource.ServiceName,
+		SshHost:                            dataSource.SSHHost,
+		SshPort:                            dataSource.SSHPort,
+		SshUser:                            dataSource.SSHUser,
+		SshObfuscatedPassword:              dataSource.SSHObfuscatedPassword,
+		SshObfuscatedPrivateKey:            dataSource.SSHObfuscatedPrivateKey,
+		AuthenticationPrivateKeyObfuscated: dataSource.AuthenticationPrivateKeyObfuscated,
 	}
 	protoBytes, err := protojson.Marshal(&dataSourceOptions)
 	if err != nil {

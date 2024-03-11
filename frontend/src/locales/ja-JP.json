@@ -2191,7 +2191,8 @@
     "delete-read-only-data-source": "読み取り専用データソースを削除",
     "connection-string-schema": "接続文字列スキーマ",
     "admin": "管理者",
-    "read-only": "RO"
+    "read-only": "RO",
+    "snowflake-keypair-tip": "キーペア認証"
   },
   "setting": {
     "project": {
