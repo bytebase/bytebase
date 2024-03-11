@@ -44,6 +44,7 @@ import {
   useDatabaseV1Store,
   useFilterStore,
   useSQLEditorV2Store,
+  useSQLEditorTabStore,
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -81,6 +82,7 @@ const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorV2Store();
+const tabStore = useSQLEditorTabStore();
 const worksheetStore = useWorkSheetStore();
 const { filter } = useFilterStore();
 
@@ -110,6 +112,8 @@ const initializeProjects = async () => {
     }
     sqlEditorStore.strictProject = false;
   }
+
+  tabStore.maybeInitProject(sqlEditorStore.project);
 };
 
 const switchProject = async () => {
@@ -119,6 +123,7 @@ const switchProject = async () => {
   } else {
     await projectStore.fetchProjectList(false /* !showDeleted */);
   }
+  tabStore.maybeInitProject(project);
 };
 
 const prepareInstances = async () => {
