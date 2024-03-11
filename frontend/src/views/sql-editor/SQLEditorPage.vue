@@ -40,56 +40,52 @@
       <Pane class="relative flex flex-col">
         <TabList />
         <div class="w-full flex-1 overflow-hidden">
-          <GettingStarted v-if="!currentTab" />
-          <template v-else>
-            <Splitpanes
-              v-if="
-                currentTab.mode === 'READONLY' || currentTab.mode === 'STANDARD'
-              "
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane class="flex flex-row overflow-hidden">
-                <div class="h-full flex-1 overflow-hidden">
-                  <Splitpanes
-                    vertical
-                    class="default-theme"
-                    :dbl-click-splitter="false"
-                  >
-                    <Pane>
-                      <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
-                      <ReadonlyModeNotSupported v-else />
-                    </Pane>
-                    <Pane
-                      v-if="showSecondarySidebar && windowWidth >= 1024"
-                      :size="25"
-                    >
-                      <SecondarySidebar />
-                    </Pane>
-                  </Splitpanes>
-                </div>
-
-                <div
-                  v-if="windowWidth >= 1024"
-                  class="h-full border-l shrink-0"
+          <Splitpanes
+            v-if="
+              !currentTab ||
+              currentTab.mode === 'READONLY' ||
+              currentTab.mode === 'STANDARD'
+            "
+            horizontal
+            class="default-theme"
+            :dbl-click-splitter="false"
+          >
+            <Pane class="flex flex-row overflow-hidden">
+              <div class="h-full flex-1 overflow-hidden">
+                <Splitpanes
+                  vertical
+                  class="default-theme"
+                  :dbl-click-splitter="false"
                 >
-                  <SecondaryGutterBar />
-                </div>
-              </Pane>
-              <Pane
-                v-if="!isDisconnected && allowReadonlyMode"
-                class="relative"
-                :size="40"
-              >
-                <ResultPanel />
-              </Pane>
-            </Splitpanes>
+                  <Pane>
+                    <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
+                    <ReadonlyModeNotSupported v-else />
+                  </Pane>
+                  <Pane
+                    v-if="showSecondarySidebar && windowWidth >= 1024"
+                    :size="25"
+                  >
+                    <SecondarySidebar />
+                  </Pane>
+                </Splitpanes>
+              </div>
 
-            <TerminalPanelV1 v-else-if="currentTab.mode === 'ADMIN'" />
+              <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
+                <SecondaryGutterBar />
+              </div>
+            </Pane>
+            <Pane
+              v-if="!isDisconnected && allowReadonlyMode"
+              class="relative"
+              :size="40"
+            >
+              <ResultPanel />
+            </Pane>
+          </Splitpanes>
 
-            <AccessDenied v-else />
-          </template>
+          <TerminalPanelV1 v-else-if="currentTab.mode === 'ADMIN'" />
+
+          <AccessDenied v-else />
         </div>
 
         <div
@@ -149,7 +145,6 @@ import {
 import AccessDenied from "./AccessDenied.vue";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
-import GettingStarted from "./GettingStarted.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
 import {

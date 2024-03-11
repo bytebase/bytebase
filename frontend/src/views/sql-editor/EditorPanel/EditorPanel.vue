@@ -1,37 +1,34 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
-    <template v-if="tab">
-      <template v-if="tab.editMode === 'SQL-EDITOR'">
-        <EditorAction @execute="handleExecute" />
+    <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
+      <EditorAction @execute="handleExecute" />
 
+      <ConnectionHolder v-if="!tab || isDisconnected" />
+      <template v-else>
         <ConnectionPathBar />
-        <ConnectionHolder v-if="isDisconnected" />
-        <template v-else>
-          <ConnectionPathBar />
-          <Suspense>
-            <SQLEditor @execute="handleExecute" />
-            <template #fallback>
-              <div
-                class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-              >
-                <BBSpin />
-              </div>
-            </template>
-          </Suspense>
-        </template>
-
         <Suspense>
-          <AIChatToSQL
-            v-if="!isDisconnected && showAIChatBox"
-            :allow-config="pageMode === 'BUNDLED'"
-            @apply-statement="handleApplyStatement"
-          />
+          <SQLEditor @execute="handleExecute" />
+          <template #fallback>
+            <div
+              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+            >
+              <BBSpin />
+            </div>
+          </template>
         </Suspense>
-
-        <ExecutingHintModal />
-
-        <SaveSheetModal />
       </template>
+
+      <Suspense>
+        <AIChatToSQL
+          v-if="!isDisconnected && showAIChatBox"
+          :allow-config="pageMode === 'BUNDLED'"
+          @apply-statement="handleApplyStatement"
+        />
+      </Suspense>
+
+      <ExecutingHintModal />
+
+      <SaveSheetModal />
     </template>
   </div>
 </template>
