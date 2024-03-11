@@ -81,13 +81,6 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
       validTabIdList.push(id);
     });
 
-    // if validTabIdList is empty, push a default empty tab
-    if (validTabIdList.length === 0) {
-      const initialTab = defaultSQLEditorTab();
-      watchTab(initialTab, true /* immediate */);
-      tabsById.set(initialTab.id, initialTab);
-      validTabIdList.push(initialTab.id);
-    }
     tabIdListMapByProject.value[project] = validTabIdList;
 
     // Load currentTabId
