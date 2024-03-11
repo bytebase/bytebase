@@ -140,21 +140,8 @@ const mergedItemList = computed(() => {
     return [];
   }
 
-  const { tabList } = tabStore;
   const mergedList: MergedItem[] = [];
 
-  if (props.view === "my") {
-    // Tabs go ahead
-    tabList.forEach((tab) => {
-      if (!tab.sheetName) {
-        mergedList.push({
-          type: "TAB",
-          target: tab,
-        });
-      }
-    });
-  }
-  // Sheets follow
   sheetList.value.forEach((sheet) => {
     mergedList.push({
       type: "SHEET",
