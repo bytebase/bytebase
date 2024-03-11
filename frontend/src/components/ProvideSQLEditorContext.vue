@@ -35,13 +35,7 @@ import {
 } from "@/store";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  Connection,
-  CoreTabInfo,
-  TabMode,
-  UNKNOWN_USER_NAME,
-  unknownProject,
-} from "@/types";
+import { Connection, CoreTabInfo, TabMode, UNKNOWN_USER_NAME } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -103,13 +97,13 @@ const prepareProjects = async () => {
   const projectName = route.query.project;
   if (projectName) {
     try {
-      const project = await projectStore.getOrFetchProjectByName(
-        `${projectNamePrefix}${projectName}`,
-        true /* silent */
-      );
-      treeStore.selectedProject = project;
+      // const project = await projectStore.getOrFetchProjectByName(
+      //   `${projectNamePrefix}${projectName}`,
+      //   true /* silent */
+      // );
+      // treeStore.selectedProject = project;
     } catch (error) {
-      treeStore.selectedProject = unknownProject();
+      // treeStore.selectedProject = unknownProject();
     }
   } else {
     await useProjectV1Store().fetchProjectList(false);
@@ -233,18 +227,22 @@ const prepareConnectionSlug = async () => {
 
   if (Number.isNaN(databaseId)) {
     // connected to instance
-    const connection = await treeStore.fetchConnectionByInstanceId(
-      String(instanceId)
-    );
-    connect(connection);
+    // const connection = await treeStore.fetchConnectionByInstanceId(
+    //   String(instanceId)
+    // );
+    connect({
+      instanceId: String(instanceId),
+      databaseId: String(UNKNOWN_ID),
+    });
   } else {
     // connected to db
-    const connection = await treeStore.fetchConnectionByInstanceIdAndDatabaseId(
-      String(instanceId),
-      String(databaseId)
-    );
+    // const connection = await treeStore.fetchConnectionByInstanceIdAndDatabaseId(
+    //   String(instanceId),
+    //   String(databaseId)
+    // );
     connect({
-      ...connection,
+      instanceId: String(instanceId),
+      databaseId: String(databaseId),
       schema: filter.schema,
       table: filter.table,
     });

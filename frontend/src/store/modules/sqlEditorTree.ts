@@ -32,8 +32,6 @@ import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "./filter";
 import { useSQLEditorV2Store } from "./sqlEditorV2";
 import {
-  useDBSchemaV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
@@ -150,47 +148,8 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
       filteredFactorList.value
     );
   };
-  const fetchConnectionByInstanceIdAndDatabaseId = async (
-    instanceId: string,
-    databaseId: string
-  ): Promise<Connection> => {
-    try {
-      const [db, _] = await Promise.all([
-        useDatabaseV1Store().getOrFetchDatabaseByUID(
-          databaseId,
-          true /* silent */
-        ),
-        useInstanceV1Store().getOrFetchInstanceByUID(instanceId),
-      ]);
-      await useDBSchemaV1Store().getOrFetchTableList(db.name);
-
-      return {
-        instanceId,
-        databaseId,
-      };
-    } catch {
-      // Fallback to disconnected if error occurs such as 404.
-      return { instanceId: String(UNKNOWN_ID), databaseId: String(UNKNOWN_ID) };
-    }
-  };
-  const fetchConnectionByInstanceId = async (
-    instanceId: string
-  ): Promise<Connection> => {
-    try {
-      await useInstanceV1Store().getOrFetchInstanceByUID(instanceId);
-
-      return {
-        instanceId,
-        databaseId: String(UNKNOWN_ID),
-      };
-    } catch {
-      // Fallback to disconnected if error occurs such as 404.
-      return { instanceId: String(UNKNOWN_ID), databaseId: String(UNKNOWN_ID) };
-    }
-  };
   const cleanup = () => {
     tree.value = [];
-    // expandedKeys.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
     state.value = "UNSET";
@@ -233,8 +192,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     collectNode,
     nodesByTarget,
     buildTree,
-    fetchConnectionByInstanceIdAndDatabaseId,
-    fetchConnectionByInstanceId,
     cleanup,
   };
 });
