@@ -1,8 +1,9 @@
 import { useLocalStorage, watchThrottled } from "@vueuse/core";
-import { head, pick } from "lodash-es";
+import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
 import "@/types";
+import { SQLEditorTreeNodeMeta } from "@/types";
 import { CoreSQLEditorTab, SQLEditorTab } from "@/types/sqlEditorTab";
 import {
   WebStorageHelper,
@@ -346,4 +347,19 @@ export const useConnectionOfCurrentSQLEditorTab = () => {
   });
 
   return { connection, instance, database, environment };
+};
+
+export const resolveOpeningDatabaseListFromSQLEditorTabList = () => {
+  const { tabList } = useSQLEditorTabStore();
+  return uniqBy(
+    tabList.flatMap<SQLEditorTreeNodeMeta<"database">>((tab) => {
+      const { database } = tab.connection;
+      if (database) {
+        const db = useDatabaseV1Store().getDatabaseByName(database);
+        return [{ type: "database", target: db }];
+      }
+      return [];
+    }),
+    (meta) => meta.target.name
+  );
 };

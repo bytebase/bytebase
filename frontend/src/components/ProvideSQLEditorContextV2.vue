@@ -18,64 +18,21 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage } from "@vueuse/core";
 import { head } from "lodash-es";
-import { NSpin } from "naive-ui";
-import { onMounted, computed, watch, ref } from "vue";
-import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
 import {
-  SQL_EDITOR_DETAIL_MODULE,
-  SQL_EDITOR_HOME_MODULE,
-  SQL_EDITOR_SHARE_MODULE,
-} from "@/router/sqlEditor";
-import {
-  useEnvironmentV1Store,
   useInstanceV1Store,
-  usePolicyV1Store,
   useProjectV1Store,
-  useRoleStore,
-  useSettingV1Store,
-  useSQLEditorStore,
-  useTabStore,
-  pushNotification,
   useCurrentUserV1,
-  useWorkSheetStore,
   useDatabaseV1Store,
-  useFilterStore,
   useSQLEditorV2Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
-import { projectNamePrefix } from "@/store/modules/v1/common";
-import {
-  Connection,
-  CoreTabInfo,
-  DEFAULT_PROJECT_V1_NAME,
-  TabMode,
-  UNKNOWN_USER_NAME,
-  unknownProject,
-} from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import {
-  PolicyType,
-  PolicyResourceType,
-} from "@/types/proto/v1/org_policy_service";
-import {
-  emptyConnection,
-  idFromSlug,
-  worksheetNameFromSlug,
-  projectNameFromSheetSlug,
-  worksheetSlugV1,
-  connectionV1Slug as makeConnectionV1Slug,
-  isWorksheetReadableV1,
-  getSuggestedTabNameFromConnection,
-  hasProjectPermissionV2,
-  extractProjectResourceName,
-} from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 
-const { t } = useI18n();
 const route = useRoute();
 
 const me = useCurrentUserV1();
@@ -83,8 +40,6 @@ const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const sqlEditorStore = useSQLEditorV2Store();
 const tabStore = useSQLEditorTabStore();
-const worksheetStore = useWorkSheetStore();
-const { filter } = useFilterStore();
 
 const initializeProjects = async () => {
   const projectInQuery = route.query.project as string;

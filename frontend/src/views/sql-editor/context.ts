@@ -16,6 +16,7 @@ type SQLEditorEvents = Emittery<{
     table: string;
   };
   "format-content": undefined;
+  "init-tree-expanded-keys": undefined;
 }>;
 
 export type SelectedDatabaseSchema = {

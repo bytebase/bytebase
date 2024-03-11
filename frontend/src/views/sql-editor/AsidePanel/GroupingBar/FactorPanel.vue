@@ -26,10 +26,12 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
 import { SQLEditorTreeFactor as Factor } from "@/types";
+import { useSQLEditorContext } from "../../context";
 import FactorItem from "./FactorItem.vue";
 
 const treeStore = useSQLEditorTreeStore();
 const { databaseList, factorList } = storeToRefs(treeStore);
+const { events } = useSQLEditorContext();
 
 const PRESET_FACTORS: Factor[] = ["project", "instance", "environment"];
 
@@ -64,5 +66,6 @@ const toggle = (factor: Factor, on: boolean) => {
 
   factorList.value = updatedList;
   treeStore.buildTree();
+  events.emit("init-tree-expanded-keys");
 };
 </script>

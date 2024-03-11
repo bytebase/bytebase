@@ -1,5 +1,5 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, head, isFunction, orderBy, uniqBy } from "lodash-es";
+import { cloneDeep, isFunction, orderBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
@@ -16,11 +16,8 @@ import {
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
   UNKNOWN_ID,
-  SQLEditorTreeNodeMeta as NodeMeta,
-  ExpandableTreeNodeTypes,
   RichSchemaMetadata,
   RichTableMetadata,
-  SQLEditorTreeNodeType,
   StatefulSQLEditorTreeFactor as StatefulFactor,
   LeafTreeNodeTypes,
   Connection,
@@ -34,9 +31,7 @@ import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "./filter";
 import { useSQLEditorV2Store } from "./sqlEditorV2";
-import { useTabStore } from "./tab";
 import {
-  useActuatorV1Store,
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useEnvironmentV1Store,
@@ -46,26 +41,16 @@ import {
 
 export const ROOT_NODE_ID = "ROOT";
 
-const defaultProjectFactor: StatefulFactor = {
-  factor: "project",
-  disabled: false,
-};
-
 const defaultEnvironmentFactor: StatefulFactor = {
   factor: "environment",
   disabled: false,
 };
 
 export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
-  const actuatorStore = useActuatorV1Store();
   const { filter } = useFilterStore();
 
   const defaultFactorList = (): StatefulFactor[] => {
-    if (actuatorStore.customTheme === "lixiang") {
-      return [defaultEnvironmentFactor];
-    } else {
-      return [defaultProjectFactor];
-    }
+    return [defaultEnvironmentFactor];
   };
 
   const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
@@ -102,11 +87,17 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   );
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
-  // just re-expose `databaseList` in sqlEditor store
-  const { databaseList } = storeToRefs(useSQLEditorV2Store());
+  // just re-expose `databaseList` and `project` in sqlEditor store
+  const { databaseList, project } = storeToRefs(useSQLEditorV2Store());
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
+  const selectedProject = computed(() => {
+    if (project.value) {
+      return useProjectV1Store().getProjectByName(project.value);
+    }
+    return undefined;
+  });
 
   const filteredDatabaseList = computed(() => {
     if (filter.database) {
@@ -125,15 +116,16 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   });
   const filteredFactorList = computed(() => {
     return factorList.value
-      .filter((sf) =>
-        selectedProject.value ? sf.factor !== defaultProjectFactor.factor : true
-      )
+      .filter((sf) => {
+        if (!selectedProject.value) {
+          return true;
+        }
+        return sf.factor !== "project";
+      })
       .filter((sf) => !sf.disabled)
       .map((sf) => sf.factor);
   });
-  const selectedProject = ref<ComposedProject>();
   const state = ref<TreeState>("UNSET");
-  const expandedKeys = ref<string[]>([]); // mixed factor type
   const tree = ref<TreeNode[]>([]);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
@@ -151,54 +143,12 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     return nodeListMapById.get(id) ?? [];
   };
 
-  const openNodesRecursively = (node: TreeNode, keys: Set<string>) => {
-    if (ExpandableTreeNodeTypes.includes(node.meta.type)) {
-      keys.add(node.key);
-    }
-    if (node.parent) {
-      openNodesRecursively(node.parent, keys);
-    }
-  };
-  const expandNodes = <T extends SQLEditorTreeNodeType>(
-    type: T,
-    target: NodeTarget<T>
-  ) => {
-    const nodes = nodesByTarget(type, target);
-    const keys = new Set(expandedKeys.value);
-    nodes.forEach((node) => {
-      keys.add(node.key);
-    });
-    expandedKeys.value = Array.from(keys);
-  };
   const buildTree = () => {
     nodeListMapById.clear();
     tree.value = buildTreeImpl(
       filteredDatabaseList.value,
       filteredFactorList.value
     );
-    const openingDatabaseList = resolveOpeningDatabaseListFromTabList();
-    const keys = new Set<string>();
-    // Recursively expand opening databases' parent nodes
-    openingDatabaseList.forEach((meta) => {
-      const db = meta.target;
-      const nodes = nodesByTarget("database", db);
-      nodes.forEach((node) => openNodesRecursively(node, keys));
-    });
-    const tab = useTabStore().currentTab;
-    // Expand current tab's connected database node
-    if (
-      tab.connection.databaseId &&
-      tab.connection.databaseId !== String(UNKNOWN_ID)
-    ) {
-      const db = useDatabaseV1Store().getDatabaseByUID(
-        tab.connection.databaseId
-      );
-      const node = head(nodesByTarget("database", db));
-      if (node) {
-        keys.add(node.key);
-      }
-    }
-    expandedKeys.value = Array.from(keys);
   };
   const fetchConnectionByInstanceIdAndDatabaseId = async (
     instanceId: string,
@@ -239,10 +189,8 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     }
   };
   const cleanup = () => {
-    databaseList.value = [];
-    selectedProject.value = undefined;
     tree.value = [];
-    expandedKeys.value = [];
+    // expandedKeys.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
     state.value = "UNSET";
@@ -255,9 +203,27 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     },
     { immediate: true, deep: true }
   );
+  watch(
+    project,
+    (project) => {
+      if (project) {
+        const position = factorList.value.findIndex(
+          (sf) => sf.factor === "project"
+        );
+        if (position > 0) {
+          factorList.value.splice(position, 1);
+          if (factorList.value.length === 0) {
+            factorList.value = defaultFactorList();
+          }
+        }
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
 
   return {
-    expandedKeys,
     databaseList,
     factorList,
     filteredFactorList,
@@ -266,7 +232,6 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     tree,
     collectNode,
     nodesByTarget,
-    expandNodes,
     buildTree,
     fetchConnectionByInstanceIdAndDatabaseId,
     fetchConnectionByInstanceId,
@@ -605,19 +570,4 @@ const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
   }
   console.error("should never reach this line", db, factor);
   return "";
-};
-
-export const resolveOpeningDatabaseListFromTabList = () => {
-  const { tabList } = useTabStore();
-  return uniqBy(
-    tabList.flatMap<NodeMeta<"database">>((tab) => {
-      const { databaseId } = tab.connection;
-      if (databaseId !== String(UNKNOWN_ID)) {
-        const db = useDatabaseV1Store().getDatabaseByUID(databaseId);
-        return [{ type: "database", target: db }];
-      }
-      return [];
-    }),
-    (meta) => meta.target.name
-  );
 };

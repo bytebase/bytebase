@@ -126,6 +126,8 @@ export const isValidSQLEditorTreeFactor = (
 
 export const ExpandableTreeNodeTypes: readonly SQLEditorTreeNodeType[] = [
   "instance",
+  "database",
+  "schema",
   "environment",
   "project",
   "table",

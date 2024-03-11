@@ -30,12 +30,13 @@ import {
   useSQLEditorV2Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { useSQLEditorContext } from "../context";
 import DatabaseTree from "./DatabaseTree.vue";
 import GroupingBar from "./GroupingBar";
 
 const sqlEditorStore = useSQLEditorV2Store();
 const treeStore = useSQLEditorTreeStore();
-
+const { events } = useSQLEditorContext();
 const { project, projectContextReady, strictProject, allowViewALLProjects } =
   storeToRefs(sqlEditorStore);
 
@@ -44,13 +45,8 @@ watch([project, projectContextReady], ([project, ready]) => {
     treeStore.state = "LOADING";
   } else {
     treeStore.buildTree();
-    if (project) {
-      const proj = useProjectV1Store().getProjectByName(project);
-      treeStore.selectedProject = proj;
-    } else {
-      treeStore.selectedProject = undefined;
-    }
     treeStore.state = "READY";
+    events.emit("init-tree-expanded-keys");
   }
 });
 
