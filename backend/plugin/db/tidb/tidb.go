@@ -1,5 +1,5 @@
-// Package mysql is the plugin for MySQL driver.
-package mysql
+// Package tidb is the plugin for TiDB driver.
+package tidb
 
 import (
 	"context"
