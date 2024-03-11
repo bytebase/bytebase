@@ -4,15 +4,14 @@
       v-if="!strictProject"
       class="flex flex-row items-center gap-x-1 px-1 py-1"
     >
-      <div class="flex-1">
-        <ProjectSelect
-          style="width: 100%"
-          :project="treeStore.selectedProject?.uid ?? String(UNKNOWN_ID)"
-          :include-all="allowViewALLProjects"
-          @update:project="handleSwitchProject"
-        />
-      </div>
-      <GroupingBar class="shrink-0" />
+      <ProjectSelect
+        style="width: 100%"
+        size="small"
+        class="project-select"
+        :project="treeStore.selectedProject?.uid ?? String(UNKNOWN_ID)"
+        :include-all="allowViewALLProjects"
+        @update:project="handleSwitchProject"
+      />
     </div>
     <div class="flex-1 overflow-hidden">
       <DatabaseTree />
@@ -32,7 +31,6 @@ import {
 import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorContext } from "../context";
 import DatabaseTree from "./DatabaseTree.vue";
-import GroupingBar from "./GroupingBar";
 
 const sqlEditorStore = useSQLEditorV2Store();
 const treeStore = useSQLEditorTreeStore();
@@ -59,3 +57,9 @@ const handleSwitchProject = (uid: string | undefined) => {
   }
 };
 </script>
+
+<style lang="postcss" scoped>
+.project-select :deep(.n-base-selection) {
+  --n-height: 30px !important;
+}
+</style>

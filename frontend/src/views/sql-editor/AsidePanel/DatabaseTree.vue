@@ -1,12 +1,15 @@
 <template>
   <div
     v-if="treeStore.state === 'READY'"
-    class="sql-editor-tree p-0.5 gap-y-1 h-full flex flex-col"
+    class="sql-editor-tree gap-y-1 h-full flex flex-col"
   >
-    <SearchBox v-model:searchPattern="searchPattern" />
+    <div class="flex flex-row gap-x-0.5 px-1 items-center">
+      <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
+      <GroupingBar class="shrink-0" />
+    </div>
     <div
       ref="treeContainerElRef"
-      class="sql-editor-tree--tree flex-1 pb-1 text-sm overflow-hidden select-none"
+      class="sql-editor-tree--tree flex-1 px-1 pb-1 text-sm overflow-hidden select-none"
       :data-height="treeContainerHeight"
     >
       <NTree
@@ -113,6 +116,7 @@ import {
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
+import GroupingBar from "./GroupingBar";
 import SearchBox from "./SearchBox/index.vue";
 import useSearchHistory from "./SearchBox/useSearchHistory";
 import { Label } from "./TreeNode";
