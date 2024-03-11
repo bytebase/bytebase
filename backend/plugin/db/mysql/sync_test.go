@@ -251,6 +251,177 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
 			},
 		},
+		// MySQL 5.7.
+		{
+			name:         "id",
+			defaultStr:   sql.NullString{},
+			nullableBool: false,
+			extra:        "auto_increment",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "AUTO_INCREMENT"},
+			},
+		},
+		{
+			name:         "name0",
+			defaultStr:   sql.NullString{},
+			nullableBool: true,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultNull{DefaultNull: true},
+			},
+		},
+		{
+			name:         "name1",
+			defaultStr:   sql.NullString{Valid: true, String: "0"},
+			nullableBool: true,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+			},
+		},
+		{
+			name:         "name2",
+			defaultStr:   sql.NullString{Valid: true, String: "hello"},
+			nullableBool: true,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "hello"}},
+			},
+		},
+		{
+			name:         "age0",
+			defaultStr:   sql.NullString{},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: nil,
+			},
+		},
+		{
+			name:         "age1",
+			defaultStr:   sql.NullString{Valid: true, String: "0"},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+			},
+		},
+		{
+			name:         "age2",
+			defaultStr:   sql.NullString{Valid: true, String: "0"},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+			},
+		},
+		{
+			name:         "age3",
+			defaultStr:   sql.NullString{Valid: true, String: "0"},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+			},
+		},
+		{
+			name:         "age4",
+			defaultStr:   sql.NullString{Valid: true, String: "0"},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0"}},
+			},
+		},
+		{
+			name:         "price",
+			defaultStr:   sql.NullString{Valid: true, String: "0.00"},
+			nullableBool: true,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: "0.00"}},
+			},
+		},
+		{
+			name:         "time0",
+			defaultStr:   sql.NullString{},
+			nullableBool: true,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultNull{DefaultNull: true},
+			},
+		},
+		{
+			name:         "time1",
+			defaultStr:   sql.NullString{},
+			nullableBool: false,
+			extra:        "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: nil,
+			},
+		},
+		{
+			name:         "time2",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
+			nullableBool: false,
+			// Different from 8.0, DEFAULT_GENERATED.
+			extra: "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+			},
+		},
+		{
+			name:         "time3",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
+			nullableBool: false,
+			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
+			extra: "on update CURRENT_TIMESTAMP",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+				OnUpdate:     "CURRENT_TIMESTAMP",
+			},
+		},
+		{
+			name:         "time4",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
+			nullableBool: true,
+			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
+			extra: "on update CURRENT_TIMESTAMP",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+				OnUpdate:     "CURRENT_TIMESTAMP",
+			},
+		},
+		{
+			name:         "time5",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
+			nullableBool: true,
+			// Different from 8.0, DEFAULT_GENERATED.
+			extra: "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP(6)"},
+			},
+		},
+		{
+			name:         "time6",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
+			nullableBool: true,
+			// Different from 8.0, DEFAULT_GENERATED.
+			extra: "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP(6)"},
+			},
+		},
+		{
+			name:         "time7",
+			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
+			nullableBool: true,
+			// Different from 8.0, DEFAULT_GENERATED.
+			extra: "",
+			want: &storepb.ColumnMetadata{
+				DefaultValue: &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: "CURRENT_TIMESTAMP"},
+			},
+		},
 	}
 
 	a := require.New(t)
