@@ -58,7 +58,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		} else {
 			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to get read only database source")
+				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
 			}
 			schemaName = dataSource.Username
 		}
@@ -75,7 +75,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span")
+		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
@@ -111,12 +111,12 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 	}
 
 	if exportErr != nil {
-		return nil, exportErr
+		return nil, status.Errorf(codes.Internal, exportErr.Error())
 	}
 
 	content, err := doEncrypt(bytes, request)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &v1pb.ExportResponse{
@@ -155,7 +155,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		} else {
 			dataSource, _, err := s.dbFactory.GetReadOnlyDatabaseSource(instance, maybeDatabase, "" /* dataSourceID */)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to get read only database source")
+				return nil, status.Errorf(codes.Internal, "failed to get read only database source: %v", err.Error())
 			}
 			schemaName = dataSource.Username
 		}
@@ -173,7 +173,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get query span")
+		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
@@ -218,18 +218,17 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 		results, durationNs, queryErr = s.doQueryV2(ctx, request, instance, maybeDatabase)
 		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 			if err := s.maskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
-				return nil, err
+				return nil, status.Errorf(codes.Internal, err.Error())
 			}
 		}
 	}
 
 	// Update activity.
-	err = s.postQuery(ctx, activity, durationNs, queryErr)
-	if err != nil {
+	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 	if queryErr != nil {
-		return nil, queryErr
+		return nil, status.Errorf(codes.Internal, queryErr.Error())
 	}
 
 	allowExport := true
@@ -674,7 +673,7 @@ func (s *SQLService) accessCheck(
 	// Check if the environment is open for query privileges.
 	ok, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, err.Error())
 	}
 	if ok {
 		return nil
@@ -694,7 +693,7 @@ func (s *SQLService) accessCheck(
 
 			project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, err.Error())
 			}
 			if project == nil && database == nil {
 				// If database not found, skip.
@@ -708,7 +707,7 @@ func (s *SQLService) accessCheck(
 			// Allow query databases across different projects.
 			projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 			if err != nil {
-				return err
+				return status.Errorf(codes.Internal, err.Error())
 			}
 
 			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
