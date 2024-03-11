@@ -286,7 +286,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	// TODO(zp): Remove this hack after switching all engines to use query span.
 	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare related message")
+		return nil, err
 	}
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
@@ -320,12 +320,12 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if exportErr != nil {
-		return nil, exportErr
+		return nil, status.Errorf(codes.Internal, exportErr.Error())
 	}
 
 	content, err := doEncrypt(bytes, request)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &v1pb.ExportResponse{
@@ -936,7 +936,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	}
 	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
+		return nil, err
 	}
 
 	return &v1pb.CheckResponse{
@@ -953,7 +953,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	// TODO(zp): Remove this hack after switching all engines to use query span.
 	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare related message")
+		return nil, err
 	}
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
@@ -995,13 +995,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database, sensitiveSchemaInfo)
 	}
 
-	err = s.postQuery(ctx, activity, durationNs, queryErr)
-	if err != nil {
+	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 
 	if queryErr != nil {
-		return nil, queryErr
+		return nil, status.Errorf(codes.Internal, queryErr.Error())
 	}
 
 	// AllowExport is a validate only check.
@@ -1202,7 +1201,7 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 	// Check if the environment is open for query privileges.
 	result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
 	if err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, err
+		return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if !result {
 		// Check if the user has permission to execute the query.
@@ -1868,12 +1867,12 @@ func (s *SQLService) sqlCheck(
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken string, databaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	instance, err := s.getInstanceMessage(ctx, instanceToken)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	var database *store.DatabaseMessage
@@ -1887,7 +1886,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
 		if database == nil {
-			return nil, nil, nil, nil, errors.Errorf("database %q not found", databaseName)
+			return nil, nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 		}
 	}
 
@@ -2392,7 +2391,7 @@ func (s *SQLService) checkQueryRights(
 	if len(databaseMessageMap) == 0 && project == nil {
 		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
 		if err != nil {
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 	}
 
@@ -2405,7 +2404,7 @@ func (s *SQLService) checkQueryRights(
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, err.Error())
 	}
 
 	for _, resource := range resourceList {
