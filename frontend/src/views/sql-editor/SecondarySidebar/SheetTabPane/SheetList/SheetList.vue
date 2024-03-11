@@ -80,10 +80,10 @@ import {
   useProjectV1Store,
   useWorkSheetAndTabStore,
   useDatabaseV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store";
 import { ComposedProject, ComposedDatabase, UNKNOWN_ID } from "@/types";
-import { connectionForTab } from "@/utils";
+import { connectionForSQLEditorTab } from "@/utils";
 import {
   SheetViewMode,
   openSheet,
@@ -98,6 +98,7 @@ import {
   domIDForItem,
   isSheetItem,
   isTabItem,
+  keyOfItem,
 } from "./common";
 
 interface TreeNode extends TreeOption {
@@ -127,8 +128,9 @@ const props = defineProps<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
-const tabStore = useTabStore();
-const { showPanel } = useSheetContext();
+const tabStore = useSQLEditorTabStore();
+const sheetContext = useSheetContext();
+const { showPanel } = sheetContext;
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
@@ -156,7 +158,7 @@ const mergedItemList = computed(() => {
       // They are probably dirty data
       (item) => (item.type === "SHEET" && !item.target.title ? 1 : 0),
       // Alphabetically otherwise
-      (item) => (item.type === "TAB" ? item.target.name : item.target.title),
+      (item) => item.target.title,
     ],
     ["asc", "asc"]
   );
@@ -169,7 +171,7 @@ const treeData = computed((): TreeNode[] => {
     let database: ComposedDatabase | undefined;
     let project: ComposedProject | undefined;
     if (isTabItem(item)) {
-      database = connectionForTab(item.target).database;
+      database = connectionForSQLEditorTab(item.target).database;
       project = database?.projectEntity;
     } else {
       database = databaseStore.getDatabaseByName(item.target.database);
@@ -186,6 +188,7 @@ const treeData = computed((): TreeNode[] => {
       };
     }
 
+    const key = keyOfItem(item);
     if (database && database.uid !== `${UNKNOWN_ID}`) {
       if (!map[project.name].children[database.name]) {
         map[project.name].children[database.name] = {
@@ -195,16 +198,16 @@ const treeData = computed((): TreeNode[] => {
           children: {},
         };
       }
-      map[project.name].children[database.name].children[item.target.name] = {
-        key: item.target.name,
-        label: isTabItem(item) ? item.target.name : item.target.title,
+      map[project.name].children[database.name].children[key] = {
+        key,
+        label: item.target.title,
         item,
         children: {},
       };
     } else {
-      map[project.name].children[item.target.name] = {
-        key: item.target.name,
-        label: isTabItem(item) ? item.target.name : item.target.title,
+      map[project.name].children[key] = {
+        key,
+        label: item.target.title,
         item,
         children: {},
       };
@@ -256,16 +259,15 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     return null;
   }
   const child = [];
-  if (isTabItem(treeNode.item)) {
+  const { item } = treeNode;
+  if (isTabItem(item)) {
     child.push(h(UnsavedPrefix));
   } else {
-    const tab = tabStore.tabList.find(
-      (tab) => tab.sheetName === treeNode.item?.target.name
-    );
-    if (tab?.isSaved ?? true) {
+    const tab = tabStore.tabList.find((tab) => tab.sheet === item.target.name);
+    if (tab?.status === "CLEAN") {
       child.push(
         h(Dropdown, {
-          sheet: treeNode.item.target,
+          sheet: item.target,
           view: props.view,
           secondary: true,
         })
@@ -314,9 +316,9 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 };
 
 const selectedKeys = computed(() => {
-  return [currentSheet.value?.name, tabStore.currentTab.id].filter(
-    (item) => !!item
-  ) as string[];
+  return [currentSheet.value?.name, tabStore.currentTab?.id].filter(
+    (item): item is string => !!item
+  );
 });
 
 const nodeProps = ({ option }: { option: TreeOption }) => {
@@ -341,7 +343,7 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   if (isTabItem(item)) {
     tabStore.setCurrentTabId(item.target.id);
   } else {
-    openSheet(item.target.name, e.metaKey || e.ctrlKey);
+    openSheet(item.target.name, sheetContext, e.metaKey || e.ctrlKey);
   }
 };
 
@@ -374,6 +376,9 @@ const scrollToCurrentTabOrSheet = () => {
     scrollToItem({ type: "SHEET", target: currentSheet.value });
   } else {
     const tab = tabStore.currentTab;
+    if (!tab) {
+      return;
+    }
     scrollToItem({ type: "TAB", target: tab });
   }
 };
@@ -391,7 +396,7 @@ watch(
 );
 
 watch(
-  [() => currentSheet.value?.name, () => tabStore.currentTab.id],
+  [() => currentSheet.value?.name, () => tabStore.currentTab?.id],
   () => {
     scrollToCurrentTabOrSheet();
   },

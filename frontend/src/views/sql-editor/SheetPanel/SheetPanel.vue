@@ -39,17 +39,16 @@
         </div>
       </template>
     </NTabs>
-    <MaskSpinner v-if="isFetchingSheet" />
+    <MaskSpinner v-if="isFetching" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { NButton, NTabs, NTabPane } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
-import { usePageMode, useSQLEditorStore } from "@/store";
+import { usePageMode } from "@/store";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
 import SheetTable from "./SheetTable";
@@ -58,15 +57,15 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const { view, events } = useSheetContext();
-const { isFetchingSheet } = storeToRefs(useSQLEditorStore());
+const sheetContext = useSheetContext();
+const { view, isFetching, events } = sheetContext;
 const pageMode = usePageMode();
 const keyword = ref("");
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Worksheet) => {
-  if (await openSheet(sheet.name)) {
+  if (await openSheet(sheet.name, sheetContext)) {
     emit("close");
   }
 };
