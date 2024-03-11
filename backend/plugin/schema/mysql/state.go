@@ -630,10 +630,21 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 		if _, err := buf.WriteString(fmt.Sprintf("\n%s", prefix)); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES LESS THAN (%s)", partition.name, partition.value)); err != nil {
+
+		var valuesWrap string
+		if strings.EqualFold(partition.value, "MAXVALUE") {
+			valuesWrap = "MAXVALUE"
+		} else {
+			valuesWrap = fmt.Sprintf("(%s)", partition.value)
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES LESS THAN %s", partition.name, valuesWrap)); err != nil {
 			return err
 		}
-		if partition.subPartition != nil {
+		if partition.subPartition == nil {
+			if _, err := buf.WriteString(" ENGINE = InnoDB"); err != nil {
+				return err
+			}
+		} else {
 			subPartitionSlice := make([]*partitionState, 0, len(partition.subPartition.partitions))
 			for _, subPartition := range partition.subPartition.partitions {
 				subPartitionSlice = append(subPartitionSlice, subPartition)

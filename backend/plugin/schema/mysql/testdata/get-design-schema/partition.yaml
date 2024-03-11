@@ -43,41 +43,19 @@
                   "name": "p0",
                   "type": "RANGE",
                   "value": "100",
-                  "expression": "`id`",
-                  "subpartitions": [
-                    {
-                      "name": "p0s0",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
-                    },
-                    {
-                      "name": "p0s1",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
-                    }
-                  ]
+                  "expression": "`id`"
                 },
                 {
                   "name": "p1",
                   "type": "RANGE",
                   "value": "200",
-                  "expression": "`id`",
-                  "subpartitions": [
-                    {
-                      "name": "p1s0",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
-                    },
-                    {
-                      "name": "p1s1",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
-                    }
-                  ]
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p2",
+                  "type": "RANGE",
+                  "value": "MAXVALUE",
+                  "expression": "`id`"
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci"
@@ -97,13 +75,9 @@
       `name` varchar(10) DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
-    SUBPARTITION BY KEY (`name`)
-    (PARTITION p0 VALUES LESS THAN (100)
-     (SUBPARTITION p0s0 ENGINE = InnoDB,
-      SUBPARTITION p0s1 ENGINE = InnoDB),
-     PARTITION p1 VALUES LESS THAN (200)
-     (SUBPARTITION p1s0 ENGINE = InnoDB,
-      SUBPARTITION p1s1 ENGINE = InnoDB)) */;
+    (PARTITION p0 VALUES LESS THAN (100) ENGINE = InnoDB,
+     PARTITION p1 VALUES LESS THAN (200) ENGINE = InnoDB,
+     PARTITION p2 VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
