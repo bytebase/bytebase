@@ -129,8 +129,8 @@ const filteredTabIdList = computed(() => {
   return tabStore.tabIdList;
 });
 
-const handleSelectTab = async (tab: TabInfo) => {
-  tabStore.setCurrentTabId(tab.id);
+const handleSelectTab = async (tab: TabInfo | undefined) => {
+  tabStore.setCurrentTabId(tab?.id ?? "");
 };
 
 const handleAddTab = () => {
@@ -183,11 +183,6 @@ const handleRemoveTab = async (
   }
 
   function remove(index: number) {
-    if (tabStore.tabList.length === 1) {
-      // Ensure at least 1 tab
-      tabStore.addTab();
-    }
-
     tabStore.removeTab(tab);
 
     // select a tab near the removed tab.

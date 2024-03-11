@@ -4,7 +4,7 @@
     :class="[
       {
         admin: tab.mode === TabMode.Admin,
-        closable,
+        closable: true,
       },
 
       [sheetTypeForTab(tab).toLowerCase()],
@@ -24,7 +24,6 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import { isTabClosable } from "@/store";
 import type { TabInfo } from "@/types";
 import { TabMode } from "@/types";
 import { sheetTypeForTab } from "@/utils";
@@ -54,12 +53,8 @@ defineEmits<{
   (e: "close", tab: TabInfo, index: number): void;
 }>();
 
-const closable = computed(() => {
-  return isTabClosable(props.tab);
-});
-
 const icon = computed((): IconType | undefined => {
-  if (state.hovering && closable.value) {
+  if (state.hovering) {
     return "close";
   }
   if (props.tab.mode === TabMode.ReadOnly && !props.tab.isSaved) {
@@ -75,6 +70,10 @@ const icon = computed((): IconType | undefined => {
 }
 .icon {
   @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
+}
+
+.suffix.closable {
+  cursor: pointer;
 }
 
 .suffix.closable.temp .icon {

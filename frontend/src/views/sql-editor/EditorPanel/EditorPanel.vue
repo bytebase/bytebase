@@ -3,18 +3,20 @@
     <template v-if="tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
 
-      <ConnectionPathBar />
-
-      <Suspense>
-        <SQLEditor @execute="handleExecute" />
-        <template #fallback>
-          <div
-            class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-          >
-            <BBSpin />
-          </div>
-        </template>
-      </Suspense>
+      <ConnectionHolder v-if="tabStore.isDisconnected" />
+      <template v-else>
+        <ConnectionPathBar />
+        <Suspense>
+          <SQLEditor @execute="handleExecute" />
+          <template #fallback>
+            <div
+              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+            >
+              <BBSpin />
+            </div>
+          </template>
+        </Suspense>
+      </template>
     </template>
 
     <Suspense>
@@ -48,6 +50,7 @@ import {
   ConnectionPathBar,
   ExecutingHintModal,
   SaveSheetModal,
+  ConnectionHolder,
 } from "../EditorCommon";
 import { useSQLEditorContext } from "../context";
 
