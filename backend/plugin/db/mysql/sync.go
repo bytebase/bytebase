@@ -275,41 +275,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, err
 		}
 		column.Nullable = nullableBool
-		if defaultStr.Valid {
-			// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
-			switch {
-			case isCurrentTimestampLike(defaultStr.String):
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
-			case strings.Contains(extra, "DEFAULT_GENERATED"):
-				column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
-			default:
-				// For non-generated and non CURRENT_XXX default value, use string.
-				column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
-			}
-		} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
-			// TODO(zp): refactor column default value.
-			// Use the upper case to consistent with MySQL Dump.
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
-		} else if nullableBool {
-			// This is NULL if the column has an explicit default of NULL,
-			// or if the column definition includes no DEFAULT clause.
-			// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
-			column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
-				DefaultNull: true,
-			}
-		}
-
-		if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
-			re := regexp.MustCompile(`CURRENT_TIMESTAMP\((\d+)\)`)
-			match := re.FindStringSubmatch(extra)
-			if len(match) > 0 {
-				digits := match[1]
-				column.OnUpdate = fmt.Sprintf("CURRENT_TIMESTAMP(%s)", digits)
-			} else {
-				column.OnUpdate = "CURRENT_TIMESTAMP"
-			}
-		}
-
+		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
 	}
@@ -467,6 +433,43 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 
 	return databaseMetadata, err
+}
+
+func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
+	if defaultStr.Valid {
+		// In MySQL 5.7, the extra value is empty for a column with CURRENT_TIMESTAMP default.
+		switch {
+		case isCurrentTimestampLike(defaultStr.String):
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: defaultStr.String}
+		case strings.Contains(extra, "DEFAULT_GENERATED"):
+			column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: fmt.Sprintf("(%s)", defaultStr.String)}
+		default:
+			// For non-generated and non CURRENT_XXX default value, use string.
+			column.DefaultValue = &storepb.ColumnMetadata_Default{Default: &wrapperspb.StringValue{Value: defaultStr.String}}
+		}
+	} else if strings.Contains(strings.ToUpper(extra), autoIncrementSymbol) {
+		// TODO(zp): refactor column default value.
+		// Use the upper case to consistent with MySQL Dump.
+		column.DefaultValue = &storepb.ColumnMetadata_DefaultExpression{DefaultExpression: autoIncrementSymbol}
+	} else if nullableBool {
+		// This is NULL if the column has an explicit default of NULL,
+		// or if the column definition includes no DEFAULT clause.
+		// https://dev.mysql.com/doc/refman/8.0/en/information-schema-columns-table.html
+		column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+			DefaultNull: true,
+		}
+	}
+
+	if strings.Contains(extra, "on update CURRENT_TIMESTAMP") {
+		re := regexp.MustCompile(`CURRENT_TIMESTAMP\((\d+)\)`)
+		match := re.FindStringSubmatch(extra)
+		if len(match) > 0 {
+			digits := match[1]
+			column.OnUpdate = fmt.Sprintf("CURRENT_TIMESTAMP(%s)", digits)
+		} else {
+			column.OnUpdate = "CURRENT_TIMESTAMP"
+		}
+	}
 }
 
 func isCurrentTimestampLike(s string) bool {
