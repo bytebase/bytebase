@@ -584,6 +584,11 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 		return err
 	}
 
+	preposition, err := getPrepositionByType(p.tp)
+	if err != nil {
+		return err
+	}
+
 	if _, err := buf.WriteString(tp); err != nil {
 		return err
 	}
@@ -637,7 +642,7 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 		} else {
 			valuesWrap = fmt.Sprintf("(%s)", partition.value)
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES LESS THAN %s", partition.name, valuesWrap)); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES %s %s", partition.name, preposition, valuesWrap)); err != nil {
 			return err
 		}
 		if partition.subPartition == nil {
@@ -703,6 +708,29 @@ func partitionTypeToString(tp storepb.TablePartitionMetadata_Type) (string, erro
 		return "LINEAR HASH", nil
 	case storepb.TablePartitionMetadata_LINEAR_KEY:
 		return "LINEAR KEY", nil
+	default:
+		return "", errors.Errorf("unsupported partition type: %v", tp)
+	}
+}
+
+func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
+	switch tp {
+	case storepb.TablePartitionMetadata_RANGE:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_LIST:
+		return "IN", nil
+	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_HASH:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_KEY:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_LINEAR_HASH:
+		return "LESS THAN", nil
+	case storepb.TablePartitionMetadata_LINEAR_KEY:
+		return "LESS THAN", nil
 	default:
 		return "", errors.Errorf("unsupported partition type: %v", tp)
 	}
