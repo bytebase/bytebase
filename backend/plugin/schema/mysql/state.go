@@ -8,6 +8,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -104,8 +106,9 @@ type tableState struct {
 	foreignKeys map[string]*foreignKeyState
 	comment     string
 	// engine and collation is only supported in ParseToMetadata.
-	engine    string
-	collation string
+	engine                string
+	collation             string
+	partitionStateWrapper *partitionStateWrapper
 }
 
 func (t *tableState) toString(buf io.StringWriter) error {
@@ -190,6 +193,15 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
+	if t.partitionStateWrapper != nil {
+		if _, err := buf.WriteString("\n"); err != nil {
+			return err
+		}
+		if err := t.partitionStateWrapper.toString(buf); err != nil {
+			return err
+		}
+	}
+
 	if _, err := buf.WriteString(";\n"); err != nil {
 		return err
 	}
@@ -220,6 +232,7 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 	for i, fk := range table.ForeignKeys {
 		state.foreignKeys[fk.Name] = convertToForeignKeyState(i, fk)
 	}
+	state.partitionStateWrapper = convertToPartitionStateWrapper(table.Partitions)
 	return state
 }
 
@@ -485,6 +498,214 @@ func (i *indexState) toString(buf io.StringWriter) error {
 		}
 	}
 	return nil
+}
+
+// Currently, our storepb.TablePartitionMetadata is too redundant, we need to convert it to a more compact format.
+// In the future, we should update the storepb.TablePartitionMetadata to a more compact format.
+type partitionStateWrapper struct {
+	tp         storepb.TablePartitionMetadata_Type
+	expr       string
+	partitions map[string]*partitionState
+}
+
+func (p *partitionStateWrapper) hasSubpartitions() (bool, storepb.TablePartitionMetadata_Type, string) {
+	for _, partition := range p.partitions {
+		if partition.subPartition != nil && len(partition.subPartition.partitions) > 0 {
+			return true, partition.subPartition.tp, partition.subPartition.expr
+		}
+	}
+
+	return false, storepb.TablePartitionMetadata_TYPE_UNSPECIFIED, ""
+}
+
+type partitionState struct {
+	id           int
+	name         string
+	value        string
+	subPartition *partitionStateWrapper
+}
+
+// nolint
+func (p *partitionStateWrapper) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
+	partitions := make([]*storepb.TablePartitionMetadata, 0, len(p.partitions))
+	partitionStates := make([]*partitionState, 0, len(p.partitions))
+	for _, partition := range p.partitions {
+		partitionStates = append(partitionStates, partition)
+	}
+	sort.Slice(partitionStates, func(i, j int) bool {
+		return partitionStates[i].id < partitionStates[j].id
+	})
+
+	for _, partition := range partitionStates {
+		partitions = append(partitions, &storepb.TablePartitionMetadata{
+			Name:          partition.name,
+			Type:          p.tp,
+			Expression:    p.expr,
+			Value:         partition.value,
+			Subpartitions: partition.subPartition.convertToPartitionMetadata(),
+		})
+	}
+
+	return partitions
+}
+
+func convertToPartitionStateWrapper(partitions []*storepb.TablePartitionMetadata) *partitionStateWrapper {
+	if len(partitions) == 0 {
+		return nil
+	}
+	wrapper := &partitionStateWrapper{
+		partitions: make(map[string]*partitionState),
+	}
+	for i, partition := range partitions {
+		if i == 0 {
+			wrapper.tp = partition.Type
+			wrapper.expr = partition.Expression
+		}
+		partitionState := &partitionState{
+			id:    i,
+			name:  partition.Name,
+			value: partition.Value,
+		}
+		partitionState.subPartition = convertToPartitionStateWrapper(partition.Subpartitions)
+		wrapper.partitions[partition.Name] = partitionState
+	}
+
+	return wrapper
+}
+
+func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
+	// Write version specific comment.
+	if _, err := buf.WriteString("/*!50100 PARTITION BY "); err != nil {
+		return err
+	}
+
+	tp, err := partitionTypeToString(p.tp)
+	if err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(tp); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(fmt.Sprintf(" (%s)", p.expr)); err != nil {
+		return err
+	}
+
+	// Write subpartition type if any.
+	if has, subTp, subExpr := p.hasSubpartitions(); has {
+		if _, err := buf.WriteString("\nSUBPARTITION BY "); err != nil {
+			return err
+		}
+		subTp, err := partitionTypeToString(subTp)
+		if err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(subTp); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(fmt.Sprintf(" (%s)", subExpr)); err != nil {
+			return err
+		}
+	}
+
+	parititonSlice := make([]*partitionState, 0, len(p.partitions))
+	for _, partition := range p.partitions {
+		parititonSlice = append(parititonSlice, partition)
+	}
+	sort.Slice(parititonSlice, func(i, j int) bool {
+		return parititonSlice[i].id < parititonSlice[j].id
+	})
+
+	for idx, partition := range parititonSlice {
+		prefix := "("
+		if idx > 0 {
+			prefix = strings.Repeat(" ", 1)
+		}
+		suffix := ","
+		if idx == len(parititonSlice)-1 {
+			suffix = ")"
+		}
+
+		if _, err := buf.WriteString(fmt.Sprintf("\n%s", prefix)); err != nil {
+			return err
+		}
+
+		var valuesWrap string
+		if strings.EqualFold(partition.value, "MAXVALUE") {
+			valuesWrap = "MAXVALUE"
+		} else {
+			valuesWrap = fmt.Sprintf("(%s)", partition.value)
+		}
+		if _, err := buf.WriteString(fmt.Sprintf("PARTITION %s VALUES LESS THAN %s", partition.name, valuesWrap)); err != nil {
+			return err
+		}
+		if partition.subPartition == nil {
+			if _, err := buf.WriteString(" ENGINE = InnoDB"); err != nil {
+				return err
+			}
+		} else {
+			subPartitionSlice := make([]*partitionState, 0, len(partition.subPartition.partitions))
+			for _, subPartition := range partition.subPartition.partitions {
+				subPartitionSlice = append(subPartitionSlice, subPartition)
+			}
+			sort.Slice(subPartitionSlice, func(i, j int) bool {
+				return subPartitionSlice[i].id < subPartitionSlice[j].id
+			})
+
+			for subIdx, subPartition := range subPartitionSlice {
+				prefix := " ("
+				if subIdx > 0 {
+					prefix = strings.Repeat(" ", 2)
+				}
+				suffix := ","
+				if subIdx == len(subPartitionSlice)-1 {
+					suffix = ")"
+				}
+				if _, err := buf.WriteString(fmt.Sprintf("\n%s", prefix)); err != nil {
+					return err
+				}
+				if _, err := buf.WriteString(fmt.Sprintf("SUBPARTITION %s ENGINE = InnoDB", subPartition.name)); err != nil {
+					return err
+				}
+				if _, err := buf.WriteString(suffix); err != nil {
+					return err
+				}
+			}
+		}
+		if _, err := buf.WriteString(suffix); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(" */"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func partitionTypeToString(tp storepb.TablePartitionMetadata_Type) (string, error) {
+	switch tp {
+	case storepb.TablePartitionMetadata_RANGE:
+		return "RANGE", nil
+	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		return "RANGE COLUMNS", nil
+	case storepb.TablePartitionMetadata_LIST:
+		return "LIST", nil
+	case storepb.TablePartitionMetadata_LIST_COLUMNS:
+		return "LIST COLUMNS", nil
+	case storepb.TablePartitionMetadata_HASH:
+		return "HASH", nil
+	case storepb.TablePartitionMetadata_KEY:
+		return "KEY", nil
+	case storepb.TablePartitionMetadata_LINEAR_HASH:
+		return "LINEAR HASH", nil
+	case storepb.TablePartitionMetadata_LINEAR_KEY:
+		return "LINEAR KEY", nil
+	default:
+		return "", errors.Errorf("unsupported partition type: %v", tp)
+	}
 }
 
 type defaultValue interface {
