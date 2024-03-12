@@ -22,7 +22,7 @@ func TestGetDesignSchema(t *testing.T) {
 	}
 
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepaths = []string{
