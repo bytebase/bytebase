@@ -20,7 +20,6 @@ import {
   RichTableMetadata,
   StatefulSQLEditorTreeFactor as StatefulFactor,
   LeafTreeNodeTypes,
-  Connection,
   DEFAULT_PROJECT_V1_NAME,
   RichViewMetadata,
   TextTarget,

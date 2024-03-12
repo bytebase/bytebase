@@ -2,9 +2,12 @@ import { MaybeRef, useLocalStorage, watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref, watch } from "vue";
-import "@/types";
-import { SQLEditorConnection, SQLEditorTreeNodeMeta } from "@/types";
-import { CoreSQLEditorTab, SQLEditorTab } from "@/types/sqlEditorTab";
+import type {
+  SQLEditorConnection,
+  SQLEditorTreeNodeMeta,
+  CoreSQLEditorTab,
+  SQLEditorTab,
+} from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,

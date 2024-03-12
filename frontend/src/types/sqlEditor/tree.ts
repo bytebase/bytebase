@@ -2,16 +2,16 @@ import { TreeOption } from "naive-ui";
 import { RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import { useSQLEditorTreeStore } from "@/store";
-import { Engine } from "./proto/v1/common";
+import { Engine } from "../proto/v1/common";
 import {
   ExternalTableMetadata,
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
   ViewMetadata,
-} from "./proto/v1/database_service";
-import { Environment } from "./proto/v1/environment_service";
-import { ComposedDatabase, ComposedInstance, ComposedProject } from "./v1";
+} from "../proto/v1/database_service";
+import { Environment } from "../proto/v1/environment_service";
+import { ComposedDatabase, ComposedInstance, ComposedProject } from "../v1";
 
 export type SQLEditorTreeFactor =
   | "project"
