@@ -286,10 +286,10 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	// TODO(zp): Remove this hack after switching all engines to use query span.
 	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare related message")
+		return nil, err
 	}
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL:
+	case storepb.Engine_POSTGRES, storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
 		return s.ExportV2(ctx, request)
 	}
 	user, instance, database, _, _, sensitiveSchemaInfo, err := s.preCheck(ctx, request.Name, request.ConnectionDatabase, request.Statement, request.Limit, false /* isAdmin */, true /* isExport */)
@@ -320,12 +320,12 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if exportErr != nil {
-		return nil, exportErr
+		return nil, status.Errorf(codes.Internal, exportErr.Error())
 	}
 
 	content, err := doEncrypt(bytes, request)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &v1pb.ExportResponse{
@@ -934,9 +934,9 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	if request.Metadata != nil {
 		overideMetadata, _ = convertV1DatabaseMetadata(request.Metadata)
 	}
-	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, environment, instance, database, overideMetadata)
+	_, adviceList, err := s.sqlReviewCheck(ctx, request.Statement, request.ChangeType, environment, instance, database, overideMetadata)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to do sql review check, error: %v", err)
+		return nil, err
 	}
 
 	return &v1pb.CheckResponse{
@@ -953,10 +953,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	// TODO(zp): Remove this hack after switching all engines to use query span.
 	_, _, instance, _, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to prepare related message")
+		return nil, err
 	}
 	switch instance.Engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE, storepb.Engine_MSSQL:
+	case storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_SNOWFLAKE:
 		return s.QueryV2(ctx, request)
 	}
 
@@ -995,13 +995,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database, sensitiveSchemaInfo)
 	}
 
-	err = s.postQuery(ctx, activity, durationNs, queryErr)
-	if err != nil {
+	if err = s.postQuery(ctx, activity, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 
 	if queryErr != nil {
-		return nil, queryErr
+		return nil, status.Errorf(codes.Internal, queryErr.Error())
 	}
 
 	// AllowExport is a validate only check.
@@ -1190,48 +1189,29 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 		dataShare = maybeDatabase.DataShare
 	}
 
-	if s.profile.DevelopmentIAM {
-		if isAdmin {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
-			if err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
-			}
-			if !ok {
-				return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
-			}
-		}
-		// Check if the environment is open for query privileges.
-		result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+	if isAdmin {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user)
 		if err != nil {
+			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, "failed to check if the user has the permission, error: %v", err)
+		}
+		if !ok {
+			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
+		}
+	}
+	// Check if the environment is open for query privileges.
+	result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
+	if err != nil {
+		return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if !result {
+		// Check if the user has permission to execute the query.
+		if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
 			return nil, nil, nil, advisor.Success, nil, nil, err
-		}
-		if !result {
-			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, err
-			}
-		}
-	} else if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		// Check if the caller is admin for exporting with admin mode.
-		if isAdmin && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
-			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-		}
-
-		// Check if the environment is open for query privileges.
-		result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-		if err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, err
-		}
-		if !result {
-			// Check if the user has permission to execute the query.
-			if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-				return nil, nil, nil, advisor.Success, nil, nil, err
-			}
 		}
 	}
 
 	// Run SQL review.
-	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, environment, instance, maybeDatabase, nil /* Override Metadata */)
+	adviceStatus, adviceList, err := s.sqlReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, environment, instance, maybeDatabase, nil /* Override Metadata */)
 	if err != nil {
 		return nil, nil, nil, adviceStatus, adviceList, nil, err
 	}
@@ -1734,7 +1714,7 @@ func getReadOnlyDataSource(instance *store.InstanceMessage) *store.DataSourceMes
 // sqlReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
-func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
+func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, changeType v1pb.CheckRequest_ChangeType, environment *store.EnvironmentMessage, instance *store.InstanceMessage, database *store.DatabaseMessage, overrideMetadata *storepb.DatabaseSchemaMetadata) (advisor.Status, []*v1pb.Advice, error) {
 	if !IsSQLReviewSupported(instance.Engine) || database == nil {
 		return advisor.Success, nil, nil
 	}
@@ -1783,10 +1763,10 @@ func (s *SQLService) sqlReviewCheck(ctx context.Context, statement string, envir
 	adviceLevel, adviceList, err := s.sqlCheck(
 		ctx,
 		instance.Engine,
-		dbMetadata.CharacterSet,
-		dbMetadata.Collation,
+		dbMetadata,
 		environment.UID,
 		statement,
+		changeType,
 		catalog,
 		connection,
 		currentSchema,
@@ -1831,10 +1811,10 @@ func convertAdviceStatus(status advisor.Status) v1pb.Advice_Status {
 func (s *SQLService) sqlCheck(
 	ctx context.Context,
 	dbType storepb.Engine,
-	dbCharacterSet string,
-	dbCollation string,
+	dbSchema *storepb.DatabaseSchemaMetadata,
 	environmentID int,
 	statement string,
+	changeType v1pb.CheckRequest_ChangeType,
 	catalog catalog.Catalog,
 	driver *sql.DB,
 	currentSchema string,
@@ -1850,8 +1830,10 @@ func (s *SQLService) sqlCheck(
 	}
 
 	res, err := advisor.SQLReviewCheck(statement, policy.RuleList, advisor.SQLReviewCheckContext{
-		Charset:         dbCharacterSet,
-		Collation:       dbCollation,
+		Charset:         dbSchema.CharacterSet,
+		Collation:       dbSchema.Collation,
+		ChangeType:      convertChangeType(changeType),
+		DBSchema:        dbSchema,
 		DbType:          dbType,
 		Catalog:         catalog,
 		Driver:          driver,
@@ -1885,12 +1867,12 @@ func (s *SQLService) sqlCheck(
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken string, databaseName string) (*store.UserMessage, *store.EnvironmentMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	instance, err := s.getInstanceMessage(ctx, instanceToken)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	var database *store.DatabaseMessage
@@ -1904,7 +1886,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, instanceToken st
 			return nil, nil, nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
 		}
 		if database == nil {
-			return nil, nil, nil, nil, errors.Errorf("database %q not found", databaseName)
+			return nil, nil, nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 		}
 	}
 
@@ -2359,13 +2341,6 @@ func (s *SQLService) checkQueryRights(
 	instance *store.InstanceMessage,
 	isExport bool,
 ) error {
-	// Owner and DBA have all rights.
-	if !s.profile.DevelopmentIAM {
-		if user.Role == api.WorkspaceAdmin || user.Role == api.WorkspaceDBA {
-			return nil
-		}
-	}
-
 	// TODO(d): use a Redshift extraction for shared database.
 	extractingStatement := statement
 	if datashare {
@@ -2416,7 +2391,7 @@ func (s *SQLService) checkQueryRights(
 	if len(databaseMessageMap) == 0 && project == nil {
 		project, _, err = s.getProjectAndDatabaseMessage(ctx, instance, databaseName)
 		if err != nil {
-			return err
+			return status.Errorf(codes.Internal, err.Error())
 		}
 	}
 
@@ -2429,7 +2404,7 @@ func (s *SQLService) checkQueryRights(
 
 	projectPolicy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
 	if err != nil {
-		return err
+		return status.Errorf(codes.Internal, err.Error())
 	}
 
 	for _, resource := range resourceList {
@@ -2443,7 +2418,7 @@ func (s *SQLService) checkQueryRights(
 			"request.row_limit": limit,
 		}
 
-		ok, err := s.hasDatabaseAccessRights(user, projectPolicy, attributes, isExport)
+		ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy, attributes, isExport)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to check access control for database: %q", resource.Database)
 		}
@@ -2455,85 +2430,51 @@ func (s *SQLService) checkQueryRights(
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
-	if s.profile.DevelopmentIAM {
-		return func() (bool, error) {
-			wantPermission := iam.PermissionDatabasesQuery
-			if isExport {
-				wantPermission = iam.PermissionDatabasesExport
-			}
-
-			for _, role := range user.Roles {
-				permissions := s.iamManager.GetPermissions(common.FormatRole(role.String()))
-				if slices.Contains(permissions, wantPermission) {
-					return true, nil
-				}
-			}
-
-			for _, binding := range projectPolicy.Bindings {
-				role := common.FormatRole(binding.Role.String())
-				permissions := s.iamManager.GetPermissions(role)
-				if !slices.Contains(permissions, wantPermission) {
-					continue
-				}
-				hasUser := false
-				for _, member := range binding.Members {
-					if member.ID == user.ID || member.Email == api.AllUsers {
-						hasUser = true
-						break
-					}
-				}
-				if !hasUser {
-					continue
-				}
-				ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
-				if err != nil {
-					slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
-					continue
-				}
-				if ok {
-					return true, nil
-				}
-			}
-			return false, nil
-		}()
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *store.IAMPolicyMessage, attributes map[string]any, isExport bool) (bool, error) {
+	wantPermission := iam.PermissionDatabasesQuery
+	if isExport {
+		wantPermission = iam.PermissionDatabasesExport
 	}
 
-	// TODO(rebelice): implement table-level query permission check and refactor this function.
-	// Project IAM policy evaluation.
-	pass := false
-	for _, binding := range projectPolicy.Bindings {
-		// Project owner has all permissions.
-		if binding.Role == api.ProjectOwner {
-			for _, member := range binding.Members {
-				if member.ID == user.ID || member.Email == api.AllUsers {
-					pass = true
-					break
-				}
-			}
+	for _, role := range user.Roles {
+		permissions, err := s.iamManager.GetPermissions(ctx, common.FormatRole(role.String()))
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get permissions")
 		}
-		if !((isExport && binding.Role == api.ProjectExporter) || (!isExport && binding.Role == api.ProjectQuerier)) {
+		if slices.Contains(permissions, wantPermission) {
+			return true, nil
+		}
+	}
+
+	for _, binding := range projectPolicy.Bindings {
+		role := common.FormatRole(binding.Role.String())
+		permissions, err := s.iamManager.GetPermissions(ctx, role)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to get permissions")
+		}
+		if !slices.Contains(permissions, wantPermission) {
 			continue
 		}
+		hasUser := false
 		for _, member := range binding.Members {
-			if member.ID != user.ID && member.Email != api.AllUsers {
-				continue
-			}
-			ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
-			if err != nil {
-				slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.Expression))
-				break
-			}
-			if ok {
-				pass = true
+			if member.ID == user.ID || member.Email == api.AllUsers {
+				hasUser = true
 				break
 			}
 		}
-		if pass {
-			break
+		if !hasUser {
+			continue
+		}
+		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.GetExpression(), attributes)
+		if err != nil {
+			slog.Error("failed to evaluate condition", log.BBError(err), slog.String("condition", binding.Condition.GetExpression()))
+			continue
+		}
+		if ok {
+			return true, nil
 		}
 	}
-	return pass, nil
+	return false, nil
 }
 
 func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {
@@ -2716,4 +2657,17 @@ func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewR
 	return &v1pb.DifferPreviewResponse{
 		Schema: schema,
 	}, nil
+}
+
+func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfig_ChangeDatabaseType {
+	switch t {
+	case v1pb.CheckRequest_DDL:
+		return storepb.PlanCheckRunConfig_DDL
+	case v1pb.CheckRequest_DDL_GHOST:
+		return storepb.PlanCheckRunConfig_DDL_GHOST
+	case v1pb.CheckRequest_DML:
+		return storepb.PlanCheckRunConfig_DML
+	default:
+		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
+	}
 }

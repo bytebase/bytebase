@@ -88,7 +88,7 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 	mux := http.NewServeMux()
 
 	var openidConfig map[string]any
-	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		err := json.NewEncoder(w).Encode(openidConfig)
 		require.NoError(t, err)
@@ -117,7 +117,7 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 		})
 		require.NoError(t, err)
 	})
-	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write(userinfo)
 		require.NoError(t, err)
@@ -125,7 +125,7 @@ func newMockServer(t *testing.T, tls bool, clientID, code, accessToken, nonce st
 
 	rs256, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
-	mux.HandleFunc("/oauth/discovery/keys", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/oauth/discovery/keys", func(w http.ResponseWriter, _ *http.Request) {
 		key, err := jwk.FromRaw(rs256.PublicKey)
 		require.NoError(t, err)
 

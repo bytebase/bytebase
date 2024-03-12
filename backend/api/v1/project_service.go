@@ -75,24 +75,12 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 
 // ListProjects lists all projects.
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
 	for _, project := range projects {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !s.profile.DevelopmentIAM && !isOwnerOrDBA(user) && !isProjectMember(user.ID, policy) {
-			continue
-		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
@@ -370,9 +358,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 	roleMessages, err := s.store.ListRoles(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to list roles: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
 	}
-	if err := validateIAMPolicy(request.Policy, convertToRoles(s.iamManager, roleMessages)); err != nil {
+	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
+	}
+	if err := validateIAMPolicy(request.Policy, roles); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -1802,22 +1794,12 @@ func (s *ProjectService) ListDatabaseGroups(ctx context.Context, request *v1pb.L
 		if project.Deleted {
 			continue
 		}
-		if s.profile.DevelopmentIAM {
-			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-			}
-			if !ok {
-				continue
-			}
-		} else {
-			policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-			if !isOwnerOrDBA(user) && !isProjectOwnerOrDeveloper(user.ID, policy) {
-				continue
-			}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+		}
+		if !ok {
+			continue
 		}
 		apiDatabaseGroups = append(apiDatabaseGroups, convertStoreToAPIDatabaseGroupBasic(databaseGroup, project.ResourceID))
 	}
@@ -2068,22 +2050,12 @@ func (s *ProjectService) ListSchemaGroups(ctx context.Context, request *v1pb.Lis
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectResourceID)
 	}
 
-	if s.profile.DevelopmentIAM {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionProjectsGet)
-		}
-	} else {
-		policy, err := s.store.GetProjectPolicy(ctx, &store.GetProjectPolicyMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		if !isOwnerOrDBA(user) && !isProjectOwnerOrDeveloper(user.ID, policy) {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied")
-		}
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied, user does not have permission %q", iam.PermissionProjectsGet)
 	}
 
 	databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
@@ -3054,18 +3026,6 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
-}
-
-// TODO(p0ny): remove this function after iam migration.
-func isProjectMember(userID int, policy *store.IAMPolicyMessage) bool {
-	for _, binding := range policy.Bindings {
-		for _, member := range binding.Members {
-			if member.ID == userID || member.Email == api.AllUsers {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func convertToProjectGitOpsInfo(repository *store.RepositoryMessage) *v1pb.ProjectGitOpsInfo {

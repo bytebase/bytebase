@@ -90,3 +90,11 @@
       content: WHERE clause is required for SELECT statement.
       line: 2
       details: ""
+- statement: SELECT 1;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""

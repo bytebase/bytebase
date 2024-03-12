@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "显示默认参数",
-      "hide-default-parameters": "隐藏默认参数"
+      "hide-default-parameters": "隐藏默认参数",
+      "enable": "启用在线大表变更"
     },
     "prior-backup-tips": "提前备份受影响的数据"
   },
@@ -1182,7 +1183,9 @@
     },
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
-    "preview": "预览工单"
+    "preview": "预览工单",
+    "missing-sql-statement": "SQL 语句缺失。要将此更改应用于所有任务，请单击 “@:{'issue.apply-to-other-tasks'}” 按钮。",
+    "task-summary-tooltip": "{failed} 个任务失败"
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
@@ -1539,7 +1542,7 @@
     "transfer-project": "转移项目",
     "unassign": "取消分配",
     "unassign-alert-title": "取消分配数据库",
-    "unassign-alert-description": "选定的数据库将从其项目中转出",
+    "unassign-alert-description": "选定的数据库将从项目中移除",
     "edit-schema": "变更 Schema",
     "edit-schema-in-vcs": "变更 Schema (VCS)",
     "edit-labels": "编辑标签",
@@ -1749,7 +1752,8 @@
     "partition-tables": "分区表",
     "external-server-name": "外部服务器名称",
     "external-database-name": "外部数据库名称",
-    "foreign-table-detail": "外部表详情"
+    "foreign-table-detail": "外部表详情",
+    "view-definition": "查看定义"
   },
   "repository": {
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
@@ -2187,7 +2191,8 @@
     "delete-read-only-data-source": "删除只读数据源",
     "connection-string-schema": "连接串模式",
     "admin": "主库",
-    "read-only": "从库"
+    "read-only": "从库",
+    "snowflake-keypair-tip": "密钥对认证"
   },
   "setting": {
     "project": {

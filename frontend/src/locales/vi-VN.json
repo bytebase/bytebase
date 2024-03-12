@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "Hiển thị thông số mặc định",
-      "hide-default-parameters": "Ẩn thông số mặc định"
+      "hide-default-parameters": "Ẩn thông số mặc định",
+      "enable": "Cho phép di chuyển trực tuyến"
     },
     "prior-backup-tips": "Sao lưu trước dữ liệu bị ảnh hưởng"
   },
@@ -1182,7 +1183,9 @@
     },
     "unfinished-resolved-issue-tips": "Sự cố này được đánh dấu là \"Xong\" nhưng một số tác vụ của nó không được thực thi thành công.",
     "some-tasks-are-not-executed-successfully": "(Một số tác vụ không được thực hiện thành công)",
-    "preview": "Vấn đề xem trước"
+    "preview": "Vấn đề xem trước",
+    "missing-sql-statement": "Câu lệnh SQL không tồn tại. Để áp dụng thay đổi này cho tất cả các nhiệm vụ, nhấn vào nút '@:{'issue.apply-to-other-tasks'}'.",
+    "task-summary-tooltip": "nhiệm vụ {failed} không thành công | \n{failed} nhiệm vụ không thành công"
   },
   "alter-schema": {
     "vcs-enabled": "Dự án này đã kích hoạt tính năng kiểm soát phiên bản dựa trên VCS và việc chọn cơ sở dữ liệu bên dưới sẽ điều hướng bạn đến kho lưu trữ Git tương ứng để bắt đầu quá trình thay đổi.",
@@ -1540,7 +1543,7 @@
     "transfer-project": "Dự án chuyển nhượng",
     "unassign": "Bỏ chỉ định",
     "unassign-alert-title": "Bỏ gán cơ sở dữ liệu",
-    "unassign-alert-description": "Cơ sở dữ liệu được chọn sẽ chuyển ra khỏi dự án của họ",
+    "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ được gỡ bỏ khỏi dự án",
     "edit-schema": "Chỉnh sửa lược đồ",
     "edit-schema-in-vcs": "Chỉnh sửa lược đồ trong VCS",
     "edit-labels": "Chỉnh sửa nhãn",
@@ -1749,7 +1752,8 @@
     "partition-tables": "Bảng phân vùng",
     "external-server-name": "Tên máy chủ bên ngoài",
     "external-database-name": "Tên cơ sở dữ liệu bên ngoài",
-    "foreign-table-detail": "Chi tiết bảng nước ngoài"
+    "foreign-table-detail": "Chi tiết bảng nước ngoài",
+    "view-definition": "Xem định nghĩa"
   },
   "repository": {
     "our-webhook-link": "Bạn có thể tìm thấy webhook do Bytebase tạo tại {webhookLink}.",
@@ -2187,7 +2191,8 @@
     "delete-read-only-data-source": "Xóa nguồn dữ liệu chỉ đọc",
     "connection-string-schema": "Lược đồ chuỗi kết nối",
     "admin": "Quản trị viên",
-    "read-only": "RO"
+    "read-only": "RO",
+    "snowflake-keypair-tip": "Xác thực cặp khóa"
   },
   "setting": {
     "project": {

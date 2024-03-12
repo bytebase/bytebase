@@ -336,6 +336,9 @@ message DataSource {
   string ssh_password = 18 [(google.api.field_behavior) = INPUT_ONLY];
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
   string ssh_private_key = 19 [(google.api.field_behavior) = INPUT_ONLY];
+  // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
+  // Used for authentication when connecting to the data source.
+  string authentication_private_key = 20 [(google.api.field_behavior) = INPUT_ONLY];
 }
 
 enum DataSourceType {

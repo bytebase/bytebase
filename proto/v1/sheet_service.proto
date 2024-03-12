@@ -72,8 +72,6 @@ message UpdateSheetRequest {
   // Only support update the following fields for now:
   // - `title`
   // - `statement`
-  // - `starred`
-  // - `visibility`
   google.protobuf.FieldMask update_mask = 2;
 }
 

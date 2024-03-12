@@ -22,6 +22,8 @@ import (
 
 const (
 	pgUnknownFieldName = "?column?"
+	generateSeries     = "generate_series"
+	generateSubscripts = "generate_subscripts"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -228,22 +230,45 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 			Schema:   &schemaName,
 		}
 	}
+	// find user defined function.
 	function := schema.GetFunction(funcName)
-	if function == nil {
-		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
-			Schema:   &schemaName,
-			Function: &funcName,
+	if function != nil {
+		columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
+		if err != nil {
+			return nil, err
 		}
+		return &base.PseudoTable{
+			Columns: columns,
+		}, nil
+	}
+	// find system function.
+	// https://www.postgresql.org/docs/current/functions-srf.html.
+	switch funcName {
+	case generateSeries:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSeries,
+					SourceColumns: make(base.SourceColumnSet),
+				},
+			},
+		}, nil
+	case generateSubscripts:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{
+				{
+					Name:          generateSubscripts,
+					SourceColumns: make(base.SourceColumnSet),
+				},
+			},
+		}, nil
 	}
 
-	columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
-	if err != nil {
-		return nil, err
+	return nil, &parsererror.ResourceNotFoundError{
+		Database: &q.connectedDB,
+		Schema:   &schemaName,
+		Function: &funcName,
 	}
-	return &base.PseudoTable{
-		Columns: columns,
-	}, nil
 }
 
 type languageType int

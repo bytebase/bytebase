@@ -368,7 +368,7 @@ func (extractor *fieldExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockCo
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
 			if element.ASTERISK() != nil {
-				schemaName, tableName := normalizeTableViewName(extractor.currentDatabase, element.Tableview_name())
+				schemaName, tableName := NormalizeTableViewName(extractor.currentDatabase, element.Tableview_name())
 				for _, field := range fromFieldList {
 					if schemaName == field.Database && field.Table == tableName {
 						result = append(result, field)
@@ -1163,7 +1163,7 @@ func (extractor *fieldExtractor) plsqlExtractTableRefAuxInternal(ctx plsql.ITabl
 func (extractor *fieldExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml_table_expression_clauseContext) ([]base.FieldInfo, error) {
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
-		schema, table := normalizeTableViewName(extractor.currentDatabase, tableViewName)
+		schema, table := NormalizeTableViewName(extractor.currentDatabase, tableViewName)
 		tableSchema, err := extractor.plsqlFindTableSchema(schema, table)
 		if err != nil {
 			return nil, err
@@ -1279,24 +1279,6 @@ func normalizeTableAlias(ctx plsql.ITable_aliasContext) string {
 	}
 
 	return ""
-}
-
-// normalizeTableViewName normalizes the table name and schema name.
-// Return empty string if it's xml table.
-func normalizeTableViewName(currentSchema string, ctx plsql.ITableview_nameContext) (string, string) {
-	if ctx.Identifier() == nil {
-		return "", ""
-	}
-
-	identifier := NormalizeIdentifierContext(ctx.Identifier())
-
-	if ctx.Id_expression() == nil {
-		return currentSchema, identifier
-	}
-
-	idExpression := NormalizeIDExpression(ctx.Id_expression())
-
-	return identifier, idExpression
 }
 
 func normalizeClusterName(ctx plsql.ICluster_nameContext) (string, string) {

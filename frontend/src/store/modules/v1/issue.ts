@@ -8,6 +8,7 @@ import {
   ComposedIssue,
   IssueFilter,
   PresetRoleType,
+  UNKNOWN_PROJECT_NAME,
 } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import {
@@ -16,13 +17,14 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import { memberListInProjectV1 } from "@/utils";
+import { extractProjectResourceName, memberListInProjectV1 } from "@/utils";
 import { useUserStore } from "../user";
 import { useActivityV1Store } from "./activity";
 import {
   experimentalFetchIssueByName,
   shallowComposeIssue,
 } from "./experimental-issue";
+import { useProjectV1Store } from "./project";
 
 export type ListIssueParams = {
   find: IssueFilter;
@@ -134,8 +136,17 @@ export const useIssueV1Store = defineStore("issue_v1", () => {
       pageToken,
     });
 
+    const projectStore = useProjectV1Store();
+    const issues = resp.issues.filter((issue) => {
+      const proj = extractProjectResourceName(issue.name);
+      return (
+        projectStore.getProjectByName(`projects/${proj}`).name !==
+        UNKNOWN_PROJECT_NAME
+      );
+    });
+
     const composedIssues = await Promise.all(
-      resp.issues.map((issue) => shallowComposeIssue(issue))
+      issues.map((issue) => shallowComposeIssue(issue))
     );
     return {
       nextPageToken: resp.nextPageToken,

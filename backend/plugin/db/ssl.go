@@ -42,7 +42,7 @@ func (tc TLSConfig) GetSslConfig() (*tls.Config, error) {
 	}
 
 	cfg.InsecureSkipVerify = true
-	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+	cfg.VerifyPeerCertificate = func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
 		if len(rawCerts) == 0 {
 			return errors.Errorf("empty certificate to verify")
 		}

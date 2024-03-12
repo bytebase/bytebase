@@ -132,7 +132,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 }
 
 // SetSetting set the setting by name.
-func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettingRequest) (*v1pb.Setting, error) {
+func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.UpdateSettingRequest) (*v1pb.Setting, error) {
 	settingName, err := common.GetSettingName(request.Setting.Name)
 	if err != nil {
 		return nil, err
@@ -144,6 +144,16 @@ func (s *SettingService) SetSetting(ctx context.Context, request *v1pb.SetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
 	apiSettingName := api.SettingName(settingName)
+
+	existedSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name: &apiSettingName,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", settingName, err)
+	}
+	if existedSetting == nil && !request.AllowMissing {
+		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+	}
 
 	var storeSettingValue string
 	switch apiSettingName {

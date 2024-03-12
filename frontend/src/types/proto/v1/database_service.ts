@@ -502,17 +502,46 @@ export interface TablePartitionMetadata {
   name: string;
   /** The type of a table partition. */
   type: TablePartitionMetadata_Type;
-  /** The expression is the expression of a table partition. */
+  /**
+   * The expression is the expression of a table partition.
+   * For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
+   * For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+   * PARTITION BY
+   *    { [LINEAR] HASH(expr)
+   *    | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
+   *    | RANGE{(expr) | COLUMNS(column_list)}
+   *    | LIST{(expr) | COLUMNS(column_list)} }.
+   */
   expression: string;
+  /**
+   * The value is the value of a table partition.
+   * For MySQL, the value is for RANGE and LIST partition types,
+   * - For a RANGE partition, it contains the value set in the partition's VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+   * - For a LIST partition, this column contains the values defined in the partition's VALUES IN clause, which is a list of comma-separated integer values.
+   * - For others, it's an empty string.
+   */
+  value: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
 }
 
+/**
+ * Type is the type of a table partition, some database engines may not support all types.
+ * Only avilable for the following database engines now:
+ * MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+ * TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
+ * PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
+ */
 export enum TablePartitionMetadata_Type {
   TYPE_UNSPECIFIED = 0,
   RANGE = 1,
-  LIST = 2,
-  HASH = 3,
+  RANGE_COLUMNS = 2,
+  LIST = 3,
+  LIST_COLUMNS = 4,
+  HASH = 5,
+  LINEAR_HASH = 6,
+  KEY = 7,
+  LINEAR_KEY = 8,
   UNRECOGNIZED = -1,
 }
 
@@ -525,11 +554,26 @@ export function tablePartitionMetadata_TypeFromJSON(object: any): TablePartition
     case "RANGE":
       return TablePartitionMetadata_Type.RANGE;
     case 2:
+    case "RANGE_COLUMNS":
+      return TablePartitionMetadata_Type.RANGE_COLUMNS;
+    case 3:
     case "LIST":
       return TablePartitionMetadata_Type.LIST;
-    case 3:
+    case 4:
+    case "LIST_COLUMNS":
+      return TablePartitionMetadata_Type.LIST_COLUMNS;
+    case 5:
     case "HASH":
       return TablePartitionMetadata_Type.HASH;
+    case 6:
+    case "LINEAR_HASH":
+      return TablePartitionMetadata_Type.LINEAR_HASH;
+    case 7:
+    case "KEY":
+      return TablePartitionMetadata_Type.KEY;
+    case 8:
+    case "LINEAR_KEY":
+      return TablePartitionMetadata_Type.LINEAR_KEY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -543,10 +587,20 @@ export function tablePartitionMetadata_TypeToJSON(object: TablePartitionMetadata
       return "TYPE_UNSPECIFIED";
     case TablePartitionMetadata_Type.RANGE:
       return "RANGE";
+    case TablePartitionMetadata_Type.RANGE_COLUMNS:
+      return "RANGE_COLUMNS";
     case TablePartitionMetadata_Type.LIST:
       return "LIST";
+    case TablePartitionMetadata_Type.LIST_COLUMNS:
+      return "LIST_COLUMNS";
     case TablePartitionMetadata_Type.HASH:
       return "HASH";
+    case TablePartitionMetadata_Type.LINEAR_HASH:
+      return "LINEAR_HASH";
+    case TablePartitionMetadata_Type.KEY:
+      return "KEY";
+    case TablePartitionMetadata_Type.LINEAR_KEY:
+      return "LINEAR_KEY";
     case TablePartitionMetadata_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -4069,7 +4123,7 @@ export const TableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", subpartitions: [] };
+  return { name: "", type: 0, expression: "", value: "", subpartitions: [] };
 }
 
 export const TablePartitionMetadata = {
@@ -4083,8 +4137,11 @@ export const TablePartitionMetadata = {
     if (message.expression !== "") {
       writer.uint32(26).string(message.expression);
     }
+    if (message.value !== "") {
+      writer.uint32(34).string(message.value);
+    }
     for (const v of message.subpartitions) {
-      TablePartitionMetadata.encode(v!, writer.uint32(34).fork()).ldelim();
+      TablePartitionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -4122,6 +4179,13 @@ export const TablePartitionMetadata = {
             break;
           }
 
+          message.value = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
           message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
       }
@@ -4138,6 +4202,7 @@ export const TablePartitionMetadata = {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
+      value: isSet(object.value) ? globalThis.String(object.value) : "",
       subpartitions: globalThis.Array.isArray(object?.subpartitions)
         ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
         : [],
@@ -4155,6 +4220,9 @@ export const TablePartitionMetadata = {
     if (message.expression !== "") {
       obj.expression = message.expression;
     }
+    if (message.value !== "") {
+      obj.value = message.value;
+    }
     if (message.subpartitions?.length) {
       obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
@@ -4169,6 +4237,7 @@ export const TablePartitionMetadata = {
     message.name = object.name ?? "";
     message.type = object.type ?? 0;
     message.expression = object.expression ?? "";
+    message.value = object.value ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     return message;
   },

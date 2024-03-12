@@ -6,7 +6,7 @@ import { DatabaseId, DataSourceId, InstanceId } from "./id";
 export type DataSourceType = "ADMIN" | "RW" | "RO";
 
 // DataSourceOptions is the options for a data source.
-export type DataSourceOptions = {
+export interface DataSourceOptions {
   srv: boolean;
   authenticationDatabase: string;
   // sid and serviceName are used for Oracle database. Required one of them.
@@ -18,7 +18,8 @@ export type DataSourceOptions = {
   sshUser: string;
   sshPassword: string;
   sshPrivateKey: string;
-};
+  authenticationPrivateKey: string;
+}
 
 export type DataSource = {
   id: DataSourceId;

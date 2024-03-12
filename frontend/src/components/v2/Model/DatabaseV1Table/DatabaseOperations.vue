@@ -68,7 +68,7 @@
   <BBAlert
     v-model:show="state.showUnassignAlert"
     type="warning"
-    :ok-text="$t('database.unassign')"
+    :ok-text="$t('common.confirm')"
     :title="$t('database.unassign-alert-title')"
     :description="$t('database.unassign-alert-description')"
     @ok="
@@ -121,6 +121,7 @@ import {
   generateIssueName,
   hasProjectPermissionV2,
   extractProjectResourceName,
+  hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 
 interface DatabaseAction {
@@ -236,12 +237,14 @@ const databaseSupportAlterSchema = computed(() => {
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
-    return canEditDatabase(db, "bb.issues.create");
+    return hasPermissionToCreateChangeDatabaseIssue(db, currentUserV1.value);
   });
 });
 
 const allowChangeData = computed(() => {
-  return props.databases.every((db) => canEditDatabase(db, "bb.issues.create"));
+  return props.databases.every((db) =>
+    hasPermissionToCreateChangeDatabaseIssue(db, currentUserV1.value)
+  );
 });
 
 const allowTransferProject = computed(() => {

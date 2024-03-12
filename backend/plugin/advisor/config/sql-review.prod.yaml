@@ -63,6 +63,12 @@ ruleList:
     level: WARNING
   - type: statement.check-set-role-variable
     level: WARNING
+  - type: statement.disallow-using-filesort
+    level: WARNING
+  - type: statement.disallow-using-temporary
+    level: WARNING
+  - type: statement.where.no-equal-null
+    level: WARNING
   - type: naming.table
     level: WARNING
     payload:
@@ -201,6 +207,12 @@ ruleList:
         - BIGINT
   - type: index.create-concurrently
     level: WARNING
+  - type: index.type-allow-list
+    level: WARNING
+    payload:
+      list:
+        - BTREE
+        - HASH
   - type: system.charset.allowlist
     level: ERROR
     payload:
@@ -223,3 +235,14 @@ ruleList:
     level: WARNING
   - type: system.function.disallow-create
     level: WARNING
+  - type: system.function.disallowed-list
+    level: WARNING
+    payload:
+      list:
+        - RAND
+        - UUID
+        - SLEEP
+  - type: advice.online-migration
+    level: ERROR
+    payload:
+      number: 100000000

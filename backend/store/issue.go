@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -33,16 +34,17 @@ func init() {
 
 // IssueMessage is the mssage for issues.
 type IssueMessage struct {
-	Project     *ProjectMessage
-	Title       string
-	Status      api.IssueStatus
-	Type        api.IssueType
-	Description string
-	Assignee    *UserMessage
-	Payload     *storepb.IssuePayload
-	Subscribers []*UserMessage
-	PipelineUID *int
-	PlanUID     *int64
+	Project         *ProjectMessage
+	Title           string
+	Status          api.IssueStatus
+	Type            api.IssueType
+	Description     string
+	Assignee        *UserMessage
+	Payload         *storepb.IssuePayload
+	Subscribers     []*UserMessage
+	PipelineUID     *int
+	PlanUID         *int64
+	TaskStatusCount map[string]int32
 
 	// The following fields are output only and not used for create().
 	UID         int
@@ -477,9 +479,34 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.description,
 		issue.assignee_id,
 		issue.payload,
-		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers
+		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers,
+		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
 	FROM %s
 	LEFT JOIN project ON issue.project_id = project.id
+	LEFT JOIN LATERAL (
+		SELECT
+			jsonb_object_agg(t.status, t.count) AS status_count
+		FROM (
+			SELECT
+				t.status,
+				count(*) AS count
+			FROM (
+				SELECT
+					CASE COALESCE((task.payload->>'skipped')::BOOLEAN, FALSE)
+						WHEN TRUE THEN 'SKIPPED'
+						ELSE latest_task_run.status
+					END AS status
+				FROM task
+				LEFT JOIN LATERAL(
+					SELECT COALESCE(
+						(SELECT task_run.status FROM task_run WHERE task_run.task_id = task.id ORDER BY task_run.id DESC LIMIT 1), 'NOT_STARTED'
+					) AS status
+				) AS latest_task_run ON TRUE
+				WHERE task.pipeline_id = issue.pipeline_id
+			) AS t
+			GROUP BY t.status
+		) AS t
+	) AS task_run_status_count ON TRUE
 	WHERE %s
 	%s
 	%s`, from, strings.Join(where, " AND "), orderByClause, limitOffsetClause)
@@ -495,6 +522,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		var payload []byte
 		var subscriberUIDs pgtype.Int4Array
+		var taskRunStatusCount []byte
 		if err := rows.Scan(
 			&issue.UID,
 			&issue.creatorUID,
@@ -511,6 +539,7 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.assigneeUID,
 			&payload,
 			&subscriberUIDs,
+			&taskRunStatusCount,
 		); err != nil {
 			return nil, err
 		}
@@ -519,6 +548,9 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		}
 		if err := protojson.Unmarshal(payload, issue.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal issue payload")
+		}
+		if err := json.Unmarshal(taskRunStatusCount, &issue.TaskStatusCount); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal task run status count")
 		}
 		issues = append(issues, &issue)
 	}

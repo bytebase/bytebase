@@ -52,7 +52,8 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		advisor.SchemaRuleStatementDMLDryRun,
+		// advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleStatementWhereNoEqualNull,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
@@ -119,7 +120,10 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleIndexTypeNoBlob,
 		// advisor.SchemaRuleIndexTotalNumberLimit enforce the index total number limit.
 		advisor.SchemaRuleIndexTotalNumberLimit,
+		// advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist enforce the primary key type allowlist.
 		advisor.SchemaRuleIndexPrimaryKeyTypeAllowlist,
+		// advisor.SchemaRuleIndexTypeAllowList enforce the index type allowlist.
+		advisor.SchemaRuleIndexTypeAllowList,
 
 		// System related rules.
 		// advisor.SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
@@ -138,6 +142,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleViewDisallowCreate,
 		// advisor.SchemaRuleFunctionDisallowCreate enforce the disallow create function.
 		advisor.SchemaRuleFunctionDisallowCreate,
+		// advisor.SchemaRuleFunctionDisallowList enforce the function disallow list.
+		advisor.SchemaRuleFunctionDisallowList,
 	}
 
 	for _, rule := range mysqlRules {

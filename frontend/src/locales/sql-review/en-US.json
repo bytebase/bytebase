@@ -20,7 +20,8 @@
     "schema": "Schema",
     "database": "Database",
     "index": "Index",
-    "system": "System"
+    "system": "System",
+    "advice": "Advice"
   },
   "template": {
     "bb-sql-review-prod": "Advanced Template",
@@ -382,6 +383,18 @@
       "title": "Check if Set Role statement at the beginning",
       "description": "Failure to set the role statement properly at the beginning of a session may lead to unauthorized access or improper permissions assignment, potentially compromising data security and integrity. Suggestion error level: Warning"
     },
+    "statement-disallow-using-temporary": {
+      "title": "Prohibit using temporary tables",
+      "description": "Temporary tables are not recommended for use in production environments. They can cause resource contention and performance issues. Suggestion error level: Warning"
+    },
+    "statement-disallow-using-filesort": {
+      "title": "Prohibit using filesort",
+      "description": "Filesort is a resource-intensive operation and may cause serious performance impact. Suggestion error level: Warning"
+    },
+    "statement-where-no-equal-null": {
+      "title": "Prohibit using NULL equality comparison in WHERE clause",
+      "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
+    },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
@@ -433,6 +446,15 @@
       "title": "Enforce concurrent index creation",
       "description": "In PostgreSQL 11 and above, using the standard statement to create an index will cause table locking and unable to write. Using the \"CONCURRENTLY\" mode can avoid this problem. Suggestion error level: Warning"
     },
+    "index-type-allow-list": {
+      "title": "Allowable list of index types",
+      "description": "Different index types have different performance characteristics. For example, B-tree indexes are suitable for range queries, while hash indexes are suitable for equality queries. Suggestion error level: Warning",
+      "component": {
+        "list": {
+          "title": "Allow list"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Allowable list of Charset",
       "description": "The character set determines which characters can be stored in the table. Using the wrong character set may result in certain characters in the application being unable to be stored and displayed correctly, such as CJK and Emoji. Suggested error level: Error",
@@ -475,6 +497,24 @@
     "system-function-disallow-create": {
       "title": "Disallow to create functions",
       "description": "This rule prohibits the creation of functions within the database. Functions provide reusable logic that can simplify queries and enhance data integrity. By disallowing their creation, it helps maintain control over database schema and prevents potential security risks. Suggested error level: Warning"
+    },
+    "system-function-disallowed-list": {
+      "title": "Prohibit the use of certain functions",
+      "description": "This rule restricts the usage of specific functions within the database. By disallowing the use of these functions, it helps maintain data consistency and security. Suggested error level: Warning",
+      "component": {
+        "list": {
+          "title": "Disallow list"
+        }
+      }
+    },
+    "advice-online-migration": {
+      "title": "Advise enabling online migration",
+      "description": "Advise enabling online migration if the migrated table row count exceeds your setting. Suggested error level: Warning",
+      "component": {
+        "number": {
+          "title": "Threshold value"
+        }
+      }
     }
   },
   "level": {

@@ -382,7 +382,7 @@ func (q *querySpanExtractor) extractSelectItem(ctx mysql.ISelectItemContext) ([]
 			return nil, err
 		}
 		if ctx.SelectAlias() != nil {
-			fieldName = NormalizeMySQLIdentifier(ctx.SelectAlias().Identifier())
+			fieldName = NormalizeMySQLSelectAlias(ctx.SelectAlias())
 		} else if fieldName == "" {
 			fieldName = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 		}

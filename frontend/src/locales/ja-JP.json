@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "デフォルトのパラメータを表示する",
-      "hide-default-parameters": "デフォルトパラメータを非表示にする"
+      "hide-default-parameters": "デフォルトパラメータを非表示にする",
+      "enable": "オンライン移行を有効にする"
     },
     "prior-backup-tips": "影響を受けるデータを事前にバックアップする"
   },
@@ -1182,7 +1183,9 @@
     },
     "unfinished-resolved-issue-tips": "この問題は「完了」とマークされていますが、一部のタスクが正常に実行されていません。",
     "some-tasks-are-not-executed-successfully": "（一部のタスクが正常に実行されていません）",
-    "preview": "問題のプレビュー"
+    "preview": "問題のプレビュー",
+    "missing-sql-statement": "SQLステートメントが見つかりません。この変更をすべてのタスクに適用するには、「@:{'issue.apply-to-other-tasks'}」ボタンをクリックしてください。",
+    "task-summary-tooltip": "{failed} タスクが失敗しました | \n{failed} 個のタスクが失敗しました"
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトはVCSベースのバージョン管理が有効になっており、以下のデータベースを選択すると、対応するGitリポジトリに移動して変更プロセスを開始できます。",
@@ -1540,7 +1543,7 @@
     "transfer-project": "プロジェクトの転送",
     "unassign": "アンアサイン",
     "unassign-alert-title": "データベースのアンアサイン",
-    "unassign-alert-description": "選択したデータベースはプロジェクトから転送されます",
+    "unassign-alert-description": "選択されたデータベースはプロジェクトから削除されます",
     "edit-schema": "スキーマの編集",
     "edit-schema-in-vcs": "VCSでスキーマを編集する",
     "edit-labels": "ラベルの編集",
@@ -1749,7 +1752,8 @@
     "partition-tables": "パーティションテーブル",
     "external-server-name": "外部サーバー名",
     "external-database-name": "外部データベース名",
-    "foreign-table-detail": "外部テーブルの詳細"
+    "foreign-table-detail": "外部テーブルの詳細",
+    "view-definition": "ビュー定義"
   },
   "repository": {
     "our-webhook-link": "Bytebaseによって作成されたWebhookは{webhookLink}で見つけることができます。",
@@ -2187,7 +2191,8 @@
     "delete-read-only-data-source": "読み取り専用データソースを削除",
     "connection-string-schema": "接続文字列スキーマ",
     "admin": "管理者",
-    "read-only": "RO"
+    "read-only": "RO",
+    "snowflake-keypair-tip": "キーペア認証"
   },
   "setting": {
     "project": {

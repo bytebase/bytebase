@@ -38,7 +38,7 @@ func TestParseToMetadata(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := ParseToMetadata(t.Schema)
+		result, err := ParseToMetadata("", t.Schema)
 		a.NoError(err)
 		resultText := protojson.Format(result)
 		if record {

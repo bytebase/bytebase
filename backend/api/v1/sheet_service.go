@@ -162,27 +162,25 @@ func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetReque
 	}
 
 	// Check the bb.issues.get permission.
-	if s.profile.DevelopmentIAM {
-		user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-		if !ok {
-			return nil, status.Errorf(codes.Internal, "user not found")
-		}
-		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &sheet.ProjectUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
-		}
-		if project == nil {
-			return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
-		}
-		ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
-		}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		UID: &sheet.ProjectUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project %q", sheet.ProjectUID)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", sheet.ProjectUID)
+	}
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, user, project.ResourceID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to get sheet")
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
@@ -231,7 +229,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 		UID:        &sheetUID,
 		ProjectUID: &project.UID,
-	}, principalID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -253,8 +251,6 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
-		case "title":
-			sheetPatch.Title = &request.Sheet.Title
 		case "content":
 			statement := string(request.Sheet.Content)
 			sheetPatch.Statement = &statement
@@ -293,14 +289,10 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
 	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 		UID:        &sheetUID,
 		ProjectUID: &project.UID,
-	}, principalID)
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -316,11 +308,7 @@ func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteShee
 }
 
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	sheet, err := s.store.GetSheet(ctx, find, principalID)
+	sheet, err := s.store.GetSheet(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
 	}
@@ -345,18 +333,14 @@ func (s *SheetService) canWriteSheet(ctx context.Context, sheet *store.SheetMess
 		return true, nil
 	}
 
-	if sheet.Visibility == store.ProjectSheet {
-		projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
-		if err != nil {
-			return false, err
-		}
-		if len(projectRoles) == 0 {
-			return false, nil
-		}
-		return projectRoles[api.ProjectOwner], nil
+	projectRoles, err := s.findProjectRoles(ctx, sheet.ProjectUID, user)
+	if err != nil {
+		return false, err
 	}
-
-	return false, nil
+	if len(projectRoles) == 0 {
+		return false, nil
+	}
+	return projectRoles[api.ProjectOwner], nil
 }
 
 func (s *SheetService) findProjectRoles(ctx context.Context, projectUID int, user *store.UserMessage) (map[api.Role]bool, error) {
@@ -432,9 +416,6 @@ func convertToStoreSheetMessage(projectUID int, databaseUID *int, creatorID int,
 		CreatorID:   creatorID,
 		Title:       sheet.Title,
 		Statement:   string(sheet.Content),
-		Visibility:  store.ProjectSheet,
-		Source:      store.SheetFromBytebaseArtifact,
-		Type:        store.SheetForSQL,
 	}
 	if sheet.Payload != nil {
 		sheetMessage.Payload = &storepb.SheetPayload{

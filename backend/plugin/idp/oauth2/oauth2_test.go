@@ -98,7 +98,7 @@ func newMockServer(t *testing.T, tls bool, code, accessToken string, userinfo []
 		})
 		require.NoError(t, err)
 	})
-	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/oauth2/userinfo", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, err := w.Write(userinfo)
 		require.NoError(t, err)

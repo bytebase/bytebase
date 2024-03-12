@@ -26,7 +26,7 @@ service SettingService {
     option (google.api.method_signature) = "name";
   }
 
-  rpc SetSetting(SetSettingRequest) returns (Setting) {
+  rpc UpdateSetting(UpdateSettingRequest) returns (Setting) {
     option (google.api.http) = {
       patch: "/v1/{setting.name=settings/*}"
       body: "setting"
@@ -69,14 +69,16 @@ message GetSettingResponse {
   Setting setting = 1;
 }
 
-// The request message for updating a setting.
-message SetSettingRequest {
+// The request message for updating or creating a setting.
+message UpdateSettingRequest {
   // The setting to update.
   Setting setting = 1 [(google.api.field_behavior) = REQUIRED];
 
   // validate_only is a flag to indicate whether to validate the setting value,
   // server would not persist the setting value if it is true.
   bool validate_only = 2;
+
+  bool allow_missing = 3;
 }
 
 // The schema of setting.

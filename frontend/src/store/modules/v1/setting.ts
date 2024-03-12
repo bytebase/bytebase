@@ -90,12 +90,13 @@ export const useSettingV1Store = defineStore("setting_v1", {
       value: SettingValue;
       validateOnly?: boolean;
     }) {
-      const resp = await settingServiceClient.setSetting({
+      const resp = await settingServiceClient.updateSetting({
         setting: {
           name: `${settingNamePrefix}${name}`,
           value,
         },
         validateOnly,
+        allowMissing: true,
       });
       this.settingMapByName.set(resp.name, resp);
       return resp;

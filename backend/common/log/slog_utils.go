@@ -12,7 +12,7 @@ var LogLevel = new(slog.LevelVar)
 
 // https://sourcegraph.com/github.com/uber-go/zap/-/blob/zapcore/entry.go?L117
 // Replace is the default replace attribute.
-var Replace = func(groups []string, a slog.Attr) slog.Attr {
+var Replace = func(_ []string, a slog.Attr) slog.Attr {
 	if a.Key == slog.SourceKey {
 		if source, ok := a.Value.Any().(*slog.Source); ok {
 			idx := strings.LastIndexByte(source.File, '/')

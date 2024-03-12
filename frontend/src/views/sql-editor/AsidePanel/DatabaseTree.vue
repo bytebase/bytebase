@@ -192,7 +192,7 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
         items.push({
           key: "connect-in-admin-mode",
           label: t("sql-editor.connect-in-admin-mode"),
-          onSelect: () => setConnection(node, { mode: TabMode.Admin }),
+          onSelect: () => setConnection(node, TabMode.Admin),
         });
       }
     }
@@ -309,10 +309,7 @@ const allowAdmin = computed(() =>
 
 const setConnection = (
   node: SQLEditorTreeNode,
-  extra: { sheetName?: string; mode: TabMode } = {
-    sheetName: undefined,
-    mode: TabMode.ReadOnly,
-  }
+  mode: TabMode = TabMode.ReadOnly
 ) => {
   if (node) {
     const { type } = node.meta;
@@ -327,7 +324,7 @@ const setConnection = (
     }
     const coreTab: CoreTabInfo = {
       connection: emptyConnection(),
-      ...extra,
+      mode,
     };
     const conn = coreTab.connection;
     // If selected item is instance node

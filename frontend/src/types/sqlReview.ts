@@ -23,7 +23,8 @@ export type CategoryType =
   | "SCHEMA"
   | "DATABASE"
   | "INDEX"
-  | "SYSTEM";
+  | "SYSTEM"
+  | "ADVICE";
 
 export const LEVEL_LIST = [
   SQLReviewRuleLevel.ERROR,
@@ -151,6 +152,9 @@ export type RuleType =
   | "statement.select-full-table-scan"
   | "statement.create-specify-schema"
   | "statement.check-set-role-variable"
+  | "statement.disallow-using-temporary"
+  | "statement.disallow-using-filesort"
+  | "statement.where.no-equal-null"
   | "schema.backward-compatibility"
   | "database.drop-empty-database"
   | "system.charset.allowlist"
@@ -160,13 +164,15 @@ export type RuleType =
   | "system.event.disallow-create"
   | "system.view.disallow-create"
   | "system.function.disallow-create"
+  | "system.function.disallowed-list"
   | "index.no-duplicate-column"
   | "index.type-no-blob"
   | "index.key-number-limit"
   | "index.total-number-limit"
   | "index.primary-key-type-allowlist"
   | "index.create-concurrently"
-  | "index.pk-type-limit";
+  | "index.pk-type-limit"
+  | "advice.online-migration";
 
 // The naming format rule payload.
 // Used by the backend.
@@ -601,8 +607,10 @@ export const convertPolicyRuleToRuleTemplate = (
     }
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
+    case "index.type-allow-list":
     case "system.charset.allowlist":
-    case "system.collation.allowlist": {
+    case "system.collation.allowlist":
+    case "system.function.disallowed-list": {
       const stringArrayComponent = ruleTemplate.componentList[0];
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
@@ -653,6 +661,7 @@ export const convertPolicyRuleToRuleTemplate = (
     case "index.key-number-limit":
     case "index.total-number-limit":
     case "system.comment.length":
+    case "advice.online-migration":
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -757,8 +766,10 @@ const mergeIndividualConfigAsRule = (
     case "column.required":
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
+    case "index.type-allow-list":
     case "system.charset.allowlist":
-    case "system.collation.allowlist": {
+    case "system.collation.allowlist":
+    case "system.function.disallowed-list": {
       if (!stringArrayPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
@@ -789,6 +800,7 @@ const mergeIndividualConfigAsRule = (
     case "index.key-number-limit":
     case "index.total-number-limit":
     case "system.comment.length":
+    case "advice.online-migration":
       if (!numberPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }

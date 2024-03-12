@@ -47,10 +47,7 @@
           />
         </div>
         <div class="bb-grid-cell !px-1">
-          <IssueStatusIcon
-            :issue-status="issue.status"
-            :task-status="issueTaskStatus(issue)"
-          />
+          <IssueStatusIconWithTaskSummary :issue="issue" />
         </div>
         <div class="bb-grid-cell overflow-hidden">
           <div class="whitespace-nowrap mr-2 text-control">
@@ -149,7 +146,6 @@ import { BBGridColumn } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
-import IssueStatusIcon from "@/components/IssueV1/components/IssueStatusIcon.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -157,14 +153,12 @@ import { useCurrentUserV1 } from "@/store";
 import { type ComposedIssue } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import { Workflow } from "@/types/proto/v1/project_service";
-import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   getHighlightHTMLByRegExp,
   issueSlug,
-  isDatabaseRelatedIssue,
-  activeTaskInRollout,
   extractProjectResourceName,
 } from "@/utils";
+import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
 type Mode = "ALL" | "PROJECT";
 
@@ -262,15 +256,6 @@ const selectedIssueList = computed(() => {
     state.selectedIssueIdList.has(issue.uid)
   );
 });
-
-const issueTaskStatus = (issue: ComposedIssue) => {
-  // For grant request issue, we always show the status as "NOT_STARTED" as task status.
-  if (!isDatabaseRelatedIssue(issue)) {
-    return Task_Status.NOT_STARTED;
-  }
-
-  return activeTaskInRollout(issue.rolloutEntity).status;
-};
 
 const isIssueSelected = (issue: ComposedIssue): boolean => {
   return state.selectedIssueIdList.has(issue.uid);

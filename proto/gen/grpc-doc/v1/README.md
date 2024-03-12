@@ -333,6 +333,7 @@
     - [GrantRequest](#bytebase-v1-GrantRequest)
     - [Issue](#bytebase-v1-Issue)
     - [Issue.Approver](#bytebase-v1-Issue-Approver)
+    - [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry)
     - [IssueComment](#bytebase-v1-IssueComment)
     - [ListIssuesRequest](#bytebase-v1-ListIssuesRequest)
     - [ListIssuesResponse](#bytebase-v1-ListIssuesResponse)
@@ -564,8 +565,8 @@
     - [SchemaTemplateSetting.TableTemplate](#bytebase-v1-SchemaTemplateSetting-TableTemplate)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
     - [SemanticTypeSetting.SemanticType](#bytebase-v1-SemanticTypeSetting-SemanticType)
-    - [SetSettingRequest](#bytebase-v1-SetSettingRequest)
     - [Setting](#bytebase-v1-Setting)
+    - [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest)
     - [Value](#bytebase-v1-Value)
     - [WorkspaceApprovalSetting](#bytebase-v1-WorkspaceApprovalSetting)
     - [WorkspaceApprovalSetting.Rule](#bytebase-v1-WorkspaceApprovalSetting-Rule)
@@ -614,6 +615,7 @@
     - [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse)
   
     - [Advice.Status](#bytebase-v1-Advice-Status)
+    - [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -1986,6 +1988,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_user | [string](#string) |  | The user to login the server. Required. |
 | ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 
 
 
@@ -3484,7 +3487,8 @@ TablePartitionMetadata is the metadata for table partitions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a table partition. |
 | type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
-| expression | [string](#string) |  | The expression is the expression of a table partition. |
+| expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
+| value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
 | subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 
 
@@ -3732,14 +3736,23 @@ The type of the backup.
 <a name="bytebase-v1-TablePartitionMetadata-Type"></a>
 
 ### TablePartitionMetadata.Type
-
+Type is the type of a table partition, some database engines may not support all types.
+Only avilable for the following database engines now:
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
+PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RANGE | 1 |  |
-| LIST | 2 |  |
-| HASH | 3 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
 
 
 
@@ -5609,6 +5622,7 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | grant_request | [GrantRequest](#bytebase-v1-GrantRequest) |  | Used if the issue type is GRANT_REQUEST. |
 | releasers | [string](#string) | repeated | The releasers of the pending stage of the issue rollout, judging from the rollout policy. If the policy is auto rollout, the releasers are the project owners and the issue creator. Format: - roles/workspaceOwner - roles/workspaceDBA - roles/projectOwner - roles/projectReleaser - users/{email} |
 | risk_level | [Issue.RiskLevel](#bytebase-v1-Issue-RiskLevel) |  |  |
+| task_status_count | [Issue.TaskStatusCountEntry](#bytebase-v1-Issue-TaskStatusCountEntry) | repeated | The status count of the issue. Keys are the following: - NOT_STARTED - SKIPPED - PENDING - RUNNING - DONE - FAILED - CANCELED |
 
 
 
@@ -5625,6 +5639,22 @@ The role&#39;s `name` and `instance` field is used to identify the role to updat
 | ----- | ---- | ----- | ----------- |
 | status | [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status) |  | The new status. |
 | principal | [string](#string) |  | Format: users/hello@world.com |
+
+
+
+
+
+
+<a name="bytebase-v1-Issue-TaskStatusCountEntry"></a>
+
+### Issue.TaskStatusCountEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [int32](#int32) |  |  |
 
 
 
@@ -9191,22 +9221,6 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 
 
-<a name="bytebase-v1-SetSettingRequest"></a>
-
-### SetSettingRequest
-The request message for updating a setting.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
-| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
-
-
-
-
-
-
 <a name="bytebase-v1-Setting"></a>
 
 ### Setting
@@ -9219,6 +9233,23 @@ The schema of setting.
 
 - `setting/{setting_name}` For example, &#34;settings/bb.branding.logo&#34; |
 | value | [Value](#bytebase-v1-Value) |  | The value of the setting. |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateSettingRequest"></a>
+
+### UpdateSettingRequest
+The request message for updating or creating a setting.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| setting | [Setting](#bytebase-v1-Setting) |  | The setting to update. |
+| validate_only | [bool](#bool) |  | validate_only is a flag to indicate whether to validate the setting value, server would not persist the setting value if it is true. |
+| allow_missing | [bool](#bool) |  |  |
 
 
 
@@ -9395,7 +9426,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | ----------- | ------------ | ------------- | ------------|
 | ListSettings | [ListSettingsRequest](#bytebase-v1-ListSettingsRequest) | [ListSettingsResponse](#bytebase-v1-ListSettingsResponse) |  |
 | GetSetting | [GetSettingRequest](#bytebase-v1-GetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
-| SetSetting | [SetSettingRequest](#bytebase-v1-SetSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
+| UpdateSetting | [UpdateSettingRequest](#bytebase-v1-UpdateSettingRequest) | [Setting](#bytebase-v1-Setting) |  |
 
  
 
@@ -9507,7 +9538,7 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 | sheet | [Sheet](#bytebase-v1-Sheet) |  | The sheet to update.
 
 The sheet&#39;s `name` field is used to identify the sheet to update. Format: projects/{project}/sheets/{sheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` - `starred` - `visibility` |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the sheet. (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`) Only support update the following fields for now: - `title` - `statement` |
 
 
 
@@ -9621,6 +9652,7 @@ Type of the SheetPayload.
 | statement | [string](#string) |  |  |
 | database | [string](#string) |  | The database name to check against. Format: instances/{instance}/databases/{databaseName} |
 | metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  | The database metadata to check against. It can be used to check against an uncommitted metadata. If not provided, the database metadata will be fetched from the database. |
+| change_type | [CheckRequest.ChangeType](#bytebase-v1-CheckRequest-ChangeType) |  |  |
 
 
 
@@ -9918,6 +9950,20 @@ Type of the SheetPayload.
 | ERROR | 3 |  |
 
 
+
+<a name="bytebase-v1-CheckRequest-ChangeType"></a>
+
+### CheckRequest.ChangeType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGE_TYPE_UNSPECIFIED | 0 |  |
+| DDL | 1 |  |
+| DDL_GHOST | 2 |  |
+| DML | 3 |  |
+
+
  
 
  
@@ -10041,7 +10087,7 @@ When paginating, all other parameters provided to `SearchWorksheets` must match 
 | organizer | [WorksheetOrganizer](#bytebase-v1-WorksheetOrganizer) |  | The organizer to update.
 
 The organizer&#39;s `worksheet` field is used to identify the worksheet. Format: worksheets/{worksheet} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` - `pinned` |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. Fields are specified relative to the worksheet organizer. Only support update the following fields for now: - `starred` |
 
 
 
@@ -10101,7 +10147,6 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | ----- | ---- | ----- | ----------- |
 | worksheet | [string](#string) |  | The name of the worksheet. Format: worksheets/{worksheet} |
 | starred | [bool](#bool) |  | starred means if the worksheet is starred. |
-| pinned | [bool](#bool) |  | pinned means if the worksheet is pinned. |
 
 
 

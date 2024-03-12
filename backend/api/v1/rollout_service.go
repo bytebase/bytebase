@@ -87,12 +87,7 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	projectIDs, err := func() (*[]string, error) {
-		if s.profile.DevelopmentIAM {
-			return getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
-		}
-		return nil, nil
-	}()
+	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
@@ -826,19 +821,17 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
 	}
 
-	if s.profile.DevelopmentIAM {
-		ok, err := func() (bool, error) {
-			if oldPlan.CreatorUID == user.ID {
-				return true, nil
-			}
-			return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
-		}()
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	ok, err = func() (bool, error) {
+		if oldPlan.CreatorUID == user.ID {
+			return true, nil
 		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
-		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionPlansUpdate, user, oldPlan.ProjectID)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update plan")
 	}
 
 	oldSteps := convertToPlanSteps(oldPlan.Config.Steps)
@@ -978,7 +971,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 
 					sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
 						UID: &sheetUID,
-					}, api.SystemBotID)
+					})
 					if err != nil {
 						return status.Errorf(codes.Internal, "failed to get sheet %q: %v", config.ChangeDatabaseConfig.Sheet, err)
 					}
@@ -1191,8 +1184,17 @@ func diffSpecs(oldSteps []*v1pb.Plan_Step, newSteps []*v1pb.Plan_Step) ([]*v1pb.
 
 func validateSteps(steps []*v1pb.Plan_Step) error {
 	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
+	seenID := map[string]bool{}
 	for _, step := range steps {
 		for _, spec := range step.Specs {
+			id := spec.GetId()
+			if id == "" {
+				return errors.Errorf("spec id cannot be empty")
+			}
+			if seenID[id] {
+				return errors.Errorf("found duplicate spec id %q", spec.GetId())
+			}
+			seenID[id] = true
 			if config := spec.GetChangeDatabaseConfig(); config != nil {
 				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
 					databaseTarget++
@@ -1325,9 +1327,6 @@ func (s *RolloutService) createPipeline(ctx context.Context, project *store.Proj
 					ProjectUID: project.UID,
 					Title:      fmt.Sprintf("Sheet for task %v", c.Name),
 					Statement:  c.Statement,
-					Visibility: store.ProjectSheet,
-					Source:     store.SheetFromBytebaseArtifact,
-					Type:       store.SheetForSQL,
 				})
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to create sheet for task %v", c.Name)

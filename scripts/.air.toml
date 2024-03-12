@@ -3,15 +3,14 @@ root = "."
 tmp_dir = ".air"
 
 [build]
-bin = './.air/bytebase --port 8080 --data . --debug --disable-sample --development-iam'
+bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
 ## Use --tags "store.db" to enable SQL query logging against our metadata db.
 ## Use -gcflags="all=-N -l" to disable inlining and optimization
 
 cmd = """
   go build \
   -p=8 \
-  -gcflags="all=-N -l" \
-  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
+  -ldflags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
   --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500

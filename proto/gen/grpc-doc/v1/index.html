@@ -1451,6 +1451,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Issue.TaskStatusCountEntry"><span class="badge">M</span>Issue.TaskStatusCountEntry</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.IssueComment"><span class="badge">M</span>IssueComment</a>
                 </li>
               
@@ -2344,11 +2348,11 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SetSettingRequest"><span class="badge">M</span>SetSettingRequest</a>
+                  <a href="#bytebase.v1.Setting"><span class="badge">M</span>Setting</a>
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Setting"><span class="badge">M</span>Setting</a>
+                  <a href="#bytebase.v1.UpdateSettingRequest"><span class="badge">M</span>UpdateSettingRequest</a>
                 </li>
               
                 <li>
@@ -2528,6 +2532,10 @@
               
                 <li>
                   <a href="#bytebase.v1.Advice.Status"><span class="badge">E</span>Advice.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.CheckRequest.ChangeType"><span class="badge">E</span>CheckRequest.ChangeType</a>
                 </li>
               
               
@@ -6202,6 +6210,14 @@ Required. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). </p></td>
+                </tr>
+              
+                <tr>
+                  <td>authentication_private_key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required.
+Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
             </tbody>
@@ -10209,7 +10225,25 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td>expression</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The expression is the expression of a table partition. </p></td>
+                  <td><p>The expression is the expression of a table partition.
+For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html.
+For MySQL, the expression is the `expr` or `column_list` of the following syntax.
+PARTITION BY
+   { [LINEAR] HASH(expr)
+   | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list)
+   | RANGE{(expr) | COLUMNS(column_list)}
+   | LIST{(expr) | COLUMNS(column_list)} }. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The value is the value of a table partition.
+For MySQL, the value is for RANGE and LIST partition types,
+- For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
+- For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values.
+- For others, it&#39;s an empty string. </p></td>
                 </tr>
               
                 <tr>
@@ -10803,7 +10837,7 @@ The API will default to the BASIC view.</p></td>
         </table>
       
         <h3 id="bytebase.v1.TablePartitionMetadata.Type">TablePartitionMetadata.Type</h3>
-        <p></p>
+        <p>Type is the type of a table partition, some database engines may not support all types.</p><p>Only avilable for the following database engines now:</p><p>MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)</p><p>TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY</p><p>PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -10823,14 +10857,44 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>LIST</td>
+                <td>RANGE_COLUMNS</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>HASH</td>
+                <td>LIST</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LIST_COLUMNS</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>HASH</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LINEAR_HASH</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>KEY</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>LINEAR_KEY</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             
@@ -16060,6 +16124,21 @@ Format:
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>task_status_count</td>
+                  <td><a href="#bytebase.v1.Issue.TaskStatusCountEntry">Issue.TaskStatusCountEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>The status count of the issue.
+Keys are the following:
+- NOT_STARTED
+- SKIPPED
+- PENDING
+- RUNNING
+- DONE
+- FAILED
+- CANCELED </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16089,6 +16168,37 @@ Format:
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Issue.TaskStatusCountEntry">Issue.TaskStatusCountEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -20295,7 +20405,7 @@ The API will default to the BASIC view.</p></td>
               
               <tr>
                 <td>UpdateProjectGitOpsInfo</td>
-                <td>POST</td>
+                <td>PATCH</td>
                 <td>/v1/{project_gitops_info.name=projects/*/gitOpsInfo}</td>
                 <td>*</td>
               </tr>
@@ -20445,7 +20555,7 @@ The API will default to the BASIC view.</p></td>
               
               <tr>
                 <td>UpdateProjectProtectionRules</td>
-                <td>POST</td>
+                <td>PATCH</td>
                 <td>/v1/{protection_rules.name=projects/*/protectionRules}</td>
                 <td>*</td>
               </tr>
@@ -25325,38 +25435,6 @@ Not used. </p></td>
 
         
       
-        <h3 id="bytebase.v1.SetSettingRequest">SetSettingRequest</h3>
-        <p>The request message for updating a setting.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>setting</td>
-                  <td><a href="#bytebase.v1.Setting">Setting</a></td>
-                  <td></td>
-                  <td><p>The setting to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>validate_only</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>validate_only is a flag to indicate whether to validate the setting value,
-server would not persist the setting value if it is true. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Setting">Setting</h3>
         <p>The schema of setting.</p>
 
@@ -25382,6 +25460,45 @@ For example, &#34;settings/bb.branding.logo&#34; </p></td>
                   <td><a href="#bytebase.v1.Value">Value</a></td>
                   <td></td>
                   <td><p>The value of the setting. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</h3>
+        <p>The request message for updating or creating a setting.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>setting</td>
+                  <td><a href="#bytebase.v1.Setting">Setting</a></td>
+                  <td></td>
+                  <td><p>The setting to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>validate_only</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>validate_only is a flag to indicate whether to validate the setting value,
+server would not persist the setting value if it is true. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -25839,8 +25956,8 @@ The external URL is used for:
               </tr>
             
               <tr>
-                <td>SetSetting</td>
-                <td><a href="#bytebase.v1.SetSettingRequest">SetSettingRequest</a></td>
+                <td>UpdateSetting</td>
+                <td><a href="#bytebase.v1.UpdateSettingRequest">UpdateSettingRequest</a></td>
                 <td><a href="#bytebase.v1.Setting">Setting</a></td>
                 <td><p></p></td>
               </tr>
@@ -25886,7 +26003,7 @@ The external URL is used for:
               
               
               <tr>
-                <td>SetSetting</td>
+                <td>UpdateSetting</td>
                 <td>PATCH</td>
                 <td>/v1/{setting.name=settings/*}</td>
                 <td>setting</td>
@@ -26155,9 +26272,7 @@ Fields are specified relative to the sheet.
 (e.g. `title`, `statement`; *not* `sheet.title` or `sheet.statement`)
 Only support update the following fields for now:
 - `title`
-- `statement`
-- `starred`
-- `visibility` </p></td>
+- `statement` </p></td>
                 </tr>
               
             </tbody>
@@ -26478,6 +26593,13 @@ Format: instances/{instance}/databases/{databaseName} </p></td>
                   <td></td>
                   <td><p>The database metadata to check against. It can be used to check against an uncommitted metadata.
 If not provided, the database metadata will be fetched from the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>change_type</td>
+                  <td><a href="#bytebase.v1.CheckRequest.ChangeType">CheckRequest.ChangeType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -27171,6 +27293,41 @@ The types come from the Golang SQL driver. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.CheckRequest.ChangeType">CheckRequest.ChangeType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>CHANGE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DDL_GHOST</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DML</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -27531,8 +27688,7 @@ Format: worksheets/{worksheet} </p></td>
                   <td><p>The list of fields to be updated.
 Fields are specified relative to the worksheet organizer.
 Only support update the following fields for now:
-- `starred`
-- `pinned` </p></td>
+- `starred` </p></td>
                 </tr>
               
             </tbody>
@@ -27710,13 +27866,6 @@ Format: worksheets/{worksheet} </p></td>
                   <td><p>starred means if the worksheet is starred. </p></td>
                 </tr>
               
-                <tr>
-                  <td>pinned</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>pinned means if the worksheet is pinned. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -27877,7 +28026,7 @@ Format: worksheets/{worksheet} </p></td>
               
               <tr>
                 <td>UpdateWorksheetOrganizer</td>
-                <td>PUT</td>
+                <td>PATCH</td>
                 <td>/v1/{organizer.worksheet=worksheets/*}/organizer</td>
                 <td>organizer</td>
               </tr>

@@ -20,7 +20,8 @@
     "schema": "Esquema",
     "database": "Base de datos",
     "index": "Índice",
-    "system": "Sistema"
+    "system": "Sistema",
+    "advice": "Consejo"
   },
   "template": {
     "bb-sql-review-prod": "Plantilla Avanzada",
@@ -382,6 +383,18 @@
       "title": "Verificar si la Declaración de Establecimiento de Rol está al Principio",
       "description": "La falla al establecer correctamente la declaración de rol al principio de una sesión puede llevar a accesos no autorizados o asignación de permisos incorrecta, comprometiendo potencialmente la seguridad e integridad de los datos. Nivel de error: Advertencia"
     },
+    "statement-disallow-using-temporary": {
+      "title": "Prohibir el uso de tablas temporales",
+      "description": "Las tablas temporales pueden causar problemas de rendimiento y de mantenimiento. Nivel de error sugerido: Advertencia"
+    },
+    "statement-disallow-using-filesort": {
+      "title": "Prohibir el uso de filesort",
+      "description": "El uso de filesort puede causar un impacto grave en el rendimiento. Nivel de error sugerido: Advertencia"
+    },
+    "statement-where-no-equal-null": {
+      "title": "Prohibir el uso de comparación de igualdad con NULL en la cláusula WHERE",
+      "description": "El resultado de la comparación de igualdad con NULL siempre es NULL, lo que puede causar resultados inesperados. Nivel de error de sugerencia: Advertencia"
+    },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
       "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
@@ -433,6 +446,15 @@
       "title": "Aplicar creación de índices concurrentes",
       "description": "En PostgreSQL 11 y versiones posteriores, usar la declaración estándar para crear un índice causará un bloqueo de tabla y no permitirá escribir. Usar el modo \"CONCURRENTLY\" puede evitar este problema. Nivel de error sugerido: Advertencia"
     },
+    "index-type-allow-list": {
+      "title": "Lista de tipos de índice permitidos",
+      "description": "Los diferentes tipos de índice tienen diferentes características de rendimiento. Por ejemplo, los índices B-tree son adecuados para consultas de rango, mientras que los índices hash son adecuados para consultas de igualdad. Nivel de error de sugerencia: Advertencia",
+      "component": {
+        "list": {
+          "title": "Lista permitida"
+        }
+      }
+    },
     "system-charset-allowlist": {
       "title": "Lista permitida de juegos de caracteres",
       "description": "El juego de caracteres determina qué caracteres se pueden almacenar en la tabla. El uso de un juego de caracteres incorrecto puede hacer que ciertos caracteres de la aplicación no se puedan almacenar ni mostrar correctamente, como los caracteres CJK y Emoji. Nivel de error sugerido: Error",
@@ -475,6 +497,24 @@
     "system-function-disallow-create": {
       "title": "Prohibición de crear funciones",
       "description": "Esta regla prohíbe la creación de funciones dentro de la base de datos. Las funciones proporcionan lógica reutilizable que puede simplificar las consultas y mejorar la integridad de los datos. Al prohibir su creación, se ayuda a mantener el control sobre el esquema de la base de datos y se previenen posibles riesgos de seguridad. Nivel de error sugerido: Advertencia"
+    },
+    "system-function-disallowed-list": {
+      "title": "Prohibir el uso de ciertas funciones",
+      "description": "Esta regla restringe el uso de funciones específicas dentro de la base de datos. Al prohibir el uso de estas funciones, ayuda a mantener la consistencia y seguridad de los datos. Nivel de error sugerido: Advertencia",
+      "component": {
+        "list": {
+          "title": "Prohibir lista"
+        }
+      }
+    },
+    "advice-online-migration": {
+      "title": "Se recomienda habilitar la migración en línea",
+      "description": "Se recomienda habilitar la migración en línea si el recuento de filas de la tabla migrada supera su configuración. Nivel de error sugerido: Advertencia",
+      "component": {
+        "number": {
+          "title": "Valor de umbral"
+        }
+      }
     }
   },
   "level": {

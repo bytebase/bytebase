@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -1292,8 +1293,8 @@ func TestVCS_SQL_Review(t *testing.T) {
 		vcsType                 v1pb.ExternalVersionControl_Type
 		externalID              string
 		repositoryFullPath      string
-		getEmptySQLReviewResult func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath, rootURL string) *api.VCSSQLReviewResult
-		getSQLReviewResult      func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath string) *api.VCSSQLReviewResult
+		getEmptySQLReviewResult func(filePath, rootURL string) *api.VCSSQLReviewResult
+		getSQLReviewResult      func(filePath string) *api.VCSSQLReviewResult
 	}{
 		{
 			name:               "GitLab",
@@ -1301,7 +1302,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			vcsType:            v1pb.ExternalVersionControl_GITLAB,
 			externalID:         "121",
 			repositoryFullPath: "test/schemaUpdate",
-			getEmptySQLReviewResult: func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath, rootURL string) *api.VCSSQLReviewResult {
+			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
 				pathes := strings.Split(filePath, "/")
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
@@ -1317,7 +1318,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					},
 				}
 			},
-			getSQLReviewResult: func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath string) *api.VCSSQLReviewResult {
+			getSQLReviewResult: func(filePath string) *api.VCSSQLReviewResult {
 				pathes := strings.Split(filePath, "/")
 				filename := pathes[len(pathes)-1]
 				return &api.VCSSQLReviewResult{
@@ -1343,7 +1344,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			vcsType:            v1pb.ExternalVersionControl_GITHUB,
 			externalID:         "octocat/Hello-World",
 			repositoryFullPath: "octocat/Hello-World",
-			getEmptySQLReviewResult: func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath, rootURL string) *api.VCSSQLReviewResult {
+			getEmptySQLReviewResult: func(filePath, rootURL string) *api.VCSSQLReviewResult {
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
 					Content: []string{
@@ -1355,7 +1356,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 					},
 				}
 			},
-			getSQLReviewResult: func(gitOpsInfo *v1pb.ProjectGitOpsInfo, filePath string) *api.VCSSQLReviewResult {
+			getSQLReviewResult: func(filePath string) *api.VCSSQLReviewResult {
 				return &api.VCSSQLReviewResult{
 					Status: advisor.Warn,
 					Content: []string{
@@ -1512,7 +1513,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 
-			emptySQLReview := test.getEmptySQLReviewResult(gitOpsInfo, gitFile, ctl.rootURL)
+			emptySQLReview := test.getEmptySQLReviewResult(gitFile, ctl.rootURL)
 			a.Equal(emptySQLReview.Status, res.Status)
 			a.Equal(emptySQLReview.Content, res.Content)
 
@@ -1538,7 +1539,7 @@ func TestVCS_SQL_Review(t *testing.T) {
 			})
 			a.NoError(err)
 
-			expectResult := test.getSQLReviewResult(gitOpsInfo, gitFile)
+			expectResult := test.getSQLReviewResult(gitFile)
 			a.Equal(expectResult.Status, reviewResult.Status)
 			a.Equal(expectResult.Content, reviewResult.Content)
 		})
@@ -1676,7 +1677,7 @@ func TestBranchNameInVCSSetupAndUpdate(t *testing.T) {
 
 			for _, test := range vcsTest.caseList {
 				test := test
-				t.Run(test.name, func(t *testing.T) {
+				t.Run(test.name, func(_ *testing.T) {
 					// Create a repository in the fake vsc provider.
 					ctl.vcsProvider.CreateRepository(vcsTest.externalID)
 
@@ -2050,6 +2051,7 @@ func TestMarkTaskAsDone(t *testing.T) {
 				{
 					Specs: []*v1pb.Plan_Spec{
 						{
+							Id: uuid.NewString(),
 							Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 								ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 									Target: database.Name,

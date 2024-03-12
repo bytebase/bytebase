@@ -115,7 +115,7 @@ service ProjectService {
 
   rpc UpdateProjectGitOpsInfo(UpdateProjectGitOpsInfoRequest) returns (ProjectGitOpsInfo) {
     option (google.api.http) = {
-      post: "/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"
+      patch: "/v1/{project_gitops_info.name=projects/*/gitOpsInfo}"
       body: "*"
     };
   }
@@ -204,7 +204,7 @@ service ProjectService {
 
   rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
     option (google.api.http) = {
-      post: "/v1/{protection_rules.name=projects/*/protectionRules}"
+      patch: "/v1/{protection_rules.name=projects/*/protectionRules}"
       body: "*"
     };
   }

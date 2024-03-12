@@ -150,9 +150,6 @@ func (r *Runner) generateOracleRollbackSQL(ctx context.Context, task *store.Task
 		ProjectUID: project.UID,
 		Title:      fmt.Sprintf("Sheet for rolling back task %v", task.ID),
 		Statement:  rollbackStatement,
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
 	})
 	if err != nil {
 		slog.Error("failed to create database creation sheet", log.BBError(err))
@@ -215,12 +212,11 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 	var rollbackSQLStatus api.RollbackSQLStatus
 	var rollbackStatement, rollbackError string
 
-	const binlogSizeLimit = 8 * 1024 * 1024
-	rollbackSQL, err := r.generateMySQLRollbackSQLImpl(ctx, payload, binlogSizeLimit, instance)
+	rollbackSQL, err := r.generateMySQLRollbackSQLImpl(ctx, payload, instance)
 	if err != nil {
 		rollbackSQLStatus = api.RollbackSQLStatusFailed
 		if mysql.IsErrExceedSizeLimit(err) {
-			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. Abort because read more than %vKB from binlog stream.", binlogSizeLimit/1024)
+			rollbackError = fmt.Sprintf("Failed to generate rollback SQL statement. Abort because read more than %vMB from binlog stream.", common.MaxBinlogSizeLimit/1024/1024)
 		} else if mysql.IsErrParseBinlogName(err) {
 			rollbackError = "Failed to generate rollback SQL statement. Please check if binlog is enabled."
 		} else {
@@ -237,9 +233,6 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 		ProjectUID: project.UID,
 		Title:      fmt.Sprintf("Sheet for rolling back task %d", task.ID),
 		Statement:  rollbackStatement,
-		Visibility: store.ProjectSheet,
-		Source:     store.SheetFromBytebaseArtifact,
-		Type:       store.SheetForSQL,
 	})
 	if err != nil {
 		slog.Error("failed to create database creation sheet", log.BBError(err))
@@ -259,12 +252,12 @@ func (r *Runner) generateMySQLRollbackSQL(ctx context.Context, task *store.TaskM
 	slog.Debug("Rollback SQL generation success", slog.Int("taskID", task.ID))
 }
 
-func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, binlogSizeLimit int, instance *store.InstanceMessage) (string, error) {
+func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.TaskDatabaseDataUpdatePayload, instance *store.InstanceMessage) (string, error) {
 	if ctx.Err() != nil {
 		return "", ctx.Err()
 	}
 	// We cannot support rollback SQL generation for sheets because it can take lots of resources.
-	sheet, err := r.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID}, api.SystemBotID)
+	sheet, err := r.store.GetSheet(ctx, &store.FindSheetMessage{UID: &payload.SheetID})
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get sheet %d", payload.SheetID)
 	}
@@ -318,7 +311,7 @@ func (r *Runner) generateMySQLRollbackSQLImpl(ctx context.Context, payload *api.
 	if err := mysqlDriver.CheckBinlogRowFormat(ctx); err != nil {
 		return "", err
 	}
-	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogSizeLimit, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
+	rollbackSQL, err := mysqlDriver.GenerateRollbackSQL(ctx, binlogFileNameList, payload.BinlogPosStart, payload.BinlogPosEnd, payload.ThreadID, tableMap)
 	if err != nil {
 		return "", errors.WithMessage(err, "failed to generate rollback SQL statement")
 	}

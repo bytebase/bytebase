@@ -401,7 +401,8 @@
         }
       },
       "show-default-parameters": "Mostrar parámetros predeterminados",
-      "hide-default-parameters": "Ocultar parámetros predeterminados"
+      "hide-default-parameters": "Ocultar parámetros predeterminados",
+      "enable": "Habilitar la migración en línea"
     },
     "prior-backup-tips": "Haga una copia de seguridad de los datos afectados con anticipación"
   },
@@ -1182,7 +1183,9 @@
     },
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
-    "preview": "Problema de vista previa"
+    "preview": "Problema de vista previa",
+    "missing-sql-statement": "Sentencia SQL faltante. Para aplicar este cambio a todas las tareas, haz clic en el botón '@:{'issue.apply-to-other-tasks'}'.",
+    "task-summary-tooltip": "{failed} tarea fallida | \n{failed} tareas fallidas"
   },
   "alter-schema": {
     "vcs-enabled": "Este proyecto ha habilitado el control de versiones basado en VCS y seleccionar la base de datos a continuación lo llevará al repositorio Git correspondiente para iniciar el proceso de cambio.",
@@ -1540,7 +1543,7 @@
     "transfer-project": "Transferir proyecto",
     "unassign": "Desasignar",
     "unassign-alert-title": "Desasignar bases de datos",
-    "unassign-alert-description": "Las bases de datos seleccionadas se transferirán desde su proyecto.",
+    "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "edit-schema": "Modificar esquema",
     "edit-schema-in-vcs": "Modificar esquema en VCS",
     "edit-labels": "Editar etiquetas",
@@ -1749,7 +1752,8 @@
     "partition-tables": "Tablas de particiones",
     "external-database-name": "Nombre de la base de datos externa",
     "external-server-name": "Nombre del servidor externo",
-    "foreign-table-detail": "Detalle de la tabla externa"
+    "foreign-table-detail": "Detalle de la tabla externa",
+    "view-definition": "Ver definición"
   },
   "repository": {
     "branch-observe-file-change": "La rama donde Bytebase observa el cambio de archivo.",
@@ -2187,7 +2191,8 @@
       "none": "Ninguno"
     },
     "admin": "Admin",
-    "read-only": "Solo lectura"
+    "read-only": "Solo lectura",
+    "snowflake-keypair-tip": "Autenticación de par de claves"
   },
   "setting": {
     "project": {

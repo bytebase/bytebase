@@ -71,6 +71,9 @@ const (
 	// MySQLUseInnoDB is an advisor type for MySQL InnoDB Engine.
 	MySQLUseInnoDB Type = "bb.plugin.advisor.mysql.use-innodb"
 
+	// MySQLOnlineMigration is an advisor type for MySQL using online migration to migrate large tables.
+	MySQLOnlineMigration Type = "bb.plugin.advisor.mysql.online-migration"
+
 	// MySQLMigrationCompatibility is an advisor type for MySQL migration compatibility.
 	MySQLMigrationCompatibility Type = "bb.plugin.advisor.mysql.migration-compatibility"
 
@@ -194,6 +197,9 @@ const (
 	// MySQLIndexTotalNumberLimit is an advisor type for MySQL index total number limit.
 	MySQLIndexTotalNumberLimit Type = "bb.plugin.advisor.mysql.index.total-number-limit"
 
+	// MySQLIndexTypeAllowList is an advisor type for MySQL index type allowlist.
+	MySQLIndexTypeAllowList Type = "bb.plugin.advisor.mysql.index.type-allow-list"
+
 	// MySQLCharsetAllowlist is an advisor type for MySQL charset allowlist.
 	MySQLCharsetAllowlist Type = "bb.plugin.advisor.mysql.charset.allowlist"
 
@@ -206,8 +212,14 @@ const (
 	// MySQLStatementDisallowCommit is an advisor type for MySQL to disallow commit.
 	MySQLStatementDisallowCommit Type = "bb.plugin.advisor.mysql.statement.disallow-commit"
 
-	// MySQLDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
-	MySQLDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
+	// MySQLStatementDisallowLimit is an advisor type for MySQL no LIMIT clause in INSERT/UPDATE/DELETE statement.
+	MySQLStatementDisallowLimit Type = "bb.plugin.advisor.mysql.statement.disallow-limit"
+
+	// MySQLStatementDisallowUsingFilesort is an advisor type for MySQL disallow using filesort in execution plan.
+	MySQLStatementDisallowUsingFilesort Type = "bb.plugin.advisor.mysql.statement.disallow-using-filesort"
+
+	// MySQLStatementDisallowUsingTemporary is an advisor type for MySQL disallow using temporary in execution plan.
+	MySQLStatementDisallowUsingTemporary Type = "bb.plugin.advisor.mysql.statement.disallow-using-temporary"
 
 	// MySQLInsertRowLimit is an advisor type for MySQL to limit INSERT rows.
 	MySQLInsertRowLimit Type = "bb.plugin.advisor.mysql.insert.row-limit"
@@ -233,14 +245,23 @@ const (
 	// MySQLStatementSelectFullTableScan is an advisor type for checking MySQL select full table scan or not.
 	MySQLStatementSelectFullTableScan Type = "bb.plugin.advisor.mysql.statement.select-full-table-scan"
 
+	// MySQLStatementWhereNoEqualNull is an advisor type for checking MySQL no equal null in WHERE clause.
+	MySQLStatementWhereNoEqualNull Type = "bb.plugin.advisor.mysql.statement.where.no-equal-null"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
+
 	// MySQLEventDisallowCreate is an advisor type for MySQL disallow create event.
 	MySQLEventDisallowCreate Type = "bb.plugin.advisor.mysql.event.disallow-create"
+
 	// MySQLViewDisallowCreate is an advisor type for MySQL disallow create view.
 	MySQLViewDisallowCreate Type = "bb.plugin.advisor.mysql.view.disallow-create"
+
 	// MySQLFunctionDisallowCreate is an advisor type for MySQL disallow create function.
 	MySQLFunctionDisallowCreate Type = "bb.plugin.advisor.mysql.function.disallow-create"
+
+	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
+	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
 	// PostgreSQL Advisor.
 
@@ -542,7 +563,9 @@ const (
 type Context struct {
 	Charset    string
 	Collation  string
+	DBSchema   *storepb.DatabaseSchemaMetadata
 	SyntaxMode SyntaxMode
+	ChangeType storepb.PlanCheckRunConfig_ChangeDatabaseType
 
 	// SQL review rule special fields.
 	AST     any

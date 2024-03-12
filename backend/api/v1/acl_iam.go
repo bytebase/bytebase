@@ -227,7 +227,7 @@ func (in *ACLInterceptor) doIAMPermissionCheck(ctx context.Context, fullMethod s
 		v1pb.EnvironmentService_UpdateBackupSetting_FullMethodName,
 		v1pb.SettingService_ListSettings_FullMethodName,
 		v1pb.SettingService_GetSetting_FullMethodName,
-		v1pb.SettingService_SetSetting_FullMethodName,
+		v1pb.SettingService_UpdateSetting_FullMethodName,
 		v1pb.OrgPolicyService_ListPolicies_FullMethodName,
 		v1pb.OrgPolicyService_GetPolicy_FullMethodName,
 		v1pb.OrgPolicyService_CreatePolicy_FullMethodName,

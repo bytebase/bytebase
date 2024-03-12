@@ -42,6 +42,10 @@ const (
 	StatementHasTableFullScan               Code = 215
 	StatementCreateWithoutSchemaName        Code = 216
 	StatementCheckSetRoleVariable           Code = 217
+	StatementExplainQueryFailed             Code = 218
+	StatementHasUsingFilesort               Code = 219
+	StatementHasUsingTemporary              Code = 220
+	StatementWhereNoEqualNull               Code = 221
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -125,6 +129,7 @@ const (
 	IndexCountExceedsLimit     Code = 813
 	CreateIndexUnconcurrently  Code = 814
 	DuplicateIndexInTable      Code = 815
+	IndexTypeNotAllowed        Code = 816
 
 	// 1001 ~ 1099 charset error code.
 	DisabledCharset Code = 1001
@@ -156,6 +161,10 @@ const (
 
 	// 1701 ~ 1799 function error code.
 	DisallowCreateFunction Code = 1701
+	DisabledFunction       Code = 1702
+
+	// 1801 ~ 1899 advice error code.
+	AdviseOnlineMigration Code = 1801
 )
 
 // Int returns the int type of code.

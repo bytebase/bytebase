@@ -13,20 +13,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*DisallowLimitAdvisor)(nil)
-	_ ast.Visitor     = (*disallowLimitChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowLimitAdvisor)(nil)
+	_ ast.Visitor     = (*statementDisallowLimitChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLDisallowLimit, &DisallowLimitAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowLimit, &StatementDisallowLimitAdvisor{})
 }
 
-// DisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
-type DisallowLimitAdvisor struct {
+// StatementDisallowLimitAdvisor is the advisor checking for no LIMIT clause in INSERT/UPDATE statement.
+type StatementDisallowLimitAdvisor struct {
 }
 
 // Check checks for no LIMIT clause in INSERT/UPDATE statement.
-func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -36,7 +36,7 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	if err != nil {
 		return nil, err
 	}
-	checker := &disallowLimitChecker{
+	checker := &statementDisallowLimitChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -58,7 +58,7 @@ func (*DisallowLimitAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Adv
 	return checker.adviceList, nil
 }
 
-type disallowLimitChecker struct {
+type statementDisallowLimitChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
@@ -67,7 +67,7 @@ type disallowLimitChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (checker *disallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (checker *statementDisallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
 	case *ast.UpdateStmt:
@@ -98,7 +98,7 @@ func (checker *disallowLimitChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*disallowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*statementDisallowLimitChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }
 
