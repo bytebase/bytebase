@@ -21,7 +21,7 @@ func init() {
 type StatementDisallowmixDMLAdvisor struct {
 }
 
-// Check checks for no "select *".
+// Check checks for no multiple DMLs for the same table.
 func (*StatementDisallowmixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {

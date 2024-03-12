@@ -17,11 +17,11 @@ func init() {
 	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixDDLDML, &StatementDisallowmixDDLDMLAdvisor{})
 }
 
-// StatementDisallowmixDDLDMLAdvisor is the advisor checking for no "select *".
+// StatementDisallowmixDDLDMLAdvisor is the advisor checking for no mixed DDL and DML.
 type StatementDisallowmixDDLDMLAdvisor struct {
 }
 
-// Check checks for no "select *".
+// Check checks for no mixed DDL and DML.
 func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
