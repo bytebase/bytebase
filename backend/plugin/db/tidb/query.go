@@ -1,4 +1,4 @@
-package mysql
+package tidb
 
 import (
 	"fmt"
