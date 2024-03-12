@@ -134,7 +134,7 @@ export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
     return;
   }
   if (tabStore.currentTab.isFreshNew || !tabStore.currentTab.sheetName) {
-    // If the current tab is "fresh new", update its connection directly.
+    // If the current tab is "fresh new" or unsaved, update its connection directly.
     tabStore.updateCurrentTab({
       ...tab,
       name: getSuggestedTabNameFromConnection(tab.connection),

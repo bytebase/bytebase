@@ -445,16 +445,12 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
       },
       mode: TabMode.ReadOnly,
     };
-    if (
-      tabStore.currentTab.isFreshNew ||
-      (!tabStore.currentTab.sheetName && !tabStore.currentTab.statement)
-    ) {
-      // If the current tab is "fresh new", update its connection directly.
+    if (tabStore.currentTab.isFreshNew || !tabStore.currentTab.sheetName) {
+      // If the current tab is "fresh new" or unsaved, update its connection directly.
       tabStore.updateCurrentTab({
         ...tab,
         name: getSuggestedTabNameFromConnection(tab.connection),
-        statement: query,
-        isSaved: false,
+        statement: tabStore.currentTab.statement || query,
       });
     } else {
       // Otherwise select or add a new tab and set its connection
