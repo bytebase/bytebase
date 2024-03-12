@@ -445,9 +445,13 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
       },
       mode: TabMode.ReadOnly,
     };
-    if (tabStore.currentTab.isFreshNew) {
-      // If the current tab is "fresh new", update its connection directly.
-      tabStore.updateCurrentTab(tab);
+    if (tabStore.currentTab.isFreshNew || !tabStore.currentTab.sheetName) {
+      // If the current tab is "fresh new" or unsaved, update its connection directly.
+      tabStore.updateCurrentTab({
+        ...tab,
+        name: getSuggestedTabNameFromConnection(tab.connection),
+        statement: tabStore.currentTab.statement || query,
+      });
     } else {
       // Otherwise select or add a new tab and set its connection
       tabStore.addTab(
@@ -677,6 +681,7 @@ watch(
     }
     if (databaseId !== String(UNKNOWN_ID)) {
       const db = databaseStore.getDatabaseByUID(databaseId);
+      treeStore.expandNodes("project", db.projectEntity);
       treeStore.expandNodes("database", db);
     }
   },
