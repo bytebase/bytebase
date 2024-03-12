@@ -1,18 +1,12 @@
 import { useLocalStorage } from "@vueuse/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
-import {
-  SQLEditorState,
-  QueryInfo,
-  QueryHistory,
-  ActivitySQLEditorQueryPayload,
-  ComposedDatabase,
-} from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { ComposedDatabase } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1 } from "./auth";
-import { RESULT_ROWS_LIMIT } from "./sqlEditor";
-import { useInstanceV1Store, useSQLStore, useActivityV1Store } from "./v1";
+import { useCurrentUserV1 } from "../auth";
+
+// set the limit to 1000 temporarily to avoid the query timeout and page crash
+export const RESULT_ROWS_LIMIT = 1000;
 
 export const useSQLEditorV2Store = defineStore("sqlEditorV2", () => {
   // empty to "ALL" projects for high-privileged users

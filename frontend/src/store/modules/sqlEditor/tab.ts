@@ -12,12 +12,9 @@ import {
   isDisconnectedSQLEditorTab,
   isSimilarSQLEditorTab,
 } from "@/utils";
-import { useSQLEditorV2Store } from "./sqlEditorV2";
-import {
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  useWebTerminalV1Store,
-} from "./v1";
+import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
+import { useSQLEditorV2Store } from "./editor";
+import { useWebTerminalV1Store } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 const KEYS = {

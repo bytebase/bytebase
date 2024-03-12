@@ -24,8 +24,7 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/grpcweb";
-import { useDatabaseV1Store } from "./database";
-import { useInstanceV1Store } from "./instance";
+import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Status.ABORTED;

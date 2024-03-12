@@ -10,7 +10,7 @@ import {
   useActivityV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
-} from "./v1";
+} from "../v1";
 
 export const useSQLEditorQueryHistoryStore = defineStore(
   "sqlEditorQueryHistory",
