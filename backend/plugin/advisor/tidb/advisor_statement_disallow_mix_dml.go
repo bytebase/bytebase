@@ -14,15 +14,15 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixDML, &StatementDisallowmixDMLAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixDML, &StatementDisallowMixDMLAdvisor{})
 }
 
-// StatementDisallowmixDDLDMLAdvisor is the advisor checking for no "select *".
-type StatementDisallowmixDMLAdvisor struct {
+// StatementDisallowmixDDLDMLAdvisor is the advisor checking for no multiple DMLs for the same table.
+type StatementDisallowMixDMLAdvisor struct {
 }
 
 // Check checks for no multiple DMLs for the same table.
-func (*StatementDisallowmixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+func (*StatementDisallowMixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
