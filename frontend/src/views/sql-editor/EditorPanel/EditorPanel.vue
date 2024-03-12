@@ -3,9 +3,10 @@
     <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
 
-      <ConnectionHolder v-if="!tab || isDisconnected" />
+      <ConnectionHolder v-if="!tab" />
       <template v-else>
         <ConnectionPathBar />
+
         <Suspense>
           <SQLEditor @execute="handleExecute" />
           <template #fallback>
