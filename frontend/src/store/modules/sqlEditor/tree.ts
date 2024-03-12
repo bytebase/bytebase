@@ -44,7 +44,7 @@ const defaultEnvironmentFactor: StatefulFactor = {
   disabled: false,
 };
 
-export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
+export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const { filter } = useFilterStore();
 
   const defaultFactorList = (): StatefulFactor[] => {

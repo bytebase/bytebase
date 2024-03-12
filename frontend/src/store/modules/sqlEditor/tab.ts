@@ -40,7 +40,7 @@ type PersistentTab = Pick<SQLEditorTab, typeof PERSISTENT_TAB_FIELDS[number]>;
 // `tabsById` stores all PersistentTab items across all projects
 const tabsById = reactive(new Map<string, SQLEditorTab>());
 
-export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
+export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
   const { project } = storeToRefs(useSQLEditorStore());
 
