@@ -275,6 +275,9 @@ const (
 	// MySQLStatementJoinStrictColumnAttrs is an advisor type for MySQL statement strict column attrs(type, charset) in join.
 	MySQLStatementJoinStrictColumnAttrs Type = "bb.plugin.advisor.mysql.statement.join-strict-column-attrs"
 
+	// MySQLStatementDisallowMixDML is an advisor type for MySQL disallow mix DML on same table.
+	MySQLStatementDisallowMixDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-dml"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
 

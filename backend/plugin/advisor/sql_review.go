@@ -121,6 +121,8 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
+	// SchemaRuleStatementDisallowMixDML disallow mix DML on the same table.
+	SchemaRuleStatementDisallowMixDML = "statement.disallow-mix-dml"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -1408,6 +1410,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowUsingTemporary:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
+		}
+	case SchemaRuleStatementDisallowMixDML:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementDisallowMixDML, nil
 		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
