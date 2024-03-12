@@ -322,7 +322,7 @@ ruleList:
       - key: number
         payload:
           type: NUMBER
-          default: 10
+          default: 2
   - type: statement.maximum-statements-in-transaction
     category: STATEMENT
     engineList:
