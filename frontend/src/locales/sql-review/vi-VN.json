@@ -65,6 +65,14 @@
       "title": "Cấm chỉ mục trùng lặp",
       "description": "Quy tắc này cấm tạo các chỉ mục trùng lặp trên bảng. Các chỉ mục trùng lặp chiếm dung lượng lưu trữ bổ sung và có thể làm giảm hiệu suất truy vấn. Mức độ lỗi gợi ý: Cảnh báo"
     },
+    "table-text-fields-total-length": {
+      "title": "Giới hạn độ dài tối đa của trường văn bản trong bảng",
+      "description": "Luật này giới hạn dung lượng dữ liệu mà một bảng có thể chứa, giúp ngăn chặn việc sử dụng dung lượng lưu trữ quá mức."
+    },
+    "table-disallow-set-charset": {
+      "title": "Cấm thiết lập bảng mã trong thuộc tính của bảng",
+      "description": "Cài đặt charset ở cấp độ cơ sở dữ liệu được khuyến khích. Cài đặt charset ở mức độ chi tiết hơn có thể dẫn đến những phức tạp không cần thiết. Mức độ lỗi đề xuất: Lỗi."
+    },
     "table-comment": {
       "title": "quy ước bình luận",
       "description": "Định cấu hình xem bảng có yêu cầu nhận xét hay không và độ dài nhận xét tối đa.",
@@ -394,6 +402,42 @@
     "statement-where-no-equal-null": {
       "title": "Cấm sử dụng so sánh bằng NULL trong mệnh đề WHERE",
       "description": "Kết quả của việc so sánh bằng NULL luôn là NULL, có thể gây ra các kết quả không mong muốn. Cấp độ lỗi gợi ý: Cảnh báo"
+    },
+    "statement-where-disallow-using-function": {
+      "title": "Ch tránh sử dụng các hàm hoặc thực hiện tính toán trên các trường được lập chỉ mục trong mệnh đề WHERE",
+      "description": "Nếu bạn áp dụng một hàm hoặc thực hiện tính toán trên trường được lập chỉ mục, cơ sở dữ liệu không thể sử dụng chỉ mục và phải quét toàn bộ bảng."
+    },
+    "statement-where-statement-query-minimum-plan-level": {
+      "title": "Hạn chế mức truy cập tối đa của phương thức truy vấn",
+      "description": "Ch tối ưu hóa hiệu suất SQL hướng đến truy cập hằng số (const), đặt mục tiêu mức tham chiếu (ref) làm tiêu chuẩn, với hiệu suất chấp nhận được ở mức phạm vi (range)."
+    },
+    "statement-where-maximum-logical-operator-count": {
+      "title": "Giới hạn số lượng giá trị trong mệnh đề IN hoặc OR của mệnh đề WHERE",
+      "description": "Điều này giúp ngăn chặn hiệu suất suy giảm do các phép so sánh rộng rãi và hạn chế tài nguyên."
+    },
+    "statement-maximum-limit-value": {
+      "title": "Giới hạn số lượng tối đa của mệnh đề LIMIT",
+      "description": "Bằng cách giới hạn số dòng trả về thông qua LIMIT, đảm bảo cơ sở dữ liệu xử lý các khối dữ liệu vừa phải, cải thiện tốc độ thực thi truy vấn. Giá trị LIMIT được giới hạn giúp ngăn chặn việc sử dụng bộ nhớ quá mức, bảo vệ tính ổn định tổng thể của hệ thống và ngăn ngừa hiệu suất giảm."
+    },
+    "statement-maximum-join-table-count": {
+      "title": "Giảm thiểu số lượng bảng cần tham gia",
+      "description": "Bản càng tham gia nhiều bảng, truy vấn sẽ càng phức tạp và thời gian thực thi càng lâu. Nói chung, tốt nhất nên giảm thiểu số lượng tham gia bảng xuống mức tối thiểu."
+    },
+    "statement-maximum-statements-in-transaction": {
+      "title": "Hạn chế số lượng câu lệnh trong một giao dịch",
+      "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất của cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh được tham gia và một câu lệnh bị lỗi, việc khôi phục toàn bộ giao dịch sẽ trở nên phức tạp. Giới hạn các câu lệnh giúp giảm thiểu thiệt hại tiềm ẩn do một lỗi đơn lẻ gây ra và đơn giản hóa các thủ tục khôi phục."
+    },
+    "statement-join-strict-column-attrs": {
+      "title": "Các trường cần ghép phải có cùng kiểu dữ liệu và bộ ký tự",
+      "description": "Nếu kiểu dữ liệu, bảng mã của các cột dùng để ghép (join) không giống nhau, cơ sở dữ liệu có thể không xác định chính xác các hàng khớp nhau, dẫn đến kết quả không chính xác hoặc không đầy đủ."
+    },
+    "statement-disallow-mix-dml": {
+      "title": "Chặn các truy vấn DML trên cùng một bảng",
+      "description": "Ch thực hiện các sửa đổi dữ liệu đồng thời trên một bảng có thể dẫn đến những thách thức trong việc xác định chính xác các hàng bị ảnh hưởng. Điều này do đó làm phức tạp quá trình tạo bản sao lưu chính xác của dữ liệu bị ảnh hưởng."
+    },
+    "statement-disallow-mix-ddl-dml": {
+      "title": "Không nên trộn lẫn DDL và DML",
+      "description": "Chú ý để đạt hiệu suất tối ưu và tính toàn vẹn dữ liệu, tránh kết hợp các câu lệnh DDL và DML trong cùng một tập lệnh."
     },
     "schema-backward-compatibility": {
       "title": "Kiểm tra khả năng tương thích ngược của ứng dụng",

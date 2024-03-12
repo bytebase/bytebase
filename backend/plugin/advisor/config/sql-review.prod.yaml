@@ -21,6 +21,12 @@ ruleList:
       maxLength: 64
   - type: table.no-duplicate-index
     level: WARNING
+  - type: table.text-fields-total-length
+    level: WARNING
+    payload:
+      number: 1000
+  - type: table.disallow-set-charset
+    level: WARNING
   - type: statement.select.no-select-all
     level: ERROR
   - type: statement.where.require
@@ -68,6 +74,35 @@ ruleList:
   - type: statement.disallow-using-temporary
     level: WARNING
   - type: statement.where.no-equal-null
+    level: WARNING
+  - type: statement.where.disallow-using-function
+    level: WARNING
+  - type: statement.where.statement.query.minimum-plan-level
+    level: WARNING
+    payload:
+      required: true
+      maxLength: 64
+  - type: statement.where.maximum-logical-operator-count
+    level: WARNING
+    payload:
+      number: 10
+  - type: statement.maximum-limit-value
+    level: WARNING
+    payload:
+      number: 1000
+  - type: statement.maximum-join-table-count
+    level: WARNING
+    payload:
+      number: 10
+  - type: statement.maximum-statements-in-transaction
+    level: WARNING
+    payload:
+      number: 10
+  - type: statement.join-strict-column-attrs
+    level: WARNING
+  - type: statement.disallow-mix-dml
+    level: WARNING
+  - type: statement.disallow-mix-ddl-dml
     level: WARNING
   - type: naming.table
     level: WARNING
