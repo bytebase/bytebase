@@ -9,14 +9,12 @@
 </template>
 
 <script lang="ts" setup>
-import { useSQLEditorStore } from "@/store";
+import { useSQLEditorV2Store } from "@/store";
 import ExecuteHint from "./ExecuteHint.vue";
 
-const sqlEditorStore = useSQLEditorStore();
+const sqlEditorStore = useSQLEditorV2Store();
 
 const handleClose = () => {
-  sqlEditorStore.setSQLEditorState({
-    isShowExecutingHint: false,
-  });
+  sqlEditorStore.isShowExecutingHint = false;
 };
 </script>

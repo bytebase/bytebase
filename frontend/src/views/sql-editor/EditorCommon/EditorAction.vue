@@ -118,15 +118,13 @@ import { computed, reactive, ref } from "vue";
 import {
   useUIStateStore,
   featureToRef,
-  useWebTerminalV1Store,
   usePageMode,
   useActuatorV1Store,
   useSQLEditorTabStore,
-  useSQLEditorV2Store,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
-import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import type { FeatureType, SQLEditorQueryParams } from "@/types";
+import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -137,20 +135,13 @@ interface LocalState {
 }
 
 const emit = defineEmits<{
-  (
-    e: "execute",
-    sql: string,
-    config: ExecuteConfig,
-    option?: ExecuteOption
-  ): void;
+  (e: "execute", params: SQLEditorQueryParams): void;
   (e: "clear-screen"): void;
 }>();
 
 const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
-const _editorStore = useSQLEditorV2Store();
-const _webTerminalStore = useWebTerminalV1Store();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
@@ -172,9 +163,6 @@ const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
 const { instance } = useConnectionOfCurrentSQLEditorTab();
-const instanceEngine = computed(() => {
-  return formatEngineV1(instance.value);
-});
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
@@ -253,15 +241,18 @@ const showQueryContextSettingPopover = computed(() => {
   );
 });
 
-const handleRunQuery = async () => {
+const handleRunQuery = () => {
   const tab = currentTab.value;
   if (!tab) {
     return;
   }
-  const statement = tab.statement;
-  const selectedStatement = tab.selectedStatement;
-  const query = selectedStatement || statement;
-  await emit("execute", query, { databaseType: instanceEngine.value });
+  const statement = tab.selectedStatement || tab.statement;
+  emit("execute", {
+    statement,
+    connection: { ...tab.connection },
+    engine: instance.value.engine,
+    explain: false,
+  });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,
@@ -273,15 +264,13 @@ const handleExplainQuery = () => {
   if (!tab) {
     return;
   }
-  const statement = tab.statement;
-  const selectedStatement = tab.selectedStatement;
-  const query = selectedStatement || statement;
-  emit(
-    "execute",
-    query,
-    { databaseType: instanceEngine.value },
-    { explain: true }
-  );
+  const statement = tab.selectedStatement || tab.statement;
+  emit("execute", {
+    statement,
+    connection: { ...tab.connection },
+    engine: instance.value.engine,
+    explain: true,
+  });
 };
 
 const handleFormatSQL = () => {

@@ -81,7 +81,7 @@
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
-        :disabled="!tabStore.currentTab.isSaved"
+        :disabled="tabStore.currentTab?.status !== 'CLEAN'"
         @click="handleCopy"
       >
         <heroicons-solid:check v-if="copied" class="h-4 w-4" />
@@ -99,7 +99,7 @@ import { useRouter } from "vue-router";
 import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
-  useTabStore,
+  useSQLEditorTabStore,
   useWorkSheetStore,
   useWorkSheetAndTabStore,
 } from "@/store";
@@ -110,7 +110,7 @@ import { worksheetSlugV1 } from "@/utils";
 const { t } = useI18n();
 
 const router = useRouter();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 

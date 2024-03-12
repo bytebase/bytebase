@@ -12,8 +12,10 @@ import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   SQLEditorConnection,
   SQLEditorTab,
+  SQLEditorTabQueryContext,
   UNKNOWN_ID,
 } from "@/types";
+import { Engine } from "@/types/proto/v1/common";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
@@ -156,3 +158,16 @@ export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
   );
   tabStore.updateCurrentTab(tab);
 };
+
+export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
+  beginTimestampMS: Date.now(),
+  abortController: new AbortController(),
+  status: "IDLE",
+  results: new Map(),
+  params: {
+    connection: emptySQLEditorConnection(),
+    engine: Engine.MYSQL,
+    explain: false,
+    statement: "",
+  },
+});

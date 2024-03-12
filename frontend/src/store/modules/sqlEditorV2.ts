@@ -39,6 +39,8 @@ export const useSQLEditorV2Store = defineStore("sqlEditorV2", () => {
     storedLastViewedProject.value = project;
   });
 
+  const isShowExecutingHint = ref(false);
+
   return {
     project,
     strictProject,
@@ -46,5 +48,6 @@ export const useSQLEditorV2Store = defineStore("sqlEditorV2", () => {
     storedLastViewedProject,
     allowViewALLProjects,
     databaseList,
+    isShowExecutingHint,
   };
 });

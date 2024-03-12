@@ -6,14 +6,9 @@
 import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
 import { computed, reactive, toRef } from "vue";
-import {
-  useCurrentTab,
-  useInstanceV1ByUID,
-  useDatabaseV1ByUID,
-  useMetadata,
-} from "@/store";
+import { useMetadata, useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import { Connection } from "@/types";
+import { SQLEditorConnection } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import type { AIContextEvents } from "../types";
 
@@ -37,7 +32,7 @@ const emit = defineEmits<{
   (
     event: "apply-statement",
     statement: string,
-    conn: Connection,
+    conn: SQLEditorConnection,
     run: boolean
   ): void;
 }>();
@@ -57,14 +52,8 @@ const openAIKey = computed(() => openAIKeySetting?.value?.stringValue ?? "");
 const openAIEndpoint = computed(
   () => openAIEndpointSetting?.value?.stringValue ?? ""
 );
-const tab = useCurrentTab();
+const { connection, instance, database } = useConnectionOfCurrentSQLEditorTab();
 
-const { instance } = useInstanceV1ByUID(
-  computed(() => tab.value.connection.instanceId)
-);
-const { database } = useDatabaseV1ByUID(
-  computed(() => tab.value.connection.databaseId)
-);
 const databaseMetadata = useMetadata(
   database.value.name,
   false /* !skipCache */,
@@ -74,7 +63,7 @@ const databaseMetadata = useMetadata(
 const events: AIContextEvents = new Emittery();
 
 events.on("apply-statement", ({ statement, run }) => {
-  emit("apply-statement", statement, tab.value.connection, run);
+  emit("apply-statement", statement, connection.value, run);
 });
 
 const autoRun = useLocalStorage("bb.plugin.ai.auto-run", false);

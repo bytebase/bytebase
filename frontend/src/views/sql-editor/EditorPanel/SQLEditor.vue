@@ -42,22 +42,12 @@ import {
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import {
-  dialectOfEngineV1,
-  ExecuteConfig,
-  ExecuteOption,
-  SQLDialect,
-} from "@/types";
-import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
+import { dialectOfEngineV1, SQLDialect, SQLEditorQueryParams } from "@/types";
+import { useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
 
 const emit = defineEmits<{
-  (
-    e: "execute",
-    sql: string,
-    config: ExecuteConfig,
-    option?: ExecuteOption
-  ): void;
+  (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
 const tabStore = useSQLEditorTabStore();
@@ -88,9 +78,6 @@ const advices = computed((): AdviceOption[] => {
   }));
 });
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const instanceEngine = computed(() => {
-  return formatEngineV1(instance.value);
-});
 const language = useInstanceV1EditorLanguage(instance);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
@@ -155,8 +142,13 @@ const runQueryAction = (explain = false) => {
   if (!tab) {
     return;
   }
-  const query = tab.selectedStatement || tab.statement || "";
-  emit("execute", query, { databaseType: instanceEngine.value }, { explain });
+  const statement = tab.selectedStatement || tab.statement || "";
+  emit("execute", {
+    connection: { ...tab.connection },
+    statement,
+    engine: instance.value.engine,
+    explain,
+  });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,

@@ -61,9 +61,11 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
-import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useDatabaseV1ByUID, useDBSchemaV1Store, useTabStore } from "@/store";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useDBSchemaV1Store,
+} from "@/store";
 import {
   SchemaMetadata,
   TableMetadata,
@@ -80,12 +82,10 @@ import { provideSchemaPanelContext } from "./context";
 const { selectedDatabaseSchemaByDatabaseName } = useSQLEditorContext();
 
 const dbSchemaStore = useDBSchemaV1Store();
-const { currentTab } = storeToRefs(useTabStore());
-const conn = computed(() => currentTab.value.connection);
+const { database } = useConnectionOfCurrentSQLEditorTab();
 const { keyword } = provideSchemaPanelContext();
 provideHoverStateContext();
 
-const { database } = useDatabaseV1ByUID(computed(() => conn.value.databaseId));
 const isLoading = ref(false);
 const databaseMetadata = asyncComputed(
   async () => {

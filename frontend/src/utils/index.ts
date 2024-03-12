@@ -17,7 +17,7 @@ export * from "./util";
 export * from "./label";
 export * from "./string";
 export * from "./tab";
-export * from "./sqlEditorTab";
+export * from "./sqlEditor";
 export * from "./task";
 export * from "./pev2";
 export * from "./web-storage";

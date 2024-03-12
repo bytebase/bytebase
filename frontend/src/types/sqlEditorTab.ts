@@ -1,14 +1,7 @@
+import { SQLEditorConnection, SQLEditorQueryParams } from "./sqlEditor";
 import { SQLResultSetV1 } from "./v1/sql";
 
 export type SQLEditorEditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
-
-export interface SQLEditorConnection {
-  instance: string; // instance resource name, empty if not connected
-  database: string; // database resource name, empty if not connected to a database
-  dataSourceId?: string;
-  schema?: string;
-  table?: string;
-}
 
 export type SQLEditorTabStatus =
   | "NEW" // just created and untouched
@@ -18,11 +11,6 @@ export type SQLEditorTabStatus =
 // STANDARD not supported by backend so far
 export type SQLEditorTabMode = "STANDARD" | "READONLY" | "ADMIN";
 export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "READONLY";
-
-export type SQLEditorQuery = {
-  connection: SQLEditorConnection; // the connection snapshot of the query
-  result?: SQLResultSetV1;
-};
 
 export type BatchQueryContext = {
   // databases is used to store the selected database names.
@@ -35,8 +23,7 @@ export type SQLEditorTabQueryContext = {
   abortController: AbortController;
   status: "IDLE" | "EXECUTING";
 
-  statement: string; // the statement connection of the query
-  explain: boolean;
+  params: SQLEditorQueryParams;
   results: Map<string /* database or instance */, SQLResultSetV1>;
 };
 
@@ -55,7 +42,7 @@ export type SQLEditorTab = {
   // SQL query related fields
   // won't be saved to localStorage
   queryContext?: SQLEditorTabQueryContext;
-  batchContext?: BatchQueryContext;
+  batchQueryContext?: BatchQueryContext;
 };
 
 export type CoreSQLEditorTab = Pick<

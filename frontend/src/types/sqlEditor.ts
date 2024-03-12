@@ -104,3 +104,18 @@ export type SQLEditorQueryHistory = {
   database: string;
   error: string;
 };
+
+export interface SQLEditorConnection {
+  instance: string; // instance resource name, empty if not connected
+  database: string; // database resource name, empty if not connected to a database
+  dataSourceId?: string;
+  schema?: string;
+  table?: string;
+}
+
+export type SQLEditorQueryParams = {
+  connection: SQLEditorConnection; // the connection snapshot of the query
+  statement: string; // the statement snapshot of the query
+  engine: Engine;
+  explain: boolean;
+};

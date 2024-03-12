@@ -1,9 +1,9 @@
-import { useLocalStorage, watchThrottled } from "@vueuse/core";
+import { MaybeRef, useLocalStorage, watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, unref, watch } from "vue";
 import "@/types";
-import { SQLEditorTreeNodeMeta } from "@/types";
+import { SQLEditorConnection, SQLEditorTreeNodeMeta } from "@/types";
 import { CoreSQLEditorTab, SQLEditorTab } from "@/types/sqlEditorTab";
 import {
   WebStorageHelper,
@@ -36,7 +36,7 @@ const PERSISTENT_TAB_FIELDS = [
   "mode",
   "sheet",
   "status",
-  "batchContext",
+  "batchQueryContext",
 ] as const;
 type PersistentTab = Pick<SQLEditorTab, typeof PERSISTENT_TAB_FIELDS[number]>;
 
@@ -239,7 +239,7 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
       () => tab.sheet,
       () => tab.statement,
       () => tab.connection,
-      () => tab.batchContext,
+      () => tab.batchQueryContext,
     ];
     // set `tab.status` to "DIRTY" when it's changed
     watch(dirtyFields, () => {
@@ -318,25 +318,34 @@ export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
   return false;
 };
 
+export const useSQLEditorConnectionDetail = (
+  connection: MaybeRef<SQLEditorConnection>
+) => {
+  const instance = computed(() => {
+    return useInstanceV1Store().getInstanceByName(unref(connection).instance);
+  });
+
+  const database = computed(() => {
+    return useDatabaseV1Store().getDatabaseByName(unref(connection).database);
+  });
+
+  const environment = computed(() => {
+    return unref(connection).database
+      ? instance.value.environmentEntity
+      : database.value.effectiveEnvironmentEntity;
+  });
+
+  return { connection, instance, database, environment };
+};
+
 export const useConnectionOfCurrentSQLEditorTab = () => {
   const store = useSQLEditorTabStore();
   const connection = computed(() => {
     return store.currentTab?.connection ?? emptySQLEditorConnection();
   });
 
-  const instance = computed(() => {
-    return useInstanceV1Store().getInstanceByName(connection.value.instance);
-  });
-
-  const database = computed(() => {
-    return useDatabaseV1Store().getDatabaseByName(connection.value.database);
-  });
-
-  const environment = computed(() => {
-    return connection.value.database
-      ? instance.value.environmentEntity
-      : database.value.effectiveEnvironmentEntity;
-  });
+  const { instance, database, environment } =
+    useSQLEditorConnectionDetail(connection);
 
   return { connection, instance, database, environment };
 };

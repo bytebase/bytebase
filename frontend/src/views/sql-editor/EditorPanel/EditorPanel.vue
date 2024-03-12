@@ -21,7 +21,7 @@
 
       <Suspense>
         <AIChatToSQL
-          v-if="!isDisconnected && showAIChatBox"
+          v-if="tab && !isDisconnected && showAIChatBox"
           :allow-config="pageMode === 'BUNDLED'"
           @apply-statement="handleApplyStatement"
         />
@@ -40,8 +40,7 @@ import { defineAsyncComponent } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
-import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
-import { formatEngineV1 } from "@/utils";
+import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -60,21 +59,13 @@ const pageMode = usePageMode();
 
 const { executeReadonly } = useExecuteSQL();
 
-const handleExecute = (
-  query: string,
-  config: ExecuteConfig,
-  option?: ExecuteOption
-) => {
-  executeReadonly(query, config, option);
+const handleExecute = (params: SQLEditorQueryParams) => {
+  executeReadonly(params);
 };
-
-// const trySaveSheet = (sheetName?: string) => {
-//   saveSheetModal.value?.trySaveSheet(sheetName);
-// };
 
 const handleApplyStatement = async (
   statement: string,
-  conn: Connection,
+  connection: SQLEditorConnection,
   run: boolean
 ) => {
   if (!tab.value) {
@@ -82,12 +73,14 @@ const handleApplyStatement = async (
   }
   tab.value.statement = statement;
   if (run) {
-    const instanceStore = useInstanceV1Store();
-    const instance = await instanceStore.getOrFetchInstanceByUID(
-      conn.instanceId
+    const instance = useInstanceV1Store().getInstanceByName(
+      connection.instance
     );
-    handleExecute(statement, {
-      databaseType: formatEngineV1(instance),
+    handleExecute({
+      connection,
+      statement,
+      engine: instance.engine,
+      explain: false,
     });
   }
 };
