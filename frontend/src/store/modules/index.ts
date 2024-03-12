@@ -8,6 +8,7 @@ export * from "./sqlEditor";
 export * from "./sqlEditorV2";
 export * from "./sqlEditorTree";
 export * from "./sqlEditorTab";
+export * from "./sqlEditorQueryHistory";
 export * from "./tab";
 export * from "./uistate";
 export * from "./sqlReview";

@@ -88,3 +88,19 @@ export interface QueryHistory {
   databaseId: DatabaseId;
   error: string;
 }
+
+export type SQLEditorQueryHistory = {
+  name: string; // Format: logs/{uid}
+
+  // Standard fields
+  // creator in users/{email} format.
+  creator: string;
+  createTime: Date;
+
+  // Domain fields
+  statement: string;
+  durationNs: number;
+  instance: string;
+  database: string;
+  error: string;
+};
