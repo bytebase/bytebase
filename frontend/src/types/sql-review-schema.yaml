@@ -92,7 +92,7 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
-  - type: table.fields-maximum-varchar-length
+  - type: table.text-fields-total-length
     category: TABLE
     engineList:
       - MYSQL

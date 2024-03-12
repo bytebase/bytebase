@@ -179,8 +179,8 @@ const (
 	// MySQLTableNoDuplicateIndex is an advisor type for MySQL no duplicate index.
 	MySQLTableNoDuplicateIndex Type = "bb.plugin.advisor.mysql.table.no-duplicate-index"
 
-	// MySQLTableFieldsMaximumVarcharLength is an advisor type for MySQL table fields maximum varchar length.
-	MySQLTableFieldsMaximumVarcharLength Type = "bb.plugin.advisor.mysql.table.fields-maximum-varchar-length"
+	// MySQLTableTextFieldsTotalLength is an advisor type for MySQL table text fields total length.
+	MySQLTableTextFieldsTotalLength Type = "bb.plugin.advisor.mysql.table.text-fields-total-length"
 
 	// MySQLTableFieldsMaximumCount is an advisor type for MySQL table fields maximum count.
 	MySQLTableDisallowSetCharset Type = "bb.plugin.advisor.mysql.table.disallow-set-charset"

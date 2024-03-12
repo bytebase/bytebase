@@ -136,8 +136,8 @@ const (
 	SchemaRuleTableDisallowTrigger SQLReviewRuleType = "table.disallow-trigger"
 	// SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 	SchemaRuleTableNoDuplicateIndex SQLReviewRuleType = "table.no-duplicate-index"
-	// SchemaRuleTableFieldsMaximumVarcharLength enforce the maximum varchar length of all fields.
-	SchemaRuleTableFieldsMaximumVarcharLength SQLReviewRuleType = "table.fields-maximum-varchar-length"
+	// SchemaRuleTableTextFieldsTotalLength enforce the total length of text fields.
+	SchemaRuleTableTextFieldsTotalLength SQLReviewRuleType = "table.text-fields-total-length"
 	// SchemaRuleTableDisallowSetCharset disallow set table charset.
 	SchemaRuleTableDisallowSetCharset SQLReviewRuleType = "table.disallow-set-charset"
 
@@ -1349,9 +1349,9 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableNoDuplicateIndex, nil
 		}
-	case SchemaRuleTableFieldsMaximumVarcharLength:
+	case SchemaRuleTableTextFieldsTotalLength:
 		if engine == storepb.Engine_MYSQL {
-			return MySQLTableFieldsMaximumVarcharLength, nil
+			return MySQLTableTextFieldsTotalLength, nil
 		}
 	case SchemaRuleTableDisallowSetCharset:
 		if engine == storepb.Engine_MYSQL {

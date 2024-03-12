@@ -21,7 +21,7 @@ ruleList:
       maxLength: 64
   - type: table.no-duplicate-index
     level: WARNING
-  - type: table.fields-maximum-varchar-length
+  - type: table.text-fields-total-length
     level: WARNING
     payload:
       number: 1000
