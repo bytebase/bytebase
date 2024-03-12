@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*NoSelectAllAdvisor)(nil)
-	_ ast.Visitor     = (*noSelectAllChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowmixDDLDMLAdvisor)(nil)
+	_ ast.Visitor     = (*statementDisallowMixDDLDMLChecker)(nil)
 )
 
 func init() {
