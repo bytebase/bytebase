@@ -1,7 +1,16 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { ActivitySQLEditorQueryPayload, SQLEditorQueryHistory } from "@/types";
-import { useActivityV1Store } from "./v1";
+import {
+  ActivitySQLEditorQueryPayload,
+  SQLEditorQueryHistory,
+  UNKNOWN_ID,
+} from "@/types";
+import { emptySQLEditorConnection } from "@/utils";
+import {
+  useActivityV1Store,
+  useDatabaseV1Store,
+  useInstanceV1Store,
+} from "./v1";
 
 export const useSQLEditorQueryHistoryStore = defineStore(
   "sqlEditorQueryHistory",
@@ -16,22 +25,38 @@ export const useSQLEditorQueryHistoryStore = defineStore(
           limit: 20,
           order: "desc",
         });
-      console.log(activityList);
-      const historyList = activityList.map<SQLEditorQueryHistory>((history) => {
-        const payload = JSON.parse(
-          history.payload
-        ) as ActivitySQLEditorQueryPayload;
-        return {
-          name: history.name,
-          creator: history.creator,
-          createTime: history.createTime ?? new Date(),
-          statement: payload.statement,
-          durationNs: payload.durationNs,
-          instance: payload.instanceName,
-          database: payload.databaseName,
-          error: payload.error,
-        };
-      });
+      const historyList = activityList.map<SQLEditorQueryHistory>(
+        (activity) => {
+          const payload = JSON.parse(
+            activity.payload
+          ) as ActivitySQLEditorQueryPayload;
+
+          const connection = emptySQLEditorConnection();
+          const database = useDatabaseV1Store().getDatabaseByUID(
+            String(payload.databaseId) || String(UNKNOWN_ID)
+          );
+          if (database.uid !== String(UNKNOWN_ID)) {
+            connection.instance = database.instance;
+            connection.database = database.name;
+          } else {
+            const instance = useInstanceV1Store().getInstanceByUID(
+              String(payload.instanceId) || String(UNKNOWN_ID)
+            );
+            if (instance.uid !== String(UNKNOWN_ID))
+              connection.instance = instance.name;
+          }
+          return {
+            name: activity.name,
+            creator: activity.creator,
+            createTime: activity.createTime ?? new Date(),
+            statement: payload.statement,
+            durationNs: payload.durationNs,
+            instance: connection.instance,
+            database: connection.database,
+            error: payload.error,
+          };
+        }
+      );
       isFetching.value = false;
       queryHistoryList.value = historyList;
     };
