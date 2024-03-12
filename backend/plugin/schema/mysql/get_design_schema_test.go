@@ -78,12 +78,12 @@ func TestNormalizeOnUpdate(t *testing.T) {
 			want: "CURRENT_TIMESTAMP(6)",
 		},
 		{
-			s:    "hello",
-			want: "hello",
-		},
-		{
 			s:    "current_timestamp",
 			want: "CURRENT_TIMESTAMP",
+		},
+		{
+			s:    "hello",
+			want: "hello",
 		},
 	}
 	for _, tc := range tests {
