@@ -301,6 +301,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   };
 });
 
+export const useCurrentSQLEditorTab = () => {
+  return storeToRefs(useSQLEditorTabStore()).currentTab;
+};
+
 export const isSQLEditorTabClosable = (tab: SQLEditorTab) => {
   const { tabList } = useSQLEditorTabStore();
 
