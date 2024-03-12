@@ -10,7 +10,7 @@ bin = './.air/bytebase --port 8080 --data . --debug --disable-sample'
 cmd = """
   go build \
   -p=8 \
-  -ldflags="-w -s -X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
+  -ldflags="-X 'github.com/bytebase/bytebase/backend/bin/server/cmd.gitcommit=$(git rev-parse HEAD)'" \
   --tags "minimal" \
   -o ./.air/bytebase ./backend/bin/server/main.go"""
 delay = 500
