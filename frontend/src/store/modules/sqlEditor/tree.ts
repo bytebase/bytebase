@@ -29,13 +29,13 @@ import {
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
-import { useFilterStore } from "./filter";
-import { useSQLEditorV2Store } from "./sqlEditorV2";
+import { useFilterStore } from "../filter";
 import {
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-} from "./v1";
+} from "../v1";
+import { useSQLEditorV2Store } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
 
