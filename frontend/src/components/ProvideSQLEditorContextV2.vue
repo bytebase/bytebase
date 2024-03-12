@@ -26,7 +26,7 @@ import {
   useProjectV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useSQLEditorV2Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
 import { DEFAULT_PROJECT_V1_NAME, UNKNOWN_USER_NAME } from "@/types";
@@ -38,7 +38,7 @@ const route = useRoute();
 const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
-const sqlEditorStore = useSQLEditorV2Store();
+const sqlEditorStore = useSQLEditorStore();
 const tabStore = useSQLEditorTabStore();
 
 const initializeProjects = async () => {

@@ -26,13 +26,13 @@ import { ProjectSelect } from "@/components/v2";
 import {
   useProjectV1Store,
   useSQLEditorTreeStore,
-  useSQLEditorV2Store,
+  useSQLEditorStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorContext } from "../context";
 import DatabaseTree from "./DatabaseTree.vue";
 
-const sqlEditorStore = useSQLEditorV2Store();
+const sqlEditorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
 const { events } = useSQLEditorContext();
 const { project, projectContextReady, strictProject, allowViewALLProjects } =

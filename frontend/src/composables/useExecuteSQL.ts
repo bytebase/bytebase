@@ -7,7 +7,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useDatabaseV1Store,
-  useSQLEditorV2Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   RESULT_ROWS_LIMIT,
   useSQLStore,
@@ -34,7 +34,7 @@ const useExecuteSQL = () => {
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
-  const sqlEditorStore = useSQLEditorV2Store();
+  const sqlEditorStore = useSQLEditorStore();
 
   const notify = (
     type: BBNotificationStyle,

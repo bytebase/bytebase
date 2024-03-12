@@ -8,7 +8,7 @@ import { useCurrentUserV1 } from "../auth";
 // set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
 
-export const useSQLEditorV2Store = defineStore("sqlEditorV2", () => {
+export const useSQLEditorStore = defineStore("sqlEditor", () => {
   // empty to "ALL" projects for high-privileged users
   const project = ref<string>("");
   // if `true`, won't show project selector and not allowed to switch to other projects

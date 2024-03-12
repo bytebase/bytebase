@@ -13,7 +13,7 @@ import {
   isSimilarSQLEditorTab,
 } from "@/utils";
 import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
-import { useSQLEditorV2Store } from "./editor";
+import { useSQLEditorStore } from "./editor";
 import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
@@ -42,7 +42,7 @@ const tabsById = reactive(new Map<string, SQLEditorTab>());
 
 export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
   // re-expose selected project in sqlEditorStore for shortcut
-  const { project } = storeToRefs(useSQLEditorV2Store());
+  const { project } = storeToRefs(useSQLEditorStore());
 
   // states
   const storage = new WebStorageHelper(LOCAL_STORAGE_KEY_PREFIX);

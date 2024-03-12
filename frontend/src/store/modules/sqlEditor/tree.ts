@@ -35,7 +35,7 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "../v1";
-import { useSQLEditorV2Store } from "./editor";
+import { useSQLEditorStore } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
 
@@ -86,7 +86,7 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
   // just re-expose `databaseList` and `project` in sqlEditor store
-  const { databaseList, project } = storeToRefs(useSQLEditorV2Store());
+  const { databaseList, project } = storeToRefs(useSQLEditorStore());
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
