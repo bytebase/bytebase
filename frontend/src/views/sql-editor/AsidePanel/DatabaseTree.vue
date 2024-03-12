@@ -76,11 +76,9 @@ import {
   pushNotification,
   useSQLEditorTabStore,
   resolveOpeningDatabaseListFromSQLEditorTabList,
-} from "@/store";
-import {
-  idForSQLEditorTreeNodeTarget,
   useSQLEditorTreeStore,
-} from "@/store/modules/sqlEditorTree";
+  idForSQLEditorTreeNodeTarget,
+} from "@/store";
 import type {
   ComposedDatabase,
   ComposedInstance,
@@ -102,7 +100,6 @@ import {
 import { Engine } from "@/types/proto/v1/common";
 import {
   findAncestor,
-  formatEngineV1,
   hasWorkspacePermissionV2,
   instanceV1AllowsCrossDatabaseQuery,
   instanceV1HasAlterSchema,
@@ -495,7 +492,7 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
   const { engine } = database.instanceEntity;
   const LIMIT = 50; // default pagesize of SQL Editor
 
-  const runQuery = async (query: string) => {
+  const runQuery = async (statement: string) => {
     const tab: CoreSQLEditorTab = {
       connection: {
         instance: database.instance,
@@ -504,24 +501,34 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
       sheet: "",
     };
-    if (tabStore.currentTab && tabStore.currentTab.status === "NEW") {
-      // If the current tab is "fresh new", update its connection directly.
-      tabStore.updateCurrentTab(tab);
+    if (
+      tabStore.currentTab &&
+      (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.sheet)
+    ) {
+      // If the current tab is "fresh new" or unsaved, update its connection directly.
+      tabStore.updateCurrentTab({
+        ...tab,
+        title: suggestedTabTitleForSQLEditorConnection(tab.connection),
+        statement: tabStore.currentTab.statement || statement,
+      });
     } else {
       // Otherwise select or add a new tab and set its connection
       tabStore.addTab(
         {
           ...tab,
           title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-          statement: query,
+          statement: statement,
           status: "DIRTY",
         },
         /* beside */ true
       );
     }
     await nextTick();
-    executeReadonly(query, {
-      databaseType: formatEngineV1(database.instanceEntity),
+    executeReadonly({
+      statement,
+      connection: { ...tab.connection },
+      explain: false,
+      engine: database.instanceEntity.engine,
     });
   };
 
@@ -740,6 +747,7 @@ watch(
     }
     if (databaseName) {
       const database = databaseStore.getDatabaseByName(databaseName);
+      expandNodesByType("project", database.projectEntity);
       expandNodesByType("database", database);
     }
   },

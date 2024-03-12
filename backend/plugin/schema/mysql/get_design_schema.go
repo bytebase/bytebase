@@ -924,7 +924,7 @@ func normalizeOnUpdate(s string) string {
 	re := regexp.MustCompile(`(current_timestamp|now|localtime|localtimestamp)(?:\((\d+)\))?`)
 	match := re.FindStringSubmatch(lowerS)
 	if len(match) > 0 {
-		if len(match) > 1 && match[1] != "" {
+		if len(match) >= 3 && match[2] != "" {
 			// has precision
 			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
 		}

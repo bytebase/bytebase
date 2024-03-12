@@ -1,7 +1,7 @@
 <template>
   <component :is="tag">
     {{ title }}
-    <span v-if="subtitle" class="text-gray-500 text-xs">
+    <span v-if="subtitle" class="text-xs opacity-70">
       {{ subtitle }}
     </span>
   </component>

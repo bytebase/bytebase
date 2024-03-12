@@ -42,30 +42,6 @@ export const emptySQLEditorConnection = (): SQLEditorConnection => {
   };
 };
 
-// export const isSimilarDefaultTabName = (name: string) => {
-//   const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
-//   return regex.test(name);
-// };
-
-// export const INITIAL_TAB = getDefaultTab();
-
-// export const isTempTab = (tab: TabInfo): boolean => {
-//   if (tab.sheetName) return false;
-//   if (!tab.isSaved) return false;
-//   if (tab.statement) return false;
-//   return true;
-// };
-
-// export const sheetTypeForTab = (tab: TabInfo): TabSheetType => {
-//   if (!tab.sheetName) {
-//     return "TEMP";
-//   }
-//   if (tab.isSaved) {
-//     return "CLEAN";
-//   }
-//   return "DIRTY";
-// };
-
 export const connectionForSQLEditorTab = (tab: SQLEditorTab) => {
   const target: {
     instance: ComposedInstance | undefined;
@@ -142,7 +118,7 @@ export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
       // Don't go further if the connection doesn't change.
       return;
     }
-    if (currentTab.status === "NEW") {
+    if (currentTab.status === "NEW" || !currentTab.sheet) {
       // If the current tab is "fresh new", update its connection directly.
       tabStore.updateCurrentTab(tab);
       return;

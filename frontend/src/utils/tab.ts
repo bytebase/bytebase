@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { v1 as uuidv1 } from "uuid";
-import { useDatabaseV1Store, useInstanceV1Store, useTabStore } from "@/store";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
 import type {
   ComposedDatabase,
   ComposedInstance,
@@ -10,7 +10,6 @@ import type {
   TabSheetType,
 } from "@/types";
 import { UNKNOWN_ID, TabMode } from "@/types";
-import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const getDefaultTabName = () => {
   return dayjs().format("YYYY-MM-DD HH:mm");
@@ -42,8 +41,6 @@ export const getDefaultTab = (): TabInfo => {
     isExecutingSQL: false,
   };
 };
-
-export const INITIAL_TAB = getDefaultTab();
 
 export const isTempTab = (tab: TabInfo): boolean => {
   if (tab.sheetName) return false;
@@ -105,47 +102,4 @@ export const getSuggestedTabNameFromConnection = (conn: Connection) => {
   }
   parts.push(getDefaultTabName());
   return parts.join(" ");
-};
-
-export const isDisconnectedTab = (tab: TabInfo) => {
-  const { instanceId, databaseId } = tab.connection;
-  if (instanceId === String(UNKNOWN_ID)) {
-    return true;
-  }
-  const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-  if (instanceV1AllowsCrossDatabaseQuery(instance)) {
-    // Connecting to instance directly.
-    return false;
-  }
-  return databaseId === String(UNKNOWN_ID);
-};
-
-export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
-  const tabStore = useTabStore();
-
-  if (!tabStore.currentTabId) {
-    tabStore.addTab({
-      name: getSuggestedTabNameFromConnection(tab.connection),
-      connection: tab.connection,
-      // The newly created tab is "clean" so its connection can be changed
-      isFreshNew: true,
-    });
-    return;
-  } else if (isSimilarTab(tab, tabStore.currentTab)) {
-    // Don't go further if the connection doesn't change.
-    return;
-  }
-  if (tabStore.currentTab.isFreshNew) {
-    // If the current tab is "fresh new", update its connection directly.
-    tabStore.updateCurrentTab(tab);
-  } else {
-    // Otherwise select or add a new tab and set its connection.
-    const name = getSuggestedTabNameFromConnection(tab.connection);
-    tabStore.selectOrAddSimilarTab(
-      tab,
-      false /* beside */,
-      name /* defaultTabName */
-    );
-    tabStore.updateCurrentTab(tab);
-  }
 };

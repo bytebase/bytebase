@@ -366,6 +366,7 @@ func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRun
 	}()
 
 	driverCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	s.stateCfg.RunningTaskRunsCancelFunc.Store(taskRun.ID, cancel)
 
 	done, result, err := RunExecutorOnce(ctx, driverCtx, executor, task, taskRun.ID)
