@@ -107,6 +107,20 @@ const (
 	SchemaRuleStatementDisallowUsingTemporary = "statement.disallow-using-temporary"
 	// SchemaRuleStatementWhereNoEqualNull check the WHERE clause no equal null.
 	SchemaRuleStatementWhereNoEqualNull = "statement.where.no-equal-null"
+	// SchemaRuleStatementWhereDisallowUsingFunction disallow using function in WHERE clause.
+	SchemaRuleStatementWhereDisallowUsingFunction = "statement.where.disallow-using-function"
+	// SchemaRuleStatementQueryMinumumPlanLevel enforce the minimum plan level.
+	SchemaRuleStatementQueryMinumumPlanLevel = "statement.query.minimum-plan-level"
+	// SchemaRuleStatementWhereMaximumLogicalOperatorCount enforce the maximum logical operator count in WHERE clause.
+	SchemaRuleStatementWhereMaximumLogicalOperatorCount = "statement.where.maximum-logical-operator-count"
+	// SchemaRuleStatementMaximumLimitValue enforce the maximum limit value.
+	SchemaRuleStatementMaximumLimitValue = "statement.maximum-limit-value"
+	// SchemaRuleStatementMaximumJoinTableCount enforce the maximum join table count in the statement.
+	SchemaRuleStatementMaximumJoinTableCount = "statement.maximum-join-table-count"
+	// SchemaRuleStatementMaximumStatementsInTransaction enforce the maximum statements in transaction.
+	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
+	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
+	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
@@ -122,6 +136,10 @@ const (
 	SchemaRuleTableDisallowTrigger SQLReviewRuleType = "table.disallow-trigger"
 	// SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 	SchemaRuleTableNoDuplicateIndex SQLReviewRuleType = "table.no-duplicate-index"
+	// SchemaRuleTableFieldsMaximumVarcharLength enforce the maximum varchar length of all fields.
+	SchemaRuleTableFieldsMaximumVarcharLength SQLReviewRuleType = "table.fields-maximum-varchar-length"
+	// SchemaRuleTableDisallowSetCharset disallow set table charset.
+	SchemaRuleTableDisallowSetCharset SQLReviewRuleType = "table.disallow-set-charset"
 
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
@@ -1331,6 +1349,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableNoDuplicateIndex, nil
 		}
+	case SchemaRuleTableFieldsMaximumVarcharLength:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableFieldsMaximumVarcharLength, nil
+		}
+	case SchemaRuleTableDisallowSetCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableDisallowSetCharset, nil
+		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
@@ -1504,6 +1530,34 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementWhereNoEqualNull:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementWhereNoEqualNull, nil
+		}
+	case SchemaRuleStatementWhereDisallowUsingFunction:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementWhereDisallowUsingFunction, nil
+		}
+	case SchemaRuleStatementQueryMinumumPlanLevel:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementQueryMinumumPlanLevel, nil
+		}
+	case SchemaRuleStatementWhereMaximumLogicalOperatorCount:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementWhereMaximumLogicalOperatorCount, nil
+		}
+	case SchemaRuleStatementMaximumLimitValue:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementMaximumLimitValue, nil
+		}
+	case SchemaRuleStatementMaximumJoinTableCount:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementMaximumJoinTableCount, nil
+		}
+	case SchemaRuleStatementMaximumStatementsInTransaction:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementMaximumStatementsInTransaction, nil
+		}
+	case SchemaRuleStatementJoinStrictColumnAttrs:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementJoinStrictColumnAttrs, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
