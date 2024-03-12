@@ -148,15 +148,15 @@ import EditorPanel from "./EditorPanel/EditorPanel.vue";
 import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
 import {
-  provideSecondarySidebarContext,
   default as SecondarySidebar,
+  useSecondarySidebarContext,
 } from "./SecondarySidebar";
 import { SecondaryGutterBar } from "./SecondarySidebar";
-import { provideSheetContext } from "./Sheet";
+import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
-import { provideSQLEditorContext } from "./context";
+import { useSQLEditorContext } from "./context";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -175,11 +175,9 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
 const tabStore = useSQLEditorTabStore();
-// provide context for SQL Editor
-const { events: editorEvents } = provideSQLEditorContext();
-// provide context for sheets
-const { showPanel: showSheetPanel } = provideSheetContext();
-const { show: showSecondarySidebar } = provideSecondarySidebarContext();
+const { events: editorEvents } = useSQLEditorContext();
+const { showPanel: showSheetPanel } = useSheetContext();
+const { show: showSecondarySidebar } = useSecondarySidebarContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
