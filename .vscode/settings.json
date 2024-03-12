@@ -28,9 +28,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true,
-    "editor.formatOnSaveMode": "file"
+    "editor.autoIndent": "advanced"
   },
   "i18n-ally.localesPaths": ["frontend/src/locales"],
   "i18n-ally.enabledParsers": ["json"],

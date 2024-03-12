@@ -22,7 +22,7 @@ func TestGetDesignSchema(t *testing.T) {
 	}
 
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepaths = []string{
@@ -65,5 +65,29 @@ func TestGetDesignSchema(t *testing.T) {
 			err = os.WriteFile(filepath, byteValue, 0644)
 			a.NoError(err)
 		}
+	}
+}
+
+func TestNormalizeOnUpdate(t *testing.T) {
+	tests := []struct {
+		s    string
+		want string
+	}{
+		{
+			s:    "current_timestamp(6)",
+			want: "CURRENT_TIMESTAMP(6)",
+		},
+		{
+			s:    "current_timestamp",
+			want: "CURRENT_TIMESTAMP",
+		},
+		{
+			s:    "hello",
+			want: "hello",
+		},
+	}
+	for _, tc := range tests {
+		got := normalizeOnUpdate(tc.s)
+		require.Equal(t, tc.want, got, tc.s)
 	}
 }
