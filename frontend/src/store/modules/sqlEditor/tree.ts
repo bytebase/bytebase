@@ -28,7 +28,7 @@ import {
   RichExternalTableMetadata,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
+import { getSemanticLabelValue, groupBy } from "@/utils";
 import { useFilterStore } from "../filter";
 import {
   useEnvironmentV1Store,
@@ -195,63 +195,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     cleanup,
   };
 });
-
-export const searchConnectionByName = (
-  instanceId: string,
-  databaseId: string,
-  instanceName: string,
-  databaseName: string
-): Connection => {
-  const connection = emptyConnection();
-  const store = useSQLEditorTreeStore();
-
-  if (instanceId !== String(UNKNOWN_ID)) {
-    // If we found instanceId and/or databaseId, use the IDs first.
-    connection.instanceId = instanceId;
-    if (databaseId !== String(UNKNOWN_ID)) {
-      connection.databaseId = databaseId;
-    }
-
-    return connection;
-  }
-
-  // Search the instance and database by name otherwise.
-  // Remain this part for legacy sheet support.
-  const rootNodes = store.tree;
-  for (let i = 0; i < rootNodes.length; i++) {
-    const maybeInstanceNode = rootNodes[i];
-    if (maybeInstanceNode.meta.type !== "instance") {
-      // Skip if we met dirty data.
-      continue;
-    }
-    if (maybeInstanceNode.label === instanceName) {
-      connection.instanceId = (
-        maybeInstanceNode.meta.target as ComposedInstance
-      ).uid;
-      if (databaseName) {
-        const { children = [] } = maybeInstanceNode;
-        for (let j = 0; j < children.length; j++) {
-          const maybeDatabaseNode = children[j];
-          if (maybeDatabaseNode.meta.type !== "database") {
-            // Skip if we met dirty data.
-            continue;
-          }
-          if (maybeDatabaseNode.label === databaseName) {
-            connection.databaseId = (
-              maybeDatabaseNode.meta.target as ComposedDatabase
-            ).uid;
-            // Don't go further since we've found the databaseId
-            break;
-          }
-        }
-      }
-      // Don't go further since we've found the instanceId
-      break;
-    }
-  }
-
-  return connection;
-};
 
 export const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,

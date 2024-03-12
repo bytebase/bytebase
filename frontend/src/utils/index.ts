@@ -16,7 +16,6 @@ export * from "./types";
 export * from "./util";
 export * from "./label";
 export * from "./string";
-export * from "./tab";
 export * from "./sqlEditor";
 export * from "./task";
 export * from "./pev2";

@@ -8,9 +8,9 @@
     <BannersWrapper v-if="showBanners" />
     <!-- Suspense is experimental, be aware of the potential change -->
     <Suspense v-if="ready">
-      <ProvideSQLEditorContextV2>
+      <ProvideSQLEditorContext>
         <router-view />
-      </ProvideSQLEditorContextV2>
+      </ProvideSQLEditorContext>
     </Suspense>
   </div>
 </template>
@@ -20,7 +20,7 @@ import { computed, ref } from "vue";
 import { onMounted } from "vue";
 import { useRouter } from "vue-router";
 import BannersWrapper from "@/components/BannersWrapper.vue";
-import ProvideSQLEditorContextV2 from "@/components/ProvideSQLEditorContextV2.vue";
+import ProvideSQLEditorContext from "@/components/ProvideSQLEditorContext.vue";
 import {
   useEnvironmentV1Store,
   usePageMode,
