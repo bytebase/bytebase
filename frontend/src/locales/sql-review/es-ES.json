@@ -65,6 +65,14 @@
       "title": "No se permiten índices duplicados",
       "description": "Esta regla prohíbe la creación de índices duplicados en una tabla. Los índices duplicados consumen espacio de almacenamiento adicional y pueden reducir el rendimiento de las consultas. Nivel de error de sugerencia: Advertencia"
     },
+    "table-text-fields-total-length": {
+      "title": "Limitar la longitud total de los campos de texto en una tabla",
+      "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento."
+    },
+    "table-disallow-set-charset": {
+      "title": "Prohibir la definición del juego de caracteres en las propiedades de la tabla",
+      "description": "Se recomienda establecer el juego de caracteres a nivel de la base de datos. Establecer el juego de caracteres con una granularidad más fina puede generar complejidades innecesarias. Nivel de error sugerido: Error."
+    },
     "table-comment": {
       "title": "Convención de comentarios de tabla",
       "description": "Configure si la tabla requiere comentarios y la longitud máxima de comentarios.",
@@ -394,6 +402,42 @@
     "statement-where-no-equal-null": {
       "title": "Prohibir el uso de comparación de igualdad con NULL en la cláusula WHERE",
       "description": "El resultado de la comparación de igualdad con NULL siempre es NULL, lo que puede causar resultados inesperados. Nivel de error de sugerencia: Advertencia"
+    },
+    "statement-where-disallow-using-function": {
+      "title": "No aplique funciones ni realice cálculos en campos indexados en la cláusula WHERE",
+      "description": "Si aplica una función o realiza un cálculo en el campo indexado, la base de datos no puede usar el índice y tiene que escanear toda la tabla."
+    },
+    "statement-where-statement-query-minimum-plan-level": {
+      "title": "Limitar el nivel máximo del método de acceso a la consulta",
+      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango."
+    },
+    "statement-where-maximum-logical-operator-count": {
+      "title": "Limitar el número de valores en las cláusulas IN u OR dentro de la cláusula WHERE",
+      "description": "Esto evita la degradación del rendimiento debido a comparaciones exhaustivas y limitaciones de recursos."
+    },
+    "statement-maximum-limit-value": {
+      "title": "Limitar el número máximo de la cláusula LIMIT",
+      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento."
+    },
+    "statement-maximum-join-table-count": {
+      "title": "Limite el número de tablas a unir",
+      "description": "Cuanto más tablas unes, más compleja se vuelve la consulta y más tardará en ejecutarse. En general, es recomendable mantener el número de uniones al mínimo."
+    },
+    "statement-maximum-statements-in-transaction": {
+      "title": "Limitar el número de sentencias en una transacción",
+      "description": "Las transacciones grandes pueden impactar significativamente el rendimiento de la base de datos. Si se involucra una gran cantidad de sentencias y una falla, revertir toda la transacción se vuelve complejo. Limitar las sentencias minimiza el daño potencial causado por una sola falla y simplifica los procedimientos de recuperación."
+    },
+    "statement-join-strict-column-attrs": {
+      "title": "Los campos a unir deben tener tipos de datos y conjuntos de caracteres idénticos",
+      "description": "Si los tipos de datos y los juegos de caracteres de las columnas de unión no son idénticos, es posible que la base de datos no pueda identificar correctamente las filas coincidentes, lo que dará lugar a resultados inexactos o incompletos."
+    },
+    "statement-disallow-mix-dml": {
+      "title": "Prohibir DML en la misma tabla",
+      "description": "La realización de modificaciones concurrentes de datos en una tabla puede generar dificultades para identificar con precisión las filas afectadas. En consecuencia, esto complica el proceso de crear una copia de seguridad precisa de los datos modificados."
+    },
+    "statement-disallow-mix-ddl-dml": {
+      "title": "No se permite mezclar DDL y DML",
+      "description": "Para un rendimiento óptimo e integridad de los datos, evite combinar sentencias DDL y DML dentro del mismo script."
     },
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",

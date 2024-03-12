@@ -65,6 +65,14 @@
       "title": "禁止重复索引",
       "description": "此规则禁止在表上创建重复的索引。重复索引会占用额外的存储空间并可能降低查询性能。建议错误等级：警告"
     },
+    "table-text-fields-total-length": {
+      "title": "限制表格文本字段的总长度",
+      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。"
+    },
+    "table-disallow-set-charset": {
+      "title": "禁止在表格属性中定义字符集",
+      "description": "建议在数据库层面设置字符集。在更细粒度设置字符集会带来不必要的复杂性。建议错误等级：错误。"
+    },
     "table-comment": {
       "title": "注释检查",
       "description": "配置表是否需要注释和最大注释长度。",
@@ -394,6 +402,42 @@
     "statement-where-no-equal-null": {
       "title": "禁止在WHERE子句中使用NULL等式比较",
       "description": "NULL 等式比较的结果始终是 NULL，可能导致意外的结果。建议错误级别：警告"
+    },
+    "statement-where-disallow-using-function": {
+      "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
+      "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
+    },
+    "statement-where-statement-query-minimum-plan-level": {
+      "title": "限制查询访问方法的最大级别",
+      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。"
+    },
+    "statement-where-maximum-logical-operator-count": {
+      "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量",
+      "description": "这可以防止因频繁对比和资源限制导致性能下降。"
+    },
+    "statement-maximum-limit-value": {
+      "title": "限制 LIMIT 子句的最大行数",
+      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。"
+    },
+    "statement-maximum-join-table-count": {
+      "title": "限制语句中连接的表数量",
+      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。"
+    },
+    "statement-maximum-statements-in-transaction": {
+      "title": "限制事务中的语句数量",
+      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。"
+    },
+    "statement-join-strict-column-attrs": {
+      "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
+      "description": "如果连接列的数据类型、字符集不一致，数据库可能无法正确识别匹配的行，从而导致结果不准确或不完整。"
+    },
+    "statement-disallow-mix-dml": {
+      "title": "禁止在同一张表上进行多个 DML 操作",
+      "description": "对表格进行并发数据修改可能会给准确识别受影响的行带来挑战。 因此，这会使创建受影响数据的精确备份过程变得复杂。"
+    },
+    "statement-disallow-mix-ddl-dml": {
+      "title": "禁止混合 DDL 和 DML 操作",
+      "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "schema-backward-compatibility": {
       "title": "检查应用向后兼容性",
