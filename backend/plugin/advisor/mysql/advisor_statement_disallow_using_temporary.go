@@ -153,7 +153,11 @@ func hasUsingTemporaryInExtraColumn(res []any) (bool, string, error) {
 		if len(row) != 12 {
 			return false, "", errors.Errorf("expected 12 but got %d", len(row))
 		}
-		if row[11] == "Using temporary" {
+		extra, ok := row[11].(string)
+		if !ok {
+			return false, "", nil
+		}
+		if strings.Contains(extra, "Using temporary") {
 			tables = append(tables, row[2].(string))
 		}
 	}
