@@ -15,7 +15,7 @@ import {
   getStatementSize,
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useSQLEditorTabStore } from "../sqlEditorTab";
+import { useSQLEditorTabStore } from "../sqlEditor";
 import { getUserEmailFromIdentifier } from "./common";
 
 type WorksheetView = "FULL" | "BASIC";
