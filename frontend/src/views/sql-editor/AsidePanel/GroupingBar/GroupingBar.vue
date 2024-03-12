@@ -31,7 +31,7 @@
 import { NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import { useSQLEditorTreeStore } from "@/store";
 import FactorPanel from "./FactorPanel.vue";
 
 defineOptions({

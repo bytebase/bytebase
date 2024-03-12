@@ -6,7 +6,6 @@ import {
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
-  useTabStore,
   useCurrentUserV1,
   usePageMode,
   useProjectV1Store,
@@ -111,7 +110,6 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_MFA_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
-    useTabStore().reset();
     useSQLEditorTabStore().reset();
     useDatabaseV1Store().reset();
     useProjectV1Store().reset();

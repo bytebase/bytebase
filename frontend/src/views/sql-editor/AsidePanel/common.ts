@@ -4,8 +4,8 @@ import {
   pushNotification,
   useCurrentUserV1,
   useDBSchemaV1Store,
+  mapTreeNodeByType,
 } from "@/store";
-import { mapTreeNodeByType } from "@/store/modules/sqlEditorTree";
 import {
   ComposedDatabase,
   SQLEditorTreeNode,
