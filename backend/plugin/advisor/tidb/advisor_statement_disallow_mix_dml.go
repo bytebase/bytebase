@@ -23,6 +23,7 @@ type StatementDisallowMixDMLAdvisor struct {
 
 // Check checks for no multiple DMLs for the same table.
 func (*StatementDisallowMixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	// TODO(p0ny): implement it.
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")

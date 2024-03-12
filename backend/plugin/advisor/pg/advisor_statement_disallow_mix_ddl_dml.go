@@ -25,6 +25,7 @@ type StatementDisallowMixDdlDmlAdvisor struct {
 
 // Check checks for disallow mix DDL and DML.
 func (*StatementDisallowMixDdlDmlAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	// TODO(p0ny): implement it.
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
