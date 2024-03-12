@@ -43,8 +43,6 @@ export const getDefaultTab = (): TabInfo => {
   };
 };
 
-export const INITIAL_TAB = getDefaultTab();
-
 export const isTempTab = (tab: TabInfo): boolean => {
   if (tab.sheetName) return false;
   if (!tab.isSaved) return false;
@@ -135,9 +133,12 @@ export const tryConnectToCoreTab = (tab: CoreTabInfo) => {
     // Don't go further if the connection doesn't change.
     return;
   }
-  if (tabStore.currentTab.isFreshNew) {
-    // If the current tab is "fresh new", update its connection directly.
-    tabStore.updateCurrentTab(tab);
+  if (tabStore.currentTab.isFreshNew || !tabStore.currentTab.sheetName) {
+    // If the current tab is "fresh new" or unsaved, update its connection directly.
+    tabStore.updateCurrentTab({
+      ...tab,
+      name: getSuggestedTabNameFromConnection(tab.connection),
+    });
   } else {
     // Otherwise select or add a new tab and set its connection.
     const name = getSuggestedTabNameFromConnection(tab.connection);

@@ -5,7 +5,6 @@ import { computed, reactive, ref, toRef, watch } from "vue";
 import { TabInfo, CoreTabInfo, AnyTabInfo, TabMode } from "@/types";
 import {
   getDefaultTab,
-  INITIAL_TAB,
   isTempTab,
   isSimilarTab,
   WebStorageHelper,
@@ -178,17 +177,11 @@ export const useTabStore = defineStore("tab", () => {
   const init = () => {
     // Load tabIdList and currentTabId
     tabIdList.value = storage.load(KEYS.tabIdList, []);
-    currentTabId.value = storage.load(KEYS.currentTabId, INITIAL_TAB.id);
+    currentTabId.value = storage.load(KEYS.currentTabId, "");
     if (tabIdList.value.indexOf(currentTabId.value) < 0) {
       // currentTabId is not in tabIdList accidentally
       // fallback to the first tab
       currentTabId.value = tabIdList.value[0];
-    }
-
-    // Fallback to the initial tab if tabIdList is empty.
-    if (tabIdList.value.length === 0) {
-      // tabIdList is empty accidentally
-      tabIdList.value = [INITIAL_TAB.id];
     }
 
     // Load tab details
