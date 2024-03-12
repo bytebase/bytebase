@@ -459,8 +459,11 @@ message CreateRolloutRequest {
   // Format: projects/{project}
   string parent = 1 [(google.api.field_behavior) = REQUIRED];
 
+  // The plan used to create rollout.
+  string plan = 2 [(google.api.field_behavior) = REQUIRED];
+
   // The rollout to create.
-  Rollout rollout = 2 [(google.api.field_behavior) = REQUIRED];
+  Rollout rollout = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message PreviewRolloutRequest {

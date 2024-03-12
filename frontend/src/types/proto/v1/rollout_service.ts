@@ -616,6 +616,8 @@ export interface CreateRolloutRequest {
    * Format: projects/{project}
    */
   parent: string;
+  /** The plan used to create rollout. */
+  plan: string;
   /** The rollout to create. */
   rollout: Rollout | undefined;
 }
@@ -3987,7 +3989,7 @@ export const GetRolloutRequest = {
 };
 
 function createBaseCreateRolloutRequest(): CreateRolloutRequest {
-  return { parent: "", rollout: undefined };
+  return { parent: "", plan: "", rollout: undefined };
 }
 
 export const CreateRolloutRequest = {
@@ -3995,8 +3997,11 @@ export const CreateRolloutRequest = {
     if (message.parent !== "") {
       writer.uint32(10).string(message.parent);
     }
+    if (message.plan !== "") {
+      writer.uint32(18).string(message.plan);
+    }
     if (message.rollout !== undefined) {
-      Rollout.encode(message.rollout, writer.uint32(18).fork()).ldelim();
+      Rollout.encode(message.rollout, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -4020,6 +4025,13 @@ export const CreateRolloutRequest = {
             break;
           }
 
+          message.plan = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
           message.rollout = Rollout.decode(reader, reader.uint32());
           continue;
       }
@@ -4034,6 +4046,7 @@ export const CreateRolloutRequest = {
   fromJSON(object: any): CreateRolloutRequest {
     return {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       rollout: isSet(object.rollout) ? Rollout.fromJSON(object.rollout) : undefined,
     };
   },
@@ -4042,6 +4055,9 @@ export const CreateRolloutRequest = {
     const obj: any = {};
     if (message.parent !== "") {
       obj.parent = message.parent;
+    }
+    if (message.plan !== "") {
+      obj.plan = message.plan;
     }
     if (message.rollout !== undefined) {
       obj.rollout = Rollout.toJSON(message.rollout);
@@ -4055,6 +4071,7 @@ export const CreateRolloutRequest = {
   fromPartial(object: DeepPartial<CreateRolloutRequest>): CreateRolloutRequest {
     const message = createBaseCreateRolloutRequest();
     message.parent = object.parent ?? "";
+    message.plan = object.plan ?? "";
     message.rollout = (object.rollout !== undefined && object.rollout !== null)
       ? Rollout.fromPartial(object.rollout)
       : undefined;
