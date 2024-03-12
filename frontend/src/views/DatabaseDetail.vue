@@ -425,7 +425,7 @@ const syncDatabaseSchema = async () => {
   try {
     await databaseV1Store.syncDatabase(database.value.name);
 
-    dbSchemaStore.getOrFetchDatabaseMetadata({
+    await dbSchemaStore.getOrFetchDatabaseMetadata({
       database: database.value.name,
       skipCache: true,
     });
