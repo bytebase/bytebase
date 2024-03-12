@@ -123,6 +123,8 @@ const (
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
 	// SchemaRuleStatementDisallowMixDML disallow mix DML on the same table.
 	SchemaRuleStatementDisallowMixDML = "statement.disallow-mix-dml"
+	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML.
+	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"

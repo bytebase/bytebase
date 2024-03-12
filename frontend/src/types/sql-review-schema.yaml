@@ -342,6 +342,11 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: statement.disallow-mix-ddl-dml
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
   - type: naming.table
     category: NAMING
     engineList:

@@ -278,6 +278,9 @@ const (
 	// MySQLStatementDisallowMixDML is an advisor type for MySQL disallow mix DML on same table.
 	MySQLStatementDisallowMixDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-dml"
 
+	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
+	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
 
