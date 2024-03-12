@@ -178,12 +178,12 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		},
 	}
 
+	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), project); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
-	}
-	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.GetSteps(), project); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 
 	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
@@ -802,13 +802,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "steps":
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
-		}
-	}
 	planID, err := common.GetPlanID(request.Plan.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -819,6 +812,23 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	}
 	if oldPlan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &oldPlan.ProjectID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project %q, err: %v", oldPlan.ProjectID, err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", oldPlan.ProjectID)
+	}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "steps":
+			if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
+		}
 	}
 
 	ok, err = func() (bool, error) {
