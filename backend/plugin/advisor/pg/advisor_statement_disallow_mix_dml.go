@@ -11,20 +11,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*%AdvisorName)(nil)
-	_ ast.Visitor     = (*%CheckerName)(nil)
+	_ advisor.Advisor = (*StatementDisallowMixDmlAdvisor)(nil)
+	_ ast.Visitor     = (*statementDisallowMixDmlChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.%AdvisorType, &%AdvisorName{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementDisallowMixDML, &StatementDisallowMixDmlAdvisor{})
 }
 
-// %AdvisorName is the advisor checking for %AdvisorComment
-type %AdvisorName struct {
+// StatementDisallowMixDmlAdvisor is the advisor checking for disallow mix DML on same table.
+type StatementDisallowMixDmlAdvisor struct {
 }
 
-// Check checks for %AdvisorComment
-func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+// Check checks for disallow mix DML on same table.
+func (*StatementDisallowMixDmlAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
+	// TODO(p0ny): implement it.
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -34,13 +35,13 @@ func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, err
 	if err != nil {
 		return nil, err
 	}
-	checker := &%CheckerName{
+	checker := &statementDisallowMixDmlChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
 
 	for _, stmt := range stmtList {
-        ast.Walk(checker, stmt)
+		ast.Walk(checker, stmt)
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -54,17 +55,17 @@ func (*%AdvisorName) Check(ctx advisor.Context, _ string) ([]advisor.Advice, err
 	return checker.adviceList, nil
 }
 
-type %CheckerName struct {
+type statementDisallowMixDmlChecker struct {
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
 }
 
 // Visit implements ast.Visitor interface.
-func (checker *%CheckerName) Visit(in ast.Node) ast.Visitor {
+func (checker *statementDisallowMixDmlChecker) Visit(_ ast.Node) ast.Visitor {
 	// TODO: implement it
 	// switch node := in.(type) {
 	// }
-    
-    return checker
+
+	return checker
 }
