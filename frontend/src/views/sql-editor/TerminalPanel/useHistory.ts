@@ -1,5 +1,5 @@
 import { computed, unref, watch } from "vue";
-import { useSQLEditorTabStore, useWebTerminalV1Store } from "@/store";
+import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
 import { WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 
@@ -12,7 +12,7 @@ type HistoryState = {
 
 export const useHistory = () => {
   const tabStore = useSQLEditorTabStore();
-  const webTerminalStore = useWebTerminalV1Store();
+  const webTerminalStore = useWebTerminalStore();
   const historyByTabId = new Map<string, HistoryState>();
   const queryState = computed(() => {
     return webTerminalStore.getQueryStateByTab(tabStore.currentTab!);

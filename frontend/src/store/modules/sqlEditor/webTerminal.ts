@@ -31,7 +31,7 @@ const SIG_ABORT = 3000 + Status.ABORTED;
 const QUERY_TIMEOUT_MS = 5000;
 const MAX_QUERY_ITEM_COUNT = 20;
 
-export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
+export const useWebTerminalStore = defineStore("webTerminal", () => {
   const map = shallowRef(new Map<string, WebTerminalQueryState>());
 
   const getQueryStateByTab = (tab: SQLEditorTab) => {

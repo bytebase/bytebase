@@ -11,7 +11,7 @@ import {
   WebStorageHelper,
   isDisconnectedTab,
 } from "@/utils";
-import { useWebTerminalV1Store } from "./v1";
+import { useWebTerminalStore } from "./v1";
 import { useWorkSheetStore } from "./v1/worksheet";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor.tab-list";
@@ -87,7 +87,7 @@ export const useTabStore = defineStore("tab", () => {
       storage.remove(KEYS.tab(id));
 
       if (tab.mode === TabMode.Admin) {
-        useWebTerminalV1Store().clearQueryStateByTab(id);
+        useWebTerminalStore().clearQueryStateByTab(id);
       }
     }
   };

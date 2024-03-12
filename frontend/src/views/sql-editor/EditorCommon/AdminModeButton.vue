@@ -18,7 +18,7 @@ import { computed, nextTick, unref } from "vue";
 import {
   useCurrentUserV1,
   useSQLEditorTabStore,
-  useWebTerminalV1Store,
+  useWebTerminalStore,
 } from "@/store";
 import { CoreSQLEditorTab } from "@/types";
 import {
@@ -79,7 +79,7 @@ const enterAdminMode = async () => {
     return;
   }
   const queryItemList = unref(
-    useWebTerminalV1Store().getQueryStateByTab(current).queryItemList
+    useWebTerminalStore().getQueryStateByTab(current).queryItemList
   );
   const queryItem = last(queryItemList || []);
   if (queryItem) {

@@ -14,7 +14,7 @@ import {
 } from "@/utils";
 import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
 import { useSQLEditorV2Store } from "./editor";
-import { useWebTerminalV1Store } from "./webTerminal";
+import { useWebTerminalStore } from "./webTerminal";
 
 const LOCAL_STORAGE_KEY_PREFIX = "bb.sql-editor-tab";
 const KEYS = {
@@ -163,7 +163,7 @@ export const useSQLEditorTabStore = defineStore("sql-editor-tab", () => {
     storage.remove(KEYS.tab(id));
 
     if (tab.mode === "ADMIN") {
-      useWebTerminalV1Store().clearQueryStateByTab(id);
+      useWebTerminalStore().clearQueryStateByTab(id);
     }
   };
   const updateTab = (id: string, payload: Partial<SQLEditorTab>) => {
