@@ -76,7 +76,9 @@ func TestBatch(t *testing.T) {
 	var testCases []TestCase
 	a.NoError(yaml.Unmarshal(bytes, &testCases))
 
-	var record = true
+	const (
+		record = false
+	)
 	for i, tc := range testCases {
 		batchResults := getBatchResults(a, tc.Input)
 		if record {
