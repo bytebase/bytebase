@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "限制表格文本字段的总长度",
-      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。"
+      "description": "该规则限制了表格所能容纳的数据量，防止存储空间的使用过量。",
+      "component": {
+        "number": {
+          "title": "最大长度"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "禁止在表格属性中定义字符集",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "限制查询访问方法的最大级别",
-      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。"
+      "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。",
+      "component": {
+        "level": {
+          "title": "最大级别"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "限制 WHERE 子句中的 IN 或 OR 子句中的值的数量",
-      "description": "这可以防止因频繁对比和资源限制导致性能下降。"
+      "description": "这可以防止因频繁对比和资源限制导致性能下降。",
+      "component": {
+        "number": {
+          "title": "最大数量"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "限制 LIMIT 子句的最大行数",

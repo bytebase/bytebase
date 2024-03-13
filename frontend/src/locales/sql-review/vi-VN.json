@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Giới hạn độ dài tối đa của trường văn bản trong bảng",
-      "description": "Luật này giới hạn dung lượng dữ liệu mà một bảng có thể chứa, giúp ngăn chặn việc sử dụng dung lượng lưu trữ quá mức."
+      "description": "Luật này giới hạn dung lượng dữ liệu mà một bảng có thể chứa, giúp ngăn chặn việc sử dụng dung lượng lưu trữ quá mức.",
+      "component": {
+        "number": {
+          "title": "Chiều dài tối đa"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Cấm thiết lập bảng mã trong thuộc tính của bảng",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "Hạn chế mức truy cập tối đa của phương thức truy vấn",
-      "description": "Ch tối ưu hóa hiệu suất SQL hướng đến truy cập hằng số (const), đặt mục tiêu mức tham chiếu (ref) làm tiêu chuẩn, với hiệu suất chấp nhận được ở mức phạm vi (range)."
+      "description": "Ch tối ưu hóa hiệu suất SQL hướng đến truy cập hằng số (const), đặt mục tiêu mức tham chiếu (ref) làm tiêu chuẩn, với hiệu suất chấp nhận được ở mức phạm vi (range).",
+      "component": {
+        "level": {
+          "title": "Mức tối đa"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Giới hạn số lượng giá trị trong mệnh đề IN hoặc OR của mệnh đề WHERE",
-      "description": "Điều này giúp ngăn chặn hiệu suất suy giảm do các phép so sánh rộng rãi và hạn chế tài nguyên."
+      "description": "Điều này giúp ngăn chặn hiệu suất suy giảm do các phép so sánh rộng rãi và hạn chế tài nguyên.",
+      "component": {
+        "number": {
+          "title": "Số lớn nhất"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Giới hạn số lượng tối đa của mệnh đề LIMIT",

@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "テキスト入力欄の文字数を制限する",
-      "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。"
+      "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。",
+      "component": {
+        "number": {
+          "title": "最大長さ"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "テーブルプロパティでの文字セットの定義を禁止する",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "クエリ アクセス メソッドの最大レベルを制限する",
-      "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。"
+      "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。",
+      "component": {
+        "level": {
+          "title": "最大レベル"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "WHERE 句の IN または OR 句の値数を制限する",
-      "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。"
+      "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。",
+      "component": {
+        "number": {
+          "title": "最大値"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "リミット節の上限値を制限する",

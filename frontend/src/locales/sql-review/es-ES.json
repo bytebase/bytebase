@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Limitar la longitud total de los campos de texto en una tabla",
-      "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento."
+      "description": "Esta regla limita la cantidad de datos que una tabla puede almacenar, evitando un uso excesivo de almacenamiento.",
+      "component": {
+        "number": {
+          "title": "Longitud máxima"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Prohibir la definición del juego de caracteres en las propiedades de la tabla",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "Limitar el nivel máximo del método de acceso a la consulta",
-      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango."
+      "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango.",
+      "component": {
+        "level": {
+          "title": "Nivel maximo"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Limitar el número de valores en las cláusulas IN u OR dentro de la cláusula WHERE",
-      "description": "Esto evita la degradación del rendimiento debido a comparaciones exhaustivas y limitaciones de recursos."
+      "description": "Esto evita la degradación del rendimiento debido a comparaciones exhaustivas y limitaciones de recursos.",
+      "component": {
+        "number": {
+          "title": "Número máximo"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Limitar el número máximo de la cláusula LIMIT",
