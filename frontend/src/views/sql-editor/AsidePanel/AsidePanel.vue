@@ -2,7 +2,7 @@
   <div class="aside-panel h-full flex flex-col overflow-hidden">
     <div
       v-if="!strictProject"
-      class="flex flex-row items-center gap-x-1 px-1 py-1"
+      class="flex flex-row items-center gap-x-1 px-1 pt-1"
     >
       <ProjectSelect
         style="width: 100%"
@@ -13,7 +13,7 @@
         @update:project="handleSwitchProject"
       />
     </div>
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1 overflow-hidden pt-1">
       <DatabaseTree />
     </div>
   </div>
