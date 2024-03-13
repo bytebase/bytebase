@@ -426,11 +426,21 @@
     },
     "statement-maximum-join-table-count": {
       "title": "Restrict the number of tables to be joined",
-      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum."
+      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Restrict the number of statements in a transaction",
-      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures."
+      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Fields to be joined must have identical data types, character sets",

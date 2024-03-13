@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -68,8 +70,23 @@ type statementMaximumJoinTableCountChecker struct {
 	title         string
 	text          string
 	limitMaxValue int
+	count         int
 }
 
 func (checker *statementMaximumJoinTableCountChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *statementMaximumJoinTableCountChecker) EnterJoinedTable(ctx *mysql.JoinedTableContext) {
+	checker.count++
+	// The count starts from 0. We count the number of tables in the joins.
+	if checker.count >= checker.limitMaxValue {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementMaximumJoinTableCount,
+			Title:   checker.title,
+			Content: fmt.Sprintf("\"%s\" exceeds the maximum number of joins %d.", checker.text, checker.limitMaxValue),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
 }

@@ -426,11 +426,21 @@
     },
     "statement-maximum-join-table-count": {
       "title": "限制语句中连接的表数量",
-      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。"
+      "description": "连接的表越多，查询就越复杂，执行时间也越长。 通常情况下，最好将连接数控制在最低限度。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "限制事务中的语句数量",
-      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。"
+      "description": "巨大的事务会显著影响数据库性能。如果涉及大量语句并且其中一个语句失败，则回滚整个事务会变得复杂。限制语句数量可以最小化单个故障造成的潜在损害并简化回滚过程。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "要进行连接的字段必须具有相同的数据类型和字符集。",
