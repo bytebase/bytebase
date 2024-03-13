@@ -13,19 +13,6 @@ import sqlReviewDevTemplate from "./sql-review.dev.yaml";
 import sqlReviewProdTemplate from "./sql-review.prod.yaml";
 import sqlReviewSampleTemplate from "./sql-review.sample.yaml";
 
-// The category type for rule template
-export type CategoryType =
-  | "ENGINE"
-  | "NAMING"
-  | "STATEMENT"
-  | "TABLE"
-  | "COLUMN"
-  | "SCHEMA"
-  | "DATABASE"
-  | "INDEX"
-  | "SYSTEM"
-  | "ADVICE";
-
 export const LEVEL_LIST = [
   SQLReviewRuleLevel.ERROR,
   SQLReviewRuleLevel.WARNING,
@@ -97,94 +84,6 @@ export interface RuleConfigComponent {
     | BooleanPayload;
 }
 
-// The identifier for rule template
-export type RuleType =
-  | "engine.mysql.use-innodb"
-  | "table.require-pk"
-  | "table.no-foreign-key"
-  | "table.drop-naming-convention"
-  | "table.disallow-partition"
-  | "table.disallow-trigger"
-  | "table.no-duplicate-index"
-  | "table.text-fields-total-length"
-  | "table.disallow-set-charset"
-  | "table.comment"
-  | "naming.table"
-  | "naming.column"
-  | "naming.index.uk"
-  | "naming.index.pk"
-  | "naming.index.fk"
-  | "naming.index.idx"
-  | "naming.column.auto-increment"
-  | "naming.table.no-keyword"
-  | "naming.identifier.no-keyword"
-  | "naming.identifier.case"
-  | "column.required"
-  | "column.no-null"
-  | "column.comment"
-  | "column.type-disallow-list"
-  | "column.disallow-change-type"
-  | "column.disallow-drop-in-index"
-  | "column.set-default-for-not-null"
-  | "column.disallow-change"
-  | "column.disallow-changing-order"
-  | "column.auto-increment-must-integer"
-  | "column.disallow-set-charset"
-  | "column.auto-increment-must-unsigned"
-  | "column.maximum-character-length"
-  | "column.maximum-varchar-length"
-  | "column.auto-increment-initial-value"
-  | "column.current-time-count-limit"
-  | "column.require-default"
-  | "statement.select.no-select-all"
-  | "statement.where.require"
-  | "statement.where.no-leading-wildcard-like"
-  | "statement.disallow-commit"
-  | "statement.disallow-limit"
-  | "statement.disallow-order-by"
-  | "statement.merge-alter-table"
-  | "statement.insert.must-specify-column"
-  | "statement.insert.disallow-order-by-rand"
-  | "statement.insert.row-limit"
-  | "statement.affected-row-limit"
-  | "statement.dml-dry-run"
-  | "statement.disallow-add-column-with-default"
-  | "statement.add-check-not-valid"
-  | "statement.disallow-add-not-null"
-  | "statement.select-full-table-scan"
-  | "statement.create-specify-schema"
-  | "statement.check-set-role-variable"
-  | "statement.disallow-using-temporary"
-  | "statement.disallow-using-filesort"
-  | "statement.where.no-equal-null"
-  | "statement.where.disallow-using-function"
-  | "statement.where.statement.query.minimum-plan-level"
-  | "statement.where.maximum-logical-operator-count"
-  | "statement.maximum-limit-value"
-  | "statement.maximum-join-table-count"
-  | "statement.maximum-statements-in-transaction"
-  | "statement.join-strict-column-attrs"
-  | "statement.disallow-mix-dml"
-  | "statement.disallow-mix-ddl-dml"
-  | "schema.backward-compatibility"
-  | "database.drop-empty-database"
-  | "system.charset.allowlist"
-  | "system.collation.allowlist"
-  | "system.comment.length"
-  | "system.procedure.disallow-create"
-  | "system.event.disallow-create"
-  | "system.view.disallow-create"
-  | "system.function.disallow-create"
-  | "system.function.disallowed-list"
-  | "index.no-duplicate-column"
-  | "index.type-no-blob"
-  | "index.key-number-limit"
-  | "index.total-number-limit"
-  | "index.primary-key-type-allowlist"
-  | "index.create-concurrently"
-  | "index.pk-type-limit"
-  | "advice.online-migration";
-
 // The naming format rule payload.
 // Used by the backend.
 interface NamingFormatPayload {
@@ -220,7 +119,7 @@ interface CasePayload {
 // The SchemaPolicyRule stores the rule configuration by users.
 // Used by the backend
 export interface SchemaPolicyRule {
-  type: RuleType;
+  type: string;
   level: SQLReviewRuleLevel;
   engine: Engine;
   payload?:
@@ -248,8 +147,8 @@ export interface SQLReviewPolicy {
 
 // RuleTemplate is the rule template. Used by the frontend
 export interface RuleTemplate {
-  type: RuleType;
-  category: CategoryType;
+  type: string;
+  category: string;
   engineList: Engine[];
   componentList: RuleConfigComponent[];
   individualConfigList: IndividualConfigForEngine[];
@@ -267,10 +166,14 @@ export interface SQLReviewPolicyTemplate {
 export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   const ruleSchemaMap = (sqlReviewSchema.ruleList as RuleTemplate[]).reduce(
     (map, ruleSchema) => {
-      map.set(ruleSchema.type, ruleSchema);
+      map.set(ruleSchema.type, {
+        ...ruleSchema,
+        componentList: ruleSchema.componentList || [],
+        individualConfigList: ruleSchema.individualConfigList || [],
+      });
       return map;
     },
-    new Map<RuleType, RuleTemplate>()
+    new Map<string, RuleTemplate>()
   );
 
   interface PayloadObject {
@@ -283,7 +186,7 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   ] as {
     id: string;
     ruleList: {
-      type: RuleType;
+      type: string;
       level: SQLReviewRuleLevel;
       payload?: PayloadObject;
       engine?: Engine;
@@ -295,7 +198,7 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
 
     const groupRuleList = groupBy(template.ruleList, (rule) => rule.type);
     for (const [ruleType, groupList] of Object.entries(groupRuleList)) {
-      const ruleTemplate = ruleSchemaMap.get(ruleType as RuleType);
+      const ruleTemplate = ruleSchemaMap.get(ruleType);
       if (!ruleTemplate) {
         continue;
       }
@@ -364,7 +267,7 @@ export const TEMPLATE_LIST: SQLReviewPolicyTemplate[] = (function () {
   });
 })();
 
-export const findRuleTemplate = (type: RuleType) => {
+export const findRuleTemplate = (type: string) => {
   for (let i = 0; i < TEMPLATE_LIST.length; i++) {
     const template = TEMPLATE_LIST[i];
     const rule = template.ruleList.find((rule) => rule.type === type);
@@ -373,16 +276,18 @@ export const findRuleTemplate = (type: RuleType) => {
   return undefined;
 };
 
-export const ruleTemplateMap: Map<RuleType, RuleTemplate> =
-  TEMPLATE_LIST.reduce((map, template) => {
+export const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
+  (map, template) => {
     for (const rule of template.ruleList) {
       map.set(rule.type, rule);
     }
     return map;
-  }, new Map<RuleType, RuleTemplate>());
+  },
+  new Map<string, RuleTemplate>()
+);
 
 interface RuleCategory {
-  id: CategoryType;
+  id: string;
   ruleList: RuleTemplate[];
 }
 
@@ -390,12 +295,6 @@ interface RuleCategory {
 export const convertToCategoryList = (
   ruleList: RuleTemplate[]
 ): RuleCategory[] => {
-  const categoryList = sqlReviewSchema.categoryList as CategoryType[];
-  const categoryOrder = categoryList.reduce((map, category, index) => {
-    map.set(category, index);
-    return map;
-  }, new Map<CategoryType, number>());
-
   const dict = ruleList.reduce((dict, rule) => {
     if (!dict[rule.category]) {
       dict[rule.category] = {
@@ -407,11 +306,7 @@ export const convertToCategoryList = (
     return dict;
   }, {} as { [key: string]: RuleCategory });
 
-  return Object.values(dict).sort(
-    (c1, c2) =>
-      (categoryOrder.get(c2.id as CategoryType) || 0) -
-      (categoryOrder.get(c1.id as CategoryType) || 0)
-  );
+  return Object.values(dict);
 };
 
 const mergeRulePayloadAsIndividualConfig = (
@@ -454,7 +349,8 @@ export const convertPolicyRuleToRuleTemplate = (
     comment: policyRule.comment,
   };
 
-  if (ruleTemplate.componentList.length === 0) {
+  const componentList = ruleTemplate.componentList ?? [];
+  if (componentList.length === 0) {
     return res;
   }
 
@@ -475,21 +371,23 @@ export const convertPolicyRuleToRuleTemplate = (
   policyRule = policyRuleList[0];
   const payload = policyRule?.payload ?? {};
 
-  const stringComponent = ruleTemplate.componentList.find(
+  const stringComponent = componentList.find(
     (c) => c.payload.type === "STRING"
   );
-  const numberComponent = ruleTemplate.componentList.find(
+  const numberComponent = componentList.find(
     (c) => c.payload.type === "NUMBER"
   );
-  const booleanComponent = ruleTemplate.componentList.find(
+  const booleanComponent = componentList.find(
     (c) => c.payload.type === "BOOLEAN"
   );
-  const templateComponent = ruleTemplate.componentList.find(
+  const templateComponent = componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   );
 
   switch (ruleTemplate.type) {
+    // Following rules require STRING component.
     case "table.drop-naming-convention":
+    case "statement.where.statement.query.minimum-plan-level":
       if (!stringComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -507,6 +405,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
         individualConfigList,
       };
+    // Following rules require STRING and NUMBER component.
     case "naming.column":
     case "naming.column.auto-increment":
     case "naming.table":
@@ -534,6 +433,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
         individualConfigList,
       };
+    // Following rules require TEMPLATE component.
     case "naming.index.pk":
       if (!templateComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -552,6 +452,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
         individualConfigList,
       };
+    // Following rules require TEMPLATE and NUMBER component.
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
@@ -579,6 +480,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
         individualConfigList,
       };
+    // Following rules require BOOLEAN component.
     case "naming.identifier.case":
       if (!booleanComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
@@ -594,7 +496,7 @@ export const convertPolicyRuleToRuleTemplate = (
         individualConfigList,
       };
     case "column.required": {
-      const requiredColumnComponent = ruleTemplate.componentList[0];
+      const requiredColumnComponent = componentList[0];
       // The columnList payload is deprecated.
       // Just keep it to compatible with old data, we can remove this later.
       let value: string[] = (payload as any)["columnList"];
@@ -616,13 +518,14 @@ export const convertPolicyRuleToRuleTemplate = (
         individualConfigList,
       };
     }
+    // Following rules require STRING_ARRAY component.
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
     case "index.type-allow-list":
     case "system.charset.allowlist":
     case "system.collation.allowlist":
     case "system.function.disallowed-list": {
-      const stringArrayComponent = ruleTemplate.componentList[0];
+      const stringArrayComponent = componentList[0];
       const stringArrayPayload = {
         ...stringArrayComponent.payload,
         value: (payload as StringArrayLimitPayload).list,
@@ -638,6 +541,7 @@ export const convertPolicyRuleToRuleTemplate = (
         individualConfigList,
       };
     }
+    // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
     case "table.comment":
       if (!booleanComponent || !numberComponent) {
@@ -664,6 +568,7 @@ export const convertPolicyRuleToRuleTemplate = (
         ],
         individualConfigList,
       };
+    // Following rules require NUMBER component.
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
@@ -673,6 +578,11 @@ export const convertPolicyRuleToRuleTemplate = (
     case "index.total-number-limit":
     case "system.comment.length":
     case "advice.online-migration":
+    case "table.text-fields-total-length":
+    case "statement.where.maximum-logical-operator-count":
+    case "statement.maximum-limit-value":
+    case "statement.maximum-join-table-count":
+    case "statement.maximum-statements-in-transaction":
       if (!numberComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -699,24 +609,24 @@ const mergeIndividualConfigAsRule = (
   base: SchemaPolicyRule,
   template: RuleTemplate
 ): SchemaPolicyRule => {
-  const stringPayload = template.componentList.find(
-    (c) => c.payload.type === "STRING"
-  )?.payload as StringPayload | undefined;
-  const numberPayload = template.componentList.find(
-    (c) => c.payload.type === "NUMBER"
-  )?.payload as NumberPayload | undefined;
-  const templatePayload = template.componentList.find(
+  const componentList = template.componentList ?? [];
+  const stringPayload = componentList.find((c) => c.payload.type === "STRING")
+    ?.payload as StringPayload | undefined;
+  const numberPayload = componentList.find((c) => c.payload.type === "NUMBER")
+    ?.payload as NumberPayload | undefined;
+  const templatePayload = componentList.find(
     (c) => c.payload.type === "TEMPLATE"
   )?.payload as TemplatePayload | undefined;
-  const booleanPayload = template.componentList.find(
-    (c) => c.payload.type === "BOOLEAN"
-  )?.payload as BooleanPayload | undefined;
-  const stringArrayPayload = template.componentList.find(
+  const booleanPayload = componentList.find((c) => c.payload.type === "BOOLEAN")
+    ?.payload as BooleanPayload | undefined;
+  const stringArrayPayload = componentList.find(
     (c) => c.payload.type === "STRING_ARRAY"
   )?.payload as StringArrayPayload | undefined;
 
   switch (template.type) {
+    // Following rules require STRING component.
     case "table.drop-naming-convention":
+    case "statement.where.statement.query.minimum-plan-level":
       if (!stringPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
@@ -727,6 +637,7 @@ const mergeIndividualConfigAsRule = (
           format: stringPayload.value ?? stringPayload.default,
         },
       };
+    // Following rules require STRING and NUMBER component.
     case "naming.column":
     case "naming.column.auto-increment":
     case "naming.table":
@@ -741,6 +652,7 @@ const mergeIndividualConfigAsRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    // Following rules require TEMPLATE component.
     case "naming.index.pk":
       if (!templatePayload) {
         throw new Error(`Invalid rule ${template.type}`);
@@ -751,6 +663,7 @@ const mergeIndividualConfigAsRule = (
           format: templatePayload.value ?? templatePayload.default,
         },
       };
+    // Following rules require TEMPLATE and NUMBER component.
     case "naming.index.idx":
     case "naming.index.uk":
     case "naming.index.fk":
@@ -764,6 +677,7 @@ const mergeIndividualConfigAsRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    // Following rules require BOOLEAN component.
     case "naming.identifier.case":
       if (!booleanPayload) {
         throw new Error(`Invalid rule ${template.type}`);
@@ -774,6 +688,7 @@ const mergeIndividualConfigAsRule = (
           upper: booleanPayload.value ?? booleanPayload.default,
         },
       };
+    // Following rules require STRING_ARRAY component.
     case "column.required":
     case "column.type-disallow-list":
     case "index.primary-key-type-allowlist":
@@ -791,6 +706,7 @@ const mergeIndividualConfigAsRule = (
         },
       };
     }
+    // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
     case "table.comment":
       if (!booleanPayload || !numberPayload) {
@@ -803,6 +719,7 @@ const mergeIndividualConfigAsRule = (
           maxLength: numberPayload.value ?? numberPayload.default,
         },
       };
+    // Following rules require NUMBER component.
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
     case "column.maximum-character-length":
@@ -812,6 +729,11 @@ const mergeIndividualConfigAsRule = (
     case "index.total-number-limit":
     case "system.comment.length":
     case "advice.online-migration":
+    case "table.text-fields-total-length":
+    case "statement.where.maximum-logical-operator-count":
+    case "statement.maximum-limit-value":
+    case "statement.maximum-join-table-count":
+    case "statement.maximum-statements-in-transaction":
       if (!numberPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
@@ -837,13 +759,13 @@ export const convertRuleTemplateToPolicyRule = (
     engine,
     comment: rule.comment ?? "",
   }));
-  if (rule.componentList.length === 0) {
+  if ((rule.componentList?.length ?? 0) === 0) {
     return baseList;
   }
 
   return baseList.map((base) => {
     const result = mergeIndividualConfigAsRule(base, rule);
-    const individualConfig = rule.individualConfigList.find(
+    const individualConfig = (rule.individualConfigList || []).find(
       (config) => config.engine === base.engine
     );
     if (individualConfig && result.payload) {
@@ -855,12 +777,12 @@ export const convertRuleTemplateToPolicyRule = (
   });
 };
 
-export const getRuleLocalizationKey = (type: RuleType): string => {
+export const getRuleLocalizationKey = (type: string): string => {
   return type.split(".").join("-");
 };
 
 export const getRuleLocalization = (
-  type: RuleType
+  type: string
 ): { title: string; description: string } => {
   const { t } = useI18n();
   const key = getRuleLocalizationKey(type);
@@ -875,7 +797,7 @@ export const getRuleLocalization = (
 };
 
 export const ruleIsAvailableInSubscription = (
-  ruleType: RuleType,
+  ruleType: string,
   subscriptionPlan: PlanType
 ): boolean => {
   return true;
