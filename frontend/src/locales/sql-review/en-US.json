@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Restrict the total length of text fields in a table",
-      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage."
+      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage.",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Prohibit defining character set in table properties",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "Restrict the maximum level of query access method",
-      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level."
+      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
+      "component": {
+        "level": {
+          "title": "Maximum level"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Restrict the number of values in the IN or OR clause of the WHERE clause",
-      "description": "This prevents performance degradation due to extensive comparisons and resource limitations."
+      "description": "This prevents performance degradation due to extensive comparisons and resource limitations.",
+      "component": {
+        "number": {
+          "title": "Maximum count"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Restrict the maximum number of the LIMIT clause",
