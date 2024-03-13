@@ -417,7 +417,12 @@
     },
     "statement-maximum-limit-value": {
       "title": "Giới hạn số lượng tối đa của mệnh đề LIMIT",
-      "description": "Bằng cách giới hạn số dòng trả về thông qua LIMIT, đảm bảo cơ sở dữ liệu xử lý các khối dữ liệu vừa phải, cải thiện tốc độ thực thi truy vấn. Giá trị LIMIT được giới hạn giúp ngăn chặn việc sử dụng bộ nhớ quá mức, bảo vệ tính ổn định tổng thể của hệ thống và ngăn ngừa hiệu suất giảm."
+      "description": "Bằng cách giới hạn số dòng trả về thông qua LIMIT, đảm bảo cơ sở dữ liệu xử lý các khối dữ liệu vừa phải, cải thiện tốc độ thực thi truy vấn. Giá trị LIMIT được giới hạn giúp ngăn chặn việc sử dụng bộ nhớ quá mức, bảo vệ tính ổn định tổng thể của hệ thống và ngăn ngừa hiệu suất giảm.",
+      "component": {
+        "number": {
+          "title": "Giá trị tối đa"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Giảm thiểu số lượng bảng cần tham gia",
