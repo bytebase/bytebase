@@ -22,13 +22,15 @@ func TestGetDesignSchema(t *testing.T) {
 	}
 
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepaths = []string{
 			"testdata/get-design-schema/get_design_schema.yaml",
 			"testdata/get-design-schema/partition/range.yaml",
 			"testdata/get-design-schema/partition/list.yaml",
+			"testdata/get-design-schema/partition/hash.yaml",
+			"testdata/get-design-schema/partition/key.yaml",
 		}
 	)
 
@@ -50,8 +52,8 @@ func TestGetDesignSchema(t *testing.T) {
 			a.NoError(err)
 
 			// Addintional parse stage to verify the result is parsable.
-			_, err = parser.ParseMySQL(t.Result)
-			a.NoError(err)
+			_, err = parser.ParseMySQL(result)
+			a.NoErrorf(err, "[%s] test case %d: %s\n content:\n%s", filepath, i, t.Description, result)
 
 			if record {
 				tests[i].Result = result

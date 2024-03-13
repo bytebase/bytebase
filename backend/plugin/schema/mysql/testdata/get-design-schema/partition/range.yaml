@@ -18,7 +18,7 @@
         {
           "tables": [
             {
-              "name": "u",
+              "name": "range_columns_partition_hash_subpartition",
               "engine": "InnoDB",
               "columns": [
                 {
@@ -29,7 +29,7 @@
                   "defaultNull": true
                 },
                 {
-                  "name": "hired",
+                  "name": "d",
                   "type": "date",
                   "nullable": true,
                   "position": 2,
@@ -41,7 +41,7 @@
                   "name": "p0",
                   "type": "RANGE_COLUMNS",
                   "value": "1,'2012-01-01 00:00:00'",
-                  "expression": "`id`,`hired`",
+                  "expression": "`id`,`d`",
                   "subpartitions": [
                     {
                       "name": "p0sp0",
@@ -61,7 +61,7 @@
                   "name": "p1",
                   "type": "RANGE_COLUMNS",
                   "value": "2,'2012-01-02 00:00:00'",
-                  "expression": "`id`,`hired`",
+                  "expression": "`id`,`d`",
                   "subpartitions": [
                     {
                       "name": "p1sp0",
@@ -87,21 +87,22 @@
   result: |
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+
     --
-    -- Table structure for `u`
+    -- Table structure for `range_columns_partition_hash_subpartition`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `range_columns_partition_hash_subpartition` (
       `id` int DEFAULT NULL,
-      `hired` date DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-    /*!50100 PARTITION BY RANGE COLUMNS (`id`,`hired`)
-    SUBPARTITION BY KEY (`id`)
+      `d` date DEFAULT NULL
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
+    /*!50500 PARTITION BY RANGE  COLUMNS(id,d)
+    SUBPARTITION BY KEY (id)
     (PARTITION p0 VALUES LESS THAN (1,'2012-01-01 00:00:00')
-     (SUBPARTITION p0sp0 ENGINE = InnoDB,
-      SUBPARTITION p0sp1 ENGINE = InnoDB),
+     (SUBPARTITION p0sp0 ENGINE=InnoDB,
+      SUBPARTITION p0sp1 ENGINE=InnoDB),
      PARTITION p1 VALUES LESS THAN (2,'2012-01-02 00:00:00')
-     (SUBPARTITION p1sp0 ENGINE = InnoDB,
-      SUBPARTITION p1sp1 ENGINE = InnoDB)) */;
+     (SUBPARTITION p1sp0 ENGINE=InnoDB,
+      SUBPARTITION p1sp1 ENGINE=InnoDB)) */;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
@@ -110,9 +111,9 @@
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `range_partition_hash_subpartition`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `range_partition_hash_subpartition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -125,7 +126,7 @@
         {
           "tables": [
             {
-              "name": "u",
+              "name": "range_partition_hash_subpartition",
               "engine": "InnoDB",
               "columns": [
                 {
@@ -149,20 +150,20 @@
                 {
                   "name": "p0",
                   "type": "RANGE",
-                  "value": "100",
+                  "value": "10",
                   "expression": "`id`",
                   "subpartitions": [
                     {
                       "name": "p0s0",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
+                      "type": "HASH",
+                      "value": "10",
+                      "expression": "`id`"
                     },
                     {
                       "name": "p0s1",
-                      "type": "KEY",
-                      "value": "100",
-                      "expression": "`name`"
+                      "type": "HASH",
+                      "value": "10",
+                      "expression": "`id`"
                     }
                   ]
                 },
@@ -174,15 +175,15 @@
                   "subpartitions": [
                     {
                       "name": "p1s0",
-                      "type": "KEY",
+                      "type": "HASH",
                       "value": "MAXVALUE",
-                      "expression": "`name`"
+                      "expression": "`id`"
                     },
                     {
                       "name": "p1s1",
-                      "type": "KEY",
+                      "type": "HASH",
                       "value": "MAXVALUE",
-                      "expression": "`name`"
+                      "expression": "`id`"
                     }
                   ]
                 }
@@ -197,31 +198,31 @@
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `range_partition_hash_subpartition`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `range_partition_hash_subpartition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
-    SUBPARTITION BY KEY (`name`)
-    (PARTITION p0 VALUES LESS THAN (100)
-     (SUBPARTITION p0s0 ENGINE = InnoDB,
-      SUBPARTITION p0s1 ENGINE = InnoDB),
-     PARTITION p1 VALUES LESS THAN MAXVALUE
-     (SUBPARTITION p1s0 ENGINE = InnoDB,
-      SUBPARTITION p1s1 ENGINE = InnoDB)) */;
+    SUBPARTITION BY HASH (`id`)
+    (PARTITION p0 VALUES LESS THAN (10)
+     (SUBPARTITION p0s0 ENGINE=InnoDB,
+      SUBPARTITION p0s1 ENGINE=InnoDB),
+     PARTITION p1 VALUES LESS THAN (MAXVALUE)
+     (SUBPARTITION p1s0 ENGINE=InnoDB,
+      SUBPARTITION p1s1 ENGINE=InnoDB)) */;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-- description: Easy Partition
+- description: Easy Range Partition
   baseline: |-
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `range_partition`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `range_partition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -234,7 +235,7 @@
         {
           "tables": [
             {
-              "name": "u",
+              "name": "range_partition",
               "engine": "InnoDB",
               "columns": [
                 {
@@ -284,16 +285,16 @@
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `range_partition`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `range_partition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
-    (PARTITION p0 VALUES LESS THAN (100) ENGINE = InnoDB,
-     PARTITION p1 VALUES LESS THAN (200) ENGINE = InnoDB,
-     PARTITION p2 VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */;
+    (PARTITION p0 VALUES LESS THAN (100) ENGINE=InnoDB,
+     PARTITION p1 VALUES LESS THAN (200) ENGINE=InnoDB,
+     PARTITION p2 VALUES LESS THAN (MAXVALUE) ENGINE=InnoDB) */;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
