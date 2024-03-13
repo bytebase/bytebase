@@ -49,11 +49,14 @@
           <span class="border-r border-control-border ml-1"></span>
         </template>
         <template
-          v-if="row.checkResult.sqlReviewReport && getActiveRule(row.checkResult.title as RuleType)"
+          v-if="
+            row.checkResult.sqlReviewReport &&
+            getActiveRule(row.checkResult.title)
+          "
         >
           <span
             class="ml-1 normal-link"
-            @click="setActiveRule(row.checkResult.title as RuleType)"
+            @click="setActiveRule(row.checkResult.title)"
             >{{ $t("sql-review.rule-detail") }}</span
           >
           <span class="border-r border-control-border ml-1"></span>
@@ -103,7 +106,6 @@ import { useReviewPolicyByEnvironmentName } from "@/store";
 import {
   GeneralErrorCode,
   RuleTemplate,
-  RuleType,
   SQLReviewPolicyErrorCode,
   UNKNOWN_ENVIRONMENT_NAME,
   findRuleTemplate,
@@ -200,7 +202,7 @@ const categoryAndTitle = (
       const title = messageWithCode(checkResult.title, code);
       return ["", title];
     }
-    const rule = ruleTemplateMap.get(checkResult.title as RuleType);
+    const rule = ruleTemplateMap.get(checkResult.title);
     if (rule) {
       const ruleLocalization = getRuleLocalization(rule.type);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
@@ -279,7 +281,7 @@ const reviewPolicy = useReviewPolicyByEnvironmentName(
     return props.environment || UNKNOWN_ENVIRONMENT_NAME;
   })
 );
-const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
+const getActiveRule = (type: string): PreviewSQLReviewRule | undefined => {
   const rule = reviewPolicy.value?.ruleList.find((rule) => rule.type === type);
   if (!rule) {
     return undefined;
@@ -304,7 +306,7 @@ const getActiveRule = (type: RuleType): PreviewSQLReviewRule | undefined => {
     payload: payload,
   };
 };
-const setActiveRule = (type: RuleType) => {
+const setActiveRule = (type: string) => {
   state.activeRule = getActiveRule(type);
 };
 </script>
