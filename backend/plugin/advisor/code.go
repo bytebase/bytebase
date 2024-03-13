@@ -48,6 +48,7 @@ const (
 	StatementWhereNoEqualNull               Code = 221
 	StatementExceedMaximumLimitValue        Code = 222
 	StatementMaximumJoinTableCount          Code = 223
+	StatementUnwantedQueryPlanLevel         Code = 224
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

@@ -412,7 +412,7 @@
       "title": "No aplique funciones ni realice cálculos en campos indexados en la cláusula WHERE",
       "description": "Si aplica una función o realiza un cálculo en el campo indexado, la base de datos no puede usar el índice y tiene que escanear toda la tabla."
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "Limitar el nivel máximo del método de acceso a la consulta",
       "description": "La optimización del rendimiento de SQL busca un acceso constante (const), con el nivel de referencia (ref) como base, y un rendimiento aceptable a nivel de rango.",
       "component": {
