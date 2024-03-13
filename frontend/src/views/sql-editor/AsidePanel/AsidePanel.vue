@@ -9,7 +9,7 @@
         size="small"
         class="project-select"
         :project="projectUID"
-        :include-all="allowViewALLProjects"
+        :include-all="false"
         @update:project="handleSwitchProject"
       />
     </div>
@@ -35,14 +35,14 @@ import DatabaseTree from "./DatabaseTree.vue";
 const editorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
 const { events } = useSQLEditorContext();
-const { project, projectContextReady, strictProject, allowViewALLProjects } =
+const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 
 const projectUID = computed(() => {
   if (!projectContextReady.value) {
     return null;
   }
-  return treeStore.selectedProject?.uid ?? String(UNKNOWN_ID);
+  return treeStore.selectedProject?.uid ?? null;
 });
 
 watch([project, projectContextReady], ([project, ready]) => {
