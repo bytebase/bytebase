@@ -573,15 +573,86 @@ func convertToPartitionStateWrapper(partitions []*storepb.TablePartitionMetadata
 	return wrapper
 }
 
+// toString() writes the partition state as SHOW CREATE TABLE syntax to buf, referencing MySQL source code:
+// https://sourcegraph.com/github.com/mysql/mysql-server@824e2b4064053f7daf17d7f3f84b7a3ed92e5fb4/-/blob/sql/sql_show.cc?L2528-2550
 func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 	// Write version specific comment.
-	if _, err := buf.WriteString("/*!50100 PARTITION BY "); err != nil {
+	vsc := p.getVersionSpecificComment()
+	if _, err := buf.WriteString(vsc); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" PARTITION BY "); err != nil {
 		return err
 	}
 
-	tp, err := partitionTypeToString(p.tp)
-	if err != nil {
-		return err
+	switch p.tp {
+	case storepb.TablePartitionMetadata_RANGE, storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		if _, err := buf.WriteString("RANGE "); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LIST, storepb.TablePartitionMetadata_LIST_COLUMNS:
+		if _, err := buf.WriteString("LIST "); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_LINEAR_KEY:
+		if p.tp == storepb.TablePartitionMetadata_LINEAR_HASH || p.tp == storepb.TablePartitionMetadata_LINEAR_KEY {
+			if _, err := buf.WriteString("LINEAR "); err != nil {
+				return err
+			}
+		}
+		if p.tp == storepb.TablePartitionMetadata_KEY || p.tp == storepb.TablePartitionMetadata_LINEAR_KEY {
+			if _, err := buf.WriteString("KEY "); err != nil {
+				return err
+			}
+			// TODO(zp): MySQL supports an ALGORITHM option with [SUB]PARTITION BY [LINEAR KEY]. ALGORITHM=1 causes the server to use the same key-hashing function as MYSQL 5.1, and ALGORITHM=1 is the only possible output in
+			// the following code. Sadly, I do not know how to get the key_algorithm from the INFORMATION_SCHEMA, AND 5.1 IS TOO LEGACY TO SUPPORT! So skip it.
+			/*
+			   current_comment_start is given when called from SHOW CREATE TABLE,
+			   Then only add ALGORITHM = 1, not the default 2 or non-set 0!
+			   For .frm current_comment_start is NULL, then add ALGORITHM if != 0.
+			*/
+			// if (part_info->key_algorithm ==
+			// 	enum_key_algorithm::KEY_ALGORITHM_51 ||  // SHOW
+			// (!current_comment_start &&                   // .frm
+			//  (part_info->key_algorithm != enum_key_algorithm::KEY_ALGORITHM_NONE))) {
+			// 	/* If we already are within a comment, end that comment first. */
+			// 	if (current_comment_start) err += add_string(fptr, "*/ ");
+			// 	err += add_string(fptr, "/*!50611 ");
+			// 	err += add_part_key_word(fptr, partition_keywords[PKW_ALGORITHM].str);
+			// 	err += add_equal(fptr);
+			// 	err += add_space(fptr);
+			// 	err += add_int(fptr, static_cast<longlong>(part_info->key_algorithm));
+			// 	err += add_space(fptr);
+			// 	err += add_string(fptr, "*/ ");
+			// 	if (current_comment_start) {
+			// 		/* Skip new line. */
+			// 		if (current_comment_start[0] == '\n') current_comment_start++;
+			// 		err += add_string(fptr, current_comment_start);
+			// 		err += add_space(fptr);
+			// 	}
+			// }
+			// HACK(zp): Write the part field list. In the MySQL source code, it calls append_identifier(), which considers the quote character. We should figure out the logic of it later.
+			// Currently, I just found that if the expr contains more than one field, it would not be quoted by '`'.
+			fields := splitPartitionExprIntoFields(p.expr)
+			if len(fields) > 1 {
+				if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
+					return err
+				}
+			} else {
+				if _, err := buf.WriteString(p.expr); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("(%s)", p.expr)); err != nil {
+				return err
+			}
+		} else {
+			if _, err := buf.WriteString("HASH "); err != nil {
+				return err
+			}
+		}
+	default:
+		return errors.Errorf("unsupported partition type: %v", p.tp)
 	}
 
 	preposition, err := getPrepositionByType(p.tp)
@@ -690,12 +761,33 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 	return nil
 }
 
+// getVersionSpecificComment is the go code equivalent of MySQL void partition_info::set_show_version_string(String *packet).
+func (p *partitionStateWrapper) getVersionSpecificComment() string {
+	if p.tp == storepb.TablePartitionMetadata_RANGE_COLUMNS || p.tp == storepb.TablePartitionMetadata_LIST_COLUMNS {
+		// MySQL introduce columns partitioning in 5.5+.
+		return "/*!50500"
+	}
+
+	/*
+			if (part_expr)
+		      part_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
+		                      (uchar *)&version);
+		    if (subpart_expr)
+		      subpart_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
+		                         (uchar *)&version);
+	*/
+	// TODO(zp): Users can use function in partition expr or subpartition expr, and the intro version of function should be the infimum of the version.
+	// But sadly, it's a huge work for us to copy the intro version for each function in MySQL. So we skip it.
+	return "/*!50100"
+}
+
 func partitionTypeToString(tp storepb.TablePartitionMetadata_Type) (string, error) {
 	switch tp {
 	case storepb.TablePartitionMetadata_RANGE:
 		return "RANGE", nil
 	case storepb.TablePartitionMetadata_RANGE_COLUMNS:
-		return "RANGE COLUMNS", nil
+		// Two spaces between RANGE and COLUMNS is by design, it's what MySQL8.0 does.
+		return "RANGE  COLUMNS", nil
 	case storepb.TablePartitionMetadata_LIST:
 		return "LIST", nil
 	case storepb.TablePartitionMetadata_LIST_COLUMNS:
@@ -864,4 +956,16 @@ func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
 		}
 	}
 	return result
+}
+
+// splitPartitioNExprIntoFields splits the partition expression by ',', and trims the leading and trailing '`' for each element.
+func splitPartitionExprIntoFields(expr string) []string {
+	// We do not support the expression contains parentheses, so we can split the expression by ','.
+	ss := strings.Split(expr, ",")
+	for i, s := range ss {
+		if strings.HasPrefix(s, "`") && strings.HasSuffix(s, "`") {
+			ss[i] = s[1 : len(s)-1]
+		}
+	}
+	return ss
 }
