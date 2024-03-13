@@ -417,7 +417,12 @@
     },
     "statement-maximum-limit-value": {
       "title": "Restrict the maximum number of the LIMIT clause",
-      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation."
+      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Restrict the number of tables to be joined",
