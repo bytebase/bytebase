@@ -10,6 +10,7 @@
         class="project-select"
         :project="projectUID"
         :include-all="false"
+        :loading="!projectContextReady"
         @update:project="handleSwitchProject"
       />
     </div>
@@ -39,9 +40,6 @@ const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 
 const projectUID = computed(() => {
-  if (!projectContextReady.value) {
-    return null;
-  }
   return treeStore.selectedProject?.uid ?? null;
 });
 
