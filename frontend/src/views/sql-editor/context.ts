@@ -58,7 +58,7 @@ export const provideSQLEditorContext = () => {
     events: new Emittery(),
 
     maybeSwitchProject: (project) => {
-      if (editorStore.project !== "" && editorStore.project !== project) {
+      if (editorStore.project !== project) {
         editorStore.project = project;
         return context.events.once("project-context-ready").then(() => project);
       }
