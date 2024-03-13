@@ -1,0 +1,335 @@
+- description: List Columns Partition Hash Subpartition
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `list_columns_partition_hash_subpartition`
+    --
+    CREATE TABLE `list_columns_partition_hash_subpartition` (
+      `id` int DEFAULT NULL,
+      `d` date DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "list_columns_partition_hash_subpartition",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "position": 1
+                },
+                {
+                  "name": "d",
+                  "type": "date",
+                  "position": 2
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "keyLength": [
+                    "-1",
+                    "-1"
+                  ],
+                  "expressions": [
+                    "id",
+                    "d"
+                  ]
+                }
+              ],
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": "LIST_COLUMNS",
+                  "value": "(1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03')",
+                  "expression": "`id`,`d`",
+                  "subpartitions": [
+                    {
+                      "name": "p0sp0",
+                      "type": "HASH",
+                      "value": "(1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03')",
+                      "expression": "`id`"
+                    },
+                    {
+                      "name": "p0sp1",
+                      "type": "HASH",
+                      "value": "(1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03')",
+                      "expression": "`id`"
+                    }
+                  ]
+                },
+                {
+                  "name": "p1",
+                  "type": "LIST_COLUMNS",
+                  "value": "(4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03')",
+                  "expression": "`id`,`d`",
+                  "subpartitions": [
+                    {
+                      "name": "p1sp0",
+                      "type": "HASH",
+                      "value": "(4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03')",
+                      "expression": "`id`"
+                    },
+                    {
+                      "name": "p1sp1",
+                      "type": "HASH",
+                      "value": "(4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03')",
+                      "expression": "`id`"
+                    }
+                  ]
+                },
+                {
+                  "name": "p2",
+                  "type": "LIST_COLUMNS",
+                  "value": "(7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')",
+                  "expression": "`id`,`d`",
+                  "subpartitions": [
+                    {
+                      "name": "p2sp0",
+                      "type": "HASH",
+                      "value": "(7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')",
+                      "expression": "`id`"
+                    },
+                    {
+                      "name": "p2sp1",
+                      "type": "HASH",
+                      "value": "(7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')",
+                      "expression": "`id`"
+                    }
+                  ]
+                },
+                {
+                  "name": "p_null",
+                  "type": "LIST_COLUMNS",
+                  "value": "(NULL,NULL)",
+                  "expression": "`id`,`d`",
+                  "subpartitions": [
+                    {
+                      "name": "p3sp0",
+                      "type": "HASH",
+                      "value": "(NULL,NULL)",
+                      "expression": "`id`"
+                    },
+                    {
+                      "name": "p3sp1",
+                      "type": "HASH",
+                      "value": "(NULL,NULL)",
+                      "expression": "`id`"
+                    }
+                  ]
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `list_columns_partition_hash_subpartition`
+    --
+    CREATE TABLE `list_columns_partition_hash_subpartition` (
+      `id` int NOT NULL,
+      `d` date NOT NULL,
+      PRIMARY KEY (`id`, `d`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50500 PARTITION BY LIST  COLUMNS(id,d)
+    SUBPARTITION BY HASH (`id`)
+    (PARTITION p0 VALUES IN ((1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03'))
+     (SUBPARTITION p0sp0 ENGINE=InnoDB,
+      SUBPARTITION p0sp1 ENGINE=InnoDB),
+     PARTITION p1 VALUES IN ((4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03'))
+     (SUBPARTITION p1sp0 ENGINE=InnoDB,
+      SUBPARTITION p1sp1 ENGINE=InnoDB),
+     PARTITION p2 VALUES IN ((7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03'))
+     (SUBPARTITION p2sp0 ENGINE=InnoDB,
+      SUBPARTITION p2sp1 ENGINE=InnoDB),
+     PARTITION p_null VALUES IN ((NULL,NULL))
+     (SUBPARTITION p3sp0 ENGINE=InnoDB,
+      SUBPARTITION p3sp1 ENGINE=InnoDB)) */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: List Columns Partition
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `list_columns_partition`
+    --
+    CREATE TABLE `list_columns_partition` (
+      `id` int DEFAULT NULL,
+      `d` date DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "list_columns_partition",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                },
+                {
+                  "name": "d",
+                  "type": "date",
+                  "nullable": true,
+                  "position": 2,
+                  "defaultNull": true
+                }
+              ],
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": "LIST_COLUMNS",
+                  "value": "(1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03')",
+                  "expression": "`id`,`d`"
+                },
+                {
+                  "name": "p1",
+                  "type": "LIST_COLUMNS",
+                  "value": "(4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03')",
+                  "expression": "`id`,`d`"
+                },
+                {
+                  "name": "p2",
+                  "type": "LIST_COLUMNS",
+                  "value": "(7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')",
+                  "expression": "`id`,`d`"
+                },
+                {
+                  "name": "p_null",
+                  "type": "LIST_COLUMNS",
+                  "value": "(NULL,NULL)",
+                  "expression": "`id`,`d`"
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `list_columns_partition`
+    --
+    CREATE TABLE `list_columns_partition` (
+      `id` int DEFAULT NULL,
+      `d` date DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50500 PARTITION BY LIST  COLUMNS(id,d)
+    (PARTITION p0 VALUES IN ((1,'2012-01-01'),(2,'2012-01-02'),(3,'2012-01-03')) ENGINE=InnoDB,
+     PARTITION p1 VALUES IN ((4,'2012-01-01'),(5,'2012-01-02'),(6,'2012-01-03')) ENGINE=InnoDB,
+     PARTITION p2 VALUES IN ((7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')) ENGINE=InnoDB,
+     PARTITION p_null VALUES IN ((NULL,NULL)) ENGINE=InnoDB) */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Easy List Partition
+  baseline: |-
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `list_partition`
+    --
+    CREATE TABLE `list_partition` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+  target: |-
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "u",
+              "engine": "InnoDB",
+              "columns": [
+                {
+                  "name": "id",
+                  "type": "int",
+                  "nullable": true,
+                  "position": 1,
+                  "defaultNull": true
+                }
+              ],
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": "LIST",
+                  "value": "1,2,3",
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p1",
+                  "type": "LIST",
+                  "value": "4,5,6",
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p2",
+                  "type": "LIST",
+                  "value": "7,8,9",
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p_null",
+                  "type": "LIST",
+                  "value": "NULL",
+                  "expression": "`id`"
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci"
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+
+    --
+    -- Table structure for `u`
+    --
+    CREATE TABLE `u` (
+      `id` int DEFAULT NULL
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
+    /*!50100 PARTITION BY LIST (`id`)
+    (PARTITION p0 VALUES IN (1,2,3) ENGINE=InnoDB,
+     PARTITION p1 VALUES IN (4,5,6) ENGINE=InnoDB,
+     PARTITION p2 VALUES IN (7,8,9) ENGINE=InnoDB,
+     PARTITION p_null VALUES IN (NULL) ENGINE=InnoDB) */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
