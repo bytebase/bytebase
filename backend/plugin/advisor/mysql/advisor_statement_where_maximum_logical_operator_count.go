@@ -48,6 +48,15 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 		checker.baseLine = stmt.BaseLine
 		checker.reported = false
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+		if checker.maxOrCount > checker.maximum {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
+				Title:   checker.title,
+				Content: fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.maxOrCount, checker.maximum, checker.text),
+				Line:    checker.maxOrCountLine,
+			})
+		}
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -70,20 +79,22 @@ type statementWhereMaximumLogicalOperatorCountChecker struct {
 	title             string
 	text              string
 	maximum           int
+	reported          bool
 	depth             int
 	inPredicateExprIn bool
-	reported          bool
+	maxOrCount        int
+	maxOrCountLine    int
 }
 
 func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterPredicateExprIn(ctx *mysql.PredicateExprInContext) {
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterPredicateExprIn(_ *mysql.PredicateExprInContext) {
 	checker.inPredicateExprIn = true
 }
 
-func (checker *statementWhereMaximumLogicalOperatorCountChecker) ExitPredicateExprIn(ctx *mysql.PredicateExprInContext) {
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) ExitPredicateExprIn(_ *mysql.PredicateExprInContext) {
 	checker.inPredicateExprIn = false
 }
 
@@ -109,15 +120,10 @@ func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprList(c
 
 func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprOr(ctx *mysql.ExprOrContext) {
 	checker.depth++
-	if !checker.reported && checker.depth > checker.maximum {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
-			Status:  checker.level,
-			Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
-			Title:   checker.title,
-			Content: fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.depth, checker.maximum, checker.text),
-			Line:    checker.baseLine + ctx.GetStart().GetLine(),
-		})
-		checker.reported = true
+	count := checker.depth + 1
+	if count > checker.maxOrCount {
+		checker.maxOrCount = count
+		checker.maxOrCountLine = checker.baseLine + ctx.GetStart().GetLine()
 	}
 }
 
