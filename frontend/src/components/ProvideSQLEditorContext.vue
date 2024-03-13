@@ -21,7 +21,7 @@
 import { head } from "lodash-es";
 import { nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useInstanceV1Store,
@@ -47,6 +47,7 @@ import {
   getSheetStatement,
   hasProjectPermissionV2,
   idFromSlug,
+  isDatabaseV1Queryable,
   isWorksheetReadableV1,
   projectNameFromSheetSlug,
   suggestedTabTitleForSQLEditorConnection,
@@ -57,6 +58,7 @@ import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
@@ -266,6 +268,12 @@ const prepareConnectionSlug = async () => {
       String(databaseId)
     );
     if (database.uid !== String(UNKNOWN_ID)) {
+      if (!isDatabaseV1Queryable(database, me.value)) {
+        router.push({
+          name: "error.403",
+        });
+      }
+
       // connected to db
       await maybeSwitchProject(database.project);
       connect({
