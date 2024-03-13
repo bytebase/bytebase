@@ -4,6 +4,6 @@
       code: 225
       title: statement.where.maximum-logical-operator-count
       content: |-
-        Number of tokens (4) in IN predicate operation exceeds limit (2) in statement "SELECT * FROM employee WHERE id IN (1, 2, 3, 4, 5);".
+        Number of tokens (5) in IN predicate operation exceeds limit (2) in statement "SELECT * FROM employee WHERE id IN (1, 2, 3, 4, 5);".
       line: 1
       details: ""

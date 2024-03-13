@@ -46,6 +46,7 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 
 	for _, stmt := range stmtList {
 		checker.baseLine = stmt.BaseLine
+		checker.reported = false
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
@@ -63,12 +64,15 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 type statementWhereMaximumLogicalOperatorCountChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	maximum    int
+	baseLine          int
+	adviceList        []advisor.Advice
+	level             advisor.Status
+	title             string
+	text              string
+	maximum           int
+	depth             int
+	inPredicateExprIn bool
+	reported          bool
 }
 
 func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterQuery(ctx *mysql.QueryContext) {
@@ -76,7 +80,22 @@ func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterQuery(ctx 
 }
 
 func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterPredicateExprIn(ctx *mysql.PredicateExprInContext) {
-	count := ctx.GetChildCount()
+	checker.inPredicateExprIn = true
+}
+
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) ExitPredicateExprIn(ctx *mysql.PredicateExprInContext) {
+	checker.inPredicateExprIn = false
+}
+
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprList(ctx *mysql.ExprListContext) {
+	if checker.reported {
+		return
+	}
+	if !checker.inPredicateExprIn {
+		return
+	}
+
+	count := len(ctx.AllExpr())
 	if count > checker.maximum {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
@@ -86,4 +105,22 @@ func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterPredicateE
 			Line:    checker.baseLine + ctx.GetStart().GetLine(),
 		})
 	}
+}
+
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterExprOr(ctx *mysql.ExprOrContext) {
+	checker.depth++
+	if !checker.reported && checker.depth > checker.maximum {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Number of tokens (%d) in the OR predicate operation exceeds limit (%d) in statement %q.", checker.depth, checker.maximum, checker.text),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+		checker.reported = true
+	}
+}
+
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) ExitExprOr(_ *mysql.ExprOrContext) {
+	checker.depth--
 }
