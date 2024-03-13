@@ -766,7 +766,7 @@ watch(
   { immediate: true }
 );
 
-useEmitteryEventListener(editorEvents, "init-tree-expanded-keys", async () => {
+useEmitteryEventListener(editorEvents, "tree-ready", async () => {
   await nextTick();
   const openingDatabaseList = resolveOpeningDatabaseListFromSQLEditorTabList();
   const keys = new Set<string>();

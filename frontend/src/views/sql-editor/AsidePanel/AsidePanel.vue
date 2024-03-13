@@ -51,7 +51,7 @@ watch([project, projectContextReady], ([project, ready]) => {
   } else {
     treeStore.buildTree();
     treeStore.state = "READY";
-    events.emit("init-tree-expanded-keys");
+    events.emit("tree-ready");
   }
 });
 

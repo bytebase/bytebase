@@ -17,7 +17,7 @@ type SQLEditorEvents = Emittery<{
     table: string;
   };
   "format-content": undefined;
-  "init-tree-expanded-keys": undefined;
+  "tree-ready": undefined;
   "project-context-ready": {
     project: string;
   };
