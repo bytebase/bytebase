@@ -3,8 +3,8 @@
     :value="state.selectedTab"
     :items="tabItemList"
     @update:value="
-    (val) => {
-        state.selectedTab = val as string;
+    (val: string) => {
+        state.selectedTab = val;
         $emit('update:value', val == 'all' ? undefined : state.selectedTab);
       }
     "
@@ -14,10 +14,9 @@
 <script lang="ts" setup>
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { CategoryType } from "@/types/sqlReview";
 
 export interface CategoryFilterItem {
-  id: CategoryType;
+  id: string;
   name: string;
 }
 

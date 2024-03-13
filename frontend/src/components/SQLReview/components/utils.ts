@@ -3,7 +3,6 @@ import {
   convertPolicyRuleToRuleTemplate,
   RuleConfigComponent,
   RuleTemplate,
-  RuleType,
   SQLReviewPolicy,
   TEMPLATE_LIST,
   IndividualConfigForEngine,
@@ -22,20 +21,20 @@ export const rulesToTemplate = (
   withDisabled = false
 ) => {
   const ruleTemplateList: RuleTemplate[] = [];
-  const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+  const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
     (map, template) => {
       for (const rule of template.ruleList) {
         map.set(rule.type, rule);
       }
       return map;
     },
-    new Map<RuleType, RuleTemplate>()
+    new Map<string, RuleTemplate>()
   );
 
   const groupByRule = groupBy(review.ruleList, (rule) => rule.type);
 
   for (const [type, ruleList] of Object.entries(groupByRule)) {
-    const rule = ruleTemplateMap.get(type as RuleType);
+    const rule = ruleTemplateMap.get(type);
     if (!rule) {
       continue;
     }

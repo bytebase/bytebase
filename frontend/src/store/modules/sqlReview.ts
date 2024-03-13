@@ -11,7 +11,6 @@ import {
   SQLReviewPolicy,
   IdType,
   MaybeRef,
-  RuleType,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
@@ -35,7 +34,7 @@ const convertToSQLReviewPolicy = async (
   const ruleList: SchemaPolicyRule[] = [];
   for (const r of policy.sqlReviewPolicy.rules) {
     const rule: SchemaPolicyRule = {
-      type: r.type as RuleType,
+      type: r.type,
       level: r.level,
       engine: r.engine,
       comment: r.comment,

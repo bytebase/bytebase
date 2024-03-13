@@ -38,8 +38,10 @@
           :required="true"
           :focus-on-mount="false"
           :ends-on-enter="true"
-          :bordered="false"
+          :bordered="state.editingTitle"
           :value="reviewPolicy.name"
+          size="large"
+          @on-focus="state.editingTitle = true"
           @end-editing="changeName"
         />
       </div>
@@ -156,7 +158,6 @@ import {
   unknown,
   RuleTemplate,
   SQLReviewPolicy,
-  RuleType,
   SchemaPolicyRule,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
@@ -181,6 +182,7 @@ interface LocalState {
   ruleList: RuleTemplate[];
   rulesUpdated: boolean;
   updating: boolean;
+  editingTitle: boolean;
 }
 
 const { t } = useI18n();
@@ -198,6 +200,7 @@ const state = reactive<LocalState>({
   ruleList: [],
   rulesUpdated: false,
   updating: false,
+  editingTitle: false,
 });
 
 watchEffect(async () => {
@@ -224,20 +227,20 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
   }
 
   const ruleTemplateList: RuleTemplate[] = [];
-  const ruleTemplateMap: Map<RuleType, RuleTemplate> = TEMPLATE_LIST.reduce(
+  const ruleTemplateMap: Map<string, RuleTemplate> = TEMPLATE_LIST.reduce(
     (map, template) => {
       for (const rule of template.ruleList) {
         map.set(rule.type, rule);
       }
       return map;
     },
-    new Map<RuleType, RuleTemplate>()
+    new Map<string, RuleTemplate>()
   );
 
   const groupByRule = groupBy(reviewPolicy.value.ruleList, (rule) => rule.type);
 
   for (const [type, ruleList] of Object.entries(groupByRule)) {
-    const rule = ruleTemplateMap.get(type as RuleType);
+    const rule = ruleTemplateMap.get(type);
     if (!rule) {
       continue;
     }
@@ -245,7 +248,7 @@ const ruleListOfPolicy = computed((): RuleTemplate[] => {
     const data = convertPolicyRuleToRuleTemplate(ruleList, rule);
     if (data) {
       ruleTemplateList.push(data);
-      ruleTemplateMap.delete(type as RuleType);
+      ruleTemplateMap.delete(type);
     }
   }
 
@@ -274,6 +277,7 @@ const {
 } = useSQLRuleFilter(toRef(state, "ruleList"));
 
 const changeName = async (name: string) => {
+  state.editingTitle = false;
   const policy = reviewPolicy.value;
   if (name === policy.name) {
     return;
