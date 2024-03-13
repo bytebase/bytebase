@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -32,9 +34,14 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 	if err != nil {
 		return nil, err
 	}
+	payload, err := advisor.UnmarshalNumberTypeRulePayload(ctx.Rule.Payload)
+	if err != nil {
+		return nil, err
+	}
 	checker := &statementWhereMaximumLogicalOperatorCountChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
+		level:   level,
+		title:   string(ctx.Rule.Type),
+		maximum: payload.Number,
 	}
 
 	for _, stmt := range stmtList {
@@ -53,7 +60,6 @@ func (*StatementWhereMaximumLogicalOperatorCountAdvisor) Check(ctx advisor.Conte
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type statementWhereMaximumLogicalOperatorCountChecker struct {
 	*mysql.BaseMySQLParserListener
 
@@ -62,8 +68,22 @@ type statementWhereMaximumLogicalOperatorCountChecker struct {
 	level      advisor.Status
 	title      string
 	text       string
+	maximum    int
 }
 
 func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *statementWhereMaximumLogicalOperatorCountChecker) EnterPredicateExprIn(ctx *mysql.PredicateExprInContext) {
+	count := ctx.GetChildCount()
+	if count > checker.maximum {
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementWhereMaximumLogicalOperatorCount,
+			Title:   checker.title,
+			Content: fmt.Sprintf("Number of tokens (%d) in IN predicate operation exceeds limit (%d) in statement %q.", count, checker.maximum, checker.text),
+			Line:    checker.baseLine + ctx.GetStart().GetLine(),
+		})
+	}
 }
