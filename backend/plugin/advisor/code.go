@@ -110,6 +110,7 @@ const (
 	TableIsReferencedByView           Code = 609
 	CreateTableTrigger                Code = 610
 	TotalTextLengthExceedsLimit       Code = 611
+	DisallowSetCharset                Code = 612
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
