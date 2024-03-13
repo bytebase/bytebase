@@ -5,17 +5,22 @@ import (
 	"strings"
 )
 
-var getClassificationFromCommentReg = regexp.MustCompile("^(([0-9]+)-)+")
+var numberReg = regexp.MustCompile("^[0-9]+$")
 
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string) (string, string) {
-	classification := getClassificationFromCommentReg.FindString(comment)
-	if classification == "" {
-		return "", comment
+	sections := strings.Split(comment, "-")
+	classification := []string{}
+	userComment := ""
+	for i, section := range sections {
+		if numberReg.MatchString(section) {
+			classification = append(classification, section)
+		} else {
+			userComment = strings.Join(sections[i:], "-")
+			break
+		}
 	}
-	userComment := strings.TrimPrefix(comment, classification)
-	classification = strings.TrimSuffix(classification, "-")
-	return classification, userComment
+	return strings.Join(classification, "-"), userComment
 }
 
 // GetCommentFromClassificationAndUserComment returns the comment from the given classification and user comment.

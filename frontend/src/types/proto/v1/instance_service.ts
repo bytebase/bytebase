@@ -313,6 +313,11 @@ export interface DataSource {
   sshPassword: string;
   /** The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK"). */
   sshPrivateKey: string;
+  /**
+   * PKCS#8 private key in PEM format. If it's empty string, no private key is required.
+   * Used for authentication when connecting to the data source.
+   */
+  authenticationPrivateKey: string;
 }
 
 export interface InstanceResource {
@@ -1864,6 +1869,7 @@ function createBaseDataSource(): DataSource {
     sshUser: "",
     sshPassword: "",
     sshPrivateKey: "",
+    authenticationPrivateKey: "",
   };
 }
 
@@ -1925,6 +1931,9 @@ export const DataSource = {
     }
     if (message.sshPrivateKey !== "") {
       writer.uint32(154).string(message.sshPrivateKey);
+    }
+    if (message.authenticationPrivateKey !== "") {
+      writer.uint32(162).string(message.authenticationPrivateKey);
     }
     return writer;
   },
@@ -2069,6 +2078,13 @@ export const DataSource = {
 
           message.sshPrivateKey = reader.string();
           continue;
+        case 20:
+          if (tag !== 162) {
+            break;
+          }
+
+          message.authenticationPrivateKey = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2101,6 +2117,9 @@ export const DataSource = {
       sshUser: isSet(object.sshUser) ? globalThis.String(object.sshUser) : "",
       sshPassword: isSet(object.sshPassword) ? globalThis.String(object.sshPassword) : "",
       sshPrivateKey: isSet(object.sshPrivateKey) ? globalThis.String(object.sshPrivateKey) : "",
+      authenticationPrivateKey: isSet(object.authenticationPrivateKey)
+        ? globalThis.String(object.authenticationPrivateKey)
+        : "",
     };
   },
 
@@ -2163,6 +2182,9 @@ export const DataSource = {
     if (message.sshPrivateKey !== "") {
       obj.sshPrivateKey = message.sshPrivateKey;
     }
+    if (message.authenticationPrivateKey !== "") {
+      obj.authenticationPrivateKey = message.authenticationPrivateKey;
+    }
     return obj;
   },
 
@@ -2190,6 +2212,7 @@ export const DataSource = {
     message.sshUser = object.sshUser ?? "";
     message.sshPassword = object.sshPassword ?? "";
     message.sshPrivateKey = object.sshPrivateKey ?? "";
+    message.authenticationPrivateKey = object.authenticationPrivateKey ?? "";
     return message;
   },
 };

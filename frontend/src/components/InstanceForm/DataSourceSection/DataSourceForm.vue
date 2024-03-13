@@ -76,6 +76,32 @@
     />
   </template>
 
+  <template v-if="basicInfo.engine === Engine.SNOWFLAKE">
+    <div class="mt-2 sm:col-span-2 sm:col-start-1">
+      <div class="textlabel block">{{ $t("data-source.ssh.private-key") }}</div>
+      <div class="flex space-x-2 text-sm mb-1">
+        <div class="text-gray-400">
+          {{ $t("data-source.snowflake-keypair-tip") }}
+        </div>
+        <LearnMoreLink
+          url="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+          class="ml-1 text-sm"
+        />
+      </div>
+      <div>
+        <DroppableTextarea
+          v-model:value="dataSource.authenticationPrivateKey"
+          :resizable="false"
+          class="w-full h-32 whitespace-pre-wrap"
+          placeholder="-----BEGIN PRIVATE KEY-----
+MIIEvQ...
+-----END PRIVATE KEY-----"
+          :allow-edit="allowEdit"
+        />
+      </div>
+    </div>
+  </template>
+
   <template v-if="showAuthenticationDatabase">
     <div class="sm:col-span-2 sm:col-start-1">
       <div class="flex flex-row items-center space-x-2">
@@ -221,7 +247,8 @@
 <script setup lang="ts">
 /* eslint-disable vue/no-mutating-props */
 import { NButton, NCheckbox, NInput } from "naive-ui";
-import { DataSourceOptions } from "@/types";
+import { watch } from "vue";
+import { DataSourceOptions } from "@/types/dataSource";
 import { Engine } from "@/types/proto/v1/common";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import { onlyAllowNumber } from "@/utils";
@@ -330,4 +357,12 @@ const handleSSHChange = (
   Object.assign(ds, value);
   ds.updateSsh = true;
 };
+
+watch(
+  () => props.dataSource.authenticationPrivateKey,
+  () => {
+    const ds = props.dataSource;
+    ds.updateAuthenticationPrivateKey = true;
+  }
+);
 </script>
