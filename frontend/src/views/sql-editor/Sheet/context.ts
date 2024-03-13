@@ -3,10 +3,12 @@ import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
+  useDatabaseV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
 import { SQLEditorTab } from "@/types";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import {
   emptySQLEditorConnection,
   getSheetStatement,
@@ -109,7 +111,23 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const openSheet = async (
+export const extractWorksheetConnection = (worksheet: Worksheet) => {
+  const connection = emptySQLEditorConnection();
+  if (worksheet.database) {
+    try {
+      const database = useDatabaseV1Store().getDatabaseByName(
+        worksheet.database
+      );
+      connection.instance = database.instance;
+      connection.database = database.name;
+    } catch {
+      // Skip.
+    }
+  }
+  return connection;
+};
+
+export const openWorksheetByName = async (
   name: string,
   editorContext: SQLEditorContext,
   worksheetContext: SheetContext,
@@ -145,28 +163,13 @@ export const openSheet = async (
   );
 
   const statement = getSheetStatement(sheet);
-  // Won't set connection to the worksheet's database
-  // since we are considering to unbind worksheets and databases
-  // const connection = emptySQLEditorConnection();
-  // if (sheet.database) {
-  //   try {
-  //     const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-  //       sheet.database,
-  //       true /* silent */
-  //     );
-  //     connection.instance = database.instance;
-  //     connection.database = database.name;
-  //   } catch {
-  //     // Skip.
-  //   }
-  // }
 
   const newTab: Partial<SQLEditorTab> = {
+    connection: extractWorksheetConnection(sheet),
     sheet: sheet.name,
     title: sheet.title,
     statement,
     status: "CLEAN",
-    // connection,
   };
 
   if (openingSheetTab) {

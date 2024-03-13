@@ -19,10 +19,15 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
-import { nextTick, onMounted, watch } from "vue";
+import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import {
+  SQL_EDITOR_DETAIL_MODULE,
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_SHARE_MODULE,
+} from "@/router/sqlEditor";
 import {
   useInstanceV1Store,
   useProjectV1Store,
@@ -43,6 +48,7 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
+  emptySQLEditorConnection,
   extractProjectResourceName,
   getSheetStatement,
   hasProjectPermissionV2,
@@ -52,8 +58,13 @@ import {
   projectNameFromSheetSlug,
   suggestedTabTitleForSQLEditorConnection,
   worksheetNameFromSlug,
+  connectionV1Slug as makeConnectionV1Slug,
+  worksheetSlugV1,
 } from "@/utils";
-import { useSheetContext } from "@/views/sql-editor/Sheet";
+import {
+  extractWorksheetConnection,
+  useSheetContext,
+} from "@/views/sql-editor/Sheet";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 
 const { t } = useI18n();
@@ -62,6 +73,7 @@ const router = useRouter();
 const me = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
+const instanceStore = useInstanceV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
@@ -110,7 +122,6 @@ const handleProjectSwitched = async () => {
 };
 
 const prepareInstances = async () => {
-  const instanceStore = useInstanceV1Store();
   const { project } = editorStore;
   if (project) {
     await instanceStore.fetchProjectInstanceList(
@@ -195,32 +206,13 @@ const prepareSheet = async () => {
     return true;
   }
 
-  // Won't set connection to the worksheet's database
-  // since we are considering to unbind worksheets and databases
-  // const connection = emptySQLEditorConnection();
-  // if (sheet.database) {
-  //   try {
-  //     const database = await databaseStore.getOrFetchDatabaseByName(
-  //       sheet.database,
-  //       true /* silent */
-  //     );
-  //     if (database.uid !== String(UNKNOWN_ID)) {
-  //       connection.instance = database.instance;
-  //       connection.database = database.name;
-  //     }
-  //   } catch {
-  //     // Skip.
-  //   }
-  // }
   // Open the sheet in a new tab otherwise.
-  tabStore.addTab();
-
-  tabStore.updateCurrentTab({
+  tabStore.addTab({
+    connection: extractWorksheetConnection(sheet),
     sheet: sheet.name,
     title: sheet.title,
     statement: getSheetStatement(sheet),
     status: "CLEAN",
-    // connection,
   });
 
   return true;
@@ -321,6 +313,93 @@ const initializeConnectionFromQuery = async () => {
   // default tab.
 };
 
+// Keep the URL synced with connection
+// 1. /sql-editor/sheet/{sheet_slug}  - saved sheets
+// 2. /sql-editor/{connection_slug}   - unsaved tabs
+// 3. /sql-editor                     - clean tabs
+const syncURLWithConnection = () => {
+  const connection = computed(
+    () => tabStore.currentTab?.connection ?? emptySQLEditorConnection()
+  );
+  watch(
+    [
+      () => tabStore.currentTab?.sheet,
+      () => connection.value?.instance,
+      () => connection.value?.database,
+      () => connection.value?.schema,
+      () => connection.value?.table,
+    ],
+    ([sheetName, instanceName, databaseName, schema, table]) => {
+      if (sheetName) {
+        const sheet = worksheetStore.getSheetByName(sheetName);
+        if (sheet) {
+          router.replace({
+            name: SQL_EDITOR_SHARE_MODULE,
+            params: {
+              sheetSlug: worksheetSlugV1(sheet),
+            },
+          });
+          return;
+        } else {
+          const tab = tabStore.currentTab;
+          if (tab) {
+            tab.sheet = "";
+            tab.status = "DIRTY";
+          }
+        }
+      }
+      if (databaseName) {
+        const database = databaseStore.getDatabaseByName(databaseName);
+        if (database.uid !== String(UNKNOWN_ID)) {
+          router.replace({
+            name: SQL_EDITOR_DETAIL_MODULE,
+            params: {
+              connectionSlug: makeConnectionV1Slug(
+                database.instanceEntity,
+                database
+              ),
+            },
+            query: {
+              ...route.query,
+              filter: table
+                ? JSON.stringify({
+                    table,
+                    schema,
+                  })
+                : undefined,
+            },
+          });
+          return;
+        }
+      }
+      if (instanceName) {
+        const instance = instanceStore.getInstanceByName(instanceName);
+        if (instance.uid !== String(UNKNOWN_ID)) {
+          router.replace({
+            name: SQL_EDITOR_DETAIL_MODULE,
+            params: {
+              connectionSlug: makeConnectionV1Slug(instance),
+            },
+            query: {
+              ...route.query,
+              filter: table
+                ? JSON.stringify({
+                    table,
+                    schema,
+                  })
+                : undefined,
+            },
+          });
+          return;
+        }
+      }
+      router.replace({
+        name: SQL_EDITOR_HOME_MODULE,
+      });
+    }
+  );
+};
+
 onMounted(async () => {
   editorStore.projectContextReady = false;
   await initializeProjects();
@@ -352,6 +431,7 @@ onMounted(async () => {
   );
 
   initializeConnectionFromQuery();
+  syncURLWithConnection();
 });
 
 useEmitteryEventListener;

@@ -86,7 +86,7 @@ import { ComposedProject, ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { connectionForSQLEditorTab } from "@/utils";
 import {
   SheetViewMode,
-  openSheet,
+  openWorksheetByName,
   useSheetContextByView,
   Dropdown,
   useSheetContext,
@@ -345,7 +345,7 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   if (isTabItem(item)) {
     tabStore.setCurrentTabId(item.target.id);
   } else {
-    openSheet(
+    openWorksheetByName(
       item.target.name,
       editorContext,
       worksheetContext,

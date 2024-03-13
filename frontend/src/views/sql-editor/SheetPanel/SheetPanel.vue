@@ -50,7 +50,7 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { SearchBox } from "@/components/v2";
 import { usePageMode } from "@/store";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
-import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
+import { useSheetContext, openWorksheetByName, addNewSheet } from "../Sheet";
 import { useSQLEditorContext } from "../context";
 import SheetTable from "./SheetTable";
 
@@ -67,7 +67,7 @@ const keyword = ref("");
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Worksheet) => {
-  if (await openSheet(sheet.name, editorContext, worksheetContext)) {
+  if (await openWorksheetByName(sheet.name, editorContext, worksheetContext)) {
     emit("close");
   }
 };
