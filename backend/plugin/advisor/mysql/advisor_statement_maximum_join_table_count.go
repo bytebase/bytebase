@@ -80,7 +80,7 @@ func (checker *statementMaximumJoinTableCountChecker) EnterQuery(ctx *mysql.Quer
 func (checker *statementMaximumJoinTableCountChecker) EnterJoinedTable(ctx *mysql.JoinedTableContext) {
 	checker.count++
 	// The count starts from 0. We count the number of tables in the joins.
-	if checker.count >= checker.limitMaxValue {
+	if checker.count == checker.limitMaxValue {
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.StatementMaximumJoinTableCount,
