@@ -417,7 +417,12 @@
     },
     "statement-maximum-limit-value": {
       "title": "限制 LIMIT 子句的最大行数",
-      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。"
+      "description": "通过 LIMIT 限制行数可以确保数据库处理可管理的大小块数据，从而提高查询执行速度。 限制 LIMIT 的值可以防止过度使用内存，从而保护系统整体稳定性和防止性能下降。",
+      "component": {
+        "number": {
+          "title": "最大行数"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "限制语句中连接的表数量",
