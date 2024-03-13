@@ -426,11 +426,21 @@
     },
     "statement-maximum-join-table-count": {
       "title": "Giảm thiểu số lượng bảng cần tham gia",
-      "description": "Bản càng tham gia nhiều bảng, truy vấn sẽ càng phức tạp và thời gian thực thi càng lâu. Nói chung, tốt nhất nên giảm thiểu số lượng tham gia bảng xuống mức tối thiểu."
+      "description": "Bản càng tham gia nhiều bảng, truy vấn sẽ càng phức tạp và thời gian thực thi càng lâu. Nói chung, tốt nhất nên giảm thiểu số lượng tham gia bảng xuống mức tối thiểu.",
+      "component": {
+        "number": {
+          "title": "Giá trị tối đa"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Hạn chế số lượng câu lệnh trong một giao dịch",
-      "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất của cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh được tham gia và một câu lệnh bị lỗi, việc khôi phục toàn bộ giao dịch sẽ trở nên phức tạp. Giới hạn các câu lệnh giúp giảm thiểu thiệt hại tiềm ẩn do một lỗi đơn lẻ gây ra và đơn giản hóa các thủ tục khôi phục."
+      "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất của cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh được tham gia và một câu lệnh bị lỗi, việc khôi phục toàn bộ giao dịch sẽ trở nên phức tạp. Giới hạn các câu lệnh giúp giảm thiểu thiệt hại tiềm ẩn do một lỗi đơn lẻ gây ra và đơn giản hóa các thủ tục khôi phục.",
+      "component": {
+        "number": {
+          "title": "Giá trị tối đa"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Các trường cần ghép phải có cùng kiểu dữ liệu và bộ ký tự",
