@@ -411,6 +411,10 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 5,
 		})
+	case SchemaRuleStatementMaximumJoinTableCount:
+		payload, err = json.Marshal(NumberTypeRulePayload{
+			Number: 2,
+		})
 	case SchemaRuleStatementMaximumLimitValue:
 		payload, err = json.Marshal(NumberTypeRulePayload{
 			Number: 1000,

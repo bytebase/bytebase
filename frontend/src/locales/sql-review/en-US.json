@@ -444,7 +444,7 @@
       "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
       "component": {
         "number": {
-          "title": "Maximum count"
+          "title": "Maximum value"
         }
       }
     },
@@ -453,7 +453,7 @@
       "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
       "component": {
         "number": {
-          "title": "Maximum number"
+          "title": "Maximum value"
         }
       }
     },

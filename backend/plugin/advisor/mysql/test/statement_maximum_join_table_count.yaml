@@ -1,0 +1,18 @@
+- statement: SELECT * FROM t;
+  want:
+    - status: SUCCESS
+      code: 0
+      title: OK
+      content: ""
+      line: 0
+      details: ""
+- statement: |-
+    select name from hello join world on hello.id = world.id join baby on world.id = baby.id;
+  want:
+    - status: WARN
+      code: 223
+      title: statement.maximum-join-table-count
+      content: |-
+        "select name from hello join world on hello.id = world.id join baby on world.id = baby.id;" exceeds the maximum number of joins 2.
+      line: 1
+      details: ""

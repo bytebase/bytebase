@@ -444,7 +444,7 @@
       "description": "Cuanto más tablas unes, más compleja se vuelve la consulta y más tardará en ejecutarse. En general, es recomendable mantener el número de uniones al mínimo.",
       "component": {
         "number": {
-          "title": "Número máximo"
+          "title": "Valor máximo"
         }
       }
     },
@@ -453,7 +453,7 @@
       "description": "Las transacciones grandes pueden impactar significativamente el rendimiento de la base de datos. Si se involucra una gran cantidad de sentencias y una falla, revertir toda la transacción se vuelve complejo. Limitar las sentencias minimiza el daño potencial causado por una sola falla y simplifica los procedimientos de recuperación.",
       "component": {
         "number": {
-          "title": "Número máximo"
+          "title": "Valor máximo"
         }
       }
     },

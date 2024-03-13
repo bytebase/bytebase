@@ -47,6 +47,7 @@ const (
 	StatementHasUsingTemporary              Code = 220
 	StatementWhereNoEqualNull               Code = 221
 	StatementExceedMaximumLimitValue        Code = 222
+	StatementMaximumJoinTableCount          Code = 223
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
