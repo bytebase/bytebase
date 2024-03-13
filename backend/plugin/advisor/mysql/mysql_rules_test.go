@@ -59,6 +59,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementMaximumLimitValue,
 		// advisor.SchemaRuleStatementMaximumJoinTableCount enforces maximum of tables in the joins.
 		advisor.SchemaRuleStatementMaximumJoinTableCount,
+		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
+		advisor.SchemaRuleStatementWhereDisallowUsingFunction,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
