@@ -81,6 +81,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDisallowTrigger,
 		// advisor.SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 		advisor.SchemaRuleTableNoDuplicateIndex,
+		// advisor.SchemaRuleTableDisallowSetCharset disallow set table charset when creating/altering table.
+		advisor.SchemaRuleTableDisallowSetCharset,
 
 		// Column related rules.
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.
