@@ -417,7 +417,12 @@
     },
     "statement-maximum-limit-value": {
       "title": "Limitar el número máximo de la cláusula LIMIT",
-      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento."
+      "description": "Limitar el número de filas mediante LIMIT garantiza que la base de datos procese bloques manejables, lo que mejora la velocidad de ejecución de las consultas. Un valor LIMIT limitado evita el uso excesivo de memoria, salvaguardando la estabilidad general del sistema y evitando la degradación del rendimiento.",
+      "component": {
+        "number": {
+          "title": "Valor máximo"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Limite el número de tablas a unir",
