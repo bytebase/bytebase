@@ -1,6 +1,9 @@
 package mysql
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -58,7 +61,6 @@ func (*StatementMaximumLimitValueAdvisor) Check(ctx advisor.Context, _ string) (
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type statementMaximumLimitValueChecker struct {
 	*mysql.BaseMySQLParserListener
 
@@ -67,9 +69,46 @@ type statementMaximumLimitValueChecker struct {
 	level         advisor.Status
 	title         string
 	text          string
+	isSelect      bool
 	limitMaxValue int
 }
 
 func (checker *statementMaximumLimitValueChecker) EnterQuery(ctx *mysql.QueryContext) {
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
+func (checker *statementMaximumLimitValueChecker) EnterSelectStatement(*mysql.SelectStatementContext) {
+	checker.isSelect = true
+}
+
+func (checker *statementMaximumLimitValueChecker) ExitSelectStatement(*mysql.SelectStatementContext) {
+	checker.isSelect = false
+}
+
+func (checker *statementMaximumLimitValueChecker) EnterLimitClause(ctx *mysql.LimitClauseContext) {
+	if !checker.isSelect {
+		return
+	}
+	if ctx.LIMIT_SYMBOL() == nil {
+		return
+	}
+
+	limitOptions := ctx.LimitOptions()
+	for _, limitOption := range limitOptions.AllLimitOption() {
+		limitValue, err := strconv.Atoi(limitOption.GetText())
+		if err != nil {
+			// Ignore invalid limit value and continue.
+			continue
+		}
+
+		if limitValue > checker.limitMaxValue {
+			checker.adviceList = append(checker.adviceList, advisor.Advice{
+				Status:  checker.level,
+				Code:    advisor.StatementExceedMaximumLimitValue,
+				Title:   checker.title,
+				Content: fmt.Sprintf("The limit value %d exceeds the maximum allowed value %d", limitValue, checker.limitMaxValue),
+				Line:    checker.baseLine + ctx.GetStart().GetLine(),
+			})
+		}
+	}
 }
