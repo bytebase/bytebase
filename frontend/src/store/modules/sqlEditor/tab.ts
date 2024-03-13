@@ -1,7 +1,7 @@
 import { MaybeRef, useLocalStorage, watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, reactive, unref, watch } from "vue";
+import { computed, reactive, unref } from "vue";
 import type {
   SQLEditorConnection,
   SQLEditorTreeNodeMeta,
@@ -234,18 +234,6 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   // watch the field changes of a tab, store it to localStorage
   // when needed, but not to frequently (for performance consideration)
   const watchTab = (tab: SQLEditorTab, immediate: boolean) => {
-    const dirtyFields = [
-      () => tab.title,
-      () => tab.sheet,
-      () => tab.statement,
-      () => tab.connection,
-      () => tab.batchQueryContext,
-    ];
-    // set `tab.status` to "DIRTY" when it's changed
-    watch(dirtyFields, () => {
-      tab.status = "DIRTY";
-    });
-
     // Use a throttled watcher to reduce the performance overhead when writing.
     watchThrottled(
       () => pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab,

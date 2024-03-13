@@ -51,21 +51,23 @@ import { SearchBox } from "@/components/v2";
 import { usePageMode } from "@/store";
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { useSheetContext, openSheet, addNewSheet } from "../Sheet";
+import { useSQLEditorContext } from "../context";
 import SheetTable from "./SheetTable";
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const sheetContext = useSheetContext();
-const { view, isFetching, events } = sheetContext;
+const editorContext = useSQLEditorContext();
+const worksheetContext = useSheetContext();
+const { view, isFetching, events } = worksheetContext;
 const pageMode = usePageMode();
 const keyword = ref("");
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
 
 const handleSelectSheet = async (sheet: Worksheet) => {
-  if (await openSheet(sheet.name, sheetContext)) {
+  if (await openSheet(sheet.name, editorContext, worksheetContext)) {
     emit("close");
   }
 };

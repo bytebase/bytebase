@@ -91,6 +91,7 @@ import {
   Dropdown,
   useSheetContext,
 } from "@/views/sql-editor/Sheet";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
 import UnsavedPrefix from "./UnsavedPrefix.vue";
 import {
   DropdownState,
@@ -129,8 +130,9 @@ const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const tabStore = useSQLEditorTabStore();
-const sheetContext = useSheetContext();
-const { showPanel } = sheetContext;
+const editorContext = useSQLEditorContext();
+const worksheetContext = useSheetContext();
+const { showPanel } = worksheetContext;
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 const keyword = ref("");
@@ -343,7 +345,12 @@ const handleItemClick = (item: MergedItem, e: MouseEvent) => {
   if (isTabItem(item)) {
     tabStore.setCurrentTabId(item.target.id);
   } else {
-    openSheet(item.target.name, sheetContext, e.metaKey || e.ctrlKey);
+    openSheet(
+      item.target.name,
+      editorContext,
+      worksheetContext,
+      e.metaKey || e.ctrlKey
+    );
   }
 };
 

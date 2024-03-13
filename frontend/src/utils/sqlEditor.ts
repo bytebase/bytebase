@@ -82,6 +82,11 @@ export const isSimilarSQLEditorTab = (
   );
 };
 
+export const isSimilarToDefaultSQLEditorTabTitle = (title: string) => {
+  const regex = /(^|\s)(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/;
+  return regex.test(title);
+};
+
 export const suggestedTabTitleForSQLEditorConnection = (
   conn: SQLEditorConnection
 ) => {
@@ -110,7 +115,10 @@ export const isDisconnectedSQLEditorTab = (tab: SQLEditorTab) => {
   return connection.database === "";
 };
 
-export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
+export const tryConnectToCoreSQLEditorTab = (
+  tab: CoreSQLEditorTab,
+  overrideTitle = true
+) => {
   const tabStore = useSQLEditorTabStore();
   const currentTab = tabStore.currentTab;
   if (currentTab) {
@@ -121,6 +129,15 @@ export const tryConnectToCoreSQLEditorTab = (tab: CoreSQLEditorTab) => {
     if (currentTab.status === "NEW" || !currentTab.sheet) {
       // If the current tab is "fresh new", update its connection directly.
       tabStore.updateCurrentTab(tab);
+      if (
+        overrideTitle &&
+        isSimilarToDefaultSQLEditorTabTitle(currentTab.title)
+      ) {
+        const title = suggestedTabTitleForSQLEditorConnection(tab.connection);
+        tabStore.updateCurrentTab({
+          title,
+        });
+      }
       return;
     }
   }

@@ -8,7 +8,7 @@
         style="width: 100%"
         size="small"
         class="project-select"
-        :project="treeStore.selectedProject?.uid ?? String(UNKNOWN_ID)"
+        :project="projectUID"
         :include-all="allowViewALLProjects"
         @update:project="handleSwitchProject"
       />
@@ -21,7 +21,7 @@
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { watch } from "vue";
+import { computed, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
 import {
   useProjectV1Store,
@@ -32,11 +32,18 @@ import { UNKNOWN_ID } from "@/types";
 import { useSQLEditorContext } from "../context";
 import DatabaseTree from "./DatabaseTree.vue";
 
-const sqlEditorStore = useSQLEditorStore();
+const editorStore = useSQLEditorStore();
 const treeStore = useSQLEditorTreeStore();
 const { events } = useSQLEditorContext();
 const { project, projectContextReady, strictProject, allowViewALLProjects } =
-  storeToRefs(sqlEditorStore);
+  storeToRefs(editorStore);
+
+const projectUID = computed(() => {
+  if (!projectContextReady.value) {
+    return null;
+  }
+  return treeStore.selectedProject?.uid ?? String(UNKNOWN_ID);
+});
 
 watch([project, projectContextReady], ([project, ready]) => {
   if (!ready) {

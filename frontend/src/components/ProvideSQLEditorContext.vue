@@ -22,6 +22,7 @@ import { head } from "lodash-es";
 import { nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useInstanceV1Store,
   useProjectV1Store,
@@ -34,7 +35,6 @@ import {
   useFilterStore,
 } from "@/store";
 import {
-  ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
   SQLEditorConnection,
@@ -43,7 +43,6 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
-  emptySQLEditorConnection,
   extractProjectResourceName,
   getSheetStatement,
   hasProjectPermissionV2,
@@ -64,9 +63,9 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
-const worksheetContext = useSheetContext();
+const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();
-const { events: editorEvents } = useSQLEditorContext();
+const { events: editorEvents, maybeSwitchProject } = useSQLEditorContext();
 
 const initializeProjects = async () => {
   const projectInQuery = route.query.project as string;
@@ -98,7 +97,7 @@ const initializeProjects = async () => {
   tabStore.maybeInitProject(editorStore.project);
 };
 
-const switchProject = async () => {
+const handleProjectSwitched = async () => {
   const { project } = editorStore;
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
@@ -157,15 +156,16 @@ const prepareSheet = async () => {
   } catch {
     // Nothing
   }
+  await maybeSwitchProject(projectName);
 
   const sheetName = worksheetNameFromSlug(sheetSlug);
   const openingSheetTab = tabStore.tabList.find(
     (tab) => tab.sheet == sheetName
   );
 
-  worksheetContext.isFetching.value = true;
+  isFetchingWorksheet.value = true;
   const sheet = await worksheetStore.getOrFetchSheetByName(sheetName);
-  worksheetContext.isFetching.value = false;
+  isFetchingWorksheet.value = false;
 
   if (!sheet) {
     if (openingSheetTab) {
@@ -193,21 +193,23 @@ const prepareSheet = async () => {
     return true;
   }
 
-  const connection = emptySQLEditorConnection();
-  if (sheet.database) {
-    try {
-      const database = await databaseStore.getOrFetchDatabaseByName(
-        sheet.database,
-        true /* silent */
-      );
-      if (database.uid !== String(UNKNOWN_ID)) {
-        connection.instance = database.instance;
-        connection.database = database.name;
-      }
-    } catch {
-      // Skip.
-    }
-  }
+  // Won't set connection to the worksheet's database
+  // since we are considering to unbind worksheets and databases
+  // const connection = emptySQLEditorConnection();
+  // if (sheet.database) {
+  //   try {
+  //     const database = await databaseStore.getOrFetchDatabaseByName(
+  //       sheet.database,
+  //       true /* silent */
+  //     );
+  //     if (database.uid !== String(UNKNOWN_ID)) {
+  //       connection.instance = database.instance;
+  //       connection.database = database.name;
+  //     }
+  //   } catch {
+  //     // Skip.
+  //   }
+  // }
   // Open the sheet in a new tab otherwise.
   tabStore.addTab();
 
@@ -216,7 +218,7 @@ const prepareSheet = async () => {
     title: sheet.title,
     statement: getSheetStatement(sheet),
     status: "CLEAN",
-    connection,
+    // connection,
   });
 
   return true;
@@ -232,27 +234,6 @@ const connect = (connection: SQLEditorConnection) => {
     /* beside */ false,
     /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection)
   );
-};
-const connectAndMaybeSwitchProject = (database: ComposedDatabase) => {
-  // we should switch to the project first, if needed
-  if (editorStore.project !== "" && editorStore.project !== database.project) {
-    editorStore.project = database.project;
-    editorEvents.once("project-context-ready").then(() => {
-      connect({
-        instance: database.instance,
-        database: database.name,
-        schema: filter.schema,
-        table: filter.table,
-      });
-    });
-  } else {
-    connect({
-      instance: database.instance,
-      database: database.name,
-      schema: filter.schema,
-      table: filter.table,
-    });
-  }
 };
 
 const prepareConnectionSlug = async () => {
@@ -286,7 +267,11 @@ const prepareConnectionSlug = async () => {
     );
     if (database.uid !== String(UNKNOWN_ID)) {
       // connected to db
-      connectAndMaybeSwitchProject(database);
+      await maybeSwitchProject(database.project);
+      connect({
+        instance: database.instance,
+        database: database.name,
+      });
       return true;
     }
   }
@@ -314,7 +299,11 @@ const initializeConnectionFromQuery = async () => {
       /* silent */ true
     );
     if (database.uid !== String(UNKNOWN_ID)) {
-      connectAndMaybeSwitchProject(database);
+      await maybeSwitchProject(database.project);
+      connect({
+        instance: database.instance,
+        database: database.name,
+      });
       return;
     }
   }
@@ -341,7 +330,7 @@ onMounted(async () => {
     () => editorStore.project,
     async () => {
       editorStore.projectContextReady = false;
-      await switchProject();
+      await handleProjectSwitched();
       await prepareInstances();
       await prepareDatabases();
       tabStore.maybeInitProject(editorStore.project);
@@ -356,4 +345,6 @@ onMounted(async () => {
 
   initializeConnectionFromQuery();
 });
+
+useEmitteryEventListener;
 </script>

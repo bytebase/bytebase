@@ -3,7 +3,6 @@ import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
-  useDatabaseV1Store,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
@@ -14,6 +13,7 @@ import {
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { SQLEditorContext } from "../context";
 import { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{
@@ -111,24 +111,20 @@ export const provideSheetContext = () => {
 
 export const openSheet = async (
   name: string,
-  context: SheetContext,
+  editorContext: SQLEditorContext,
+  worksheetContext: SheetContext,
   forceNewTab = false
 ) => {
   const cleanup = () => {
-    context.isFetching.value = false;
+    worksheetContext.isFetching.value = false;
   };
 
-  context.isFetching.value = true;
+  worksheetContext.isFetching.value = true;
   const sheet = await useWorkSheetStore().getOrFetchSheetByName(name);
   if (!sheet) {
     cleanup();
     return false;
   }
-
-  const tabStore = useSQLEditorTabStore();
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheet === sheet.name
-  );
 
   if (!isWorksheetReadableV1(sheet)) {
     pushNotification({
@@ -142,27 +138,35 @@ export const openSheet = async (
 
   cleanup();
 
+  await editorContext.maybeSwitchProject(sheet.project);
+  const tabStore = useSQLEditorTabStore();
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheet === sheet.name
+  );
+
   const statement = getSheetStatement(sheet);
-  const connection = emptySQLEditorConnection();
-  if (sheet.database) {
-    try {
-      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        sheet.database,
-        true /* silent */
-      );
-      connection.instance = database.instance;
-      connection.database = database.name;
-    } catch {
-      // Skip.
-    }
-  }
+  // Won't set connection to the worksheet's database
+  // since we are considering to unbind worksheets and databases
+  // const connection = emptySQLEditorConnection();
+  // if (sheet.database) {
+  //   try {
+  //     const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+  //       sheet.database,
+  //       true /* silent */
+  //     );
+  //     connection.instance = database.instance;
+  //     connection.database = database.name;
+  //   } catch {
+  //     // Skip.
+  //   }
+  // }
 
   const newTab: Partial<SQLEditorTab> = {
     sheet: sheet.name,
     title: sheet.title,
     statement,
     status: "CLEAN",
-    connection,
+    // connection,
   };
 
   if (openingSheetTab) {

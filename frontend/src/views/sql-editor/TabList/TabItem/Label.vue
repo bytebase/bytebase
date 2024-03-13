@@ -84,14 +84,19 @@ const confirmEdit = () => {
   }
 
   tab.title = title;
+  tab.status = "DIRTY";
   if (tab.sheet) {
-    worksheetV1Store.patchSheet(
-      {
-        name: tab.sheet,
-        title,
-      },
-      ["title"]
-    );
+    worksheetV1Store
+      .patchSheet(
+        {
+          name: tab.sheet,
+          title,
+        },
+        ["title"]
+      )
+      .then(() => {
+        tab.status = "CLEAN";
+      });
   }
 
   state.editing = false;

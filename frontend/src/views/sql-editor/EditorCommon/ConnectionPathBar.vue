@@ -62,7 +62,7 @@
     </div>
 
     <div
-      v-if="!currentTab || (tabStore.isDisconnected && !currentTab.sheet)"
+      v-else
       class="flex justify-start items-center h-8 px-4 whitespace-nowrap overflow-x-auto"
     >
       <div class="text-sm text-control">
