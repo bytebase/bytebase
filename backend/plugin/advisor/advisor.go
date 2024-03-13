@@ -424,6 +424,12 @@ const (
 	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
 	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
 
+	// PostgreSQLStatementDisallowMixDML is an advisor type for PostgreSQL disallow mix DML on same table.
+	PostgreSQLStatementDisallowMixDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-dml"
+
+	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
+	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
