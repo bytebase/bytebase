@@ -191,6 +191,7 @@ const changeStepIndex = (nextIndex: number) => {
         positiveText: t("common.confirm"),
         onPositiveClick: (_: MouseEvent) => {
           onTemplateApply(state.pendingApplyTemplate);
+          state.currentStep = nextIndex;
         },
       });
       return;

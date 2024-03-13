@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Restrict the total length of text fields in a table",
-      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage."
+      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage.",
+      "component": {
+        "number": {
+          "title": "Maximum length"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Prohibit defining character set in table properties",
@@ -409,23 +414,48 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "Restrict the maximum level of query access method",
-      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level."
+      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
+      "component": {
+        "level": {
+          "title": "Maximum level"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Restrict the number of values in the IN or OR clause of the WHERE clause",
-      "description": "This prevents performance degradation due to extensive comparisons and resource limitations."
+      "description": "This prevents performance degradation due to extensive comparisons and resource limitations.",
+      "component": {
+        "number": {
+          "title": "Maximum count"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Restrict the maximum number of the LIMIT clause",
-      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation."
+      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-join-table-count": {
       "title": "Restrict the number of tables to be joined",
-      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum."
+      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Restrict the number of statements in a transaction",
-      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures."
+      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures.",
+      "component": {
+        "number": {
+          "title": "Maximum value"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Fields to be joined must have identical data types, character sets",

@@ -52,8 +52,15 @@ func TestMySQLRules(t *testing.T) {
 		// advisor.SchemaRuleStatementAffectedRowLimit enforce the UPDATE/DELETE affected row limit.
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		// advisor.SchemaRuleStatementDMLDryRun dry run the dml.
-		// advisor.SchemaRuleStatementDMLDryRun,
+		advisor.SchemaRuleStatementDMLDryRun,
+		// advisor.SchemaRuleStatementNoEqualNull disallow the equal null.
 		advisor.SchemaRuleStatementWhereNoEqualNull,
+		// advisor.SchemaRuleStatementMaximumLimitValue enforce the maximum limit value.
+		advisor.SchemaRuleStatementMaximumLimitValue,
+		// advisor.SchemaRuleStatementMaximumJoinTableCount enforces maximum of tables in the joins.
+		advisor.SchemaRuleStatementMaximumJoinTableCount,
+		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
+		advisor.SchemaRuleStatementWhereDisallowUsingFunction,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
