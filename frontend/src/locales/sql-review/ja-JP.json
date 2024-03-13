@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "テキスト入力欄の文字数を制限する",
-      "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。"
+      "description": "このルールは、テーブルが保持できるデータ量を制限し、過剰なストレージ使用を防ぎます。",
+      "component": {
+        "number": {
+          "title": "最大長さ"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "テーブルプロパティでの文字セットの定義を禁止する",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "クエリ アクセス メソッドの最大レベルを制限する",
-      "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。"
+      "description": "SQL パフォーマンス最適化は、定数時間 (じょうすうじかん) アクセスを目指すもので、基準として参照 (さんしょう) レベルを置き、許容範囲として範囲 (はんい) レベルのパフォーマンスを想定します。",
+      "component": {
+        "level": {
+          "title": "最大レベル"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "WHERE 句の IN または OR 句の値数を制限する",
-      "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。"
+      "description": "このアプローチは、広範な比較とリソースの制限によるパフォーマンスの低下を防ぎます。",
+      "component": {
+        "number": {
+          "title": "最大数"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "リミット節の上限値を制限する",
@@ -426,11 +441,21 @@
     },
     "statement-maximum-join-table-count": {
       "title": "結合するテーブル数を制限する",
-      "description": "結合するテーブル数が増えるほど、クエリは 複雑 (fukuzatsu) になり、実行時間が 長くなります (nagaku narimasu)。 一般的に、結合数を 最小限 (saishougen) に抑えることが望ましいです。"
+      "description": "結合するテーブル数が増えるほど、クエリは 複雑 (fukuzatsu) になり、実行時間が 長くなります (nagaku narimasu)。 一般的に、結合数を 最小限 (saishougen) に抑えることが望ましいです。",
+      "component": {
+        "number": {
+          "title": "最大数"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "トランザクション内のステートメント数を制限する",
-      "description": "大きなトランザクションは、データベースのパフォーマンスに著しく影響を及ぼします。 多数のステートメントが関与しており、1つでも失敗すると、トランザクション全体のロールバックが複雑になります。 ステートメントを制限することで、単一の障害による潜在的な損害を最小限に抑え、ロールバック手順を簡素化できます。"
+      "description": "大きなトランザクションは、データベースのパフォーマンスに著しく影響を及ぼします。 多数のステートメントが関与しており、1つでも失敗すると、トランザクション全体のロールバックが複雑になります。 ステートメントを制限することで、単一の障害による潜在的な損害を最小限に抑え、ロールバック手順を簡素化できます。",
+      "component": {
+        "number": {
+          "title": "最大数"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "ジョインするフィールドは、データ型と文字セットが一致している必要があります",

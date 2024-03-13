@@ -67,7 +67,12 @@
     },
     "table-text-fields-total-length": {
       "title": "Giới hạn độ dài tối đa của trường văn bản trong bảng",
-      "description": "Luật này giới hạn dung lượng dữ liệu mà một bảng có thể chứa, giúp ngăn chặn việc sử dụng dung lượng lưu trữ quá mức."
+      "description": "Luật này giới hạn dung lượng dữ liệu mà một bảng có thể chứa, giúp ngăn chặn việc sử dụng dung lượng lưu trữ quá mức.",
+      "component": {
+        "number": {
+          "title": "Chiều dài tối đa"
+        }
+      }
     },
     "table-disallow-set-charset": {
       "title": "Cấm thiết lập bảng mã trong thuộc tính của bảng",
@@ -409,11 +414,21 @@
     },
     "statement-where-statement-query-minimum-plan-level": {
       "title": "Hạn chế mức truy cập tối đa của phương thức truy vấn",
-      "description": "Ch tối ưu hóa hiệu suất SQL hướng đến truy cập hằng số (const), đặt mục tiêu mức tham chiếu (ref) làm tiêu chuẩn, với hiệu suất chấp nhận được ở mức phạm vi (range)."
+      "description": "Ch tối ưu hóa hiệu suất SQL hướng đến truy cập hằng số (const), đặt mục tiêu mức tham chiếu (ref) làm tiêu chuẩn, với hiệu suất chấp nhận được ở mức phạm vi (range).",
+      "component": {
+        "level": {
+          "title": "Mức tối đa"
+        }
+      }
     },
     "statement-where-maximum-logical-operator-count": {
       "title": "Giới hạn số lượng giá trị trong mệnh đề IN hoặc OR của mệnh đề WHERE",
-      "description": "Điều này giúp ngăn chặn hiệu suất suy giảm do các phép so sánh rộng rãi và hạn chế tài nguyên."
+      "description": "Điều này giúp ngăn chặn hiệu suất suy giảm do các phép so sánh rộng rãi và hạn chế tài nguyên.",
+      "component": {
+        "number": {
+          "title": "Số lớn nhất"
+        }
+      }
     },
     "statement-maximum-limit-value": {
       "title": "Giới hạn số lượng tối đa của mệnh đề LIMIT",
@@ -426,11 +441,21 @@
     },
     "statement-maximum-join-table-count": {
       "title": "Giảm thiểu số lượng bảng cần tham gia",
-      "description": "Bản càng tham gia nhiều bảng, truy vấn sẽ càng phức tạp và thời gian thực thi càng lâu. Nói chung, tốt nhất nên giảm thiểu số lượng tham gia bảng xuống mức tối thiểu."
+      "description": "Bản càng tham gia nhiều bảng, truy vấn sẽ càng phức tạp và thời gian thực thi càng lâu. Nói chung, tốt nhất nên giảm thiểu số lượng tham gia bảng xuống mức tối thiểu.",
+      "component": {
+        "number": {
+          "title": "Số lớn nhất"
+        }
+      }
     },
     "statement-maximum-statements-in-transaction": {
       "title": "Hạn chế số lượng câu lệnh trong một giao dịch",
-      "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất của cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh được tham gia và một câu lệnh bị lỗi, việc khôi phục toàn bộ giao dịch sẽ trở nên phức tạp. Giới hạn các câu lệnh giúp giảm thiểu thiệt hại tiềm ẩn do một lỗi đơn lẻ gây ra và đơn giản hóa các thủ tục khôi phục."
+      "description": "Các giao dịch lớn có thể ảnh hưởng đáng kể đến hiệu suất của cơ sở dữ liệu. Nếu một số lượng lớn các câu lệnh được tham gia và một câu lệnh bị lỗi, việc khôi phục toàn bộ giao dịch sẽ trở nên phức tạp. Giới hạn các câu lệnh giúp giảm thiểu thiệt hại tiềm ẩn do một lỗi đơn lẻ gây ra và đơn giản hóa các thủ tục khôi phục.",
+      "component": {
+        "number": {
+          "title": "Số lớn nhất"
+        }
+      }
     },
     "statement-join-strict-column-attrs": {
       "title": "Các trường cần ghép phải có cùng kiểu dữ liệu và bộ ký tự",
