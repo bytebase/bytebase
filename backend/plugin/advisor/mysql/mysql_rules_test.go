@@ -61,6 +61,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementMaximumJoinTableCount,
 		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
 		advisor.SchemaRuleStatementWhereDisallowUsingFunction,
+		// advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount enforces maximum number of logical operators in the where clause.
+		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
