@@ -82,6 +82,7 @@ const doSaveSheet = async (tab: SQLEditorTab) => {
         title,
         project: database.project,
         content: new TextEncoder().encode(statement),
+        database: database.name,
         visibility: Worksheet_Visibility.VISIBILITY_PRIVATE,
       })
     );
