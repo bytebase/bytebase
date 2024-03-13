@@ -412,7 +412,7 @@
       "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
       "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "Restrict the maximum level of query access method",
       "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level.",
       "component": {

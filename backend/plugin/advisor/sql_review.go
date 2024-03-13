@@ -296,6 +296,11 @@ type NumberTypeRulePayload struct {
 	Number int `json:"number"`
 }
 
+// StringTypeRulePayload is the string type payload.
+type StringTypeRulePayload struct {
+	String string `json:"string"`
+}
+
 // NamingCaseRulePayload is the payload for naming case rule.
 type NamingCaseRulePayload struct {
 	// Upper is true means the case should be upper case, otherwise lower case.
@@ -419,6 +424,15 @@ func UnmarshalNumberTypeRulePayload(payload string) (*NumberTypeRulePayload, err
 		return nil, errors.Wrapf(err, "failed to unmarshal number type rule payload %q", payload)
 	}
 	return &nlr, nil
+}
+
+// UnmarshalStringTypeRulePayload will unmarshal payload to StringTypeRulePayload.
+func UnmarshalStringTypeRulePayload(payload string) (*StringTypeRulePayload, error) {
+	var slr StringTypeRulePayload
+	if err := json.Unmarshal([]byte(payload), &slr); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal string type rule payload %q", payload)
+	}
+	return &slr, nil
 }
 
 // UnmarshalStringArrayTypeRulePayload will unmarshal payload to StringArrayTypeRulePayload.
