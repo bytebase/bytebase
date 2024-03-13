@@ -110,6 +110,12 @@ interface NumberLimitPayload {
   number: number;
 }
 
+// The string rule payload.
+// Used by the backend.
+interface StringPayload {
+  string: string;
+}
+
 // The case rule payload.
 // Used by the backend.
 interface CasePayload {
@@ -385,9 +391,26 @@ export const convertPolicyRuleToRuleTemplate = (
   );
 
   switch (ruleTemplate.type) {
+    case "statement.query.minimum-plan-level":
+      if (!stringComponent) {
+        throw new Error(`Invalid rule ${ruleTemplate.type}`);
+      }
+
+      return {
+        ...res,
+        componentList: [
+          {
+            ...stringComponent,
+            payload: {
+              ...stringComponent.payload,
+              value: (payload as StringPayload).string,
+            } as StringPayload,
+          },
+        ],
+        individualConfigList,
+      };
     // Following rules require STRING component.
     case "table.drop-naming-convention":
-    case "statement.where.statement.query.minimum-plan-level":
       if (!stringComponent) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
@@ -624,9 +647,19 @@ const mergeIndividualConfigAsRule = (
   )?.payload as StringArrayPayload | undefined;
 
   switch (template.type) {
+    case "statement.query.minimum-plan-level":
+      if (!stringPayload) {
+        throw new Error(`Invalid rule ${template.type}`);
+      }
+
+      return {
+        ...base,
+        payload: {
+          string: stringPayload.value ?? stringPayload.default,
+        },
+      };
     // Following rules require STRING component.
     case "table.drop-naming-convention":
-    case "statement.where.statement.query.minimum-plan-level":
       if (!stringPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
