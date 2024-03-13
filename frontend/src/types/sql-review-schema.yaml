@@ -92,6 +92,20 @@ ruleList:
     engineList:
       - MYSQL
     componentList: []
+  - type: table.text-fields-total-length
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1000
+  - type: table.disallow-set-charset
+    category: TABLE
+    engineList:
+      - MYSQL
+    componentList: []
   - type: statement.select.no-select-all
     category: STATEMENT
     engineList:
@@ -264,6 +278,71 @@ ruleList:
       - MYSQL
     componentList: []
   - type: statement.where.no-equal-null
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
+  - type: statement.where.disallow-using-function
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
+  - type: statement.where.statement.query.minimum-plan-level
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: level
+        payload:
+          type: STRING
+          default: INDEX
+  - type: statement.where.maximum-logical-operator-count
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 10
+  - type: statement.maximum-limit-value
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 1000
+  - type: statement.maximum-join-table-count
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 2
+  - type: statement.maximum-statements-in-transaction
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList:
+      - key: number
+        payload:
+          type: NUMBER
+          default: 10
+  - type: statement.join-strict-column-attrs
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
+  - type: statement.disallow-mix-dml
+    category: STATEMENT
+    engineList:
+      - MYSQL
+    componentList: []
+  - type: statement.disallow-mix-ddl-dml
     category: STATEMENT
     engineList:
       - MYSQL

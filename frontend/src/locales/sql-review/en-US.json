@@ -65,6 +65,14 @@
       "title": "Disallow duplicate indexes",
       "description": "This rule prohibits the creation of duplicate indexes on a table. Duplicate indexes consume extra storage space and can potentially reduce query performance. Suggestion error level: Warning"
     },
+    "table-text-fields-total-length": {
+      "title": "Restrict the total length of text fields in a table",
+      "description": "This rule limits the amount of data a table can hold, preventing excessive storage usage."
+    },
+    "table-disallow-set-charset": {
+      "title": "Prohibit defining character set in table properties",
+      "description": "It is recommended to set the charset at the database level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error."
+    },
     "table-comment": {
       "title": "Comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",
@@ -394,6 +402,42 @@
     "statement-where-no-equal-null": {
       "title": "Prohibit using NULL equality comparison in WHERE clause",
       "description": "The result of NULL equality comparison is always NULL, which may cause unexpected results. Suggestion error level: Warning"
+    },
+    "statement-where-disallow-using-function": {
+      "title": "Do not apply functions or perform calculations on indexed fields in the WHERE clause",
+      "description": "If you apply a function or perform a calculation on the indexed field, the database cannot use the index and has to scan the entire table instead."
+    },
+    "statement-where-statement-query-minimum-plan-level": {
+      "title": "Restrict the maximum level of query access method",
+      "description": "SQL performance optimization strives for constant (const) access, aiming for reference (ref) level as a baseline, with acceptable performance at range level."
+    },
+    "statement-where-maximum-logical-operator-count": {
+      "title": "Restrict the number of values in the IN or OR clause of the WHERE clause",
+      "description": "This prevents performance degradation due to extensive comparisons and resource limitations."
+    },
+    "statement-maximum-limit-value": {
+      "title": "Restrict the maximum number of the LIMIT clause",
+      "description": "Limiting the number of rows through LIMIT ensures the database processes manageable chunks, improving query execution speed.  A capped LIMIT value prevents excessive memory usage, safeguarding overall system stability and preventing performance degradation."
+    },
+    "statement-maximum-join-table-count": {
+      "title": "Restrict the number of tables to be joined",
+      "description": "The more tables you join, the more complex the query becomes and the longer it takes to execute. In general, it is best to keep the number of joins to a minimum."
+    },
+    "statement-maximum-statements-in-transaction": {
+      "title": "Restrict the number of statements in a transaction",
+      "description": "Large transactions can significantly impact database performance. If a large number of statements are involved and one fails, rolling back the entire transaction becomes complex. Limiting statements minimizes the potential damage caused by a single failure and simplifies rollback procedures."
+    },
+    "statement-join-strict-column-attrs": {
+      "title": "Fields to be joined must have identical data types, character sets",
+      "description": "If the data types, character sets of the join columns are not identical, the database may not be able to correctly identify matching rows, leading to inaccurate or incomplete results."
+    },
+    "statement-disallow-mix-dml": {
+      "title": "Disallow DMLs on the same table",
+      "description": "Performing concurrent data modifications on a table can lead to challenges in accurately identifying the impacted rows. This consequently complicates the process of creating a precise backup of the affected data."
+    },
+    "statement-disallow-mix-ddl-dml": {
+      "title": "Disallow mixing DDL and DML",
+      "description": "For optimal performance and data integrity, avoid combining DDL and DML statements within the same script."
     },
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
