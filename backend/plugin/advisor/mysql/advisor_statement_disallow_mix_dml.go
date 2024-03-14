@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -32,14 +34,29 @@ func (*StatementDisallowMixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	if err != nil {
 		return nil, err
 	}
+
 	checker := &statementDisallowMixDMLChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
+		level:             level,
+		title:             string(ctx.Rule.Type),
+		dmlStatementCount: make(map[string]int),
 	}
 
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+	}
+
+	if len(checker.dmlStatementCount) > 1 {
+		content := "Found"
+		for t, count := range checker.dmlStatementCount {
+			content += fmt.Sprintf(" %d %s,", count, t)
+		}
+		content += " disallow mixing different types of DML statements"
+		checker.adviceList = append(checker.adviceList, advisor.Advice{
+			Status:  checker.level,
+			Code:    advisor.StatementDisallowMixDML,
+			Title:   checker.title,
+			Content: content,
+		})
 	}
 
 	if len(checker.adviceList) == 0 {
@@ -53,17 +70,24 @@ func (*StatementDisallowMixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type statementDisallowMixDMLChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
 	adviceList []advisor.Advice
 	level      advisor.Status
 	title      string
-	text       string
+
+	dmlStatementCount map[string]int
 }
 
-func (checker *statementDisallowMixDMLChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+func (c *statementDisallowMixDMLChecker) EnterInsertStatement(_ *mysql.InsertStatementContext) {
+	c.dmlStatementCount["INSERT"]++
+}
+
+func (c *statementDisallowMixDMLChecker) EnterUpdateStatement(_ *mysql.UpdateStatementContext) {
+	c.dmlStatementCount["UPDATE"]++
+}
+
+func (c *statementDisallowMixDMLChecker) EnterDeleteStatement(_ *mysql.DeleteStatementContext) {
+	c.dmlStatementCount["DELETE"]++
 }
