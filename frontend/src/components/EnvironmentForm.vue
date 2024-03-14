@@ -247,11 +247,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
+import { computedAsync, useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
+import { computed, reactive, PropType, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
@@ -270,7 +270,6 @@ import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import type {
   ResourceId,
-  SQLReviewPolicy,
   ValidatedMessage,
   WorkspacePermission,
 } from "@/types";
@@ -357,31 +356,14 @@ const bindings = computed(() => {
   return {};
 });
 
-const environmentId = computed(() => {
+const sqlReviewPolicy = computedAsync(() => {
   if (props.create) {
-    return;
+    return undefined;
   }
-  return extractEnvironmentResourceName(
+  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentName(
     (props.environment as Environment).name
   );
-});
-
-const prepareSQLReviewPolicy = () => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentId(
-    environmentId.value
-  );
-};
-watchEffect(prepareSQLReviewPolicy);
-
-const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
-});
+}, undefined);
 
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
@@ -395,7 +377,7 @@ const onSQLReviewPolicyClick = () => {
     router.push({
       name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
       query: {
-        environmentId: environmentId.value,
+        environmentId: (props.environment as Environment).uid,
       },
     });
   }

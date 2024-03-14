@@ -281,11 +281,12 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.sqlReviewPolicySlug as string;
-            return (
-              useSQLReviewStore().getReviewPolicyByEnvironmentId(
-                String(uidFromSlug(slug))
-              )?.name ?? t("sql-review.title")
-            );
+            const environmentUID = String(uidFromSlug(slug));
+            const policy =
+              useSQLReviewStore().getReviewPolicyByEnvironmentUID(
+                environmentUID
+              );
+            return policy?.name ?? t("sql-review.title");
           },
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },

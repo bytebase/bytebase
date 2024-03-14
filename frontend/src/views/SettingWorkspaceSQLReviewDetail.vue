@@ -133,9 +133,9 @@
 </template>
 
 <script lang="ts" setup>
-import { useTitle } from "@vueuse/core";
+import { computedAsync, useTitle } from "@vueuse/core";
 import { cloneDeep, groupBy } from "lodash-es";
-import { computed, reactive, toRef, watch, watchEffect } from "vue";
+import { computed, reactive, toRef, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
@@ -157,7 +157,6 @@ import {
 import {
   unknown,
   RuleTemplate,
-  SQLReviewPolicy,
   SchemaPolicyRule,
   TEMPLATE_LIST,
   convertPolicyRuleToRuleTemplate,
@@ -203,23 +202,17 @@ const state = reactive<LocalState>({
   editingTitle: false,
 });
 
-watchEffect(async () => {
-  await store.getOrFetchReviewPolicyByEnvironmentId(
-    idFromSlug(props.sqlReviewPolicySlug)
-  );
-});
-
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
-const reviewPolicy = computed((): SQLReviewPolicy => {
-  return (
-    store.getReviewPolicyByEnvironmentId(
-      String(idFromSlug(props.sqlReviewPolicySlug))
-    ) || (unknown("SQL_REVIEW") as SQLReviewPolicy)
+const reviewPolicy = computedAsync(async () => {
+  const environmentUID = idFromSlug(props.sqlReviewPolicySlug);
+  const policy = await store.getOrFetchReviewPolicyByEnvironmentUID(
+    environmentUID
   );
-});
+  return policy ?? unknown("SQL_REVIEW");
+}, unknown("SQL_REVIEW"));
 
 const ruleListOfPolicy = computed((): RuleTemplate[] => {
   if (!reviewPolicy.value) {
