@@ -272,26 +272,6 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 	return sheet, nil
 }
 
-// DeleteSheet deletes an existing sheet by ID.
-func (s *Store) DeleteSheet(ctx context.Context, sheetUID int) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `DELETE FROM sheet WHERE id = $1`, sheetUID); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	s.sheetCache.Remove(sheetUID)
-	return nil
-}
-
 // patchSheetImpl updates a sheet's name/statement/payload/database_id/project_id.
 func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
 	set, args := []string{"updater_id = $1"}, []any{patch.UpdaterID}

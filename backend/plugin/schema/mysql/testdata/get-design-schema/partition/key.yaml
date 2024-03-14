@@ -1,13 +1,13 @@
-- description: Easy Partition
+- description: Easy Key Partition
   baseline: |-
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `key_partition_multiple`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `key_partition_multiple` (
       `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
+      `id2` int DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
@@ -18,7 +18,7 @@
         {
           "tables": [
             {
-              "name": "u",
+              "name": "key_partition_multiple",
               "engine": "InnoDB",
               "columns": [
                 {
@@ -29,33 +29,23 @@
                   "defaultNull": true
                 },
                 {
-                  "name": "name",
-                  "type": "varchar(10)",
+                  "name": "id2",
+                  "type": "int",
                   "nullable": true,
                   "position": 2,
-                  "collation": "utf8mb4_0900_ai_ci",
-                  "defaultNull": true,
-                  "characterSet": "utf8mb4"
+                  "defaultNull": true
                 }
               ],
               "partitions": [
                 {
                   "name": "p0",
-                  "type": "RANGE",
-                  "value": "100",
-                  "expression": "`id`"
+                  "type": "KEY",
+                  "expression": "`id`,`id2`"
                 },
                 {
                   "name": "p1",
-                  "type": "RANGE",
-                  "value": "200",
-                  "expression": "`id`"
-                },
-                {
-                  "name": "p2",
-                  "type": "RANGE",
-                  "value": "MAXVALUE",
-                  "expression": "`id`"
+                  "type": "KEY",
+                  "expression": "`id`,`id2`"
                 }
               ],
               "collation": "utf8mb4_0900_ai_ci"
@@ -68,16 +58,15 @@
     SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
     SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
-    -- Table structure for `u`
+    -- Table structure for `key_partition_multiple`
     --
-    CREATE TABLE `u` (
+    CREATE TABLE `key_partition_multiple` (
       `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
+      `id2` int DEFAULT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-    /*!50100 PARTITION BY RANGE (`id`)
-    (PARTITION p0 VALUES LESS THAN (100) ENGINE = InnoDB,
-     PARTITION p1 VALUES LESS THAN (200) ENGINE = InnoDB,
-     PARTITION p2 VALUES LESS THAN MAXVALUE ENGINE = InnoDB) */;
+    /*!50100 PARTITION BY KEY (id,id2)
+    (PARTITION p0 ENGINE=InnoDB,
+     PARTITION p1 ENGINE=InnoDB) */;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

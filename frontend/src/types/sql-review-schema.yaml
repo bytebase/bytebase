@@ -248,7 +248,7 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
-  - type: statement.where.statement.query.minimum-plan-level
+  - type: statement.query.minimum-plan-level
     category: STATEMENT
     engineList:
       - MYSQL

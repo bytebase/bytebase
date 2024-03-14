@@ -61,6 +61,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementMaximumJoinTableCount,
 		// advisor.SchemaRuleStatementWhereDisallowUsingFunction disallow using function in where clause.
 		advisor.SchemaRuleStatementWhereDisallowUsingFunction,
+		// advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount enforces maximum number of logical operators in the where clause.
+		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
@@ -81,6 +83,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleTableDisallowTrigger,
 		// advisor.SchemaRuleTableNoDuplicateIndex require the table no duplicate index.
 		advisor.SchemaRuleTableNoDuplicateIndex,
+		// advisor.SchemaRuleTableDisallowSetCharset disallow set table charset when creating/altering table.
+		advisor.SchemaRuleTableDisallowSetCharset,
 
 		// Column related rules.
 		// advisor.SchemaRuleRequiredColumn enforce the required columns in each table.

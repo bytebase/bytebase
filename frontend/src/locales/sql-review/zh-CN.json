@@ -412,7 +412,7 @@
       "title": "在 WHERE 子句中避免对索引字段应用函数或执行计算",
       "description": "如果对索引字段应用函数或执行计算，则数据库无法使用索引，而必须扫描整个表。"
     },
-    "statement-where-statement-query-minimum-plan-level": {
+    "statement-query-minimum-plan-level": {
       "title": "限制查询访问方法的最大级别",
       "description": "在 SQL 性能优化中，追求常量访问速度，以引用级别作为基线，区间级别的性能尚可接受。",
       "component": {

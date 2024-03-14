@@ -176,8 +176,7 @@ const turnSheetToUnsavedTab = (sheet: Worksheet) => {
   const tabStore = useSQLEditorTabStore();
   const tab = tabStore.tabList.find((tab) => tab.sheet === sheet.name);
   if (tab) {
-    tab.sheet = "";
-    tab.status = "DIRTY";
+    tabStore.removeTab(tab);
   }
 };
 </script>
