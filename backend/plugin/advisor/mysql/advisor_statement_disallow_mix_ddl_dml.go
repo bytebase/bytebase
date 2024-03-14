@@ -4,8 +4,6 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	mysql "github.com/bytebase/mysql-parser"
-
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -32,38 +30,39 @@ func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	if err != nil {
 		return nil, err
 	}
-	checker := &statementDisallowMixDDLDMLChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
-	}
+	title := string(ctx.Rule.Type)
 
+	checker := &mysqlparser.StatementTypeChecker{}
+
+	hasDDL := false
+	hasDML := false
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+		if checker.IsDDL {
+			hasDDL = true
+		}
+		if checker.IsDML {
+			hasDML = true
+		}
 	}
 
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+	if hasDDL && hasDML {
+		return []advisor.Advice{
+			{
+				Status:  level,
+				Title:   title,
+				Content: "Mixing DDL with DML is not allowed",
+				Code:    advisor.StatementDisallowMixDDLDML,
+			},
+		}, nil
+	}
+
+	return []advisor.Advice{
+		{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
-		})
-	}
-	return checker.adviceList, nil
-}
-
-// TODO(sql-review): implement me please.
-type statementDisallowMixDDLDMLChecker struct {
-	*mysql.BaseMySQLParserListener
-
-	baseLine   int
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-}
-
-func (checker *statementDisallowMixDDLDMLChecker) EnterQuery(ctx *mysql.QueryContext) {
-	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+		},
+	}, nil
 }
