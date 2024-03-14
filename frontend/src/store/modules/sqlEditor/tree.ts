@@ -15,7 +15,6 @@ import {
   isValidSQLEditorTreeFactor as isValidFactor,
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
-  UNKNOWN_ID,
   RichSchemaMetadata,
   RichTableMetadata,
   StatefulSQLEditorTreeFactor as StatefulFactor,
@@ -137,7 +136,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     target: NodeTarget<T>
   ) => {
     const id = idForSQLEditorTreeNodeTarget(type, target);
-    return nodeListMapById.get(id) ?? [];
+    return (nodeListMapById.get(id) ?? []) as TreeNode<T>[];
   };
 
   const buildTree = () => {
@@ -257,12 +256,12 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
     return `labels/${kv.key}:${kv.value}`;
   }
   if (type === "expandable-text") {
-    const { text, type } = target as NodeTarget<"expandable-text">;
-    return `texts-${type}/${typeof text === "function" ? text() : text}`;
+    const { text, id, type } = target as NodeTarget<"expandable-text">;
+    return `texts-${type}/${id}/${typeof text === "function" ? text() : text}`;
   }
   if (type === "dummy") {
-    const dummyType = (target as NodeTarget<"dummy">).type;
-    return `dummy-${dummyType}`;
+    const { type, id } = target as NodeTarget<"dummy">;
+    return `dummy-${type}/${id}`;
   }
 
   throw new Error(

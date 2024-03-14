@@ -11,6 +11,7 @@
     ]"
     :data-status="tab.status"
     :data-sheet="tab.sheet"
+    :data-connection="JSON.stringify(tab.connection)"
     @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"

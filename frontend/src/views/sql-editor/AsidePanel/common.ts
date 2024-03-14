@@ -27,6 +27,7 @@ const createDummyNode = (
   return mapTreeNodeByType(
     "dummy",
     {
+      id: parent.key,
       type,
       error,
     },
@@ -45,6 +46,7 @@ const createExpandableTextNode = (
   return mapTreeNodeByType(
     "expandable-text",
     {
+      id: parent.key,
       type,
       expandable: true,
       text,

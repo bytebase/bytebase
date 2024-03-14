@@ -66,10 +66,20 @@ export type RichViewMetadata = {
 };
 export type TextTarget<E extends boolean> = {
   expandable: E;
+  id: string;
   type: SQLEditorTreeNodeType;
   text: string | (() => string);
   render?: RenderFunction;
   searchable?: boolean;
+};
+export type LabelTarget = {
+  key: string;
+  value: string;
+};
+export type DummyTarget = {
+  id: string;
+  type: SQLEditorTreeNodeType;
+  error?: unknown;
 };
 
 export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
@@ -92,11 +102,11 @@ export type SQLEditorTreeNodeTarget<T extends SQLEditorTreeNodeType = any> =
     : T extends "view"
     ? RichViewMetadata
     : T extends "label"
-    ? { key: string; value: string }
+    ? LabelTarget
     : T extends "expandable-text"
     ? TextTarget<true>
     : T extends "dummy"
-    ? { type: SQLEditorTreeNodeType; error?: unknown }
+    ? DummyTarget
     : never;
 
 export type SQLEditorTreeState = "UNSET" | "LOADING" | "READY";

@@ -15,14 +15,17 @@
 import { storeToRefs } from "pinia";
 import { useSQLEditorTreeStore } from "@/store";
 import { StatefulSQLEditorTreeFactor as StatefulFactor } from "@/types";
+import { useSQLEditorContext } from "../../context";
 import FactorTag from "./FactorTag.vue";
 
 const treeStore = useSQLEditorTreeStore();
+const { events } = useSQLEditorContext();
 const { factorList, filteredFactorList } = storeToRefs(treeStore);
 
 const toggleDisabled = (factor: StatefulFactor, index: number) => {
   factor.disabled = !factor.disabled;
   treeStore.buildTree();
+  events.emit("tree-ready");
 };
 
 const remove = (factor: StatefulFactor, index: number) => {
@@ -34,5 +37,6 @@ const remove = (factor: StatefulFactor, index: number) => {
     });
   }
   treeStore.buildTree();
+  events.emit("tree-ready");
 };
 </script>

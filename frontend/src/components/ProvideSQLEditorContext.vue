@@ -271,6 +271,8 @@ const prepareConnectionSlug = async () => {
       connect({
         instance: database.instance,
         database: database.name,
+        schema: filter.schema,
+        table: filter.table,
       });
       return true;
     }
@@ -303,6 +305,8 @@ const initializeConnectionFromQuery = async () => {
       connect({
         instance: database.instance,
         database: database.name,
+        schema: filter.schema,
+        table: filter.table,
       });
       return;
     }
@@ -348,6 +352,13 @@ const syncURLWithConnection = () => {
           }
         }
       }
+      const query = { ...route.query };
+      if (table) {
+        query.filter = JSON.stringify({
+          table,
+          schema,
+        });
+      }
       if (databaseName) {
         const database = databaseStore.getDatabaseByName(databaseName);
         if (database.uid !== String(UNKNOWN_ID)) {
@@ -359,15 +370,7 @@ const syncURLWithConnection = () => {
                 database
               ),
             },
-            query: {
-              ...route.query,
-              filter: table
-                ? JSON.stringify({
-                    table,
-                    schema,
-                  })
-                : undefined,
-            },
+            query,
           });
           return;
         }
@@ -380,15 +383,7 @@ const syncURLWithConnection = () => {
             params: {
               connectionSlug: makeConnectionV1Slug(instance),
             },
-            query: {
-              ...route.query,
-              filter: table
-                ? JSON.stringify({
-                    table,
-                    schema,
-                  })
-                : undefined,
-            },
+            query,
           });
           return;
         }
