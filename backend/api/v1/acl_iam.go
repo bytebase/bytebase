@@ -86,8 +86,7 @@ func isSkippedMethod(fullMethod string) bool {
 	case
 		v1pb.SheetService_CreateSheet_FullMethodName,
 		v1pb.SheetService_GetSheet_FullMethodName,
-		v1pb.SheetService_UpdateSheet_FullMethodName,
-		v1pb.SheetService_DeleteSheet_FullMethodName:
+		v1pb.SheetService_UpdateSheet_FullMethodName:
 		return true
 	// skip checking for sheet service because we want to
 	// discriminate bytebase artifact sheets and user sheets first.
