@@ -15,7 +15,7 @@ import {
   getStatementSize,
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { useTabStore } from "../tab";
+import { useSQLEditorTabStore } from "../sqlEditor";
 import { getUserEmailFromIdentifier } from "./common";
 
 type WorksheetView = "FULL" | "BASIC";
@@ -221,17 +221,20 @@ export const useWorkSheetStore = defineStore("worksheet_v1", () => {
 });
 
 export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
-  const tabStore = useTabStore();
+  const tabStore = useSQLEditorTabStore();
   const sheetStore = useWorkSheetStore();
   const me = useCurrentUserV1();
 
   const currentSheet = computed(() => {
     const tab = tabStore.currentTab;
-    const name = tab.sheetName;
-    if (!name) {
+    if (!tab) {
       return undefined;
     }
-    return sheetStore.getSheetByName(name);
+    const { sheet } = tab;
+    if (!sheet) {
+      return undefined;
+    }
+    return sheetStore.getSheetByName(sheet);
   });
 
   const isCreator = computed(() => {

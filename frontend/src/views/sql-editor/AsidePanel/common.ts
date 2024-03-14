@@ -4,8 +4,8 @@ import {
   pushNotification,
   useCurrentUserV1,
   useDBSchemaV1Store,
+  mapTreeNodeByType,
 } from "@/store";
-import { mapTreeNodeByType } from "@/store/modules/sqlEditorTree";
 import {
   ComposedDatabase,
   SQLEditorTreeNode,
@@ -27,6 +27,7 @@ const createDummyNode = (
   return mapTreeNodeByType(
     "dummy",
     {
+      id: parent.key,
       type,
       error,
     },
@@ -45,6 +46,7 @@ const createExpandableTextNode = (
   return mapTreeNodeByType(
     "expandable-text",
     {
+      id: parent.key,
       type,
       expandable: true,
       text,

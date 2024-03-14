@@ -1,21 +1,21 @@
 import Emittery from "emittery";
-import { storeToRefs } from "pinia";
 import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
+  useSQLEditorTabStore,
   useWorkSheetStore,
-  useTabStore,
-  useSQLEditorStore,
 } from "@/store";
-import { AnyTabInfo, UNKNOWN_ID } from "@/types";
+import { SQLEditorTab } from "@/types";
+import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import {
-  emptyConnection,
+  emptySQLEditorConnection,
   getSheetStatement,
-  getSuggestedTabNameFromConnection,
   isWorksheetReadableV1,
+  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { SQLEditorContext } from "../context";
 import { SheetViewMode } from "./types";
 
 type SheetEvents = Emittery<{
@@ -72,6 +72,7 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
 
 export type SheetContext = {
   showPanel: Ref<boolean>;
+  isFetching: Ref<boolean>;
   view: Ref<SheetViewMode>;
   views: Record<SheetViewMode, ReturnType<typeof useSheetListByView>>;
   events: SheetEvents;
@@ -91,6 +92,7 @@ export const useSheetContextByView = (view: SheetViewMode) => {
 export const provideSheetContext = () => {
   const context: SheetContext = {
     showPanel: ref(false),
+    isFetching: ref(false),
     view: ref("my"),
     views: {
       my: useSheetListByView("my"),
@@ -109,23 +111,38 @@ export const provideSheetContext = () => {
   return context;
 };
 
-export const openSheet = async (name: string, forceNewTab = false) => {
-  const { isFetchingSheet } = storeToRefs(useSQLEditorStore());
+export const extractWorksheetConnection = (worksheet: Worksheet) => {
+  const connection = emptySQLEditorConnection();
+  if (worksheet.database) {
+    try {
+      const database = useDatabaseV1Store().getDatabaseByName(
+        worksheet.database
+      );
+      connection.instance = database.instance;
+      connection.database = database.name;
+    } catch {
+      // Skip.
+    }
+  }
+  return connection;
+};
+
+export const openWorksheetByName = async (
+  name: string,
+  editorContext: SQLEditorContext,
+  worksheetContext: SheetContext,
+  forceNewTab = false
+) => {
   const cleanup = () => {
-    isFetchingSheet.value = false;
+    worksheetContext.isFetching.value = false;
   };
 
-  isFetchingSheet.value = true;
+  worksheetContext.isFetching.value = true;
   const sheet = await useWorkSheetStore().getOrFetchSheetByName(name);
   if (!sheet) {
     cleanup();
     return false;
   }
-
-  const tabStore = useTabStore();
-  const openingSheetTab = tabStore.tabList.find(
-    (tab) => tab.sheetName === sheet.name
-  );
 
   if (!isWorksheetReadableV1(sheet)) {
     pushNotification({
@@ -139,12 +156,22 @@ export const openSheet = async (name: string, forceNewTab = false) => {
 
   cleanup();
 
+  await editorContext.maybeSwitchProject(sheet.project);
+  const tabStore = useSQLEditorTabStore();
+  const openingSheetTab = tabStore.tabList.find(
+    (tab) => tab.sheet === sheet.name
+  );
+
   const statement = getSheetStatement(sheet);
-  const newTab: AnyTabInfo = {
-    sheetName: sheet.name,
-    name: sheet.title,
+
+  const newTab: Partial<SQLEditorTab> = {
+    connection: extractWorksheetConnection(sheet),
+    sheet: sheet.name,
+    title: sheet.title,
     statement,
+    status: "CLEAN",
   };
+
   if (openingSheetTab) {
     // Switch to a sheet tab if it's open already.
     tabStore.setCurrentTabId(openingSheetTab.id);
@@ -156,45 +183,17 @@ export const openSheet = async (name: string, forceNewTab = false) => {
     tabStore.addTab(newTab);
   }
 
-  let insId = String(UNKNOWN_ID);
-  let dbId = String(UNKNOWN_ID);
-  if (sheet.database) {
-    try {
-      const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-        sheet.database,
-        true /* silent */
-      );
-      insId = database.instanceEntity.uid;
-      dbId = database.uid;
-    } catch {
-      // Skip.
-    }
-  }
-
-  tabStore.updateCurrentTab({
-    sheetName: sheet.name,
-    name: sheet.title,
-    statement,
-    isSaved: true,
-    connection: {
-      ...emptyConnection(),
-      // TODO: legacy instance id.
-      instanceId: insId,
-      databaseId: dbId,
-    },
-  });
-
   return true;
 };
 
 export const addNewSheet = () => {
-  const tabStore = useTabStore();
-  const connection = { ...tabStore.currentTab.connection };
-  const name = getSuggestedTabNameFromConnection(connection);
+  const tabStore = useSQLEditorTabStore();
+  const curr = tabStore.currentTab;
+  const connection = curr ? { ...curr.connection } : emptySQLEditorConnection();
+  const title = suggestedTabTitleForSQLEditorConnection(connection);
   tabStore.addTab({
-    name,
+    title,
     connection,
-    // The newly created tab is "clean" so its connection can be changed
-    isFreshNew: true,
+    status: "NEW",
   });
 };

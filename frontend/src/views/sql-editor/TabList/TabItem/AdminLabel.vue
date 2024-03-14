@@ -9,9 +9,9 @@
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
       <span>{{ instance.title }}</span>
     </template>
-    <template v-if="databaseV1.uid !== String(UNKNOWN_ID)">
+    <template v-if="database.uid !== String(UNKNOWN_ID)">
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
-      <span>{{ databaseV1.databaseName }}</span>
+      <span>{{ database.databaseName }}</span>
     </template>
   </label>
 </template>
@@ -19,13 +19,13 @@
 <script lang="ts" setup>
 import { computed, PropType } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
-import { useDatabaseV1ByUID, useInstanceV1ByUID } from "@/store";
-import type { TabInfo } from "@/types";
+import { useDatabaseV1Store, useInstanceV1Store } from "@/store";
+import type { SQLEditorTab } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 
 const props = defineProps({
   tab: {
-    type: Object as PropType<TabInfo>,
+    type: Object as PropType<SQLEditorTab>,
     required: true,
   },
   index: {
@@ -36,11 +36,10 @@ const props = defineProps({
 
 const connection = computed(() => props.tab.connection);
 
-const { instance } = useInstanceV1ByUID(
-  computed(() => connection.value.instanceId)
-);
-
-const { database: databaseV1 } = useDatabaseV1ByUID(
-  computed(() => String(connection.value.databaseId))
-);
+const instance = computed(() => {
+  return useInstanceV1Store().getInstanceByName(connection.value.instance);
+});
+const database = computed(() => {
+  return useDatabaseV1Store().getDatabaseByName(connection.value.database);
+});
 </script>

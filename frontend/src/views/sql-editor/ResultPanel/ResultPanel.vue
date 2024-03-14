@@ -83,19 +83,19 @@ import { head } from "lodash-es";
 import { Info, X } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, ref, watch } from "vue";
-import { useDatabaseV1Store, useTabStore } from "@/store";
+import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
 import { ComposedDatabase } from "@/types";
 import { ResultViewV1 } from "../EditorCommon/";
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const selectedDatabase = ref<ComposedDatabase>();
 
 const batchQueryDatabases = computed(() => {
-  return tabStore.currentTab.batchQueryContext?.selectedDatabaseNames || [];
+  return tabStore.currentTab?.batchQueryContext?.databases || [];
 });
 const queriedDatabaseNames = computed(() =>
-  Array.from(tabStore.currentTab.databaseQueryResultMap?.keys() || [])
+  Array.from(tabStore.currentTab?.queryContext?.results.keys() || [])
 );
 const databases = computed(() => {
   return queriedDatabaseNames.value.map((databaseName) => {
@@ -103,26 +103,28 @@ const databases = computed(() => {
   });
 });
 const selectedResultSet = computed(() => {
-  return tabStore.currentTab.databaseQueryResultMap?.get(
+  return tabStore.currentTab?.queryContext?.results.get(
     selectedDatabase.value?.name || ""
   );
 });
-const executeParams = computed(() => tabStore.currentTab.executeParams);
-const loading = computed(() => tabStore.currentTab.isExecutingSQL);
+const executeParams = computed(() => tabStore.currentTab?.queryContext?.params);
+const loading = computed(
+  () => tabStore.currentTab?.queryContext?.status === "EXECUTING"
+);
 const currentTimestampMS = useTimestamp();
 const queryElapsedTime = computed(() => {
   if (!loading.value) return "";
   const tab = tabStore.currentTab;
-  const { isExecutingSQL, queryContext } = tab;
-  if (!isExecutingSQL) return "";
-  if (!queryContext) return;
+  if (!tab) return "";
+  const { queryContext } = tab;
+  if (!queryContext) return "";
   const beginMS = queryContext.beginTimestampMS;
   const elapsedMS = currentTimestampMS.value - beginMS;
   return `${(elapsedMS / 1000).toFixed(1)}s`;
 });
 
 const isDatabaseQueryFailed = (database: ComposedDatabase) => {
-  const resultSet = tabStore.currentTab.databaseQueryResultMap?.get(
+  const resultSet = tabStore.currentTab?.queryContext?.results.get(
     database.name || ""
   );
   // If there is any error in the result set, we consider the query failed.
@@ -130,14 +132,11 @@ const isDatabaseQueryFailed = (database: ComposedDatabase) => {
 };
 
 const cancelQuery = () => {
-  const { queryContext } = tabStore.currentTab;
-  if (!queryContext) return;
-  const { abortController } = queryContext;
-  abortController?.abort();
+  tabStore.currentTab?.queryContext?.abortController.abort();
 };
 
 const handleCloseSingleResultView = (database: ComposedDatabase) => {
-  tabStore.currentTab.databaseQueryResultMap?.delete(database.name || "");
+  tabStore.currentTab?.queryContext?.results.delete(database.name || "");
 };
 
 // Auto select the first database when the databases are ready.
