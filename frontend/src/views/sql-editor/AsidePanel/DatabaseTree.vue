@@ -715,27 +715,34 @@ const expandSchemaAndTableNodes = (
     return false;
   }
 
-  const schemaNode = databaseNode.children?.find((node: SQLEditorTreeNode) => {
-    if (node.meta.type === "schema") {
-      return (
-        (node.meta.target as SQLEditorTreeNodeTarget<"schema">).schema.name ===
-        schemaMetadata.name
-      );
+  const schemaNode = databaseNode.children?.find(
+    (
+      node: SQLEditorTreeNode
+    ): node is
+      | SQLEditorTreeNode<"schema">
+      | SQLEditorTreeNode<"expandable-text"> => {
+      if (node.meta.type === "schema") {
+        return (
+          (node.meta.target as SQLEditorTreeNodeTarget<"schema">).schema
+            .name === schemaMetadata.name
+        );
+      }
+      if (node.meta.type === "expandable-text") {
+        return schemaMetadata.name === "";
+      }
+      return false;
     }
-    if (node.meta.type === "expandable-text") {
-      return schemaMetadata.name === "";
-    }
-    return false;
-  });
+  );
 
   if (!schemaNode) {
     return false;
   }
   expandNode(schemaNode);
-  expandNodesByType("schema", {
-    database: db,
-    schema: schemaMetadata,
-  });
+  if (schemaNode.meta.type === "schema") {
+    // a schema node contains a "Tables" `expandable-text` node
+    // so we should also expand the first child
+    expandNode(head(schemaNode.children));
+  }
 
   if (!table) {
     return true;
@@ -764,6 +771,11 @@ const expandFirstSchemaNode = (
 ) => {
   const firstChild = head(databaseNode.children) as SQLEditorTreeNode;
   expandNode(firstChild);
+  if (firstChild && firstChild.meta.type === "schema") {
+    // a schema node contains a "Tables" `expandable-text` node
+    // so we should also expand the first child
+    expandNode(head(firstChild.children));
+  }
 };
 
 // Open corresponding tree node when the connection changed.
