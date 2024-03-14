@@ -31,7 +31,7 @@
         </template>
         <div class="access-content space-y-2 w-80">
           <div
-            v-for="(option, idx) in accessOptions"
+            v-for="option in accessOptions"
             :key="option.label"
             class="p-2 rounded-sm flex justify-between"
             :class="[
@@ -40,24 +40,16 @@
             ]"
             @click="handleChangeAccess(option)"
           >
-            <div class="access-content--prefix flex">
-              <div v-if="idx === 0" class="mt-1">
-                <heroicons-outline:lock-closed class="h-5 w-5" />
-              </div>
-              <div v-if="idx === 1" class="mt-1">
-                <heroicons-outline:user-group class="h-5 w-5" />
-              </div>
-              <div v-if="idx === 2" class="mt-1">
-                <heroicons-outline:globe class="h-5 w-5" />
-              </div>
-              <section class="flex flex-col pl-2">
+            <div class="access-content--prefix">
+              <div class="flex space-x-2 items-center">
+                <component :is="option.icon" class="h-5 w-5" />
                 <h2 class="text-md flex">
                   {{ option.label }}
                 </h2>
-                <h3 class="text-xs">
-                  {{ option.description }}
-                </h3>
-              </section>
+              </div>
+              <span class="text-xs textinfolabel">
+                {{ option.description }}
+              </span>
             </div>
             <div
               v-show="option.value === currentAccess.value"
@@ -93,6 +85,7 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
+import { LockKeyholeIcon, UsersIcon } from "lucide-vue-next";
 import {
   NButton,
   NInput,
@@ -100,7 +93,7 @@ import {
   NInputGroupLabel,
   NPopover,
 } from "naive-ui";
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
@@ -127,16 +120,19 @@ const accessOptions = computed<AccessOption[]>(() => {
       label: t("sql-editor.private"),
       value: Worksheet_Visibility.VISIBILITY_PRIVATE,
       description: t("sql-editor.private-desc"),
+      icon: h(LockKeyholeIcon),
     },
     {
       label: t("sql-editor.project-read"),
       value: Worksheet_Visibility.VISIBILITY_PROJECT_READ,
       description: t("sql-editor.project-read-desc"),
+      icon: h(UsersIcon),
     },
     {
       label: t("sql-editor.project-write"),
       value: Worksheet_Visibility.VISIBILITY_PROJECT_WRITE,
       description: t("sql-editor.project-write-desc"),
+      icon: h(UsersIcon),
     },
   ];
 });

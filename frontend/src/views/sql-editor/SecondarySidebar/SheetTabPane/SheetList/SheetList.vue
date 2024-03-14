@@ -59,6 +59,7 @@
           y: dropdown.y,
           onClickoutside: () => (dropdown = undefined),
         }"
+        @dismiss="dropdown = undefined"
       />
     </div>
   </div>
