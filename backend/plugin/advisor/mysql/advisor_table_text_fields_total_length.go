@@ -45,6 +45,7 @@ func (*TableMaximumVarcharLengthAdvisor) Check(ctx advisor.Context, _ string) ([
 	checker := &tableFieldsMaximumVarcharLengthChecker{
 		level:   level,
 		title:   string(ctx.Rule.Type),
+		catalog: ctx.Catalog,
 		maximum: payload.Number,
 	}
 
