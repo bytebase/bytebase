@@ -19,7 +19,7 @@
 - statement: UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
   want:
     - status: WARN
-      code: 226
+      code: 227
       title: statement.disallow-mix-dml
       content: Found 1 UPDATE, 1 DELETE on table ``.`tech_book`, disallow mixing different types of DML statements
       line: 0
