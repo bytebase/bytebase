@@ -136,10 +136,10 @@ const visibilityDisplayName = (visibility: Worksheet_Visibility) => {
   switch (visibility) {
     case Worksheet_Visibility.VISIBILITY_PRIVATE:
       return t("sql-editor.private");
-    case Worksheet_Visibility.VISIBILITY_PROJECT:
-      return t("common.project");
-    case Worksheet_Visibility.VISIBILITY_PUBLIC:
-      return t("sql-editor.public");
+    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+      return t("sql-editor.project-read");
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+      return t("sql-editor.project-write");
     default:
       return "";
   }

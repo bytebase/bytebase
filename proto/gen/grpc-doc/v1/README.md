@@ -10146,8 +10146,8 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 | Public, worksheet OWNER can read/write, and all others can read. |
-| VISIBILITY_PROJECT | 2 | Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
 | VISIBILITY_PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 

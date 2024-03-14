@@ -181,10 +181,10 @@ message Worksheet {
 
   enum Visibility {
     VISIBILITY_UNSPECIFIED = 0;
-    // Public, worksheet OWNER can read/write, and all others can read.
-    VISIBILITY_PUBLIC = 1;
-    // Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
-    VISIBILITY_PROJECT = 2;
+    // Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.
+    VISIBILITY_PROJECT_READ = 1;
+    // Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.
+    VISIBILITY_PROJECT_WRITE = 2;
     // Private, only worksheet OWNER can read/write.
     VISIBILITY_PRIVATE = 3;
   }

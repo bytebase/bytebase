@@ -1,10 +1,11 @@
 import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { PresetRoleType } from "@/types";
 import {
   Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto/v1/worksheet_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { isMemberOfProjectV1, isOwnerOfProjectV1 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -12,60 +13,64 @@ export const extractWorksheetUID = (name: string) => {
   return matches?.[1] ?? "-1";
 };
 
+// readable to
+// PRIVATE: workspace Owner/DBA and the creator only.
+// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
+// PROJECT_READ: workspace Owner/DBA and all members in the project.
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
   const currentUserV1 = useCurrentUserV1();
-
-  // readable to
-  // PRIVATE: the creator only
-  // PROJECT: the creator and members in the project, workspace Owner and DBA
-  // PUBLIC: everyone
 
   if (getUserEmailFromIdentifier(sheet.creator) === currentUserV1.value.email) {
     // Always readable to the creator
     return true;
   }
-  const { visibility } = sheet;
-  if (visibility === Worksheet_Visibility.VISIBILITY_PRIVATE) {
-    return false;
-  }
-  if (visibility === Worksheet_Visibility.VISIBILITY_PROJECT) {
-    const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
 
-    return hasProjectPermissionV2(
-      projectV1,
-      currentUserV1.value,
-      "bb.projects.get"
-    );
+  if (
+    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
+    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+  ) {
+    return true;
   }
-  // visibility === "PUBLIC"
-  return true;
+
+  switch (sheet.visibility) {
+    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+      return false;
+    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE: {
+      const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
+      return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
+    }
+  }
+  return false;
 };
 
+// writable to
+// PRIVATE: workspace Owner/DBA and the creator only.
+// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
+// PROJECT_READ: workspace Owner/DBA and project owner.
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
   const currentUserV1 = useCurrentUserV1();
-
-  // writable to
-  // PRIVATE: the creator only
-  // PROJECT: the creator or project role can manage sheet, workspace Owner and DBA
-  // PUBLIC: the creator only
 
   if (getUserEmailFromIdentifier(sheet.creator) === currentUserV1.value.email) {
     // Always writable to the creator
     return true;
   }
-  const { visibility } = sheet;
-  if (visibility === Worksheet_Visibility.VISIBILITY_PRIVATE) {
-    return false;
+  if (
+    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
+    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+  ) {
+    return true;
   }
-  if (visibility === Worksheet_Visibility.VISIBILITY_PROJECT) {
-    const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
 
-    return hasProjectPermissionV2(
-      projectV1,
-      currentUserV1.value,
-      "bb.projects.get"
-    );
+  const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
+  switch (sheet.visibility) {
+    case Worksheet_Visibility.VISIBILITY_PRIVATE:
+      return false;
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+      return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
+    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+      return isOwnerOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
   }
-  // visibility === "PUBLIC"
+
   return false;
 };

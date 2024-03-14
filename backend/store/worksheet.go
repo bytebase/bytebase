@@ -20,10 +20,10 @@ type WorkSheetVisibility string
 const (
 	// PrivateWorkSheet is the sheet visibility for PRIVATE. Only sheet OWNER can read/write.
 	PrivateWorkSheet WorkSheetVisibility = "PRIVATE"
-	// ProjectWorkSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
-	ProjectWorkSheet WorkSheetVisibility = "PROJECT"
-	// PublicWorkSheet is the sheet visibility for PUBLIC. Sheet OWNER can read/write, and all others can read.
-	PublicWorkSheet WorkSheetVisibility = "PUBLIC"
+	// ProjectReadWorkSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	ProjectReadWorkSheet WorkSheetVisibility = "PROJECT_READ"
+	// ProjectWriteWorkSheet is the sheet visibility for PROJECT. Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read.
+	ProjectWriteWorkSheet WorkSheetVisibility = "PROJECT_WRITE"
 )
 
 // WorkSheetMessage is the message for a sheet.
