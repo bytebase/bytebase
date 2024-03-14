@@ -451,6 +451,7 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
         ...tab,
         name: getSuggestedTabNameFromConnection(tab.connection),
         statement: tabStore.currentTab.statement || query,
+        isSaved: false,
       });
     } else {
       // Otherwise select or add a new tab and set its connection
