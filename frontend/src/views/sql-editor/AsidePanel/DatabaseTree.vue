@@ -525,6 +525,7 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
         ...tab,
         title: suggestedTabTitleForSQLEditorConnection(tab.connection),
         statement: tabStore.currentTab.statement || statement,
+        status: "DIRTY",
       });
     } else {
       // Otherwise select or add a new tab and set its connection

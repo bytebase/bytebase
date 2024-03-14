@@ -164,10 +164,10 @@ export interface Worksheet {
 
 export enum Worksheet_Visibility {
   VISIBILITY_UNSPECIFIED = 0,
-  /** VISIBILITY_PUBLIC - Public, worksheet OWNER can read/write, and all others can read. */
-  VISIBILITY_PUBLIC = 1,
-  /** VISIBILITY_PROJECT - Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read. */
-  VISIBILITY_PROJECT = 2,
+  /** VISIBILITY_PROJECT_READ - Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, and project DEVELOPER can read. */
+  VISIBILITY_PROJECT_READ = 1,
+  /** VISIBILITY_PROJECT_WRITE - Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. */
+  VISIBILITY_PROJECT_WRITE = 2,
   /** VISIBILITY_PRIVATE - Private, only worksheet OWNER can read/write. */
   VISIBILITY_PRIVATE = 3,
   UNRECOGNIZED = -1,
@@ -179,11 +179,11 @@ export function worksheet_VisibilityFromJSON(object: any): Worksheet_Visibility 
     case "VISIBILITY_UNSPECIFIED":
       return Worksheet_Visibility.VISIBILITY_UNSPECIFIED;
     case 1:
-    case "VISIBILITY_PUBLIC":
-      return Worksheet_Visibility.VISIBILITY_PUBLIC;
+    case "VISIBILITY_PROJECT_READ":
+      return Worksheet_Visibility.VISIBILITY_PROJECT_READ;
     case 2:
-    case "VISIBILITY_PROJECT":
-      return Worksheet_Visibility.VISIBILITY_PROJECT;
+    case "VISIBILITY_PROJECT_WRITE":
+      return Worksheet_Visibility.VISIBILITY_PROJECT_WRITE;
     case 3:
     case "VISIBILITY_PRIVATE":
       return Worksheet_Visibility.VISIBILITY_PRIVATE;
@@ -198,10 +198,10 @@ export function worksheet_VisibilityToJSON(object: Worksheet_Visibility): string
   switch (object) {
     case Worksheet_Visibility.VISIBILITY_UNSPECIFIED:
       return "VISIBILITY_UNSPECIFIED";
-    case Worksheet_Visibility.VISIBILITY_PUBLIC:
-      return "VISIBILITY_PUBLIC";
-    case Worksheet_Visibility.VISIBILITY_PROJECT:
-      return "VISIBILITY_PROJECT";
+    case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
+      return "VISIBILITY_PROJECT_READ";
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+      return "VISIBILITY_PROJECT_WRITE";
     case Worksheet_Visibility.VISIBILITY_PRIVATE:
       return "VISIBILITY_PRIVATE";
     case Worksheet_Visibility.UNRECOGNIZED:
