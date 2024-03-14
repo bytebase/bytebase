@@ -34,11 +34,6 @@ service SheetService {
     };
     option (google.api.method_signature) = "sheet,update_mask";
   }
-
-  rpc DeleteSheet(DeleteSheetRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=projects/*/sheets/*}"};
-    option (google.api.method_signature) = "name";
-  }
 }
 
 message CreateSheetRequest {
@@ -73,12 +68,6 @@ message UpdateSheetRequest {
   // - `title`
   // - `statement`
   google.protobuf.FieldMask update_mask = 2;
-}
-
-message DeleteSheetRequest {
-  // The name of the sheet to delete.
-  // Format: projects/{project}/sheets/{sheet}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
 }
 
 message Sheet {
