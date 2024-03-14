@@ -1,5 +1,5 @@
 <template>
-  <div class="label">
+  <div class="label" :class="[tab.status.toLowerCase()]">
     <NEllipsis
       class="name"
       :tooltip="{
@@ -125,14 +125,14 @@ watch(isCurrentTab, (value) => {
   @apply relative flex items-center whitespace-nowrap min-w-[6rem] max-w-[12rem] truncate;
 }
 
-.name {
+.label :deep(.name) {
   @apply h-6 w-full flex items-center text-sm;
 }
 .edit {
   @apply border-0 border-b absolute inset-0 p-0 text-sm;
 }
 
-.temp .name {
+.label.new :deep(.name) {
   @apply italic;
 }
 </style>

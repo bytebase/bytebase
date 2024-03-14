@@ -54,3 +54,34 @@ export const wrapSQLIdentifier = (id: string, engine: Engine) => {
 
   return "`" + id + "`";
 };
+
+export const generateSchemaAndTableNameInSQL = (
+  engine: Engine,
+  schema: string,
+  tableOrView: string
+) => {
+  const parts: string[] = [];
+  if (schema) {
+    parts.push(wrapSQLIdentifier(schema, engine));
+  }
+  parts.push(wrapSQLIdentifier(tableOrView, engine));
+  return parts.join(".");
+};
+
+export const generateSimpleSelectAllStatement = (
+  engine: Engine,
+  schema: string,
+  table: string,
+  limit: number
+) => {
+  const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
+
+  if (engine === Engine.MSSQL) {
+    return `SELECT TOP ${limit} * FROM ${schemaAndTable};`;
+  }
+  if (engine === Engine.ORACLE || engine === Engine.OCEANBASE_ORACLE) {
+    return `SELECT * FROM ${schemaAndTable} WHERE ROWNUM <= ${limit};`;
+  }
+
+  return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;
+};
