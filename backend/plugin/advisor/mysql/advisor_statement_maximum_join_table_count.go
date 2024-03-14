@@ -60,7 +60,6 @@ func (*StatementMaximumJoinTableCountAdvisor) Check(ctx advisor.Context, _ strin
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type statementMaximumJoinTableCountChecker struct {
 	*mysql.BaseMySQLParserListener
 
