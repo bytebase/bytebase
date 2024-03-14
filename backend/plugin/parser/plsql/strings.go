@@ -11,13 +11,12 @@ import (
 )
 
 type StringsManipulator struct {
-	l      *parser.PlSqlLexer
+	tree   antlr.Tree
 	stream antlr.TokenStream
-	p      *parser.PlSqlParser
 }
 
-func NewStringsManipulator(l *parser.PlSqlLexer, stream antlr.TokenStream, p *parser.PlSqlParser) *StringsManipulator {
-	return &StringsManipulator{l, stream, p}
+func NewStringsManipulator(tree antlr.Tree, stream antlr.TokenStream) *StringsManipulator {
+	return &StringsManipulator{tree, stream}
 }
 
 type StringsManipulatorActionDropTable struct {
@@ -329,8 +328,13 @@ type tableID struct {
 
 func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction) (string, error) {
 	tableActions := make(map[tableID][]base.StringsManipulatorAction)
+	var addTables []base.StringsManipulatorAction
 
 	for _, action := range actions {
+		if addTable, ok := action.(*StringsManipulatorActionAddTable); ok {
+			addTables = append(addTables, addTable)
+			continue
+		}
 		table := tableID{
 			schema: action.GetSchemaName(),
 			table:  action.GetTopLevelNaming(),
@@ -340,6 +344,46 @@ func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction
 		tableActions[table] = append(tableActions[table], action)
 	}
 
+	listener := &statementListener{
+		actions:   tableActions,
+		addTables: addTables,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, s.tree)
+	return strings.Join(listener.results, "\n"), listener.err
+}
+
+type statementListener struct {
+	*parser.BasePlSqlParserListener
+
+	actions   map[tableID][]base.StringsManipulatorAction
+	addTables []base.StringsManipulatorAction
+	results   []string
+	err       error
+}
+
+func (l *statementListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
+	for _, statement := range ctx.AllUnit_statement() {
+		switch {
+		case statement.Create_table() != nil:
+			rewriter := &rewriter{
+				actions:      l.actions,
+				state:        statementStateRemaining,
+				buf:          &strings.Builder{},
+				tableActions: make(map[string][]base.StringsManipulatorAction),
+			}
+			antlr.ParseTreeWalkerDefault.Walk(rewriter, statement.Create_table())
+			if rewriter.err != nil {
+				l.err = rewriter.err
+				return
+			}
+			l.results = append(l.results, rewriter.buf.String())
+		default:
+			l.results = append(l.results, statement.GetParser().GetTokenStream().GetTextFromRuleContext(statement)+";\n")
+		}
+	}
+	for _, action := range l.addTables {
+		l.results = append(l.results, action.(*StringsManipulatorActionAddTable).TableDefinition)
+	}
 }
 
 type statementState int
@@ -353,10 +397,9 @@ const (
 type rewriter struct {
 	*parser.BasePlSqlParserListener
 
-	actions  map[tableID][]base.StringsManipulatorAction
-	results  []string
-	err      error
-	startPos int
+	actions map[tableID][]base.StringsManipulatorAction
+	buf     *strings.Builder
+	err     error
 
 	// per-statement state
 	currentTableID    *tableID
@@ -366,20 +409,10 @@ type rewriter struct {
 	constraintDefines []string
 }
 
-func (r *rewriter) ResetPerStatementState() {
-	r.currentTableID = nil
-	r.tableActions = nil
-	r.state = statementStateRemaining
-	r.columnDefines = nil
-	r.constraintDefines = nil
-}
-
 func (r *rewriter) EnterCreate_table(ctx *parser.Create_tableContext) {
 	if r.err != nil {
 		return
 	}
-
-	r.ResetPerStatementState()
 
 	if ctx.Relational_table() == nil {
 		return
@@ -399,9 +432,9 @@ func (r *rewriter) EnterCreate_table(ctx *parser.Create_tableContext) {
 		r.currentTableID = nil
 		return
 	}
+	r.state = statementStateModify
 
 	hasDropTable := false
-	r.tableActions = make(map[string][]base.StringsManipulatorAction)
 	for _, action := range actions {
 		// do copy
 		action := action
@@ -422,22 +455,20 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 	if r.err != nil {
 		return
 	}
-	defer func() {
-		r.startPos = ctx.GetStop().GetTokenIndex() + 1
-	}()
 
 	switch r.state {
 	case statementStateDelete:
-		r.results = append(r.results, ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: r.startPos,
-			Stop:  ctx.GetStart().GetTokenIndex() - 1,
-		}))
 		return
 	case statementStateRemaining:
-		r.results = append(r.results, ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-			Start: r.startPos,
-			Stop:  ctx.GetStop().GetTokenIndex(),
-		}))
+		if _, err := r.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+			r.err = err
+			return
+		}
+		// Keep the original format with dump.
+		if _, err := r.buf.WriteString("\n"); err != nil {
+			r.err = err
+			return
+		}
 		return
 	case statementStateModify:
 		actions, exists := r.tableActions[""]
@@ -460,47 +491,48 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 }
 
 func (r *rewriter) assembleCreateTable(ctx *parser.Create_tableContext) error {
-	buf := strings.Builder{}
 	// Write the prefix part.
-	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: r.startPos,
+	if _, err := r.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.GetStart().GetTokenIndex(),
 		Stop:  ctx.Relational_table().GetStart().GetTokenIndex() - 1,
 	})); err != nil {
 		return errors.Wrap(err, "failed to write string")
 	}
-	if _, err := buf.WriteString(" ("); err != nil {
+	if _, err := r.buf.WriteString(" ("); err != nil {
 		return errors.Wrap(err, "failed to write string")
 	}
 	if len(r.columnDefines) > 0 {
-		if _, err := buf.WriteString("\n  "); err != nil {
+		if _, err := r.buf.WriteString("\n  "); err != nil {
 			return errors.Wrap(err, "failed to write string")
 		}
-		if _, err := buf.WriteString(strings.Join(r.columnDefines, ",\n  ")); err != nil {
+		if _, err := r.buf.WriteString(strings.Join(r.columnDefines, ",\n  ")); err != nil {
 			return errors.Wrap(err, "failed to write string")
 		}
 	}
 	if len(r.constraintDefines) > 0 {
 		if len(r.columnDefines) > 0 {
-			if _, err := buf.WriteString(",\n  "); err != nil {
+			if _, err := r.buf.WriteString(",\n  "); err != nil {
 				return errors.Wrap(err, "failed to write string")
 			}
 		}
-		if _, err := buf.WriteString(strings.Join(r.constraintDefines, ",\n  ")); err != nil {
+		if _, err := r.buf.WriteString(strings.Join(r.constraintDefines, ",\n  ")); err != nil {
 			return errors.Wrap(err, "failed to write string")
 		}
 	}
-	if _, err := buf.WriteString("\n)"); err != nil {
+	if _, err := r.buf.WriteString("\n)"); err != nil {
 		return errors.Wrap(err, "failed to write string")
 	}
 	// Write the suffix part.
-	if _, err := buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+	if _, err := r.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: ctx.Relational_table().GetStop().GetTokenIndex() + 1,
 		Stop:  ctx.GetStop().GetTokenIndex(),
 	})); err != nil {
 		return errors.Wrap(err, "failed to write string")
 	}
-	// TODO: deal with ; in the end of the statement.
-	r.results = append(r.results, buf.String())
+	// Keep the original format with dump.
+	if _, err := r.buf.WriteString("\n"); err != nil {
+		return errors.Wrap(err, "failed to write string")
+	}
 	return nil
 }
 
