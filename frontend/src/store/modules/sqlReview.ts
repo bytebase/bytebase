@@ -218,7 +218,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find((g) => g.environment.name === name);
     },
-    getReviewPolicyByEnvironmentId(
+    getReviewPolicyByEnvironmentUID(
       environmentId: string
     ): SQLReviewPolicy | undefined {
       return this.getReviewPolicyByEnvironmentName(
@@ -266,11 +266,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
       return reviewPolicy;
     },
-    async getOrFetchReviewPolicyByEnvironmentId(
-      environmentId: string
+    async getOrFetchReviewPolicyByEnvironmentUID(
+      uid: string
     ): Promise<SQLReviewPolicy | undefined> {
       return this.getOrFetchReviewPolicyByEnvironmentName(
-        `${environmentNamePrefix}${environmentId}`
+        `${environmentNamePrefix}${uid}`
       );
     },
   },
@@ -286,16 +286,12 @@ export const useSQLReviewPolicyList = () => {
   return computed(() => store.reviewPolicyList);
 };
 
-export const useReviewPolicyByEnvironmentName = (
-  environmentId: MaybeRef<string>
-) => {
+export const useReviewPolicyByEnvironmentName = (name: MaybeRef<string>) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    const id = unref(environmentId);
+    const id = unref(name);
     store.getOrFetchReviewPolicyByEnvironmentName(id);
   });
 
-  return computed(() =>
-    store.getReviewPolicyByEnvironmentName(unref(environmentId))
-  );
+  return computed(() => store.getReviewPolicyByEnvironmentName(unref(name)));
 };
