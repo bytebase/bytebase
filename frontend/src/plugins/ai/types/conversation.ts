@@ -1,5 +1,3 @@
-import type { InstanceId, DatabaseId } from "@/types";
-
 export type MessageAuthor = "USER" | "AI";
 
 export type MessageStatus = "LOADING" | "DONE" | "FAILED";
@@ -19,7 +17,7 @@ export type Conversation = {
   id: string; // uuid
   created_ts: number; // ms
   name: string;
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instance: string;
+  database: string;
   messageList: Message[];
 };

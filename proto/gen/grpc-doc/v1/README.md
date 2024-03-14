@@ -582,7 +582,6 @@
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
-    - [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetPayload](#bytebase-v1-SheetPayload)
@@ -9455,21 +9454,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-v1-DeleteSheetRequest"></a>
-
-### DeleteSheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sheet to delete. Format: projects/{project}/sheets/{sheet} |
-
-
-
-
-
-
 <a name="bytebase-v1-GetSheetRequest"></a>
 
 ### GetSheetRequest
@@ -9573,7 +9557,6 @@ Type of the SheetPayload.
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 
@@ -10163,8 +10146,8 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 | Public, worksheet OWNER can read/write, and all others can read. |
-| VISIBILITY_PROJECT | 2 | Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
 | VISIBILITY_PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 

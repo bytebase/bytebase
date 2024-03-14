@@ -12,7 +12,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, defineProps, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";

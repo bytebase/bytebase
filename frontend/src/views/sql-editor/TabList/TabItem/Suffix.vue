@@ -3,11 +3,10 @@
     class="suffix"
     :class="[
       {
-        admin: tab.mode === TabMode.Admin,
+        admin: tab.mode === 'ADMIN',
         closable: true,
       },
-
-      [sheetTypeForTab(tab).toLowerCase()],
+      tab.status,
     ]"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
@@ -24,9 +23,7 @@
 
 <script lang="ts" setup>
 import { computed, PropType, reactive } from "vue";
-import type { TabInfo } from "@/types";
-import { TabMode } from "@/types";
-import { sheetTypeForTab } from "@/utils";
+import type { SQLEditorTab } from "@/types";
 
 type LocalState = {
   hovering: boolean;
@@ -36,7 +33,7 @@ type IconType = "unsaved" | "close";
 
 const props = defineProps({
   tab: {
-    type: Object as PropType<TabInfo>,
+    type: Object as PropType<SQLEditorTab>,
     required: true,
   },
   index: {
@@ -50,14 +47,18 @@ const state = reactive<LocalState>({
 });
 
 defineEmits<{
-  (e: "close", tab: TabInfo, index: number): void;
+  (e: "close", tab: SQLEditorTab, index: number): void;
 }>();
 
 const icon = computed((): IconType | undefined => {
   if (state.hovering) {
     return "close";
   }
-  if (props.tab.mode === TabMode.ReadOnly && !props.tab.isSaved) {
+  const { mode, status } = props.tab;
+  if (
+    (mode === "READONLY" || mode === "STANDARD") &&
+    (status === "DIRTY" || status === "NEW")
+  ) {
     return "unsaved";
   }
   return "close";
@@ -71,12 +72,10 @@ const icon = computed((): IconType | undefined => {
 .icon {
   @apply block w-5 h-5 p-0.5 text-gray-500 rounded;
 }
-
 .suffix.closable {
   cursor: pointer;
 }
-
-.suffix.closable.temp .icon {
+.suffix.closable.dirty .icon {
   @apply text-accent;
 }
 .suffix.closable .icon {

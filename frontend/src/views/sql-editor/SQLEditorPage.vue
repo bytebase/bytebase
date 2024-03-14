@@ -39,77 +39,53 @@
       </template>
       <Pane class="relative flex flex-col">
         <TabList />
-
         <div class="w-full flex-1 overflow-hidden">
-          <template v-if="tabStore.currentTab.mode === TabMode.ReadOnly">
-            <Splitpanes
-              v-if="allowReadOnlyMode"
-              horizontal
-              class="default-theme"
-              :dbl-click-splitter="false"
-            >
-              <Pane class="flex flex-row overflow-hidden">
-                <div class="h-full flex-1 overflow-hidden">
-                  <Splitpanes
-                    vertical
-                    class="default-theme"
-                    :dbl-click-splitter="false"
-                  >
-                    <Pane>
-                      <EditorPanel />
-                    </Pane>
-                    <Pane
-                      v-if="showSecondarySidebar && windowWidth >= 1024"
-                      :size="25"
-                    >
-                      <SecondarySidebar />
-                    </Pane>
-                  </Splitpanes>
-                </div>
-
-                <div
-                  v-if="windowWidth >= 1024"
-                  class="h-full border-l shrink-0"
-                >
-                  <SecondaryGutterBar />
-                </div>
-              </Pane>
-              <Pane v-if="!isDisconnected" class="relative" :size="40">
-                <ResultPanel />
-              </Pane>
-            </Splitpanes>
-
-            <div
-              v-else
-              class="w-full h-full flex flex-col items-center justify-center gap-y-2"
-            >
-              <img
-                src="../../assets/illustration/403.webp"
-                class="max-h-[40%]"
-              />
-              <i18n-t
-                class="textinfolabel flex items-center"
-                keypath="sql-editor.allow-admin-mode-only"
-                tag="div"
-              >
-                <template #instance>
-                  <InstanceV1Name :instance="instance" :link="false" />
-                </template>
-              </i18n-t>
-              <AdminModeButton />
-            </div>
-          </template>
-
-          <TerminalPanelV1 v-if="tabStore.currentTab.mode === TabMode.Admin" />
-          <div
-            v-else
-            class="w-full h-full flex flex-col items-center justify-center"
+          <Splitpanes
+            v-if="
+              !currentTab ||
+              currentTab.mode === 'READONLY' ||
+              currentTab.mode === 'STANDARD'
+            "
+            horizontal
+            class="default-theme"
+            :dbl-click-splitter="false"
           >
-            <img src="../../assets/illustration/403.webp" class="max-h-[40%]" />
-            <div class="textinfolabel">
-              {{ $t("database.access-denied") }}
-            </div>
-          </div>
+            <Pane class="flex flex-row overflow-hidden">
+              <div class="h-full flex-1 overflow-hidden">
+                <Splitpanes
+                  vertical
+                  class="default-theme"
+                  :dbl-click-splitter="false"
+                >
+                  <Pane>
+                    <EditorPanel v-if="isDisconnected || allowReadonlyMode" />
+                    <ReadonlyModeNotSupported v-else />
+                  </Pane>
+                  <Pane
+                    v-if="showSecondarySidebar && windowWidth >= 1024"
+                    :size="25"
+                  >
+                    <SecondarySidebar />
+                  </Pane>
+                </Splitpanes>
+              </div>
+
+              <div v-if="windowWidth >= 1024" class="h-full border-l shrink-0">
+                <SecondaryGutterBar />
+              </div>
+            </Pane>
+            <Pane
+              v-if="!isDisconnected && allowReadonlyMode"
+              class="relative"
+              :size="40"
+            >
+              <ResultPanel />
+            </Pane>
+          </Splitpanes>
+
+          <TerminalPanelV1 v-else-if="currentTab.mode === 'ADMIN'" />
+
+          <AccessDenied v-else />
         </div>
 
         <div
@@ -131,50 +107,56 @@
 
     <SchemaEditorModal
       v-if="alterSchemaState.showModal"
-      :database-id-list="alterSchemaState.databaseIdList.map((id) => `${id}`)"
+      :database-id-list="alterSchemaState.databaseIdList"
       :new-window="true"
       alter-type="SINGLE_DB"
       @close="alterSchemaState.showModal = false"
     />
+
+    <teleport to="#sql-editor-debug">
+      <li>[Page]isDisconnected: {{ isDisconnected }}</li>
+      <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
+      <li>[Page]currentTab.connection: {{ currentTab?.connection }}</li>
+    </teleport>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { useWindowSize } from "@vueuse/core";
+import { storeToRefs } from "pinia";
 import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
-import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useActuatorV1Store,
+  useConnectionOfCurrentSQLEditorTab,
   useDatabaseV1Store,
-  useInstanceV1ByUID,
-  useSQLEditorStore,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store";
-import { DatabaseId, TabMode } from "@/types";
 import {
   allowUsingSchemaEditorV1,
   extractProjectResourceName,
   instanceV1HasReadonlyMode,
 } from "@/utils";
+import AccessDenied from "./AccessDenied.vue";
 import AsidePanel from "./AsidePanel/AsidePanel.vue";
-import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
 import EditorPanel from "./EditorPanel/EditorPanel.vue";
+import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
 import {
-  provideSecondarySidebarContext,
   default as SecondarySidebar,
+  useSecondarySidebarContext,
 } from "./SecondarySidebar";
 import { SecondaryGutterBar } from "./SecondarySidebar";
-import { provideSheetContext } from "./Sheet";
+import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import TerminalPanelV1 from "./TerminalPanel/TerminalPanelV1.vue";
-import { provideSQLEditorContext } from "./context";
+import { useSQLEditorContext } from "./context";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -182,7 +164,7 @@ type LocalState = {
 
 type AlterSchemaState = {
   showModal: boolean;
-  databaseIdList: DatabaseId[];
+  databaseIdList: string[];
 };
 
 const state = reactive<LocalState>({
@@ -190,29 +172,23 @@ const state = reactive<LocalState>({
 });
 
 const router = useRouter();
-const tabStore = useTabStore();
 const databaseStore = useDatabaseV1Store();
 const actuatorStore = useActuatorV1Store();
-const sqlEditorStore = useSQLEditorStore();
-// provide context for SQL Editor
-const { events: editorEvents } = provideSQLEditorContext();
-// provide context for sheets
-const { showPanel: showSheetPanel } = provideSheetContext();
-const { show: showSecondarySidebar } = provideSecondarySidebarContext();
+const tabStore = useSQLEditorTabStore();
+const { events: editorEvents } = useSQLEditorContext();
+const { showPanel: showSheetPanel } = useSheetContext();
+const { show: showSecondarySidebar } = useSecondarySidebarContext();
 
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const showQuickstart = computed(() => actuatorStore.pageMode === "BUNDLED");
-
-const isDisconnected = computed(() => tabStore.isDisconnected);
-const isFetchingSheet = computed(() => sqlEditorStore.isFetchingSheet);
+const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
 
-const { instance } = useInstanceV1ByUID(
-  computed(() => tabStore.currentTab.connection.instanceId)
-);
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
-const allowReadOnlyMode = computed(() => {
-  if (isDisconnected.value) return true;
+const allowReadonlyMode = computed(() => {
+  if (isDisconnected.value) return false;
 
   return instanceV1HasReadonlyMode(instance.value);
 });
@@ -229,7 +205,7 @@ useEmitteryEventListener(
     const database = databaseStore.getDatabaseByUID(databaseUID);
     if (allowUsingSchemaEditorV1([database])) {
       // TODO: support open selected database tab directly in Schema Editor.
-      alterSchemaState.databaseIdList = [databaseUID].map((uid) => Number(uid));
+      alterSchemaState.databaseIdList = [databaseUID];
       alterSchemaState.showModal = true;
     } else {
       const exampleSQL = ["ALTER TABLE"];
@@ -261,7 +237,7 @@ useEmitteryEventListener(
 );
 </script>
 
-<style>
+<style lang="postcss">
 @import "splitpanes/dist/splitpanes.css";
 
 /* splitpanes pane style */

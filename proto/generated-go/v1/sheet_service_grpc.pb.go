@@ -11,7 +11,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -23,7 +22,6 @@ const (
 	SheetService_CreateSheet_FullMethodName = "/bytebase.v1.SheetService/CreateSheet"
 	SheetService_GetSheet_FullMethodName    = "/bytebase.v1.SheetService/GetSheet"
 	SheetService_UpdateSheet_FullMethodName = "/bytebase.v1.SheetService/UpdateSheet"
-	SheetService_DeleteSheet_FullMethodName = "/bytebase.v1.SheetService/DeleteSheet"
 )
 
 // SheetServiceClient is the client API for SheetService service.
@@ -33,7 +31,6 @@ type SheetServiceClient interface {
 	CreateSheet(ctx context.Context, in *CreateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 	GetSheet(ctx context.Context, in *GetSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
 	UpdateSheet(ctx context.Context, in *UpdateSheetRequest, opts ...grpc.CallOption) (*Sheet, error)
-	DeleteSheet(ctx context.Context, in *DeleteSheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type sheetServiceClient struct {
@@ -71,15 +68,6 @@ func (c *sheetServiceClient) UpdateSheet(ctx context.Context, in *UpdateSheetReq
 	return out, nil
 }
 
-func (c *sheetServiceClient) DeleteSheet(ctx context.Context, in *DeleteSheetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, SheetService_DeleteSheet_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // SheetServiceServer is the server API for SheetService service.
 // All implementations must embed UnimplementedSheetServiceServer
 // for forward compatibility
@@ -87,7 +75,6 @@ type SheetServiceServer interface {
 	CreateSheet(context.Context, *CreateSheetRequest) (*Sheet, error)
 	GetSheet(context.Context, *GetSheetRequest) (*Sheet, error)
 	UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error)
-	DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedSheetServiceServer()
 }
 
@@ -103,9 +90,6 @@ func (UnimplementedSheetServiceServer) GetSheet(context.Context, *GetSheetReques
 }
 func (UnimplementedSheetServiceServer) UpdateSheet(context.Context, *UpdateSheetRequest) (*Sheet, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateSheet not implemented")
-}
-func (UnimplementedSheetServiceServer) DeleteSheet(context.Context, *DeleteSheetRequest) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteSheet not implemented")
 }
 func (UnimplementedSheetServiceServer) mustEmbedUnimplementedSheetServiceServer() {}
 
@@ -174,24 +158,6 @@ func _SheetService_UpdateSheet_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SheetService_DeleteSheet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteSheetRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SheetServiceServer).DeleteSheet(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SheetService_DeleteSheet_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SheetServiceServer).DeleteSheet(ctx, req.(*DeleteSheetRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // SheetService_ServiceDesc is the grpc.ServiceDesc for SheetService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -210,10 +176,6 @@ var SheetService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateSheet",
 			Handler:    _SheetService_UpdateSheet_Handler,
-		},
-		{
-			MethodName: "DeleteSheet",
-			Handler:    _SheetService_DeleteSheet_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

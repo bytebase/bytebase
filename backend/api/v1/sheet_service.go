@@ -6,7 +6,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -268,43 +267,6 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 	}
 
 	return v1pbSheet, nil
-}
-
-// DeleteSheet deletes a sheet.
-func (s *SheetService) DeleteSheet(ctx context.Context, request *v1pb.DeleteSheetRequest) (*emptypb.Empty, error) {
-	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectResourceID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
-	}
-	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
-	}
-
-	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{
-		UID:        &sheetUID,
-		ProjectUID: &project.UID,
-	})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
-	}
-	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("sheet with id %d not found", sheetUID))
-	}
-
-	if err := s.store.DeleteSheet(ctx, sheetUID); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete sheet: %v", err))
-	}
-
-	return &emptypb.Empty{}, nil
 }
 
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {

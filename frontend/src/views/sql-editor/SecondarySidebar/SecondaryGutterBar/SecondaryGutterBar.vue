@@ -30,19 +30,15 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
 import {
+  useConnectionOfCurrentSQLEditorTab,
   useCurrentUserV1,
-  useDatabaseV1Store,
-  useInstanceV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import {
-  hasProjectPermissionV2,
-  instanceV1HasAlterSchema,
-  isDisconnectedTab,
-} from "@/utils";
+import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
 import { TabView, useSecondarySidebarContext } from "../context";
 import OpenAIButton from "./OpenAIButton.vue";
 
@@ -56,44 +52,41 @@ const activeTab = computed(() => {
   return tab.value;
 });
 
-const tabStore = useTabStore();
-
-const isDisconnected = computed(() => {
-  return isDisconnectedTab(tabStore.currentTab);
-});
+const tabStore = useSQLEditorTabStore();
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
+const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 
 const isSchemalessInstance = computed(() => {
+  if (!currentTab.value) {
+    return false;
+  }
   if (isDisconnected.value) {
     return false;
   }
-  const { instanceId } = tabStore.currentTab.connection;
-
-  if (instanceId === String(UNKNOWN_ID)) {
+  if (instance.value.uid === String(UNKNOWN_ID)) {
     return false;
   }
 
-  const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-
-  return !instanceV1HasAlterSchema(instance);
+  return !instanceV1HasAlterSchema(instance.value);
 });
 
 const showInfoPane = computed(() => {
-  if (isDisconnected.value) {
+  if (!currentTab.value) {
     return false;
   }
-
-  const conn = tabStore.currentTab.connection;
-  if (conn.databaseId === String(UNKNOWN_ID)) {
+  if (isDisconnected.value) {
     return false;
   }
 
   if (isSchemalessInstance.value) {
     return false;
   }
+  if (database.value.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
 
-  const database = useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
   return hasProjectPermissionV2(
-    database.projectEntity,
+    database.value.projectEntity,
     me.value,
     "bb.databases.getSchema"
   );

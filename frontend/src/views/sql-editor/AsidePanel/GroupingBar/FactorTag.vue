@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import { useSQLEditorTreeStore } from "@/store";
 import {
   StatefulSQLEditorTreeFactor as StatefulFactor,
   readableSQLEditorTreeFactor,

@@ -1,5 +1,6 @@
 <template>
   <div class="bg-white flex flex-col gap-y-2 w-max p-2">
+    <FactorTags class="border-b pt-1 pb-2 max-w-[20rem]" />
     <FactorItem
       v-for="(factor, i) in PRESET_FACTORS"
       :key="i"
@@ -24,12 +25,15 @@
 import { cloneDeep, orderBy, uniq } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useSQLEditorTreeStore } from "@/store/modules/sqlEditorTree";
+import { useSQLEditorTreeStore } from "@/store";
 import { SQLEditorTreeFactor as Factor } from "@/types";
+import { useSQLEditorContext } from "../../context";
 import FactorItem from "./FactorItem.vue";
+import FactorTags from "./FactorTags.vue";
 
 const treeStore = useSQLEditorTreeStore();
 const { databaseList, factorList } = storeToRefs(treeStore);
+const { events } = useSQLEditorContext();
 
 const PRESET_FACTORS: Factor[] = ["project", "instance", "environment"];
 
@@ -64,5 +68,6 @@ const toggle = (factor: Factor, on: boolean) => {
 
   factorList.value = updatedList;
   treeStore.buildTree();
+  events.emit("tree-ready");
 };
 </script>

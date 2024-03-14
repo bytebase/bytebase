@@ -27,7 +27,7 @@ import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import { useDatabaseV1Store, useTabStore } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
@@ -55,11 +55,7 @@ useResizeObserver(wrapperRef, (entries) => {
     truncated.value = false;
   }
 });
-
-const database = computed(() => {
-  const conn = useTabStore().currentTab.connection;
-  return useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
-});
+const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const clickable = computed(() => {
   if (truncated.value) return true;

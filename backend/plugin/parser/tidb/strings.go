@@ -36,42 +36,8 @@ func NewStringsManipulator(s string) *StringsManipulator {
 	}
 }
 
-type StringsManipulatorActionType int
-
-const (
-	StringsManipulatorActionTypeNone StringsManipulatorActionType = iota
-	StringsManipulatorActionTypeDropTable
-	StringsManipulatorActionTypeAddTable
-	StringsManipulatorActionTypeDropColumn
-	StringsManipulatorActionTypeAddColumn
-	StringsManipulatorActionTypeModifyColumnType
-	StringsManipulatorActionTypeDropColumnOption
-	StringsManipulatorActionTypeAddColumnOption
-	StringsManipulatorActionTypeModifyColumnOption
-	StringsManipulatorActionTypeDropTableConstraint
-	StringsManipulatorActionTypeModifyTableConstraint
-	StringsManipulatorActionTypeAddTableConstraint
-	StringsManipulatorActionTypeDropTableOption
-	StringsManipulatorActionTypeModifyTableOption
-	StringsManipulatorActionTypeAddTableOption
-)
-
-type StringsManipulatorAction interface {
-	GetType() StringsManipulatorActionType
-	GetTopLevelNaming() string
-	GetSecondLevelNaming() string
-}
-
-type StringsManipulatorActionBase struct {
-	Type StringsManipulatorActionType
-}
-
-func (s *StringsManipulatorActionBase) GetType() StringsManipulatorActionType {
-	return s.Type
-}
-
 type StringsManipulatorActionDropTable struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table string
 }
 
@@ -85,15 +51,15 @@ func (*StringsManipulatorActionDropTable) GetSecondLevelNaming() string {
 
 func NewDropTableAction(tableName string) *StringsManipulatorActionDropTable {
 	return &StringsManipulatorActionDropTable{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeDropTable,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeDropTable,
 		},
 		Table: tableName,
 	}
 }
 
 type StringsManipulatorActionAddTable struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	TableDefinition string
 }
 
@@ -107,15 +73,15 @@ func (*StringsManipulatorActionAddTable) GetSecondLevelNaming() string {
 
 func NewAddTableAction(tableDefinition string) *StringsManipulatorActionAddTable {
 	return &StringsManipulatorActionAddTable{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeAddTable,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeAddTable,
 		},
 		TableDefinition: tableDefinition,
 	}
 }
 
 type StringsManipulatorActionDropColumn struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table  string
 	Column string
 }
@@ -130,8 +96,8 @@ func (s *StringsManipulatorActionDropColumn) GetSecondLevelNaming() string {
 
 func NewDropColumnAction(tableName string, columnName string) *StringsManipulatorActionDropColumn {
 	return &StringsManipulatorActionDropColumn{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeDropColumn,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeDropColumn,
 		},
 		Table:  tableName,
 		Column: columnName,
@@ -139,7 +105,7 @@ func NewDropColumnAction(tableName string, columnName string) *StringsManipulato
 }
 
 type StringsManipulatorActionModifyColumnType struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table  string
 	Column string
 	Type   string
@@ -154,7 +120,7 @@ func (s *StringsManipulatorActionModifyColumnType) GetSecondLevelNaming() string
 }
 
 type StringsManipulatorActionAddColumn struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table            string
 	ColumnDefinition string
 }
@@ -169,8 +135,8 @@ func (*StringsManipulatorActionAddColumn) GetSecondLevelNaming() string {
 
 func NewAddColumnAction(tableName string, columnDefinition string) *StringsManipulatorActionAddColumn {
 	return &StringsManipulatorActionAddColumn{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeAddColumn,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeAddColumn,
 		},
 		Table:            tableName,
 		ColumnDefinition: columnDefinition,
@@ -179,8 +145,8 @@ func NewAddColumnAction(tableName string, columnDefinition string) *StringsManip
 
 func NewModifyColumnTypeAction(tableName string, columnName string, columnType string) *StringsManipulatorActionModifyColumnType {
 	return &StringsManipulatorActionModifyColumnType{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeModifyColumnType,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeModifyColumnType,
 		},
 		Table:  tableName,
 		Column: columnName,
@@ -189,7 +155,7 @@ func NewModifyColumnTypeAction(tableName string, columnName string, columnType s
 }
 
 type StringsManipulatorActionColumnOptionBase struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Type tidbast.ColumnOptionType
 }
 
@@ -214,8 +180,8 @@ func (s *StringsManipulatorActionDropColumnOption) GetSecondLevelNaming() string
 func NewDropColumnOptionAction(tableName string, columnName string, option tidbast.ColumnOptionType) *StringsManipulatorActionDropColumnOption {
 	return &StringsManipulatorActionDropColumnOption{
 		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
-			StringsManipulatorActionBase: StringsManipulatorActionBase{
-				Type: StringsManipulatorActionTypeDropColumnOption,
+			StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+				Type: base.StringsManipulatorActionTypeDropColumnOption,
 			},
 			Type: option,
 		},
@@ -242,8 +208,8 @@ func (s *StringsManipulatorActionModifyColumnOption) GetSecondLevelNaming() stri
 func NewModifyColumnOptionAction(tableName string, columnName string, oldOption tidbast.ColumnOptionType, newOptionDefine string) *StringsManipulatorActionModifyColumnOption {
 	return &StringsManipulatorActionModifyColumnOption{
 		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
-			StringsManipulatorActionBase: StringsManipulatorActionBase{
-				Type: StringsManipulatorActionTypeModifyColumnOption,
+			StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+				Type: base.StringsManipulatorActionTypeModifyColumnOption,
 			},
 			Type: oldOption,
 		},
@@ -271,8 +237,8 @@ func (s *StringsManipulatorActionAddColumnOption) GetSecondLevelNaming() string 
 func NewAddColumnOptionAction(tableName string, columnName string, optionType tidbast.ColumnOptionType, newOptionDefine string) *StringsManipulatorActionAddColumnOption {
 	return &StringsManipulatorActionAddColumnOption{
 		StringsManipulatorActionColumnOptionBase: StringsManipulatorActionColumnOptionBase{
-			StringsManipulatorActionBase: StringsManipulatorActionBase{
-				Type: StringsManipulatorActionTypeAddColumnOption,
+			StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+				Type: base.StringsManipulatorActionTypeAddColumnOption,
 			},
 			Type: optionType,
 		},
@@ -283,7 +249,7 @@ func NewAddColumnOptionAction(tableName string, columnName string, optionType ti
 }
 
 type StringsManipulatorActionDropTableConstraint struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table          string
 	Constraint     tidbast.ConstraintType
 	ConstraintName string
@@ -299,8 +265,8 @@ func (s *StringsManipulatorActionDropTableConstraint) GetSecondLevelNaming() str
 
 func NewDropTableConstraintAction(tableName string, constraintName string) *StringsManipulatorActionDropTableConstraint {
 	return &StringsManipulatorActionDropTableConstraint{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeDropTableConstraint,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeDropTableConstraint,
 		},
 		Table:          tableName,
 		ConstraintName: constraintName,
@@ -308,7 +274,7 @@ func NewDropTableConstraintAction(tableName string, constraintName string) *Stri
 }
 
 type StringsManipulatorActionModifyTableConstraint struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table               string
 	OldConstraint       tidbast.ConstraintType
 	OldConstraintName   string
@@ -325,8 +291,8 @@ func (s *StringsManipulatorActionModifyTableConstraint) GetSecondLevelNaming() s
 
 func NewModifyTableConstraintAction(tableName string, oldConstraint tidbast.ConstraintType, oldConstraintName string, newConstraintDefine string) *StringsManipulatorActionModifyTableConstraint {
 	return &StringsManipulatorActionModifyTableConstraint{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeModifyTableConstraint,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeModifyTableConstraint,
 		},
 		Table:               tableName,
 		OldConstraint:       oldConstraint,
@@ -336,7 +302,7 @@ func NewModifyTableConstraintAction(tableName string, oldConstraint tidbast.Cons
 }
 
 type StringsManipulatorActionAddTableConstraint struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table               string
 	Type                tidbast.ConstraintType
 	NewConstraintDefine string
@@ -352,8 +318,8 @@ func (*StringsManipulatorActionAddTableConstraint) GetSecondLevelNaming() string
 
 func NewAddTableConstraintAction(tableName string, constraintType tidbast.ConstraintType, newConstraintDefine string) *StringsManipulatorActionAddTableConstraint {
 	return &StringsManipulatorActionAddTableConstraint{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeAddTableConstraint,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeAddTableConstraint,
 		},
 		Table:               tableName,
 		Type:                constraintType,
@@ -362,7 +328,7 @@ func NewAddTableConstraintAction(tableName string, constraintType tidbast.Constr
 }
 
 type StringsManipulatorActionDropTableOption struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table     string
 	OldOption tidbast.TableOptionType
 }
@@ -377,8 +343,8 @@ func (*StringsManipulatorActionDropTableOption) GetSecondLevelNaming() string {
 
 func NewDropTableOptionAction(tableName string, oldOption tidbast.TableOptionType) *StringsManipulatorActionDropTableOption {
 	return &StringsManipulatorActionDropTableOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeDropTableOption,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeDropTableOption,
 		},
 		Table:     tableName,
 		OldOption: oldOption,
@@ -386,7 +352,7 @@ func NewDropTableOptionAction(tableName string, oldOption tidbast.TableOptionTyp
 }
 
 type StringsManipulatorActionModifyTableOption struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table          string
 	OldOption      tidbast.TableOptionType
 	NewOptionValue string
@@ -402,8 +368,8 @@ func (*StringsManipulatorActionModifyTableOption) GetSecondLevelNaming() string 
 
 func NewModifyTableOptionAction(tableName string, oldOption tidbast.TableOptionType, newOptionValue string) *StringsManipulatorActionModifyTableOption {
 	return &StringsManipulatorActionModifyTableOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeModifyTableOption,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeModifyTableOption,
 		},
 		Table:          tableName,
 		OldOption:      oldOption,
@@ -412,7 +378,7 @@ func NewModifyTableOptionAction(tableName string, oldOption tidbast.TableOptionT
 }
 
 type StringsManipulatorActionAddTableOption struct {
-	StringsManipulatorActionBase
+	base.StringsManipulatorActionBase
 	Table          string
 	NewOptionValue string
 }
@@ -427,16 +393,16 @@ func (*StringsManipulatorActionAddTableOption) GetSecondLevelNaming() string {
 
 func NewAddTableOptionAction(tableName string, newOptionValue string) *StringsManipulatorActionAddTableOption {
 	return &StringsManipulatorActionAddTableOption{
-		StringsManipulatorActionBase: StringsManipulatorActionBase{
-			Type: StringsManipulatorActionTypeAddTableOption,
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type: base.StringsManipulatorActionTypeAddTableOption,
 		},
 		Table:          tableName,
 		NewOptionValue: newOptionValue,
 	}
 }
 
-func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (string, error) {
-	tableActions := make(map[string][]StringsManipulatorAction)
+func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction) (string, error) {
+	tableActions := make(map[string][]base.StringsManipulatorAction)
 
 	for _, action := range actions {
 		tableName := action.GetTopLevelNaming()
@@ -465,7 +431,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 				doneAddTableActions = true
 				addTableActions := tableActions[""]
 				for _, action := range addTableActions {
-					if action.GetType() == StringsManipulatorActionTypeAddTable {
+					if action.GetType() == base.StringsManipulatorActionTypeAddTable {
 						results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
 					}
 				}
@@ -480,13 +446,13 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 		}
 
 		hasDropTable := false
-		actionsMap := make(map[string][]StringsManipulatorAction)
+		actionsMap := make(map[string][]base.StringsManipulatorAction)
 		for _, action := range actions {
 			// do copy
 			action := action
 			secondName := action.GetSecondLevelNaming()
 			actionsMap[secondName] = append(actionsMap[secondName], action)
-			if action.GetType() == StringsManipulatorActionTypeDropTable {
+			if action.GetType() == base.StringsManipulatorActionTypeDropTable {
 				hasDropTable = true
 			}
 		}
@@ -507,7 +473,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 	if !doneAddTableActions {
 		addTableActions := tableActions[""]
 		for _, action := range addTableActions {
-			if action.GetType() == StringsManipulatorActionTypeAddTable {
+			if action.GetType() == base.StringsManipulatorActionTypeAddTable {
 				results = append(results, action.(*StringsManipulatorActionAddTable).TableDefinition)
 			}
 		}
@@ -519,7 +485,7 @@ func (s *StringsManipulator) Manipulate(actions ...StringsManipulatorAction) (st
 	return strings.Join(results, "\n"), nil
 }
 
-func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]StringsManipulatorAction) (string, error) {
+func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]base.StringsManipulatorAction) (string, error) {
 	listener := &rewriter{
 		actions: actionsMap,
 	}
@@ -533,7 +499,7 @@ func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]StringsM
 type rewriter struct {
 	*parser.BaseTiDBParserListener
 
-	actions map[string][]StringsManipulatorAction
+	actions map[string][]base.StringsManipulatorAction
 	err     error
 
 	prefixString     string
@@ -675,7 +641,7 @@ func (r *rewriter) EnterTableConstraintDef(ctx *parser.TableConstraintDefContext
 		return
 	}
 
-	var constraintActions []StringsManipulatorAction
+	var constraintActions []base.StringsManipulatorAction
 	if actions, exists := r.actions[secondName]; exists {
 		// column name and constraint name are in the different namespace for tidb
 		for _, action := range actions {
@@ -804,7 +770,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		return
 	}
 
-	var columnActions []StringsManipulatorAction
+	var columnActions []base.StringsManipulatorAction
 	if actions, exists := r.actions[columnName]; exists {
 		// column name and constraint name are in the different namespace for tidb
 		for _, action := range actions {
@@ -829,9 +795,9 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		))
 		return
 	}
-	actionsMap := make(map[StringsManipulatorActionType][]StringsManipulatorAction)
+	actionsMap := make(map[base.StringsManipulatorActionType][]base.StringsManipulatorAction)
 	for _, action := range columnActions {
-		if action.GetType() == StringsManipulatorActionTypeDropColumn {
+		if action.GetType() == base.StringsManipulatorActionTypeDropColumn {
 			// drop column action is special, we need to handle it first
 			return
 		}
@@ -848,7 +814,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		return
 	}
 
-	if modifyType, exists := actionsMap[StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
+	if modifyType, exists := actionsMap[base.StringsManipulatorActionTypeModifyColumnType]; exists && len(modifyType) > 0 {
 		if len(modifyType) > 1 {
 			r.err = errors.New("multiple modify column type actions")
 			return
@@ -884,8 +850,8 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		),
 	))
 
-	optionActionMap := make(map[tidbast.ColumnOptionType]StringsManipulatorAction)
-	for _, action := range actionsMap[StringsManipulatorActionTypeDropColumnOption] {
+	optionActionMap := make(map[tidbast.ColumnOptionType]base.StringsManipulatorAction)
+	for _, action := range actionsMap[base.StringsManipulatorActionTypeDropColumnOption] {
 		action, ok := action.(*StringsManipulatorActionDropColumnOption)
 		if !ok {
 			r.err = errors.New("invalid drop column option action")
@@ -893,7 +859,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		}
 		optionActionMap[action.GetOptionType()] = action
 	}
-	for _, action := range actionsMap[StringsManipulatorActionTypeModifyColumnOption] {
+	for _, action := range actionsMap[base.StringsManipulatorActionTypeModifyColumnOption] {
 		action, ok := action.(*StringsManipulatorActionModifyColumnOption)
 		if !ok {
 			r.err = errors.New("invalid modify column option action")
@@ -901,7 +867,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 		}
 		optionActionMap[action.GetOptionType()] = action
 	}
-	for _, action := range actionsMap[StringsManipulatorActionTypeAddColumnOption] {
+	for _, action := range actionsMap[base.StringsManipulatorActionTypeAddColumnOption] {
 		action, ok := action.(*StringsManipulatorActionAddColumnOption)
 		if !ok {
 			r.err = errors.New("invalid add column option action")
@@ -950,7 +916,7 @@ func (r *rewriter) EnterColumnDef(ctx *parser.ColumnDefContext) {
 	r.columnDefines = append(r.columnDefines, buf.String())
 }
 
-func writeOnUpdateOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+func writeOnUpdateOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]base.StringsManipulatorAction) error {
 	needOrigin := true
 	if action, exists := optionActionMap[tidbast.ColumnOptionOnUpdate]; exists {
 		switch action := action.(type) {
@@ -986,7 +952,7 @@ func writeOnUpdateOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptio
 	return nil
 }
 
-func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]base.StringsManipulatorAction) error {
 	needOrigin := true
 	if action, exists := optionActionMap[tidbast.ColumnOptionComment]; exists {
 		switch action := action.(type) {
@@ -1022,7 +988,7 @@ func writeColumnCommentOption(buf *strings.Builder, optionMap map[tidbast.Column
 	return nil
 }
 
-func writeDefaultLikeOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction, autoRand string) error {
+func writeDefaultLikeOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]base.StringsManipulatorAction, autoRand string) error {
 	needOrigin := true
 	if action, exists := optionActionMap[tidbast.ColumnOptionDefaultValue]; exists {
 		switch action := action.(type) {
@@ -1112,7 +1078,7 @@ func writeDefaultLikeOption(buf *strings.Builder, optionMap map[tidbast.ColumnOp
 	return nil
 }
 
-func writeNullableOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]StringsManipulatorAction) error {
+func writeNullableOption(buf *strings.Builder, optionMap map[tidbast.ColumnOptionType]parser.IColumnOptionContext, optionActionMap map[tidbast.ColumnOptionType]base.StringsManipulatorAction) error {
 	needOrigin := true
 	if action, exists := optionActionMap[tidbast.ColumnOptionNull]; exists {
 		switch action.(type) {

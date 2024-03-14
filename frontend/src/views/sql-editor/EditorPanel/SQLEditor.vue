@@ -22,6 +22,7 @@
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
 import type {
@@ -34,42 +35,36 @@ import {
   extensionNameOfLanguage,
   formatEditorContent,
 } from "@/components/MonacoEditor/utils";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useTabStore,
-  useSQLEditorStore,
   useUIStateStore,
-  useInstanceV1ByUID,
   useWorkSheetAndTabStore,
-  useDatabaseV1ByUID,
+  useSQLEditorTabStore,
+  useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import {
-  dialectOfEngineV1,
-  ExecuteConfig,
-  ExecuteOption,
-  SQLDialect,
-} from "@/types";
-import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
+import { dialectOfEngineV1, SQLDialect, SQLEditorQueryParams } from "@/types";
+import { useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../context";
 
 const emit = defineEmits<{
-  (
-    e: "execute",
-    sql: string,
-    config: ExecuteConfig,
-    option?: ExecuteOption
-  ): void;
+  (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
+const { currentTab } = storeToRefs(tabStore);
+const pendingFormatContentCommand = ref(false);
 
-const content = computed(() => tabStore.currentTab.statement);
+const content = computed(() => currentTab.value?.statement ?? "");
 const advices = computed((): AdviceOption[] => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return [];
+  }
   return (
-    Array.from(tabStore.currentTab?.databaseQueryResultMap?.values() || [])
+    Array.from(tab.queryContext?.results.values() || [])
       .map((result) => result?.advices || [])
       .flat() ?? []
   ).map((advice) => ({
@@ -82,15 +77,7 @@ const advices = computed((): AdviceOption[] => {
     source: advice.detail,
   }));
 });
-const { instance } = useInstanceV1ByUID(
-  computed(() => tabStore.currentTab.connection.instanceId)
-);
-const { database } = useDatabaseV1ByUID(
-  computed(() => tabStore.currentTab.connection.databaseId)
-);
-const instanceEngine = computed(() => {
-  return formatEngineV1(instance.value);
-});
+const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
@@ -101,7 +88,7 @@ const currentTabId = computed(() => tabStore.currentTabId);
 const isSwitchingTab = ref(false);
 
 const filename = computed(() => {
-  const name = tabStore.currentTab.id || uuidv1();
+  const name = currentTab.value?.id || uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
 });
@@ -119,16 +106,20 @@ const handleChange = (value: string) => {
   if (isSwitchingTab.value) {
     return;
   }
-  if (value === tabStore.currentTab.statement) {
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
+  if (value === tab.statement) {
     return;
   }
   // Clear old advices when the statement is changed.
-  tabStore.currentTab.databaseQueryResultMap?.forEach((result) => {
+  tab.queryContext?.results.forEach((result) => {
     result.advices = [];
   });
   tabStore.updateCurrentTab({
     statement: value,
-    isSaved: false,
+    status: "DIRTY",
   });
 };
 
@@ -139,13 +130,25 @@ const handleChangeSelection = (value: string) => {
 };
 
 const handleSaveSheet = () => {
-  editorEvents.emit("save-sheet", { tab: tabStore.currentTab });
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
+  editorEvents.emit("save-sheet", { tab });
 };
 
 const runQueryAction = (explain = false) => {
   const tab = tabStore.currentTab;
-  const query = tab.selectedStatement || tab.statement || "";
-  emit("execute", query, { databaseType: instanceEngine.value }, { explain });
+  if (!tab) {
+    return;
+  }
+  const statement = tab.selectedStatement || tab.statement || "";
+  emit("execute", {
+    connection: { ...tab.connection },
+    statement,
+    engine: instance.value.engine,
+    explain,
+  });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,
@@ -177,16 +180,19 @@ const handleEditorReady = (
   });
 
   watch(
-    () => sqlEditorStore.shouldFormatContent,
-    async (shouldFormat) => {
-      if (shouldFormat) {
-        await formatEditorContent(editor, dialect.value);
-        sqlEditorStore.setShouldFormatContent(false);
+    pendingFormatContentCommand,
+    (pending) => {
+      if (pending) {
+        formatEditorContent(editor, dialect.value);
+        nextTick(() => {
+          pendingFormatContentCommand.value = false;
+        });
       }
     },
-    {
-      immediate: true,
-    }
+    { immediate: true }
   );
 };
+useEmitteryEventListener(editorEvents, "format-content", () => {
+  pendingFormatContentCommand.value = true;
+});
 </script>

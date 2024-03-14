@@ -317,7 +317,7 @@
       "statement-type": "语句类型",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "预估影响行数",
+      "affected-rows": "影响行数（基于统计信息估算）",
       "sql-type": "SQL 类型",
       "summary-report": "概要报告"
     },
@@ -366,7 +366,7 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能\n会影响重复的行。执行前请注意确认。\n{link}"
+      "sql-rollback-tips": "开启时会保留数据变更的回滚日志，可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能会影响重复的行。执行前请注意确认。\n{link}"
     },
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "apply-change-to-all-pending-tasks": {
@@ -2254,9 +2254,10 @@
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
-    "project-desc": "工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限",
-    "public": "公开",
-    "public-desc": "工作表所有者拥有读写权限，其他人只拥有只读权限.",
+    "project-read": "项目内可读",
+    "project-read-desc": "工作表所有者或者项目所有者拥有读、写权限，其他成员拥有只读权限",
+    "project-write": "项目内读写",
+    "project-write-desc": "工作表所有者和项目内成员都有读写权限",
     "create-read-only-data-source": "前去创建",
     "go-back": "返回",
     "save-sheet": "保存工作表",

@@ -10,7 +10,6 @@ import { ExternalVersionControl as VCSV1 } from "@/types/proto/v1/externalvs_ser
 import { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { IssueId, SQLReviewPolicy } from "../types";
 import { IdType } from "../types/id";
-import { extractEnvironmentResourceName } from "./v1";
 
 export const indexOrUIDFromSlug = (slug: string): number => {
   const parts = slug.split("-");
@@ -64,10 +63,7 @@ export function vcsSlugV1(vcs: VCSV1): string {
 }
 
 export function sqlReviewPolicySlug(reviewPolicy: SQLReviewPolicy): string {
-  return [
-    slug(reviewPolicy.name),
-    extractEnvironmentResourceName(reviewPolicy.environment.name),
-  ].join("-");
+  return [slug(reviewPolicy.name), reviewPolicy.environment.uid].join("-");
 }
 
 export function worksheetSlugV1(sheet: Worksheet): string {
