@@ -8,6 +8,8 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type stringsManipulateTest struct {
@@ -60,8 +62,8 @@ func TestStringsManipulate(t *testing.T) {
 	}
 }
 
-func convertActionsForTest(actions []testAction) []StringsManipulatorAction {
-	var result []StringsManipulatorAction
+func convertActionsForTest(actions []testAction) []base.StringsManipulatorAction {
+	var result []base.StringsManipulatorAction
 	for _, action := range actions {
 		switch action.Type {
 		case "dropTable":
