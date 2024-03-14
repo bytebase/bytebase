@@ -40,7 +40,7 @@ const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 
 const projectUID = computed(() => {
-  return treeStore.selectedProject?.uid ?? null;
+  return treeStore.currentProject?.uid ?? null;
 });
 
 watch([project, projectContextReady], ([project, ready]) => {

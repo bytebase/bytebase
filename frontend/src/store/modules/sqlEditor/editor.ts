@@ -4,6 +4,7 @@ import { computed, ref, watch } from "vue";
 import { ComposedDatabase } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
+import { useProjectV1Store } from "../v1";
 
 // set the limit to 1000 temporarily to avoid the query timeout and page crash
 export const RESULT_ROWS_LIMIT = 1000;
@@ -21,6 +22,12 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     ""
   );
 
+  const currentProject = computed(() => {
+    if (project.value) {
+      return useProjectV1Store().getProjectByName(project.value);
+    }
+    return undefined;
+  });
   const allowViewALLProjects = computed(() => {
     const me = useCurrentUserV1();
     return hasWorkspacePermissionV2(me.value, "bb.projects.list");
@@ -40,6 +47,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     strictProject,
     projectContextReady,
     storedLastViewedProject,
+    currentProject,
     allowViewALLProjects,
     databaseList,
     isShowExecutingHint,

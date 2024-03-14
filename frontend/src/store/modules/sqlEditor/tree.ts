@@ -83,17 +83,13 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   );
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
-  // just re-expose `databaseList` and `project` in sqlEditor store
-  const { databaseList, project } = storeToRefs(useSQLEditorStore());
+  // re-expose `databaseList`, `project`, `currentProject` from sqlEditor store for shortcuts
+  const { databaseList, project, currentProject } = storeToRefs(
+    useSQLEditorStore()
+  );
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
-  const selectedProject = computed(() => {
-    if (project.value) {
-      return useProjectV1Store().getProjectByName(project.value);
-    }
-    return undefined;
-  });
 
   const filteredDatabaseList = computed(() => {
     if (filter.database) {
@@ -101,8 +97,8 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
         return database.name === filter.database;
       });
     }
-    if (filter.project || selectedProject.value) {
-      const projectName = filter.project ?? selectedProject.value?.name;
+    if (filter.project || currentProject.value) {
+      const projectName = filter.project ?? currentProject.value?.name;
       return databaseList.value.filter((database) => {
         return database.project === projectName;
       });
@@ -113,7 +109,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const filteredFactorList = computed(() => {
     return factorList.value
       .filter((sf) => {
-        if (!selectedProject.value) {
+        if (!currentProject.value) {
           return true;
         }
         return sf.factor !== "project";
@@ -184,7 +180,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     databaseList,
     factorList,
     filteredFactorList,
-    selectedProject,
+    currentProject: currentProject,
     state,
     tree,
     collectNode,
