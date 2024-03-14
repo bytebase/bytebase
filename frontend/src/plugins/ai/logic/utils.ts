@@ -1,25 +1,28 @@
 import { watch } from "vue";
-import { useCurrentTab } from "@/store";
-import type { Connection } from "@/types";
+import { useCurrentSQLEditorTab } from "@/store";
+import type { SQLEditorConnection } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { engineNameV1 } from "@/utils";
 
 export const onConnectionChanged = (
-  fn: (newConn: Connection, oldConn: Connection | undefined) => void,
+  fn: (
+    newConn: SQLEditorConnection,
+    oldConn: SQLEditorConnection | undefined
+  ) => void,
   immediate = false
 ) => {
-  const tab = useCurrentTab();
+  const tab = useCurrentSQLEditorTab();
   return watch(
     [
-      () => tab.value.connection.instanceId,
-      () => tab.value.connection.databaseId,
+      () => tab.value?.connection.instance,
+      () => tab.value?.connection.database,
     ],
     (newValues, oldValues) => {
       fn(
-        { instanceId: newValues[0], databaseId: newValues[1] },
+        { instance: newValues[0] ?? "", database: newValues[1] ?? "" },
         oldValues[0] && oldValues[1]
-          ? { instanceId: oldValues[0], databaseId: oldValues[1] }
+          ? { instance: oldValues[0] ?? "", database: oldValues[1] ?? "" }
           : undefined
       );
     },

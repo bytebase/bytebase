@@ -224,7 +224,10 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         meta: {
           title: (route: RouteLocationNormalized) => {
             const slug = route.params.vcsSlug as string;
-            return useVCSV1Store().getVCSByUid(uidFromSlug(slug))?.title ?? "";
+            return (
+              useVCSV1Store().getVCSByUid(uidFromSlug(slug))?.title ??
+              t("settings.sidebar.gitops")
+            );
           },
           requiredWorkspacePermissionList: () => [
             "bb.externalVersionControls.get",
@@ -281,7 +284,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
             return (
               useSQLReviewStore().getReviewPolicyByEnvironmentId(
                 String(uidFromSlug(slug))
-              )?.name ?? ""
+              )?.name ?? t("sql-review.title")
             );
           },
           requiredWorkspacePermissionList: () => ["bb.policies.get"],

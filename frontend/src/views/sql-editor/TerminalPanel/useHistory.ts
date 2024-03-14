@@ -1,6 +1,6 @@
 import { computed, unref, watch } from "vue";
-import { useTabStore, useWebTerminalV1Store } from "@/store";
-import { TabMode, WebTerminalQueryItemV1 } from "@/types";
+import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
+import { WebTerminalQueryItemV1 } from "@/types";
 import { minmax } from "@/utils";
 
 const MAX_HISTORY_ITEM_COUNT = 1000;
@@ -11,11 +11,11 @@ type HistoryState = {
 };
 
 export const useHistory = () => {
-  const tabStore = useTabStore();
-  const webTerminalStore = useWebTerminalV1Store();
+  const tabStore = useSQLEditorTabStore();
+  const webTerminalStore = useWebTerminalStore();
   const historyByTabId = new Map<string, HistoryState>();
   const queryState = computed(() => {
-    return webTerminalStore.getQueryStateByTab(tabStore.currentTab);
+    return webTerminalStore.getQueryStateByTab(tabStore.currentTab!);
   });
 
   const currentQuery = computed(() => {
@@ -24,8 +24,8 @@ export const useHistory = () => {
   });
 
   const currentStack = () => {
-    const tab = tabStore.currentTab;
-    if (tab.mode === TabMode.ReadOnly) return undefined;
+    const tab = tabStore.currentTab!;
+    if (tab.mode !== "ADMIN") return undefined;
 
     const existed = historyByTabId.get(tab.id);
     if (existed) {

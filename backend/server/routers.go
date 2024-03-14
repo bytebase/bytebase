@@ -50,7 +50,7 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, mux *grpcruntim
 	}
 	e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper: grpcSkipper,
-		Timeout: 30 * time.Second,
+		Timeout: 0, // unlimited
 	}))
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Skipper: grpcSkipper,

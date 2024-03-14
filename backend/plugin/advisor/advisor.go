@@ -179,6 +179,12 @@ const (
 	// MySQLTableNoDuplicateIndex is an advisor type for MySQL no duplicate index.
 	MySQLTableNoDuplicateIndex Type = "bb.plugin.advisor.mysql.table.no-duplicate-index"
 
+	// MySQLTableTextFieldsTotalLength is an advisor type for MySQL table text fields total length.
+	MySQLTableTextFieldsTotalLength Type = "bb.plugin.advisor.mysql.table.text-fields-total-length"
+
+	// MySQLTableFieldsMaximumCount is an advisor type for MySQL table fields maximum count.
+	MySQLTableDisallowSetCharset Type = "bb.plugin.advisor.mysql.table.disallow-set-charset"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 
@@ -245,14 +251,48 @@ const (
 	// MySQLStatementSelectFullTableScan is an advisor type for checking MySQL select full table scan or not.
 	MySQLStatementSelectFullTableScan Type = "bb.plugin.advisor.mysql.statement.select-full-table-scan"
 
+	// MySQLStatementWhereNoEqualNull is an advisor type for checking MySQL no equal null in WHERE clause.
+	MySQLStatementWhereNoEqualNull Type = "bb.plugin.advisor.mysql.statement.where.no-equal-null"
+
+	// MySQLStatementWhereDisallowUsingFunction is an advisor type for checking MySQL disallow using function in WHERE clause.
+	MySQLStatementWhereDisallowUsingFunction Type = "bb.plugin.advisor.mysql.statement.query.disallow-using-function"
+
+	// MySQLStatementQueryMinumumPlanLevel is an advisor type for checking MySQL query minimum plan level.
+	MySQLStatementQueryMinumumPlanLevel Type = "bb.plugin.advisor.mysql.statement.query.minimum-plan-level"
+
+	// MySQLStatementWhereMaximumLogicalOperatorCount is an advisor type for checking MySQL statement maximum logical operator count in WHERE clause.
+	MySQLStatementWhereMaximumLogicalOperatorCount Type = "bb.plugin.advisor.mysql.statement.where.maximum-logical-operator-count"
+
+	// MySQLStatementMaximumLimitValue is an advisor type for MySQL statement maximum limit value.
+	MySQLStatementMaximumLimitValue Type = "bb.plugin.advisor.mysql.statement.maximum-limit-value"
+
+	// MySQLStatementMaximumJoinTableCount is an advisor type for MySQL statement maximum join table count.
+	MySQLStatementMaximumJoinTableCount Type = "bb.plugin.advisor.mysql.statement.maximum-join-table-count"
+
+	// MySQLStatementMaximumStatementsInTransaction is an advisor type for MySQL maximum statements in transaction.
+	MySQLStatementMaximumStatementsInTransaction Type = "bb.plugin.advisor.mysql.statement.maximum-statements-in-transaction"
+
+	// MySQLStatementJoinStrictColumnAttrs is an advisor type for MySQL statement strict column attrs(type, charset) in join.
+	MySQLStatementJoinStrictColumnAttrs Type = "bb.plugin.advisor.mysql.statement.join-strict-column-attrs"
+
+	// MySQLStatementDisallowMixDML is an advisor type for MySQL disallow mix DML on same table.
+	MySQLStatementDisallowMixDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-dml"
+
+	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
+	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
+
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"
+
 	// MySQLEventDisallowCreate is an advisor type for MySQL disallow create event.
 	MySQLEventDisallowCreate Type = "bb.plugin.advisor.mysql.event.disallow-create"
+
 	// MySQLViewDisallowCreate is an advisor type for MySQL disallow create view.
 	MySQLViewDisallowCreate Type = "bb.plugin.advisor.mysql.view.disallow-create"
+
 	// MySQLFunctionDisallowCreate is an advisor type for MySQL disallow create function.
 	MySQLFunctionDisallowCreate Type = "bb.plugin.advisor.mysql.function.disallow-create"
+
 	// MySQLFunctionDisallowedList is an advisor type for MySQL disallowed function list.
 	MySQLFunctionDisallowedList Type = "bb.plugin.advisor.mysql.function.disallowed-list"
 
@@ -383,6 +423,12 @@ const (
 
 	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
 	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
+
+	// PostgreSQLStatementDisallowMixDML is an advisor type for PostgreSQL disallow mix DML on same table.
+	PostgreSQLStatementDisallowMixDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-dml"
+
+	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
+	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
 
 	// Oracle Advisor.
 

@@ -1082,18 +1082,21 @@ ViewMetadata is the metadata for views.
 ### TablePartitionMetadata.Type
 Type is the type of a table partition, some database engines may not support all types.
 Only avilable for the following database engines now:
-MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
 PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RANGE | 1 |  |
-| LIST | 2 |  |
-| HASH | 3 |  |
-| LINEAR_HASH | 4 |  |
-| KEY | 5 |  |
-| LINEAR_KEY | 6 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
 
 
 
@@ -1328,6 +1331,7 @@ Used internally for obfuscating the page token.
 | ssh_user | [string](#string) |  | The user to login the server. |
 | ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 
 
 

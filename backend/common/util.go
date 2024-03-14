@@ -25,9 +25,11 @@ const (
 	// MaxSheetSize is the maximum size (1M) of a sheet for displaying.
 	MaxSheetSize = 1024 * 1024
 	// MaxSheetCheckSize is the maximum size of a sheet for checking changes.
-	MaxSheetCheckSize = 512 * 1024
+	MaxSheetCheckSize = 1024 * 1024
 	// MaxSheetSizeForRollback is the maximum size of a sheet for rollback generator to run.
 	MaxSheetSizeForRollback = 8 * 1024 * 1024
+	// MaxBinlogSizeLimit defines the upper limit for scanning the binlog text body size in search of a transaction..
+	MaxBinlogSizeLimit = 32 * 1024 * 1024
 	// MaxChunksCount is the maximum number of chunks for a sheet.
 	MaxSheetChunksCount = 200
 

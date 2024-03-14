@@ -15,8 +15,6 @@ import ExecuteHint from "./ExecuteHint.vue";
 const sqlEditorStore = useSQLEditorStore();
 
 const handleClose = () => {
-  sqlEditorStore.setSQLEditorState({
-    isShowExecutingHint: false,
-  });
+  sqlEditorStore.isShowExecutingHint = false;
 };
 </script>

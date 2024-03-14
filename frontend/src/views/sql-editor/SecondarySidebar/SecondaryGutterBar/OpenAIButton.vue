@@ -36,10 +36,10 @@
 <script setup lang="ts">
 import { ButtonProps, NButton, NTooltip } from "naive-ui";
 import { computed } from "vue";
-import { useSettingV1Store, useTabStore } from "@/store";
+import { useSettingV1Store, useSQLEditorTabStore } from "@/store";
 import { useSQLEditorContext } from "../../context";
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 const openAIKeySetting = computed(() =>
   settingV1Store.getSettingByName("bb.plugin.openai.key")

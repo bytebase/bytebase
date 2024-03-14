@@ -395,6 +395,15 @@ type TableState struct {
 	dependentView map[string]bool
 }
 
+// ListColumns return the list of columns.
+func (table *TableState) ListColumns() []*ColumnState {
+	var columns []*ColumnState
+	for _, v := range table.columnSet {
+		columns = append(columns, v)
+	}
+	return columns
+}
+
 // CountIndex return the index total number.
 func (table *TableState) CountIndex() int {
 	return len(table.indexSet)

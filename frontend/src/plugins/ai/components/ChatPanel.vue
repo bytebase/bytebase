@@ -16,7 +16,11 @@
       <div v-if="isChatMode" class="flex items-center gap-2 w-full">
         <DynamicSuggestions class="flex-1" @enter="requestAI" />
       </div>
-      <PromptInput @focus="tab.editMode = 'CHAT-TO-SQL'" @enter="requestAI" />
+      <PromptInput
+        v-if="tab"
+        @focus="tab.editMode = 'CHAT-TO-SQL'"
+        @enter="requestAI"
+      />
     </div>
 
     <template v-if="isChatMode">
@@ -28,8 +32,9 @@
 <script lang="ts" setup>
 import { Axios, AxiosResponse } from "axios";
 import { head } from "lodash-es";
+import { storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
-import { useCurrentTab } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import { engineNameV1 } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import { useConversationStore } from "../store";
@@ -48,9 +53,9 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
-const tab = useCurrentTab();
+const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
-const isChatMode = computed(() => tab.value.editMode === "CHAT-TO-SQL");
+const isChatMode = computed(() => tab.value?.editMode === "CHAT-TO-SQL");
 
 const context = useAIContext();
 const { events, openAIKey, openAIEndpoint, autoRun, showHistoryDialog } =
@@ -65,6 +70,7 @@ const requestAI = async (query: string) => {
   const conversation = selectedConversation.value;
   if (!conversation) return;
   const t = tab.value;
+  if (!t) return;
 
   const { messageList } = conversation;
   if (messageList.length === 0) {
@@ -215,6 +221,7 @@ onConnectionChanged(() => {
 });
 
 events.on("new-conversation", async () => {
+  if (!tab.value) return;
   showHistoryDialog.value = false;
   const c = await store.createConversation({
     name: "",
@@ -229,7 +236,8 @@ watch(
     if (ready && list.length === 0) {
       store.createConversation({
         name: "",
-        ...tab.value.connection,
+        instance: tab.value?.connection.instance ?? "",
+        database: tab.value?.connection.database ?? "",
       });
     }
   },

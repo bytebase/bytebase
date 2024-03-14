@@ -1,7 +1,7 @@
 import { last } from "lodash-es";
 import { computed, ref, watch } from "vue";
-import { useCurrentTab } from "@/store";
-import { TabInfo } from "@/types";
+import { useSQLEditorTabStore } from "@/store";
+import { SQLEditorTab } from "@/types";
 import { useConversationStore } from "../store";
 import { AIChatInfo, Conversation } from "../types";
 import { useAIContext } from "./context";
@@ -9,18 +9,17 @@ import { useAIContext } from "./context";
 const chatsByTab = new Map<string, AIChatInfo>();
 
 export const useChatByTab = () => {
-  const tab = useCurrentTab();
   const store = useConversationStore();
 
-  const initializeChat = (tab: TabInfo): AIChatInfo => {
+  const initializeChat = (tab: SQLEditorTab): AIChatInfo => {
     const ready = ref(false);
     store.fetchConversationListByConnection(tab.connection).then(() => {
       ready.value = true;
     });
     const list = computed(() => {
-      const { instanceId, databaseId } = tab.connection;
+      const { instance, database } = tab.connection;
       return store.conversationList.filter(
-        (c) => c.instanceId === instanceId && c.databaseId === databaseId
+        (c) => c.instance === instance && c.database === database
       );
     });
     const selected = ref<Conversation>();
@@ -38,8 +37,11 @@ export const useChatByTab = () => {
     return { list, ready, selected };
   };
 
-  const getChatByTab = (tab: TabInfo) => {
-    const key = JSON.stringify(tab.connection);
+  const getChatByTab = (tab: SQLEditorTab) => {
+    const key = JSON.stringify({
+      instance: tab.connection.instance,
+      database: tab.connection.database,
+    });
     const existed = chatsByTab.get(key);
     if (existed) return existed;
     const chat = initializeChat(tab);
@@ -48,7 +50,8 @@ export const useChatByTab = () => {
   };
 
   return computed(() => {
-    return getChatByTab(tab.value);
+    const tab = useSQLEditorTabStore().currentTab!;
+    return getChatByTab(tab);
   });
 };
 

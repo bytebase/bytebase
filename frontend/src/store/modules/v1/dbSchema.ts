@@ -93,13 +93,13 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
   };
   const mergeCache = (
     metadata: DatabaseMetadata,
-    view?: DatabaseMetadataView
+    view: DatabaseMetadataView = VIEW_BASIC,
+    dropIfNotExist: boolean = false
   ) => {
     const [existed, existedView] = getCache(metadata.name);
     if (!existed || view === VIEW_FULL) {
-      return setCache(metadata, view ?? VIEW_BASIC);
+      return setCache(metadata, view);
     }
-    console.assert(existedView !== undefined);
     if (!existedView) {
       throw new Error(
         `should never reach this line. metadata=${metadata}, view=${view}, existed=${existed}, existedView=${existedView}`
@@ -114,6 +114,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
         existed.schemaConfigs.push(schemaConfig);
         continue;
       }
+
       for (const tableConfig of schemaConfig.tableConfigs) {
         const tableIndex = existed.schemaConfigs[
           schemaConfigIndex
@@ -127,7 +128,19 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
             tableConfig;
         }
       }
+
+      dropCacheIfNotExist(
+        dropIfNotExist,
+        schemaConfig.tableConfigs,
+        existed.schemaConfigs[schemaConfigIndex].tableConfigs
+      );
     }
+
+    dropCacheIfNotExist(
+      dropIfNotExist,
+      metadata.schemaConfigs,
+      existed.schemaConfigs
+    );
 
     for (const schema of metadata.schemas) {
       const schemaIndex = existed.schemas.findIndex(
@@ -147,9 +160,39 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
           existed.schemas[schemaIndex].tables[tableIndex] = table;
         }
       }
+
+      dropCacheIfNotExist(
+        dropIfNotExist,
+        schema.tables,
+        existed.schemas[schemaIndex].tables
+      );
     }
+
+    dropCacheIfNotExist(dropIfNotExist, metadata.schemas, existed.schemas);
+
     return setCache(existed, view ?? existedView);
   };
+
+  // drop old data if it not exists in the new data list.
+  const dropCacheIfNotExist = (
+    dropIfNotExist: boolean,
+    newList: { name: string }[],
+    oldList: { name: string }[]
+  ) => {
+    if (!dropIfNotExist) {
+      return;
+    }
+    let i = 0;
+    while (i < oldList.length) {
+      const index = newList.findIndex((s) => s.name === oldList[i].name);
+      if (index < 0) {
+        oldList.splice(i, 1);
+      } else {
+        i++;
+      }
+    }
+  };
+
   const updateDatabaseSchemaConfigs = async (metadata: DatabaseMetadata) => {
     await databaseServiceClient.updateDatabaseMetadata({
       databaseMetadata: metadata,
@@ -157,7 +200,7 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     });
     // updateDatabaseMetadata actually returns basic view
     // so we cannot setCache(updated) here
-    mergeCache(metadata);
+    mergeCache(metadata, VIEW_BASIC, true);
   };
   /**
    *
@@ -240,7 +283,10 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
       }
     );
     setRequestCache(metadataResourceName, view ?? VIEW_BASIC, promise);
-    promise.then((res) => mergeCache(res, view));
+    promise.then((res) => {
+      // drop not exist data if we don't have the filter in the request.
+      mergeCache(res, view, !filter);
+    });
 
     return promise;
   };

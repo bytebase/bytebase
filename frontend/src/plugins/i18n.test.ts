@@ -64,6 +64,13 @@ describe("Test i18n for SQL review", () => {
               !!i18nForSQLReview["engine"][engineToJSON(engine).toLowerCase()]
             ).toBe(true);
           }
+
+          for (const component of rule.componentList) {
+            expect(!!i18nForSQLReview["rule"][key]["component"]).toBe(true);
+            expect(
+              !!i18nForSQLReview["rule"][key]["component"][component.key]
+            ).toBe(true);
+          }
         });
       }
     });

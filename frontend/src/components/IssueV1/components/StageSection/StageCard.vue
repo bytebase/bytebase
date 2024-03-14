@@ -33,7 +33,7 @@
           class="w-6 h-6 ml-2 text-error hover:text-error-hover"
         />
       </template>
-      <span>Missing SQL statement</span>
+      <span>{{ $t("issue.missing-sql-statement") }}</span>
     </NTooltip>
     <NTooltip
       v-if="

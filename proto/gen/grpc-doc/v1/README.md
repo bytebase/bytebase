@@ -582,7 +582,6 @@
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
-    - [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetPayload](#bytebase-v1-SheetPayload)
@@ -1988,6 +1987,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_user | [string](#string) |  | The user to login the server. Required. |
 | ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
+| authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
 
 
 
@@ -3737,18 +3737,21 @@ The type of the backup.
 ### TablePartitionMetadata.Type
 Type is the type of a table partition, some database engines may not support all types.
 Only avilable for the following database engines now:
-MySQL: RANGE, LIST, HASH, LINEAR HASH, KEY, LINEAR_KEY, COLUMNS(which is actually RANGE and LIST) (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+MySQL: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, LINEAR HASH, KEY, LINEAR_KEY (https://dev.mysql.com/doc/refman/8.0/en/partitioning-types.html)
+TiDB: RANGE, RANGE COLUMNS, LIST, LIST COLUMNS, HASH, KEY
 PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-partitioning.html)
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RANGE | 1 |  |
-| LIST | 2 |  |
-| HASH | 3 |  |
-| LINEAR_HASH | 4 |  |
-| KEY | 5 |  |
-| LINEAR_KEY | 6 |  |
+| RANGE_COLUMNS | 2 |  |
+| LIST | 3 |  |
+| LIST_COLUMNS | 4 |  |
+| HASH | 5 |  |
+| LINEAR_HASH | 6 |  |
+| KEY | 7 |  |
+| LINEAR_KEY | 8 |  |
 
 
 
@@ -9451,21 +9454,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-v1-DeleteSheetRequest"></a>
-
-### DeleteSheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sheet to delete. Format: projects/{project}/sheets/{sheet} |
-
-
-
-
-
-
 <a name="bytebase-v1-GetSheetRequest"></a>
 
 ### GetSheetRequest
@@ -9569,7 +9557,6 @@ Type of the SheetPayload.
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

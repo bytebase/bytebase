@@ -1184,6 +1184,7 @@
     "unfinished-resolved-issue-tips": "This issue is marked as \"Done\" but some of its tasks are not executed successfully.",
     "some-tasks-are-not-executed-successfully": "(Some tasks are not executed successfully)",
     "preview": "Preview issue",
+    "missing-sql-statement": "SQL statement missing. To apply this change to all tasks, click the @:{'issue.apply-to-other-tasks'} button.",
     "task-summary-tooltip": "{failed} task failed | {failed} tasks failed"
   },
   "alter-schema": {
@@ -2159,6 +2160,7 @@
     "new-data-source": "New data source",
     "connection-name-string-copied-to-clipboard": "{0} string copied to clipboard.",
     "jdbc-cant-connect-to-socket-database-value-instance-host": "JDBC can't connect to socket {0} ",
+    "snowflake-keypair-tip": "Key-pair authentication",
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",

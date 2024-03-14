@@ -282,6 +282,20 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		g.lastTokenIndex = ctx.CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex() + 1
 	}
 
+	if g.currentTable.partitionStateWrapper != nil {
+		if _, err := g.result.WriteString("\n"); err != nil {
+			g.err = err
+			return
+		}
+		if err := g.currentTable.partitionStateWrapper.toString(&g.result); err != nil {
+			g.err = err
+			return
+		}
+		if ctx.PartitionClause() != nil {
+			g.lastTokenIndex = ctx.PartitionClause().GetStop().GetTokenIndex() + 1
+		}
+	}
+
 	if _, err := g.result.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
 		Start: g.lastTokenIndex,
 		// Write all tokens until the end of the statement.
@@ -910,7 +924,7 @@ func normalizeOnUpdate(s string) string {
 	re := regexp.MustCompile(`(current_timestamp|now|localtime|localtimestamp)(?:\((\d+)\))?`)
 	match := re.FindStringSubmatch(lowerS)
 	if len(match) > 0 {
-		if len(match) > 1 && match[1] != "" {
+		if len(match) >= 3 && match[2] != "" {
 			// has precision
 			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
 		}
