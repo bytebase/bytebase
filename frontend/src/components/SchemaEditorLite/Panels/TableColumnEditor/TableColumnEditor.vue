@@ -125,6 +125,7 @@ const props = withDefaults(
     engine: Engine;
     classificationConfigId?: string;
     disableChangeTable?: boolean;
+    allowChangePrimaryKeys?: boolean;
     allowReorderColumns?: boolean;
     maxBodyHeight?: number;
     filterColumn?: (column: ColumnMetadata) => boolean;
@@ -135,6 +136,7 @@ const props = withDefaults(
     show: true,
     showForeignKey: true,
     disableChangeTable: false,
+    allowChangePrimaryKeys: false,
     allowReorderColumns: false,
     maxBodyHeight: undefined,
     classificationConfigId: "",
@@ -515,7 +517,10 @@ const columns = computed(() => {
       render: (column) => {
         return h(NCheckbox, {
           checked: isColumnPrimaryKey(column),
-          disabled: props.readonly || props.disableAlterColumn(column),
+          disabled:
+            props.readonly ||
+            !props.allowChangePrimaryKeys ||
+            props.disableAlterColumn(column),
           "onUpdate:checked": (checked: boolean) =>
             emit("primary-key-set", column, checked),
         });

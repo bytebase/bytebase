@@ -81,6 +81,7 @@
         :engine="engine"
         :classification-config-id="project.dataClassificationConfigId"
         :disable-change-table="disableChangeTable"
+        :allow-change-primary-keys="allowChangePrimaryKeys"
         :allow-reorder-columns="allowReorderColumns"
         :filter-column="(column: ColumnMetadata) => column.name.includes(props.searchPattern.trim())"
         :disable-alter-column="disableAlterColumn"
@@ -271,6 +272,10 @@ const isDroppedColumn = (column: ColumnMetadata): boolean => {
 
 const disableChangeTable = computed(() => {
   return isDroppedSchema.value || isDroppedTable.value;
+});
+
+const allowChangePrimaryKeys = computed(() => {
+  return statusForTable() === "created";
 });
 
 const allowReorderColumns = computed(() => {
