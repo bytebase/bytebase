@@ -245,9 +245,11 @@ func extractSingleTable(ctx mysql.ISingleTableContext) ([]table, error) {
 func extractSingleTableParens(ctx mysql.ISingleTableParensContext) ([]table, error) {
 	if ctx.SingleTable() != nil {
 		return extractSingleTable(ctx.SingleTable())
-	} else {
+	}
+	if ctx.SingleTableParens() != nil {
 		return extractSingleTableParens(ctx.SingleTableParens())
 	}
+	return nil, nil
 }
 
 func extractJoinedTable(ctx mysql.IJoinedTableContext) ([]table, error) {
