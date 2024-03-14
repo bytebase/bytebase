@@ -1,0 +1,205 @@
+- input: |-
+    CREATE TABLE "BYTEBASE"."DEPARTMENTS" (
+      "DEPARTMENT_ID" NUMBER(3) VISIBLE NOT NULL,
+      "DEPARTMENT_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      CONSTRAINT "SYS_C006991" PRIMARY KEY ("DEPARTMENT_ID"),
+      CONSTRAINT "SYS_C006992" UNIQUE ("DEPARTMENT_NAME") NOT DEFERRABLE INITIALLY IMMEDIATE VALIDATE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."EMPLOYEES" (
+      "ID" NUMBER VISIBLE,
+      "NAME" VARCHAR2(255 BYTE) VISIBLE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."SALARY" (
+      "EMPLOYEE_ID" NUMBER(5) VISIBLE NOT NULL,
+      "FIRST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "LAST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "SALARY_AMOUNT" NUMBER(10,2) VISIBLE,
+      "HIRE_DATE" DATE VISIBLE,
+      CONSTRAINT "SYS_C006995" PRIMARY KEY ("EMPLOYEE_ID")
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."T" (
+      "A" NUMBER VISIBLE,
+      "B" NUMBER VISIBLE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."TTTTTTTTT" (
+      "A" NUMBER VISIBLE,
+      "B" NUMBER VISIBLE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."employees" (
+      "ID" NUMBER VISIBLE,
+      "NAME" VARCHAR2(255 BYTE) VISIBLE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+  actions:
+    - type: modifyColumnType
+      arguments:
+        - employees
+        - NAME
+        - VARCHAR2(244)
+    - type: addColumn
+      arguments:
+        - employees
+        - '`AGE` NUMBER VISIBLE'
+    - type: addTable
+      arguments:
+        - |-
+          CREATE TABLE "BYTEBASE"."T2" (
+            "A" NUMBER VISIBLE,
+            "B" NUMBER VISIBLE
+          )
+          ;
+    - type: dropTable
+      arguments:
+        - TTTTTTTTT
+    - type: dropColumn
+      arguments:
+        - T
+        - B
+    - type: dropTableConstraint
+      arguments:
+        - DEPARTMENTS
+        - SYS_C006991
+    - type: modifyTableConstraint
+      arguments:
+        - DEPARTMENTS
+        - UNIQUE
+        - SYS_C006992
+        - CONSTRAINT "SYS_C006992" UNIQUE ("DEPARTMENT_NAME") DEFERRABLE INITIALLY DEFERRED
+    - type: addTableConstraint
+      arguments:
+        - DEPARTMENTS
+        - SYS_C006993
+        - CONSTRAINT "SYS_C006993" UNIQUE ("DEPARTMENT_NAME") DEFERRABLE INITIALLY DEFERRED
+  want: |-
+    CREATE TABLE "BYTEBASE"."DEPARTMENTS"  (
+      "DEPARTMENT_ID" NUMBER(3) VISIBLE NOT NULL,
+      "DEPARTMENT_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      CONSTRAINT "SYS_C006992" UNIQUE ("DEPARTMENT_NAME") DEFERRABLE INITIALLY DEFERRED,
+      CONSTRAINT "SYS_C006993" UNIQUE ("DEPARTMENT_NAME") DEFERRABLE INITIALLY DEFERRED
+    )
+    ;
+
+    CREATE TABLE "BYTEBASE"."EMPLOYEES" (
+      "ID" NUMBER VISIBLE,
+      "NAME" VARCHAR2(255 BYTE) VISIBLE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."SALARY" (
+      "EMPLOYEE_ID" NUMBER(5) VISIBLE NOT NULL,
+      "FIRST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "LAST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "SALARY_AMOUNT" NUMBER(10,2) VISIBLE,
+      "HIRE_DATE" DATE VISIBLE,
+      CONSTRAINT "SYS_C006995" PRIMARY KEY ("EMPLOYEE_ID")
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."T"  (
+      "A" NUMBER VISIBLE
+    )
+    ;
+
+
+    CREATE TABLE "BYTEBASE"."employees"  (
+      "ID" NUMBER VISIBLE,
+      "NAME" VARCHAR2(244) VISIBLE,
+      `AGE` NUMBER VISIBLE
+    )
+    ;
+
+    CREATE TABLE "BYTEBASE"."T2" (
+      "A" NUMBER VISIBLE,
+      "B" NUMBER VISIBLE
+    )
+    ;
