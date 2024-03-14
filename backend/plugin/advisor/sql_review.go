@@ -1431,6 +1431,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowMixDML, nil
 		}
+	case SchemaRuleStatementDisallowMixDDLDML:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLStatementDisallowMixDDLDML, nil
+		}
 	case SchemaRuleCharsetAllowlist:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
