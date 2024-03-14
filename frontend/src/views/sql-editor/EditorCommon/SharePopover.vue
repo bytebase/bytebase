@@ -129,14 +129,14 @@ const accessOptions = computed<AccessOption[]>(() => {
       description: t("sql-editor.private-desc"),
     },
     {
-      label: t("common.project"),
-      value: Worksheet_Visibility.VISIBILITY_PROJECT,
-      description: t("sql-editor.project-desc"),
+      label: t("sql-editor.project-read"),
+      value: Worksheet_Visibility.VISIBILITY_PROJECT_READ,
+      description: t("sql-editor.project-read-desc"),
     },
     {
-      label: t("sql-editor.public"),
-      value: Worksheet_Visibility.VISIBILITY_PUBLIC,
-      description: t("sql-editor.public-desc"),
+      label: t("sql-editor.project-write"),
+      value: Worksheet_Visibility.VISIBILITY_PROJECT_WRITE,
+      description: t("sql-editor.project-write-desc"),
     },
   ];
 });
