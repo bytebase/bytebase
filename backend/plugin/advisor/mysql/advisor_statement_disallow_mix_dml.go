@@ -167,6 +167,7 @@ func (c *statementDisallowMixDMLChecker) EnterDeleteStatement(ctx *mysql.DeleteS
 		c.dmlStatementCount[table]["DELETE"]++
 	}
 }
+
 func extractTableReference(ctx mysql.ITableReferenceContext) ([]table, error) {
 	if ctx.TableFactor() == nil {
 		return nil, nil
