@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
@@ -352,7 +352,7 @@ const syncURLWithConnection = () => {
           }
         }
       }
-      const query = { ...route.query };
+      const query = omit({ ...route.query }, "filter");
       if (table) {
         query.filter = JSON.stringify({
           table,
