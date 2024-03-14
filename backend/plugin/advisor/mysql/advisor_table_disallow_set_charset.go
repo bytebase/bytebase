@@ -55,7 +55,6 @@ func (*TableDisallowSetCharsetAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type tableDisallowSetCharsetChecker struct {
 	*mysql.BaseMySQLParserListener
 
