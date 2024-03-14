@@ -36,9 +36,10 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
     case Worksheet_Visibility.VISIBILITY_PRIVATE:
       return false;
     case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
-    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
+    case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE: {
       const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
       return isMemberOfProjectV1(projectV1.iamPolicy, currentUserV1.value);
+    }
   }
   return false;
 };
