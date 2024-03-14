@@ -1,3 +1,4 @@
+import { VNode } from "vue";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 
 interface SheetVCSPayload {
@@ -18,4 +19,5 @@ export type AccessOption = {
   label: string;
   description: string;
   value: Worksheet_Visibility;
+  icon: VNode;
 };
