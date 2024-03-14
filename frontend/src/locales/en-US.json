@@ -317,7 +317,7 @@
       "statement-type": "Statement type",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "Estimated affected rows",
+      "affected-rows": "Affected rows (estimation based on statistical information)",
       "sql-type": "SQL type",
       "summary-report": "Summary report"
     },
