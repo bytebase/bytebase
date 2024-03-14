@@ -1,34 +1,39 @@
-import { cloneDeep, isEmpty } from "lodash-es";
+import { isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { useI18n } from "vue-i18n";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import {
   pushNotification,
-  useTabStore,
-  useSQLEditorStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+  RESULT_ROWS_LIMIT,
+  useSQLStore,
+  useSQLEditorQueryHistoryStore,
 } from "@/store";
 import {
   ComposedDatabase,
-  ExecuteConfig,
-  ExecuteOption,
   SQLResultSetV1,
   UNKNOWN_ID,
   BBNotificationStyle,
+  SQLEditorQueryParams,
 } from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,
 } from "@/types/proto/v1/sql_service";
-import { hasPermissionToCreateChangeDatabaseIssue } from "@/utils";
+import {
+  emptySQLEditorTabQueryContext,
+  hasPermissionToCreateChangeDatabaseIssue,
+} from "@/utils";
 
 const useExecuteSQL = () => {
   const { t } = useI18n();
   const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
-  const tabStore = useTabStore();
+  const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
 
   const notify = (
@@ -44,59 +49,66 @@ const useExecuteSQL = () => {
     });
   };
 
-  const preflight = (query: string) => {
+  const preflight = (params: SQLEditorQueryParams) => {
     const tab = tabStore.currentTab;
+    if (!tab) {
+      return false;
+    }
 
-    if (tab.isExecutingSQL) {
+    if (tab.queryContext?.status === "EXECUTING") {
       notify("INFO", t("common.tips"), t("sql-editor.can-not-execute-query"));
       return false;
     }
 
-    const isDisconnected = tabStore.isDisconnected;
-    if (isDisconnected) {
+    if (tabStore.isDisconnected) {
       notify("CRITICAL", t("sql-editor.select-connection"));
       return false;
     }
 
-    if (isEmpty(query)) {
+    if (isEmpty(params.statement)) {
       notify("CRITICAL", t("sql-editor.notify-empty-statement"));
       return false;
     }
 
-    tab.isExecutingSQL = true;
+    tab.queryContext = {
+      ...emptySQLEditorTabQueryContext(),
+      params,
+      status: "EXECUTING",
+    };
     return true;
   };
 
   const cleanup = () => {
     const tab = tabStore.currentTab;
-    tab.isExecutingSQL = false;
+    if (!tab) return;
+    if (!tab.queryContext) return;
+    tab.queryContext.status = "IDLE";
   };
 
-  const executeReadonly = async (
-    query: string,
-    config: ExecuteConfig,
-    option?: Partial<ExecuteOption>
-  ) => {
-    if (!preflight(query)) {
+  const executeReadonly = async (params: SQLEditorQueryParams) => {
+    if (!preflight(params)) {
       return cleanup();
     }
 
     const tab = tabStore.currentTab;
-    const { data } = await parseSQL(query);
+    if (!tab) {
+      return;
+    }
+    const queryContext = tab.queryContext!;
+    const batchQueryContext = tab.batchQueryContext;
+    const { data } = await parseSQL(params.statement);
 
     if (data === undefined) {
       notify("CRITICAL", t("sql-editor.notify-invalid-sql-statement"));
       return cleanup();
     }
 
-    let selectStatement = query;
-    if (option?.explain) {
-      selectStatement = `EXPLAIN ${selectStatement}`;
-    }
+    const statement = params.explain
+      ? `EXPLAIN ${params.statement}`
+      : params.statement;
 
-    const batchQueryContext = tab.batchQueryContext;
-    const selectedDatabase = useDatabaseV1Store().getDatabaseByUID(
-      tab.connection.databaseId
+    const selectedDatabase = useDatabaseV1Store().getDatabaseByName(
+      params.connection.database
     );
     const databaseName =
       selectedDatabase.uid === String(UNKNOWN_ID)
@@ -108,10 +120,10 @@ const useExecuteSQL = () => {
     if (
       databaseName &&
       batchQueryContext &&
-      batchQueryContext.selectedDatabaseNames.length > 0
+      batchQueryContext.databases.length > 0
     ) {
-      for (const databaseName of batchQueryContext.selectedDatabaseNames) {
-        const database = databaseStore.getDatabaseByName(databaseName);
+      for (const databaseResourceName of batchQueryContext.databases) {
+        const database = databaseStore.getDatabaseByName(databaseResourceName);
         if (database.name === selectedDatabase.name) {
           continue;
         }
@@ -119,21 +131,19 @@ const useExecuteSQL = () => {
       }
     }
 
-    const databaseQueryResultMap = new Map<string, SQLResultSetV1>();
+    const queryResultMap = new Map<string, SQLResultSetV1>();
     for (const database of batchQueryDatabases) {
-      databaseQueryResultMap.set(database.name, {
+      queryResultMap.set(database.name, {
         error: "",
         results: [],
         advices: [],
         allowExport: false,
       });
     }
-    tabStore.updateCurrentTab({
-      databaseQueryResultMap,
-    });
+    queryContext.results = queryResultMap;
 
     const fail = (database: ComposedDatabase, result: SQLResultSetV1) => {
-      databaseQueryResultMap.set(database.name, {
+      queryResultMap.set(database.name, {
         error: result.error,
         results: [],
         advices: result.advices,
@@ -142,13 +152,8 @@ const useExecuteSQL = () => {
       });
     };
 
-    const abortController = new AbortController();
-    tabStore.updateTab(tab.id, {
-      queryContext: {
-        beginTimestampMS: Date.now(),
-        abortController,
-      },
-    });
+    const { abortController } = queryContext;
+    queryContext.beginTimestampMS = Date.now();
     for (const database of batchQueryDatabases) {
       const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
       if (abortController.signal.aborted) {
@@ -163,28 +168,29 @@ const useExecuteSQL = () => {
         });
         continue;
       }
-      const instanceId = isUnknownDatabase
-        ? tab.connection.instanceId
-        : database.instanceEntity.uid;
+      const instance = isUnknownDatabase
+        ? params.connection.instance
+        : database.instance;
       const databaseName = isUnknownDatabase ? "" : database.databaseName;
       const dataSourceId =
-        instanceId === tab.connection.instanceId
-          ? tab.connection.dataSourceId
-          : undefined;
+        instance === params.connection.instance
+          ? params.connection.dataSourceId ?? ""
+          : "";
 
       try {
-        const sqlResultSet = await sqlEditorStore.executeQuery(
+        const resultSet = await useSQLStore().queryReadonly(
           {
-            instanceId: instanceId,
-            databaseName: databaseName,
+            name: instance,
+            connectionDatabase: databaseName,
             dataSourceId: dataSourceId,
-            statement: selectStatement,
+            statement,
+            limit: RESULT_ROWS_LIMIT,
           },
           abortController.signal
         );
         let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
         let adviceNotifyMessage = "";
-        for (const advice of sqlResultSet.advices) {
+        for (const advice of resultSet.advices) {
           if (advice.status === Advice_Status.SUCCESS) {
             continue;
           }
@@ -212,14 +218,15 @@ const useExecuteSQL = () => {
           );
         }
 
-        if (sqlResultSet.error) {
+        if (resultSet.error) {
           // The error message should be consistent with the one from the backend.
           if (
-            sqlResultSet.error === "Support SELECT sql statement only" &&
-            sqlResultSet.status === Status.INVALID_ARGUMENT
+            resultSet.error === "Support SELECT sql statement only" &&
+            resultSet.status === Status.INVALID_ARGUMENT
           ) {
-            const { databaseId } = tab.connection;
-            const database = databaseStore.getDatabaseByUID(databaseId);
+            const database = databaseStore.getDatabaseByName(
+              params.connection.database
+            );
             // Show a tips to navigate to issue creation
             // if the user is allowed to create issue in the project.
             if (
@@ -228,17 +235,15 @@ const useExecuteSQL = () => {
                 currentUser.value
               )
             ) {
-              sqlEditorStore.setSQLEditorState({
-                isShowExecutingHint: true,
-              });
+              sqlEditorStore.isShowExecutingHint = true;
               cleanup();
             }
-            fail(database, sqlResultSet);
+            fail(database, resultSet);
           } else {
-            fail(database, sqlResultSet);
+            fail(database, resultSet);
           }
         } else {
-          databaseQueryResultMap.set(database.name, markRaw(sqlResultSet));
+          queryResultMap.set(database.name, markRaw(resultSet));
         }
       } catch (error: any) {
         fail(database, error.response?.data?.message ?? String(error));
@@ -246,17 +251,9 @@ const useExecuteSQL = () => {
     }
 
     // After all the queries are executed, we update the tab with the latest query result map.
-    tabStore.updateTab(tab.id, {
-      databaseQueryResultMap: cloneDeep(databaseQueryResultMap),
-      executeParams: {
-        query,
-        config,
-        option,
-      },
-    });
     // Refresh the query history list when the query executed successfully
     // (with or without warnings).
-    sqlEditorStore.fetchQueryHistoryList();
+    useSQLEditorQueryHistoryStore().fetchQueryHistoryList();
     cleanup();
   };
 

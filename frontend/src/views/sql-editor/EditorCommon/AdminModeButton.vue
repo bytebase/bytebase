@@ -3,7 +3,7 @@
     v-if="showButton"
     :size="props.size"
     type="warning"
-    :disabled="tabStore.isDisconnected"
+    :disabled="isDisconnected"
     @click="enterAdminMode"
   >
     <heroicons-outline:wrench class="-ml-1" />
@@ -13,12 +13,17 @@
 
 <script lang="ts" setup>
 import { last } from "lodash-es";
-import { computed, unref } from "vue";
-import { useCurrentUserV1, useTabStore, useWebTerminalV1Store } from "@/store";
-import { TabMode } from "@/types";
+import { storeToRefs } from "pinia";
+import { computed, nextTick, unref } from "vue";
 import {
-  getSuggestedTabNameFromConnection,
+  useCurrentUserV1,
+  useSQLEditorTabStore,
+  useWebTerminalStore,
+} from "@/store";
+import { CoreSQLEditorTab } from "@/types";
+import {
   hasWorkspacePermissionV2,
+  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 
 const emit = defineEmits<{
@@ -38,29 +43,43 @@ const allowAdmin = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.adminExecute")
 );
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
 const showButton = computed(() => {
   if (!allowAdmin.value) return false;
-  return tabStore.currentTab.mode === TabMode.ReadOnly;
+  const mode = currentTab.value?.mode;
+  return mode === "READONLY" || mode === "STANDARD";
 });
 
-const enterAdminMode = () => {
-  const current = tabStore.currentTab;
-  const statement = current.statement;
-  const target = {
-    connection: current.connection,
-    mode: TabMode.Admin,
-    name: getSuggestedTabNameFromConnection(current.connection),
+const enterAdminMode = async () => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
+  const statement = tab.statement;
+  const target: CoreSQLEditorTab = {
+    connection: { ...tab.connection },
+    mode: "ADMIN",
+    sheet: "",
   };
-  tabStore.selectOrAddSimilarTab(target, /* beside */ true);
+  tabStore.selectOrAddSimilarNewTab(
+    target,
+    /* beside */ true,
+    /* title */ suggestedTabTitleForSQLEditorConnection(tab.connection)
+  );
   tabStore.updateCurrentTab({
     ...target,
     statement,
   });
+
+  await nextTick();
+  const current = currentTab.value;
+  if (!current) {
+    return;
+  }
   const queryItemList = unref(
-    useWebTerminalV1Store().getQueryStateByTab(tabStore.currentTab)
-      .queryItemList
+    useWebTerminalStore().getQueryStateByTab(current).queryItemList
   );
   const queryItem = last(queryItemList || []);
   if (queryItem) {

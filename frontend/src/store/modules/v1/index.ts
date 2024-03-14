@@ -17,7 +17,6 @@ export * from "./experimental-issue";
 export * from "./subscription";
 export * from "./actuator";
 export * from "./sql";
-export * from "./webTerminal";
 export * from "./repository";
 export * from "./vcs";
 export * from "./changeHistory";
