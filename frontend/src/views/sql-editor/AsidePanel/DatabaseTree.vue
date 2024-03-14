@@ -99,7 +99,6 @@ import {
   isConnectableSQLEditorTreeNode,
   languageOfEngineV1,
 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   findAncestor,
   hasWorkspacePermissionV2,
@@ -107,7 +106,7 @@ import {
   instanceV1HasAlterSchema,
   instanceV1HasReadonlyMode,
   isDescendantOf,
-  wrapSQLIdentifier,
+  generateSimpleSelectAllStatement,
   connectionV1Slug,
   tryConnectToCoreSQLEditorTab,
   emptySQLEditorConnection,
@@ -507,11 +506,28 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
   const { engine } = database.instanceEntity;
   const LIMIT = 50; // default pagesize of SQL Editor
 
+  const language = languageOfEngineV1(engine);
+  if (language === "redis") {
+    return; // not supported
+  }
+  const schema = target.schema.name;
+  const tableOrViewName =
+    type === "table"
+      ? (target as SQLEditorTreeNodeTarget<"table">).table.name
+      : type === "view"
+      ? (target as SQLEditorTreeNodeTarget<"view">).view.name
+      : "";
+  if (!tableOrViewName) {
+    return;
+  }
+
   const runQuery = async (statement: string) => {
     const tab: CoreSQLEditorTab = {
       connection: {
         instance: database.instance,
         database: database.name,
+        schema,
+        table: tableOrViewName,
       },
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
       sheet: "",
@@ -524,8 +540,8 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
       tabStore.updateCurrentTab({
         ...tab,
         title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-        statement: tabStore.currentTab.statement || statement,
         status: "DIRTY",
+        statement,
       });
     } else {
       // Otherwise select or add a new tab and set its connection
@@ -533,7 +549,7 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
         {
           ...tab,
           title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-          statement: statement,
+          statement,
           status: "DIRTY",
         },
         /* beside */ true
@@ -548,20 +564,6 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
     });
   };
 
-  const language = languageOfEngineV1(engine);
-  if (language === "redis") {
-    return; // not supported
-  }
-  const tableOrViewName =
-    type === "table"
-      ? (target as SQLEditorTreeNodeTarget<"table">).table.name
-      : type === "view"
-      ? (target as SQLEditorTreeNodeTarget<"view">).view.name
-      : "";
-  if (!tableOrViewName) {
-    return;
-  }
-
   if (language === "javascript" && type === "table") {
     // mongodb
     const query = `db["${tableOrViewName}"].find().limit(${LIMIT});`;
@@ -573,19 +575,12 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
     maybeSelectTable(node);
   }
 
-  const tableNameParts: string[] = [];
-  if (target.schema.name) {
-    tableNameParts.push(wrapSQLIdentifier(target.schema.name, engine));
-  }
-  tableNameParts.push(wrapSQLIdentifier(tableOrViewName, engine));
-
-  const queryParts = ["SELECT * FROM", tableNameParts.join(".")];
-  if (engine === Engine.ORACLE || engine === Engine.OCEANBASE_ORACLE) {
-    queryParts.push(`WHERE ROWNUM <= ${LIMIT}`);
-  } else {
-    queryParts.push(`LIMIT ${LIMIT}`);
-  }
-  const query = queryParts.join(" ");
+  const query = generateSimpleSelectAllStatement(
+    engine,
+    schema,
+    tableOrViewName,
+    LIMIT
+  );
   runQuery(query);
 };
 

@@ -365,6 +365,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementCreateSpecifySchema,
 		SchemaRuleStatementCheckSetRoleVariable,
 		SchemaRuleStatementWhereDisallowUsingFunction,
+		SchemaRuleStatementDisallowMixDML,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleTableDisallowSetCharset:
 	case SchemaRuleTableDropNamingConvention:
