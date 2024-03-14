@@ -16,7 +16,7 @@ export const extractWorksheetUID = (name: string) => {
 // readable to
 // PRIVATE: workspace Owner/DBA and the creator only.
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
-// PROJECT_READ: workspace Owner/DBA and project owner.
+// PROJECT_READ: workspace Owner/DBA and all members in the project.
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
   const currentUserV1 = useCurrentUserV1();
 

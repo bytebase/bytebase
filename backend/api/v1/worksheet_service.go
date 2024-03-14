@@ -473,7 +473,7 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 // worksheet is readable when:
 // PRIVATE: workspace Owner/DBA and the creator only.
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
-// PROJECT_READ: workspace Owner/DBA and project owner.
+// PROJECT_READ: workspace Owner/DBA and all members in the project.
 func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
