@@ -5,7 +5,7 @@
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButton size="small" @click="tab.editMode = 'SQL-EDITOR'">
+      <NButton size="small" @click="tab!.editMode = 'SQL-EDITOR'">
         <template #icon>
           <heroicons:chevron-left />
         </template>
@@ -35,10 +35,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useCurrentTab } from "@/store";
+import { useCurrentSQLEditorTab } from "@/store";
 import { useAIContext } from "../logic";
 
-const tab = useCurrentTab();
+const tab = useCurrentSQLEditorTab();
 
 const { events, showHistoryDialog } = useAIContext();
 </script>

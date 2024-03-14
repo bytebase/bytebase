@@ -4,7 +4,7 @@ import PouchDB from "pouchdb";
 import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
-import { Connection, MaybeRef } from "@/types";
+import { MaybeRef, SQLEditorConnection } from "@/types";
 import { Conversation, Message } from "../types";
 
 type RowStatus = "NORMAL" | "ARCHIVED";
@@ -133,13 +133,15 @@ export const useConversationStore = defineStore("ai-conversation", () => {
     return [...conversationById.values()];
   });
 
-  const fetchConversationListByConnection = async (conn: Connection) => {
+  const fetchConversationListByConnection = async (
+    conn: SQLEditorConnection
+  ) => {
     const conversationEntityList = (
       await conversations.find({
         selector: {
           row_status: { $eq: "NORMAL" },
-          instanceId: { $eq: conn.instanceId },
-          databaseId: { $eq: conn.databaseId },
+          instance: { $eq: conn.instance },
+          database: { $eq: conn.database },
         },
       })
     ).docs;
@@ -270,7 +272,9 @@ export const useConversationStore = defineStore("ai-conversation", () => {
   };
 });
 
-export const useConversationListByConnection = (conn: MaybeRef<Connection>) => {
+export const useConversationListByConnection = (
+  conn: MaybeRef<SQLEditorConnection>
+) => {
   const store = useConversationStore();
   const ready = ref(false);
   watchEffect(async () => {
@@ -279,9 +283,9 @@ export const useConversationListByConnection = (conn: MaybeRef<Connection>) => {
     ready.value = true;
   });
   const list = computed(() => {
-    const { instanceId, databaseId } = unref(conn);
+    const { instance, database } = unref(conn);
     return store.conversationList.filter(
-      (c) => c.instanceId === instanceId && c.databaseId === databaseId
+      (c) => c.instance === instance && c.database === database
     );
   });
   return { list, ready };

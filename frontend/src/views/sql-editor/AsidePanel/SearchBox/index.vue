@@ -1,23 +1,21 @@
 <template>
-  <div class="w-full pt-2 px-2">
-    <NAutoComplete
-      size="small"
-      clear-after-select
-      blur-after-select
-      :clearable="true"
-      :value="searchPattern"
-      :placeholder="$t('sql-editor.search-databases')"
-      :options="autoCompleteOptions"
-      :render-label="renderLabel"
-      :get-show="getOptionShow"
-      @update:value="$emit('update:search-pattern', $event || '')"
-      @select="handleDatabaseSelect"
-    >
-      <template #prefix>
-        <SearchIcon class="w-4 h-auto text-gray-300" />
-      </template>
-    </NAutoComplete>
-  </div>
+  <NAutoComplete
+    size="small"
+    clear-after-select
+    blur-after-select
+    :clearable="true"
+    :value="searchPattern"
+    :placeholder="$t('sql-editor.search-databases')"
+    :options="autoCompleteOptions"
+    :render-label="renderLabel"
+    :get-show="getOptionShow"
+    @update:value="$emit('update:search-pattern', $event || '')"
+    @select="handleDatabaseSelect"
+  >
+    <template #prefix>
+      <SearchIcon class="w-4 h-auto text-gray-300" />
+    </template>
+  </NAutoComplete>
 </template>
 
 <script lang="ts" setup>
@@ -27,9 +25,16 @@ import { computed, watchEffect, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
-import { CoreTabInfo, TabMode } from "@/types";
-import { emptyConnection, tryConnectToCoreTab } from "@/utils";
+import { CoreSQLEditorTab, DEFAULT_SQL_EDITOR_TAB_MODE } from "@/types";
+import {
+  emptySQLEditorConnection,
+  tryConnectToCoreSQLEditorTab,
+} from "@/utils";
 import useSearchHistory from "./useSearchHistory";
+
+defineOptions({
+  name: "SearchBox",
+});
 
 const props = defineProps<{
   searchPattern: string;
@@ -80,7 +85,11 @@ const autoCompleteOptions = computed(() => {
 
 const renderLabel = (option: SelectOption) => {
   if (option.type === "group") {
-    return h("div", { class: "w-full text-sm text-gray-400" }, [option.label]);
+    return h(
+      "div",
+      { class: "w-full text-sm text-gray-400" },
+      String(option.label)
+    );
   }
 
   const database = databaseStore.getDatabaseByName(option.value as string);
@@ -111,16 +120,16 @@ const renderLabel = (option: SelectOption) => {
 
 const handleDatabaseSelect = (databaseName: string) => {
   const database = databaseStore.getDatabaseByName(databaseName);
-  const coreTab: CoreTabInfo = {
+  const coreTab: CoreSQLEditorTab = {
     connection: {
-      ...emptyConnection(),
-      instanceId: database.instanceEntity.uid,
-      databaseId: database.uid,
+      ...emptySQLEditorConnection(),
+      instance: database.instance,
+      database: database.name,
     },
-    sheetName: undefined,
-    mode: TabMode.ReadOnly,
+    sheet: "",
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
   };
-  tryConnectToCoreTab(coreTab);
+  tryConnectToCoreSQLEditorTab(coreTab);
 };
 
 watchEffect(async () => {

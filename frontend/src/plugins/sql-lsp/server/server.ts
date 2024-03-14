@@ -5,7 +5,9 @@ import type {
   CompletionItem,
 } from "vscode-languageserver/browser";
 import { CompletionTriggerKind } from "vscode-languageserver/browser";
-import { EngineTypesUsingSQL } from "@/types/sqlEditor";
+// when this file is imported as WebWorker we need to import stuff clearly from a file
+// or strange thing might happen lol
+import { EngineTypesUsingSQL } from "@/types/sqlEditor/editor";
 import { complete } from "./complete";
 import { initializeConnection } from "./initializeConnection";
 

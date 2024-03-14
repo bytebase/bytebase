@@ -5,21 +5,24 @@
       {
         current: isCurrentTab,
         hovering: state.hovering,
-        admin: tab.mode === TabMode.Admin,
+        admin: tab.mode === 'ADMIN',
       },
-      [sheetTypeForTab(tab).toLowerCase()],
+      tab.status,
     ]"
-    :data-is-fresh-new="tab.isFreshNew"
-    :data-is-saved="tab.isSaved"
-    :data-is-disconnected="isDisconnectedTab(tab)"
-    :data-sheet-type="sheetTypeForTab(tab)"
+    :data-status="tab.status"
+    :data-sheet="tab.sheet"
+    :data-connection="JSON.stringify(tab.connection)"
     @mousedown.left="$emit('select', tab, index)"
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
     <div class="body">
       <Prefix :tab="tab" :index="index" />
-      <Label v-if="tab.mode === TabMode.ReadOnly" :tab="tab" :index="index" />
+      <Label
+        v-if="tab.mode === 'READONLY' || tab.mode === 'STANDARD'"
+        :tab="tab"
+        :index="index"
+      />
       <AdminLabel v-else :tab="tab" :index="index" />
       <Suffix :tab="tab" :index="index" @close="$emit('close', tab, index)" />
     </div>
@@ -27,12 +30,9 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed, PropType, reactive } from "vue";
-import { useTabStore } from "@/store";
-import type { TabInfo } from "@/types";
-import { TabMode } from "@/types";
-import { isDisconnectedTab, sheetTypeForTab } from "@/utils";
+import { useSQLEditorTabStore } from "@/store";
+import type { SQLEditorTab } from "@/types";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
 import Prefix from "./Prefix.vue";
@@ -44,7 +44,7 @@ type LocalState = {
 
 const props = defineProps({
   tab: {
-    type: Object as PropType<TabInfo>,
+    type: Object as PropType<SQLEditorTab>,
     required: true,
   },
   index: {
@@ -54,18 +54,17 @@ const props = defineProps({
 });
 
 defineEmits<{
-  (e: "select", tab: TabInfo, index: number): void;
-  (e: "close", tab: TabInfo, index: number): void;
+  (e: "select", tab: SQLEditorTab, index: number): void;
+  (e: "close", tab: SQLEditorTab, index: number): void;
 }>();
 
 const state = reactive<LocalState>({
   hovering: false,
 });
 
-const tabStore = useTabStore();
-const { currentTabId } = storeToRefs(tabStore);
+const tabStore = useSQLEditorTabStore();
 
-const isCurrentTab = computed(() => props.tab.id === currentTabId.value);
+const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 </script>
 
 <style scoped lang="postcss">

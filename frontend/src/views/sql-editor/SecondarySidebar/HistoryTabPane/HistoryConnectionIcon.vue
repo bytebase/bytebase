@@ -10,15 +10,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
-import { useInstanceV1ByUID } from "@/store";
-import { QueryHistory, UNKNOWN_ID } from "@/types";
+import { useInstanceV1Store } from "@/store";
+import { SQLEditorQueryHistory, UNKNOWN_ID } from "@/types";
 
 const props = defineProps<{
-  queryHistory: QueryHistory;
+  queryHistory: SQLEditorQueryHistory;
 }>();
 
-const instanceUID = computed(() => {
-  return String(props.queryHistory.instanceId);
+const instance = computed(() => {
+  return useInstanceV1Store().getInstanceByName(props.queryHistory.instance);
 });
-const { instance } = useInstanceV1ByUID(instanceUID);
 </script>

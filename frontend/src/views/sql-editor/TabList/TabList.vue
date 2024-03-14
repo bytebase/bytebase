@@ -2,7 +2,7 @@
   <div
     class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-1"
   >
-    <div class="relative flex flex-1 flex-nowrap overflow-hidden">
+    <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[29px]">
       <Draggable
         id="tab-list"
         ref="tabListRef"
@@ -23,13 +23,13 @@
           #item="{ element: id, index }: { element: string, index: number }"
         >
           <TabItem
-            :tab="tabStore.getTabById(id)"
+            :tab="tabStore.tabById(id)!"
             :index="index"
             :data-tab-id="id"
             @select="(tab) => handleSelectTab(tab)"
             @close="(tab, index) => handleRemoveTab(tab, index)"
             @contextmenu.stop.prevent="
-              contextMenuRef?.show(tabStore.getTabById(id), index, $event)
+              contextMenuRef?.show(tabStore.tabById(id)!, index, $event)
             "
           />
         </template>
@@ -61,17 +61,15 @@ import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useTabStore,
   useActuatorV1Store,
   useFilterStore,
-  useDatabaseV1Store,
+  useSQLEditorTabStore,
 } from "@/store";
-import type { TabInfo } from "@/types";
-import { TabMode, UNKNOWN_ID } from "@/types";
+import type { SQLEditorTab } from "@/types";
 import {
   defer,
-  getSuggestedTabNameFromConnection,
-  sheetTypeForTab,
+  emptySQLEditorConnection,
+  suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
@@ -83,11 +81,10 @@ type LocalState = {
   hoverTabId: string;
 };
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 
 const { t } = useI18n();
 const { filter } = useFilterStore();
-const databaseStore = useDatabaseV1Store();
 const dialog = useDialog();
 
 const state = reactive<LocalState>({
@@ -112,12 +109,11 @@ const showProfileDropdown = computed(() => {
 const filteredTabIdList = computed(() => {
   // If a database is selected, only show tabs that are associated with the database.
   if (filter.database) {
-    const database = databaseStore.getDatabaseByName(filter.database);
     return tabStore.tabIdList.filter((id) => {
-      const tab = tabStore.getTabById(id);
+      const tab = tabStore.tabById(id);
       if (
-        tab.connection.databaseId === String(UNKNOWN_ID) ||
-        tab.connection.databaseId === database.uid
+        !tab?.connection.database ||
+        tab.connection.database === filter.database
       ) {
         return true;
       } else {
@@ -129,30 +125,36 @@ const filteredTabIdList = computed(() => {
   return tabStore.tabIdList;
 });
 
-const handleSelectTab = async (tab: TabInfo | undefined) => {
+const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
   tabStore.setCurrentTabId(tab?.id ?? "");
 };
 
 const handleAddTab = () => {
-  const connection = { ...tabStore.currentTab.connection };
-  const name = getSuggestedTabNameFromConnection(connection);
+  const currentTab = tabStore.currentTab;
+  const connection = currentTab?.connection
+    ? { ...currentTab.connection }
+    : emptySQLEditorConnection();
+  const title = suggestedTabTitleForSQLEditorConnection(connection);
   tabStore.addTab({
-    name,
+    title,
     connection,
-    // The newly created tab is "clean" so its connection can be changed
-    isFreshNew: true,
+    // The newly created tab is "clean"
+    status: "CLEAN",
   });
   nextTick(recalculateScrollState);
   sheetEvents.emit("add-sheet");
 };
 
 const handleRemoveTab = async (
-  tab: TabInfo,
+  tab: SQLEditorTab,
   index: number,
   focusWhenConfirm = false
 ) => {
   const _defer = defer<boolean>();
-  if (tab.mode === TabMode.ReadOnly && !tab.isSaved) {
+  if (
+    (tab.mode === "READONLY" || tab.mode === "STANDARD") &&
+    tab.status === "DIRTY"
+  ) {
     if (focusWhenConfirm) {
       tabStore.setCurrentTabId(tab.id);
     }
@@ -261,9 +263,9 @@ useEmitteryEventListener(
   context.events,
   "close-tab",
   async ({ tab, index, action }) => {
-    const tabList = tabStore.tabList;
+    const { tabList } = tabStore;
 
-    const remove = async (tab: TabInfo, index: number) => {
+    const remove = async (tab: SQLEditorTab, index: number) => {
       await handleRemoveTab(tab, index, true);
       await new Promise((r) => requestAnimationFrame(r));
     };
@@ -291,7 +293,7 @@ useEmitteryEventListener(
     if (action === "CLOSE_SAVED") {
       for (let i = max; i >= 0; i--) {
         const tab = tabList[i];
-        if (sheetTypeForTab(tab) === "CLEAN") {
+        if (tab.status === "CLEAN") {
           await remove(tab, i);
         }
       }

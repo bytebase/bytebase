@@ -110,10 +110,10 @@ import { InstanceV1EngineIcon } from "@/components/v2";
 import LabelsColumn from "@/components/v2/Model/DatabaseV1Table/LabelsColumn.vue";
 import {
   hasFeature,
+  useConnectionOfCurrentSQLEditorTab,
   useCurrentUserIamPolicy,
-  useDatabaseV1ByUID,
   useDatabaseV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store/modules";
 import { ComposedDatabase } from "@/types";
 
@@ -124,7 +124,7 @@ interface LocalState {
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const state = reactive<LocalState>({
   databaseNameSearch: "",
@@ -132,13 +132,9 @@ const state = reactive<LocalState>({
 });
 // Save the stringified label key-value pairs.
 const currentTab = computed(() => tabStore.currentTab);
-const connection = computed(() => currentTab.value.connection);
+const { database: selectedDatabase } = useConnectionOfCurrentSQLEditorTab();
 const selectedDatabaseNames = ref<string[]>([]);
 const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
-
-const { database: selectedDatabase } = useDatabaseV1ByUID(
-  computed(() => String(connection.value.databaseId))
-);
 
 const project = computed(() => selectedDatabase.value.projectEntity);
 
@@ -250,16 +246,15 @@ const handleTriggerClick = () => {
 watch(selectedDatabaseNames, () => {
   tabStore.updateCurrentTab({
     batchQueryContext: {
-      selectedDatabaseNames: selectedDatabaseNames.value,
+      databases: selectedDatabaseNames.value,
     },
   });
 });
 
 watch(
-  () => currentTab.value.batchQueryContext?.selectedDatabaseNames,
-  () => {
-    selectedDatabaseNames.value =
-      currentTab.value.batchQueryContext?.selectedDatabaseNames || [];
+  () => currentTab.value?.batchQueryContext?.databases,
+  (databases) => {
+    selectedDatabaseNames.value = databases ?? [];
   },
   {
     immediate: true,

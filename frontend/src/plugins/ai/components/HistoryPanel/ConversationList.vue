@@ -77,7 +77,7 @@ import { head } from "lodash-es";
 import { NPopconfirm } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { reactive, watch } from "vue";
-import { useCurrentTab } from "@/store";
+import { useCurrentSQLEditorTab } from "@/store";
 import { useAIContext, useCurrentChat } from "../../logic";
 import { useConversationStore } from "../../store";
 import type { Conversation } from "../../types";
@@ -87,7 +87,7 @@ type LocalState = {
   rename: Conversation | undefined;
 };
 
-const tab = useCurrentTab();
+const tab = useCurrentSQLEditorTab();
 const store = useConversationStore();
 const { events } = useAIContext();
 const { list, ready, selected } = useCurrentChat();
@@ -97,10 +97,7 @@ const state = reactive<LocalState>({
 });
 
 watch(
-  [
-    () => tab.value.connection.instanceId,
-    () => tab.value.connection.databaseId,
-  ],
+  [() => tab.value?.connection.instance, () => tab.value?.connection.database],
   () => {
     state.rename = undefined;
   },
