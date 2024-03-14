@@ -2411,10 +2411,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.DeleteSheetRequest"><span class="badge">M</span>DeleteSheetRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetSheetRequest"><span class="badge">M</span>GetSheetRequest</a>
                 </li>
               
@@ -26054,31 +26050,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.DeleteSheetRequest">DeleteSheetRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the sheet to delete.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetSheetRequest">GetSheetRequest</h3>
         <p></p>
 
@@ -26340,13 +26311,6 @@ Only support update the following fields for now:
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>DeleteSheet</td>
-                <td><a href="#bytebase.v1.DeleteSheetRequest">DeleteSheetRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -26392,16 +26356,6 @@ Only support update the following fields for now:
                 <td>PATCH</td>
                 <td>/v1/{sheet.name=projects/*/sheets/*}</td>
                 <td>sheet</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteSheet</td>
-                <td>DELETE</td>
-                <td>/v1/{name=projects/*/sheets/*}</td>
-                <td></td>
               </tr>
               
             
