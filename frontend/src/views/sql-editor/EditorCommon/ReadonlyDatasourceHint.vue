@@ -26,8 +26,8 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useCurrentUserV1, useTabStore } from "@/store";
-import { ComposedInstance, TabMode, UNKNOWN_ID } from "@/types";
+import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
+import { ComposedInstance, UNKNOWN_ID } from "@/types";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -35,11 +35,11 @@ const props = defineProps<{
   instance: ComposedInstance;
 }>();
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const me = useCurrentUserV1();
 
 const isAdminMode = computed(() => {
-  return tabStore.currentTab.mode === TabMode.Admin;
+  return tabStore.currentTab?.mode === "ADMIN";
 });
 
 const allowManageInstance = computed(() => {

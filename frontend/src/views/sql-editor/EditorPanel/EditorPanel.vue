@@ -1,11 +1,12 @@
 <template>
   <div class="flex h-full w-full flex-col justify-start items-start">
-    <template v-if="tab.editMode === 'SQL-EDITOR'">
+    <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
 
-      <ConnectionHolder v-if="tabStore.isDisconnected" />
+      <ConnectionHolder v-if="!tab" />
       <template v-else>
         <ConnectionPathBar />
+
         <Suspense>
           <SQLEditor @execute="handleExecute" />
           <template #fallback>
@@ -17,34 +18,29 @@
           </template>
         </Suspense>
       </template>
+
+      <Suspense>
+        <AIChatToSQL
+          v-if="tab && !isDisconnected && showAIChatBox"
+          :allow-config="pageMode === 'BUNDLED'"
+          @apply-statement="handleApplyStatement"
+        />
+      </Suspense>
+
+      <ExecutingHintModal />
+
+      <SaveSheetModal />
     </template>
-
-    <Suspense>
-      <AIChatToSQL
-        v-if="!tabStore.isDisconnected && showAIChatBox"
-        :allow-config="pageMode === 'BUNDLED'"
-        @apply-statement="handleApplyStatement"
-      />
-    </Suspense>
-
-    <ExecutingHintModal />
-
-    <SaveSheetModal />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { storeToRefs } from "pinia";
 import { defineAsyncComponent } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import {
-  useCurrentTab,
-  useInstanceV1Store,
-  useTabStore,
-  usePageMode,
-} from "@/store";
-import type { Connection, ExecuteConfig, ExecuteOption } from "@/types";
-import { formatEngineV1 } from "@/utils";
+import { useInstanceV1Store, usePageMode, useSQLEditorTabStore } from "@/store";
+import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -56,38 +52,35 @@ import { useSQLEditorContext } from "../context";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
-const tabStore = useTabStore();
-const tab = useCurrentTab();
+const tabStore = useSQLEditorTabStore();
+const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { showAIChatBox } = useSQLEditorContext();
 const pageMode = usePageMode();
 
 const { executeReadonly } = useExecuteSQL();
 
-const handleExecute = (
-  query: string,
-  config: ExecuteConfig,
-  option?: ExecuteOption
-) => {
-  executeReadonly(query, config, option);
+const handleExecute = (params: SQLEditorQueryParams) => {
+  executeReadonly(params);
 };
-
-// const trySaveSheet = (sheetName?: string) => {
-//   saveSheetModal.value?.trySaveSheet(sheetName);
-// };
 
 const handleApplyStatement = async (
   statement: string,
-  conn: Connection,
+  connection: SQLEditorConnection,
   run: boolean
 ) => {
+  if (!tab.value) {
+    return;
+  }
   tab.value.statement = statement;
   if (run) {
-    const instanceStore = useInstanceV1Store();
-    const instance = await instanceStore.getOrFetchInstanceByUID(
-      conn.instanceId
+    const instance = useInstanceV1Store().getInstanceByName(
+      connection.instance
     );
-    handleExecute(statement, {
-      databaseType: formatEngineV1(instance),
+    handleExecute({
+      connection,
+      statement,
+      engine: instance.engine,
+      explain: false,
     });
   }
 };

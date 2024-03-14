@@ -23,15 +23,19 @@ import {
 } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useWorkSheetStore, pushNotification, useTabStore } from "@/store";
+import {
+  useWorkSheetStore,
+  pushNotification,
+  useSQLEditorTabStore,
+} from "@/store";
 import {
   Worksheet,
   Worksheet_Visibility,
 } from "@/types/proto/v1/worksheet_service";
 import {
   isWorksheetWritableV1,
-  getDefaultTab,
   getSheetStatement,
+  defaultSQLEditorTab,
 } from "@/utils";
 import { useSheetContext, type SheetViewMode } from "../";
 import { useSQLEditorContext } from "../../context";
@@ -158,9 +162,9 @@ const handleAction = async (key: string) => {
   } else if (key === "rename") {
     editorEvents.emit("save-sheet", {
       tab: {
-        ...getDefaultTab(),
-        sheetName: sheet.name,
-        name: sheet.title,
+        ...defaultSQLEditorTab(),
+        sheet: sheet.name,
+        title: sheet.title,
         statement: getSheetStatement(sheet),
       },
       editTitle: true,
@@ -169,8 +173,8 @@ const handleAction = async (key: string) => {
 };
 
 const turnSheetToUnsavedTab = (sheet: Worksheet) => {
-  const tabStore = useTabStore();
-  const tab = tabStore.tabList.find((tab) => tab.sheetName === sheet.name);
+  const tabStore = useSQLEditorTabStore();
+  const tab = tabStore.tabList.find((tab) => tab.sheet === sheet.name);
   if (tab) {
     tabStore.removeTab(tab);
   }

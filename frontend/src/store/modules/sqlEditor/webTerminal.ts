@@ -3,16 +3,16 @@ import { uniqueId } from "lodash-es";
 import { ClientError, Status } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { fromEventPattern, map, Observable, Subscription } from "rxjs";
-import { markRaw, ref } from "vue";
+import { markRaw, ref, shallowRef } from "vue";
 import { useCancelableTimeout } from "@/composables/useCancelableTimeout";
 import {
   SQLResultSetV1,
   StreamingQueryController,
-  TabInfo,
+  SQLEditorTab,
   UNKNOWN_ID,
   WebTerminalQueryItemV1,
-  WebTerminalQueryParamsV1,
   WebTerminalQueryState,
+  SQLEditorQueryParams,
 } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import {
@@ -24,18 +24,17 @@ import {
   extractGrpcErrorMessage,
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/grpcweb";
-import { useDatabaseV1Store } from "./database";
-import { useInstanceV1Store } from "./instance";
+import { useDatabaseV1Store, useInstanceV1Store } from "../v1";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Status.ABORTED;
 const QUERY_TIMEOUT_MS = 5000;
 const MAX_QUERY_ITEM_COUNT = 20;
 
-export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
-  const map = ref(new Map<string, WebTerminalQueryState>());
+export const useWebTerminalStore = defineStore("webTerminal", () => {
+  const map = shallowRef(new Map<string, WebTerminalQueryState>());
 
-  const getQueryStateByTab = (tab: TabInfo) => {
+  const getQueryStateByTab = (tab: SQLEditorTab) => {
     const existed = map.value.get(tab.id);
     if (existed) return existed;
 
@@ -45,14 +44,14 @@ export const useWebTerminalV1Store = defineStore("webTerminal_v1", () => {
     return qs;
   };
 
-  const clearQueryStateByTab = (tab: TabInfo) => {
-    map.value.delete(tab.id);
+  const clearQueryStateByTab = (id: string) => {
+    map.value.delete(id);
   };
 
   return { getQueryStateByTab, clearQueryStateByTab };
 });
 
-const createQueryState = (tab: TabInfo): WebTerminalQueryState => {
+const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
   return {
     tab,
     queryItemList: ref([createInitialQueryItemByTab(tab)]),
@@ -61,7 +60,9 @@ const createQueryState = (tab: TabInfo): WebTerminalQueryState => {
   };
 };
 
-const createInitialQueryItemByTab = (tab: TabInfo): WebTerminalQueryItemV1 => {
+const createInitialQueryItemByTab = (
+  tab: SQLEditorTab
+): WebTerminalQueryItemV1 => {
   return createQueryItemV1(tab.statement);
 };
 
@@ -74,10 +75,10 @@ export const createQueryItemV1 = (
   status,
 });
 
-const createStreamingQueryController = (tab: TabInfo) => {
+const createStreamingQueryController = (tab: SQLEditorTab) => {
   const status: StreamingQueryController["status"] = ref("DISCONNECTED");
   const events: StreamingQueryController["events"] = markRaw(new Emittery());
-  const input$ = fromEventPattern<WebTerminalQueryParamsV1>(
+  const input$ = fromEventPattern<SQLEditorQueryParams>(
     (handler) => events.on("query", handler),
     (handler) => events.off("query", handler)
   );
@@ -289,19 +290,18 @@ export const mockAffectedV1Rows0 = (): QueryResult => {
 };
 
 const mapRequest = (
-  tab: TabInfo,
-  params: WebTerminalQueryParamsV1
+  tab: SQLEditorTab,
+  params: SQLEditorQueryParams
 ): AdminExecuteRequest => {
-  const { option, query } = params;
+  const { connection, statement, explain } = params;
 
-  const { instanceId, databaseId } = tab.connection;
-  const instance = useInstanceV1Store().getInstanceByUID(instanceId);
-  const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+  const instance = useInstanceV1Store().getInstanceByName(connection.instance);
+  const database = useDatabaseV1Store().getDatabaseByName(connection.database);
   const request = AdminExecuteRequest.fromJSON({
     name: instance.name,
     connectionDatabase:
       database.uid === String(UNKNOWN_ID) ? "" : database.databaseName,
-    statement: option?.explain ? `EXPLAIN ${query}` : query,
+    statement: explain ? `EXPLAIN ${statement}` : statement,
   });
   return request;
 };

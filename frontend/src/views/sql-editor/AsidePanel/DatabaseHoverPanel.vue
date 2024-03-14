@@ -99,7 +99,7 @@ const show = computed(
 );
 
 const hasProjectContext = computed(() => {
-  return treeStore.selectedProject;
+  return !!treeStore.currentProject;
 });
 
 useEventListener(popoverRef, "mouseenter", () => {

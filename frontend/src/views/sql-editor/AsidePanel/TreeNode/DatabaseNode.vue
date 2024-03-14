@@ -62,6 +62,6 @@ const hasEnvironmentContext = computed(() => {
 });
 
 const hasProjectContext = computed(() => {
-  return props.factors.includes("project") || treeStore.selectedProject;
+  return props.factors.includes("project") || !!treeStore.currentProject;
 });
 </script>

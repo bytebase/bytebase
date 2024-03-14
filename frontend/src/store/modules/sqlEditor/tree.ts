@@ -1,6 +1,6 @@
 import { useLocalStorage } from "@vueuse/core";
-import { cloneDeep, head, isFunction, orderBy, uniqBy } from "lodash-es";
-import { defineStore } from "pinia";
+import { cloneDeep, isFunction, orderBy } from "lodash-es";
+import { defineStore, storeToRefs } from "pinia";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref, watch } from "vue";
 import {
@@ -15,15 +15,10 @@ import {
   isValidSQLEditorTreeFactor as isValidFactor,
   extractSQLEditorLabelFactor as extractLabelFactor,
   unknownEnvironment,
-  UNKNOWN_ID,
-  SQLEditorTreeNodeMeta as NodeMeta,
-  ExpandableTreeNodeTypes,
   RichSchemaMetadata,
   RichTableMetadata,
-  SQLEditorTreeNodeType,
   StatefulSQLEditorTreeFactor as StatefulFactor,
   LeafTreeNodeTypes,
-  Connection,
   DEFAULT_PROJECT_V1_NAME,
   RichViewMetadata,
   TextTarget,
@@ -31,40 +26,27 @@ import {
   RichExternalTableMetadata,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
-import { emptyConnection, getSemanticLabelValue, groupBy } from "@/utils";
-import { useFilterStore } from "./filter";
-import { useTabStore } from "./tab";
+import { getSemanticLabelValue, groupBy } from "@/utils";
+import { useFilterStore } from "../filter";
 import {
-  useActuatorV1Store,
-  useDBSchemaV1Store,
-  useDatabaseV1Store,
   useEnvironmentV1Store,
   useInstanceV1Store,
   useProjectV1Store,
-} from "./v1";
+} from "../v1";
+import { useSQLEditorStore } from "./editor";
 
 export const ROOT_NODE_ID = "ROOT";
-
-const defaultProjectFactor: StatefulFactor = {
-  factor: "project",
-  disabled: false,
-};
 
 const defaultEnvironmentFactor: StatefulFactor = {
   factor: "environment",
   disabled: false,
 };
 
-export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
-  const actuatorStore = useActuatorV1Store();
+export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const { filter } = useFilterStore();
 
   const defaultFactorList = (): StatefulFactor[] => {
-    if (actuatorStore.customTheme === "lixiang") {
-      return [defaultEnvironmentFactor];
-    } else {
-      return [defaultProjectFactor];
-    }
+    return [defaultEnvironmentFactor];
   };
 
   const factorListInLocalStorage = useLocalStorage<StatefulFactor[]>(
@@ -101,7 +83,10 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   );
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
-  const databaseList = ref<ComposedDatabase[]>([]);
+  // re-expose `databaseList`, `project`, `currentProject` from sqlEditor store for shortcuts
+  const { databaseList, project, currentProject } = storeToRefs(
+    useSQLEditorStore()
+  );
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
   );
@@ -112,8 +97,8 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
         return database.name === filter.database;
       });
     }
-    if (filter.project || selectedProject.value) {
-      const projectName = filter.project ?? selectedProject.value?.name;
+    if (filter.project || currentProject.value) {
+      const projectName = filter.project ?? currentProject.value?.name;
       return databaseList.value.filter((database) => {
         return database.project === projectName;
       });
@@ -123,15 +108,16 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
   });
   const filteredFactorList = computed(() => {
     return factorList.value
-      .filter((sf) =>
-        selectedProject.value ? sf.factor !== defaultProjectFactor.factor : true
-      )
+      .filter((sf) => {
+        if (!currentProject.value) {
+          return true;
+        }
+        return sf.factor !== "project";
+      })
       .filter((sf) => !sf.disabled)
       .map((sf) => sf.factor);
   });
-  const selectedProject = ref<ComposedProject>();
   const state = ref<TreeState>("UNSET");
-  const expandedKeys = ref<string[]>([]); // mixed factor type
   const tree = ref<TreeNode[]>([]);
 
   const collectNode = <T extends NodeType>(node: TreeNode<T>) => {
@@ -146,101 +132,18 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     target: NodeTarget<T>
   ) => {
     const id = idForSQLEditorTreeNodeTarget(type, target);
-    return nodeListMapById.get(id) ?? [];
+    return (nodeListMapById.get(id) ?? []) as TreeNode<T>[];
   };
 
-  const openNodesRecursively = (node: TreeNode, keys: Set<string>) => {
-    if (ExpandableTreeNodeTypes.includes(node.meta.type)) {
-      keys.add(node.key);
-    }
-    if (node.parent) {
-      openNodesRecursively(node.parent, keys);
-    }
-  };
-  const expandNodes = <T extends SQLEditorTreeNodeType>(
-    type: T,
-    target: NodeTarget<T>
-  ) => {
-    const nodes = nodesByTarget(type, target);
-    const keys = new Set(expandedKeys.value);
-    nodes.forEach((node) => {
-      keys.add(node.key);
-    });
-    expandedKeys.value = Array.from(keys);
-  };
   const buildTree = () => {
     nodeListMapById.clear();
     tree.value = buildTreeImpl(
       filteredDatabaseList.value,
       filteredFactorList.value
     );
-    const openingDatabaseList = resolveOpeningDatabaseListFromTabList();
-    const keys = new Set<string>();
-    // Recursively expand opening databases' parent nodes
-    openingDatabaseList.forEach((meta) => {
-      const db = meta.target;
-      const nodes = nodesByTarget("database", db);
-      nodes.forEach((node) => openNodesRecursively(node, keys));
-    });
-    const tab = useTabStore().currentTab;
-    // Expand current tab's connected database node
-    if (
-      tab.connection.databaseId &&
-      tab.connection.databaseId !== String(UNKNOWN_ID)
-    ) {
-      const db = useDatabaseV1Store().getDatabaseByUID(
-        tab.connection.databaseId
-      );
-      const node = head(nodesByTarget("database", db));
-      if (node) {
-        keys.add(node.key);
-      }
-    }
-    expandedKeys.value = Array.from(keys);
-  };
-  const fetchConnectionByInstanceIdAndDatabaseId = async (
-    instanceId: string,
-    databaseId: string
-  ): Promise<Connection> => {
-    try {
-      const [db, _] = await Promise.all([
-        useDatabaseV1Store().getOrFetchDatabaseByUID(
-          databaseId,
-          true /* silent */
-        ),
-        useInstanceV1Store().getOrFetchInstanceByUID(instanceId),
-      ]);
-      await useDBSchemaV1Store().getOrFetchTableList(db.name);
-
-      return {
-        instanceId,
-        databaseId,
-      };
-    } catch {
-      // Fallback to disconnected if error occurs such as 404.
-      return { instanceId: String(UNKNOWN_ID), databaseId: String(UNKNOWN_ID) };
-    }
-  };
-  const fetchConnectionByInstanceId = async (
-    instanceId: string
-  ): Promise<Connection> => {
-    try {
-      await useInstanceV1Store().getOrFetchInstanceByUID(instanceId);
-
-      return {
-        instanceId,
-        databaseId: String(UNKNOWN_ID),
-      };
-    } catch {
-      // Fallback to disconnected if error occurs such as 404.
-      return { instanceId: String(UNKNOWN_ID), databaseId: String(UNKNOWN_ID) };
-    }
   };
   const cleanup = () => {
-    databaseList.value = [];
-    selectedProject.value = undefined;
     tree.value = [];
-    expandedKeys.value = [];
     factorList.value = defaultFactorList();
     nodeListMapById.clear();
     state.value = "UNSET";
@@ -253,81 +156,39 @@ export const useSQLEditorTreeStore = defineStore("SQL-Editor-Tree", () => {
     },
     { immediate: true, deep: true }
   );
+  watch(
+    project,
+    (project) => {
+      if (project) {
+        const position = factorList.value.findIndex(
+          (sf) => sf.factor === "project"
+        );
+        if (position > 0) {
+          factorList.value.splice(position, 1);
+          if (factorList.value.length === 0) {
+            factorList.value = defaultFactorList();
+          }
+        }
+      }
+    },
+    {
+      immediate: true,
+    }
+  );
 
   return {
-    expandedKeys,
     databaseList,
     factorList,
     filteredFactorList,
-    selectedProject,
+    currentProject: currentProject,
     state,
     tree,
     collectNode,
     nodesByTarget,
-    expandNodes,
     buildTree,
-    fetchConnectionByInstanceIdAndDatabaseId,
-    fetchConnectionByInstanceId,
     cleanup,
   };
 });
-
-export const searchConnectionByName = (
-  instanceId: string,
-  databaseId: string,
-  instanceName: string,
-  databaseName: string
-): Connection => {
-  const connection = emptyConnection();
-  const store = useSQLEditorTreeStore();
-
-  if (instanceId !== String(UNKNOWN_ID)) {
-    // If we found instanceId and/or databaseId, use the IDs first.
-    connection.instanceId = instanceId;
-    if (databaseId !== String(UNKNOWN_ID)) {
-      connection.databaseId = databaseId;
-    }
-
-    return connection;
-  }
-
-  // Search the instance and database by name otherwise.
-  // Remain this part for legacy sheet support.
-  const rootNodes = store.tree;
-  for (let i = 0; i < rootNodes.length; i++) {
-    const maybeInstanceNode = rootNodes[i];
-    if (maybeInstanceNode.meta.type !== "instance") {
-      // Skip if we met dirty data.
-      continue;
-    }
-    if (maybeInstanceNode.label === instanceName) {
-      connection.instanceId = (
-        maybeInstanceNode.meta.target as ComposedInstance
-      ).uid;
-      if (databaseName) {
-        const { children = [] } = maybeInstanceNode;
-        for (let j = 0; j < children.length; j++) {
-          const maybeDatabaseNode = children[j];
-          if (maybeDatabaseNode.meta.type !== "database") {
-            // Skip if we met dirty data.
-            continue;
-          }
-          if (maybeDatabaseNode.label === databaseName) {
-            connection.databaseId = (
-              maybeDatabaseNode.meta.target as ComposedDatabase
-            ).uid;
-            // Don't go further since we've found the databaseId
-            break;
-          }
-        }
-      }
-      // Don't go further since we've found the instanceId
-      break;
-    }
-  }
-
-  return connection;
-};
 
 export const keyForSQLEditorTreeNodeTarget = <T extends NodeType>(
   type: T,
@@ -391,12 +252,12 @@ export const idForSQLEditorTreeNodeTarget = <T extends NodeType>(
     return `labels/${kv.key}:${kv.value}`;
   }
   if (type === "expandable-text") {
-    const { text, type } = target as NodeTarget<"expandable-text">;
-    return `texts-${type}/${typeof text === "function" ? text() : text}`;
+    const { text, id, type } = target as NodeTarget<"expandable-text">;
+    return `texts-${type}/${id}/${typeof text === "function" ? text() : text}`;
   }
   if (type === "dummy") {
-    const dummyType = (target as NodeTarget<"dummy">).type;
-    return `dummy-${dummyType}`;
+    const { type, id } = target as NodeTarget<"dummy">;
+    return `dummy-${type}/${id}`;
   }
 
   throw new Error(
@@ -603,19 +464,4 @@ const getSemanticFactorValue = (db: ComposedDatabase, factor: Factor) => {
   }
   console.error("should never reach this line", db, factor);
   return "";
-};
-
-export const resolveOpeningDatabaseListFromTabList = () => {
-  const { tabList } = useTabStore();
-  return uniqBy(
-    tabList.flatMap<NodeMeta<"database">>((tab) => {
-      const { databaseId } = tab.connection;
-      if (databaseId !== String(UNKNOWN_ID)) {
-        const db = useDatabaseV1Store().getDatabaseByUID(databaseId);
-        return [{ type: "database", target: db }];
-      }
-      return [];
-    }),
-    (meta) => meta.target.name
-  );
 };

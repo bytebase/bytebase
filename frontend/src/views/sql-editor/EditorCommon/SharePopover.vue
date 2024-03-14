@@ -70,18 +70,18 @@
       </NPopover>
     </section>
     <NInputGroup class="flex items-center justify-center">
-      <n-input-group-label>
+      <NInputGroupLabel>
         <div
           class="w-full h-full flex flex-row items-center justify-center m-auto"
         >
           <heroicons-solid:link class="w-5 h-auto" />
         </div>
-      </n-input-group-label>
-      <n-input v-model:value="sharedTabLink" disabled />
+      </NInputGroupLabel>
+      <NInput v-model:value="sharedTabLink" disabled />
       <NButton
         class="w-20"
         :type="copied ? 'success' : 'primary'"
-        :disabled="!tabStore.currentTab.isSaved"
+        :disabled="tabStore.currentTab?.status !== 'CLEAN'"
         @click="handleCopy"
       >
         <heroicons-solid:check v-if="copied" class="h-4 w-4" />
@@ -93,13 +93,20 @@
 
 <script lang="ts" setup>
 import { useClipboard } from "@vueuse/core";
+import {
+  NButton,
+  NInput,
+  NInputGroup,
+  NInputGroupLabel,
+  NPopover,
+} from "naive-ui";
 import { ref, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
-  useTabStore,
+  useSQLEditorTabStore,
   useWorkSheetStore,
   useWorkSheetAndTabStore,
 } from "@/store";
@@ -110,7 +117,7 @@ import { worksheetSlugV1 } from "@/utils";
 const { t } = useI18n();
 
 const router = useRouter();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const worksheetV1Store = useWorkSheetStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 

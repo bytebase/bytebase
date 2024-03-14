@@ -52,7 +52,7 @@
     </div>
 
     <div
-      v-show="isLoading && sqlEditorStore.queryHistoryList.length === 0"
+      v-show="isFetching && queryHistoryList.length === 0"
       class="absolute w-full h-full flex justify-center items-center"
     >
       <BBSpin :title="$t('common.loading')" />
@@ -64,26 +64,27 @@
 import { useClipboard } from "@vueuse/core";
 import dayjs from "dayjs";
 import { escape } from "lodash-es";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
-  useTabStore,
-  useSQLEditorStore,
-  searchConnectionByName,
+  useSQLEditorQueryHistoryStore,
+  useSQLEditorTabStore,
 } from "@/store";
-import { QueryHistory } from "@/types";
+import { SQLEditorQueryHistory } from "@/types";
 import { getHighlightHTMLByKeyWords } from "@/utils";
 import HistoryConnectionIcon from "./HistoryConnectionIcon.vue";
 
 interface State {
   search: string;
-  currentActionHistory: QueryHistory | null;
+  currentActionHistory: SQLEditorQueryHistory | null;
 }
 
 const { t } = useI18n();
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const tabStore = useSQLEditorTabStore();
+const queryHistoryStore = useSQLEditorQueryHistoryStore();
+const { isFetching, queryHistoryList } = storeToRefs(queryHistoryStore);
 
 const state = reactive<State>({
   search: "",
@@ -94,15 +95,10 @@ const { copy: copyTextToClipboard, isSupported } = useClipboard({
   legacy: true,
 });
 
-const isLoading = computed(() => {
-  return sqlEditorStore.isFetchingQueryHistory;
-});
-
 const data = computed(() => {
   const tempData =
-    sqlEditorStore.queryHistoryList &&
-    sqlEditorStore.queryHistoryList.length > 0
-      ? sqlEditorStore.queryHistoryList.filter((history) => {
+    queryHistoryList.value.length > 0
+      ? queryHistoryList.value.filter((history) => {
           let t = false;
 
           if (history.statement.includes(state.search)) {
@@ -126,22 +122,22 @@ const data = computed(() => {
   });
 });
 
-const titleOfQueryHistory = (history: QueryHistory) => {
+const titleOfQueryHistory = (history: SQLEditorQueryHistory) => {
   return dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss");
 };
 
 const notifyMessage = computed(() => {
-  if (isLoading.value) {
+  if (isFetching.value) {
     return "";
   }
-  if (sqlEditorStore.queryHistoryList.length === null) {
+  if (queryHistoryList.value.length === 0) {
     return t("sql-editor.no-history-found");
   }
 
   return "";
 });
 
-const handleCopy = (history: QueryHistory) => {
+const handleCopy = (history: SQLEditorQueryHistory) => {
   if (!isSupported.value) {
     pushNotification({
       module: "bytebase",
@@ -160,27 +156,21 @@ const handleCopy = (history: QueryHistory) => {
   });
 };
 
-const handleQueryHistoryClick = async (queryHistory: QueryHistory) => {
-  const { instanceId, databaseId, instanceName, databaseName, statement } =
-    queryHistory;
-  const connection = searchConnectionByName(
-    String(instanceId),
-    String(databaseId),
-    instanceName,
-    databaseName
-  );
+const handleQueryHistoryClick = async (queryHistory: SQLEditorQueryHistory) => {
+  const { instance, database, statement } = queryHistory;
 
   // Open a new tab with the connection and statement.
   tabStore.addTab({
-    name: `Query history at ${titleOfQueryHistory(queryHistory)}`,
-  });
-  tabStore.updateCurrentTab({
-    connection,
+    title: `Query history at ${titleOfQueryHistory(queryHistory)}`,
+    connection: {
+      instance,
+      database,
+    },
     statement,
   });
 };
 
 onMounted(async () => {
-  await sqlEditorStore.fetchQueryHistoryList();
+  await queryHistoryStore.fetchQueryHistoryList();
 });
 </script>

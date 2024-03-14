@@ -1,6 +1,6 @@
 import type * as monaco from "monaco-editor";
-import type { InstanceId, DatabaseId, EngineType } from "../types";
-import { Engine } from "./proto/v1/common";
+import type { EngineType } from "@/types";
+import { Engine } from "../proto/v1/common";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -71,8 +71,8 @@ export enum SortText {
   KEYWORD = "3",
 }
 
-export interface QueryHistory {
-  name: string;
+export type SQLEditorQueryHistory = {
+  name: string; // Format: logs/{uid}
 
   // Standard fields
   // creator in users/{email} format.
@@ -82,9 +82,22 @@ export interface QueryHistory {
   // Domain fields
   statement: string;
   durationNs: number;
-  instanceName: string;
-  databaseName: string;
-  instanceId: InstanceId;
-  databaseId: DatabaseId;
+  instance: string;
+  database: string;
   error: string;
+};
+
+export interface SQLEditorConnection {
+  instance: string; // instance resource name, empty if not connected
+  database: string; // database resource name, empty if not connected to a database
+  dataSourceId?: string;
+  schema?: string;
+  table?: string;
 }
+
+export type SQLEditorQueryParams = {
+  connection: SQLEditorConnection; // the connection snapshot of the query
+  statement: string; // the statement snapshot of the query
+  engine: Engine;
+  explain: boolean;
+};

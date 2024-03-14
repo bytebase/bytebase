@@ -75,9 +75,8 @@ import {
   pushNotification,
   useActuatorV1Store,
   useDatabaseV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
 import { extractProjectResourceName } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
@@ -90,15 +89,16 @@ const DMLIssueTemplate = "bb.issue.database.data.update";
 
 const router = useRouter();
 const { t } = useI18n();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const { pageMode } = storeToRefs(useActuatorV1Store());
 
-const sqlStatement = computed(
-  () => tabStore.currentTab.selectedStatement || tabStore.currentTab.statement
-);
+const statement = computed(() => {
+  const tab = tabStore.currentTab;
+  return tab?.selectedStatement || tab?.statement || "";
+});
 
 const isDDL = computedAsync(async () => {
-  const { data } = await parseSQL(sqlStatement.value);
+  const { data } = await parseSQL(statement.value);
   return data !== null ? isDDLStatement(data, "some") : false;
 }, false);
 
@@ -109,8 +109,8 @@ const handleClose = () => {
 };
 
 const gotoCreateIssue = () => {
-  const { databaseId } = tabStore.currentTab.connection;
-  if (databaseId === String(UNKNOWN_ID)) {
+  const database = tabStore.currentTab?.connection.database ?? "";
+  if (!database) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
@@ -121,22 +121,22 @@ const gotoCreateIssue = () => {
 
   emit("close");
 
-  const database = useDatabaseV1Store().getDatabaseByUID(databaseId);
+  const db = useDatabaseV1Store().getDatabaseByName(database);
 
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
-      projectId: extractProjectResourceName(database.project),
+      projectId: extractProjectResourceName(db.project),
       issueSlug: "create",
     },
     query: {
       template: isDDL.value ? DDLIssueTemplate : DMLIssueTemplate,
-      name: `[${database.databaseName}] ${
+      name: `[${db.databaseName}] ${
         isDDL.value ? "Alter schema" : "Change Data"
       }`,
-      project: database.projectEntity.uid,
-      databaseList: databaseId,
-      sql: sqlStatement.value,
+      project: db.projectEntity.uid,
+      databaseList: db.uid,
+      sql: statement.value,
     },
   });
 };

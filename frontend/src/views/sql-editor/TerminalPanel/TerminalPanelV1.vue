@@ -80,8 +80,8 @@ import { useElementSize } from "@vueuse/core";
 import { computed, defineAsyncComponent, ref, unref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { IStandaloneCodeEditor } from "@/components/MonacoEditor";
-import { useTabStore, useWebTerminalV1Store } from "@/store";
-import { ExecuteConfig, ExecuteOption, WebTerminalQueryItemV1 } from "@/types";
+import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
+import { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
   EditorAction,
   ConnectionPathBar,
@@ -95,11 +95,11 @@ const CompactSQLEditor = defineAsyncComponent(
   () => import("./CompactSQLEditor.vue")
 );
 
-const tabStore = useTabStore();
-const webTerminalStore = useWebTerminalV1Store();
+const tabStore = useSQLEditorTabStore();
+const webTerminalStore = useWebTerminalStore();
 
 const queryState = computed(() => {
-  return webTerminalStore.getQueryStateByTab(tabStore.currentTab);
+  return webTerminalStore.getQueryStateByTab(tabStore.currentTab!);
 });
 
 const queryList = computed(() => {
@@ -126,21 +126,17 @@ const isEditableQueryItem = (item: WebTerminalQueryItemV1): boolean => {
   return item === currentQuery.value && item.status === "IDLE";
 };
 
-const handleExecute = async (
-  query: string,
-  config: ExecuteConfig,
-  option?: ExecuteOption
-) => {
+const handleExecute = async (params: SQLEditorQueryParams) => {
   if (currentQuery.value.status !== "IDLE") {
     return;
   }
 
   // Prevent executing empty query;
-  if (!query) {
+  if (!params.statement) {
     return;
   }
 
-  queryState.value.controller.events.emit("query", { query, config, option });
+  queryState.value.controller.events.emit("query", params);
 };
 
 const handleClearScreen = () => {
