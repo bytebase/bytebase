@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -32,16 +33,24 @@ func TestHiveConnectionAndClose(t *testing.T) {
 
 func TestHivePing(t *testing.T) {
 	driver, ctx := newHiveContextAndDriver()
+	_, err := driver.Open(ctx, storepb.Engine_HIVE, driver.config)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
 	if err := driver.Ping(ctx); err != nil {
-		t.Fatal("hive: bad connection")
+		t.Fatal(err.Error())
 	}
 }
 
 func TestHiveExecute(t *testing.T) {
 	driver, ctx := newHiveContextAndDriver()
-	if _, err := driver.Open(ctx, -1, driver.config); err != nil {
-		t.Fatal("Connection fails")
+	_, err := driver.Open(ctx, storepb.Engine_HIVE, driver.config)
+	if err != nil {
+		t.Fatal("connection fails")
 	}
+
 	affectedRows, err := driver.Execute(ctx, "INSERT INTO pokes(foo, bar) VALUES(2000, 'val_2002')", db.ExecuteOptions{})
 	if err != nil {
 		t.Fail()

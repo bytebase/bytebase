@@ -3,9 +3,7 @@ package hive
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"io"
-	"net"
 	"strconv"
 	"time"
 
@@ -24,8 +22,12 @@ type Driver struct {
 	dbClient *gohive.Connection
 }
 
-func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// field legality check @todo
+var (
+	_ db.Driver = (*Driver)(nil)
+)
+
+func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+	// field legality check
 	if config.Username == "" {
 		return nil, errors.Errorf("user not set")
 	}
@@ -60,17 +62,12 @@ func (d *Driver) Close(_ context.Context) error {
 	return nil
 }
 
-// implemented by trying to establish tcp connection
-func (d *Driver) Ping(_ context.Context) error {
-	// timeout after 1000ms
-	timeout := time.Duration(1000 * time.Millisecond)
-	addr := fmt.Sprintf("%s:%s", d.config.Host, d.config.Port)
-	conn, err := net.DialTimeout("tcp", addr, timeout)
-	if err != nil {
-		return errors.Errorf("bad connection")
+func (d *Driver) Ping(ctx context.Context) error {
+	if d.dbClient == nil {
+		return errors.Errorf("database not connected")
 	}
-	if err := conn.Close(); err != nil {
-		return errors.Errorf("failed to close tcp connection")
+	if _, err := d.Execute(ctx, "SELECT 1", db.ExecuteOptions{}); err != nil {
+		return errors.Errorf("connection bad")
 	}
 	return nil
 }
@@ -83,21 +80,36 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// Execute will execute the statement.
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
 	var rowCount int64
 	cursor := d.dbClient.Cursor()
 	cursor.Execute(ctx, statement, false)
-
 	operationStatus := cursor.Poll(false)
-
+	// TODO(tommy): multiplies statments
+	if cursor.Err != nil {
+		return -1, errors.Errorf("failed to execute statement")
+	}
 	rowCount = operationStatus.GetNumModifiedRows()
 	cursor.Close()
 	return rowCount, nil
 }
 
 // Used for execute readonly SELECT statement
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	cursor := d.dbClient.Cursor()
+	cursor.Exec(ctx, statement)
+	if cursor.Err != nil {
+		return nil, errors.Errorf("failed to execute statement")
+	}
+	// var results []*v1pb.QueryResult
+
+	// for cursor.HasMore(ctx) {
+	// 	for columnName, value := range cursor.RowMap(ctx) {
+
+	// 	}
+	// 	cursor.FetchOne(ctx)
+	// }
+
 	return nil, errors.Errorf("Not implemeted")
 }
 
@@ -167,5 +179,3 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (stri
 func (d *Driver) Restore(ctx context.Context, src io.Reader) error {
 	return errors.Errorf("Not implemeted")
 }
-
-// dial timeout ?
