@@ -33,6 +33,13 @@ bytebase:
     existingClaim: ""
     storage: 2Gi
     storageClass: ""
+  resources: {}
+#    limits:
+#      cpu: 200m
+#      memory: 1Gi
+#    requests:
+#      cpu: 100m
+#      memory: 512Mi
 
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.
