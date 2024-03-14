@@ -582,7 +582,6 @@
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
-    - [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
     - [SheetPayload](#bytebase-v1-SheetPayload)
@@ -9455,21 +9454,6 @@ We support three types of SMTP encryption: NONE, STARTTLS, and SSL/TLS.
 
 
 
-<a name="bytebase-v1-DeleteSheetRequest"></a>
-
-### DeleteSheetRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the sheet to delete. Format: projects/{project}/sheets/{sheet} |
-
-
-
-
-
-
 <a name="bytebase-v1-GetSheetRequest"></a>
 
 ### GetSheetRequest
@@ -9573,7 +9557,6 @@ Type of the SheetPayload.
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
-| DeleteSheet | [DeleteSheetRequest](#bytebase-v1-DeleteSheetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
 

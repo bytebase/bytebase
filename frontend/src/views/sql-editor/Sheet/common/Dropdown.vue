@@ -172,8 +172,7 @@ const turnSheetToUnsavedTab = (sheet: Worksheet) => {
   const tabStore = useTabStore();
   const tab = tabStore.tabList.find((tab) => tab.sheetName === sheet.name);
   if (tab) {
-    tab.sheetName = undefined;
-    tab.isSaved = false;
+    tabStore.removeTab(tab);
   }
 };
 </script>

@@ -358,7 +358,7 @@ func (s *WorksheetService) DeleteWorksheet(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.PermissionDenied, "cannot write worksheet %s", worksheet.Title)
 	}
 
-	if err := s.store.DeleteSheet(ctx, worksheetUID); err != nil {
+	if err := s.store.DeleteWorkSheet(ctx, worksheetUID); err != nil {
 		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete worksheet: %v", err))
 	}
 
