@@ -189,14 +189,16 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   ) => {
     const curr = currentTab.value;
     if (curr) {
-      if (isDisconnectedSQLEditorTab(curr)) {
+      if (
+        isDisconnectedSQLEditorTab(curr) ||
+        isSimilarSQLEditorTab(tab, curr)
+      ) {
+        curr.connection = tab.connection;
+        curr.sheet = tab.sheet;
+        curr.mode = tab.mode;
         if (defaultTitle) {
           curr.title = defaultTitle;
         }
-        return;
-      }
-
-      if (isSimilarSQLEditorTab(tab, curr)) {
         return;
       }
     }
