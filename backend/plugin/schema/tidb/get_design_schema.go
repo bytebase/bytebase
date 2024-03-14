@@ -9,6 +9,7 @@ import (
 	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -70,7 +71,7 @@ type tidbDesignSchemaGenerator struct {
 	currentTable *tableState
 	err          error
 
-	actions []tidbparser.StringsManipulatorAction
+	actions []base.StringsManipulatorAction
 }
 
 func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) {
