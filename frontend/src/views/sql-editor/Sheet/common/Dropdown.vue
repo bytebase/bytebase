@@ -48,6 +48,10 @@ const props = defineProps<{
   transparent?: boolean;
 }>();
 
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+}>();
+
 const { t } = useI18n();
 const worksheetV1Store = useWorkSheetStore();
 const dialog = useDialog();
@@ -170,6 +174,8 @@ const handleAction = async (key: string) => {
       editTitle: true,
     });
   }
+
+  emit("dismiss");
 };
 
 const turnSheetToUnsavedTab = (sheet: Worksheet) => {
