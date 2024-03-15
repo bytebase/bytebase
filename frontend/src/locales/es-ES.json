@@ -366,7 +366,8 @@
       "generating": "Generando",
       "empty-rollback-statement": "La declaración de reversión está vacía",
       "cancel-generating": "Cancelar la generación del SQL de reversión",
-      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}"
+      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}",
+      "maximum-size-tips": "El tamaño máximo de datos de retroceso admitido es de 32MB"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {

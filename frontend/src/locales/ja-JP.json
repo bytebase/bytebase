@@ -366,7 +366,8 @@
       "generating": "生成中",
       "empty-rollback-statement": "ロールバックステートメントが空です",
       "cancel-generating": "SQLロールバックの生成をキャンセル",
-      "sql-rollback-tips": "有効にすると、Bytebaseはデータ変更のロールバックログを保持し、この変更を元に戻すための新しい問題を作成できます。\n注意：テーブルに主キーがない場合、元に戻すSQLは重複した行に影響を与える可能性があります。実行する前に注意深く確認してください。\n{link}"
+      "sql-rollback-tips": "有効にすると、Bytebaseはデータ変更のロールバックログを保持し、この変更を元に戻すための新しい問題を作成できます。\n注意：テーブルに主キーがない場合、元に戻すSQLは重複した行に影響を与える可能性があります。実行する前に注意深く確認してください。\n{link}",
+      "maximum-size-tips": "サポートされる最大ロールバックデータサイズは 32MB です"
     },
     "skip-failed-in-current-stage": "現在のステージで失敗したタスクをスキップ",
     "apply-change-to-all-pending-tasks": {
