@@ -138,14 +138,15 @@ const prepareDatabases = async () => {
     return;
   }
   const { project } = editorStore;
-  const filter = project ? `project == "${project}"` : "";
-
+  const filters = [`instance == "instances/-"`];
+  if (project) {
+    filters.push(`project == "${project}"`);
+  }
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.
   const databaseList = (
-    await databaseStore.searchOrListDatabases({
-      parent: "instances/-",
-      filter,
+    await databaseStore.searchDatabases({
+      filter: filters.join(" && "),
       permission: "bb.databases.query",
     })
   ).filter((db) => db.syncState === State.ACTIVE);
