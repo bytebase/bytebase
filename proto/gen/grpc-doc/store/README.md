@@ -1269,6 +1269,7 @@ Used internally for obfuscating the page token.
 | OCEANBASE_ORACLE | 17 |  |
 | STARROCKS | 18 |  |
 | DORIS | 19 |  |
+| HIVE | 20 |  |
 
 
 
