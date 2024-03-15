@@ -35,11 +35,11 @@ bytebase:
     storageClass: ""
   resources: {}
 #    limits:
-#      cpu: 200m
-#      memory: 1Gi
+#      cpu: 2000m
+#      memory: 4Gi
 #    requests:
-#      cpu: 100m
-#      memory: 512Mi
+#      cpu: 1000m
+#      memory: 1Gi
 
   # Additional Bytebase secret mounts
   # Defines additional mounts with secret. Secret must be manually created in the namespace.
