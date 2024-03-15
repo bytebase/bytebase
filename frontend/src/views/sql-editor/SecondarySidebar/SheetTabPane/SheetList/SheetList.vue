@@ -78,7 +78,6 @@ import {
   DatabaseV1Name,
 } from "@/components/v2";
 import {
-  useProjectV1Store,
   useWorkSheetAndTabStore,
   useDatabaseV1Store,
   useSQLEditorTabStore,

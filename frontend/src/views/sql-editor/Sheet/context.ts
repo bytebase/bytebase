@@ -1,6 +1,6 @@
 import Emittery from "emittery";
 import { storeToRefs } from "pinia";
-import { InjectionKey, Ref, inject, provide, ref, computed, watch } from "vue";
+import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
