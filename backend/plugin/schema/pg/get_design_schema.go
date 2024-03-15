@@ -37,7 +37,7 @@ type designSchemaGenerator struct {
 }
 
 // GetDesignSchema returns the schema string for the design schema.
-func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	parseResult, err := pgparser.ParsePostgreSQL(baselineSchema)
 	if err != nil {

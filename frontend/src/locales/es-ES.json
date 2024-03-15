@@ -1406,7 +1406,11 @@
       "self": "Desactivar copia de seguridad automática de la base de datos",
       "content": "La política de desactivación de copias de seguridad automáticas no se aplica de forma retroactiva.\n¿Está seguro de aplicarla a todas las bases de datos en este entorno?"
     },
-    "production-environment": "Entorno de producción"
+    "production-environment": "Entorno de producción",
+    "access-control": {
+      "title": "Control de acceso",
+      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+    }
   },
   "quick-start": {
     "self": "Inicio rápido",
@@ -3319,7 +3323,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
+    "select-database-placeholder": "Seleccione una base de datos (solo MySQL, PostgreSQL, TiDB y Oracle)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",

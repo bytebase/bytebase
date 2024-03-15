@@ -472,7 +472,7 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 
 func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
 	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
 	}
@@ -483,7 +483,8 @@ func (*SQLService) StringifyMetadata(_ context.Context, request *v1pb.StringifyM
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.Metadata)
 	sanitizeCommentForSchemaMetadata(storeSchemaMetadata)
 
-	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline */, storeSchemaMetadata)
+	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
+	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, "" /* baseline */, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -2649,7 +2650,8 @@ func encodeToBase64String(statement string) string {
 // DifferPreview returns the diff preview of the given SQL statement and metadata.
 func (*SQLService) DifferPreview(_ context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
 	storeSchemaMetadata, _ := convertV1DatabaseMetadata(request.NewMetadata)
-	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), request.OldSchema, storeSchemaMetadata)
+	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
+	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, request.OldSchema, storeSchemaMetadata)
 	if err != nil {
 		return nil, err
 	}
