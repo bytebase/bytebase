@@ -50,8 +50,11 @@ func (*StatementDisallowMixDMLAdvisor) Check(ctx advisor.Context, _ string) ([]a
 	for table, dmlCount := range checker.dmlStatementCount {
 		if len(dmlCount) > 1 {
 			content := "Found"
-			for t, count := range dmlCount {
-				content += fmt.Sprintf(" %d %s,", count, t)
+			for _, t := range []string{"DELETE", "INSERT", "UPDATE"} {
+				count, ok := dmlCount[t]
+				if ok {
+					content += fmt.Sprintf(" %d %s,", count, t)
+				}
 			}
 			content = strings.TrimSuffix(content, ",")
 			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
