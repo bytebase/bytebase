@@ -605,6 +605,9 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 	// We cannot get use whether the table is partitioned by server default from metadata, so we need to
 	// use regexp for dump table string.
 	for tableKey, partitions := range result {
+		if len(partitions) == 0 {
+			continue
+		}
 		showQuery := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", databaseName, tableKey.Table)
 		showRows, err := driver.db.QueryContext(ctx, showQuery)
 		if err != nil {
