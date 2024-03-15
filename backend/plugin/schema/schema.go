@@ -17,7 +17,7 @@ var (
 	checkColumnTypes = make(map[storepb.Engine]checkColumnType)
 )
 
-type getDesignSchema func(string, *storepb.DatabaseSchemaMetadata) (string, error)
+type getDesignSchema func(string, string, *storepb.DatabaseSchemaMetadata) (string, error)
 type parseToMetadata func(string, string) (*storepb.DatabaseSchemaMetadata, error)
 type checkColumnType func(string) bool
 
@@ -30,12 +30,12 @@ func RegisterGetDesignSchema(engine storepb.Engine, f getDesignSchema) {
 	getDesignSchemas[engine] = f
 }
 
-func GetDesignSchema(engine storepb.Engine, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(engine storepb.Engine, defaultSchema, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	f, ok := getDesignSchemas[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(baselineSchema, to)
+	return f(defaultSchema, baselineSchema, to)
 }
 
 func RegisterParseToMetadatas(engine storepb.Engine, f parseToMetadata) {

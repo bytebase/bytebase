@@ -106,6 +106,71 @@ type tableState struct {
 	comment string
 }
 
+func (t *tableState) toString(schemaName string, buf *strings.Builder) error {
+	if _, err := buf.WriteString(`CREATE TABLE "`); err != nil {
+		return err
+	}
+	if schemaName != "" {
+		if _, err := buf.WriteString(schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(t.name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString("\" (\n"); err != nil {
+		return err
+	}
+	columns := []*columnState{}
+	for _, column := range t.columns {
+		columns = append(columns, column)
+	}
+	sort.Slice(columns, func(i, j int) bool {
+		return columns[i].id < columns[j].id
+	})
+	for i, column := range columns {
+		if i > 0 {
+			if _, err := buf.WriteString(",\n"); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(`  `); err != nil {
+			return err
+		}
+		if err := column.toString(buf); err != nil {
+			return err
+		}
+	}
+
+	indexes := []*indexState{}
+	for _, index := range t.indexes {
+		indexes = append(indexes, index)
+	}
+	sort.Slice(indexes, func(i, j int) bool {
+		return indexes[i].id < indexes[j].id
+	})
+	for i, index := range indexes {
+		if i+len(columns) > 0 {
+			if _, err := buf.WriteString(",\n"); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(`  `); err != nil {
+			return err
+		}
+		if err := index.toString(buf); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString("\n)\n;\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
 func newTableState(id int, name string) *tableState {
 	return &tableState{
 		id:      id,
@@ -201,6 +266,38 @@ type columnState struct {
 	nullable     bool
 }
 
+func (c *columnState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(`"`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(c.name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`" `); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(c.tp); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(" VISIBLE"); err != nil {
+		return err
+	}
+	if c.defaultValue != nil {
+		if _, err := buf.WriteString(" DEFAULT "); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(c.defaultValue.toString()); err != nil {
+			return err
+		}
+	}
+	if !c.nullable {
+		if _, err := buf.WriteString(" NOT NULL"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *columnState) convertToColumnMetadata() *storepb.ColumnMetadata {
 	result := &storepb.ColumnMetadata{
 		Name:     c.name,
@@ -253,6 +350,51 @@ type indexState struct {
 	keys    []string
 	primary bool
 	unique  bool
+}
+
+func (i *indexState) toString(buf *strings.Builder) error {
+	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(i.name); err != nil {
+		return err
+	}
+	if _, err := buf.WriteString(`"`); err != nil {
+		return err
+	}
+
+	if i.primary {
+		if _, err := buf.WriteString(" PRIMARY KEY ("); err != nil {
+			return err
+		}
+	} else if i.unique {
+		if _, err := buf.WriteString(" UNIQUE ("); err != nil {
+			return err
+		}
+	}
+
+	for i, key := range i.keys {
+		if i > 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(`"`); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(key); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"`); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(")"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (i *indexState) convertToIndexMetadata() *storepb.IndexMetadata {

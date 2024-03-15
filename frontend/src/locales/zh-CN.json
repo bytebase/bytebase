@@ -3319,7 +3319,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库 (仅限 MySQL，PostgreSQL 和 TiDB)",
+    "select-database-placeholder": "选择数据库（仅限 MySQL、PostgreSQL、TiDB 和 Oracle）",
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功",
