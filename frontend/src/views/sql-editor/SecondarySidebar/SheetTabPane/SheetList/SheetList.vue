@@ -78,7 +78,6 @@ import {
   DatabaseV1Name,
 } from "@/components/v2";
 import {
-  useProjectV1Store,
   useWorkSheetAndTabStore,
   useDatabaseV1Store,
   useSQLEditorTabStore,
@@ -129,7 +128,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const projectStore = useProjectV1Store();
 const tabStore = useSQLEditorTabStore();
 const editorContext = useSQLEditorContext();
 const worksheetContext = useSheetContext();
@@ -172,49 +170,29 @@ const treeData = computed((): TreeNode[] => {
   const map: TreeNodeMap = {};
   for (const item of mergedItemList.value) {
     let database: ComposedDatabase | undefined;
-    let project: ComposedProject | undefined;
     if (isTabItem(item)) {
       database = connectionForSQLEditorTab(item.target).database;
-      project = database?.projectEntity;
     } else {
       database = databaseStore.getDatabaseByName(item.target.database);
-      project = projectStore.getProjectByName(item.target.project);
     }
 
-    project = project ?? projectStore.getProjectByUID(String(UNKNOWN_ID));
-    if (!map[project.name]) {
-      map[project.name] = {
-        key: project.name,
-        label: project.title,
-        project,
+    database = database ?? databaseStore.getDatabaseByUID(String(UNKNOWN_ID));
+    if (!map[database.name]) {
+      map[database.name] = {
+        key: database.name,
+        label: database.databaseName,
+        database,
         children: {},
       };
     }
 
     const key = keyOfItem(item);
-    if (database && database.uid !== `${UNKNOWN_ID}`) {
-      if (!map[project.name].children[database.name]) {
-        map[project.name].children[database.name] = {
-          key: database.name,
-          label: database.databaseName,
-          database,
-          children: {},
-        };
-      }
-      map[project.name].children[database.name].children[key] = {
-        key,
-        label: item.target.title,
-        item,
-        children: {},
-      };
-    } else {
-      map[project.name].children[key] = {
-        key,
-        label: item.target.title,
-        item,
-        children: {},
-      };
-    }
+    map[database.name].children[key] = {
+      key,
+      label: item.target.title,
+      item,
+      children: {},
+    };
   }
   return getTreeNodeList(map);
 });
