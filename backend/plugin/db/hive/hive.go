@@ -67,7 +67,7 @@ func (d *Driver) Ping(ctx context.Context) error {
 		return errors.Errorf("database not connected")
 	}
 	if _, err := d.Execute(ctx, "SELECT 1", db.ExecuteOptions{}); err != nil {
-		return errors.Errorf("connection bad")
+		return errors.Errorf("bad connection")
 	}
 	return nil
 }
@@ -85,9 +85,9 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	cursor := d.dbClient.Cursor()
 	cursor.Execute(ctx, statement, false)
 	operationStatus := cursor.Poll(false)
-	// TODO(tommy): multiplies statments
+	// TODO(tommy): support multiple statments
 	if cursor.Err != nil {
-		return -1, errors.Errorf("failed to execute statement")
+		return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
 	rowCount = operationStatus.GetNumModifiedRows()
 	cursor.Close()
@@ -99,13 +99,13 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	cursor := d.dbClient.Cursor()
 	cursor.Exec(ctx, statement)
 	if cursor.Err != nil {
-		return nil, errors.Errorf("failed to execute statement")
+		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
+	// TODO(tommy): func not implemented
 	// var results []*v1pb.QueryResult
 
 	// for cursor.HasMore(ctx) {
 	// 	for columnName, value := range cursor.RowMap(ctx) {
-
 	// 	}
 	// 	cursor.FetchOne(ctx)
 	// }
