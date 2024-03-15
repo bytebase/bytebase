@@ -5,7 +5,7 @@
     class="inline-flex items-center gap-x-1"
     :class="[link && !plain && 'normal-link', link && 'hover:underline']"
   >
-    <span class="line-clamp-1" :class="textClass">
+    <span class="line-clamp-1 select-none" :class="textClass">
       {{ prefix }}
       {{ environmentV1Name(environment) }}
       {{ suffix }}

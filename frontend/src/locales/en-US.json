@@ -1406,7 +1406,11 @@
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "production-environment": "Production environment"
+    "production-environment": "Production environment",
+    "access-control": {
+      "title": "Access control",
+      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+    }
   },
   "quick-start": {
     "self": "Quickstart",

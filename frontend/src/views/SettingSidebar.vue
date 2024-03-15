@@ -35,7 +35,6 @@ import workspaceSettingRoutes, {
   SETTING_ROUTE_WORKSPACE_RISK_CENTER,
   SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
   SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-  SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
   SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
   SETTING_ROUTE_WORKSPACE_GITOPS,
   SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
@@ -187,11 +186,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.sensitive-data"),
           name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.access-control"),
-          name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
           type: "route",
         },
         {

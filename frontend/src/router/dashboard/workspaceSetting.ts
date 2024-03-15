@@ -20,7 +20,6 @@ export const SETTING_ROUTE_WORKSPACE_SSO = `${SETTING_ROUTE_WORKSPACE}.sso`;
 export const SETTING_ROUTE_WORKSPACE_SSO_CREATE = `${SETTING_ROUTE_WORKSPACE_SSO}.create`;
 export const SETTING_ROUTE_WORKSPACE_SSO_DETAIL = `${SETTING_ROUTE_WORKSPACE_SSO}.detail`;
 export const SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA = `${SETTING_ROUTE_WORKSPACE}.sensitive-data`;
-export const SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL = `${SETTING_ROUTE_WORKSPACE}.access-control`;
 export const SETTING_ROUTE_WORKSPACE_RISK_CENTER = `${SETTING_ROUTE_WORKSPACE}.risk-center`;
 export const SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL = `${SETTING_ROUTE_WORKSPACE}.custom-approval`;
 export const SETTING_ROUTE_WORKSPACE_SLOW_QUERY = `${SETTING_ROUTE_WORKSPACE}.slow-query`;
@@ -139,16 +138,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
         component: () => import("@/views/SettingWorkspaceSensitiveData.vue"),
-        props: true,
-      },
-      {
-        path: "access-control",
-        name: SETTING_ROUTE_WORKSPACE_ACCESS_CONTROL,
-        meta: {
-          title: () => t("settings.sidebar.access-control"),
-          requiredWorkspacePermissionList: () => ["bb.policies.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceAccessControl.vue"),
         props: true,
       },
       {
