@@ -181,6 +181,7 @@
               <Switch
                 :value="disableCopyDataPolicy"
                 :text="true"
+                :disabled="!allowEditDisableCopyData"
                 @update:value="upsertPolicy"
               />
               <span class="textlabel">{{
@@ -508,6 +509,10 @@ const allowEdit = computed(() => {
     ((state.environment as Environment).state === State.ACTIVE &&
       hasPermission("bb.environments.update"))
   );
+});
+
+const allowEditDisableCopyData = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const allowCreate = computed(() => {
