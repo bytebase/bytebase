@@ -85,7 +85,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	cursor := d.dbClient.Cursor()
 	cursor.Execute(ctx, statement, false)
 	operationStatus := cursor.Poll(false)
-	// TODO(tommy): support multiple statments
+
 	if cursor.Err != nil {
 		return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}

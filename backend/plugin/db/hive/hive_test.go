@@ -13,7 +13,7 @@ import (
 func newHiveContextAndDriver() (Driver, context.Context) {
 	var driver Driver
 	ctx := context.Background()
-	driver.config.Host = ""
+	driver.config.Host = "114.132.70.108"
 	driver.config.Port = "10000"
 	driver.config.Username = "hive"
 	driver.config.Password = "hive"
@@ -51,7 +51,7 @@ func TestHiveExecute(t *testing.T) {
 		t.Fatal("connection fails")
 	}
 
-	affectedRows, err := driver.Execute(ctx, "INSERT INTO pokes(foo, bar) VALUES(2000, 'val_2002')", db.ExecuteOptions{})
+	affectedRows, err := driver.Execute(ctx, "INSERT INTO pokes(foo, bar) VALUES(2000, 'val_2002'); INSERT INTO pokes(foo, bar) VALUES(2000, 'val_2003');", db.ExecuteOptions{})
 	if err != nil {
 		t.Fail()
 	}
