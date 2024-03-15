@@ -392,14 +392,10 @@ const disableCopyDataPolicy = computed(() => {
     (policy) =>
       policy.resourceType === PolicyResourceType.ENVIRONMENT &&
       policy.type === PolicyType.DISABLE_COPY_DATA &&
+      policy.resourceUid === (props.environment as Environment).uid &&
       policy.disableCopyDataPolicy?.active
   );
-  for (const policy of policies) {
-    if (policy.resourceUid === (props.environment as Environment).uid) {
-      return true;
-    }
-  }
-  return false;
+  return policies.length > 0;
 });
 
 const onSQLReviewPolicyClick = () => {
