@@ -2914,6 +2914,14 @@ For MySQL, the value is for RANGE and LIST partition types,
                 </tr>
               
                 <tr>
+                  <td>use_default</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The use_default is whether the users use the default partition, it stores the different value for different database engines.
+For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. </p></td>
+                </tr>
+              
+                <tr>
                   <td>subpartitions</td>
                   <td><a href="#bytebase.store.TablePartitionMetadata">TablePartitionMetadata</a></td>
                   <td>repeated</td>
