@@ -3319,7 +3319,7 @@
     "search-tables": "テーブルを検索する",
     "use-tips": "テーブルをクリックして開始します。",
     "apply-to-database": "データベースに変更を適用する",
-    "select-database-placeholder": "データベースを選択する（MySQL、PostgreSQL、TiDBのみ）",
+    "select-database-placeholder": "データベースを選択します (MySQL、PostgreSQL、TiDB、Oracle のみ)",
     "message": {
       "created-succeed": "ブランチが正常に作成されました",
       "updated-succeed": "ブランチが正常に更新されました",

@@ -19,7 +19,7 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_TIDB, GetDesignSchema)
 }
 
-func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	stmts, err := tidbparser.ParseTiDB(baselineSchema, "", "")
 	if err != nil {

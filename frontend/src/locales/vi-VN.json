@@ -3319,7 +3319,7 @@
     "search-tables": "Tìm kiếm bảng",
     "use-tips": "Bấm vào một bảng để bắt đầu.",
     "apply-to-database": "Áp dụng thay đổi cho cơ sở dữ liệu",
-    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL và TiDB)",
+    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB và Oracle)",
     "message": {
       "created-succeed": "Chi nhánh được tạo thành công",
       "updated-succeed": "Chi nhánh được cập nhật thành công",
