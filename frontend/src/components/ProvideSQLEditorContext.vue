@@ -139,7 +139,6 @@ const prepareDatabases = async () => {
   }
   const { project } = editorStore;
   const filters = [`instance == "instances/-"`];
-  // If `projectId` is provided in the route, filter the database list by the project.
   if (project) {
     filters.push(`project == "${project}"`);
   }
