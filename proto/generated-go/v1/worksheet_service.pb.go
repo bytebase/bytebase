@@ -28,7 +28,7 @@ type Worksheet_Visibility int32
 
 const (
 	Worksheet_VISIBILITY_UNSPECIFIED Worksheet_Visibility = 0
-	// Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, and project DEVELOPER can read.
+	// Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.
 	Worksheet_VISIBILITY_PROJECT_READ Worksheet_Visibility = 1
 	// Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.
 	Worksheet_VISIBILITY_PROJECT_WRITE Worksheet_Visibility = 2
