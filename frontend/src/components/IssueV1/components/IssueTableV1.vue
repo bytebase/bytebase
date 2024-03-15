@@ -90,7 +90,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
     },
     {
       key: "status",
-      width: 30,
+      className: "w-5 !p-0",
       render: (issue) => h(IssueStatusIconWithTaskSummary, { issue }),
     },
     {
