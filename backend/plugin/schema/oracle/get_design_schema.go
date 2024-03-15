@@ -102,7 +102,7 @@ func (g *designSchemaGenerator) EnterCreate_table(ctx *plsqlparser.Create_tableC
 	delete(schema.tables, tableName)
 }
 
-func (g *designSchemaGenerator) ExitCreate_table(ctx *plsqlparser.Create_tableContext) {
+func (g *designSchemaGenerator) ExitCreate_table(_ *plsqlparser.Create_tableContext) {
 	if g.err != nil {
 		return
 	}
