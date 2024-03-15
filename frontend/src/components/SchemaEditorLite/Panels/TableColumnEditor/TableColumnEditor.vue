@@ -92,7 +92,11 @@ import { DataClassificationSetting_DataClassificationConfig as DataClassificatio
 import ColumnDefaultValueExpressionModal from "../../Modals/ColumnDefaultValueExpressionModal.vue";
 import { useSchemaEditorContext } from "../../context";
 import { EditStatus } from "../../types";
-import { getDefaultValueByKey, isTextOfColumnType } from "../../utils";
+import {
+  DefaultValueOption,
+  getDefaultValueByKey,
+  isTextOfColumnType,
+} from "../../utils";
 import { markUUID } from "../common";
 import {
   ClassificationCell,
@@ -325,7 +329,7 @@ const columns = computed(() => {
           allowMoveUp: index > 0,
           allowMoveDown: index < shownColumnList.value.length - 1,
           disabled: props.disableChangeTable,
-          onReorder: (delta) => emit("reorder", column, index, delta),
+          onReorder: (delta: -1 | 1) => emit("reorder", column, index, delta),
         });
       },
     },
@@ -345,7 +349,7 @@ const columns = computed(() => {
             "--n-padding-right": "4px",
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
-          "onUpdate:value": (value) => {
+          "onUpdate:value": (value: string) => {
             const oldStatus = statusForColumn(column);
             column.name = value;
             markColumnStatus(column, "updated", oldStatus);
@@ -412,7 +416,7 @@ const columns = computed(() => {
           disabled: props.readonly || props.disableAlterColumn(column),
           schemaTemplateColumnTypes: schemaTemplateColumnTypes.value,
           engine: props.engine,
-          "onUpdate:value": (value) => {
+          "onUpdate:value": (value: string) => {
             column.type = value;
             markColumnStatus(column, "updated");
           },
@@ -432,8 +436,9 @@ const columns = computed(() => {
           disabled: props.readonly || props.disableAlterColumn(column),
           schemaTemplateColumnTypes: schemaTemplateColumnTypes.value,
           engine: props.engine,
-          onInput: (value) => handleColumnDefaultInput(column, value),
-          onSelect: (option) => handleColumnDefaultSelect(column, option.key),
+          onInput: (value: string) => handleColumnDefaultInput(column, value),
+          onSelect: (option: DefaultValueOption) =>
+            handleColumnDefaultSelect(column, option.key),
         });
       },
     },
@@ -455,7 +460,7 @@ const columns = computed(() => {
             "--n-padding-right": "4px",
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
-          "onUpdate:value": (value) => {
+          "onUpdate:value": (value: string) => {
             column.onUpdate = value;
             markColumnStatus(column, "updated");
           },
@@ -479,7 +484,7 @@ const columns = computed(() => {
             "--n-padding-right": "4px",
             "--n-text-color-disabled": "rgb(var(--color-main))",
           },
-          "onUpdate:value": (value) => {
+          "onUpdate:value": (value: string) => {
             column.userComment = value;
             markColumnStatus(column, "updated");
           },
@@ -543,8 +548,10 @@ const columns = computed(() => {
           column: column,
           readonly: props.readonly,
           disabled: props.readonly || props.disableAlterColumn(column),
-          onClick: (fk) => emit("foreign-key-click", column, fk),
-          onEdit: (fk) => emit("foreign-key-edit", column, fk),
+          onClick: (fk: ForeignKeyMetadata) =>
+            emit("foreign-key-click", column, fk),
+          onEdit: (fk: ForeignKeyMetadata | undefined) =>
+            emit("foreign-key-edit", column, fk),
         });
       },
     },
