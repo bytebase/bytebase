@@ -1406,7 +1406,11 @@
       "self": "データベースの自動バックアップを無効にする",
       "content": "自動バックアップポリシーの無効化は過去に適用されません。\nこの環境のすべてのデータベースに適用することを確認していますか？"
     },
-    "production-environment": "本番環境"
+    "production-environment": "本番環境",
+    "access-control": {
+      "title": "アクセス制御",
+      "disable-copy-data-from-sql-editor": "SQLエディターからのデータコピーを無効にする"
+    }
   },
   "quick-start": {
     "self": "クイックスタート",

@@ -7,6 +7,7 @@
         calc(var(--n-rail-width) + var(--n-button-width) - var(--n-rail-height))
       );
     "
+    v-bind="$attrs"
   >
     <template v-if="text" #checked>
       <span style="font-size: 10px">{{ $t("common.on") }}</span>
