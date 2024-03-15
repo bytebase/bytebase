@@ -114,56 +114,56 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 }
 
 // RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
-func (_ *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // Sync schema
 // SyncInstance syncs the instance metadata.
-func (_ *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
+func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMetadata, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // SyncDBSchema syncs a single database schema.
-func (_ *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (*Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // Sync slow query logs
 // SyncSlowQuery syncs the slow query logs.
 // The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
-func (_ *Driver) SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
+func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // CheckSlowQueryLogEnabled checks if the slow query log is enabled.
-func (_ *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
+func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return errors.Errorf("Not implemeted")
 }
 
 // Role
 // CreateRole creates the role.
-func (_ *Driver) CreateRole(ctx context.Context, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // UpdateRole updates the role.
-func (_ *Driver) UpdateRole(ctx context.Context, roleName string, upsert *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
+func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // FindRole finds the role by name.
-func (_ *Driver) FindRole(ctx context.Context, roleName string) (*db.DatabaseRoleMessage, error) {
+func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // ListRole lists the role.
-func (_ *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
+func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
 // DeleteRole deletes the role by name.
-func (_ *Driver) DeleteRole(ctx context.Context, roleName string) error {
+func (*Driver) DeleteRole(_ context.Context, _ string) error {
 	return errors.Errorf("Not implemeted")
 }
 
@@ -171,11 +171,11 @@ func (_ *Driver) DeleteRole(ctx context.Context, roleName string) error {
 // Dump the database.
 // The returned string is the JSON encoded metadata for the logical dump.
 // For MySQL, the payload contains the binlog filename and position when the dump is generated.
-func (_ *Driver) Dump(ctx context.Context, out io.Writer, schemaOnly bool) (string, error) {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
 	return "", errors.Errorf("Not implemeted")
 }
 
 // Restore the database from src, which is a full backup.
-func (_ *Driver) Restore(ctx context.Context, src io.Reader) error {
+func (*Driver) Restore(_ context.Context, _ io.Reader) error {
 	return errors.Errorf("Not implemeted")
 }
