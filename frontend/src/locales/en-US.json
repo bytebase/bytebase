@@ -3319,7 +3319,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
-    "select-database-placeholder": "Select a database (MySQL, PostgreSQL and TiDB only)",
+    "select-database-placeholder": "Select a database (MySQL, PostgreSQL, TiDB and Oracle only)",
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully",

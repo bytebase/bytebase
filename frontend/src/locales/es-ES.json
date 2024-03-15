@@ -3319,7 +3319,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
+    "select-database-placeholder": "Seleccione una base de datos (solo MySQL, PostgreSQL, TiDB y Oracle)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",

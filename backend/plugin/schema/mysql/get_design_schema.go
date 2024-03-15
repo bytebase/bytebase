@@ -22,7 +22,7 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_MYSQL, GetDesignSchema)
 }
 
-func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks())
 	if err != nil {

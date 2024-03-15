@@ -9,7 +9,7 @@ import (
 
 func checkDatabaseMetadata(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) error {
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_ORACLE:
 	default:
 		return errors.Errorf("unsupported engine for check database metadata: %v", engine)
 	}
