@@ -71,7 +71,7 @@
         <template #table="{ issueList, loading }">
           <IssueTableV1
             class="border-x-0"
-            :show-placeholder="!loading"
+            :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
           />

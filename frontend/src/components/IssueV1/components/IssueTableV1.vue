@@ -7,124 +7,24 @@
     {{ title }}
   </div>
   <div ref="tableRef">
-    <BBGrid
-      :column-list="columnList"
-      :data-source="issueList"
-      :row-clickable="true"
-      :show-placeholder="showPlaceholder"
-      :is-row-expanded="isIssueExpanded"
-      :is-row-clickable="(_: ComposedIssue) => true"
-      :custom-header="true"
-      class="border w-auto overflow-x-auto"
-      header-class="capitalize"
-      v-bind="$attrs"
-      @click-row="clickIssue"
-    >
-      <template #header>
-        <div role="table-row" class="bb-grid-row bb-grid-header-row group">
-          <div
-            v-for="(column, index) in columnList"
-            :key="index"
-            role="table-cell"
-            class="bb-grid-header-cell"
-          >
-            <template v-if="index === 0">
-              <NCheckbox
-                v-if="issueList.length > 0"
-                v-bind="allSelectionState"
-                @update:checked="setAllIssuesSelection"
-              />
-            </template>
-            <template v-else>{{ column.title }}</template>
-          </div>
-        </div>
-      </template>
-      <template #item="{ item: issue }: { item: ComposedIssue }">
-        <div class="bb-grid-cell" @click.stop.prevent>
-          <NCheckbox
-            :checked="isIssueSelected(issue)"
-            @update:checked="setIssueSelection(issue, $event)"
-          />
-        </div>
-        <div class="bb-grid-cell !px-1">
-          <IssueStatusIconWithTaskSummary :issue="issue" />
-        </div>
-        <div class="bb-grid-cell overflow-hidden">
-          <div class="whitespace-nowrap mr-2 text-control">
-            <template v-if="mode == 'ALL'">
-              {{ issue.projectEntity.key }}-{{ issue.uid }}
-            </template>
-            <template v-else> #{{ issue.uid }} </template>
-          </div>
-          <NPerformantEllipsis
-            class="flex-1 truncate"
-            :class="{
-              'font-semibold': isAssigneeAttentionOn(issue),
-            }"
-          >
-            <template #default>
-              <span v-html="highlight(issue.title)"></span>
-            </template>
-            <template #tooltip>
-              <div
-                class="whitespace-pre-wrap break-words break-all"
-                :style="{
-                  'max-width': `${tableWidth * 0.9}px`,
-                }"
-              >
-                {{ issue.title }}
-              </div>
-            </template>
-          </NPerformantEllipsis>
-          <NTooltip v-if="isAssigneeAttentionOn(issue)">
-            <template #trigger>
-              <span>
-                <heroicons-outline:bell-alert
-                  class="w-4 h-4 text-accent ml-1"
-                />
-              </span>
-            </template>
-            <span class="whitespace-nowrap">
-              {{ $t("issue.assignee-attention.needs-attention") }}
-            </span>
-          </NTooltip>
-        </div>
-        <div v-if="showExtendedColumns" class="bb-grid-cell">
-          <EllipsisText :performant="true">
-            {{ humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000) }}
-          </EllipsisText>
-        </div>
-        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
-          <CurrentApproverV1 :issue="issue" />
-        </div>
-        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
-          <div
-            v-if="issue.assigneeEntity"
-            class="flex flex-row items-center overflow-hidden gap-x-2"
-          >
-            <BBAvatar :size="'SMALL'" :username="issue.assigneeEntity.title" />
-            <span class="truncate">
-              {{ issue.assigneeEntity.title }}
-            </span>
-          </div>
-          <template v-else>-</template>
-        </div>
-        <div v-if="showExtendedColumns" class="bb-grid-cell !py-0.5">
-          <div class="flex flex-row items-center overflow-hidden gap-x-2">
-            <BBAvatar :size="'SMALL'" :username="issue.creatorEntity.title" />
-            <span class="truncate">
-              {{ issue.creatorEntity.title }}
-            </span>
-          </div>
-        </div>
-      </template>
-      <template #expanded-item="{ item: issue }: { item: ComposedIssue }">
-        <div
-          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
-          v-html="highlight(issue.description)"
-        />
-      </template>
-    </BBGrid>
+    <NDataTable
+      :columns="columnList"
+      :data="issueList"
+      :max-height="640"
+      :virtual-scroll="true"
+      :striped="true"
+      :bordered="true"
+      :loading="loading"
+      :row-key="(issue: ComposedIssue) => issue.uid"
+      :default-expand-all="true"
+      :expanded-row-keys="
+        issueList.filter(isIssueExpanded).map((issue) => issue.uid)
+      "
+      :checked-row-keys="[...state.selectedIssueIdList]"
+      :row-props="rowProps"
+      :render-expand-icon="() => h('span', { class: 'hidden' })"
+      @update:checked-row-keys="(val) => state.selectedIssueIdList = new Set(val as string[])"
+    />
   </div>
 
   <div
@@ -138,11 +38,11 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { NCheckbox, NPerformantEllipsis } from "naive-ui";
-import { reactive, computed, watch, ref } from "vue";
+import { NPerformantEllipsis, DataTableColumn, NDataTable } from "naive-ui";
+import { reactive, computed, watch, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBGridColumn } from "@/bbkit";
+import { BBAvatar } from "@/bbkit";
 import EllipsisText from "@/components/EllipsisText.vue";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
@@ -157,6 +57,7 @@ import {
   getHighlightHTMLByRegExp,
   issueSlug,
   extractProjectResourceName,
+  humanizeTs,
 } from "@/utils";
 import IssueStatusIconWithTaskSummary from "./IssueStatusIconWithTaskSummary.vue";
 
@@ -164,50 +65,130 @@ type Mode = "ALL" | "PROJECT";
 
 const { t } = useI18n();
 
-const columnList = computed((): BBGridColumn[] => {
-  const columns: BBGridColumn[] = [
+const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
+  const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
     {
-      title: "", // Checkbox
-      width: "3rem",
+      type: "selection",
+      cellProps: (issue, rowIndex) => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
     },
     {
-      title: "", // Status
-      width: "auto",
+      type: "expand",
+      width: 0,
+      expandable: (issue) => isIssueExpanded(issue),
+      renderExpand: (issue) =>
+        h("div", {
+          class:
+            "max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all",
+          innerHTML: highlight(issue.description),
+        }),
     },
     {
+      key: "status",
+      width: 30,
+      render: (issue) => h(IssueStatusIconWithTaskSummary, { issue }),
+    },
+    {
+      key: "title",
       title: t("issue.table.name"),
-      width: "minmax(auto, 1fr)",
+      resizable: true,
+      render: (issue) => {
+        return h("div", { class: "flex items-center overflow-hidden" }, [
+          h(
+            "div",
+            { class: "whitespace-nowrap mr-2 text-control" },
+            props.mode == "ALL"
+              ? `${issue.projectEntity.key}-${issue.uid}`
+              : `#${issue.uid}`
+          ),
+          h(
+            NPerformantEllipsis,
+            {
+              class: `flex-1 truncate ${
+                isAssigneeAttentionOn(issue) ? "font-semibold" : ""
+              }`,
+            },
+            {
+              default: () => h("span", { innerHTML: highlight(issue.title) }),
+              tooltip: () =>
+                h(
+                  "div",
+                  { class: "whitespace-pre-wrap break-words break-all" },
+                  issue.title
+                ),
+            }
+          ),
+        ]);
+      },
+    },
+    {
+      key: "updateTime",
+      title: t("issue.table.updated"),
+      width: 150,
+      resizable: true,
+      hide: !showExtendedColumns.value,
+      render: (issue) =>
+        h(
+          EllipsisText,
+          { performant: true },
+          humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000)
+        ),
+    },
+    {
+      key: "approver",
+      width: 150,
+      resizable: true,
+      title: t("issue.table.approver"),
+      hide: !showExtendedColumns.value,
+      render: (issue) => h(CurrentApproverV1, { issue }),
+    },
+    {
+      key: "assignee",
+      resizable: true,
+      title: t("issue.table.assignee"),
+      width: 150,
+      hide: !showExtendedColumns.value,
+      render: (issue) => {
+        if (issue.assigneeEntity) {
+          return h(
+            "div",
+            { class: "flex flex-row items-center overflow-hidden gap-x-2" },
+            [
+              h(BBAvatar, {
+                size: "SMALL",
+                username: issue.assigneeEntity.title,
+              }),
+              h("span", { class: "truncate" }, issue.assigneeEntity.title),
+            ]
+          );
+        } else {
+          return h("span", {}, "-");
+        }
+      },
+    },
+    {
+      key: "creator",
+      resizable: true,
+      width: 150,
+      title: t("issue.table.creator"),
+      hide: !showExtendedColumns.value,
+      render: (issue) =>
+        h(
+          "div",
+          { class: "flex flex-row items-center overflow-hidden gap-x-2" },
+          [
+            h(BBAvatar, { size: "SMALL", username: issue.creator }),
+            h("span", { class: "truncate" }, issue.creatorEntity.title),
+          ]
+        ),
     },
   ];
-  if (showExtendedColumns.value) {
-    columns.push(
-      {
-        title: t("issue.table.updated"),
-        width: "minmax(auto, 7rem)",
-      },
-      {
-        title: t("issue.table.approver"),
-        width: "minmax(auto, 8rem)",
-      },
-      {
-        title: t("issue.table.assignee"),
-        width: "minmax(auto, 8rem)",
-      },
-      {
-        title: t("issue.table.creator"),
-        width: "minmax(auto, 8rem)",
-      }
-    );
-  }
-
-  if (props.issueList.length === 0) {
-    return columns.map((col) => ({
-      ...col,
-      width: "1fr",
-    }));
-  }
-
-  return columns;
+  return columns.filter((column) => !column.hide);
 });
 
 interface LocalState {
@@ -221,13 +202,13 @@ const props = withDefaults(
     issueList: ComposedIssue[];
     mode?: Mode;
     highlightText?: string;
-    showPlaceholder?: boolean;
+    loading?: boolean;
   }>(),
   {
     title: "",
     mode: "ALL",
     highlightText: "",
-    showPlaceholder: false,
+    loading: true,
   }
 );
 
@@ -257,45 +238,6 @@ const selectedIssueList = computed(() => {
   );
 });
 
-const isIssueSelected = (issue: ComposedIssue): boolean => {
-  return state.selectedIssueIdList.has(issue.uid);
-};
-
-const allSelectionState = computed(() => {
-  const set = state.selectedIssueIdList;
-
-  const checked =
-    set.size > 0 && props.issueList.every((issue) => set.has(issue.uid));
-  const indeterminate =
-    !checked && props.issueList.some((issue) => set.has(issue.uid));
-
-  return {
-    checked,
-    indeterminate,
-  };
-});
-
-const setIssueSelection = (issue: ComposedIssue, selected: boolean) => {
-  if (selected) {
-    state.selectedIssueIdList.add(issue.uid);
-  } else {
-    state.selectedIssueIdList.delete(issue.uid);
-  }
-};
-const setAllIssuesSelection = (selected: boolean): void => {
-  const set = state.selectedIssueIdList;
-  const list = props.issueList;
-  if (selected) {
-    list.forEach((issue) => {
-      set.add(issue.uid);
-    });
-  } else {
-    list.forEach((issue) => {
-      set.delete(issue.uid);
-    });
-  }
-};
-
 const isAssigneeAttentionOn = (issue: ComposedIssue) => {
   if (issue.projectEntity.workflow === Workflow.VCS) {
     return false;
@@ -311,28 +253,28 @@ const isAssigneeAttentionOn = (issue: ComposedIssue) => {
   return false;
 };
 
-const clickIssue = (
-  issue: ComposedIssue,
-  _: number,
-  row: number,
-  e: MouseEvent
-) => {
-  emitWindowEvent("bb.issue-detail", {
-    uid: issue.uid,
-  });
-  const route = router.resolve({
-    name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-    params: {
-      projectId: extractProjectResourceName(issue.project),
-      issueSlug: issueSlug(issue.title, issue.uid),
+const rowProps = (issue: ComposedIssue) => {
+  return {
+    style: "cursor: pointer;",
+    onClick: (e: MouseEvent) => {
+      emitWindowEvent("bb.issue-detail", {
+        uid: issue.uid,
+      });
+      const route = router.resolve({
+        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+        params: {
+          projectId: extractProjectResourceName(issue.project),
+          issueSlug: issueSlug(issue.title, issue.uid),
+        },
+      });
+      const url = route.fullPath;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
+      }
     },
-  });
-  const url = route.fullPath;
-  if (e.ctrlKey || e.metaKey) {
-    window.open(url, "_blank");
-  } else {
-    router.push(url);
-  }
+  };
 };
 
 watch(
