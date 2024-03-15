@@ -173,10 +173,11 @@ const state = reactive<LocalState>({
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const prepareDatabaseList = () => {
+  const filter = `instance == "instances/-"`;
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    databaseStore.searchOrListDatabases({
-      parent: "instances/-",
+    databaseStore.searchDatabases({
+      filter,
     });
   }
 };

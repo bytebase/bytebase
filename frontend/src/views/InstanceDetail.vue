@@ -123,8 +123,9 @@ const environment = computed(() => {
 });
 
 watchEffect(() => {
-  databaseStore.searchOrListDatabases({
-    parent: instance.value.name,
+  const filter = `instance == "${instance.value.name}"`;
+  databaseStore.searchDatabases({
+    filter,
   });
 });
 
@@ -158,8 +159,9 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      return databaseStore.searchOrListDatabases({
-        parent: instance.value.name,
+      const filter = `instance == "${instance.value.name}"`;
+      databaseStore.searchDatabases({
+        filter,
       });
     });
     // Clear the db schema metadata cache entities.

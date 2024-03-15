@@ -33,8 +33,7 @@ const prepareDatabases = async () => {
     filter = `project == "${projectNamePrefix}${route.params.projectId}"`;
   }
 
-  await databaseStore.searchOrListDatabases({
-    parent: "instances/-",
+  await databaseStore.searchDatabases({
     filter,
   });
 };

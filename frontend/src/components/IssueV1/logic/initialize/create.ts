@@ -547,8 +547,7 @@ export const prepareDatabaseList = async (
 };
 
 const prepareDatabaseListByProject = async (project: string) => {
-  await useDatabaseV1Store().searchOrListDatabases({
-    parent: `instances/-`,
+  await useDatabaseV1Store().searchDatabases({
     filter: `project == "${project}"`,
   });
 };
