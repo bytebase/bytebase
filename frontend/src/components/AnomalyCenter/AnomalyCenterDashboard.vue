@@ -175,8 +175,9 @@ const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 const prepareDatabaseList = () => {
   // It will also be called when user logout
   if (currentUserV1.value.name !== UNKNOWN_USER_NAME) {
-    databaseStore.searchOrListDatabases({
-      parent: "instances/-",
+    const filter = `instance == "instances/-"`;
+    databaseStore.searchDatabases({
+      filter,
     });
   }
 };
