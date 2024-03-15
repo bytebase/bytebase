@@ -9,21 +9,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*StatementDisallowmixDDLDMLAdvisor)(nil)
-	_ ast.Visitor     = (*statementDisallowMixDDLDMLChecker)(nil)
+	_ advisor.Advisor = (*StatementDisallowMixDDLDMLAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixDDLDML, &StatementDisallowmixDDLDMLAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementDisallowMixDDLDML, &StatementDisallowMixDDLDMLAdvisor{})
 }
 
-// StatementDisallowmixDDLDMLAdvisor is the advisor checking for no mixed DDL and DML.
-type StatementDisallowmixDDLDMLAdvisor struct {
+// StatementDisallowMixDDLDMLAdvisor is the advisor checking for no mixed DDL and DML.
+type StatementDisallowMixDDLDMLAdvisor struct {
 }
 
 // Check checks for no mixed DDL and DML.
-func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
-	// TODO(p0ny): implement it.
+func (*StatementDisallowMixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) ([]advisor.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -33,41 +31,38 @@ func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	if err != nil {
 		return nil, err
 	}
-	checker := &statementDisallowMixDDLDMLChecker{
-		level: level,
-		title: string(ctx.Rule.Type),
-	}
+	title := string(ctx.Rule.Type)
+
+	var hasDDL, hasDML bool
 	for _, stmtNode := range root {
-		checker.text = stmtNode.Text()
-		checker.line = stmtNode.OriginTextPosition()
-		(stmtNode).Accept(checker)
+		if _, ok := stmtNode.(ast.DDLNode); ok {
+			hasDDL = true
+		}
+		if _, ok := stmtNode.(ast.DMLNode); ok {
+			hasDML = true
+		}
+		if hasDDL && hasDML {
+			break
+		}
 	}
 
-	if len(checker.adviceList) == 0 {
-		checker.adviceList = append(checker.adviceList, advisor.Advice{
+	if hasDDL && hasDML {
+		return []advisor.Advice{
+			{
+				Status:  level,
+				Title:   title,
+				Content: "Mixing DDL with DML is not allowed",
+				Code:    advisor.StatementDisallowMixDDLDML,
+			},
+		}, nil
+	}
+
+	return []advisor.Advice{
+		{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
-		})
-	}
-	return checker.adviceList, nil
-}
-
-type statementDisallowMixDDLDMLChecker struct {
-	adviceList []advisor.Advice
-	level      advisor.Status
-	title      string
-	text       string
-	line       int
-}
-
-// Enter implements the ast.Visitor interface.
-func (*statementDisallowMixDDLDMLChecker) Enter(in ast.Node) (ast.Node, bool) {
-	return in, false
-}
-
-// Leave implements the ast.Visitor interface.
-func (*statementDisallowMixDDLDMLChecker) Leave(in ast.Node) (ast.Node, bool) {
-	return in, true
+		},
+	}, nil
 }
