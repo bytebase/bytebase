@@ -88,6 +88,7 @@ const allowedEngineTypeList: Engine[] = [
   Engine.MYSQL,
   Engine.TIDB,
   Engine.POSTGRES,
+  Engine.ORACLE,
 ];
 
 const isValidId = (id: any): id is string => {

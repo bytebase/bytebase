@@ -523,8 +523,9 @@ func (r *rewriter) assembleCreateTable(ctx *parser.Create_tableContext) error {
 		return errors.Wrap(err, "failed to write string")
 	}
 	// Write the suffix part.
+	start := ctx.Relational_table().RIGHT_PAREN().GetSymbol().GetTokenIndex() + 1
 	if _, err := r.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
-		Start: ctx.Relational_table().GetStop().GetTokenIndex() + 1,
+		Start: start,
 		Stop:  ctx.GetStop().GetTokenIndex(),
 	})); err != nil {
 		return errors.Wrap(err, "failed to write string")
