@@ -63,16 +63,9 @@
         :page-size="50"
       >
         <template #table="{ issueList, loading }">
-          <div
-            v-if="state.loading"
-            class="absolute inset-0 bg-white/50 pt-[10rem] flex flex-col items-center"
-          >
-            <BBSpin />
-          </div>
           <IssueTableV1
-            v-else
             mode="PROJECT"
-            :show-placeholder="!loading"
+            :loading="loading"
             :issue-list="issueList"
             :highlight-text="state.params.query"
           />
