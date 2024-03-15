@@ -366,7 +366,8 @@
       "generating": "Đang tạo",
       "empty-rollback-statement": "Câu lệnh rollback trống",
       "cancel-generating": "Hủy việc tạo khôi phục SQL",
-      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}"
+      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}",
+      "maximum-size-tips": "Kích thước dữ liệu khôi phục tối đa được hỗ trợ là 32MB"
     },
     "skip-failed-in-current-stage": "Bỏ qua các nhiệm vụ thất bại trong giai đoạn hiện tại",
     "apply-change-to-all-pending-tasks": {
