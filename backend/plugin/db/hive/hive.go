@@ -27,7 +27,7 @@ var (
 )
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// field legality check
+	// field legality check.
 	if config.Username == "" {
 		return nil, errors.Errorf("user not set")
 	}
@@ -37,14 +37,14 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	// initialize database connection
+	// initialize database connection.
 	configuration := gohive.NewConnectConfiguration()
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
 	// TODO(tommy): actually there are various kinds of authentication to choose among [SASL, KERBEROS, NOSASL, PLAIN SASL]
-	// "NONE" refers to PLAIN SASL that doesn't need authentication
+	// "NONE" refers to PLAIN SASL that doesn't need authentication.
 	authMethods := "NONE"
 	conn, errConn := gohive.Connect(config.Host, port, authMethods, configuration)
 	if errConn != nil {
@@ -94,7 +94,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	return rowCount, nil
 }
 
-// Used for execute readonly SELECT statement
+// Used for execute readonly SELECT statement.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	cursor := d.dbClient.Cursor()
 	cursor.Exec(ctx, statement)
