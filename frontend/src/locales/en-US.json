@@ -366,7 +366,8 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}"
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}",
+      "maximum-size-tips": "Maximum rollback data size supported is 32MB"
     },
     "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "apply-change-to-all-pending-tasks": {
