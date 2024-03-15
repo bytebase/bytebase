@@ -1406,7 +1406,11 @@
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
     },
-    "production-environment": "生产环境"
+    "production-environment": "生产环境",
+    "access-control": {
+      "title": "访问控制",
+      "disable-copy-data-from-sql-editor": "禁止从 SQL 编辑器复制数据"
+    }
   },
   "quick-start": {
     "self": "新手任务",

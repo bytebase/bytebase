@@ -154,13 +154,11 @@
                 :text="true"
                 @update:value="toggleSQLReviewPolicy"
               />
-              <NButton
-                quaternary
-                type="primary"
+              <span
+                class="textlabel normal-link !text-accent"
                 @click="onSQLReviewPolicyClick"
+                >{{ sqlReviewPolicy.name }}</span
               >
-                {{ sqlReviewPolicy.name }}
-              </NButton>
             </div>
             <NButton
               v-else-if="hasPermission('bb.policies.update')"
@@ -171,6 +169,26 @@
             <span v-else class="textinfolabel">
               {{ $t("sql-review.no-policy-set") }}
             </span>
+          </div>
+        </div>
+
+        <div v-if="!create" class="flex flex-col gap-y-2">
+          <label class="textlabel">
+            {{ $t("environment.access-control.title") }}
+          </label>
+          <div>
+            <div class="inline-flex items-center gap-x-2">
+              <Switch
+                :value="disableCopyDataPolicy"
+                :text="true"
+                @update:value="upsertPolicy"
+              />
+              <span class="textlabel">{{
+                $t(
+                  "environment.access-control.disable-copy-data-from-sql-editor"
+                )
+              }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -251,7 +269,7 @@ import { computedAsync, useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, PropType, watch, ref } from "vue";
+import { computed, reactive, PropType, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
@@ -264,6 +282,7 @@ import {
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
+  usePolicyV1Store,
   useSQLReviewStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
@@ -282,6 +301,7 @@ import {
   Policy,
   PolicyType,
   BackupPlanSchedule,
+  PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
@@ -333,6 +353,7 @@ const emit = defineEmits([
 const { t } = useI18n();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 const environmentList = useEnvironmentV1List();
 const sqlReviewStore = useSQLReviewStore();
@@ -365,6 +386,21 @@ const sqlReviewPolicy = computedAsync(() => {
   );
 }, undefined);
 
+const disableCopyDataPolicy = computed(() => {
+  const policies = policyStore.policyList.filter(
+    (policy) =>
+      policy.resourceType === PolicyResourceType.ENVIRONMENT &&
+      policy.type === PolicyType.DISABLE_COPY_DATA &&
+      policy.disableCopyDataPolicy?.active
+  );
+  for (const policy of policies) {
+    if (policy.resourceUid === (props.environment as Environment).uid) {
+      return true;
+    }
+  }
+  return false;
+});
+
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
     router.push({
@@ -382,6 +418,17 @@ const onSQLReviewPolicyClick = () => {
     });
   }
 };
+
+const prepareEnvironmentDisableCopyDataPolicy = async () => {
+  await policyStore.fetchPolicies({
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    policyType: PolicyType.DISABLE_COPY_DATA,
+  });
+};
+
+onMounted(() => {
+  prepareEnvironmentDisableCopyDataPolicy();
+});
 
 watch(
   () => props.environment,
@@ -593,6 +640,21 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-review.policy-updated"),
+  });
+};
+
+const upsertPolicy = async (on: boolean) => {
+  await policyStore.createPolicy(props.environment.name, {
+    type: PolicyType.DISABLE_COPY_DATA,
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    disableCopyDataPolicy: {
+      active: on,
+    },
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
 };
 </script>

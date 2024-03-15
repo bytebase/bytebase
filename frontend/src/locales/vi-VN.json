@@ -1406,7 +1406,11 @@
       "self": "Vô hiệu hóa sao lưu tự động cơ sở dữ liệu",
       "content": "Việc tắt chính sách sao lưu tự động không được áp dụng trở về trước.\nBạn có chắc chắn về việc áp dụng cho tất cả cơ sở dữ liệu trong môi trường này không?"
     },
-    "production-environment": "Môi trường sản xuất"
+    "production-environment": "Môi trường sản xuất",
+    "access-control": {
+      "title": "Kiểm soát truy cập",
+      "disable-copy-data-from-sql-editor": "Vô hiệu hóa sao chép dữ liệu từ trình chỉnh sửa SQL"
+    }
   },
   "quick-start": {
     "self": "Bắt đầu nhanh",
