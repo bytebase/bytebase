@@ -27,6 +27,10 @@ func TestGetTextLength(t *testing.T) {
 			s:    "char(123)",
 			want: 123,
 		},
+		{
+			s:    "varchar(123)",
+			want: 123,
+		},
 	}
 	for _, tc := range tests {
 		got := getTextLength(tc.s)

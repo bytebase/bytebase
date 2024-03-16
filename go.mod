@@ -16,8 +16,8 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.50.0
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/bytebase/mysql-parser v0.0.0-20240220070334-5b2c6e79084d
-	github.com/bytebase/plsql-parser v0.0.0-20240311082012-3f6b21c94406
+	github.com/bytebase/mysql-parser v0.0.0-20240315091443-ac59cc21115a
+	github.com/bytebase/plsql-parser v0.0.0-20240312070534-3df16db96661
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
@@ -39,7 +39,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/improbable-eng/grpc-web v0.15.0
 	github.com/jackc/pgtype v1.14.2
-	github.com/jackc/pgx/v5 v5.5.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo/v4 v4.11.4
@@ -234,7 +234,7 @@ require (
 	github.com/jackc/pgconn v1.14.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

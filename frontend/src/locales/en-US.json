@@ -366,7 +366,8 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}"
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}",
+      "maximum-size-tips": "Maximum rollback data size supported is 32MB"
     },
     "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "apply-change-to-all-pending-tasks": {
@@ -1405,7 +1406,11 @@
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "production-environment": "Production environment"
+    "production-environment": "Production environment",
+    "access-control": {
+      "title": "Access control",
+      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+    }
   },
   "quick-start": {
     "self": "Quickstart",
@@ -2254,9 +2259,10 @@
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
-    "project-desc": "Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read",
-    "public": "Public",
-    "public-desc": "Sheet OWNER can read/write, and all others can read",
+    "project-read": "Project read",
+    "project-read-desc": "Both sheet OWNER and project OWNER can read/write, other project members can read",
+    "project-write": "Project write",
+    "project-write-desc": "Both sheet OWNER and project members can read/write",
     "create-read-only-data-source": "Go to create",
     "go-back": "Go Back",
     "save-sheet": "Save Sheet",
@@ -3317,7 +3323,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
-    "select-database-placeholder": "Select a database (MySQL, PostgreSQL and TiDB only)",
+    "select-database-placeholder": "Select a database (MySQL, PostgreSQL, TiDB and Oracle only)",
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully",

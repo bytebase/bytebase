@@ -154,13 +154,11 @@
                 :text="true"
                 @update:value="toggleSQLReviewPolicy"
               />
-              <NButton
-                quaternary
-                type="primary"
+              <span
+                class="textlabel normal-link !text-accent"
                 @click="onSQLReviewPolicyClick"
+                >{{ sqlReviewPolicy.name }}</span
               >
-                {{ sqlReviewPolicy.name }}
-              </NButton>
             </div>
             <NButton
               v-else-if="hasPermission('bb.policies.update')"
@@ -171,6 +169,27 @@
             <span v-else class="textinfolabel">
               {{ $t("sql-review.no-policy-set") }}
             </span>
+          </div>
+        </div>
+
+        <div v-if="!create" class="flex flex-col gap-y-2">
+          <label class="textlabel">
+            {{ $t("environment.access-control.title") }}
+          </label>
+          <div>
+            <div class="inline-flex items-center gap-x-2">
+              <Switch
+                :value="disableCopyDataPolicy"
+                :text="true"
+                :disabled="!allowEditDisableCopyData"
+                @update:value="upsertPolicy"
+              />
+              <span class="textlabel">{{
+                $t(
+                  "environment.access-control.disable-copy-data-from-sql-editor"
+                )
+              }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -247,11 +266,11 @@
 </template>
 
 <script lang="ts" setup>
-import { useEventListener } from "@vueuse/core";
+import { computedAsync, useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, reactive, PropType, watch, watchEffect, ref } from "vue";
+import { computed, reactive, PropType, watch, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
@@ -264,13 +283,13 @@ import {
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
+  usePolicyV1Store,
   useSQLReviewStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import type {
   ResourceId,
-  SQLReviewPolicy,
   ValidatedMessage,
   WorkspacePermission,
 } from "@/types";
@@ -283,6 +302,7 @@ import {
   Policy,
   PolicyType,
   BackupPlanSchedule,
+  PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import {
   extractEnvironmentResourceName,
@@ -334,6 +354,7 @@ const emit = defineEmits([
 const { t } = useI18n();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 const environmentList = useEnvironmentV1List();
 const sqlReviewStore = useSQLReviewStore();
@@ -357,30 +378,24 @@ const bindings = computed(() => {
   return {};
 });
 
-const environmentId = computed(() => {
+const sqlReviewPolicy = computedAsync(() => {
   if (props.create) {
-    return;
+    return undefined;
   }
-  return extractEnvironmentResourceName(
+  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentName(
     (props.environment as Environment).name
   );
-});
+}, undefined);
 
-const prepareSQLReviewPolicy = () => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentId(
-    environmentId.value
+const disableCopyDataPolicy = computed(() => {
+  const policies = policyStore.policyList.filter(
+    (policy) =>
+      policy.resourceType === PolicyResourceType.ENVIRONMENT &&
+      policy.type === PolicyType.DISABLE_COPY_DATA &&
+      policy.resourceUid === (props.environment as Environment).uid &&
+      policy.disableCopyDataPolicy?.active
   );
-};
-watchEffect(prepareSQLReviewPolicy);
-
-const sqlReviewPolicy = computed((): SQLReviewPolicy | undefined => {
-  if (!environmentId.value) {
-    return;
-  }
-  return sqlReviewStore.getReviewPolicyByEnvironmentId(environmentId.value);
+  return policies.length > 0;
 });
 
 const onSQLReviewPolicyClick = () => {
@@ -395,11 +410,22 @@ const onSQLReviewPolicyClick = () => {
     router.push({
       name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
       query: {
-        environmentId: environmentId.value,
+        environmentId: (props.environment as Environment).uid,
       },
     });
   }
 };
+
+const prepareEnvironmentDisableCopyDataPolicy = async () => {
+  await policyStore.fetchPolicies({
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    policyType: PolicyType.DISABLE_COPY_DATA,
+  });
+};
+
+onMounted(() => {
+  prepareEnvironmentDisableCopyDataPolicy();
+});
 
 watch(
   () => props.environment,
@@ -479,6 +505,10 @@ const allowEdit = computed(() => {
     ((state.environment as Environment).state === State.ACTIVE &&
       hasPermission("bb.environments.update"))
   );
+});
+
+const allowEditDisableCopyData = computed(() => {
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const allowCreate = computed(() => {
@@ -611,6 +641,21 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("sql-review.policy-updated"),
+  });
+};
+
+const upsertPolicy = async (on: boolean) => {
+  await policyStore.createPolicy(props.environment.name, {
+    type: PolicyType.DISABLE_COPY_DATA,
+    resourceType: PolicyResourceType.ENVIRONMENT,
+    disableCopyDataPolicy: {
+      active: on,
+    },
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
   });
 };
 </script>

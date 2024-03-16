@@ -255,6 +255,9 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
 	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
+	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
 	if err != nil {

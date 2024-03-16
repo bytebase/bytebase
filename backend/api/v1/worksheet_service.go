@@ -191,10 +191,9 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			switch spec.operator {
 			case comparatorTypeEqual:
 				worksheetFind.CreatorID = &user.ID
-				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectWorkSheet, store.PublicWorkSheet, store.PrivateWorkSheet}
 			case comparatorTypeNotEqual:
 				worksheetFind.ExcludedCreatorID = &user.ID
-				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectWorkSheet, store.PublicWorkSheet}
+				worksheetFind.Visibilities = []store.WorkSheetVisibility{store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet}
 				worksheetFind.PrincipalID = &user.ID
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid operator %q for creator", spec.operator))
@@ -433,27 +432,37 @@ func (s *WorksheetService) findWorksheet(ctx context.Context, find *store.FindWo
 
 // canWriteWorksheet check if the principal can write the worksheet.
 // worksheet if writable when:
-// PRIVATE: the creator only.
-// PROJECT: the creator or project role can manage worksheet, workspace Owner and DBA.
-// PUBLIC: the creator only.
+// PRIVATE: workspace Owner/DBA and the creator only.
+// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
+// PROJECT_READ: workspace Owner/DBA and project owner.
 func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
+	// Worksheet creator and workspace Owner/DBA can always write.
 	if worksheet.CreatorID == user.ID {
 		return true, nil
 	}
+	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+		return true, nil
+	}
 
-	if worksheet.Visibility == store.ProjectWorkSheet {
-		projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
-		if err != nil {
-			return false, err
-		}
-		if len(projectRoles) == 0 {
-			return false, nil
-		}
+	projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
+	if err != nil {
+		return false, err
+	}
+	if len(projectRoles) == 0 {
+		return false, nil
+	}
+
+	switch worksheet.Visibility {
+	case store.PrivateWorkSheet:
+		return false, nil
+	case store.ProjectWriteWorkSheet:
+		return len(projectRoles) > 0, nil
+	case store.ProjectReadWorkSheet:
 		return projectRoles[api.ProjectOwner], nil
 	}
 
@@ -462,30 +471,35 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 
 // canReadWorksheet check if the principal can read the worksheet.
 // worksheet is readable when:
-// PRIVATE: the creator only.
-// PROJECT: the creator and members in the project.
-// PUBLIC: everyone in the workspace.
+// PRIVATE: workspace Owner/DBA and the creator only.
+// PROJECT_WRITE: workspace Owner/DBA and all members in the project.
+// PROJECT_READ: workspace Owner/DBA and all members in the project.
 func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *store.WorkSheetMessage) (bool, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return false, status.Errorf(codes.Internal, "user not found")
 	}
 
+	// Worksheet creator and workspace Owner/DBA can always read.
+	if worksheet.CreatorID == user.ID {
+		return true, nil
+	}
+	if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
+		return true, nil
+	}
+
 	switch worksheet.Visibility {
 	case store.PrivateWorkSheet:
-		return worksheet.CreatorID == user.ID, nil
-	case store.PublicWorkSheet:
-		return true, nil
-	case store.ProjectWorkSheet:
-		if slices.Contains(user.Roles, api.WorkspaceAdmin) || slices.Contains(user.Roles, api.WorkspaceDBA) {
-			return true, nil
-		}
+		return false, nil
+	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
+		// For project level visibility, users can read the worksheet as long as they're the project member.
 		projectRoles, err := s.findProjectRoles(ctx, worksheet.ProjectUID, user)
 		if err != nil {
 			return false, err
 		}
 		return len(projectRoles) > 0, nil
 	}
+
 	return false, nil
 }
 
@@ -514,10 +528,10 @@ func (s *WorksheetService) convertToAPIWorksheetMessage(ctx context.Context, wor
 
 	visibility := v1pb.Worksheet_VISIBILITY_UNSPECIFIED
 	switch worksheet.Visibility {
-	case store.PublicWorkSheet:
-		visibility = v1pb.Worksheet_VISIBILITY_PUBLIC
-	case store.ProjectWorkSheet:
-		visibility = v1pb.Worksheet_VISIBILITY_PROJECT
+	case store.ProjectReadWorkSheet:
+		visibility = v1pb.Worksheet_VISIBILITY_PROJECT_READ
+	case store.ProjectWriteWorkSheet:
+		visibility = v1pb.Worksheet_VISIBILITY_PROJECT_WRITE
 	case store.PrivateWorkSheet:
 		visibility = v1pb.Worksheet_VISIBILITY_PRIVATE
 	}
@@ -573,10 +587,10 @@ func convertToStoreWorksheetVisibility(visibility v1pb.Worksheet_Visibility) (st
 	switch visibility {
 	case v1pb.Worksheet_VISIBILITY_UNSPECIFIED:
 		return store.WorkSheetVisibility(""), status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid visibility %q", visibility))
-	case v1pb.Worksheet_VISIBILITY_PUBLIC:
-		return store.PublicWorkSheet, nil
-	case v1pb.Worksheet_VISIBILITY_PROJECT:
-		return store.ProjectWorkSheet, nil
+	case v1pb.Worksheet_VISIBILITY_PROJECT_READ:
+		return store.ProjectReadWorkSheet, nil
+	case v1pb.Worksheet_VISIBILITY_PROJECT_WRITE:
+		return store.ProjectWriteWorkSheet, nil
 	case v1pb.Worksheet_VISIBILITY_PRIVATE:
 		return store.PrivateWorkSheet, nil
 	default:

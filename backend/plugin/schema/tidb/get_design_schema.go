@@ -9,6 +9,7 @@ import (
 	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -18,7 +19,7 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_TIDB, GetDesignSchema)
 }
 
-func GetDesignSchema(baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 	stmts, err := tidbparser.ParseTiDB(baselineSchema, "", "")
 	if err != nil {
@@ -70,7 +71,7 @@ type tidbDesignSchemaGenerator struct {
 	currentTable *tableState
 	err          error
 
-	actions []tidbparser.StringsManipulatorAction
+	actions []base.StringsManipulatorAction
 }
 
 func (g *tidbDesignSchemaGenerator) Enter(in tidbast.Node) (tidbast.Node, bool) {

@@ -9630,7 +9630,15 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter is used to filter databases returned in the list.
-For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. </p></td>
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+The field only support in filter:
+- project with &#34;=&#34; operator, for example:
+ - project = &#34;projects/sample-project&#34;
+ - project = &#34;projects/-&#34;
+- instance with &#34;=&#34; operator, for example:
+ - instance = &#34;instances/mysql&#34;
+ - instance = &#34;instances/-&#34;
+for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. </p></td>
                 </tr>
               
                 <tr>
@@ -10240,6 +10248,14 @@ For MySQL, the value is for RANGE and LIST partition types,
 - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE.
 - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values.
 - For others, it&#39;s an empty string. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>use_default</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The use_default is whether the users use the default partition, it stores the different value for different database engines.
+For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. </p></td>
                 </tr>
               
                 <tr>
@@ -27844,15 +27860,15 @@ Format: worksheets/{worksheet} </p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PUBLIC</td>
+                <td>VISIBILITY_PROJECT_READ</td>
                 <td>1</td>
-                <td><p>Public, worksheet OWNER can read/write, and all others can read.</p></td>
+                <td><p>Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read.</p></td>
               </tr>
             
               <tr>
-                <td>VISIBILITY_PROJECT</td>
+                <td>VISIBILITY_PROJECT_WRITE</td>
                 <td>2</td>
-                <td><p>Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read.</p></td>
+                <td><p>Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet.</p></td>
               </tr>
             
               <tr>

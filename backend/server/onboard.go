@@ -180,7 +180,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 		DatabaseUID: &prodDatabase.UID,
 		Title:       "Sample Sheet",
 		Statement:   "SELECT * FROM salary;",
-		Visibility:  store.ProjectWorkSheet,
+		Visibility:  store.ProjectReadWorkSheet,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create sample work sheet")
 	}

@@ -1,16 +1,12 @@
 <template>
   <SheetConnectionIcon :tab="tab" class="w-4 h-4" />
-
-  <template v-if="sheet">
-    <heroicons-outline:user-group
-      v-if="sheet.visibility === Worksheet_Visibility.VISIBILITY_PROJECT"
-      class="w-4 h-4"
-    />
-    <heroicons-outline:globe
-      v-if="sheet.visibility === Worksheet_Visibility.VISIBILITY_PUBLIC"
-      class="w-4 h-4"
-    />
-  </template>
+  <heroicons-outline:user-group
+    v-if="
+      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_READ ||
+      sheet?.visibility === Worksheet_Visibility.VISIBILITY_PROJECT_WRITE
+    "
+    class="w-4 h-4"
+  />
   <template v-if="tab.mode === 'ADMIN'">
     <heroicons-outline:wrench class="w-4 h-4" />
   </template>

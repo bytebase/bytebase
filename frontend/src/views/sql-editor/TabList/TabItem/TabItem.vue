@@ -7,7 +7,7 @@
         hovering: state.hovering,
         admin: tab.mode === 'ADMIN',
       },
-      tab.status,
+      tab.status.toLowerCase(),
     ]"
     :data-status="tab.status"
     :data-sheet="tab.sheet"

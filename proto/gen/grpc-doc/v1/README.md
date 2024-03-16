@@ -3278,7 +3278,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - project with &#34;=&#34; operator, for example: - project = &#34;projects/sample-project&#34; - project = &#34;projects/-&#34; - instance with &#34;=&#34; operator, for example: - instance = &#34;instances/mysql&#34; - instance = &#34;instances/-&#34; for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. |
 | permission | [string](#string) |  | By default, the permission &#34;bb.databases.get&#34; is used. Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. |
 
 
@@ -3488,6 +3488,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | type | [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type) |  | The type of a table partition. |
 | expression | [string](#string) |  | The expression is the expression of a table partition. For PostgreSQL, the expression is the text of {FOR VALUES partition_bound_spec}, see https://www.postgresql.org/docs/current/sql-createtable.html. For MySQL, the expression is the `expr` or `column_list` of the following syntax. PARTITION BY { [LINEAR] HASH(expr) | [LINEAR] KEY [ALGORITHM={1 | 2}] (column_list) | RANGE{(expr) | COLUMNS(column_list)} | LIST{(expr) | COLUMNS(column_list)} }. |
 | value | [string](#string) |  | The value is the value of a table partition. For MySQL, the value is for RANGE and LIST partition types, - For a RANGE partition, it contains the value set in the partition&#39;s VALUES LESS THAN clause, which can be either an integer or MAXVALUE. - For a LIST partition, this column contains the values defined in the partition&#39;s VALUES IN clause, which is a list of comma-separated integer values. - For others, it&#39;s an empty string. |
+| use_default | [string](#string) |  | The use_default is whether the users use the default partition, it stores the different value for different database engines. For MySQL, it&#39;s [INT] type, 0 means not use default partition, otherwise, it&#39;s equals to number in syntax [SUB]PARTITION {number}. |
 | subpartitions | [TablePartitionMetadata](#bytebase-v1-TablePartitionMetadata) | repeated | The subpartitions is the list of subpartitions in a table partition. |
 
 
@@ -10146,8 +10147,8 @@ The worksheet&#39;s `name` field is used to identify the worksheet to update. Fo
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | VISIBILITY_UNSPECIFIED | 0 |  |
-| VISIBILITY_PUBLIC | 1 | Public, worksheet OWNER can read/write, and all others can read. |
-| VISIBILITY_PROJECT | 2 | Project, worksheet OWNER and project OWNER can read/write, and project DEVELOPER can read. |
+| VISIBILITY_PROJECT_READ | 1 | Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. |
+| VISIBILITY_PROJECT_WRITE | 2 | Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. |
 | VISIBILITY_PRIVATE | 3 | Private, only worksheet OWNER can read/write. |
 
 

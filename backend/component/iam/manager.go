@@ -51,15 +51,29 @@ func NewManager(store *store.Store) (*Manager, error) {
 	}, nil
 }
 
-// Check if the user has the permission p
+// Check if the user or `allUsers` has the permission p
 // or has the permission p in every project.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
+	ok, err := m.doCheckPermission(ctx, p, user, projectIDs...)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check permission")
+	}
+	if ok {
+		return true, nil
+	}
+	allUsers, err := m.store.GetUserByID(ctx, api.AllUsersID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get allUsers")
+	}
+	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
+}
+
+func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
 	workspaceRoles := m.getWorkspaceRoles(user)
 	projectRoles, err := m.getProjectRoles(ctx, user, projectIDs)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project roles")
 	}
-
 	return m.hasPermission(ctx, p, workspaceRoles, projectRoles)
 }
 
