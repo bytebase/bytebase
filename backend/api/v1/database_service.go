@@ -126,18 +126,11 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 }
 
 func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.SearchDatabasesRequest) (*v1pb.SearchDatabasesResponse, error) {
-	find := &store.FindDatabaseMessage{}
-	if request.Filter != "" {
-		projectFilter, err := getProjectFilter(request.Filter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		projectID, err := common.GetProjectID(projectFilter)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid project %q in the filter", projectFilter)
-		}
-		find.ProjectID = &projectID
+	find, err := getDatabaseFind(request.Filter)
+	if err != nil {
+		return nil, err
 	}
+
 	permission := iam.PermissionDatabasesGet
 	if request.GetPermission() == iam.PermissionDatabasesQuery.String() {
 		permission = iam.PermissionDatabasesQuery
@@ -175,6 +168,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 	if instanceID != "-" {
 		find.InstanceID = &instanceID
 	}
+
 	if request.Filter != "" {
 		projectFilter, err := getProjectFilter(request.Filter)
 		if err != nil {
@@ -203,6 +197,45 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		response.Databases = append(response.Databases, database)
 	}
 	return response, nil
+}
+
+func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
+	filters, err := parseFilter(filter)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+
+	find := &store.FindDatabaseMessage{}
+
+	for _, spec := range filters {
+		switch spec.key {
+		case "instance":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
+			}
+			instanceID, err := common.GetInstanceID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			if instanceID != "-" {
+				find.InstanceID = &instanceID
+			}
+		case "project":
+			if spec.operator != comparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "project" filter`)
+			}
+
+			projectID, err := common.GetProjectID(spec.value)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			}
+			if projectID != "-" {
+				find.ProjectID = &projectID
+			}
+		}
+	}
+
+	return find, nil
 }
 
 func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
