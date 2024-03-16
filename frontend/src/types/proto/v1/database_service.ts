@@ -165,7 +165,15 @@ export interface SearchDatabasesRequest {
   pageToken: string;
   /**
    * Filter is used to filter databases returned in the list.
-   * For example, "project = projects/{project}" can be used to list databases in a project.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - project with "=" operator, for example:
+   *  - project = "projects/sample-project"
+   *  - project = "projects/-"
+   * - instance with "=" operator, for example:
+   *  - instance = "instances/mysql"
+   *  - instance = "instances/-"
+   * for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
    */
   filter: string;
   /**

@@ -128,8 +128,7 @@ const state = reactive<LocalState>({
 
 const { ready } = useSearchDatabaseV1List(
   computed(() => ({
-    parent: "instances/-",
-    filter: `project == "${project.value.name}"`,
+    filter: `project = "${project.value.name}" && instances/-`,
   }))
 );
 

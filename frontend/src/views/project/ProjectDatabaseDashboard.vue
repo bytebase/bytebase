@@ -31,8 +31,7 @@ const project = computed(() => {
 
 useSearchDatabaseV1List(
   computed(() => ({
-    parent: "instances/-",
-    filter: `project == "${project.value.name}"`,
+    filter: `project = "${project.value.name}" && instances/-`,
   }))
 );
 
