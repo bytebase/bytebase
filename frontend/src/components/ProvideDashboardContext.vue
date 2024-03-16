@@ -27,10 +27,10 @@ const policyStore = usePolicyV1Store();
 const databaseStore = useDatabaseV1Store();
 
 const prepareDatabases = async () => {
-  const filters = [`instance == "instances/-"`];
+  const filters = [`instance = "instances/-"`];
   // If `projectId` is provided in the route, filter the database list by the project.
   if (route.params.projectId) {
-    filters.push(`project == "${projectNamePrefix}${route.params.projectId}"`);
+    filters.push(`project = "${projectNamePrefix}${route.params.projectId}"`);
   }
   await databaseStore.searchDatabases({
     filter: filters.join(" && "),

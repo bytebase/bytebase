@@ -77,10 +77,7 @@ watch(
     loading.value = true;
 
     const project = await useProjectV1Store().getOrFetchProjectByUID(projectId);
-    const filters = [
-      `instance == "instances/-"`,
-      `project == "${project.name}"`,
-    ];
+    const filters = [`instance = "instances/-"`, `project = "${project.name}"`];
     const databaseList = await databaseStore.searchDatabases({
       filter: filters.join(" && "),
     });

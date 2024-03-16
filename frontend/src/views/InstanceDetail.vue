@@ -123,7 +123,7 @@ const environment = computed(() => {
 });
 
 watchEffect(() => {
-  const filter = `instance == "${instance.value.name}"`;
+  const filter = `instance = "${instance.value.name}"`;
   databaseStore.searchDatabases({
     filter,
   });
@@ -159,7 +159,7 @@ const syncSchema = async () => {
   state.syncingSchema = true;
   try {
     await instanceV1Store.syncInstance(instance.value).then(() => {
-      const filter = `instance == "${instance.value.name}"`;
+      const filter = `instance = "${instance.value.name}"`;
       databaseStore.searchDatabases({
         filter,
       });

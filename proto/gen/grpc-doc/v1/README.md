@@ -3278,7 +3278,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
-| filter | [string](#string) |  | Filter is used to filter databases returned in the list. For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. |
+| filter | [string](#string) |  | Filter is used to filter databases returned in the list. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. The field only support in filter: - project with &#34;=&#34; operator, for example: - project = &#34;projects/sample-project&#34; - project = &#34;projects/-&#34; - instance with &#34;=&#34; operator, for example: - instance = &#34;instances/mysql&#34; - instance = &#34;instances/-&#34; for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. |
 | permission | [string](#string) |  | By default, the permission &#34;bb.databases.get&#34; is used. Alternatively, &#34;bb.databases.query&#34; can be used to retrieve databases with query permissions to. |
 
 
