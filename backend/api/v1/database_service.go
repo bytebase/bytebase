@@ -211,7 +211,7 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 		switch spec.key {
 		case "instance":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
 			}
 			instanceID, err := common.GetInstanceID(spec.value)
 			if err != nil {
@@ -222,7 +222,7 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 			}
 		case "project":
 			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "project" filter`)
 			}
 
 			projectID, err := common.GetProjectID(spec.value)
