@@ -138,9 +138,9 @@ const prepareDatabases = async () => {
     return;
   }
   const { project } = editorStore;
-  const filters = [`instance == "instances/-"`];
+  const filters = [`instance = "instances/-"`];
   if (project) {
-    filters.push(`project == "${project}"`);
+    filters.push(`project = "${project}"`);
   }
   // `databaseList` is the database list accessible by current user.
   // Only accessible instances and databases will be listed in the tree.

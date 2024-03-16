@@ -9630,7 +9630,15 @@ the call that provided the page token. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Filter is used to filter databases returned in the list.
-For example, &#34;project = projects/{project}&#34; can be used to list databases in a project. </p></td>
+follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+The field only support in filter:
+- project with &#34;=&#34; operator, for example:
+ - project = &#34;projects/sample-project&#34;
+ - project = &#34;projects/-&#34;
+- instance with &#34;=&#34; operator, for example:
+ - instance = &#34;instances/mysql&#34;
+ - instance = &#34;instances/-&#34;
+for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. </p></td>
                 </tr>
               
                 <tr>

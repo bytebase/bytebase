@@ -142,7 +142,7 @@ const state = reactive<LocalState>({
 const { project } = useProjectV1ByUID(toRef(props, "projectId"));
 
 const prepare = async () => {
-  const filter = `instance == "instances/-"`;
+  const filter = `instance = "instances/-"`;
   databaseStore.searchDatabases({
     filter,
   });
