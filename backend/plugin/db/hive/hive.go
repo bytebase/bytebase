@@ -3,9 +3,7 @@ package hive
 import (
 	"context"
 	"database/sql"
-	"io"
 	"strconv"
-	"time"
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
@@ -66,7 +64,7 @@ func (d *Driver) Ping(ctx context.Context) error {
 	if d.dbClient == nil {
 		return errors.Errorf("database not connected")
 	}
-	if _, err := d.Execute(ctx, "SELECT 1", db.ExecuteOptions{}); err != nil {
+	if _, err := d.QueryConn(ctx, nil, "SELECT 1", &db.QueryContext{}); err != nil {
 		return errors.Errorf("bad connection")
 	}
 	return nil
@@ -80,37 +78,44 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+// TODO(tommy): check whether the statement is readonly?
+func (d *Driver) Execute(ctx context.Context, statements string, _ db.ExecuteOptions) (int64, error) {
+	if d.dbClient == nil {
+		return 0, errors.Errorf("database not connected")
+	}
 	var rowCount int64
 	cursor := d.dbClient.Cursor()
-	cursor.Execute(ctx, statement, false)
-	operationStatus := cursor.Poll(false)
+	cursor.Close()
+	// TODO(tommy): support multiple statements execution.
+	cursor.Execute(ctx, statements, false)
 
 	if cursor.Err != nil {
 		return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
+	operationStatus := cursor.Poll(false)
 	rowCount = operationStatus.GetNumModifiedRows()
-	cursor.Close()
 	return rowCount, nil
 }
 
 // Used for execute readonly SELECT statement.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	cursor := d.dbClient.Cursor()
-	cursor.Exec(ctx, statement)
-	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statements string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if d.dbClient == nil {
+		return nil, errors.Errorf("database not connected")
 	}
-	// TODO(tommy): func not implemented
-	// var results []*v1pb.QueryResult
 
-	// for cursor.HasMore(ctx) {
-	// 	for columnName, value := range cursor.RowMap(ctx) {
-	// 	}
-	// 	cursor.FetchOne(ctx)
-	// }
+	cursor := d.dbClient.Cursor()
+	defer cursor.Close()
 
-	return nil, errors.Errorf("Not implemeted")
+	var results []*v1pb.QueryResult
+	for _, statement := range splitStatements(statements) {
+		result, err := runSingleStatement(ctx, statement, cursor)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
 // RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
@@ -118,64 +123,63 @@ func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.Q
 	return nil, errors.Errorf("Not implemeted")
 }
 
-// Sync schema
-// SyncInstance syncs the instance metadata.
-func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMetadata, error) {
-	return nil, errors.Errorf("Not implemeted")
+// This function converts basic types to types that have implemented isRowValue_Kind interface.
+func parseValueType(value any) (*v1pb.RowValue, error) {
+	var rowValue v1pb.RowValue
+	switch t := value.(type) {
+	case nil:
+		return nil, errors.Errorf("value cannot be %v", t)
+	case bool:
+		rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
+	case int8:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
+	case int16:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
+	case int32:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
+	case int64:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
+	// TODO(tommy): dangerous truncation float64 -> float32.
+	case float64:
+		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: value.(float32)}
+	case string:
+		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
+	case []byte:
+		rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
+	default:
+		return nil, errors.Errorf("not supported type")
+	}
+	return &rowValue, nil
 }
 
-// SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return nil, errors.Errorf("Not implemeted")
+func runSingleStatement(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+	// TODO(tommy): support latency!
+	cursor.Execute(ctx, statement, false)
+	if cursor.Err != nil {
+		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
+	}
+
+	var result v1pb.QueryResult
+	// process query results.
+	for cursor.HasMore(ctx) {
+		for columnName, value := range cursor.RowMap(ctx) {
+			// ColumnNames.
+			result.ColumnNames = append(result.ColumnNames, columnName)
+			// Rows.
+			var queryRow v1pb.QueryRow
+			val, err := parseValueType(value)
+			if err != nil {
+				return nil, err
+			}
+			queryRow.Values = append(queryRow.Values, val)
+			result.Rows = append(result.Rows, &queryRow)
+			result.Statement = statement
+		}
+	}
+	return &result, nil
 }
 
-// Sync slow query logs
-// SyncSlowQuery syncs the slow query logs.
-// The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("Not implemeted")
-}
-
-// Role
-// CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// ListRole lists the role.
-func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// DeleteRole deletes the role by name.
-func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	return errors.Errorf("Not implemeted")
-}
-
-// Dump and restore
-// Dump the database.
-// The returned string is the JSON encoded metadata for the logical dump.
-// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
-	return "", errors.Errorf("Not implemeted")
-}
-
-// Restore the database from src, which is a full backup.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	return errors.Errorf("Not implemeted")
+// TODO(tommy): Finite State Machine.
+func splitStatements(statement string) []string {
+	return []string{statement}
 }
