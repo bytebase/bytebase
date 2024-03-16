@@ -58,7 +58,7 @@ export const useSearchScopeOptions = (
   const { projectList } = useProjectV1List();
   const { instanceList } = useInstanceV1List(false /* !showDeleted */);
   const { databaseList } = useSearchDatabaseV1List({
-    filter: "instances/-",
+    filter: "instance = instances/-",
   });
 
   const principalSearchValueOptions = computed(() => {

@@ -477,7 +477,7 @@ watch(
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 
 const { ready } = useSearchDatabaseV1List({
-  filter: "instances/-",
+  filter: "instance = instances/-",
 });
 
 const prepareDatabaseGroupList = async () => {
