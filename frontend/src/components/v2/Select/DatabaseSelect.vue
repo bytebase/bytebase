@@ -67,7 +67,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 const { ready } = useSearchDatabaseV1List({
-  filter: "instances/-",
+  filter: "instance = instances/-",
 });
 
 const rawDatabaseList = computed(() => {
