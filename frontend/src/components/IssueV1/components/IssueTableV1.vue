@@ -89,19 +89,15 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         }),
     },
     {
-      key: "status",
-      className: "w-5 !p-0",
-      render: (issue) => h(IssueStatusIconWithTaskSummary, { issue }),
-    },
-    {
       key: "title",
       title: t("issue.table.name"),
       resizable: true,
-      render: (issue) => {
-        return h("div", { class: "flex items-center overflow-hidden" }, [
+      render: (issue) =>
+        h("div", { class: "flex items-center overflow-hidden space-x-2" }, [
+          h(IssueStatusIconWithTaskSummary, { issue }),
           h(
             "div",
-            { class: "whitespace-nowrap mr-2 text-control" },
+            { class: "whitespace-nowrap text-control" },
             props.mode == "ALL"
               ? `${issue.projectEntity.key}-${issue.uid}`
               : `#${issue.uid}`
@@ -123,8 +119,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
                 ),
             }
           ),
-        ]);
-      },
+        ]),
     },
     {
       key: "updateTime",
@@ -181,7 +176,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         h(
           "div",
           { class: "flex flex-row items-center overflow-hidden gap-x-2" },
-          [
+          () => [
             h(BBAvatar, { size: "SMALL", username: issue.creator }),
             h("span", { class: "truncate" }, issue.creatorEntity.title),
           ]

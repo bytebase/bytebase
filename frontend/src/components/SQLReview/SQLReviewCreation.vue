@@ -41,7 +41,7 @@ import { reactive, computed, withDefaults } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
   pushNotification,
@@ -159,7 +159,7 @@ const onCancel = () => {
     emit("cancel");
   } else {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+      name: WORKSPACE_ROUTE_SQL_REVIEW,
     });
   }
 };
