@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -33,6 +34,7 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	// 1. Preprocessing Stage.
 	diff := &diffNode{
 		ignoreCaseSensitive: ctx.IgnoreCaseSensitive,
+		createPartitionList: make(map[string][]*partitionDef),
 	}
 	if err := diff.diffStatement(oldStmt, newStmt); err != nil {
 		return "", err
@@ -74,6 +76,7 @@ type diffNode struct {
 	addForeignKeyList         []*foreignKeyDef
 	createViewList            []*viewDef
 
+	createPartitionList map[string][]*partitionDef
 	createEventList     []*eventDef
 	createTriggerList   []*triggerDef
 	createFunctionList  []*functionDef
@@ -148,6 +151,7 @@ func (diff *diffNode) diffTable(oldTable, newTable *tableDef) {
 	diff.diffForeignKey(oldTable, newTable)
 	diff.diffCheckConstraint(oldTable, newTable)
 	diff.diffTableOptions(oldTable, newTable)
+	diff.diffTablePartition(oldTable, newTable)
 }
 
 func (diff *diffNode) diffCheckConstraint(oldTable, newTable *tableDef) {
@@ -203,6 +207,48 @@ func (diff *diffNode) diffTableOptions(oldTable, newTable *tableDef) {
 	for newTp, newOption := range newTable.tableOptions {
 		if _, ok := oldTable.tableOptions[newTp]; !ok {
 			diff.alterTableOptionList = append(diff.alterTableOptionList, newOption)
+		}
+	}
+}
+
+func (diff *diffNode) diffTablePartition(oldTable, newTable *tableDef) {
+	// Skip for some unsupported cases.
+
+	// One table has partition, the other does not.
+	oldHasPartition := len(oldTable.partitions) > 0
+	newHasPartition := len(newTable.partitions) > 0
+	if oldHasPartition != newHasPartition {
+		return
+	}
+	// Both do not have partition.
+	if !oldHasPartition && !newHasPartition {
+		return
+	}
+
+	// Both have partition, but the partition type or paritition expr is different.
+	var oldTp storepb.TablePartitionMetadata_Type
+	var oldExpr string
+	for _, partition := range oldTable.partitions {
+		oldTp = partition.tp
+		oldExpr = partition.expr
+		break
+	}
+	var newTp storepb.TablePartitionMetadata_Type
+	var newExpr string
+	for _, partition := range newTable.partitions {
+		newTp = partition.tp
+		newExpr = partition.expr
+		break
+	}
+	if oldTp != newTp || oldExpr != newExpr {
+		return
+	}
+
+	tableName := oldTable.name
+
+	for partitionName, newPartition := range newTable.partitions {
+		if _, ok := oldTable.partitions[partitionName]; !ok {
+			diff.createPartitionList[tableName] = append(diff.createPartitionList[tableName], newPartition)
 		}
 	}
 }
@@ -579,11 +625,11 @@ func convertColumnMapToSortedList(columns map[string]*columnDef) (newColumns []*
 func hasColumnsIntersection(a, b []*columnDef) bool {
 	bMap := make(map[string]bool)
 	for _, col := range b {
-		// MySQL column name is case insensitive.
+		// MySQL column name is case-insensitive.
 		bMap[col.name] = true
 	}
 	for _, col := range a {
-		// MySQL column name is case insensitive.
+		// MySQL column name is case-insensitive.
 		if _, ok := bMap[col.name]; ok {
 			return true
 		}
@@ -641,7 +687,7 @@ func (diff *diffNode) diffIndex(oldTable, newTable *tableDef) {
 }
 
 func (diff *diffNode) buildSchemaInfo(statement string) (*databaseDef, error) {
-	return diff.parseMySQLSchemaStringToSchemDef(statement)
+	return diff.parseMySQLSchemaStringToSchemaDef(statement)
 }
 
 // isViewEqual checks whether two views with same name are equal.
@@ -769,6 +815,9 @@ func (diff *diffNode) deparse() (string, error) {
 	}
 
 	if err := sortAndWriteAddForeignKeyList(&buf, diff.addForeignKeyList); err != nil {
+		return "", err
+	}
+	if err := sortAndWriteCreatePartitionList(&buf, diff.createPartitionList); err != nil {
 		return "", err
 	}
 	if err := sortAndWriteCreateViewList(&buf, diff.createViewList); err != nil {
@@ -1279,6 +1328,65 @@ func writeCreateTempViewStatement(buf *strings.Builder, view *viewDef) error {
 	return nil
 }
 
+func sortAndWriteCreatePartitionList(buf *strings.Builder, partitions map[string][]*partitionDef) error {
+	// Sort by table name.
+	tableNames := make([]string, 0, len(partitions))
+	for tableName := range partitions {
+		tableNames = append(tableNames, tableName)
+	}
+	sort.Strings(tableNames)
+	for _, tableName := range tableNames {
+		// Sort by partition id.
+		sort.Slice(partitions[tableName], func(i, j int) bool {
+			return partitions[tableName][i].id < partitions[tableName][j].id
+		})
+		for _, partition := range partitions[tableName] {
+			if err := writeCreatePartitionStatement(buf, tableName, partition); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func writeCreatePartitionStatement(buf *strings.Builder, tableName string, partition *partitionDef) error {
+	if partition == nil {
+		return nil
+	}
+
+	if _, err := buf.WriteString(fmt.Sprintf("ALTER TABLE `%s` ADD PARTITION ", tableName)); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(fmt.Sprintf("(PARTITION %s", partition.name)); err != nil {
+		return err
+	}
+
+	switch partition.tp {
+	case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+		if _, err := buf.WriteString(")"); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_RANGE, storepb.TablePartitionMetadata_RANGE_COLUMNS:
+		if _, err := buf.WriteString(fmt.Sprintf(" VALUES LESS THAN (%s))", partition.value)); err != nil {
+			return err
+		}
+	case storepb.TablePartitionMetadata_LIST, storepb.TablePartitionMetadata_LIST_COLUMNS:
+		if _, err := buf.WriteString(fmt.Sprintf(" VALUES IN (%s))", partition.value)); err != nil {
+			return err
+		}
+	default:
+		return errors.Errorf("unknown partition type %v", partition.tp)
+	}
+
+	if _, err := buf.WriteString(";"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func sortAndWriteCreateViewList(buf *strings.Builder, views []*viewDef) error {
 	sort.Slice(views, func(i, j int) bool {
 		return views[i].name < views[j].name
@@ -1506,6 +1614,15 @@ type procedureDef struct {
 	name string
 }
 
+type partitionDef struct {
+	id   int
+	tp   storepb.TablePartitionMetadata_Type
+	expr string
+
+	name  string
+	value string
+}
+
 type schemaDef struct {
 	name string
 	// todo: check for duplicate names.
@@ -1549,6 +1666,7 @@ type tableDef struct {
 	checks           map[string]*checkDef
 	tableOptions     map[string]*tableOptionDef
 	primaryKey       *primaryKeyDef
+	partitions       map[string]*partitionDef
 }
 
 func newTableDef(id int, name string) *tableDef {
@@ -1638,7 +1756,7 @@ type mysqlTransformer struct {
 	ignoreCaseSensitive bool
 }
 
-func (diff *diffNode) parseMySQLSchemaStringToSchemDef(schema string) (*databaseDef, error) {
+func (diff *diffNode) parseMySQLSchemaStringToSchemaDef(schema string) (*databaseDef, error) {
 	list, err := ParseMySQL(schema)
 	if err != nil {
 		return nil, err
@@ -1858,6 +1976,170 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			table.checks[ck.name] = ck
 		}
 	}
+}
+
+func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	table := t.db.schemas[""].tables[t.currentTable]
+	if table == nil {
+		t.err = errors.New("table not found: " + t.currentTable)
+		return
+	}
+
+	// We do not support PARTITIONS N syntax for now, because we should generate the each partition name/definition by ourself likes MySQL server side does.
+	// But it may be supported in the near future, because it's normal use case for KEY and HASH partitioning.
+	if ctx.PARTITIONS_SYMBOL() != nil {
+		slog.Warn("Skip partition clause for table %s because syntax PARTITIONS N is not supported", slog.String("table", t.currentTable))
+		return
+	}
+
+	if ctx.PartitionDefinitions() == nil {
+		slog.Warn("Skip partition clause for table %s because syntax PARTITION BY is not supported", slog.String("table", t.currentTable))
+		return
+	}
+
+	var tp storepb.TablePartitionMetadata_Type
+	var expr string
+
+	if iPartitionTypeDefCtx := ctx.PartitionTypeDef(); iPartitionTypeDefCtx != nil {
+		switch partitionTypeDefCtx := iPartitionTypeDefCtx.(type) {
+		case *mysql.PartitionDefKeyContext:
+			tp = storepb.TablePartitionMetadata_KEY
+			if partitionTypeDefCtx.LINEAR_SYMBOL() != nil {
+				tp = storepb.TablePartitionMetadata_LINEAR_KEY
+			}
+			identifierList := extractIdentifierList(partitionTypeDefCtx.IdentifierList())
+			for i, identifier := range identifierList {
+				identifier := strings.TrimSpace(identifier)
+				if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+					identifierList[i] = fmt.Sprintf("`%s`", identifier)
+				}
+			}
+			expr = strings.Join(identifierList, ",")
+		case *mysql.PartitionDefHashContext:
+			tp = storepb.TablePartitionMetadata_HASH
+			if partitionTypeDefCtx.LINEAR_SYMBOL() != nil {
+				tp = storepb.TablePartitionMetadata_LINEAR_HASH
+			}
+			bitExprText := partitionTypeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(partitionTypeDefCtx.BitExpr())
+			bitExprFields := strings.Split(bitExprText, ",")
+			for i, bitExprField := range bitExprFields {
+				bitExprField := strings.TrimSpace(bitExprField)
+				if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+					bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+				}
+			}
+			expr = strings.Join(bitExprFields, ",")
+		case *mysql.PartitionDefRangeListContext:
+			if partitionTypeDefCtx.RANGE_SYMBOL() != nil {
+				tp = storepb.TablePartitionMetadata_RANGE
+			} else {
+				tp = storepb.TablePartitionMetadata_LIST
+			}
+			if partitionTypeDefCtx.COLUMNS_SYMBOL() != nil {
+				if tp == storepb.TablePartitionMetadata_RANGE {
+					tp = storepb.TablePartitionMetadata_RANGE_COLUMNS
+				} else {
+					tp = storepb.TablePartitionMetadata_LIST_COLUMNS
+				}
+
+				identifierList := extractIdentifierList(partitionTypeDefCtx.IdentifierList())
+				for i, identifier := range identifierList {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifierList[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+			} else {
+				bitExprText := partitionTypeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(partitionTypeDefCtx.BitExpr())
+				bitExprFields := strings.Split(bitExprText, ",")
+				for i, bitExprField := range bitExprFields {
+					bitExprField := strings.TrimSpace(bitExprField)
+					if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+						bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+					}
+				}
+				expr = strings.Join(bitExprFields, ",")
+			}
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+	}
+
+	result := make(map[string]*partitionDef)
+
+	partitionDefinitionsCtx := ctx.PartitionDefinitions()
+	allPartitionDefinitions := partitionDefinitionsCtx.AllPartitionDefinition()
+	for _, partitionDefinition := range allPartitionDefinitions {
+		partitionDef := &partitionDef{
+			id:   len(table.partitions) + 1,
+			tp:   tp,
+			expr: expr,
+			name: NormalizeMySQLIdentifier(partitionDefinition.Identifier()),
+		}
+
+		switch tp {
+		case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
+			if partitionDefinition.PartitionValueItemListParen() == nil {
+				t.err = errors.New("COLUMNS partition but no partition value item in LESS THAN clause")
+				return
+			}
+			itemsText := partitionDefinition.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
+				antlr.NewInterval(
+					partitionDefinition.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+					partitionDefinition.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+				),
+			)
+			itemsTextFields := strings.Split(itemsText, ",")
+			for i, itemsTextField := range itemsTextFields {
+				itemsTextField := strings.TrimSpace(itemsTextField)
+				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+				}
+				itemsTextFields[i] = itemsTextField
+			}
+
+			partitionDef.value = strings.Join(itemsTextFields, ",")
+		case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
+			if partitionDefinition.PartitionValuesIn() == nil {
+				t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
+				return
+			}
+			var itemsText string
+			if partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL() != nil {
+				itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partitionDefinition.PartitionValuesIn().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partitionDefinition.PartitionValuesIn().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+			} else {
+				itemsText = partitionDefinition.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromRuleContext(partitionDefinition.PartitionValuesIn().PartitionValueItemListParen(0))
+			}
+
+			itemsTextFields := strings.Split(itemsText, ",")
+			for i, itemsTextField := range itemsTextFields {
+				itemsTextField := strings.TrimSpace(itemsTextField)
+				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+				}
+				itemsTextFields[i] = itemsTextField
+			}
+			partitionDef.value = strings.Join(itemsTextFields, ",")
+		case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+
+		result[partitionDef.name] = partitionDef
+	}
+
+	table.partitions = result
 }
 
 // extract table name and column names.
