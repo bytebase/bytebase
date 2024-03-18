@@ -8,13 +8,7 @@
 </template>
 
 <script lang="ts" setup>
-import {
-  UserCircle,
-  Building,
-  ShieldCheck,
-  Link,
-  Archive,
-} from "lucide-vue-next";
+import { UserCircle, Building, Archive } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouteRecordRaw, useRoute, useRouter } from "vue-router";
@@ -27,22 +21,6 @@ import workspaceSettingRoutes, {
   SETTING_ROUTE_WORKSPACE_ROLE,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
   SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
-  SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
-  SETTING_ROUTE_WORKSPACE_RISK_CENTER,
-  SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
-  SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-  SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-  SETTING_ROUTE_WORKSPACE_GITOPS,
-  SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
-  SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SSO,
-  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
-  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
-  SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE,
 } from "@/router/dashboard/workspaceSetting";
@@ -65,24 +43,6 @@ const getItemClass = (item: SidebarItem) => {
   }
 
   switch (route.name) {
-    case SETTING_ROUTE_WORKSPACE_SSO_CREATE:
-    case SETTING_ROUTE_WORKSPACE_SSO_DETAIL:
-      if (item.name === SETTING_ROUTE_WORKSPACE_SSO) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE:
-    case SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL:
-      if (item.name === SETTING_ROUTE_WORKSPACE_SQL_REVIEW) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
-    case SETTING_ROUTE_WORKSPACE_GITOPS_CREATE:
-    case SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL:
-      if (item.name === SETTING_ROUTE_WORKSPACE_GITOPS) {
-        list.push("router-link-active", "bg-link-hover");
-      }
-      break;
     case SETTING_ROUTE_PROFILE_TWO_FACTOR:
       if (item.name === SETTING_ROUTE_PROFILE) {
         list.push("router-link-active", "bg-link-hover");
@@ -113,6 +73,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       title: t("settings.sidebar.account"),
       icon: h(UserCircle),
       type: "div",
+      expand: true,
       children: [
         {
           title: t("settings.sidebar.profile"),
@@ -125,6 +86,7 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
       title: t("settings.sidebar.workspace"),
       icon: h(Building),
       type: "div",
+      expand: true,
       children: [
         {
           title: t("settings.sidebar.general"),
@@ -149,70 +111,6 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.debug-log"),
           name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-          type: "route",
-        },
-      ],
-    },
-    {
-      title: t("settings.sidebar.security-and-policy"),
-      icon: h(ShieldCheck),
-      type: "div",
-      children: [
-        {
-          title: t("sql-review.title"),
-          name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
-          type: "route",
-        },
-        {
-          title: t("slow-query.self"),
-          name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
-          type: "route",
-        },
-        {
-          title: t("schema-template.self"),
-          name: SETTING_ROUTE_WORKSPACE_SCHEMA_TEMPLATE,
-          type: "route",
-        },
-        {
-          title: t("custom-approval.risk.risk-center"),
-          name: SETTING_ROUTE_WORKSPACE_RISK_CENTER,
-          type: "route",
-        },
-        {
-          title: t("custom-approval.self"),
-          name: SETTING_ROUTE_WORKSPACE_CUSTOM_APPROVAL,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.sensitive-data"),
-          name: SETTING_ROUTE_WORKSPACE_SENSITIVE_DATA,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.audit-log"),
-          name: SETTING_ROUTE_WORKSPACE_AUDIT_LOG,
-          type: "route",
-        },
-      ],
-    },
-    {
-      title: t("settings.sidebar.integration"),
-      icon: h(Link),
-      type: "div",
-      children: [
-        {
-          title: t("settings.sidebar.gitops"),
-          name: SETTING_ROUTE_WORKSPACE_GITOPS,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.sso"),
-          name: SETTING_ROUTE_WORKSPACE_SSO,
-          type: "route",
-        },
-        {
-          title: t("settings.sidebar.mail-delivery"),
-          name: SETTING_ROUTE_WORKSPACE_MAIL_DELIVERY,
           type: "route",
         },
       ],

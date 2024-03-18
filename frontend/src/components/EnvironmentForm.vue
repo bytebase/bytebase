@@ -283,9 +283,9 @@ import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   hasFeature,
   pushNotification,
@@ -409,14 +409,14 @@ const disableCopyDataPolicy = computed(() => {
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
       params: {
         sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
       },
     });
   } else {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
       query: {
         environmentId: (props.environment as Environment).uid,
       },

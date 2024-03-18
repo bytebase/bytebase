@@ -145,9 +145,9 @@ import { useRouter } from "vue-router";
 import { BBButtonConfirm, BBGrid, BBGridColumn } from "@/bbkit";
 import { EnvironmentV1Name } from "@/components/v2";
 import {
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -234,7 +234,7 @@ const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
 const handleClickCreate = (environment: Environment) => {
   if (hasUpdatePolicyPermission.value) {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
       query: {
         environmentId: extractEnvironmentResourceName(environment.name),
       },
@@ -250,7 +250,7 @@ const handleClickCreate = (environment: Environment) => {
 
 const handleClickEdit = (review: SQLReviewPolicy) => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+    name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
     params: {
       sqlReviewPolicySlug: sqlReviewPolicySlug(review),
     },
