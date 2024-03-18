@@ -54,7 +54,7 @@
       </NButton>
       <NButton size="small">
         <router-link
-          :to="{ name: SQL_EDITOR_HOME_MODULE }"
+          :to="sqlEditorLink"
           exact-active-class=""
           target="_blank"
           class="flex flex-row justify-center items-center"
@@ -102,15 +102,18 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
+import {
+  SQL_EDITOR_HOME_MODULE,
+  SQL_EDITOR_PROJECT_MODULE,
+} from "@/router/sqlEditor";
 import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
-import { UNKNOWN_ID } from "../types";
+import { UNKNOWN_ID, UNKNOWN_PROJECT_NAME } from "../types";
 
 interface LocalState {
   showQRCodeModal: boolean;
@@ -148,6 +151,20 @@ const { currentPlan } = storeToRefs(subscriptionStore);
 
 const hasGetSettingPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUser.value, "bb.settings.get");
+});
+
+const sqlEditorLink = computed(() => {
+  if (project.value.name !== UNKNOWN_PROJECT_NAME) {
+    return router.resolve({
+      name: SQL_EDITOR_PROJECT_MODULE,
+      params: {
+        project: extractProjectResourceName(project.value.name),
+      },
+    });
+  }
+  return router.resolve({
+    name: SQL_EDITOR_HOME_MODULE,
+  });
 });
 
 const kbarActions = computed(() => {

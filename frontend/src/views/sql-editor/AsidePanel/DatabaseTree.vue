@@ -65,7 +65,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
@@ -107,10 +107,11 @@ import {
   instanceV1HasReadonlyMode,
   isDescendantOf,
   generateSimpleSelectAllStatement,
-  connectionV1Slug,
   tryConnectToCoreSQLEditorTab,
   emptySQLEditorConnection,
   suggestedTabTitleForSQLEditorConnection,
+  extractProjectResourceName,
+  extractInstanceResourceName,
 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import DatabaseHoverPanel from "./DatabaseHoverPanel.vue";
@@ -228,18 +229,15 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
             const { copy, copied } = useClipboard({
               source: computed(() => {
                 const route = router.resolve({
-                  name: SQL_EDITOR_DETAIL_MODULE,
+                  name: SQL_EDITOR_DATABASE_MODULE,
                   params: {
-                    connectionSlug: connectionV1Slug(
-                      database.instanceEntity,
-                      database
-                    ),
+                    project: extractProjectResourceName(database.project),
+                    instance: extractInstanceResourceName(database.instance),
+                    database: database.databaseName,
                   },
                   query: {
-                    filter: JSON.stringify({
-                      table: table.name,
-                      schema: schema.name,
-                    }),
+                    table: table.name,
+                    schema: schema.name,
                   },
                 });
                 return new URL(route.href, window.location.origin).href;

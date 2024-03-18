@@ -168,11 +168,11 @@
     "helpName": ""
   },
   {
-    "routeName": "sql-editor.detail",
+    "routeName": "sql-editor.legacy-detail",
     "helpName": ""
   },
   {
-    "routeName": "sql-editor.share",
+    "routeName": "sql-editor.legacy-share",
     "helpName": ""
   },
   {

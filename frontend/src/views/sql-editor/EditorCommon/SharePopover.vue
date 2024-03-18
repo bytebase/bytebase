@@ -96,7 +96,7 @@ import {
 import { ref, computed, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useSQLEditorTabStore,
@@ -105,7 +105,7 @@ import {
 } from "@/store";
 import { AccessOption } from "@/types";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
-import { worksheetSlugV1 } from "@/utils";
+import { extractProjectResourceName, extractSheetUID } from "@/utils";
 
 const { t } = useI18n();
 
@@ -174,9 +174,10 @@ const sharedTabLink = computed(() => {
   }
 
   const route = router.resolve({
-    name: SQL_EDITOR_SHARE_MODULE,
+    name: SQL_EDITOR_WORKSHEET_MODULE,
     params: {
-      sheetSlug: worksheetSlugV1(sheet.value),
+      project: extractProjectResourceName(sheet.value.project),
+      sheet: extractSheetUID(sheet.value.name),
     },
   });
   return new URL(route.href, window.location.origin).href;
