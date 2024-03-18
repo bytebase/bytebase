@@ -101,7 +101,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { SQLRuleEditDialog } from "@/components/SQLReview/components";
 import { PayloadValueType } from "@/components/SQLReview/components/RuleConfigComponents";
-import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import { useReviewPolicyByEnvironmentName } from "@/store";
 import {
   GeneralErrorCode,
@@ -240,7 +240,7 @@ const errorCodeLink = (
         title: t("sql-review.configure-policy"),
         target: "__blank",
         url: router.resolve({
-          name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+          name: WORKSPACE_ROUTE_SQL_REVIEW,
         }).fullPath,
       };
     default: {

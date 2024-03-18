@@ -25,6 +25,8 @@
 {{- $persistenceExistingClaim := .Values.bytebase.persistence.existingClaim -}}
 {{- $persistenceStorage := .Values.bytebase.persistence.storage -}}
 {{- $persistenceStorageClass := .Values.bytebase.persistence.storageClass }}
+# bytbease.resources
+{{- $resources := .Values.bytebase.resources -}}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -167,6 +169,9 @@ spec:
           ports:
             - containerPort: {{ $port }}
               name: web
+          {{- if $resources }}
+          resources: {{- toYaml $resources | nindent 12 }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthz

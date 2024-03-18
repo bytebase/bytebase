@@ -1,0 +1,221 @@
+- baseline: |-
+    CREATE TABLE "BYTEBASE"."DEPARTMENTS" (
+      "DEPARTMENT_ID" NUMBER(10) VISIBLE NOT NULL,
+      "DEPARTMENT_NAME" VARCHAR2(100 BYTE) VISIBLE,
+      "DEPARTMENT_NAME_2" VARCHAR2(50 BYTE) VISIBLE,
+      CONSTRAINT "SYS_C006991" PRIMARY KEY ("DEPARTMENT_NAME"),
+      CONSTRAINT "SYS_C006993" UNIQUE ("DEPARTMENT_NAME") NOT DEFERRABLE INITIALLY IMMEDIATE VALIDATE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+    CREATE TABLE "BYTEBASE"."DEPARTMENTS123" (
+      "DEPARTMENT_ID" NUMBER(3) VISIBLE NOT NULL,
+      "DEPARTMENT_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      CONSTRAINT "SYS_C006991" PRIMARY KEY ("DEPARTMENT_ID"),
+      CONSTRAINT "SYS_C006992" UNIQUE ("DEPARTMENT_NAME") NOT DEFERRABLE INITIALLY IMMEDIATE VALIDATE
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+  target: |-
+    {
+      "schemas": [
+        {
+          "name": "BYTEBASE",
+          "tables": [
+            {
+              "name": "DEPARTMENTS",
+              "columns": [
+                {
+                  "name": "DEPARTMENT_ID",
+                  "type": "NUMBER(3)"
+                },
+                {
+                  "name": "DEPARTMENT_NAME",
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "SYS_C006991",
+                  "expressions": [
+                    "DEPARTMENT_ID"
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "SYS_C006992",
+                  "expressions": [
+                    "DEPARTMENT_NAME"
+                  ],
+                  "unique": true,
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "EMPLOYEES",
+              "columns": [
+                {
+                  "name": "EMPLOYEE_ID",
+                  "type": "NUMBER(5)"
+                },
+                {
+                  "name": "FIRST_NAME",
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "LAST_NAME",
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "JOB_TITLE",
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "HIRE_DATE",
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "SALARY",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "DEPARTMENT_ID",
+                  "nullable": true,
+                  "type": "NUMBER(3)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "SYS_C006993",
+                  "expressions": [
+                    "EMPLOYEE_ID"
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "IDX_EMPLOYEE_NAME_DEPARTMENT",
+                  "expressions": [
+                    "LAST_NAME",
+                    "FIRST_NAME",
+                    "DEPARTMENT_ID"
+                  ],
+                  "visible": true
+                }
+              ]
+            },
+            {
+              "name": "SALARY",
+              "columns": [
+                {
+                  "name": "EMPLOYEE_ID",
+                  "type": "NUMBER(5)"
+                },
+                {
+                  "name": "FIRST_NAME",
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "LAST_NAME",
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "SALARY_AMOUNT",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "HIRE_DATE",
+                  "nullable": true,
+                  "type": "DATE"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "SYS_C006995",
+                  "expressions": [
+                    "EMPLOYEE_ID"
+                  ],
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  result: |
+    CREATE TABLE "BYTEBASE"."DEPARTMENTS"  (
+      "DEPARTMENT_ID" NUMBER(3) VISIBLE NOT NULL,
+      "DEPARTMENT_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      CONSTRAINT "SYS_C006991" PRIMARY KEY ("DEPARTMENT_ID"),
+      CONSTRAINT "SYS_C006992" UNIQUE ("DEPARTMENT_NAME")
+    )
+    LOGGING
+    NOCOMPRESS
+    PCTFREE 10
+    INITRANS 1
+    STORAGE (
+      INITIAL 65536
+    )
+    NOCACHE
+    PARALLEL          1
+    DISABLE ROW MOVEMENT
+    ;
+
+
+    CREATE TABLE "BYTEBASE"."EMPLOYEES" (
+      "EMPLOYEE_ID" NUMBER(5) VISIBLE NOT NULL,
+      "FIRST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "LAST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "JOB_TITLE" VARCHAR2(100 BYTE) VISIBLE,
+      "HIRE_DATE" DATE VISIBLE,
+      "SALARY" NUMBER(10,2) VISIBLE,
+      "DEPARTMENT_ID" NUMBER(3) VISIBLE,
+      CONSTRAINT "SYS_C006993" PRIMARY KEY ("EMPLOYEE_ID"),
+      CONSTRAINT "IDX_EMPLOYEE_NAME_DEPARTMENT""LAST_NAME", "FIRST_NAME", "DEPARTMENT_ID")
+    )
+    ;
+
+    CREATE TABLE "BYTEBASE"."SALARY" (
+      "EMPLOYEE_ID" NUMBER(5) VISIBLE NOT NULL,
+      "FIRST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "LAST_NAME" VARCHAR2(50 BYTE) VISIBLE,
+      "SALARY_AMOUNT" NUMBER(10,2) VISIBLE,
+      "HIRE_DATE" DATE VISIBLE,
+      CONSTRAINT "SYS_C006995" PRIMARY KEY ("EMPLOYEE_ID")
+    )
+    ;

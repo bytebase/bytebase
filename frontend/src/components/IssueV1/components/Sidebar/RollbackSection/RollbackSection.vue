@@ -31,6 +31,12 @@
       <RollbackStatus v-if="rollbackUIType === 'FULL'" />
     </div>
   </div>
+  <p
+    v-if="rollbackUIType === 'SWITCH' && rollbackEnabled"
+    class="textinfolabel -mt-3 w-full break-words"
+  >
+    {{ $t("task.rollback.maximum-size-tips") }}
+  </p>
 </template>
 
 <script setup lang="ts">
@@ -41,5 +47,5 @@ import { useRollbackContext } from "./common";
 
 const rollbackContext = useRollbackContext();
 
-const { rollbackUIType } = rollbackContext;
+const { rollbackUIType, rollbackEnabled } = rollbackContext;
 </script>

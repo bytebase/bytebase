@@ -366,7 +366,8 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时会保留数据变更的回滚日志，可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能会影响重复的行。执行前请注意确认。\n{link}"
+      "sql-rollback-tips": "开启时会保留数据变更的回滚日志，可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能会影响重复的行。执行前请注意确认。\n{link}",
+      "maximum-size-tips": "支持的最大回滚数据量为 32MB"
     },
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "apply-change-to-all-pending-tasks": {
@@ -828,14 +829,6 @@
         "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
         "override-confirm": "继续导入"
       }
-    },
-    "access-control": {
-      "description": "配置审批流来控制数据的查询和导出。{link}",
-      "skip-approval": "跳过人工审批",
-      "query-data": "数据查询",
-      "export-data": "数据导出",
-      "disallowed": "禁止",
-      "copy-data-from-sql-editor": "从 SQL 编辑器复制数据"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -1405,7 +1398,11 @@
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
     },
-    "production-environment": "生产环境"
+    "production-environment": "生产环境",
+    "access-control": {
+      "title": "访问控制",
+      "disable-copy-data-from-sql-editor": "禁止从 SQL 编辑器复制数据"
+    }
   },
   "quick-start": {
     "self": "新手任务",
@@ -2540,7 +2537,7 @@
       },
       "bb-feature-access-control": {
         "title": "数据访问控制",
-        "desc": "配置审批流来控制数据的查询和导出。"
+        "desc": "限制用户对数据的访问权限，例如禁止用户复制数据查询结果"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
@@ -3318,7 +3315,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库 (仅限 MySQL，PostgreSQL 和 TiDB)",
+    "select-database-placeholder": "选择数据库（仅限 MySQL、PostgreSQL、TiDB 和 Oracle）",
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功",

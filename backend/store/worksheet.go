@@ -293,6 +293,9 @@ func (s *Store) DeleteWorkSheet(ctx context.Context, sheetUID int) error {
 	}
 	defer tx.Rollback()
 
+	if _, err := tx.ExecContext(ctx, `DELETE FROM worksheet_organizer WHERE worksheet_id = $1`, sheetUID); err != nil {
+		return err
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM worksheet WHERE id = $1`, sheetUID); err != nil {
 		return err
 	}

@@ -121,13 +121,13 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 	var results []*storepb.PlanCheckRunResult_Result
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-		checkResults, err := postgresqlStatementTypeCheck(renderedStatement, changeType)
+		checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
 		if err != nil {
 			return nil, err
 		}
 		results = append(results, checkResults...)
 	case storepb.Engine_TIDB:
-		checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+		checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation)
 		if err != nil {
 			return nil, err
 		}
@@ -140,7 +140,7 @@ func (e *StatementTypeExecutor) runForDatabaseTarget(ctx context.Context, config
 			results = append(results, sdlAdvice...)
 		}
 	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
-		checkResults, err := mysqlStatementTypeCheck(renderedStatement, changeType)
+		checkResults, err := mysqlStatementTypeCheck(renderedStatement)
 		if err != nil {
 			return nil, err
 		}
@@ -296,13 +296,13 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 				var results []*storepb.PlanCheckRunResult_Result
 				switch instance.Engine {
 				case storepb.Engine_POSTGRES, storepb.Engine_RISINGWAVE:
-					checkResults, err := postgresqlStatementTypeCheck(renderedStatement, changeType)
+					checkResults, err := postgresqlStatementTypeCheck(renderedStatement)
 					if err != nil {
 						return nil, err
 					}
 					results = append(results, checkResults...)
 				case storepb.Engine_TIDB:
-					checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation, changeType)
+					checkResults, err := tidbStatementTypeCheck(renderedStatement, dbSchema.GetMetadata().CharacterSet, dbSchema.GetMetadata().Collation)
 					if err != nil {
 						return nil, err
 					}
@@ -315,7 +315,7 @@ func (e *StatementTypeExecutor) runForDatabaseGroupTarget(ctx context.Context, c
 						results = append(results, sdlAdvice...)
 					}
 				case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-					checkResults, err := mysqlStatementTypeCheck(renderedStatement, changeType)
+					checkResults, err := mysqlStatementTypeCheck(renderedStatement)
 					if err != nil {
 						return nil, err
 					}
@@ -508,7 +508,7 @@ func tidbCreateAndDropDatabaseCheck(nodeList []tidbast.StmtNode) []*storepb.Plan
 	return results
 }
 
-func mysqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
+func mysqlStatementTypeCheck(statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	stmts, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		// nolint:nilerr
@@ -533,41 +533,6 @@ func mysqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunCo
 
 	// Disallow CREATE/DROP DATABASE statements.
 	results = append(results, mysqlCreateAndDropDatabaseCheck(stmts)...)
-
-	switch changeType {
-	case storepb.PlanCheckRunConfig_DML:
-		for _, node := range stmts {
-			checker := &mysqlparser.StatementTypeChecker{}
-			antlr.ParseTreeWalkerDefault.Walk(checker, node.Tree)
-			// We only want to disallow DDL statements in CHANGE DATA.
-			// We need to run some common statements, e.g. COMMIT.
-			if checker.IsDDL {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Data change can only run DML",
-					Content: fmt.Sprintf("\"%s\" is not DML", checker.Text),
-					Code:    common.TaskTypeNotDML.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL:
-		for _, node := range stmts {
-			checker := &mysqlparser.StatementTypeChecker{}
-			antlr.ParseTreeWalkerDefault.Walk(checker, node.Tree)
-			if checker.IsDML || checker.IsExplain {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Alter schema can only run DDL",
-					Content: fmt.Sprintf("\"%s\" is not DDL", checker.Text),
-					Code:    common.TaskTypeNotDDL.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	default:
-		return nil, common.Errorf(common.Invalid, "invalid check statement type task type: %s", changeType)
-	}
 
 	return results, nil
 }
@@ -610,7 +575,7 @@ func (e *StatementTypeExecutor) mysqlSDLTypeCheck(ctx context.Context, newSchema
 	return results, nil
 }
 
-func tidbStatementTypeCheck(statement string, charset string, collation string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
+func tidbStatementTypeCheck(statement string, charset string, collation string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	p := tidbp.New()
 	// To support MySQL8 window function syntax.
 	// See https://github.com/bytebase/bytebase/issues/175.
@@ -641,40 +606,6 @@ func tidbStatementTypeCheck(statement string, charset string, collation string, 
 	// Disallow CREATE/DROP DATABASE statements.
 	results = append(results, tidbCreateAndDropDatabaseCheck(stmts)...)
 
-	switch changeType {
-	case storepb.PlanCheckRunConfig_DML:
-		for _, node := range stmts {
-			_, isDDL := node.(tidbast.DDLNode)
-			// We only want to disallow DDL statements in CHANGE DATA.
-			// We need to run some common statements, e.g. COMMIT.
-			if isDDL {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Data change can only run DML",
-					Content: fmt.Sprintf("\"%s\" is not DML", node.Text()),
-					Code:    common.TaskTypeNotDML.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL:
-		for _, node := range stmts {
-			_, isDML := node.(tidbast.DMLNode)
-			_, isExplain := node.(*tidbast.ExplainStmt)
-			if isDML || isExplain {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Alter schema can only run DDL",
-					Content: fmt.Sprintf("\"%s\" is not DDL", node.Text()),
-					Code:    common.TaskTypeNotDDL.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	default:
-		return nil, common.Errorf(common.Invalid, "invalid check statement type task type: %s", changeType)
-	}
-
 	return results, nil
 }
 
@@ -703,7 +634,7 @@ func postgresqlCreateAndDropDatabaseCheck(nodeList []ast.Node) []*storepb.PlanCh
 	return result
 }
 
-func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) ([]*storepb.PlanCheckRunResult_Result, error) {
+func postgresqlStatementTypeCheck(statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	stmts, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
 		// nolint:nilerr
@@ -728,41 +659,6 @@ func postgresqlStatementTypeCheck(statement string, changeType storepb.PlanCheck
 
 	// Disallow CREATE/DROP DATABASE statements.
 	results = append(results, postgresqlCreateAndDropDatabaseCheck(stmts)...)
-
-	switch changeType {
-	case storepb.PlanCheckRunConfig_DML:
-		for _, node := range stmts {
-			_, isDDL := node.(ast.DDLNode)
-			// We only want to disallow DDL statements in CHANGE DATA.
-			// We need to run some common statements, e.g. COMMIT.
-			if isDDL {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Data change can only run DML",
-					Content: fmt.Sprintf("\"%s\" is not DML", node.Text()),
-					Code:    common.TaskTypeNotDML.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL:
-		for _, node := range stmts {
-			_, isDML := node.(ast.DMLNode)
-			_, isSelect := node.(*ast.SelectStmt)
-			_, isExplain := node.(*ast.ExplainStmt)
-			if isDML || isSelect || isExplain {
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Title:   "Alter schema can only run DDL",
-					Content: fmt.Sprintf("\"%s\" is not DDL", node.Text()),
-					Code:    common.TaskTypeNotDDL.Int32(),
-					Report:  nil,
-				})
-			}
-		}
-	default:
-		return nil, common.Errorf(common.Invalid, "invalid check statement type task type: %s", changeType)
-	}
 
 	return results, nil
 }
