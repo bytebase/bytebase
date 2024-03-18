@@ -830,14 +830,6 @@
         "override-confirm": "Still upload"
       }
     },
-    "access-control": {
-      "description": "Configure approval flow to control data query and export. {link}",
-      "skip-approval": "Skip approval",
-      "query-data": "Query Data",
-      "export-data": "Export Data",
-      "disallowed": "Disallowed",
-      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
-    },
     "release": {
       "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
@@ -2546,7 +2538,7 @@
       },
       "bb-feature-access-control": {
         "title": "データアクセス制御",
-        "desc": "データのクエリとエクスポートを制御するための承認フローを設定します。"
+        "desc": "ユーザーがデータクエリ結果をコピーするのを禁止するなど、データへのユーザーアクセスを制限します。"
       },
       "bb-feature-lgtm": {
         "title": "LGTMチェック",

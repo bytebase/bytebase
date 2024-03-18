@@ -71,6 +71,9 @@ type columnSetDefaultForNotNullChecker struct {
 }
 
 func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -192,6 +195,9 @@ func (*columnSetDefaultForNotNullChecker) needDefault(ctx mysql.IFieldDefinition
 }
 
 func (checker *columnSetDefaultForNotNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

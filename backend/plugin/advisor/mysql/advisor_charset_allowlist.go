@@ -83,6 +83,9 @@ func (checker *charsetAllowlistChecker) EnterQuery(ctx *mysql.QueryContext) {
 
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *charsetAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	for _, option := range ctx.AllCreateDatabaseOption() {
 		if option.DefaultCharset() != nil {
 			charset := mysqlparser.NormalizeMySQLCharsetName(option.DefaultCharset().CharsetName())
@@ -107,6 +110,9 @@ func (checker *charsetAllowlistChecker) checkCharset(charset string, lineNumber 
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *charsetAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateTableOptions() != nil {
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
 			if option.DefaultCharset() != nil {
@@ -142,6 +148,9 @@ func (checker *charsetAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableC
 
 // EnterAlterDatabase is called when production alterDatabase is entered.
 func (checker *charsetAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	for _, option := range ctx.AllAlterDatabaseOption() {
 		if option.CreateDatabaseOption() == nil || option.CreateDatabaseOption().DefaultCharset() == nil {
 			continue
@@ -154,6 +163,9 @@ func (checker *charsetAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatab
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *charsetAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}

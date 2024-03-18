@@ -81,6 +81,9 @@ type columnTypeDisallowListChecker struct {
 }
 
 func (checker *columnTypeDisallowListChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -124,6 +127,9 @@ func (checker *columnTypeDisallowListChecker) checkFieldDefinition(tableName, co
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *columnTypeDisallowListChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

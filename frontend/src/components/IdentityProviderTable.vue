@@ -28,7 +28,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { SETTING_ROUTE_WORKSPACE_SSO_DETAIL } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SSO_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 const props = defineProps<{
@@ -57,7 +57,7 @@ const columnList = computed(() => [
 const clickIdentityProvider = function (section: number, row: number) {
   const identityProvider = props.identityProviderList[row];
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+    name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
       ssoName: identityProvider.name,
     },

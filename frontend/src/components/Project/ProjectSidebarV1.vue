@@ -140,7 +140,7 @@ const flattenProjectV1Routes = computed(() => {
   return getFlattenProjectV1Routes(projectV1Routes);
 });
 
-const filterprojectSidebarByPermissions = (
+const filterProjectSidebarByPermissions = (
   sidebarList: ProjectSidebarItem[]
 ): ProjectSidebarItem[] => {
   return sidebarList
@@ -154,7 +154,7 @@ const filterprojectSidebarByPermissions = (
     })
     .map((item) => ({
       ...item,
-      children: filterprojectSidebarByPermissions(item.children ?? []),
+      children: filterProjectSidebarByPermissions(item.children ?? []),
     }));
 };
 
@@ -164,6 +164,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       title: t("common.database"),
       icon: h(Database),
       type: "div",
+      expand: true,
       children: [
         {
           title: t("common.databases"),
@@ -231,6 +232,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(Link),
       type: "div",
       hide: isDefaultProject.value,
+      expand: true,
       children: [
         {
           title: t("common.gitops"),
@@ -249,6 +251,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
       icon: h(Users),
       type: "div",
       hide: isDefaultProject.value,
+      expand: true,
       children: [
         {
           title: t("common.members"),
@@ -271,7 +274,7 @@ const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     },
   ];
 
-  return filterprojectSidebarByPermissions(sidebarList);
+  return filterProjectSidebarByPermissions(sidebarList);
 });
 
 const getItemClass = (item: SidebarItem) => {

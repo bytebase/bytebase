@@ -830,14 +830,6 @@
         "override-confirm": "继续导入"
       }
     },
-    "access-control": {
-      "description": "配置审批流来控制数据的查询和导出。{link}",
-      "skip-approval": "跳过人工审批",
-      "query-data": "数据查询",
-      "export-data": "数据导出",
-      "disallowed": "禁止",
-      "copy-data-from-sql-editor": "从 SQL 编辑器复制数据"
-    },
     "release": {
       "new-version-available": "有新版本可更新",
       "new-version-content": "新版本 {tag} 正式发布！请根据我们的文档来获取新版本。",
@@ -2545,7 +2537,7 @@
       },
       "bb-feature-access-control": {
         "title": "数据访问控制",
-        "desc": "配置审批流来控制数据的查询和导出。"
+        "desc": "限制用户对数据的访问权限，例如禁止用户复制数据查询结果"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",

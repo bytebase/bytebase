@@ -173,8 +173,9 @@
         </div>
 
         <div v-if="!create" class="flex flex-col gap-y-2">
-          <label class="textlabel">
+          <label class="textlabel flex items-center">
             {{ $t("environment.access-control.title") }}
+            <FeatureBadge feature="bb.feature.access-control" />
           </label>
           <div>
             <div class="inline-flex items-center gap-x-2">
@@ -263,6 +264,12 @@
       <!-- Update button group -->
     </template>
   </component>
+
+  <FeatureModal
+    :open="state.missingRequiredFeature != undefined"
+    :feature="state.missingRequiredFeature"
+    @cancel="state.missingRequiredFeature = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
@@ -276,10 +283,11 @@ import { useRouter, onBeforeRouteLeave } from "vue-router";
 import { DrawerContent, Switch } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import {
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
-  SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+  WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
+} from "@/router/dashboard/workspaceRoutes";
 import {
+  hasFeature,
   pushNotification,
   useCurrentUserV1,
   useEnvironmentV1List,
@@ -290,6 +298,7 @@ import {
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import type {
+  FeatureType,
   ResourceId,
   ValidatedMessage,
   WorkspacePermission,
@@ -318,6 +327,7 @@ interface LocalState {
   rolloutPolicy: Policy;
   backupPolicy: Policy;
   environmentTier: EnvironmentTier;
+  missingRequiredFeature?: FeatureType;
 }
 
 const props = defineProps({
@@ -350,6 +360,7 @@ const emit = defineEmits([
   "archive",
   "restore",
   "update-policy",
+  "update-access-control",
 ]);
 
 const { t } = useI18n();
@@ -398,14 +409,14 @@ const disableCopyDataPolicy = computed(() => {
 const onSQLReviewPolicyClick = () => {
   if (sqlReviewPolicy.value) {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_DETAIL,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
       params: {
         sqlReviewPolicySlug: sqlReviewPolicySlug(sqlReviewPolicy.value),
       },
     });
   } else {
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW_CREATE,
+      name: WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
       query: {
         environmentId: (props.environment as Environment).uid,
       },
@@ -642,6 +653,11 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
 };
 
 const upsertPolicy = async (on: boolean) => {
+  if (!hasFeature("bb.feature.access-control")) {
+    state.missingRequiredFeature = "bb.feature.access-control";
+    return;
+  }
+
   await policyStore.createPolicy(props.environment.name, {
     type: PolicyType.DISABLE_COPY_DATA,
     resourceType: PolicyResourceType.ENVIRONMENT,
