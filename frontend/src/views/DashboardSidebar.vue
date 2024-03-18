@@ -200,7 +200,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("settings.sidebar.security-and-policy"),
       icon: h(ShieldCheck),
       type: "div",
-      expand: true,
       children: [
         {
           title: t("sql-review.title"),
@@ -245,7 +244,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("settings.sidebar.integration"),
       icon: h(LinkIcon),
       type: "div",
-      expand: true,
       children: [
         {
           title: t("settings.sidebar.gitops"),
