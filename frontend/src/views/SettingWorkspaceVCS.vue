@@ -36,7 +36,7 @@ import { computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import VCSCard from "@/components/VCS/VCSCard.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
-import { SETTING_ROUTE_WORKSPACE_GITOPS_CREATE } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_GITOPS_CREATE } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1, useVCSV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -63,7 +63,7 @@ const vcsList = computed(() => {
 
 const addVCSProvider = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_GITOPS_CREATE,
+    name: WORKSPACE_ROUTE_GITOPS_CREATE,
   });
 };
 </script>

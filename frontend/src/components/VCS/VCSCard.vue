@@ -40,7 +40,7 @@
 import { NButton } from "naive-ui";
 import { PropType, computed } from "vue";
 import { useRouter } from "vue-router";
-import { SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_GITOPS_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import { useCurrentUserV1 } from "@/store";
 import { ExternalVersionControl } from "@/types/proto/v1/externalvs_service";
 import { hasWorkspacePermissionV2, vcsSlugV1 } from "@/utils";
@@ -64,7 +64,7 @@ const hasUpdateVCSPermission = computed(() => {
 
 const editVCS = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_GITOPS_DETAIL,
+    name: WORKSPACE_ROUTE_GITOPS_DETAIL,
     params: {
       vcsSlug: vcsSlugV1(props.vcs),
     },

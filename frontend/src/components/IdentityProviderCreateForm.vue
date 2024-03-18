@@ -814,7 +814,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
-import { SETTING_ROUTE_WORKSPACE_SSO } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useActuatorV1Store,
@@ -1238,7 +1238,7 @@ const handleDeleteButtonClick = async () => {
     title: "Archive SSO succeed",
   });
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO,
+    name: WORKSPACE_ROUTE_SSO,
   });
 };
 
@@ -1272,7 +1272,7 @@ const handleRestoreButtonClick = async () => {
 
 const handleCancelButtonClick = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO,
+    name: WORKSPACE_ROUTE_SSO,
   });
 };
 
@@ -1333,7 +1333,7 @@ const handleCreateButtonClick = async () => {
     title: "Create SSO succeed",
   });
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO,
+    name: WORKSPACE_ROUTE_SSO,
   });
 };
 

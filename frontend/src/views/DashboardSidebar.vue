@@ -10,21 +10,24 @@
 <script lang="ts" setup>
 import { Action, defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import {
+  LinkIcon,
   HomeIcon,
   DatabaseIcon,
-  TurtleIcon,
   DownloadIcon,
   ShieldAlertIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
   SquareStackIcon,
+  ShieldCheck,
+  SettingsIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter, useRoute, RouteRecordRaw } from "vue-router";
 import { SidebarItem } from "@/components/CommonSidebar.vue";
 import { useGlobalDatabaseActions } from "@/components/KBar/useDatabaseActions";
 import { useProjectActions } from "@/components/KBar/useProjectActions";
+import workspaceRoutes from "@/router/dashboard/workspace";
 import {
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
@@ -34,15 +37,25 @@ import {
   WORKSPACE_ROUTE_SLOW_QUERY,
   WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
+  WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
+  WORKSPACE_ROUTE_CUSTOM_APPROVAL,
+  WORKSPACE_ROUTE_RISK_CENTER,
+  WORKSPACE_ROUTE_SENSITIVE_DATA,
+  WORKSPACE_ROUTE_AUDIT_LOG,
+  WORKSPACE_ROUTE_GITOPS,
+  WORKSPACE_ROUTE_SSO,
+  WORKSPACE_ROUTE_MAIL_DELIVERY,
 } from "@/router/dashboard/workspaceRoutes";
+import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { useCurrentUserV1 } from "@/store";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "../utils";
+import { WorkspacePermission } from "@/types";
+import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
-  navigationId: string;
-  shortcuts: string[];
-  name: string;
-  type: "route" | "divider";
+  navigationId?: string;
+  shortcuts?: string[];
+  children?: DashboardSidebarItem[];
 }
 
 const { t } = useI18n();
@@ -62,8 +75,62 @@ const getItemClass = (item: SidebarItem): string[] => {
   return classes;
 };
 
+const getFlattenRoutes = (
+  routes: RouteRecordRaw[],
+  permissions: WorkspacePermission[] = []
+): {
+  name: string;
+  permissions: WorkspacePermission[];
+}[] => {
+  return routes.reduce((list, workspaceRoute) => {
+    const requiredWorkspacePermissionListFunc =
+      workspaceRoute.meta?.requiredWorkspacePermissionList;
+    let requiredPermissionList = requiredWorkspacePermissionListFunc
+      ? requiredWorkspacePermissionListFunc()
+      : [];
+    if (requiredPermissionList.length === 0) {
+      requiredPermissionList = permissions;
+    }
+
+    if (workspaceRoute.name && workspaceRoute.name.toString() !== "") {
+      list.push({
+        name: workspaceRoute.name.toString(),
+        permissions: requiredPermissionList,
+      });
+    }
+    if (workspaceRoute.children) {
+      list.push(
+        ...getFlattenRoutes(workspaceRoute.children, requiredPermissionList)
+      );
+    }
+    return list;
+  }, [] as { name: string; permissions: WorkspacePermission[] }[]);
+};
+
+const flattenRoutes = computed(() => {
+  return getFlattenRoutes(workspaceRoutes);
+});
+
+const filterSidebarByPermissions = (
+  sidebarList: DashboardSidebarItem[]
+): DashboardSidebarItem[] => {
+  return sidebarList
+    .filter((item) => {
+      const routeConfig = flattenRoutes.value.find(
+        (workspaceRoute) => workspaceRoute.name === item.path
+      );
+      return (routeConfig?.permissions ?? []).every((permission) =>
+        hasWorkspacePermissionV2(currentUserV1.value, permission)
+      );
+    })
+    .map((item) => ({
+      ...item,
+      children: filterSidebarByPermissions(item.children ?? []),
+    }));
+};
+
 const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
-  return [
+  const sidebarList: DashboardSidebarItem[] = [
     {
       navigationId: "bb.navigation.home",
       title: t("issue.my-issues"),
@@ -79,7 +146,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: PROJECT_V1_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "p"],
-      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list"),
     },
     {
       navigationId: "bb.navigation.instances",
@@ -88,7 +154,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: INSTANCE_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "i"],
-      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list"),
     },
     {
       navigationId: "bb.navigation.databases",
@@ -105,24 +170,10 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
       type: "route",
       shortcuts: ["g", "e"],
-      hide: !hasWorkspacePermissionV2(
-        currentUserV1.value,
-        "bb.environments.list"
-      ),
     },
     {
-      navigationId: "",
       type: "divider",
       name: "",
-      shortcuts: [],
-    },
-    {
-      navigationId: "bb.navigation.slow-query",
-      title: t("slow-query.slow-queries"),
-      icon: h(TurtleIcon),
-      name: WORKSPACE_ROUTE_SLOW_QUERY,
-      type: "route",
-      shortcuts: ["g", "s", "q"],
     },
     {
       navigationId: "bb.navigation.export-center",
@@ -145,12 +196,101 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       type: "route",
       shortcuts: ["g", "a", "c"],
     },
+    {
+      title: t("settings.sidebar.security-and-policy"),
+      icon: h(ShieldCheck),
+      type: "div",
+      expand: true,
+      children: [
+        {
+          title: t("sql-review.title"),
+          name: WORKSPACE_ROUTE_SQL_REVIEW,
+          type: "route",
+        },
+        {
+          title: t("slow-query.self"),
+          name: WORKSPACE_ROUTE_SLOW_QUERY,
+          type: "route",
+          navigationId: "bb.navigation.slow-query",
+          shortcuts: ["g", "s", "q"],
+        },
+        {
+          title: t("schema-template.self"),
+          name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
+          type: "route",
+        },
+        {
+          title: t("custom-approval.risk.risk-center"),
+          name: WORKSPACE_ROUTE_RISK_CENTER,
+          type: "route",
+        },
+        {
+          title: t("custom-approval.self"),
+          name: WORKSPACE_ROUTE_CUSTOM_APPROVAL,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.sensitive-data"),
+          name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.audit-log"),
+          name: WORKSPACE_ROUTE_AUDIT_LOG,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: t("settings.sidebar.integration"),
+      icon: h(LinkIcon),
+      type: "div",
+      expand: true,
+      children: [
+        {
+          title: t("settings.sidebar.gitops"),
+          name: WORKSPACE_ROUTE_GITOPS,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.sso"),
+          name: WORKSPACE_ROUTE_SSO,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.mail-delivery"),
+          name: WORKSPACE_ROUTE_MAIL_DELIVERY,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: t("common.setting"),
+      icon: h(SettingsIcon),
+      name: SETTING_ROUTE_WORKSPACE_GENERAL,
+      type: "route",
+    },
   ];
+
+  return filterSidebarByPermissions(sidebarList);
 });
 
 const navigationKbarActions = computed((): Action[] => {
   return dashboardSidebarItemList.value
-    .filter((item) => item.navigationId && item.name && !item.hide)
+    .reduce((list, item) => {
+      if (!item.children) {
+        if (item.navigationId && item.name && !item.hide) {
+          list.push(item);
+        }
+      } else {
+        for (const child of item.children) {
+          if (child.navigationId && child.name && !child.hide) {
+            list.push(child);
+          }
+        }
+      }
+      return list;
+    }, [] as DashboardSidebarItem[])
     .map((item) => {
       return defineAction({
         id: item.navigationId,
