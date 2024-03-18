@@ -74,7 +74,7 @@ func convertActionsForTest(actions []testAction) []base.StringsManipulatorAction
 		case "dropTable":
 			result = append(result, NewDropTableAction(schemaName, action.Arguments[0]))
 		case "addTable":
-			result = append(result, NewAddTableAction(schemaName, action.Arguments[0]))
+			result = append(result, NewAddTableAction(schemaName, action.Arguments[0], action.Arguments[1]))
 		case "dropColumn":
 			result = append(result, NewDropColumnAction(schemaName, action.Arguments[0], action.Arguments[1]))
 		case "addColumn":
@@ -93,6 +93,12 @@ func convertActionsForTest(actions []testAction) []base.StringsManipulatorAction
 			result = append(result, NewModifyTableConstraintAction(schemaName, action.Arguments[0], convertConstraintTypeForTest(action.Arguments[1]), action.Arguments[2], action.Arguments[3]))
 		case "addTableConstraint":
 			result = append(result, NewAddTableConstraintAction(schemaName, action.Arguments[0], convertConstraintTypeForTest(action.Arguments[1]), action.Arguments[2]))
+		case "addIndex":
+			result = append(result, NewAddIndexAction(schemaName, action.Arguments[0], action.Arguments[1]))
+		case "dropIndex":
+			result = append(result, NewDropIndexAction(schemaName, action.Arguments[0], action.Arguments[1]))
+		case "modifyIndex":
+			result = append(result, NewModifyIndexAction(schemaName, action.Arguments[0], action.Arguments[1], action.Arguments[2]))
 		}
 	}
 
