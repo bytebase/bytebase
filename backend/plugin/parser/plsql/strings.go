@@ -512,6 +512,8 @@ func (l *statementListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
 				// Add an empty line before the index definition.
 				l.results = append(l.results, "")
 				l.results = append(l.results, action.IndexDefine)
+			default:
+				// Do nothing.
 			}
 		}
 	}
