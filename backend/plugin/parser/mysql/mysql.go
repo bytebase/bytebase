@@ -315,11 +315,14 @@ func IsTopMySQLRule(ctx *antlr.BaseParserRuleContext) bool {
 		if _, ok := ctx.GetParent().GetParent().(*parser.QueryContext); !ok {
 			return false
 		}
-	case *parser.CreateStatementContext, *parser.DropStatementContext, *parser.TransactionOrLockingStatementContext:
+	case *parser.CreateStatementContext, *parser.DropStatementContext, *parser.TransactionOrLockingStatementContext, *parser.AlterStatementContext:
 		if ctx.GetParent().GetParent() == nil {
 			return false
 		}
-		if _, ok := ctx.GetParent().GetParent().(*parser.QueryContext); !ok {
+		if ctx.GetParent().GetParent().GetParent() == nil {
+			return false
+		}
+		if _, ok := ctx.GetParent().GetParent().GetParent().(*parser.QueryContext); !ok {
 			return false
 		}
 	default:
