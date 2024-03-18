@@ -79,25 +79,9 @@ func (d *DatabaseState) mysqlChangeState(in *mysqlparser.ParseResult) (err *Walk
 	return nil
 }
 
-func isTopMySQLRule(ctx *antlr.BaseParserRuleContext) bool {
-	if ctx.GetParent() == nil {
-		return false
-	}
-	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
-		return false
-	}
-	if ctx.GetParent().GetParent() == nil {
-		return false
-	}
-	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
-		return false
-	}
-	return true
-}
-
 // EnterCreateTable is called when production createTable is entered.
 func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.TableName() == nil {
@@ -191,7 +175,7 @@ func (l *mysqlListener) EnterCreateTable(ctx *mysql.CreateTableContext) {
 
 // EnterDropTable is called when production dropTable is entered.
 func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.TableRefList() == nil {
@@ -230,7 +214,7 @@ func (l *mysqlListener) EnterDropTable(ctx *mysql.DropTableContext) {
 
 // EnterAlterTable is called when production alterTable is entered.
 func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.TableRef() == nil {
@@ -402,7 +386,7 @@ func (l *mysqlListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
 
 // EnterDropIndex is called when production dropIndex is entered.
 func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.TableRef() == nil {
@@ -426,7 +410,7 @@ func (l *mysqlListener) EnterDropIndex(ctx *mysql.DropIndexContext) {
 }
 
 func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
@@ -483,7 +467,7 @@ func (l *mysqlListener) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
 
 // EnterAlterDatabase is called when production alterDatabase is entered.
 func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.SchemaRef() != nil {
@@ -512,7 +496,7 @@ func (l *mysqlListener) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
 
 // EnterDropDatabase is called when production dropDatabase is entered.
 func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.SchemaRef() == nil {
@@ -530,7 +514,7 @@ func (l *mysqlListener) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
 
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (l *mysqlListener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.SchemaName() == nil {
@@ -542,7 +526,7 @@ func (l *mysqlListener) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
 func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	for _, pair := range ctx.AllRenamePair() {
@@ -588,7 +572,7 @@ func (l *mysqlListener) EnterRenameTableStatement(ctx *mysql.RenameTableStatemen
 }
 
 func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.TriggerName() == nil {
@@ -608,7 +592,7 @@ func (l *mysqlListener) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
 }
 
 func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.ProcedureName() == nil {
@@ -618,7 +602,7 @@ func (*mysqlListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
 }
 
 func (*mysqlListener) EnterCreateEvent(ctx *mysql.CreateEventContext) {
-	if !isTopMySQLRule(&ctx.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.EventName() == nil {

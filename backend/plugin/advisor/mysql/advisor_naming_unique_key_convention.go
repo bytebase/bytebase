@@ -88,6 +88,9 @@ func (checker *namingUKConventionChecker) EnterQuery(ctx *mysql.QueryContext) {
 }
 
 func (checker *namingUKConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -113,6 +116,9 @@ func (checker *namingUKConventionChecker) EnterCreateTable(ctx *mysql.CreateTabl
 }
 
 func (checker *namingUKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -175,6 +181,9 @@ func (checker *namingUKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableC
 }
 
 func (checker *namingUKConventionChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	// only focus on unique index.
 	if ctx.UNIQUE_SYMBOL() == nil {
 		return

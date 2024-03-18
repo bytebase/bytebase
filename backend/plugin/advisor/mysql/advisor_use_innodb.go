@@ -74,6 +74,9 @@ type useInnoDBChecker struct {
 
 // EnterCreateTable is called when production createTable is entered.
 func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateTableOptions() == nil {
 		return
 	}
@@ -94,6 +97,9 @@ func (c *useInnoDBChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
 }
 
 func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}
@@ -126,6 +132,9 @@ func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 }
 
 func (c *useInnoDBChecker) EnterSetStatement(ctx *mysql.SetStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.StartOptionValueList() == nil {
 		return

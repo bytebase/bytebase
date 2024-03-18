@@ -81,6 +81,9 @@ func (checker *functionDisallowedListChecker) EnterQuery(ctx *mysql.QueryContext
 }
 
 func (checker *functionDisallowedListChecker) EnterFunctionCall(ctx *mysql.FunctionCallContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	pi := ctx.PureIdentifier()
 	if pi != nil {
 		functionName := pi.IDENTIFIER().GetText()

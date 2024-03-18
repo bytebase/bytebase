@@ -76,6 +76,9 @@ type columnMaximumCharacterLengthChecker struct {
 }
 
 func (checker *columnMaximumCharacterLengthChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableElementList() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -109,6 +112,9 @@ func (checker *columnMaximumCharacterLengthChecker) EnterCreateTable(ctx *mysql.
 }
 
 func (checker *columnMaximumCharacterLengthChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
