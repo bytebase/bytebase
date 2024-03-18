@@ -34,14 +34,14 @@ func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseS
 }
 
 func (s *databaseState) convertToDatabaseMetadata() *storepb.DatabaseSchemaMetadata {
-	schemaStates := []*schemaState{}
+	var schemaStates []*schemaState
 	for _, schema := range s.schemas {
 		schemaStates = append(schemaStates, schema)
 	}
 	sort.Slice(schemaStates, func(i, j int) bool {
 		return schemaStates[i].id < schemaStates[j].id
 	})
-	schemas := []*storepb.SchemaMetadata{}
+	var schemas []*storepb.SchemaMetadata
 	for _, schema := range schemaStates {
 		schemas = append(schemas, schema.convertToSchemaMetadata())
 	}
@@ -75,14 +75,14 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 }
 
 func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
-	tableStates := []*tableState{}
+	var tableStates []*tableState
 	for _, table := range s.tables {
 		tableStates = append(tableStates, table)
 	}
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
-	tables := []*storepb.TableMetadata{}
+	var tables []*storepb.TableMetadata
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
@@ -115,7 +115,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
-	columns := []*columnState{}
+	var columns []*columnState
 	for _, column := range t.columns {
 		columns = append(columns, column)
 	}
@@ -133,7 +133,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
-	indexes := []*indexState{}
+	var indexes []*indexState
 	for _, index := range t.indexes {
 		indexes = append(indexes, index)
 	}
@@ -152,7 +152,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 		}
 	}
 
-	foreignKeys := []*foreignKeyState{}
+	var foreignKeys []*foreignKeyState
 	for _, fk := range t.foreignKeys {
 		foreignKeys = append(foreignKeys, fk)
 	}
@@ -237,14 +237,14 @@ func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
 }
 
 func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
-	columnStates := []*columnState{}
+	var columnStates []*columnState
 	for _, column := range t.columns {
 		columnStates = append(columnStates, column)
 	}
 	sort.Slice(columnStates, func(i, j int) bool {
 		return columnStates[i].id < columnStates[j].id
 	})
-	columns := []*storepb.ColumnMetadata{}
+	var columns []*storepb.ColumnMetadata
 	for _, column := range columnStates {
 		columns = append(columns, column.convertToColumnMetadata())
 	}
@@ -253,26 +253,26 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		column.Position = int32(i + 1)
 	}
 
-	indexStates := []*indexState{}
+	var indexStates []*indexState
 	for _, index := range t.indexes {
 		indexStates = append(indexStates, index)
 	}
 	sort.Slice(indexStates, func(i, j int) bool {
 		return indexStates[i].id < indexStates[j].id
 	})
-	indexes := []*storepb.IndexMetadata{}
+	var indexes []*storepb.IndexMetadata
 	for _, index := range indexStates {
 		indexes = append(indexes, index.convertToIndexMetadata())
 	}
 
-	fkStates := []*foreignKeyState{}
+	var fkStates []*foreignKeyState
 	for _, fk := range t.foreignKeys {
 		fkStates = append(fkStates, fk)
 	}
 	sort.Slice(fkStates, func(i, j int) bool {
 		return fkStates[i].id < fkStates[j].id
 	})
-	fks := []*storepb.ForeignKeyMetadata{}
+	var fks []*storepb.ForeignKeyMetadata
 	for _, fk := range fkStates {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
@@ -670,7 +670,7 @@ func (p *partitionStateWrapper) toString(buf io.StringWriter) error {
 			// HACK(zp): Write the part field list. In the MySQL source code, it calls append_identifier(), which considers the quote character. We should figure out the logic of it later.
 			// Currently, I just found that if the expr contains more than one field, it would not be quoted by '`'.
 			// KEY and LINEAR KEY can take the field list.
-			// While MySQL calls append_field_list() to write the field list, it unmask the OPTION_QUOTE_SHOW_CREATE flag,
+			// While MySQL calls append_field_list() to write the field list, it unmasks the OPTION_QUOTE_SHOW_CREATE flag,
 			// for us, we do the best effort to split the expr by ',' and trim the leading and trailing '`', and write it to the buffer after joining them with ','.
 			fields := splitPartitionExprIntoFields(p.expr)
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
