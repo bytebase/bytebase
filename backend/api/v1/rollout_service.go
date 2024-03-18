@@ -72,7 +72,11 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	if plan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // ListPlans lists plans.
@@ -126,22 +130,25 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
 	}
 
+	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
+		pageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		return &v1pb.ListPlansResponse{
-			Plans:         convertToPlans(plans[:limit]),
-			NextPageToken: nextPageToken,
-		}, nil
+		nextPageToken = pageToken
+		plans = plans[:limit]
 	}
 
-	// no subsequent pages
+	convertedPlans, err := convertToPlans(ctx, s.store, plans)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plans, error: %v", err)
+	}
+
 	return &v1pb.ListPlansResponse{
-		Plans:         convertToPlans(plans),
-		NextPageToken: "",
+		Plans:         convertedPlans,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
@@ -197,7 +204,11 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	// Tickle plan check scheduler.
 	s.stateCfg.PlanCheckTickleChan <- 0
 
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // PreviewRollout previews the rollout for a plan.
@@ -1150,7 +1161,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	return convertToPlan(updatedPlan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.
