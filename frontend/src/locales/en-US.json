@@ -830,14 +830,6 @@
         "override-confirm": "Still upload"
       }
     },
-    "access-control": {
-      "description": "Configure approval flow to control data query and export. {link}",
-      "skip-approval": "Skip approval",
-      "query-data": "Query Data",
-      "export-data": "Export Data",
-      "disallowed": "Disallowed",
-      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
-    },
     "release": {
       "new-version-available": "New version is available",
       "new-version-content": "The new version {tag} is available now! Please check our docs for installation.",
@@ -2545,8 +2537,8 @@
         "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
       },
       "bb-feature-access-control": {
-        "title": "Data Access control",
-        "desc": "Configure approval flow to control data query and export."
+        "title": "Data Access Control",
+        "desc": "Restrict user access to data, such as prohibiting users from copying data query results."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",
