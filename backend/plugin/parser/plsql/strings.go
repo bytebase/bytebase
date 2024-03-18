@@ -44,23 +44,25 @@ func NewDropTableAction(schemaName, tableName string) *StringsManipulatorActionD
 
 type StringsManipulatorActionAddTable struct {
 	base.StringsManipulatorActionBase
+	Table           string
 	TableDefinition string
 }
 
-func (*StringsManipulatorActionAddTable) GetTopLevelNaming() string {
-	return ""
+func (s *StringsManipulatorActionAddTable) GetTopLevelNaming() string {
+	return s.Table
 }
 
 func (*StringsManipulatorActionAddTable) GetSecondLevelNaming() string {
 	return ""
 }
 
-func NewAddTableAction(schemaName, tableDefinition string) *StringsManipulatorActionAddTable {
+func NewAddTableAction(schemaName, tableName, tableDefinition string) *StringsManipulatorActionAddTable {
 	return &StringsManipulatorActionAddTable{
 		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
 			Type:       base.StringsManipulatorActionTypeAddTable,
 			SchemaName: schemaName,
 		},
+		Table:           tableName,
 		TableDefinition: tableDefinition,
 	}
 }
@@ -321,32 +323,131 @@ func NewAddTableConstraintAction(schemaName, tableName string, constraintType ba
 	}
 }
 
+type StringsManipulatorActionDropIndex struct {
+	base.StringsManipulatorActionBase
+	Table string
+	Index string
+}
+
+func (s *StringsManipulatorActionDropIndex) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (s *StringsManipulatorActionDropIndex) GetSecondLevelNaming() string {
+	return s.Index
+}
+
+func NewDropIndexAction(schemaName, tableName, indexName string) *StringsManipulatorActionDropIndex {
+	return &StringsManipulatorActionDropIndex{
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type:       base.StringsManipulatorActionTypeDropIndex,
+			SchemaName: schemaName,
+		},
+		Table: tableName,
+		Index: indexName,
+	}
+}
+
+type StringsManipulatorActionAddIndex struct {
+	base.StringsManipulatorActionBase
+	Table       string
+	IndexDefine string
+}
+
+func (s *StringsManipulatorActionAddIndex) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (*StringsManipulatorActionAddIndex) GetSecondLevelNaming() string {
+	return ""
+}
+
+func NewAddIndexAction(schemaName, tableName, indexDefine string) *StringsManipulatorActionAddIndex {
+	return &StringsManipulatorActionAddIndex{
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type:       base.StringsManipulatorActionTypeAddIndex,
+			SchemaName: schemaName,
+		},
+		Table:       tableName,
+		IndexDefine: indexDefine,
+	}
+}
+
+type StringsManipulatorActionModifyIndex struct {
+	base.StringsManipulatorActionBase
+	Table          string
+	IndexName      string
+	NewIndexDefine string
+}
+
+func (s *StringsManipulatorActionModifyIndex) GetTopLevelNaming() string {
+	return s.Table
+}
+
+func (s *StringsManipulatorActionModifyIndex) GetSecondLevelNaming() string {
+	return s.IndexName
+}
+
+func NewModifyIndexAction(schemaName, tableName, indexName string, newIndexDefine string) *StringsManipulatorActionModifyIndex {
+	return &StringsManipulatorActionModifyIndex{
+		StringsManipulatorActionBase: base.StringsManipulatorActionBase{
+			Type:       base.StringsManipulatorActionTypeModifyIndex,
+			SchemaName: schemaName,
+		},
+		Table:          tableName,
+		IndexName:      indexName,
+		NewIndexDefine: newIndexDefine,
+	}
+}
+
 type tableID struct {
 	schema string
 	table  string
+}
+
+type indexID struct {
+	schema string
+	table  string
+	index  string
 }
 
 func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction) (string, error) {
 	tableActions := make(map[tableID][]base.StringsManipulatorAction)
 	var addTables []base.StringsManipulatorAction
 
+	indexActions := make(map[indexID][]base.StringsManipulatorAction)
+
 	for _, action := range actions {
-		if addTable, ok := action.(*StringsManipulatorActionAddTable); ok {
-			addTables = append(addTables, addTable)
-			continue
+		switch action := action.(type) {
+		case *StringsManipulatorActionAddTable:
+			addTables = append(addTables, action)
+		case *StringsManipulatorActionDropIndex:
+			indexID := indexID{
+				schema: action.GetSchemaName(),
+				table:  action.GetTopLevelNaming(),
+				index:  action.GetSecondLevelNaming(),
+			}
+			indexActions[indexID] = append(indexActions[indexID], action)
+		case *StringsManipulatorActionModifyIndex:
+			indexID := indexID{
+				schema: action.GetSchemaName(),
+				table:  action.GetTopLevelNaming(),
+				index:  action.GetSecondLevelNaming(),
+			}
+			indexActions[indexID] = append(indexActions[indexID], action)
+		default:
+			table := tableID{
+				schema: action.GetSchemaName(),
+				table:  action.GetTopLevelNaming(),
+			}
+			tableActions[table] = append(tableActions[table], action)
 		}
-		table := tableID{
-			schema: action.GetSchemaName(),
-			table:  action.GetTopLevelNaming(),
-		}
-		// do copy
-		action := action
-		tableActions[table] = append(tableActions[table], action)
 	}
 
 	listener := &statementListener{
-		actions:   tableActions,
-		addTables: addTables,
+		actions:      tableActions,
+		indexActions: indexActions,
+		addTables:    addTables,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, s.tree)
 	return strings.Join(listener.results, "\n"), listener.err
@@ -355,10 +456,11 @@ func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction
 type statementListener struct {
 	*parser.BasePlSqlParserListener
 
-	actions   map[tableID][]base.StringsManipulatorAction
-	addTables []base.StringsManipulatorAction
-	results   []string
-	err       error
+	actions      map[tableID][]base.StringsManipulatorAction
+	indexActions map[indexID][]base.StringsManipulatorAction
+	addTables    []base.StringsManipulatorAction
+	results      []string
+	err          error
 }
 
 func (l *statementListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
@@ -377,12 +479,43 @@ func (l *statementListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
 				return
 			}
 			l.results = append(l.results, rewriter.buf.String())
+		case statement.Create_index() != nil:
+			rewriter := &rewriter{
+				actions:      l.actions,
+				indexActions: l.indexActions,
+				state:        statementStateRemaining,
+				buf:          &strings.Builder{},
+			}
+			antlr.ParseTreeWalkerDefault.Walk(rewriter, statement.Create_index())
+			if rewriter.err != nil {
+				l.err = rewriter.err
+				return
+			}
+			l.results = append(l.results, rewriter.buf.String())
 		default:
 			l.results = append(l.results, statement.GetParser().GetTokenStream().GetTextFromRuleContext(statement)+";\n")
 		}
 	}
 	for _, action := range l.addTables {
 		l.results = append(l.results, action.(*StringsManipulatorActionAddTable).TableDefinition)
+		tableID := tableID{
+			schema: action.GetSchemaName(),
+			table:  action.GetTopLevelNaming(),
+		}
+		actions, ok := l.actions[tableID]
+		if !ok || len(actions) == 0 {
+			continue
+		}
+		for _, action := range actions {
+			switch action := action.(type) {
+			case *StringsManipulatorActionAddIndex:
+				// Add an empty line before the index definition.
+				l.results = append(l.results, "")
+				l.results = append(l.results, action.IndexDefine)
+			default:
+				// Do nothing.
+			}
+		}
 	}
 }
 
@@ -397,9 +530,10 @@ const (
 type rewriter struct {
 	*parser.BasePlSqlParserListener
 
-	actions map[tableID][]base.StringsManipulatorAction
-	buf     *strings.Builder
-	err     error
+	actions      map[tableID][]base.StringsManipulatorAction
+	indexActions map[indexID][]base.StringsManipulatorAction
+	buf          *strings.Builder
+	err          error
 
 	// per-statement state
 	currentTableID    *tableID
@@ -407,6 +541,64 @@ type rewriter struct {
 	state             statementState
 	columnDefines     []string
 	constraintDefines []string
+
+	newIndexDefine string
+}
+
+func (r *rewriter) EnterCreate_index(ctx *parser.Create_indexContext) {
+	if r.err != nil {
+		return
+	}
+
+	if ctx.Table_index_clause() == nil {
+		return
+	}
+
+	_, indexName := NormalizeIndexName(ctx.Index_name())
+
+	indexDefinition := ctx.Table_index_clause()
+	schema, table := NormalizeTableViewName("", indexDefinition.Tableview_name())
+	indexID := indexID{
+		schema: schema,
+		table:  table,
+		index:  indexName,
+	}
+
+	actions, ok := r.indexActions[indexID]
+	if !ok || len(actions) == 0 {
+		return
+	}
+
+	for _, action := range actions {
+		switch action := action.(type) {
+		case *StringsManipulatorActionDropIndex:
+			r.state = statementStateDelete
+		case *StringsManipulatorActionModifyIndex:
+			r.state = statementStateModify
+			r.newIndexDefine = action.NewIndexDefine
+		}
+	}
+}
+
+func (r *rewriter) ExitCreate_index(ctx *parser.Create_indexContext) {
+	if r.err != nil {
+		return
+	}
+
+	switch r.state {
+	case statementStateDelete:
+		return
+	case statementStateRemaining:
+		if _, err := r.buf.WriteString(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)); err != nil {
+			r.err = err
+			return
+		}
+	case statementStateModify:
+		if _, err := r.buf.WriteString(r.newIndexDefine); err != nil {
+			r.err = err
+			return
+		}
+	}
 }
 
 func (r *rewriter) EnterCreate_table(ctx *parser.Create_tableContext) {
@@ -456,6 +648,24 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 		return
 	}
 
+	addIndexFunc := func() error {
+		for _, action := range r.tableActions[""] {
+			if action.GetType() == base.StringsManipulatorActionTypeAddIndex {
+				addIndex, ok := action.(*StringsManipulatorActionAddIndex)
+				if !ok {
+					return errors.New("unexpected action type")
+				}
+				if _, err := r.buf.WriteString("\n"); err != nil {
+					return err
+				}
+				if _, err := r.buf.WriteString(addIndex.IndexDefine); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+
 	switch r.state {
 	case statementStateDelete:
 		return
@@ -468,6 +678,9 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 		if _, err := r.buf.WriteString("\n"); err != nil {
 			r.err = err
 			return
+		}
+		if err := addIndexFunc(); err != nil {
+			r.err = err
 		}
 		return
 	case statementStateModify:
@@ -484,6 +697,11 @@ func (r *rewriter) ExitCreate_table(ctx *parser.Create_tableContext) {
 		}
 
 		if err := r.assembleCreateTable(ctx); err != nil {
+			r.err = err
+			return
+		}
+
+		if err := addIndexFunc(); err != nil {
 			r.err = err
 			return
 		}

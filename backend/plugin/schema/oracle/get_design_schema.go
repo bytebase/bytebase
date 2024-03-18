@@ -47,7 +47,7 @@ func GetDesignSchema(defaultSchema, baselineSchema string, to *storepb.DatabaseS
 			if err := tableState.toString(schema.Name, buf); err != nil {
 				return "", err
 			}
-			generator.actions = append(generator.actions, plsql.NewAddTableAction(schema.Name, buf.String()))
+			generator.actions = append(generator.actions, plsql.NewAddTableAction(schema.Name, table.Name, buf.String()))
 		}
 	}
 	manipulator := plsql.NewStringsManipulator(tree, tokens)
