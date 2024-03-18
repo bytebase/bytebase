@@ -366,7 +366,8 @@
       "generating": "Đang tạo",
       "empty-rollback-statement": "Câu lệnh rollback trống",
       "cancel-generating": "Hủy việc tạo khôi phục SQL",
-      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}"
+      "sql-rollback-tips": "Khi được bật, Bytebase sẽ giữ nhật ký khôi phục cho thay đổi dữ liệu\nvà cho phép bạn tạo một vấn đề mới để hoàn nguyên thay đổi này.\nCảnh báo: Nếu bảng không có khóa chính. Hoàn tác SQL có thể ảnh hưởng\nhàng trùng lặp. Vui lòng xác nhận cẩn thận trước khi thực hiện.\n{link}",
+      "maximum-size-tips": "Kích thước dữ liệu khôi phục tối đa được hỗ trợ là 32MB"
     },
     "skip-failed-in-current-stage": "Bỏ qua các nhiệm vụ thất bại trong giai đoạn hiện tại",
     "apply-change-to-all-pending-tasks": {
@@ -828,14 +829,6 @@
         "override-desc": "Dữ liệu phân loại hiện tại sẽ bị ghi đè và ảnh hưởng đến tất cả các dự án.",
         "override-confirm": "Vẫn tải lên"
       }
-    },
-    "access-control": {
-      "description": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu. {link}",
-      "skip-approval": "Bỏ qua phê duyệt",
-      "query-data": "Truy vấn dữ liệu",
-      "export-data": "Xuất dữ liệu",
-      "disallowed": "Không được phép",
-      "copy-data-from-sql-editor": "Sao chép dữ liệu từ SQL Editor"
     },
     "release": {
       "new-version-available": "Phiên bản mới có sẵn",
@@ -1405,7 +1398,11 @@
       "self": "Vô hiệu hóa sao lưu tự động cơ sở dữ liệu",
       "content": "Việc tắt chính sách sao lưu tự động không được áp dụng trở về trước.\nBạn có chắc chắn về việc áp dụng cho tất cả cơ sở dữ liệu trong môi trường này không?"
     },
-    "production-environment": "Môi trường sản xuất"
+    "production-environment": "Môi trường sản xuất",
+    "access-control": {
+      "title": "Kiểm soát truy cập",
+      "disable-copy-data-from-sql-editor": "Vô hiệu hóa sao chép dữ liệu từ trình chỉnh sửa SQL"
+    }
   },
   "quick-start": {
     "self": "Bắt đầu nhanh",
@@ -2541,7 +2538,7 @@
       },
       "bb-feature-access-control": {
         "title": "Kiểm soát truy cập dữ liệu",
-        "desc": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu."
+        "desc": "Hạn chế quyền truy cập dữ liệu của người dùng, chẳng hạn như cấm người dùng sao chép kết quả truy vấn dữ liệu."
       },
       "bb-feature-lgtm": {
         "title": "Kiểm tra LGTM",
@@ -3318,7 +3315,7 @@
     "search-tables": "Tìm kiếm bảng",
     "use-tips": "Bấm vào một bảng để bắt đầu.",
     "apply-to-database": "Áp dụng thay đổi cho cơ sở dữ liệu",
-    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL và TiDB)",
+    "select-database-placeholder": "Chọn cơ sở dữ liệu (chỉ MySQL, PostgreSQL, TiDB và Oracle)",
     "message": {
       "created-succeed": "Chi nhánh được tạo thành công",
       "updated-succeed": "Chi nhánh được cập nhật thành công",

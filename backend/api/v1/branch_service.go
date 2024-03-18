@@ -298,7 +298,8 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		sanitizeCommentForSchemaMetadata(metadata)
 		filteredMetadata := filterDatabaseMetadata(metadata)
 
-		schema, err := schema.GetDesignSchema(branch.Engine, string(branch.BaseSchema), metadata)
+		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), metadata)
+		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, string(branch.BaseSchema), metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -324,6 +325,21 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 		return nil, err
 	}
 	return v1Branch, nil
+}
+
+// We assume that the database name is the same as the schema name,
+// and that an Oracle database with only one schema is managed based on the schema.
+func extractDefaultSchemaForOracleBranch(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) string {
+	if engine != storepb.Engine_ORACLE {
+		return ""
+	}
+	defaultSchema := metadata.Name
+	for _, schema := range metadata.Schemas {
+		if schema.Name != defaultSchema {
+			return ""
+		}
+	}
+	return defaultSchema
 }
 
 // MergeBranch merges a personal draft branch to the target branch.
@@ -404,7 +420,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if mergedMetadata == nil {
 		return nil, status.Errorf(codes.Internal, "merged metadata should not be nil if there is no error while merging (%+v, %+v, %+v)", headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata)
 	}
-	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), string(headBranch.HeadSchema), mergedMetadata)
+	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), mergedMetadata)
+	mergedSchema, err := schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, string(headBranch.HeadSchema), mergedMetadata)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
@@ -536,7 +553,8 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		// metadata in the frontend, and config would be ignored.
 		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
 
-		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), newBaseSchema, newHeadMetadata)
+		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(baseBranch.Engine), newHeadMetadata)
+		newHeadSchema, err = schema.GetDesignSchema(storepb.Engine(baseBranch.Engine), defaultSchema, newBaseSchema, newHeadMetadata)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 		}
@@ -699,7 +717,7 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 
 func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadataRequest) (*v1pb.DiffMetadataResponse, error) {
 	switch request.Engine {
-	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB:
+	case v1pb.Engine_MYSQL, v1pb.Engine_POSTGRES, v1pb.Engine_TIDB, v1pb.Engine_ORACLE:
 	default:
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported engine: %v", request.Engine)
 	}
@@ -718,11 +736,13 @@ func (*BranchService) DiffMetadata(_ context.Context, request *v1pb.DiffMetadata
 		return nil, status.Errorf(codes.InvalidArgument, "invalid target metadata: %v", err)
 	}
 
-	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeSourceMetadata)
+	defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSourceMetadata)
+	sourceSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultStoreSourceSchema, "" /* baseline*/, storeSourceMetadata)
 	if err != nil {
 		return nil, err
 	}
-	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), "" /* baseline*/, storeTargetMetadata)
+	defaultStoreTargetSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeTargetMetadata)
+	targetSchema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultStoreTargetSchema, "" /* baseline*/, storeTargetMetadata)
 	if err != nil {
 		return nil, err
 	}

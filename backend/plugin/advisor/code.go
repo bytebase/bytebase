@@ -51,6 +51,8 @@ const (
 	StatementUnwantedQueryPlanLevel           Code = 224
 	StatementWhereMaximumLogicalOperatorCount Code = 225
 	StatementJoinColumnAttrsNotMatch          Code = 226
+	StatementDisallowMixDML                   Code = 227
+	StatementDisallowMixDDLDML                Code = 228
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.

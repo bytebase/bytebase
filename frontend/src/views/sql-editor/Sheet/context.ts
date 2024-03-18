@@ -1,9 +1,11 @@
 import Emittery from "emittery";
+import { storeToRefs } from "pinia";
 import { InjectionKey, Ref, inject, provide, ref, computed } from "vue";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
   useDatabaseV1Store,
+  useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
 } from "@/store";
@@ -26,19 +28,28 @@ type SheetEvents = Emittery<{
 const useSheetListByView = (viewMode: SheetViewMode) => {
   const sheetStore = useWorkSheetStore();
 
+  const { currentProject } = storeToRefs(useSQLEditorStore());
+
   const isInitialized = ref(false);
   const isLoading = ref(false);
   const sheetList = computed(() => {
+    let list = [];
     switch (viewMode) {
       case "my":
-        return sheetStore.mySheetList;
+        list = sheetStore.mySheetList;
+        break;
       case "shared":
-        return sheetStore.sharedSheetList;
+        list = sheetStore.sharedSheetList;
+        break;
       case "starred":
-        return sheetStore.starredSheetList;
+        list = sheetStore.starredSheetList;
+        break;
     }
-    // Only to make TypeScript happy
-    throw "Should never reach this line";
+    return list.filter((worksheet) => {
+      return (
+        !currentProject.value || worksheet.project === currentProject.value.name
+      );
+    });
   });
 
   const fetchSheetList = async () => {

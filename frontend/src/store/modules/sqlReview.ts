@@ -286,12 +286,17 @@ export const useSQLReviewPolicyList = () => {
   return computed(() => store.reviewPolicyList);
 };
 
-export const useReviewPolicyByEnvironmentName = (name: MaybeRef<string>) => {
+export const useReviewPolicyByEnvironmentName = (
+  name: MaybeRef<string | undefined>
+) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    const id = unref(name);
-    store.getOrFetchReviewPolicyByEnvironmentName(id);
+    if (!unref(name)) return;
+    store.getOrFetchReviewPolicyByEnvironmentName(unref(name)!);
   });
 
-  return computed(() => store.getReviewPolicyByEnvironmentName(unref(name)));
+  return computed(() => {
+    if (!unref(name)) return undefined;
+    return store.getReviewPolicyByEnvironmentName(unref(name)!);
+  });
 };

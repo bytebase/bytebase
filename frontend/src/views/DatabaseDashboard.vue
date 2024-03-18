@@ -61,7 +61,8 @@
 
 <script lang="ts" setup>
 import { NCheckbox } from "naive-ui";
-import { computed, watchEffect, onMounted, reactive } from "vue";
+import { computed, watchEffect, onMounted, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { DatabaseV1Table } from "@/components/v2";
 import { isDatabase } from "@/components/v2/Model/DatabaseV1Table/utils";
 import {
@@ -88,6 +89,8 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
+  buildSearchTextBySearchParams,
+  buildSearchParamsBySearchText,
 } from "@/utils";
 
 interface LocalState {
@@ -101,17 +104,47 @@ interface LocalState {
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
 const pageMode = usePageMode();
+const route = useRoute();
+const router = useRouter();
+
+const defaultSearchParams = () => {
+  const params: SearchParams = {
+    query: "",
+    scopes: [],
+  };
+  return params;
+};
+
+const initializeSearchParamsFromQuery = () => {
+  const { qs } = route.query;
+  if (typeof qs === "string" && qs.length > 0) {
+    return buildSearchParamsBySearchText(qs);
+  }
+  return defaultSearchParams();
+};
 
 const state = reactive<LocalState>({
   databaseGroupList: [],
   loading: false,
   selectedDatabaseIds: new Set(),
-  params: {
-    query: "",
-    scopes: [],
-  },
+  params: initializeSearchParamsFromQuery(),
   selectedLabels: [],
 });
+
+watch(
+  () => state.params,
+  () => {
+    // using custom advanced search query, sync the search query string
+    // to URL
+    router.replace({
+      query: {
+        ...route.query,
+        qs: buildSearchTextBySearchParams(state.params),
+      },
+    });
+  },
+  { deep: true }
+);
 
 const currentUserV1 = useCurrentUserV1();
 const databaseV1Store = useDatabaseV1Store();

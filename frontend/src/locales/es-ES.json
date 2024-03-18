@@ -366,7 +366,8 @@
       "generating": "Generando",
       "empty-rollback-statement": "La declaración de reversión está vacía",
       "cancel-generating": "Cancelar la generación del SQL de reversión",
-      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}"
+      "sql-rollback-tips": "Cuando está habilitado, Bytebase mantendrá los registros de reversión para el cambio de datos\ny te permitirá crear una nueva incidencia para revertir este cambio.\nAdvertencia: Si la tabla no tiene una clave primaria. El SQL de reversión puede afectar\nfilas duplicadas. Por favor, confirma cuidadosamente antes de ejecutarlo.\n{enlace}",
+      "maximum-size-tips": "El tamaño máximo de datos de retroceso admitido es de 32MB"
     },
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {
@@ -828,14 +829,6 @@
         "override-desc": "Los datos de clasificación existentes se anularán y afectarán a todos los proyectos.",
         "override-confirm": "Aún subiendo"
       }
-    },
-    "access-control": {
-      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
-      "skip-approval": "Saltar aprobación manual",
-      "query-data": "Consulta de datos",
-      "export-data": "Exportación de datos",
-      "disallowed": "no permitido",
-      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
     },
     "release": {
       "new-version-available": "Nueva versión disponible",
@@ -1405,7 +1398,11 @@
       "self": "Desactivar copia de seguridad automática de la base de datos",
       "content": "La política de desactivación de copias de seguridad automáticas no se aplica de forma retroactiva.\n¿Está seguro de aplicarla a todas las bases de datos en este entorno?"
     },
-    "production-environment": "Entorno de producción"
+    "production-environment": "Entorno de producción",
+    "access-control": {
+      "title": "Control de acceso",
+      "disable-copy-data-from-sql-editor": "Desactivar copiar datos desde el editor SQL"
+    }
   },
   "quick-start": {
     "self": "Inicio rápido",
@@ -2541,7 +2538,7 @@
       },
       "bb-feature-access-control": {
         "title": "Control de acceso a datos",
-        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
+        "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",
@@ -3318,7 +3315,7 @@
     "search-tables": "Buscar tablas",
     "use-tips": "Selecciona las tablas a diseñar",
     "apply-to-database": "Aplicar cambio a la base de datos",
-    "select-database-placeholder": "Seleccionar base de datos (sólo MySQL, PostgreSQL, TiDB)",
+    "select-database-placeholder": "Seleccione una base de datos (solo MySQL, PostgreSQL, TiDB y Oracle)",
     "message": {
       "created-succeed": "Diseño de esquema creado con éxito",
       "updated-succeed": "Diseño de esquema actualizado con éxito",

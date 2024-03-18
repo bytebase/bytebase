@@ -34,7 +34,7 @@ import { reactive, computed, onUnmounted, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_GITOPS } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useVCSV1Store } from "@/store";
 import {
   isValidVCSApplicationIdOrSecret,
@@ -255,7 +255,7 @@ const tryFinishSetup = () => {
     })
     .then((vcs: ExternalVersionControl) => {
       router.push({
-        name: SETTING_ROUTE_WORKSPACE_GITOPS,
+        name: WORKSPACE_ROUTE_GITOPS,
       });
       pushNotification({
         module: "bytebase",
@@ -269,7 +269,7 @@ const tryFinishSetup = () => {
 
 const cancelSetup = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_GITOPS,
+    name: WORKSPACE_ROUTE_GITOPS,
   });
 };
 </script>

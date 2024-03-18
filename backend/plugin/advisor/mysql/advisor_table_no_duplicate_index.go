@@ -78,6 +78,7 @@ type duplicateIndex struct {
 	unique    bool
 	fulltext  bool
 	spatial   bool
+	table     string
 	columns   []string
 	// line is the line number of the index definition.
 	line int
@@ -91,16 +92,16 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 		return
 	}
 
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	// Build suspect index list.
 	for _, tableElement := range ctx.TableElementList().AllTableElement() {
 		if tableElement == nil || tableElement.TableConstraintDef() == nil {
 			continue
 		}
-		checker.handleConstraintDef(tableElement.TableConstraintDef())
+		checker.handleConstraintDef(tableName, tableElement.TableConstraintDef())
 	}
 	// Check for duplicate index.
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.DuplicateIndexInTable,
@@ -119,16 +120,16 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 		return
 	}
 
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 	for _, alterListItem := range ctx.AlterTableActions().AlterCommandList().AlterList().AllAlterListItem() {
 		if alterListItem == nil {
 			continue
 		}
 		if alterListItem.ADD_SYMBOL() != nil && alterListItem.TableConstraintDef() != nil {
-			checker.handleConstraintDef(alterListItem.TableConstraintDef())
+			checker.handleConstraintDef(tableName, alterListItem.TableConstraintDef())
 		}
 	}
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.DuplicateIndexInTable,
@@ -139,7 +140,7 @@ func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTab
 	}
 }
 
-func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(ctx mysql.ITableConstraintDefContext) {
+func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(tableName string, ctx mysql.ITableConstraintDefContext) {
 	switch ctx.GetType_().GetTokenType() {
 	case mysql.MySQLParserINDEX_SYMBOL, mysql.MySQLParserKEY_SYMBOL, mysql.MySQLParserPRIMARY_SYMBOL, mysql.MySQLParserUNIQUE_SYMBOL, mysql.MySQLParserFULLTEXT_SYMBOL, mysql.MySQLParserSPATIAL_SYMBOL:
 	default:
@@ -149,6 +150,7 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(ctx mysql.ITabl
 	index := duplicateIndex{
 		indexType: "BTREE",
 		line:      checker.baseLine + ctx.GetStart().GetLine(),
+		table:     tableName,
 	}
 	if ctx.KeyListVariants() != nil {
 		index.columns = mysqlparser.NormalizeKeyListVariants(ctx.KeyListVariants())
@@ -176,9 +178,11 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 		return
 	}
 
+	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 	index := duplicateIndex{
 		indexType: "BTREE",
 		line:      checker.baseLine + ctx.GetStart().GetLine(),
+		table:     tableName,
 	}
 	if ctx.UNIQUE_SYMBOL() != nil {
 		index.unique = true
@@ -205,7 +209,6 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateI
 	index.columns = mysqlparser.NormalizeKeyListVariants(ctx.CreateIndexTarget().KeyListVariants())
 	checker.indexList = append(checker.indexList, index)
 	if index := hasDuplicateIndexes(checker.indexList); index != nil {
-		_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
 		checker.adviceList = append(checker.adviceList, advisor.Advice{
 			Status:  checker.level,
 			Code:    advisor.DuplicateIndexInTable,
@@ -242,6 +245,7 @@ func indexKey(index duplicateIndex) string {
 		parts = append(parts, "spatial")
 	}
 	parts = append(parts, index.indexType)
+	parts = append(parts, index.table)
 	parts = append(parts, index.columns...)
 	return strings.Join(parts, "-")
 }

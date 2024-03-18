@@ -194,7 +194,15 @@ message SearchDatabasesRequest {
   string page_token = 2;
 
   // Filter is used to filter databases returned in the list.
-  // For example, "project = projects/{project}" can be used to list databases in a project.
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // The field only support in filter:
+  // - project with "=" operator, for example:
+  //  - project = "projects/sample-project"
+  //  - project = "projects/-"
+  // - instance with "=" operator, for example:
+  //  - instance = "instances/mysql"
+  //  - instance = "instances/-"
+  // for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
   string filter = 3;
 
   // By default, the permission "bb.databases.get" is used.
@@ -564,8 +572,12 @@ message TablePartitionMetadata {
   // - For others, it's an empty string.
   string value = 4;
 
+  // The use_default is whether the users use the default partition, it stores the different value for different database engines.
+  // For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+  string use_default = 5;
+
   // The subpartitions is the list of subpartitions in a table partition.
-  repeated TablePartitionMetadata subpartitions = 5;
+  repeated TablePartitionMetadata subpartitions = 6;
 }
 
 // ColumnMetadata is the metadata for columns.
