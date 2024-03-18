@@ -50,7 +50,7 @@ func runStatementTypeCheck(t *testing.T, file string, engineType storepb.Engine,
 		var err error
 		switch engineType {
 		case storepb.Engine_MYSQL:
-			checkResults, err = mysqlStatementTypeCheck(test.Statement, test.ChangeType)
+			checkResults, err = mysqlStatementTypeCheck(test.Statement)
 			require.NoError(t, err)
 		default:
 		}
