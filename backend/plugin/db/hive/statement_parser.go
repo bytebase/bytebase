@@ -10,38 +10,44 @@ import (
 type StatementStatus int32
 
 var (
-	StatementEnd   StatementStatus
-	StatementBegin StatementStatus = 1
-	CommentStart   StatementStatus = 2
-	Comment        StatementStatus = 3
-	CommentCR      StatementStatus = 4
-	Error          StatementStatus = 5
+	StatementInit  StatementStatus
+	StatementEnd   StatementStatus = 1
+	StatementBegin StatementStatus = 2
+	CommentEnd     StatementStatus = 3
+	CommentBegin   StatementStatus = 4
+	Comment        StatementStatus = 5
+	CommentCR      StatementStatus = 6
+	Error          StatementStatus = 7
 )
 
 func splitHiveStatements(statementsStr string) ([]string, error) {
 	var (
-		statementStartIndex int
-		statements          []string
-		state               StatementStatus
-		isStatementStarted  = false
+		// statementStartIndex int
+		state           = StatementInit
+		statements      = []string{}
+		statementBuffer = []int32{}
+		// isStatementStarted  = false
+		// isCommentStarted    = false
 	)
 
-	for currIndex, c := range statementsStr {
+	for idx, c := range statementsStr {
 		transferState(&state, int32(c))
+
 		switch state {
 		case Error:
 			return nil, errors.New("syntax error")
 		case StatementBegin:
-			if !isStatementStarted {
-				statementStartIndex = currIndex
-				isStatementStarted = true
-			}
-			if currIndex == len(statementsStr)-1 {
-				statements = append(statements, statementsStr[statementStartIndex:currIndex-1])
+			statementBuffer = append(statementBuffer, int32(c))
+			if idx == len(statementsStr)-1 {
+				statements = append(statements, string(statementBuffer))
 			}
 		case StatementEnd:
-			isStatementStarted = false
-			statements = append(statements, statementsStr[statementStartIndex:currIndex-1])
+			if len(statementBuffer) == 0 {
+				continue
+			}
+			statements = append(statements, string(statementBuffer))
+			statementBuffer = []int32{}
+		default:
 		}
 	}
 
@@ -50,25 +56,30 @@ func splitHiveStatements(statementsStr string) ([]string, error) {
 
 func transferState(state *StatementStatus, input int32) {
 	switch *state {
+	case StatementInit:
+		if isStatementChar(input) {
+			*state = StatementBegin
+		} else if input == '-' {
+			*state = CommentBegin
+		}
+
 	case StatementEnd:
 		if isStatementChar(input) {
 			*state = StatementBegin
 		} else if input == '-' {
-			*state = CommentStart
-		} else if input != ';' {
-			*state = Error
+			*state = CommentBegin
 		}
 
 	case StatementBegin:
 		if input == ';' {
 			*state = StatementEnd
 		} else if input == '-' {
-			*state = CommentStart
+			*state = CommentBegin
 		} else if !isStatementChar(input) {
 			*state = Error
 		}
 
-	case CommentStart:
+	case CommentBegin:
 		if input == '-' {
 			*state = Comment
 		} else {
@@ -79,7 +90,7 @@ func transferState(state *StatementStatus, input int32) {
 		if input == '\r' {
 			*state = CommentCR
 		} else if input == '\n' {
-			*state = StatementEnd
+			*state = CommentEnd
 		}
 
 	case CommentCR:
@@ -87,19 +98,25 @@ func transferState(state *StatementStatus, input int32) {
 			*state = Error
 			return
 		}
-		*state = StatementEnd
+		*state = StatementInit
 
+	case CommentEnd:
+		if isStatementChar(input) {
+			*state = StatementBegin
+		} else if input == '-' {
+			*state = CommentBegin
+		}
 	default:
 	}
 }
 
 // this function will test whether a certain char can occur in Hive's statement.
 func isStatementChar(input int32) bool {
-	if unicode.IsLetter(input) {
+	if unicode.IsLetter(input) || unicode.IsDigit(input) {
 		return true
 	}
 
-	statementChars := []int32{'\r', '\n', '\t', ',', '*', '\'', ' '}
+	statementChars := []int32{'\r', '\n', '\t', ',', '*', '\'', ' ', '_', '(', ')'}
 	for _, c := range statementChars {
 		if input == int32(c) {
 			return true

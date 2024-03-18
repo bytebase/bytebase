@@ -85,7 +85,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 		return 0, errors.Errorf("no database connection established")
 	}
 	cursor := d.dbClient.Cursor()
-	cursor.Close()
+	defer cursor.Close()
 
 	var rowCount int64
 	statements, err := splitHiveStatements(statementsStr)

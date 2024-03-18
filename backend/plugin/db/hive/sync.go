@@ -28,8 +28,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			Name: row.Values[0].GetStringValue(),
 		})
 	}
-	// TODO(tommy): last sync time, roles
-
+	// TODO(tommy): roles
 	instanceMetadata.Version = version
 	return &instanceMetadata, nil
 }
