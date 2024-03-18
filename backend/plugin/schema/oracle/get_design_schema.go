@@ -1,6 +1,7 @@
 package oracle
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -43,11 +44,41 @@ func GetDesignSchema(defaultSchema, baselineSchema string, to *storepb.DatabaseS
 			if !ok {
 				continue
 			}
+			if tableState.deleted {
+				// Add indexes.
+				for _, index := range table.Indexes {
+					if index.Primary || index.Unique {
+						continue
+					}
+					if indexState := tableState.indexes[index.Name]; indexState != nil {
+						var buf strings.Builder
+						if err := indexState.toOutlineString(schemaState.name, tableState.name, &buf); err != nil {
+							return "", err
+						}
+						generator.actions = append(generator.actions, plsql.NewAddIndexAction(schema.Name, table.Name, buf.String()))
+					}
+				}
+				continue
+			}
 			buf := &strings.Builder{}
 			if err := tableState.toString(schema.Name, buf); err != nil {
 				return "", err
 			}
 			generator.actions = append(generator.actions, plsql.NewAddTableAction(schema.Name, table.Name, buf.String()))
+			for _, index := range table.Indexes {
+				indexState := tableState.indexes[index.Name]
+				if indexState == nil {
+					continue
+				}
+				if index.Primary || index.Unique {
+					continue
+				}
+				buf := &strings.Builder{}
+				if err := indexState.toOutlineString(schemaState.name, tableState.name, buf); err != nil {
+					return "", err
+				}
+				generator.actions = append(generator.actions, plsql.NewAddIndexAction(schema.Name, table.Name, buf.String()))
+			}
 		}
 	}
 	manipulator := plsql.NewStringsManipulator(tree, tokens)
@@ -63,6 +94,88 @@ type designSchemaGenerator struct {
 	err           error
 
 	actions []base.StringsManipulatorAction
+}
+
+func (g *designSchemaGenerator) EnterCreate_index(ctx *plsqlparser.Create_indexContext) {
+	if g.err != nil {
+		return
+	}
+
+	indexDefinition := ctx.Table_index_clause()
+	if indexDefinition == nil {
+		return
+	}
+
+	_, tableName := plsql.NormalizeTableViewName("", indexDefinition.Tableview_name())
+	schemaName, indexName := plsql.NormalizeIndexName(ctx.Index_name())
+
+	if schemaName == "" {
+		schemaName = g.defaultSchema
+	}
+
+	schema, ok := g.to.schemas[schemaName]
+	if !ok {
+		g.actions = append(g.actions, plsql.NewDropIndexAction(schemaName, tableName, indexName))
+		return
+	}
+
+	table, ok := schema.tables[tableName]
+	if !ok || table.deleted {
+		g.actions = append(g.actions, plsql.NewDropIndexAction(schemaName, tableName, indexName))
+		return
+	}
+
+	index, ok := table.indexes[indexName]
+	if !ok {
+		g.actions = append(g.actions, plsql.NewDropIndexAction(schemaName, tableName, indexName))
+		return
+	}
+
+	delete(table.indexes, indexName)
+	var buf strings.Builder
+	if err := index.toOutlineString(schemaName, tableName, &buf); err != nil {
+		g.err = err
+		return
+	}
+	if index.primary {
+		g.actions = append(g.actions, plsql.NewDropIndexAction(schemaName, tableName, indexName))
+		g.actions = append(g.actions, plsql.NewAddTableConstraintAction(schemaName, tableName, base.TableConstraintTypePrimaryKey, buf.String()))
+		return
+	}
+
+	isUnique := ctx.UNIQUE() != nil
+	if index.unique != isUnique {
+		g.actions = append(g.actions, plsql.NewModifyIndexAction(schemaName, tableName, indexName, buf.String()))
+		return
+	}
+
+	var keys []string
+	for _, expr := range indexDefinition.AllIndex_expr_option() {
+		if expr.Index_expr().Column_name() != nil {
+			_, _, columnName := plsql.NormalizeColumnName(expr.Index_expr().Column_name())
+			keys = append(keys, fmt.Sprintf("\"%s\"", columnName))
+		} else if expr.Index_expr().Expression() != nil {
+			keys = append(keys, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(expr.Index_expr().Expression()))
+		}
+	}
+
+	if !equalIndexKeys(keys, index.keys) {
+		g.actions = append(g.actions, plsql.NewModifyIndexAction(schemaName, tableName, indexName, buf.String()))
+		return
+	}
+}
+
+func equalIndexKeys(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, key := range a {
+		if key != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func (g *designSchemaGenerator) EnterCreate_table(ctx *plsqlparser.Create_tableContext) {
@@ -99,7 +212,7 @@ func (g *designSchemaGenerator) EnterCreate_table(ctx *plsqlparser.Create_tableC
 	}
 	g.currentTable = table
 
-	delete(schema.tables, tableName)
+	table.deleted = true
 }
 
 func (g *designSchemaGenerator) ExitCreate_table(_ *plsqlparser.Create_tableContext) {
@@ -139,8 +252,11 @@ func (g *designSchemaGenerator) ExitCreate_table(_ *plsqlparser.Create_tableCont
 		return indexes[i].id < indexes[j].id
 	})
 	for _, index := range indexes {
+		if !index.primary && !index.unique {
+			continue
+		}
 		var buf strings.Builder
-		if err := index.toString(&buf); err != nil {
+		if err := index.toInlineString(&buf); err != nil {
 			g.err = err
 			return
 		}
@@ -174,7 +290,7 @@ func (g *designSchemaGenerator) EnterOut_of_line_constraint(ctx *plsqlparser.Out
 
 	delete(g.currentTable.indexes, constraintName)
 	var buf strings.Builder
-	if err := indexState.toString(&buf); err != nil {
+	if err := indexState.toInlineString(&buf); err != nil {
 		g.err = err
 		return
 	}
