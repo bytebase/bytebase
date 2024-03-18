@@ -147,7 +147,7 @@ import {
 } from "@/components/SQLReview/components";
 import { PayloadForEngine } from "@/components/SQLReview/components/RuleConfigComponents";
 import { EnvironmentV1Name } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_SQL_REVIEW } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -382,7 +382,7 @@ const onRemove = () => {
     });
   });
   router.replace({
-    name: SETTING_ROUTE_WORKSPACE_SQL_REVIEW,
+    name: WORKSPACE_ROUTE_SQL_REVIEW,
   });
 };
 
