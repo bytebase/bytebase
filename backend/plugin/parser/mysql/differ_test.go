@@ -20,7 +20,7 @@ type DifferTestData struct {
 
 func runDifferTest(t *testing.T, file string, record bool) {
 	var tests []DifferTestData
-	filepath := filepath.Join("test-data", file)
+	filepath := filepath.Join("test-data/differ", file)
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
 	defer yamlFile.Close()
@@ -98,5 +98,10 @@ func TestSchemaDiffTrigger(t *testing.T) {
 
 func TestSchemaDiffConstraint(t *testing.T) {
 	testFile := "test_differ_constraint.yaml"
+	runDifferTest(t, testFile, false /* record */)
+}
+
+func TestSchemaDiffPartition(t *testing.T) {
+	testFile := "test_differ_partition.yaml"
 	runDifferTest(t, testFile, false /* record */)
 }
