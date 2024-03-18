@@ -58,7 +58,6 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(ctx advisor.Context
 	return checker.adviceList, nil
 }
 
-// TODO(sql-review): implement me please.
 type statementMaximumStatementsInTransactionChecker struct {
 	*mysql.BaseMySQLParserListener
 

@@ -90,9 +90,9 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useRouter } from "vue-router";
 import {
-  SETTING_ROUTE_WORKSPACE_SSO_CREATE,
-  SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
-} from "@/router/dashboard/workspaceSetting";
+  WORKSPACE_ROUTE_SSO_CREATE,
+  WORKSPACE_ROUTE_SSO_DETAIL,
+} from "@/router/dashboard/workspaceRoutes";
 import { featureToRef, useCurrentUserV1 } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -146,7 +146,7 @@ const handleCreateSSO = () => {
   }
 
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO_CREATE,
+    name: WORKSPACE_ROUTE_SSO_CREATE,
   });
 };
 
@@ -157,7 +157,7 @@ const handleViewSSO = (identityProvider: IdentityProvider) => {
   }
 
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_SSO_DETAIL,
+    name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
       ssoName: identityProvider.name,
     },

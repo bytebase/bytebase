@@ -602,6 +602,58 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 		return nil, errors.Wrapf(err, "failed to scan row")
 	}
 
+	// We cannot get use whether the table is partitioned by server default from metadata, so we need to
+	// use regexp for dump table string.
+	for tableKey, partitions := range result {
+		if len(partitions) == 0 {
+			continue
+		}
+		showQuery := fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", databaseName, tableKey.Table)
+		showRows, err := driver.db.QueryContext(ctx, showQuery)
+		if err != nil {
+			slog.Warn("failed to execute query", slog.String("query", showQuery), log.BBError(err))
+		}
+		for showRows.Next() {
+			var tableName, createTable string
+			if err := showRows.Scan(&tableName, &createTable); err != nil {
+				slog.Warn("failed to scan row", slog.String("query", showQuery), log.BBError(err))
+			}
+			partitionRegexp := regexp.MustCompile(`[^B]PARTITIONS (?P<partitionNum>\d+)`)
+			subPartitionRegexp := regexp.MustCompile(`SUBPARTITIONS (?P<subPartitionNum>\d+)`)
+			partitionNum := 0
+			subPartitionNum := 0
+			if partitionRegexp.MatchString(createTable) {
+				partitionNum, err = strconv.Atoi(partitionRegexp.FindStringSubmatch(createTable)[1])
+				if err != nil {
+					slog.Warn("failed to parse partition number", slog.String("query", showQuery), log.BBError(err))
+				}
+			}
+			if subPartitionRegexp.MatchString(createTable) {
+				subPartitionNum, err = strconv.Atoi(subPartitionRegexp.FindStringSubmatch(createTable)[1])
+				if err != nil {
+					slog.Warn("failed to parse subpartition number", slog.String("query", showQuery), log.BBError(err))
+				}
+			}
+			for _, partition := range partitions {
+				if partitionNum != 0 {
+					partition.UseDefault = strconv.Itoa(partitionNum)
+				}
+				for _, subPartition := range partition.Subpartitions {
+					if subPartitionNum != 0 {
+						subPartition.UseDefault = strconv.Itoa(subPartitionNum)
+					}
+				}
+			}
+		}
+		if err := showRows.Err(); err != nil {
+			slog.Warn("rows err", slog.String("query", showQuery), log.BBError(err))
+		}
+		// nolint
+		if err := showRows.Close(); err != nil {
+			slog.Warn("failed to close row", slog.String("query", showQuery), log.BBError(err))
+		}
+	}
+
 	return result, nil
 }
 

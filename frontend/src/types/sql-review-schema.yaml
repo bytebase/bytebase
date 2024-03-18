@@ -305,6 +305,8 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - POSTGRES
+      - TIDB
   - type: naming.table
     category: NAMING
     engineList:

@@ -118,6 +118,7 @@
               :table="state.table"
               :engine="state.engine"
               :classification-config-id="classificationConfig?.id"
+              :allow-change-primary-keys="true"
               :allow-reorder-columns="allowReorderColumns"
               :max-body-height="640"
               @drop="onColumnDrop"

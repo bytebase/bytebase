@@ -164,7 +164,7 @@ export interface Worksheet {
 
 export enum Worksheet_Visibility {
   VISIBILITY_UNSPECIFIED = 0,
-  /** VISIBILITY_PROJECT_READ - Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, and project DEVELOPER can read. */
+  /** VISIBILITY_PROJECT_READ - Read access in project scope, worksheet OWNER/DBA and project OWNER can read/write, other project members can read. */
   VISIBILITY_PROJECT_READ = 1,
   /** VISIBILITY_PROJECT_WRITE - Write access in project scope, worksheet OWNER/DBA and all members in the project can write the worksheet. */
   VISIBILITY_PROJECT_WRITE = 2,

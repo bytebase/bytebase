@@ -1,7 +1,7 @@
 <template>
-  <SlowQuerySettings />
+  <SlowQueryPanel />
 </template>
 
 <script lang="ts" setup>
-import { SlowQuerySettings } from "@/components/SlowQuery";
+import { SlowQueryPanel } from "@/components/SlowQuery";
 </script>

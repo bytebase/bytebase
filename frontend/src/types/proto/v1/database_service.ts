@@ -165,7 +165,15 @@ export interface SearchDatabasesRequest {
   pageToken: string;
   /**
    * Filter is used to filter databases returned in the list.
-   * For example, "project = projects/{project}" can be used to list databases in a project.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * The field only support in filter:
+   * - project with "=" operator, for example:
+   *  - project = "projects/sample-project"
+   *  - project = "projects/-"
+   * - instance with "=" operator, for example:
+   *  - instance = "instances/mysql"
+   *  - instance = "instances/-"
+   * for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
    */
   filter: string;
   /**
@@ -521,6 +529,11 @@ export interface TablePartitionMetadata {
    * - For others, it's an empty string.
    */
   value: string;
+  /**
+   * The use_default is whether the users use the default partition, it stores the different value for different database engines.
+   * For MySQL, it's [INT] type, 0 means not use default partition, otherwise, it's equals to number in syntax [SUB]PARTITION {number}.
+   */
+  useDefault: string;
   /** The subpartitions is the list of subpartitions in a table partition. */
   subpartitions: TablePartitionMetadata[];
 }
@@ -4123,7 +4136,7 @@ export const TableMetadata = {
 };
 
 function createBaseTablePartitionMetadata(): TablePartitionMetadata {
-  return { name: "", type: 0, expression: "", value: "", subpartitions: [] };
+  return { name: "", type: 0, expression: "", value: "", useDefault: "", subpartitions: [] };
 }
 
 export const TablePartitionMetadata = {
@@ -4140,8 +4153,11 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       writer.uint32(34).string(message.value);
     }
+    if (message.useDefault !== "") {
+      writer.uint32(42).string(message.useDefault);
+    }
     for (const v of message.subpartitions) {
-      TablePartitionMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+      TablePartitionMetadata.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -4186,6 +4202,13 @@ export const TablePartitionMetadata = {
             break;
           }
 
+          message.useDefault = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
           message.subpartitions.push(TablePartitionMetadata.decode(reader, reader.uint32()));
           continue;
       }
@@ -4203,6 +4226,7 @@ export const TablePartitionMetadata = {
       type: isSet(object.type) ? tablePartitionMetadata_TypeFromJSON(object.type) : 0,
       expression: isSet(object.expression) ? globalThis.String(object.expression) : "",
       value: isSet(object.value) ? globalThis.String(object.value) : "",
+      useDefault: isSet(object.useDefault) ? globalThis.String(object.useDefault) : "",
       subpartitions: globalThis.Array.isArray(object?.subpartitions)
         ? object.subpartitions.map((e: any) => TablePartitionMetadata.fromJSON(e))
         : [],
@@ -4223,6 +4247,9 @@ export const TablePartitionMetadata = {
     if (message.value !== "") {
       obj.value = message.value;
     }
+    if (message.useDefault !== "") {
+      obj.useDefault = message.useDefault;
+    }
     if (message.subpartitions?.length) {
       obj.subpartitions = message.subpartitions.map((e) => TablePartitionMetadata.toJSON(e));
     }
@@ -4238,6 +4265,7 @@ export const TablePartitionMetadata = {
     message.type = object.type ?? 0;
     message.expression = object.expression ?? "";
     message.value = object.value ?? "";
+    message.useDefault = object.useDefault ?? "";
     message.subpartitions = object.subpartitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     return message;
   },
