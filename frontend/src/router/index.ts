@@ -178,7 +178,7 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith(DATABASE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(ISSUE_ROUTE_DASHBOARD) ||
     to.name === INSTANCE_ROUTE_DETAIL ||
-    to.name === SQL_EDITOR_HOME_MODULE ||
+    to.name?.toString().startsWith("sql-editor") ||
     to.name?.toString().startsWith(SETTING_ROUTE) ||
     to.name?.toString().startsWith("workspace")
   ) {
