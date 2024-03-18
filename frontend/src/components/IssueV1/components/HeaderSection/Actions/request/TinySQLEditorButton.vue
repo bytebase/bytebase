@@ -12,12 +12,15 @@ import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import {
-  SQL_EDITOR_DETAIL_MODULE,
+  SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
 } from "@/router/sqlEditor";
 import { useDatabaseV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { connectionV1Slug } from "@/utils";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+} from "@/utils";
 import { convertFromCELString } from "@/utils/issue/cel";
 
 const router = useRouter();
@@ -38,11 +41,12 @@ const gotoSQLEditor = async () => {
       databaseResourceName
     );
     if (db.uid !== String(UNKNOWN_ID)) {
-      const slug = connectionV1Slug(db.instanceEntity, db);
       const url = router.resolve({
-        name: SQL_EDITOR_DETAIL_MODULE,
+        name: SQL_EDITOR_DATABASE_MODULE,
         params: {
-          connectionSlug: slug,
+          project: extractProjectResourceName(db.project),
+          instance: extractInstanceResourceName(db.instance),
+          database: db.databaseName,
         },
       });
       window.open(url.fullPath, "__BLANK");

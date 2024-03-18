@@ -37,7 +37,7 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
-import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
+import sqlEditorRoutes from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -187,7 +187,7 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith(DATABASE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(ISSUE_ROUTE_DASHBOARD) ||
     to.name === INSTANCE_ROUTE_DETAIL ||
-    to.name === SQL_EDITOR_HOME_MODULE ||
+    to.name?.toString().startsWith("sql-editor") ||
     to.name?.toString().startsWith(SETTING_ROUTE)
   ) {
     next();

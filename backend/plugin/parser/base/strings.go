@@ -18,6 +18,9 @@ const (
 	StringsManipulatorActionTypeDropTableOption
 	StringsManipulatorActionTypeModifyTableOption
 	StringsManipulatorActionTypeAddTableOption
+	StringsManipulatorActionTypeDropIndex
+	StringsManipulatorActionTypeAddIndex
+	StringsManipulatorActionTypeModifyIndex
 )
 
 type StringsManipulatorAction interface {

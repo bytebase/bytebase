@@ -266,7 +266,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computedAsync, useEventListener } from "@vueuse/core";
+import { useEventListener } from "@vueuse/core";
 import { cloneDeep, isEqual, isEmpty } from "lodash-es";
 import { NButton, NCheckbox, NInput, NRadioGroup } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -284,6 +284,7 @@ import {
   useCurrentUserV1,
   useEnvironmentV1List,
   usePolicyV1Store,
+  useReviewPolicyByEnvironmentName,
   useSQLReviewStore,
 } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
@@ -357,7 +358,6 @@ const currentUserV1 = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
 const environmentV1Store = useEnvironmentV1Store();
 const environmentList = useEnvironmentV1List();
-const sqlReviewStore = useSQLReviewStore();
 const state = reactive<LocalState>({
   environment: cloneDeep(props.environment),
   rolloutPolicy: cloneDeep(props.rolloutPolicy),
@@ -378,14 +378,11 @@ const bindings = computed(() => {
   return {};
 });
 
-const sqlReviewPolicy = computedAsync(() => {
-  if (props.create) {
-    return undefined;
-  }
-  return sqlReviewStore.getOrFetchReviewPolicyByEnvironmentName(
-    (props.environment as Environment).name
-  );
-}, undefined);
+const sqlReviewPolicy = useReviewPolicyByEnvironmentName(
+  computed(() => {
+    return props.create ? undefined : (props.environment as Environment).name;
+  })
+);
 
 const disableCopyDataPolicy = computed(() => {
   const policies = policyStore.policyList.filter(

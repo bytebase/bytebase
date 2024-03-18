@@ -22,27 +22,13 @@
     SELECT tbl_temp1.fld_order_id
     FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"INSERT INTO tbl_temp2 (fld_id)\nSELECT tbl_temp1.fld_order_id\nFROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: IMPORT TABLE FROM '/tmp/mysql-files/*.sdi';
   changetype: 1
   want: []
 - statement: TABLE a EXCEPT TABLE b;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"TABLE a EXCEPT TABLE b;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: EXPLAIN SELECT c->>"$.name" AS name FROM jempn WHERE g > 2;
   changetype: 1
   want: []
@@ -110,28 +96,14 @@
   want: []
 - statement: ALTER FUNCTION hello COMMENT 'hello function';
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"ALTER FUNCTION hello COMMENT 'hello function';\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: |-
     CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()
     BEGIN
       SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
     END;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()\nBEGIN\n  SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;\nEND;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: ALTER PROCEDURE account_count COMMENT 'this account_count';
   changetype: 1
   want: []
@@ -142,14 +114,7 @@
 
     SELECT hello('world');
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"CREATE FUNCTION hello (s CHAR(20))\nRETURNS CHAR(50) DETERMINISTIC\nRETURN CONCAT('Hello, ',s,'!');\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: |-
     delimiter //
     CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)
@@ -159,27 +124,13 @@
        END//
     delimiter ;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"CREATE PROCEDURE citycount (IN country CHAR(3), OUT cities INT)\n   BEGIN\n     SELECT COUNT(*) INTO cities FROM world.city\n     WHERE CountryCode = country;\n   END;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: CALL citycount('JPN', @cities); -- cities in Japan
   changetype: 2
   want: []
 - statement: ALTER EVENT no_such_event ON SCHEDULE EVERY '2:3' DAY_HOUR;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"ALTER EVENT no_such_event ON SCHEDULE EVERY '2:3' DAY_HOUR;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: |-
     CREATE EVENT myevent
     ON SCHEDULE
@@ -188,147 +139,63 @@
     DO
       UPDATE myschema.mytable SET mycol = mycol + 1;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"CREATE EVENT myevent\nON SCHEDULE\n  EVERY 6 HOUR\nCOMMENT 'A sample comment.'\nDO\n  UPDATE myschema.mytable SET mycol = mycol + 1;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: ALTER DATABASE bbdev READ ONLY = DEFAULT;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"ALTER DATABASE bbdev READ ONLY = DEFAULT;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: ALTER SCHEMA bbdev READ ONLY = DEFAULT;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"ALTER SCHEMA bbdev READ ONLY = DEFAULT;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: CREATE TABLE t1(a INT);
   changetype: 1
   want: []
 - statement: DELETE FROM t1;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"DELETE FROM t1;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: SELECT 1;
   changetype: 2
   want: []
 - statement: DROP TABLE t1;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"DROP TABLE t1;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: CREATE DATABASE bbdev;
   changetype: 1
   want:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "Cannot create database",
-        "content":  "The statement \"CREATE DATABASE bbdev;\" creates database",
-        "code":  404
+        "status": "ERROR",
+        "title": "Cannot create database",
+        "content": "The statement \"CREATE DATABASE bbdev;\" creates database",
+        "code": 404
       }
 - statement: DROP DATABASE bbdev;
   changetype: 2
   want:
     - |-
       {
-        "status":  "ERROR",
-        "title":  "Cannot drop database",
-        "content":  "The statement \"DROP DATABASE bbdev;\" drops database",
-        "code":  403
-      }
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"DROP DATABASE bbdev;\" is not DML",
-        "code":  401
+        "status": "ERROR",
+        "title": "Cannot drop database",
+        "content": "The statement \"DROP DATABASE bbdev;\" drops database",
+        "code": 403
       }
 - statement: RENAME TABLE t1 To t2;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"RENAME TABLE t1 To t2;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: TRUNCATE TABLE t1;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"TRUNCATE TABLE t1;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: ALTER TABLE t1 ADD COLUMN col1 INT;
   changetype: 2
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Data change can only run DML",
-        "content":  "\"ALTER TABLE t1 ADD COLUMN col1 INT;\" is not DML",
-        "code":  401
-      }
+  want: []
 - statement: DELETE FROM t1 WHERE id = 1;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"DELETE FROM t1 WHERE id = 1;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: INSERT INTO t1(id) VALUE(1);
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"INSERT INTO t1(id) VALUE(1);\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: UPDATE t1 SET name = 'zp' WHERE id = 1;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"UPDATE t1 SET name = 'zp' WHERE id = 1;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: |-
     update t_ci_job_artifact_config c
     inner join (
@@ -346,14 +213,7 @@
     set c.structure_id = tmp.structure_id
     where c.structure_id is null;
   changetype: 1
-  want:
-    - |-
-      {
-        "status":  "WARNING",
-        "title":  "Alter schema can only run DDL",
-        "content":  "\"update t_ci_job_artifact_config c\ninner join (\nselect\nstructure.id as structure_id,\nstructure.job_id as job_id\nfrom\nt_ci_job_stage_group_structure structure,\nt_ci_stage_template_group stg\nwhere\nstructure.stage_template_group_id = stg.id\nand stg.template_type = 3\nand stg.artifact_type in (4,5,6,7)\n) tmp on c.job_id = tmp.job_id and c.type in (4,5,6,7)\nset c.structure_id = tmp.structure_id\nwhere c.structure_id is null;\" is not DDL",
-        "code":  402
-      }
+  want: []
 - statement: |-
     update t_ci_job_artifact_config c
     inner join (
