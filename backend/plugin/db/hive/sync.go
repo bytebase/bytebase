@@ -10,15 +10,25 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// TODO(tommy): consider a more elegant way to pass HMS's client.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-
 	var instanceMetadata db.InstanceMetadata
+	// version.
 	results, err := d.QueryConn(ctx, nil, "SELECT VERSION()", nil)
 	if err != nil || len(results) == 0 {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
 	version := results[0].Rows[0].Values[0].GetStringValue()
+	// databases.
+	results, err = d.QueryConn(ctx, nil, "SHOW DATABASES", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get databases from instance")
+	}
+	for _, row := range results[0].Rows {
+		instanceMetadata.Databases = append(instanceMetadata.Databases, &storepb.DatabaseSchemaMetadata{
+			Name: row.Values[0].GetStringValue(),
+		})
+	}
+	// TODO(tommy): last sync time, roles
 
 	instanceMetadata.Version = version
 	return &instanceMetadata, nil
@@ -29,14 +39,10 @@ func (*Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata,
 	return nil, errors.Errorf("Not implemeted")
 }
 
-// Sync slow query logs
-// SyncSlowQuery syncs the slow query logs.
-// The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
 func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
-// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
 func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 	return errors.Errorf("Not implemeted")
 }

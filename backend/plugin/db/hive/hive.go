@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
+	"time"
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 
@@ -62,7 +64,7 @@ func (d *Driver) Close(_ context.Context) error {
 
 func (d *Driver) Ping(ctx context.Context) error {
 	if d.dbClient == nil {
-		return errors.Errorf("database not connected")
+		return errors.Errorf("no database connection established")
 	}
 	if _, err := d.QueryConn(ctx, nil, "SELECT 1", &db.QueryContext{}); err != nil {
 		return errors.Errorf("bad connection")
@@ -78,39 +80,48 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// TODO(tommy): check whether the statement is readonly?
-func (d *Driver) Execute(ctx context.Context, statements string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
 	if d.dbClient == nil {
-		return 0, errors.Errorf("database not connected")
+		return 0, errors.Errorf("no database connection established")
 	}
-	var rowCount int64
 	cursor := d.dbClient.Cursor()
 	cursor.Close()
-	// TODO(tommy): support multiple statements execution.
-	cursor.Execute(ctx, statements, false)
 
-	if cursor.Err != nil {
-		return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
+	var rowCount int64
+	statements, err := splitHiveStatements(statementsStr)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split statements")
 	}
-	operationStatus := cursor.Poll(false)
-	rowCount = operationStatus.GetNumModifiedRows()
+
+	for _, statement := range statements {
+		cursor.Execute(ctx, statement, false)
+		if cursor.Err != nil {
+			return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
+		}
+		operationStatus := cursor.Poll(false)
+		rowCount += operationStatus.GetNumModifiedRows()
+	}
+
 	return rowCount, nil
 }
 
-// Used for execute readonly SELECT statement.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statements string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if d.dbClient == nil {
-		return nil, errors.Errorf("database not connected")
+		return nil, errors.Errorf("no database connection established")
 	}
-
 	cursor := d.dbClient.Cursor()
 	defer cursor.Close()
 
 	var results []*v1pb.QueryResult
-	for _, statement := range splitStatements(statements) {
-		result, err := runSingleStatement(ctx, statement, cursor)
+	statements, err := splitHiveStatements(statementsStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split statements")
+	}
+
+	for _, statement := range statements {
+		result, err := runSingleQuery(ctx, statement, cursor)
 		if err != nil {
-			return nil, err
+			result.Error = err.Error()
 		}
 		results = append(results, result)
 	}
@@ -118,7 +129,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statements string, 
 	return results, nil
 }
 
-// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
+// @TODO(zp): remove this function from the interface.
 func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
@@ -139,7 +150,7 @@ func parseValueType(value any) (*v1pb.RowValue, error) {
 		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
 	case int64:
 		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-	// TODO(tommy): dangerous truncation float64 -> float32.
+	// TODO(tommy): dangerous truncation: float64 -> float32.
 	case float64:
 		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: value.(float32)}
 	case string:
@@ -147,20 +158,20 @@ func parseValueType(value any) (*v1pb.RowValue, error) {
 	case []byte:
 		rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
 	default:
-		return nil, errors.Errorf("not supported type")
+		return nil, errors.Errorf("type not supported")
 	}
 	return &rowValue, nil
 }
 
-func runSingleStatement(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
-	// TODO(tommy): support latency!
+func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
 	cursor.Execute(ctx, statement, false)
 	if cursor.Err != nil {
 		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
 	}
 
-	var result v1pb.QueryResult
 	// process query results.
+	var result v1pb.QueryResult
 	for cursor.HasMore(ctx) {
 		for columnName, value := range cursor.RowMap(ctx) {
 			// ColumnNames.
@@ -172,14 +183,11 @@ func runSingleStatement(ctx context.Context, statement string, cursor *gohive.Cu
 				return nil, err
 			}
 			queryRow.Values = append(queryRow.Values, val)
+			// Latency.
+			result.Latency = durationpb.New(time.Since(startTime))
 			result.Rows = append(result.Rows, &queryRow)
 			result.Statement = statement
 		}
 	}
 	return &result, nil
-}
-
-// TODO(tommy): Finite State Machine.
-func splitStatements(statement string) []string {
-	return []string{statement}
 }
