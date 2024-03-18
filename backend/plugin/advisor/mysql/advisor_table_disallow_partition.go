@@ -75,6 +75,9 @@ func (checker *tableDisallowPartitionChecker) EnterQuery(ctx *mysql.QueryContext
 
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *tableDisallowPartitionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.PartitionClause() != nil && ctx.PartitionClause().PartitionTypeDef() != nil {
 		code = advisor.CreateTablePartition
@@ -93,6 +96,9 @@ func (checker *tableDisallowPartitionChecker) EnterCreateTable(ctx *mysql.Create
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *tableDisallowPartitionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.AlterTableActions().PartitionClause() != nil && ctx.AlterTableActions().PartitionClause().PartitionTypeDef() != nil {
 		code = advisor.CreateTablePartition

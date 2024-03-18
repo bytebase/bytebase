@@ -73,6 +73,9 @@ type allowDropEmptyDBChecker struct {
 
 // EnterDropDatabase is called when production dropDatabase is entered.
 func (checker *allowDropEmptyDBChecker) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.SchemaRef() == nil {
 		return
 	}

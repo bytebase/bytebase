@@ -78,6 +78,9 @@ type columnDisallowDropInIndexChecker struct {
 }
 
 func (checker *columnDisallowDropInIndexChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -114,6 +117,9 @@ func (checker *columnDisallowDropInIndexChecker) EnterCreateTable(ctx *mysql.Cre
 }
 
 func (checker *columnDisallowDropInIndexChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

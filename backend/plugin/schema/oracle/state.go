@@ -99,6 +99,7 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 }
 
 type tableState struct {
+	deleted bool
 	id      int
 	name    string
 	columns map[string]*columnState
@@ -152,8 +153,13 @@ func (t *tableState) toString(schemaName string, buf *strings.Builder) error {
 	sort.Slice(indexes, func(i, j int) bool {
 		return indexes[i].id < indexes[j].id
 	})
-	for i, index := range indexes {
-		if i+len(columns) > 0 {
+	constraintCount := 0
+	for _, index := range indexes {
+		if !index.primary && !index.unique {
+			continue
+		}
+		constraintCount++
+		if constraintCount+len(columns) > 0 {
 			if _, err := buf.WriteString(",\n"); err != nil {
 				return err
 			}
@@ -161,7 +167,7 @@ func (t *tableState) toString(schemaName string, buf *strings.Builder) error {
 		if _, err := buf.WriteString(`  `); err != nil {
 			return err
 		}
-		if err := index.toString(buf); err != nil {
+		if err := index.toInlineString(buf); err != nil {
 			return err
 		}
 	}
@@ -352,7 +358,65 @@ type indexState struct {
 	unique  bool
 }
 
-func (i *indexState) toString(buf *strings.Builder) error {
+func (i *indexState) toOutlineString(schemaName, tableName string, buf *strings.Builder) error {
+	if _, err := buf.WriteString(`CREATE`); err != nil {
+		return err
+	}
+
+	if i.unique {
+		if _, err := buf.WriteString(" UNIQUE"); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(` INDEX "`); err != nil {
+		return err
+	}
+
+	if schemaName != "" {
+		if _, err := buf.WriteString(schemaName); err != nil {
+			return err
+		}
+		if _, err := buf.WriteString(`"."`); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(i.name); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(`" ON "`); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(tableName); err != nil {
+		return err
+	}
+
+	if _, err := buf.WriteString(`" (`); err != nil {
+		return err
+	}
+
+	for i, key := range i.keys {
+		if i > 0 {
+			if _, err := buf.WriteString(", "); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(key); err != nil {
+			return err
+		}
+	}
+
+	if _, err := buf.WriteString(")\n;\n"); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (i *indexState) toInlineString(buf *strings.Builder) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}

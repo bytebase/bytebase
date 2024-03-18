@@ -1,21 +1,14 @@
 import { orderBy } from "lodash-es";
-import { SimpleExpr, resolveCELExpr } from "@/plugins/cel";
+import { SimpleExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
-  usePolicyV1Store,
   useSubscriptionV1Store,
 } from "@/store";
-import { policyNamePrefix } from "@/store/modules/v1/common";
-import { ComposedDatabase, UNKNOWN_ID, PresetRoleType } from "@/types";
-import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { ComposedDatabase, UNKNOWN_ID } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { Engine, State } from "@/types/proto/v1/common";
 import { DataSourceType } from "@/types/proto/v1/instance_service";
-import {
-  PolicyType,
-  policyTypeToJSON,
-} from "@/types/proto/v1/org_policy_service";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasProjectPermissionV2,
@@ -139,28 +132,6 @@ export const isDatabaseV1Queryable = (
     return true;
   }
 
-  const name = `${policyNamePrefix}${policyTypeToJSON(
-    PolicyType.WORKSPACE_IAM
-  )}`;
-  const policy = usePolicyV1Store().getPolicyByName(name);
-  if (policy) {
-    const bindings = policy.workspaceIamPolicy?.bindings;
-    if (bindings) {
-      const querierBinding = bindings.find(
-        (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
-      );
-      if (querierBinding) {
-        const simpleExpr = resolveCELExpr(
-          querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-        );
-        const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-        if (envNameList.includes(database.effectiveEnvironment)) {
-          return true;
-        }
-      }
-    }
-  }
-
   // denied otherwise
   return false;
 };
@@ -172,34 +143,6 @@ export const isTableQueryable = (
   table: string,
   user: User
 ): boolean => {
-  if (!hasFeature("bb.feature.access-control")) {
-    // The current plan doesn't have access control feature.
-    // Fallback to true.
-    return true;
-  } else {
-    const name = `${policyNamePrefix}${policyTypeToJSON(
-      PolicyType.WORKSPACE_IAM
-    )}`;
-    const policy = usePolicyV1Store().getPolicyByName(name);
-    if (policy) {
-      const bindings = policy.workspaceIamPolicy?.bindings;
-      if (bindings) {
-        const querierBinding = bindings.find(
-          (binding) => binding.role === PresetRoleType.PROJECT_QUERIER
-        );
-        if (querierBinding) {
-          const simpleExpr = resolveCELExpr(
-            querierBinding.parsedExpr?.expr || Expr.fromPartial({})
-          );
-          const envNameList = extractEnvironmentNameListFromExpr(simpleExpr);
-          if (envNameList.includes(database.effectiveEnvironment)) {
-            return true;
-          }
-        }
-      }
-    }
-  }
-
   if (
     hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
   ) {

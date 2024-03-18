@@ -76,6 +76,9 @@ type columnMaximumVarcharLengthChecker struct {
 }
 
 func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableElementList() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -109,6 +112,9 @@ func (checker *columnMaximumVarcharLengthChecker) EnterCreateTable(ctx *mysql.Cr
 }
 
 func (checker *columnMaximumVarcharLengthChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

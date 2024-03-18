@@ -81,16 +81,7 @@ type statementDmlDryRunChecker struct {
 
 // EnterUpdateStatement is called when production updateStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
-	if ctx.GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
-		return
-	}
-	if ctx.GetParent().GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
@@ -98,16 +89,7 @@ func (checker *statementDmlDryRunChecker) EnterUpdateStatement(ctx *mysql.Update
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
-	if ctx.GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
-		return
-	}
-	if ctx.GetParent().GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())
@@ -115,16 +97,7 @@ func (checker *statementDmlDryRunChecker) EnterDeleteStatement(ctx *mysql.Delete
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *statementDmlDryRunChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
-	if ctx.GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
-		return
-	}
-	if ctx.GetParent().GetParent() == nil {
-		return
-	}
-	if _, ok := ctx.GetParent().GetParent().(*mysql.QueryContext); !ok {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	checker.handleStmt(ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx), ctx.GetStart().GetLine())

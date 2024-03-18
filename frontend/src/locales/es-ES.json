@@ -830,14 +830,6 @@
         "override-confirm": "Aún subiendo"
       }
     },
-    "access-control": {
-      "description": "Configura un flujo de aprobación para controlar la consulta y exportación de datos. {link}",
-      "skip-approval": "Saltar aprobación manual",
-      "query-data": "Consulta de datos",
-      "export-data": "Exportación de datos",
-      "disallowed": "no permitido",
-      "copy-data-from-sql-editor": "Copiar datos del editor de SQL"
-    },
     "release": {
       "new-version-available": "Nueva versión disponible",
       "new-version-content": "¡La nueva versión {tag} está disponible ahora! Consulte nuestra documentación para la instalación.",
@@ -2546,7 +2538,7 @@
       },
       "bb-feature-access-control": {
         "title": "Control de acceso a datos",
-        "desc": "Configura un flujo de aprobación para controlar la consulta y exportación de datos."
+        "desc": "Restringir el acceso de los usuarios a los datos, como prohibir a los usuarios copiar los resultados de consultas de datos."
       },
       "bb-feature-lgtm": {
         "title": "Verificación LGTM",

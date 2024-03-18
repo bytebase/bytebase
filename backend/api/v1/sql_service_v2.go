@@ -285,8 +285,9 @@ func (s *SQLService) doExportV2(ctx context.Context, request *v1pb.ExportRequest
 	if err != nil {
 		return nil, durationNs, err
 	}
-	if len(result) != 1 {
-		return nil, durationNs, errors.Errorf("expecting 1 result, but got %d", len(result))
+	// only return the last result
+	if len(result) > 1 {
+		result = result[len(result)-1:]
 	}
 
 	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
