@@ -2,11 +2,12 @@ import { MaybeRef, useLocalStorage, watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, unref } from "vue";
-import type {
+import {
   SQLEditorConnection,
   SQLEditorTreeNodeMeta,
   CoreSQLEditorTab,
   SQLEditorTab,
+  UNKNOWN_ID,
 } from "@/types";
 import {
   WebStorageHelper,
@@ -324,9 +325,11 @@ export const useSQLEditorConnectionDetail = (
   });
 
   const environment = computed(() => {
-    return unref(connection).database
-      ? instance.value.environmentEntity
-      : database.value.effectiveEnvironmentEntity;
+    if (database.value.uid !== String(UNKNOWN_ID)) {
+      return database.value.effectiveEnvironmentEntity;
+    }
+
+    return instance.value.environmentEntity;
   });
 
   return { connection, instance, database, environment };
