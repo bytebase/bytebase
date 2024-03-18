@@ -91,11 +91,17 @@ func (checker *statementJoinStrictColumnAttrsChecker) EnterQuery(ctx *mysql.Quer
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) EnterSelectStatement(_ *mysql.SelectStatementContext) {
+func (checker *statementJoinStrictColumnAttrsChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.isSelect = true
 }
 
-func (checker *statementJoinStrictColumnAttrsChecker) ExitSelectStatement(_ *mysql.SelectStatementContext) {
+func (checker *statementJoinStrictColumnAttrsChecker) ExitSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.isSelect = false
 }
 

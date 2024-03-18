@@ -79,6 +79,9 @@ type columnCommentConventionChecker struct {
 }
 
 func (checker *columnCommentConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -104,6 +107,9 @@ func (checker *columnCommentConventionChecker) EnterCreateTable(ctx *mysql.Creat
 }
 
 func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

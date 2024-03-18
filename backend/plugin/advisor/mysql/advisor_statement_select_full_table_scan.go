@@ -68,6 +68,9 @@ type statementSelectFullTableScanChecker struct {
 }
 
 func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
 		return
 	}

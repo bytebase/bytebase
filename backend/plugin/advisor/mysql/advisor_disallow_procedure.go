@@ -73,6 +73,9 @@ func (checker *procedureDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContex
 
 // EnterCreateProcedure is to check if creating procedure is forbidden.
 func (checker *procedureDisallowCreateChecker) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.ProcedureName() != nil {
 		code = advisor.DisallowCreateProcedure

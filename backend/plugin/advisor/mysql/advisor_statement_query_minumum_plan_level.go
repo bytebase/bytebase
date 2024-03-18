@@ -136,6 +136,9 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterQuery(ctx *mysql.Quer
 }
 
 func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
 		return
 	}
