@@ -458,10 +458,10 @@ const initializeConnectionFromQuery = async () => {
 };
 
 // Keep the URL synced with connection
-// 1. /sql-editor/projects/{project}/sheets/{sheet}  - saved sheets
-// 2. /sql-editor/projects/{project}/instances/{instance}/databases/{database}   - unsaved tabs
-// 3. /sql-editor/projects/{project}                     - clean tabs
-const syncURLWithConnection = (immediate: boolean) => {
+// 1. /sql-editor/projects/{project}/sheets/{sheet}                            - saved sheets
+// 2. /sql-editor/projects/{project}/instances/{instance}/databases/{database} - unsaved tabs
+// 3. /sql-editor/projects/{project}                                           - disconnected tabs
+const syncURLWithConnection = () => {
   const connection = computed(
     () => tabStore.currentTab?.connection ?? emptySQLEditorConnection()
   );
@@ -561,7 +561,7 @@ const syncURLWithConnection = (immediate: boolean) => {
         name: SQL_EDITOR_HOME_MODULE,
       });
     },
-    { immediate }
+    { immediate: true }
   );
 };
 
@@ -595,8 +595,8 @@ onMounted(async () => {
     }
   );
 
-  const legacy = (await initializeConnectionFromQuery()) ?? false;
-  syncURLWithConnection(legacy);
+  await initializeConnectionFromQuery();
+  syncURLWithConnection();
 });
 
 useEmitteryEventListener;
