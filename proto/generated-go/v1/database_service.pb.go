@@ -837,7 +837,17 @@ type SearchDatabasesRequest struct {
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter databases returned in the list.
-	// For example, "project = projects/{project}" can be used to list databases in a project.
+	// follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+	// The field only support in filter:
+	// - project with "=" operator, for example:
+	//   - project = "projects/sample-project"
+	//   - project = "projects/-"
+	//
+	// - instance with "=" operator, for example:
+	//   - instance = "instances/mysql"
+	//   - instance = "instances/-"
+	//
+	// for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
 	Filter string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
 	// By default, the permission "bb.databases.get" is used.
 	// Alternatively, "bb.databases.query" can be used to retrieve databases with query permissions to.
