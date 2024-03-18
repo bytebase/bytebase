@@ -56,7 +56,6 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		schemaMetadata = append(schemaMetadata, &storepb.SchemaMetadata{
 			Tables: tableMetadata,
 		})
-
 	}
 	databaseSchemaMetadata.Schemas = schemaMetadata
 
