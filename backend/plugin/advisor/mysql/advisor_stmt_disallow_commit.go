@@ -76,8 +76,7 @@ func (checker *statementDisallowCommitChecker) EnterQuery(ctx *mysql.QueryContex
 
 // EnterTransactionStatement is called when production transactionStatement is entered.
 func (checker *statementDisallowCommitChecker) EnterTransactionStatement(ctx *mysql.TransactionStatementContext) {
-	parent := ctx.GetParent().(*mysql.TransactionOrLockingStatementContext)
-	if !mysqlparser.IsTopMySQLRule(&parent.BaseParserRuleContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
 	if ctx.COMMIT_SYMBOL() == nil {
