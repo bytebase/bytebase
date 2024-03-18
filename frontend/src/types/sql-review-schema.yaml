@@ -301,6 +301,7 @@ ruleList:
     category: STATEMENT
     engineList:
       - MYSQL
+      - TIDB
   - type: statement.disallow-mix-ddl-dml
     category: STATEMENT
     engineList:
