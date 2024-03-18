@@ -125,9 +125,9 @@
                 {
                   "name": "IDX_EMPLOYEE_NAME_DEPARTMENT",
                   "expressions": [
-                    "LAST_NAME",
-                    "FIRST_NAME",
-                    "DEPARTMENT_ID"
+                    "\"LAST_NAME\"",
+                    "\"FIRST_NAME\"",
+                    "\"DEPARTMENT_ID\""
                   ],
                   "visible": true
                 }
@@ -205,9 +205,11 @@
       "HIRE_DATE" DATE VISIBLE,
       "SALARY" NUMBER(10,2) VISIBLE,
       "DEPARTMENT_ID" NUMBER(3) VISIBLE,
-      CONSTRAINT "SYS_C006993" PRIMARY KEY ("EMPLOYEE_ID"),
-      CONSTRAINT "IDX_EMPLOYEE_NAME_DEPARTMENT""LAST_NAME", "FIRST_NAME", "DEPARTMENT_ID")
+      CONSTRAINT "SYS_C006993" PRIMARY KEY ("EMPLOYEE_ID")
     )
+    ;
+
+    CREATE INDEX "BYTEBASE"."IDX_EMPLOYEE_NAME_DEPARTMENT" ON "EMPLOYEES" ("LAST_NAME", "FIRST_NAME", "DEPARTMENT_ID")
     ;
 
     CREATE TABLE "BYTEBASE"."SALARY" (
