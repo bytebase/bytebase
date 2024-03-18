@@ -79,6 +79,9 @@ type namingColumnConventionChecker struct {
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *namingColumnConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -105,6 +108,9 @@ func (checker *namingColumnConventionChecker) EnterCreateTable(ctx *mysql.Create
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *namingColumnConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

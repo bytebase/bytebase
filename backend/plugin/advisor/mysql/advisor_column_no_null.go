@@ -115,6 +115,9 @@ func (checker *columnNoNullChecker) generateAdvice() []advisor.Advice {
 }
 
 func (checker *columnNoNullChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -147,6 +150,9 @@ func (checker *columnNoNullChecker) EnterCreateTable(ctx *mysql.CreateTableConte
 }
 
 func (checker *columnNoNullChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

@@ -93,6 +93,9 @@ func (checker *insertRowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *insertRowLimitChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.line = checker.baseLine + ctx.GetStart().GetLine()
 	if ctx.InsertQueryExpression() != nil {
 		checker.handleInsertQueryExpression(ctx.InsertQueryExpression())
