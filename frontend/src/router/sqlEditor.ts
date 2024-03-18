@@ -2,8 +2,8 @@ import { RouteRecordRaw } from "vue-router";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 
 export const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
-export const SQL_EDITOR_DETAIL_MODULE_LEGACY = "sql-editor.detail";
-export const SQL_EDITOR_SHARE_MODULE_LEGACY = "sql-editor.share";
+export const SQL_EDITOR_DETAIL_MODULE_LEGACY = "sql-editor.legacy-detail";
+export const SQL_EDITOR_SHARE_MODULE_LEGACY = "sql-editor.legacy-share";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
   {
