@@ -830,14 +830,6 @@
         "override-confirm": "Vẫn tải lên"
       }
     },
-    "access-control": {
-      "description": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu. {link}",
-      "skip-approval": "Bỏ qua phê duyệt",
-      "query-data": "Truy vấn dữ liệu",
-      "export-data": "Xuất dữ liệu",
-      "disallowed": "Không được phép",
-      "copy-data-from-sql-editor": "Sao chép dữ liệu từ SQL Editor"
-    },
     "release": {
       "new-version-available": "Phiên bản mới có sẵn",
       "new-version-content": "Hiện đã có phiên bản mới {tag}! Vui lòng kiểm tra tài liệu của chúng tôi để cài đặt.",
@@ -2546,7 +2538,7 @@
       },
       "bb-feature-access-control": {
         "title": "Kiểm soát truy cập dữ liệu",
-        "desc": "Định cấu hình luồng phê duyệt để kiểm soát truy vấn và xuất dữ liệu."
+        "desc": "Hạn chế quyền truy cập dữ liệu của người dùng, chẳng hạn như cấm người dùng sao chép kết quả truy vấn dữ liệu."
       },
       "bb-feature-lgtm": {
         "title": "Kiểm tra LGTM",
