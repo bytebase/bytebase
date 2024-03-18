@@ -267,6 +267,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       icon: h(SettingsIcon),
       name: SETTING_ROUTE_WORKSPACE_GENERAL,
       type: "route",
+      hide: !hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.get"),
     },
   ];
 
