@@ -12,7 +12,7 @@ import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { useIssueContext } from "@/components/IssueV1/logic";
 import {
-  SQL_EDITOR_DETAIL_MODULE,
+  SQL_EDITOR_DETAIL_MODULE_LEGACY,
   SQL_EDITOR_HOME_MODULE,
 } from "@/router/sqlEditor";
 import { useDatabaseV1Store } from "@/store";
@@ -40,7 +40,7 @@ const gotoSQLEditor = async () => {
     if (db.uid !== String(UNKNOWN_ID)) {
       const slug = connectionV1Slug(db.instanceEntity, db);
       const url = router.resolve({
-        name: SQL_EDITOR_DETAIL_MODULE,
+        name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
         params: {
           connectionSlug: slug,
         },

@@ -32,7 +32,7 @@ import { computed } from "vue";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_DETAIL_MODULE_LEGACY } from "@/router/sqlEditor";
 import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
@@ -124,7 +124,7 @@ const gotoSQLEditor = () => {
   }
 
   const route = router.resolve({
-    name: SQL_EDITOR_DETAIL_MODULE,
+    name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
     params: {
       connectionSlug: connectionV1Slug(database.instanceEntity, database),
     },

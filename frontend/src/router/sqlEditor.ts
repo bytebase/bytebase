@@ -2,8 +2,8 @@ import { RouteRecordRaw } from "vue-router";
 import SQLEditorLayout from "@/layouts/SQLEditorLayout.vue";
 
 export const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
-export const SQL_EDITOR_DETAIL_MODULE = "sql-editor.detail";
-export const SQL_EDITOR_SHARE_MODULE = "sql-editor.share";
+export const SQL_EDITOR_DETAIL_MODULE_LEGACY = "sql-editor.detail";
+export const SQL_EDITOR_SHARE_MODULE_LEGACY = "sql-editor.share";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
   {
@@ -19,13 +19,13 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
       },
       {
         path: ":connectionSlug",
-        name: SQL_EDITOR_DETAIL_MODULE,
+        name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
       },
       {
         path: "sheet/:sheetSlug",
-        name: SQL_EDITOR_SHARE_MODULE,
+        name: SQL_EDITOR_SHARE_MODULE_LEGACY,
         meta: { title: () => "Bytebase SQL Editor" },
         component: () => import("../views/sql-editor/SQLEditorPage.vue"),
       },

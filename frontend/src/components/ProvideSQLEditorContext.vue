@@ -24,9 +24,9 @@ import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  SQL_EDITOR_DETAIL_MODULE,
+  SQL_EDITOR_DETAIL_MODULE_LEGACY,
   SQL_EDITOR_HOME_MODULE,
-  SQL_EDITOR_SHARE_MODULE,
+  SQL_EDITOR_SHARE_MODULE_LEGACY,
 } from "@/router/sqlEditor";
 import {
   useInstanceV1Store,
@@ -339,7 +339,7 @@ const syncURLWithConnection = () => {
         const sheet = worksheetStore.getSheetByName(sheetName);
         if (sheet) {
           router.replace({
-            name: SQL_EDITOR_SHARE_MODULE,
+            name: SQL_EDITOR_SHARE_MODULE_LEGACY,
             params: {
               sheetSlug: worksheetSlugV1(sheet),
             },
@@ -364,7 +364,7 @@ const syncURLWithConnection = () => {
         const database = databaseStore.getDatabaseByName(databaseName);
         if (database.uid !== String(UNKNOWN_ID)) {
           router.replace({
-            name: SQL_EDITOR_DETAIL_MODULE,
+            name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
             params: {
               connectionSlug: makeConnectionV1Slug(
                 database.instanceEntity,
@@ -380,7 +380,7 @@ const syncURLWithConnection = () => {
         const instance = instanceStore.getInstanceByName(instanceName);
         if (instance.uid !== String(UNKNOWN_ID)) {
           router.replace({
-            name: SQL_EDITOR_DETAIL_MODULE,
+            name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
             params: {
               connectionSlug: makeConnectionV1Slug(instance),
             },

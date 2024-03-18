@@ -96,7 +96,7 @@ import {
 import { ref, computed, onMounted, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_SHARE_MODULE_LEGACY } from "@/router/sqlEditor";
 import {
   pushNotification,
   useSQLEditorTabStore,
@@ -174,7 +174,7 @@ const sharedTabLink = computed(() => {
   }
 
   const route = router.resolve({
-    name: SQL_EDITOR_SHARE_MODULE,
+    name: SQL_EDITOR_SHARE_MODULE_LEGACY,
     params: {
       sheetSlug: worksheetSlugV1(sheet.value),
     },

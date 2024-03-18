@@ -65,7 +65,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_DETAIL_MODULE_LEGACY } from "@/router/sqlEditor";
 import {
   useActuatorV1Store,
   useCurrentUserV1,
@@ -228,7 +228,7 @@ const dropdownOptions = computed((): DropdownOptionWithTreeNode[] => {
             const { copy, copied } = useClipboard({
               source: computed(() => {
                 const route = router.resolve({
-                  name: SQL_EDITOR_DETAIL_MODULE,
+                  name: SQL_EDITOR_DETAIL_MODULE_LEGACY,
                   params: {
                     connectionSlug: connectionV1Slug(
                       database.instanceEntity,
