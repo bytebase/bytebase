@@ -83,6 +83,9 @@ func (checker *namingTableConventionChecker) generateAdvice() ([]advisor.Advice,
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *namingTableConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -93,6 +96,9 @@ func (checker *namingTableConventionChecker) EnterCreateTable(ctx *mysql.CreateT
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *namingTableConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -116,6 +122,9 @@ func (checker *namingTableConventionChecker) EnterAlterTable(ctx *mysql.AlterTab
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
 func (checker *namingTableConventionChecker) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	for _, pair := range ctx.AllRenamePair() {
 		if pair.TableName() == nil {
 			continue

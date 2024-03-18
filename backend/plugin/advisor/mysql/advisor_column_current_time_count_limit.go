@@ -71,6 +71,9 @@ type columnCurrentTimeCountLimitChecker struct {
 }
 
 func (checker *columnCurrentTimeCountLimitChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableElementList() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -86,6 +89,9 @@ func (checker *columnCurrentTimeCountLimitChecker) EnterCreateTable(ctx *mysql.C
 }
 
 func (checker *columnCurrentTimeCountLimitChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

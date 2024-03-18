@@ -71,6 +71,9 @@ type columnAutoIncrementMustUnsignedChecker struct {
 }
 
 func (checker *columnAutoIncrementMustUnsignedChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableElementList() == nil || ctx.TableName() == nil {
 		return
 	}
@@ -86,6 +89,9 @@ func (checker *columnAutoIncrementMustUnsignedChecker) EnterCreateTable(ctx *mys
 }
 
 func (checker *columnAutoIncrementMustUnsignedChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

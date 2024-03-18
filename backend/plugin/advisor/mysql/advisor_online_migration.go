@@ -104,6 +104,9 @@ type useGhostChecker struct {
 }
 
 func (c *useGhostChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	resource := base.SchemaResource{
 		Database: c.currentDatabase,
 	}

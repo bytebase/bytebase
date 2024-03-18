@@ -75,6 +75,9 @@ type disallowUsingFilesortChecker struct {
 }
 
 func (checker *disallowUsingFilesortChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if _, ok := ctx.GetParent().(*mysql.SimpleStatementContext); !ok {
 		return
 	}

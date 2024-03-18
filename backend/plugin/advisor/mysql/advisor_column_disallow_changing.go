@@ -76,6 +76,9 @@ func (checker *columnDisallowChangingChecker) EnterQuery(ctx *mysql.QueryContext
 }
 
 func (checker *columnDisallowChangingChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

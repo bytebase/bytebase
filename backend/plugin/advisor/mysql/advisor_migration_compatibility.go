@@ -91,6 +91,9 @@ func (checker *compatibilityChecker) ExitQuery(ctx *mysql.QueryContext) {
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *compatibilityChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -103,21 +106,33 @@ func (checker *compatibilityChecker) EnterCreateTable(ctx *mysql.CreateTableCont
 }
 
 // EnterDropDatabase is called when production dropDatabase is entered.
-func (checker *compatibilityChecker) EnterDropDatabase(_ *mysql.DropDatabaseContext) {
+func (checker *compatibilityChecker) EnterDropDatabase(ctx *mysql.DropDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.code = advisor.CompatibilityDropDatabase
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
-func (checker *compatibilityChecker) EnterRenameTableStatement(_ *mysql.RenameTableStatementContext) {
+func (checker *compatibilityChecker) EnterRenameTableStatement(ctx *mysql.RenameTableStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.code = advisor.CompatibilityRenameTable
 }
 
 // EnterDropTable is called when production dropTable is entered.
-func (checker *compatibilityChecker) EnterDropTable(_ *mysql.DropTableContext) {
+func (checker *compatibilityChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.code = advisor.CompatibilityDropTable
 }
 
 func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil || ctx.AlterTableActions().AlterCommandList() == nil {
 		return
 	}
@@ -212,6 +227,9 @@ func (checker *compatibilityChecker) EnterAlterTable(ctx *mysql.AlterTableContex
 
 // EnterCreateIndex is called when production createIndex is entered.
 func (checker *compatibilityChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.GetType_() == nil {
 		return
 	}
