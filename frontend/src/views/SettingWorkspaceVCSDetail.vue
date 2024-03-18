@@ -157,7 +157,7 @@ import { reactive, computed, watchEffect, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import RepositoryTable from "@/components/RepositoryTable.vue";
 import { vcsListByUIType } from "@/components/VCS/utils";
-import { SETTING_ROUTE_WORKSPACE_GITOPS } from "@/router/dashboard/workspaceSetting";
+import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -412,7 +412,7 @@ const doUpdate = () => {
 
 const cancel = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_GITOPS,
+    name: WORKSPACE_ROUTE_GITOPS,
   });
 };
 
@@ -428,7 +428,7 @@ const deleteVCS = () => {
       title: `Successfully deleted '${title}'`,
     });
     router.push({
-      name: SETTING_ROUTE_WORKSPACE_GITOPS,
+      name: WORKSPACE_ROUTE_GITOPS,
     });
   });
 };

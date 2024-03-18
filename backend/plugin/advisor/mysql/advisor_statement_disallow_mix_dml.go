@@ -95,6 +95,9 @@ type table struct {
 }
 
 func (c *statementDisallowMixDMLChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRef() == nil {
 		return
 	}
@@ -110,6 +113,9 @@ func (c *statementDisallowMixDMLChecker) EnterInsertStatement(ctx *mysql.InsertS
 }
 
 func (c *statementDisallowMixDMLChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	var allTables []table
 	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
 		tables, err := extractTableReference(tableRefCtx)
@@ -134,6 +140,9 @@ func (c *statementDisallowMixDMLChecker) EnterUpdateStatement(ctx *mysql.UpdateS
 }
 
 func (c *statementDisallowMixDMLChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	var allTables []table
 	if ctx.TableRef() != nil {
 		tables, err := extractTableRef(ctx.TableRef())

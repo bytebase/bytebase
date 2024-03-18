@@ -1,6 +1,6 @@
 <template>
   <template v-for="[role, bindings] in roleGroup" :key="role">
-    <p class="mb-2 text-base pl-2">{{ displayRoleTitle(role) }}</p>
+    <p class="mb-2 text-base">{{ displayRoleTitle(role) }}</p>
     <BBGrid
       :column-list="columnList"
       :row-clickable="false"

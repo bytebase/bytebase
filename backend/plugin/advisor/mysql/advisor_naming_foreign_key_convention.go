@@ -86,6 +86,9 @@ func (checker *namingFKConventionChecker) EnterQuery(ctx *mysql.QueryContext) {
 }
 
 func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -111,6 +114,9 @@ func (checker *namingFKConventionChecker) EnterCreateTable(ctx *mysql.CreateTabl
 }
 
 func (checker *namingFKConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

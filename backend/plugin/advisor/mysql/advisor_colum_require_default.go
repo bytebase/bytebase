@@ -68,6 +68,9 @@ type columnRequireDefaultChecker struct {
 }
 
 func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -93,6 +96,9 @@ func (checker *columnRequireDefaultChecker) EnterCreateTable(ctx *mysql.CreateTa
 }
 
 func (checker *columnRequireDefaultChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

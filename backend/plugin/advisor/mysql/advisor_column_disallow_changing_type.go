@@ -81,6 +81,9 @@ func (checker *columnDisallowChangingTypeChecker) EnterQuery(ctx *mysql.QueryCon
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *columnDisallowChangingTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

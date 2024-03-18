@@ -73,6 +73,9 @@ func (checker *whereRequirementChecker) EnterQuery(ctx *mysql.QueryContext) {
 
 // EnterDeleteStatement is called when production deleteStatement is entered.
 func (checker *whereRequirementChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.WhereClause() == nil || ctx.WhereClause().WHERE_SYMBOL() == nil {
 		checker.handleWhereClause(ctx.GetStart().GetLine())
 	}
@@ -80,6 +83,9 @@ func (checker *whereRequirementChecker) EnterDeleteStatement(ctx *mysql.DeleteSt
 
 // EnterUpdateStatement is called when production updateStatement is entered.
 func (checker *whereRequirementChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.WhereClause() == nil || ctx.WhereClause().WHERE_SYMBOL() == nil {
 		checker.handleWhereClause(ctx.GetStart().GetLine())
 	}

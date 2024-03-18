@@ -73,6 +73,9 @@ func (checker *tableDisallowTriggerChecker) EnterQuery(ctx *mysql.QueryContext) 
 
 // EnterCreateTrigger is to check the create trigger statement.
 func (checker *tableDisallowTriggerChecker) EnterCreateTrigger(ctx *mysql.CreateTriggerContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.TriggerName() != nil {
 		code = advisor.CreateTableTrigger

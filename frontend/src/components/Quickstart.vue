@@ -121,7 +121,7 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
 } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_MEMBER } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_SHARE_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -195,9 +195,10 @@ const introList = computed(() => {
     {
       name: computed(() => t("quick-start.query-data")),
       link: {
-        name: SQL_EDITOR_SHARE_MODULE,
+        name: SQL_EDITOR_WORKSHEET_MODULE,
         params: {
-          sheetSlug: "project-sample-101",
+          project: "project-sample",
+          sheet: "101",
         },
       },
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),

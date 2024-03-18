@@ -86,6 +86,9 @@ type indexPrimaryKeyTypeAllowlistChecker struct {
 }
 
 func (checker *indexPrimaryKeyTypeAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -112,6 +115,9 @@ func (checker *indexPrimaryKeyTypeAllowlistChecker) EnterCreateTable(ctx *mysql.
 }
 
 func (checker *indexPrimaryKeyTypeAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

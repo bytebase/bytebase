@@ -9,7 +9,11 @@
       @update:time="state.timeRange = $event"
     >
       <template #suffix>
-        <NButton v-if="allowAdmin" type="default" @click="goConfig">
+        <NButton
+          v-if="allowAdmin"
+          type="default"
+          @click="state.showSetting = true"
+        >
           {{ $t("common.configure") }}
         </NButton>
         <NButton
@@ -47,6 +51,15 @@
       @close="selectedSlowQueryLog = undefined"
     />
   </div>
+
+  <Drawer v-model:show="state.showSetting" width="auto">
+    <DrawerContent
+      :closable="true"
+      class="w-[calc(100vw-2rem)] lg:max-w-[64rem] xl:max-w-[72rem]"
+    >
+      <SlowQuerySettings />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
@@ -54,8 +67,6 @@ import dayjs from "dayjs";
 import { NButton } from "naive-ui";
 import { computed, shallowRef, watch, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import { SETTING_ROUTE_WORKSPACE_SLOW_QUERY } from "@/router/dashboard/workspaceSetting";
 import {
   pushNotification,
   useCurrentUserV1,
@@ -72,6 +83,7 @@ import {
   extractInstanceResourceName,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import { SlowQuerySettings } from "../Settings";
 import DetailPanel from "./DetailPanel.vue";
 import LogFilter from "./LogFilter.vue";
 import LogTable from "./LogTable.vue";
@@ -111,6 +123,7 @@ interface LocalState {
     toTime: number | undefined;
   };
   params: SearchParams;
+  showSetting: boolean;
 }
 
 const defaultSlowQueryTimeRange = () => {
@@ -129,10 +142,10 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
+  showSetting: false,
 });
 
 const { t } = useI18n();
-const router = useRouter();
 const currentUser = useCurrentUserV1();
 const slowQueryStore = useSlowQueryStore();
 const loading = shallowRef(false);
@@ -231,12 +244,6 @@ const syncNow = async () => {
   } finally {
     syncing.value = false;
   }
-};
-
-const goConfig = () => {
-  router.push({
-    name: SETTING_ROUTE_WORKSPACE_SLOW_QUERY,
-  });
 };
 
 // Fetch the list while params changed.

@@ -133,8 +133,11 @@ onMounted(() => {
   if (props.binding) {
     const userUidList = [];
     for (const member of props.binding.members) {
-      // Member format: user:{email}
-      const user = userStore.getUserByEmail(member.slice(5));
+      let email = member;
+      if (member.startsWith("user:")) {
+        email = member.slice(5);
+      }
+      const user = userStore.getUserByEmail(email);
       if (user) {
         const userUid = getUserId(user.name);
         userUidList.push(String(userUid));
