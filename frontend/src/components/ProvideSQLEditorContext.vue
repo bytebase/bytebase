@@ -84,20 +84,28 @@ const { filter } = useFilterStore();
 const { events: editorEvents, maybeSwitchProject } = useSQLEditorContext();
 
 const initializeProjects = async () => {
+  const initProject = async (project: string) => {
+    try {
+      await projectStore.getOrFetchProjectByName(project, /* !silent */ false);
+      editorStore.project = project;
+      return true;
+    } catch {
+      // nothing
+    }
+    return false;
+  };
+
   const projectInQuery = route.query.project as string;
   const projectInParams = route.params.project as string;
   if (typeof projectInQuery === "string" && projectInQuery) {
     // Legacy "?project={project}"
     const project = `projects/${projectInQuery}`;
-    editorStore.strictProject = true;
-    editorStore.project = project;
-    await projectStore.getOrFetchProjectByName(project, true /* silent */);
+    await initProject(project);
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"
     const project = `projects/${projectInParams}`;
     editorStore.strictProject = "strict" in route.query;
-    editorStore.project = project;
-    await projectStore.getOrFetchProjectByName(project, true /* silent */);
+    await initProject(project);
   } else {
     // plain "/sql-editor"
     const projectList = await projectStore.fetchProjectList(false);
