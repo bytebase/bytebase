@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/beltran/gohive"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -34,11 +36,16 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
+	if config.Database == "" {
+		return nil, errors.Errorf("database not set")
+	}
+
 	d.config = config
 	d.ctx = config.ConnectionContext
 
 	// initialize database connection.
 	configuration := gohive.NewConnectConfiguration()
+	configuration.Database = config.Database
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
@@ -80,6 +87,7 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
+// TODO(tommy): support transaction.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
 	if d.dbClient == nil {
 		return 0, errors.Errorf("no database connection established")
@@ -88,13 +96,13 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	defer cursor.Close()
 
 	var rowCount int64
-	statements, err := splitHiveStatements(statementsStr)
+	statements, err := standard.SplitSQL(statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
 	}
 
 	for _, statement := range statements {
-		cursor.Execute(ctx, statement, false)
+		cursor.Execute(ctx, statement.Text, false)
 		if cursor.Err != nil {
 			return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
 		}
@@ -113,13 +121,13 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	defer cursor.Close()
 
 	var results []*v1pb.QueryResult
-	statements, err := splitHiveStatements(statementsStr)
+	statements, err := standard.SplitSQL(statementsStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
 	for _, statement := range statements {
-		result, err := runSingleQuery(ctx, statement, cursor)
+		result, err := runSingleQuery(ctx, statement.Text, cursor)
 		if err != nil {
 			result.Error = err.Error()
 		}
@@ -164,6 +172,8 @@ func parseValueType(value any) (*v1pb.RowValue, error) {
 }
 
 func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+	statement = strings.TrimRight(statement, ";")
+
 	startTime := time.Now()
 	cursor.Execute(ctx, statement, false)
 	if cursor.Err != nil {
