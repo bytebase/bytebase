@@ -2002,7 +2002,9 @@
       "roles": "Vai trò",
       "search-member": "Tìm kiếm thành viên",
       "revoke-members": "Thu hồi các thành viên này",
-      "clean-up-expired-roles": "Dọn dẹp các vai trò đã hết hạn"
+      "clean-up-expired-roles": "Dọn dẹp các vai trò đã hết hạn",
+      "workspace-level-roles": "Vai trò cấp độ không gian làm việc",
+      "project-level-roles": "Vai trò cấp độ dự án"
     },
     "mode": {
       "standard": "Chế độ căn bản",
