@@ -16,12 +16,6 @@
           <ServiceAccountTag
             v-if="user.userType === UserType.SERVICE_ACCOUNT"
           />
-          <span
-            v-if="user.mfaEnabled"
-            class="inline-flex items-center px-2 py-0.5 rounded-lg text-xs bg-green-800 text-green-100"
-          >
-            {{ $t("two-factor.enabled") }}
-          </span>
         </div>
         <span v-if="user.name !== SYSTEM_BOT_USER_NAME" class="textlabel">
           {{ user.email }}
