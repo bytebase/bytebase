@@ -2053,6 +2053,7 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 						identifierList[i] = fmt.Sprintf("`%s`", identifier)
 					}
 				}
+				expr = strings.Join(identifierList, ",")
 			} else {
 				bitExprText := partitionTypeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(partitionTypeDefCtx.BitExpr())
 				bitExprFields := strings.Split(bitExprText, ",")
@@ -2084,26 +2085,29 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 
 		switch tp {
 		case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
-			if partitionDefinition.PartitionValueItemListParen() == nil {
-				t.err = errors.New("COLUMNS partition but no partition value item in LESS THAN clause")
+			if partitionDefinition.LESS_SYMBOL() == nil {
+				t.err = errors.New("RANGE partition but no LESS THAN clause")
 				return
 			}
-			itemsText := partitionDefinition.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
-				antlr.NewInterval(
-					partitionDefinition.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
-					partitionDefinition.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
-				),
-			)
-			itemsTextFields := strings.Split(itemsText, ",")
-			for i, itemsTextField := range itemsTextFields {
-				itemsTextField := strings.TrimSpace(itemsTextField)
-				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
-					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+			if partitionDefinition.PartitionValueItemListParen() != nil {
+				itemsText := partitionDefinition.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partitionDefinition.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partitionDefinition.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+				itemsTextFields := strings.Split(itemsText, ",")
+				for i, itemsTextField := range itemsTextFields {
+					itemsTextField := strings.TrimSpace(itemsTextField)
+					if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+						itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+					}
+					itemsTextFields[i] = itemsTextField
 				}
-				itemsTextFields[i] = itemsTextField
+				partitionDef.value = strings.Join(itemsTextFields, ",")
+			} else {
+				partitionDef.value = "MAXVALUE"
 			}
-
-			partitionDef.value = strings.Join(itemsTextFields, ",")
 		case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
 			if partitionDefinition.PartitionValuesIn() == nil {
 				t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
