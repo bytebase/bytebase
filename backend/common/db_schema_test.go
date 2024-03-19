@@ -12,41 +12,85 @@ func TestClassification(t *testing.T) {
 		rawComment     string
 		classification string
 		userComment    string
+		rebuildComment string
 	}{
 		{
 			rawComment:     "1abc",
 			classification: "",
 			userComment:    "1abc",
+			rebuildComment: "1abc",
 		},
 		{
 			rawComment:     "abc",
 			classification: "",
 			userComment:    "abc",
+			rebuildComment: "abc",
 		},
 		{
 			rawComment:     "-abc",
 			classification: "",
 			userComment:    "-abc",
+			rebuildComment: "-abc",
 		},
 		{
 			rawComment:     "0-abc",
 			classification: "0",
 			userComment:    "abc",
+			rebuildComment: "0-abc",
 		},
 		{
 			rawComment:     "1-2-abc",
 			classification: "1-2",
 			userComment:    "abc",
+			rebuildComment: "1-2-abc",
+		},
+		{
+			rawComment:     "1-2 abc",
+			classification: "1-2",
+			userComment:    "abc",
+			rebuildComment: "1-2-abc",
+		},
+		{
+			rawComment:     "1 abc",
+			classification: "1",
+			userComment:    "abc",
+			rebuildComment: "1-abc",
 		},
 		{
 			rawComment:     "1",
 			classification: "1",
 			userComment:    "",
+			rebuildComment: "1",
+		},
+		{
+			rawComment:     "1- 2",
+			classification: "1",
+			userComment:    " 2",
+			rebuildComment: "1- 2",
+		},
+		{
+			rawComment:     "1 2",
+			classification: "1",
+			userComment:    "2",
+			rebuildComment: "1-2",
 		},
 		{
 			rawComment:     "1-2",
 			classification: "1-2",
 			userComment:    "",
+			rebuildComment: "1-2",
+		},
+		{
+			rawComment:     "1-2a",
+			classification: "1",
+			userComment:    "2a",
+			rebuildComment: "1-2a",
+		},
+		{
+			rawComment:     "1:a",
+			classification: "",
+			userComment:    "1:a",
+			rebuildComment: "1:a",
 		},
 	}
 
@@ -55,8 +99,8 @@ func TestClassification(t *testing.T) {
 			classification, userComment := GetClassificationAndUserComment(test.rawComment)
 			assert.Equal(t, test.classification, classification)
 			assert.Equal(t, test.userComment, userComment)
-			rawComment := GetCommentFromClassificationAndUserComment(classification, userComment)
-			assert.Equal(t, test.rawComment, rawComment)
+			rebuildComment := GetCommentFromClassificationAndUserComment(classification, userComment)
+			assert.Equal(t, test.rebuildComment, rebuildComment)
 		})
 	}
 }
