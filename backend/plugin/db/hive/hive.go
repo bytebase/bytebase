@@ -3,14 +3,16 @@ package hive
 import (
 	"context"
 	"database/sql"
-	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -34,11 +36,16 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
+	if config.Database == "" {
+		return nil, errors.Errorf("database not set")
+	}
+
 	d.config = config
 	d.ctx = config.ConnectionContext
 
 	// initialize database connection.
 	configuration := gohive.NewConnectConfiguration()
+	configuration.Database = config.Database
 	port, err := strconv.Atoi(config.Port)
 	if err != nil {
 		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
@@ -64,9 +71,9 @@ func (d *Driver) Close(_ context.Context) error {
 
 func (d *Driver) Ping(ctx context.Context) error {
 	if d.dbClient == nil {
-		return errors.Errorf("database not connected")
+		return errors.Errorf("no database connection established")
 	}
-	if _, err := d.Execute(ctx, "SELECT 1", db.ExecuteOptions{}); err != nil {
+	if _, err := d.QueryConn(ctx, nil, "SELECT 1", &db.QueryContext{}); err != nil {
 		return errors.Errorf("bad connection")
 	}
 	return nil
@@ -80,102 +87,117 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	var rowCount int64
-	cursor := d.dbClient.Cursor()
-	cursor.Execute(ctx, statement, false)
-	operationStatus := cursor.Poll(false)
-
-	if cursor.Err != nil {
-		return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
+// TODO(tommy): support transaction.
+func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
+	if d.dbClient == nil {
+		return 0, errors.Errorf("no database connection established")
 	}
-	rowCount = operationStatus.GetNumModifiedRows()
-	cursor.Close()
+	cursor := d.dbClient.Cursor()
+	defer cursor.Close()
+
+	var rowCount int64
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to split statements")
+	}
+
+	for _, statement := range statements {
+		cursor.Execute(ctx, statement.Text, false)
+		if cursor.Err != nil {
+			return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
+		}
+		operationStatus := cursor.Poll(false)
+		rowCount += operationStatus.GetNumModifiedRows()
+	}
+
 	return rowCount, nil
 }
 
-// Used for execute readonly SELECT statement.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	cursor := d.dbClient.Cursor()
-	cursor.Exec(ctx, statement)
-	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if d.dbClient == nil {
+		return nil, errors.Errorf("no database connection established")
 	}
-	// TODO(tommy): func not implemented
-	// var results []*v1pb.QueryResult
+	cursor := d.dbClient.Cursor()
+	defer cursor.Close()
 
-	// for cursor.HasMore(ctx) {
-	// 	for columnName, value := range cursor.RowMap(ctx) {
-	// 	}
-	// 	cursor.FetchOne(ctx)
-	// }
+	var results []*v1pb.QueryResult
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to split statements")
+	}
 
-	return nil, errors.Errorf("Not implemeted")
+	for _, statement := range statements {
+		result, err := runSingleQuery(ctx, statement.Text, cursor)
+		if err != nil {
+			result.Error = err.Error()
+		}
+		results = append(results, result)
+	}
+
+	return results, nil
 }
 
-// RunStatement will execute the statement and return the result, for both SELECT and non-SELECT statements.
+// @TODO(zp): remove this function from the interface.
 func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
 	return nil, errors.Errorf("Not implemeted")
 }
 
-// Sync schema
-// SyncInstance syncs the instance metadata.
-func (*Driver) SyncInstance(_ context.Context) (*db.InstanceMetadata, error) {
-	return nil, errors.Errorf("Not implemeted")
+// This function converts basic types to types that have implemented isRowValue_Kind interface.
+func parseValueType(value any) (*v1pb.RowValue, error) {
+	var rowValue v1pb.RowValue
+	switch t := value.(type) {
+	case nil:
+		return nil, errors.Errorf("value cannot be %v", t)
+	case bool:
+		rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
+	case int8:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
+	case int16:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
+	case int32:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
+	case int64:
+		rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
+	// TODO(tommy): dangerous truncation: float64 -> float32.
+	case float64:
+		rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: value.(float32)}
+	case string:
+		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
+	case []byte:
+		rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
+	default:
+		return nil, errors.Errorf("type not supported")
+	}
+	return &rowValue, nil
 }
 
-// SyncDBSchema syncs a single database schema.
-func (*Driver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
+func runSingleQuery(ctx context.Context, statement string, cursor *gohive.Cursor) (*v1pb.QueryResult, error) {
+	statement = strings.TrimRight(statement, ";")
 
-// Sync slow query logs
-// SyncSlowQuery syncs the slow query logs.
-// The returned map is keyed by database name, and the value is list of slow query statistics grouped by query fingerprint.
-func (*Driver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
+	startTime := time.Now()
+	cursor.Execute(ctx, statement, false)
+	if cursor.Err != nil {
+		return nil, errors.Wrapf(cursor.Err, "failed to execute statement")
+	}
 
-// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
-func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
-	return errors.Errorf("Not implemeted")
-}
-
-// Role
-// CreateRole creates the role.
-func (*Driver) CreateRole(_ context.Context, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// UpdateRole updates the role.
-func (*Driver) UpdateRole(_ context.Context, _ string, _ *db.DatabaseRoleUpsertMessage) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// FindRole finds the role by name.
-func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// ListRole lists the role.
-func (*Driver) ListRole(_ context.Context) ([]*db.DatabaseRoleMessage, error) {
-	return nil, errors.Errorf("Not implemeted")
-}
-
-// DeleteRole deletes the role by name.
-func (*Driver) DeleteRole(_ context.Context, _ string) error {
-	return errors.Errorf("Not implemeted")
-}
-
-// Dump and restore
-// Dump the database.
-// The returned string is the JSON encoded metadata for the logical dump.
-// For MySQL, the payload contains the binlog filename and position when the dump is generated.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ bool) (string, error) {
-	return "", errors.Errorf("Not implemeted")
-}
-
-// Restore the database from src, which is a full backup.
-func (*Driver) Restore(_ context.Context, _ io.Reader) error {
-	return errors.Errorf("Not implemeted")
+	// process query results.
+	var result v1pb.QueryResult
+	for cursor.HasMore(ctx) {
+		for columnName, value := range cursor.RowMap(ctx) {
+			// ColumnNames.
+			result.ColumnNames = append(result.ColumnNames, columnName)
+			// Rows.
+			var queryRow v1pb.QueryRow
+			val, err := parseValueType(value)
+			if err != nil {
+				return nil, err
+			}
+			queryRow.Values = append(queryRow.Values, val)
+			// Latency.
+			result.Latency = durationpb.New(time.Since(startTime))
+			result.Rows = append(result.Rows, &queryRow)
+			result.Statement = statement
+		}
+	}
+	return &result, nil
 }
