@@ -6,6 +6,7 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
+    "verbatimModuleSyntax": false,
     "baseUrl": ".",
     "lib": ["WebWorker", "ES2022"],
     "types": ["unplugin-icons/types/vue", "vite/client"],
