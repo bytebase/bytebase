@@ -38,8 +38,8 @@ const watchNotification = () => {
   const duration = item.manualHide
     ? undefined
     : item.style === "CRITICAL"
-    ? CRITICAL_NOTIFICATION_DURATION
-    : NOTIFICATION_DURATION;
+      ? CRITICAL_NOTIFICATION_DURATION
+      : NOTIFICATION_DURATION;
 
   notification.create({
     type: getNotificationType(item.style),

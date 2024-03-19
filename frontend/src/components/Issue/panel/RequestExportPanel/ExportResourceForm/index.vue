@@ -37,7 +37,7 @@
     >
       <DatabaseResourceSelector
         :project-id="project!.uid"
-        :database-id="(props.databaseId as string)"
+        :database-id="props.databaseId as string"
         :database-resources="state.databaseResources"
         @update="handleTableResourceUpdate"
       />

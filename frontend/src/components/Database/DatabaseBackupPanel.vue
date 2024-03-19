@@ -404,20 +404,27 @@ const pollBackups = (interval: number) => {
   if (state.pollBackupsTimer) {
     clearInterval(state.pollBackupsTimer);
   }
-  state.pollBackupsTimer = setTimeout(() => {
-    backupStore
-      .fetchBackupList({
-        parent: props.database.name,
-      })
-      .then((backups) => {
-        const pending = backups.some(
-          (backup) => backup.state === Backup_BackupState.PENDING_CREATE
-        );
-        if (pending) {
-          pollBackups(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
-        }
-      });
-  }, Math.max(1000, Math.min(interval, NORMAL_POLL_INTERVAL) + (Math.random() * 2 - 1) * POLL_JITTER));
+  state.pollBackupsTimer = setTimeout(
+    () => {
+      backupStore
+        .fetchBackupList({
+          parent: props.database.name,
+        })
+        .then((backups) => {
+          const pending = backups.some(
+            (backup) => backup.state === Backup_BackupState.PENDING_CREATE
+          );
+          if (pending) {
+            pollBackups(Math.min(interval * 2, NORMAL_POLL_INTERVAL));
+          }
+        });
+    },
+    Math.max(
+      1000,
+      Math.min(interval, NORMAL_POLL_INTERVAL) +
+        (Math.random() * 2 - 1) * POLL_JITTER
+    )
+  );
 };
 
 const prepareBackupSetting = () => {

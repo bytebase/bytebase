@@ -178,7 +178,7 @@ const TABS = [
   "",
 ] as const;
 
-type TabValue = typeof TABS[number];
+type TabValue = (typeof TABS)[number];
 
 interface LocalState {
   loading: boolean;

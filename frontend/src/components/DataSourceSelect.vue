@@ -4,7 +4,10 @@
     :disabled="disabled"
     @change="
       (e) => {
-        $emit('select-data-source-id', parseInt((e.target as HTMLOptionElement).value));
+        $emit(
+          'select-data-source-id',
+          parseInt((e.target as HTMLOptionElement).value)
+        );
       }
     "
   >

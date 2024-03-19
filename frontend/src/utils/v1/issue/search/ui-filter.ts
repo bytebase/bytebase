@@ -11,7 +11,7 @@ import { extractUserResourceName } from "../../user";
 import { SearchParams, getValueFromSearchParams } from "./common";
 
 export const IssueApprovalStatusList = ["pending", "approved"] as const;
-export type IssueApprovalStatus = typeof IssueApprovalStatusList[number];
+export type IssueApprovalStatus = (typeof IssueApprovalStatusList)[number];
 export const isValidIssueApprovalStatus = (
   s: string
 ): s is IssueApprovalStatus => {

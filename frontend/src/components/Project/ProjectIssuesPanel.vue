@@ -103,7 +103,7 @@ import { IssueSearch } from "../IssueV1/components";
 
 const TABS = ["WAITING_APPROVAL", "WAITING_ROLLOUT", "ALL", ""] as const;
 
-type TabValue = typeof TABS[number];
+type TabValue = (typeof TABS)[number];
 
 interface LocalState {
   params: SearchParams;

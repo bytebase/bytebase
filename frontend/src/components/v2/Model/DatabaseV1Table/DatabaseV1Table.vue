@@ -30,7 +30,7 @@
         #item="{
           item: database,
         }: {
-          item: ComposedDatabase | ComposedDatabaseGroup,
+          item: ComposedDatabase | ComposedDatabaseGroup;
         }"
       >
         <template v-if="isDatabase(database)">
@@ -58,7 +58,7 @@
         </template>
         <template v-else>
           <DatabaseGroupTableRow
-            :database-group="(database as ComposedDatabaseGroup)"
+            :database-group="database as ComposedDatabaseGroup"
             :mode="mode"
             :show-selection-column="showSelectionColumn"
             :show-misc-column="showMiscColumn"

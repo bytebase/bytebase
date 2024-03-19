@@ -41,7 +41,7 @@
     />
 
     <DatabaseHoverPanel
-      :database="(hoverNode?.meta.target as ComposedDatabase|undefined)"
+      :database="hoverNode?.meta.target as ComposedDatabase | undefined"
       :x="hoverPanelPosition.x"
       :y="hoverPanelPosition.y"
       class="ml-3"
@@ -513,8 +513,8 @@ const selectAllFromTableOrView = async (node: SQLEditorTreeNode) => {
     type === "table"
       ? (target as SQLEditorTreeNodeTarget<"table">).table.name
       : type === "view"
-      ? (target as SQLEditorTreeNodeTarget<"view">).view.name
-      : "";
+        ? (target as SQLEditorTreeNodeTarget<"view">).view.name
+        : "";
   if (!tableOrViewName) {
     return;
   }

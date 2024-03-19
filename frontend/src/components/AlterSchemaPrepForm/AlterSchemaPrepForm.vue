@@ -159,9 +159,12 @@
                   :show-sql-editor-button="false"
                   :show-placeholder="true"
                   @select-database="
-                (db: ComposedDatabase) =>
-                  toggleDatabasesSelection([db as ComposedDatabase], !isDatabaseSelected(db))
-              "
+                    (db: ComposedDatabase) =>
+                      toggleDatabasesSelection(
+                        [db as ComposedDatabase],
+                        !isDatabaseSelected(db)
+                      )
+                  "
                 >
                   <template
                     #selection-all="{ databaseList: selectedDatabaseList }"
@@ -169,7 +172,11 @@
                     <NCheckbox
                       v-if="selectedDatabaseList.length > 0"
                       class="h-4 w-4 text-accent rounded disabled:cursor-not-allowed border-control-border focus:ring-accent"
-                      v-bind="getAllSelectionState(selectedDatabaseList as ComposedDatabase[])"
+                      v-bind="
+                        getAllSelectionState(
+                          selectedDatabaseList as ComposedDatabase[]
+                        )
+                      "
                       @update:checked="
                         toggleDatabasesSelection(
                           selectedDatabaseList as ComposedDatabase[],
@@ -180,7 +187,9 @@
                   </template>
                   <template #selection="{ database }">
                     <NCheckbox
-                      :checked="isDatabaseSelected(database as ComposedDatabase)"
+                      :checked="
+                        isDatabaseSelected(database as ComposedDatabase)
+                      "
                       @update:checked="
                         toggleDatabasesSelection(
                           [database as ComposedDatabase],

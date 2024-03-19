@@ -199,10 +199,10 @@
             :label="item.title"
             :checked="isEventOn(item.activity)"
             @update:checked="
-            (on: boolean) => {
-              toggleEvent(item.activity, on);
-            }
-          "
+              (on: boolean) => {
+                toggleEvent(item.activity, on);
+              }
+            "
           />
           <div class="textinfolabel">{{ item.label }}</div>
         </div>

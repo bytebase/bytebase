@@ -287,10 +287,12 @@
           :disabled="!allowEdit"
           :label="enableSQLReviewTitle"
           :checked="repositoryConfig.enableSQLReviewCI"
-          @update:checked="(on: boolean) => {
-            repositoryConfig.enableSQLReviewCI = on;
-            onSQLReviewCIToggle(on);
-          }"
+          @update:checked="
+            (on: boolean) => {
+              repositoryConfig.enableSQLReviewCI = on;
+              onSQLReviewCIToggle(on);
+            }
+          "
         />
       </div>
     </div>

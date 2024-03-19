@@ -38,7 +38,11 @@
             class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
             :placeholder="'587'"
             :required="true"
-            @wheel="(event: MouseEvent) => {(event.target as HTMLInputElement).blur()}"
+            @wheel="
+              (event: MouseEvent) => {
+                (event.target as HTMLInputElement).blur();
+              }
+            "
           />
         </div>
       </div>

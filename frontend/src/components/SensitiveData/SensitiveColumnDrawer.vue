@@ -38,7 +38,12 @@
                 :options="algorithmList"
                 :consistent-menu-width="false"
                 :placeholder="$t('settings.sensitive-data.algorithms.default')"
-                :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+                :fallback-option="
+                  (_: string) => ({
+                    label: $t('settings.sensitive-data.algorithms.default'),
+                    value: '',
+                  })
+                "
                 clearable
                 size="small"
                 style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
@@ -58,7 +63,12 @@
                 :options="algorithmList"
                 :consistent-menu-width="false"
                 :placeholder="$t('settings.sensitive-data.algorithms.default')"
-                :fallback-option="(_: string) => ({ label: $t('settings.sensitive-data.algorithms.default'), value: '' })"
+                :fallback-option="
+                  (_: string) => ({
+                    label: $t('settings.sensitive-data.algorithms.default'),
+                    value: '',
+                  })
+                "
                 clearable
                 size="small"
                 style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
@@ -169,7 +179,13 @@
                   :is-date-disabled="(date: number) => date < Date.now()"
                   clearable
                   :disabled="!hasPermission || state.processing"
-                  @update:value="(val: number | undefined) => onAccessControlUpdate(row, (item) => item.expirationTimestamp = val)"
+                  @update:value="
+                    (val: number | undefined) =>
+                      onAccessControlUpdate(
+                        row,
+                        (item) => (item.expirationTimestamp = val)
+                      )
+                  "
                 />
               </div>
               <div v-if="hasPermission" class="bb-grid-cell">

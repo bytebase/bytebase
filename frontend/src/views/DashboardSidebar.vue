@@ -82,29 +82,32 @@ const getFlattenRoutes = (
   name: string;
   permissions: WorkspacePermission[];
 }[] => {
-  return routes.reduce((list, workspaceRoute) => {
-    const requiredWorkspacePermissionListFunc =
-      workspaceRoute.meta?.requiredWorkspacePermissionList;
-    let requiredPermissionList = requiredWorkspacePermissionListFunc
-      ? requiredWorkspacePermissionListFunc()
-      : [];
-    if (requiredPermissionList.length === 0) {
-      requiredPermissionList = permissions;
-    }
+  return routes.reduce(
+    (list, workspaceRoute) => {
+      const requiredWorkspacePermissionListFunc =
+        workspaceRoute.meta?.requiredWorkspacePermissionList;
+      let requiredPermissionList = requiredWorkspacePermissionListFunc
+        ? requiredWorkspacePermissionListFunc()
+        : [];
+      if (requiredPermissionList.length === 0) {
+        requiredPermissionList = permissions;
+      }
 
-    if (workspaceRoute.name && workspaceRoute.name.toString() !== "") {
-      list.push({
-        name: workspaceRoute.name.toString(),
-        permissions: requiredPermissionList,
-      });
-    }
-    if (workspaceRoute.children) {
-      list.push(
-        ...getFlattenRoutes(workspaceRoute.children, requiredPermissionList)
-      );
-    }
-    return list;
-  }, [] as { name: string; permissions: WorkspacePermission[] }[]);
+      if (workspaceRoute.name && workspaceRoute.name.toString() !== "") {
+        list.push({
+          name: workspaceRoute.name.toString(),
+          permissions: requiredPermissionList,
+        });
+      }
+      if (workspaceRoute.children) {
+        list.push(
+          ...getFlattenRoutes(workspaceRoute.children, requiredPermissionList)
+        );
+      }
+      return list;
+    },
+    [] as { name: string; permissions: WorkspacePermission[] }[]
+  );
 };
 
 const flattenRoutes = computed(() => {

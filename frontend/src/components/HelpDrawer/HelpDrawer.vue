@@ -99,10 +99,10 @@ watch(helpId, async (id) => {
         locale.value === "zh-CN"
           ? "zh"
           : locale.value === "ja-JP"
-          ? "ja"
-          : locale.value === "vi-VN"
-          ? "vi"
-          : "en"
+            ? "ja"
+            : locale.value === "vi-VN"
+              ? "vi"
+              : "en"
       }/${id}.md`
     );
     const markdown = await res.text();
