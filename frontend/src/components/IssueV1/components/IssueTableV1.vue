@@ -23,7 +23,9 @@
       :checked-row-keys="[...state.selectedIssueIdList]"
       :row-props="rowProps"
       :render-expand-icon="() => h('span', { class: 'hidden' })"
-      @update:checked-row-keys="(val) => state.selectedIssueIdList = new Set(val as string[])"
+      @update:checked-row-keys="
+        (val) => (state.selectedIssueIdList = new Set(val as string[]))
+      "
     />
   </div>
 
@@ -131,7 +133,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         h(
           EllipsisText,
           { performant: true },
-          humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000)
+          {
+            default: () =>
+              humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
+          }
         ),
     },
     {

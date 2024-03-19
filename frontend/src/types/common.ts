@@ -184,6 +184,7 @@ const makeUnknown = (type: ResourceType) => {
     options: {
       srv: false,
       authenticationDatabase: "",
+      authenticationPrivateKey: "",
       sid: "",
       serviceName: "",
       sshHost: "",
@@ -406,6 +407,7 @@ const makeEmpty = (type: ResourceType) => {
     options: {
       srv: false,
       authenticationDatabase: "",
+      authenticationPrivateKey: "",
       sid: "",
       serviceName: "",
       sshHost: "",

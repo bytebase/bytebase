@@ -134,10 +134,12 @@ const selectedBranchList = computed<string[]>({
         const sheet = localSheetStore.createLocalSheet(
           `${project.value.name}/sheets/${uid}`
         );
-        updatedChanges.push({
-          sheet: sheet.name,
-          source: name,
-        });
+        updatedChanges.push(
+          Change.fromPartial({
+            sheet: sheet.name,
+            source: name,
+          })
+        );
       }
     }
     changes.value = updatedChanges;
