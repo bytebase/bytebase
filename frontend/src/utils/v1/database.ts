@@ -12,6 +12,7 @@ import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasProjectPermissionV2,
+  hasWorkspaceLevelProjectPermission,
 } from "../iam";
 import { isDev, semverCompare } from "../util";
 import {
@@ -121,9 +122,7 @@ export const isDatabaseV1Queryable = (
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
-  ) {
+  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
     return true;
   }
 
@@ -143,9 +142,7 @@ export const isTableQueryable = (
   table: string,
   user: User
 ): boolean => {
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.query")
-  ) {
+  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
     // The current user has the super privilege to access all databases.
     // AKA. Owners and DBAs
     return true;
