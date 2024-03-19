@@ -14,114 +14,141 @@
           $t("project.members.grant-access")
         }}</NButton>
       </div>
-      <div v-for="role in roleList" :key="role.role" class="mb-4">
-        <template v-if="role.singleBindingList.length > 0">
-          <div
-            class="w-full px-2 py-2 flex flex-row justify-start items-center"
-          >
-            <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
-            <NTooltip
-              :disabled="
-                allowRemoveRole(role.role) ||
-                role.role !== PresetRoleType.PROJECT_OWNER
-              "
-            >
-              <template #trigger>
-                <NButton
-                  tag="div"
-                  text
-                  class="cursor-pointer opacity-60 hover:opacity-100"
-                  :disabled="!allowRemoveRole(role.role)"
-                  @click="handleDeleteRole(role.role)"
-                >
-                  <heroicons-outline:trash class="w-4 h-4 ml-1" />
-                </NButton>
-              </template>
-              <div>
-                {{ $t("project.members.cannot-remove-last-owner") }}
-              </div>
-            </NTooltip>
-          </div>
-          <BBGrid
-            :column-list="getGridColumns(role.role)"
-            :row-clickable="false"
-            :data-source="role.singleBindingList"
-            class="border"
-          >
-            <template #item="{ item }: SingleBindingRow">
-              <div class="bb-grid-cell">
-                <span
-                  class="text-blue-600 cursor-pointer hover:opacity-80"
-                  @click="editingBinding = item.rawBinding"
-                >
-                  {{
-                    item.rawBinding.condition?.title ||
-                    displayRoleTitle(item.rawBinding.role)
-                  }}
-                </span>
-              </div>
-              <template
-                v-if="isRoleShouldShowDatabaseRelatedColumns(role.role)"
-              >
-                <div class="bb-grid-cell">
-                  <span class="shrink-0 mr-1">{{
-                    extractDatabaseName(item.databaseResource)
-                  }}</span>
-                  <template v-if="item.databaseResource">
-                    <InstanceV1Name
-                      class="text-gray-500"
-                      :instance="
-                        extractDatabase(item.databaseResource).instanceEntity
-                      "
-                      :link="false"
-                    />
-                  </template>
-                </div>
-                <div class="bb-grid-cell">
-                  {{ extractSchemaName(item.databaseResource) }}
-                </div>
-                <div class="bb-grid-cell">
-                  {{ extractTableName(item.databaseResource) }}
-                </div>
-              </template>
-              <div class="bb-grid-cell">
-                {{ extractExpiration(item.expiration) }}
-                <RoleExpiredTip v-if="checkRoleExpired(item)" />
-              </div>
-              <div class="bb-grid-cell">
-                <RoleDescription :description="item.description || ''" />
-              </div>
-              <div class="bb-grid-cell space-x-1">
-                <NTooltip trigger="hover">
-                  <template #trigger>
-                    <NButton
-                      tag="div"
-                      text
-                      class="cursor-pointer opacity-60 hover:opacity-100"
-                      :disabled="!allowDeleteCondition(item)"
-                      @click="handleDeleteCondition(item)"
-                    >
-                      <heroicons-outline:trash class="w-4 h-4" />
-                    </NButton>
-                  </template>
-                  <template #default>
-                    <template v-if="!allowDeleteCondition(item)">
-                      {{ $t("project.members.cannot-remove-last-owner") }}
-                    </template>
-                    <template v-else>
-                      {{ $t("common.delete") }}
-                    </template>
-                  </template>
-                </NTooltip>
-              </div>
+      <template v-if="member.workspaceLevelProjectRoles.length > 0">
+        <p class="text-lg px-1 pb-2 w-full border-b mb-3">
+          {{ $t("project.members.workspace-level-roles") }}
+        </p>
+        <div class="flex flex-row items-center flex-wrap gap-2">
+          <NTag v-for="role in member.workspaceLevelProjectRoles" :key="role">
+            <template #avatar>
+              <NTooltip>
+                <template #trigger>
+                  <Building2Icon class="w-4 h-auto" />
+                </template>
+                {{ $t("project.members.workspace-level-roles") }}
+              </NTooltip>
             </template>
-          </BBGrid>
-        </template>
-      </div>
+            {{ displayRoleTitle(role) }}
+          </NTag>
+        </div>
+      </template>
+      <template v-if="roleList.length > 0">
+        <p
+          v-if="member.workspaceLevelProjectRoles.length > 0"
+          class="text-lg px-1 pb-2 w-full border-b mt-4"
+        >
+          {{ $t("project.members.project-level-roles") }}
+        </p>
+        <div v-for="role in roleList" :key="role.role" class="mb-4">
+          <template v-if="role.singleBindingList.length > 0">
+            <div
+              class="w-full px-2 py-2 flex flex-row justify-start items-center"
+            >
+              <span class="textlabel">{{ displayRoleTitle(role.role) }}</span>
+              <NTooltip
+                :disabled="
+                  allowRemoveRole(role.role) ||
+                  role.role !== PresetRoleType.PROJECT_OWNER
+                "
+              >
+                <template #trigger>
+                  <NButton
+                    tag="div"
+                    text
+                    class="cursor-pointer opacity-60 hover:opacity-100"
+                    :disabled="!allowRemoveRole(role.role)"
+                    @click="handleDeleteRole(role.role)"
+                  >
+                    <heroicons-outline:trash class="w-4 h-4 ml-1" />
+                  </NButton>
+                </template>
+                <div>
+                  {{ $t("project.members.cannot-remove-last-owner") }}
+                </div>
+              </NTooltip>
+            </div>
+            <BBGrid
+              :column-list="getGridColumns(role.role)"
+              :row-clickable="false"
+              :data-source="role.singleBindingList"
+              class="border"
+            >
+              <template #item="{ item }: SingleBindingRow">
+                <div class="bb-grid-cell">
+                  <span
+                    class="text-blue-600 cursor-pointer hover:opacity-80"
+                    @click="editingBinding = item.rawBinding"
+                  >
+                    {{
+                      item.rawBinding.condition?.title ||
+                      displayRoleTitle(item.rawBinding.role)
+                    }}
+                  </span>
+                </div>
+                <template
+                  v-if="isRoleShouldShowDatabaseRelatedColumns(role.role)"
+                >
+                  <div class="bb-grid-cell">
+                    <span class="shrink-0 mr-1">{{
+                      extractDatabaseName(item.databaseResource)
+                    }}</span>
+                    <template v-if="item.databaseResource">
+                      <InstanceV1Name
+                        class="text-gray-500"
+                        :instance="
+                          extractDatabase(item.databaseResource).instanceEntity
+                        "
+                        :link="false"
+                      />
+                    </template>
+                  </div>
+                  <div class="bb-grid-cell">
+                    {{ extractSchemaName(item.databaseResource) }}
+                  </div>
+                  <div class="bb-grid-cell">
+                    {{ extractTableName(item.databaseResource) }}
+                  </div>
+                </template>
+                <div class="bb-grid-cell">
+                  {{ extractExpiration(item.expiration) }}
+                  <RoleExpiredTip v-if="checkRoleExpired(item)" />
+                </div>
+                <div class="bb-grid-cell">
+                  <RoleDescription :description="item.description || ''" />
+                </div>
+                <div class="bb-grid-cell space-x-1">
+                  <NTooltip trigger="hover">
+                    <template #trigger>
+                      <NButton
+                        tag="div"
+                        text
+                        class="cursor-pointer opacity-60 hover:opacity-100"
+                        :disabled="!allowDeleteCondition(item)"
+                        @click="handleDeleteCondition(item)"
+                      >
+                        <heroicons-outline:trash class="w-4 h-4" />
+                      </NButton>
+                    </template>
+                    <template #default>
+                      <template v-if="!allowDeleteCondition(item)">
+                        {{ $t("project.members.cannot-remove-last-owner") }}
+                      </template>
+                      <template v-else>
+                        {{ $t("common.delete") }}
+                      </template>
+                    </template>
+                  </NTooltip>
+                </div>
+              </template>
+            </BBGrid>
+          </template>
+        </div>
+      </template>
       <template #footer>
         <div class="w-full flex flex-row justify-between items-center">
           <div>
             <BBButtonConfirm
+              :disabled="!allowRevokeMember"
               :style="'DELETE'"
               :button-text="$t('project.members.revoke-member')"
               :require-confirm="true"
@@ -160,12 +187,14 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniqBy } from "lodash-es";
+import { Building2Icon } from "lucide-vue-next";
 import { NButton, NTooltip, useDialog } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, BBGridRow } from "@/bbkit";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
+  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -181,17 +210,24 @@ import {
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle } from "@/utils";
+import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
 import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import EditProjectRolePanel from "../ProjectRoleTable/EditProjectRolePanel.vue";
+import { ProjectMember } from "../types";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
-import { ComposedProjectMember, SingleBinding } from "./types";
 
-export type SingleBindingRow = BBGridRow<SingleBinding>;
+interface SingleBinding {
+  databaseResource?: DatabaseResource;
+  expiration?: Date;
+  description?: string;
+  rawBinding: Binding;
+}
+
+type SingleBindingRow = BBGridRow<SingleBinding>;
 
 interface LocalState {
   showAddMemberPanel: boolean;
@@ -199,16 +235,17 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  member: ComposedProjectMember;
+  member: ProjectMember;
 }>();
 
-const emits = defineEmits<{
+defineEmits<{
   (event: "close"): void;
 }>();
 
 const { t } = useI18n();
 const dialog = useDialog();
 const userStore = useUserStore();
+const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
@@ -228,6 +265,18 @@ const panelTitle = computed(() => {
   return t("project.members.edit", {
     member: `${props.member.user.title}(${props.member.user.email})`,
   });
+});
+
+const allowRevokeMember = computed(() => {
+  if (props.member.projectRoleBindings.length === 0) {
+    return false;
+  }
+
+  return hasProjectPermissionV2(
+    props.project,
+    currentUser.value,
+    "bb.projects.setIamPolicy"
+  );
 });
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
@@ -546,9 +595,6 @@ watch(
           singleBindingList: singleBindingList,
         });
       }
-    }
-    if (tempRoleList.length === 0) {
-      emits("close");
     }
 
     // Sort by role type.
