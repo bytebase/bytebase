@@ -128,28 +128,22 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 
 // GetPlanLimitValue gets the limit value for the plan.
 func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.PlanLimit) int64 {
-	subscription := s.LoadSubscription(ctx)
-	if subscription == nil || subscription.Plan == api.FREE {
-		// Free plan uses the maximum value from plan.yaml.
-		v, ok := enterprise.PlanLimitValues[name]
-		if !ok {
-			return 0
-		}
-		return v[api.FREE]
+	v, ok := enterprise.PlanLimitValues[name]
+	if !ok {
+		return 0
 	}
 
-	switch name {
-	case enterprise.PlanLimitMaximumEnvironment:
-		return math.MaxInt64
-	case enterprise.PlanLimitMaximumUser:
-		if subscription.Seat == 0 {
-			return math.MaxInt64
-		}
-		return int64(subscription.Seat)
-	case enterprise.PlanLimitMaximumInstance:
-		return int64(subscription.InstanceCount)
+	subscription := s.LoadSubscription(ctx)
+
+	limit := v[subscription.Plan]
+	if subscription.Trialing {
+		limit = v[api.FREE]
 	}
-	return 0
+
+	if limit == -1 {
+		return math.MaxInt64
+	}
+	return limit
 }
 
 // RefreshCache will invalidate and refresh the subscription cache.
