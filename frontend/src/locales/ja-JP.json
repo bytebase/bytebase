@@ -2002,7 +2002,9 @@
       "roles": "ロール",
       "search-member": "メンバーを検索",
       "revoke-members": "これらのメンバーを取り消す",
-      "clean-up-expired-roles": "期限切れのロールをクリーンアップする"
+      "clean-up-expired-roles": "期限切れのロールをクリーンアップする",
+      "workspace-level-roles": "ワークスペースレベルの役割",
+      "project-level-roles": "プロジェクトレベルの役割"
     },
     "mode": {
       "standard": "標準モード",

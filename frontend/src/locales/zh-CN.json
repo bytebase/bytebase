@@ -2002,7 +2002,9 @@
       "roles": "角色",
       "search-member": "搜索成员",
       "revoke-members": "撤销成员",
-      "clean-up-expired-roles": "清除过期的角色"
+      "clean-up-expired-roles": "清除过期的角色",
+      "workspace-level-roles": "工作空间级别角色",
+      "project-level-roles": "项目级别角色"
     },
     "mode": {
       "standard": "标准模式",

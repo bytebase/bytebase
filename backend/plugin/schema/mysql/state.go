@@ -3,7 +3,9 @@ package mysql
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -109,6 +111,9 @@ type tableState struct {
 	engine                string
 	collation             string
 	partitionStateWrapper *partitionStateWrapper
+	// TODO(zp): more flexible struct, use in parseToMetadata.
+	// Migrate to use it.
+	partitionStateV2 *partitionStateV2
 }
 
 func (t *tableState) toString(buf io.StringWriter) error {
@@ -277,6 +282,11 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		fks = append(fks, fk.convertToForeignKeyMetadata())
 	}
 
+	var partitions []*storepb.TablePartitionMetadata
+	if t.partitionStateV2 != nil {
+		partitions = t.partitionStateV2.convertToPartitionMetadata()
+	}
+
 	return &storepb.TableMetadata{
 		Name:        t.name,
 		Columns:     columns,
@@ -285,6 +295,7 @@ func (t *tableState) convertToTableMetadata() *storepb.TableMetadata {
 		Comment:     t.comment,
 		Engine:      t.engine,
 		Collation:   t.collation,
+		Partitions:  partitions,
 	}
 }
 
@@ -500,6 +511,165 @@ func (i *indexState) toString(buf io.StringWriter) error {
 	return nil
 }
 
+type partitionStateV2 struct {
+	info       partitionInfo
+	subInfo    *partitionInfo
+	partitions map[string]*partitionDefinition
+}
+
+type partitionInfo struct {
+	tp         storepb.TablePartitionMetadata_Type
+	useDefault int
+	expr       string
+}
+
+type partitionDefinition struct {
+	id            int
+	name          string
+	value         string
+	subPartitions map[string]*partitionDefinition
+}
+
+func (p *partitionStateV2) isValid() error {
+	if p.info.useDefault == 0 && len(p.partitions) == 0 {
+		return errors.New("empty partition list")
+	}
+
+	if p.info.useDefault != 0 && len(p.partitions) > 0 {
+		return errors.New("specify partitions clause and use default partition are not allowed at the same time")
+	}
+
+	if p.info.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+		return errors.New("invalid partition type")
+	}
+
+	if p.subInfo != nil {
+		if p.subInfo.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+			return errors.New("invalid subpartition type")
+		}
+
+		anySpecificPartition := len(p.partitions) > 0
+		if anySpecificPartition {
+			var anySpecificSubpartition bool
+			for _, partition := range p.partitions {
+				if len(partition.subPartitions) > 0 {
+					anySpecificSubpartition = true
+					break
+				}
+			}
+
+			if anySpecificSubpartition && p.subInfo.useDefault != 0 {
+				return errors.New("specify subpartitions clause and use default subpartition are not allowed at the same time")
+			}
+		}
+	}
+
+	return nil
+}
+
+func (p *partitionStateV2) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
+	// There are `useDefault` fields in partitionInfo structure, which may use with empty parititions fields.
+	// For example, `PARTITION BY HASH (id) PARTITIONS 4 SUBPARTITION BY KEY(id) SUBPARTITIONS 5;` may cause the `partitions` field to be empty.
+	// To be compatible with our protobuf definition, which requires at least one partition, we need to generate the default partition name. And, value
+	// is not important, because only the KEY and HASH partition type support PARTITIONS clause.
+	// TODO(parser-group): recheck the MySQL behavior of generating the default partition name and value.
+	if err := p.isValid(); err != nil {
+		slog.Warn(err.Error())
+		return nil
+	}
+	var partitions []*storepb.TablePartitionMetadata
+	if p.info.useDefault != 0 {
+		generator := newPartitionDefaultNameGenerator("")
+		for i := 0; i < p.info.useDefault; i++ {
+			partitions = append(partitions, &storepb.TablePartitionMetadata{
+				Name:       generator.next(),
+				Type:       p.info.tp,
+				Expression: p.info.expr,
+				Value:      "",
+				UseDefault: strconv.Itoa(p.info.useDefault),
+			})
+		}
+		// The reason of we do not consider subUseDefault in this case is that MySQL does not support
+		// subpartitions for HASH and KEY partitioning, and they are the only partitioning types that support
+		// the PARTITIONS clause.
+	} else {
+		sortedPartitions := make([]*partitionDefinition, 0, len(p.partitions))
+		for _, partition := range p.partitions {
+			sortedPartitions = append(sortedPartitions, partition)
+		}
+		sort.Slice(sortedPartitions, func(i, j int) bool {
+			return sortedPartitions[i].id < sortedPartitions[j].id
+		})
+		for _, partition := range sortedPartitions {
+			partitionMetadata := &storepb.TablePartitionMetadata{
+				Name:       partition.name,
+				Type:       p.info.tp,
+				Expression: p.info.expr,
+				Value:      partition.value,
+			}
+			if p.subInfo != nil {
+				if p.subInfo.useDefault != 0 {
+					subUseDefault := strconv.Itoa(p.subInfo.useDefault)
+					generator := newPartitionDefaultNameGenerator(partition.name)
+					for i := 0; i < p.subInfo.useDefault; i++ {
+						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
+							Name:       generator.next(),
+							Type:       p.subInfo.tp,
+							Expression: p.subInfo.expr,
+							UseDefault: subUseDefault,
+							Value:      "",
+						})
+					}
+				} else {
+					sortedSubpartitions := make([]*partitionDefinition, 0, len(partition.subPartitions))
+					for _, subPartition := range partition.subPartitions {
+						sortedSubpartitions = append(sortedSubpartitions, subPartition)
+					}
+					sort.Slice(sortedSubpartitions, func(i, j int) bool {
+						return sortedSubpartitions[i].id < sortedSubpartitions[j].id
+					})
+					for _, subPartition := range sortedSubpartitions {
+						partitionMetadata.Subpartitions = append(partitionMetadata.Subpartitions, &storepb.TablePartitionMetadata{
+							Name:       subPartition.name,
+							Type:       p.subInfo.tp,
+							Expression: p.subInfo.expr,
+							Value:      subPartition.value,
+						})
+					}
+				}
+			}
+			partitions = append(partitions, partitionMetadata)
+		}
+	}
+
+	return partitions
+}
+
+// partitionDefaultNameGenerator is the name generator of MySQL partition, which use the default clause.
+// The behavior of this generator should be compatible with MySQL.
+// - If do not specify the `parentName`, the default partition name series is "p0", "p1", "p2", ...
+// - Otherwise, the default partition name series is "parentNamesp0", "parentNamesp1", "parentNamesp2", ...
+type partitionDefaultNameGenerator struct {
+	parentName string
+	count      int
+}
+
+func newPartitionDefaultNameGenerator(parentName string) *partitionDefaultNameGenerator {
+	return &partitionDefaultNameGenerator{
+		parentName: parentName,
+		count:      -1,
+	}
+}
+
+func (g *partitionDefaultNameGenerator) next() string {
+	g.count++
+
+	if g.parentName == "" {
+		return fmt.Sprintf("p%d", g.count)
+	}
+	return fmt.Sprintf("%ssp%d", g.parentName, g.count)
+}
+
 // Currently, our storepb.TablePartitionMetadata is too redundant, we need to convert it to a more compact format.
 // In the future, we should update the storepb.TablePartitionMetadata to a more compact format.
 type partitionStateWrapper struct {
@@ -510,7 +680,7 @@ type partitionStateWrapper struct {
 
 func (p *partitionStateWrapper) hasSubpartitions() (bool, storepb.TablePartitionMetadata_Type, string) {
 	for _, partition := range p.partitions {
-		if partition.subPartition != nil && len(partition.subPartition.partitions) > 0 {
+		if partition.subPartition != nil && partition.subPartition.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
 			return true, partition.subPartition.tp, partition.subPartition.expr
 		}
 	}
@@ -523,30 +693,6 @@ type partitionState struct {
 	name         string
 	value        string
 	subPartition *partitionStateWrapper
-}
-
-// nolint
-func (p *partitionStateWrapper) convertToPartitionMetadata() []*storepb.TablePartitionMetadata {
-	partitions := make([]*storepb.TablePartitionMetadata, 0, len(p.partitions))
-	partitionStates := make([]*partitionState, 0, len(p.partitions))
-	for _, partition := range p.partitions {
-		partitionStates = append(partitionStates, partition)
-	}
-	sort.Slice(partitionStates, func(i, j int) bool {
-		return partitionStates[i].id < partitionStates[j].id
-	})
-
-	for _, partition := range partitionStates {
-		partitions = append(partitions, &storepb.TablePartitionMetadata{
-			Name:          partition.name,
-			Type:          p.tp,
-			Expression:    p.expr,
-			Value:         partition.value,
-			Subpartitions: partition.subPartition.convertToPartitionMetadata(),
-		})
-	}
-
-	return partitions
 }
 
 func convertToPartitionStateWrapper(partitions []*storepb.TablePartitionMetadata) *partitionStateWrapper {

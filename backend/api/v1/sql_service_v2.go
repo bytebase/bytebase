@@ -79,7 +79,7 @@ func (s *SQLService) ExportV2(ctx context.Context, request *v1pb.ExportRequest) 
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -177,7 +177,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, false /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -234,7 +234,7 @@ func (s *SQLService) QueryV2(ctx context.Context, request *v1pb.QueryRequest) (*
 	allowExport := true
 	// AllowExport is a validate only check.
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		err := s.accessCheck(ctx, instance, environment, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
+		err := s.accessCheck(ctx, instance, user, request.Statement, spans, request.Limit, false /* isAdmin */, true /* isExport */)
 		allowExport = (err == nil)
 	}
 
@@ -659,7 +659,6 @@ func (s *SQLService) buildListDatabaseNamesFunc(instance *store.InstanceMessage)
 func (s *SQLService) accessCheck(
 	ctx context.Context,
 	instance *store.InstanceMessage,
-	environment *store.EnvironmentMessage,
 	user *store.UserMessage,
 	statement string,
 	spans []*base.QuerySpan,
@@ -669,15 +668,6 @@ func (s *SQLService) accessCheck(
 	// Check if the caller is admin for exporting with admin mode.
 	if isAdmin && isExport && (user.Role != api.WorkspaceAdmin && user.Role != api.WorkspaceDBA) {
 		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
-	}
-
-	// Check if the environment is open for query privileges.
-	ok, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	if ok {
-		return nil
 	}
 
 	for _, span := range spans {

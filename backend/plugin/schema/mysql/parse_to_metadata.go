@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -306,5 +307,239 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 			}
 			table.indexes[name] = idx
 		}
+	}
+}
+
+func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContext) {
+	if t.err != nil {
+		return
+	}
+	if _, parentIsCreateTable := ctx.GetParent().(*mysql.CreateTableContext); !parentIsCreateTable {
+		return
+	}
+	if t.currentTable == "" {
+		return
+	}
+	table := t.state.schemas[""].tables[t.currentTable]
+	if table == nil {
+		return
+	}
+
+	parititonInfo := partitionInfo{}
+
+	iTypeDefCtx := ctx.PartitionTypeDef()
+	if iTypeDefCtx != nil {
+		switch typeDefCtx := iTypeDefCtx.(type) {
+		case *mysql.PartitionDefKeyContext:
+			parititonInfo.tp = storepb.TablePartitionMetadata_KEY
+			if typeDefCtx.LINEAR_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LINEAR_KEY
+			}
+			// TODO(zp): handle the key algorithm
+			if typeDefCtx.IdentifierList() != nil {
+				identifiers := extractIdentifierList(typeDefCtx.IdentifierList())
+				for i, identifier := range identifiers {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifiers[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				parititonInfo.expr = strings.Join(identifiers, ",")
+			}
+		case *mysql.PartitionDefHashContext:
+			parititonInfo.tp = storepb.TablePartitionMetadata_HASH
+			if typeDefCtx.LINEAR_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LINEAR_HASH
+			}
+			bitExprText := typeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(typeDefCtx.BitExpr())
+			bitExprFields := strings.Split(bitExprText, ",")
+			for i, bitExprField := range bitExprFields {
+				bitExprField := strings.TrimSpace(bitExprField)
+				if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+					bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+				}
+			}
+			parititonInfo.expr = strings.Join(bitExprFields, ",")
+		case *mysql.PartitionDefRangeListContext:
+			if typeDefCtx.RANGE_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_RANGE
+			} else {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LIST
+			}
+			if typeDefCtx.COLUMNS_SYMBOL() != nil {
+				if parititonInfo.tp == storepb.TablePartitionMetadata_RANGE {
+					parititonInfo.tp = storepb.TablePartitionMetadata_RANGE_COLUMNS
+				} else {
+					parititonInfo.tp = storepb.TablePartitionMetadata_LIST_COLUMNS
+				}
+
+				identifierList := extractIdentifierList(typeDefCtx.IdentifierList())
+				for i, identifier := range identifierList {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifierList[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				parititonInfo.expr = strings.Join(identifierList, ",")
+			} else {
+				bitExprText := typeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(typeDefCtx.BitExpr())
+				bitExprFields := strings.Split(bitExprText, ",")
+				for i, bitExprField := range bitExprFields {
+					bitExprField := strings.TrimSpace(bitExprField)
+					if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+						bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+					}
+				}
+				parititonInfo.expr = strings.Join(bitExprFields, ",")
+			}
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+	}
+
+	if n := ctx.Real_ulong_number(); n != nil {
+		number, err := strconv.ParseInt(n.GetText(), 10, 64)
+		if err != nil {
+			t.err = errors.Wrap(err, "failed to parse partition number")
+			return
+		}
+		parititonInfo.useDefault = int(number)
+	}
+
+	var subInfo *partitionInfo
+	if subPartitionCtx := ctx.SubPartitions(); subPartitionCtx != nil {
+		subInfo = new(partitionInfo)
+		if subPartitionCtx.HASH_SYMBOL() != nil {
+			subInfo.tp = storepb.TablePartitionMetadata_HASH
+			if subPartitionCtx.LINEAR_SYMBOL() != nil {
+				subInfo.tp = storepb.TablePartitionMetadata_LINEAR_HASH
+			}
+			if bitExprCtx := subPartitionCtx.BitExpr(); bitExprCtx != nil {
+				bitExprText := bitExprCtx.GetParser().GetTokenStream().GetTextFromRuleContext(bitExprCtx)
+				bitExprFields := strings.Split(bitExprText, ",")
+				for i, bitExprField := range bitExprFields {
+					bitExprField := strings.TrimSpace(bitExprField)
+					if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+						bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+					}
+				}
+				subInfo.expr = strings.Join(bitExprFields, ",")
+			}
+		} else if subPartitionCtx.KEY_SYMBOL() != nil {
+			subInfo.tp = storepb.TablePartitionMetadata_KEY
+			if subPartitionCtx.LINEAR_SYMBOL() != nil {
+				subInfo.tp = storepb.TablePartitionMetadata_LINEAR_KEY
+			}
+			if identifierListParensCtx := subPartitionCtx.IdentifierListWithParentheses(); identifierListParensCtx != nil {
+				identifiers := extractIdentifierList(identifierListParensCtx.IdentifierList())
+				for i, identifier := range identifiers {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifiers[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				subInfo.expr = strings.Join(identifiers, ",")
+			}
+		}
+
+		if n := subPartitionCtx.Real_ulong_number(); n != nil {
+			number, err := strconv.ParseInt(n.GetText(), 10, 64)
+			if err != nil {
+				t.err = errors.Wrap(err, "failed to parse sub partition number")
+				return
+			}
+			subInfo.useDefault = int(number)
+		}
+	}
+
+	partitionDefinitions := make(map[string]*partitionDefinition)
+	allPartDefs := ctx.PartitionDefinitions().AllPartitionDefinition()
+	for i, partDef := range allPartDefs {
+		pd := &partitionDefinition{
+			id:   i + 1,
+			name: mysqlparser.NormalizeMySQLIdentifier(partDef.Identifier()),
+		}
+		switch parititonInfo.tp {
+		case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
+			if partDef.LESS_SYMBOL() == nil {
+				t.err = errors.New("RANGE partition but no LESS THAN clause")
+				return
+			}
+			if partDef.PartitionValueItemListParen() != nil {
+				itemsText := partDef.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partDef.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partDef.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+				itemsTextFields := strings.Split(itemsText, ",")
+				for i, itemsTextField := range itemsTextFields {
+					itemsTextField := strings.TrimSpace(itemsTextField)
+					if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+						itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+					}
+					itemsTextFields[i] = itemsTextField
+				}
+				pd.value = strings.Join(itemsTextFields, ",")
+			} else {
+				pd.value = "MAXVALUE"
+			}
+		case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
+			if partDef.PartitionValuesIn() == nil {
+				t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
+				return
+			}
+			var itemsText string
+			if partDef.PartitionValuesIn().OPEN_PAR_SYMBOL() != nil {
+				itemsText = partDef.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partDef.PartitionValuesIn().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partDef.PartitionValuesIn().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+			} else {
+				itemsText = partDef.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromRuleContext(partDef.PartitionValuesIn().PartitionValueItemListParen(0))
+			}
+
+			itemsTextFields := strings.Split(itemsText, ",")
+			for i, itemsTextField := range itemsTextFields {
+				itemsTextField := strings.TrimSpace(itemsTextField)
+				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+				}
+				itemsTextFields[i] = itemsTextField
+			}
+			pd.value = strings.Join(itemsTextFields, ",")
+		case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+
+		if subInfo != nil {
+			allSubpartitions := partDef.AllSubpartitionDefinition()
+			if subInfo.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED && len(allSubpartitions) > 0 {
+				t.err = errors.New("specify subpartition definition but no subpartition type specified")
+				return
+			}
+			subPartitionDefinitions := make(map[string]*partitionDefinition)
+			for i, sub := range allSubpartitions {
+				subpd := &partitionDefinition{
+					id:   i + 1,
+					name: mysqlparser.NormalizeMySQLTextOrIdentifier(sub.TextOrIdentifier()),
+				}
+				subPartitionDefinitions[subpd.name] = subpd
+			}
+			pd.subPartitions = subPartitionDefinitions
+		}
+
+		partitionDefinitions[pd.name] = pd
+	}
+
+	table.partitionStateV2 = &partitionStateV2{
+		info:       parititonInfo,
+		subInfo:    subInfo,
+		partitions: partitionDefinitions,
 	}
 }
