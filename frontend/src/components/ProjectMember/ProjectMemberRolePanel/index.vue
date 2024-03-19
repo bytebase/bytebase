@@ -15,7 +15,7 @@
         }}</NButton>
       </div>
       <template v-if="member.workspaceLevelProjectRoles.length > 0">
-        <p class="text-lg p-2 w-full border-b mb-4">
+        <p class="text-lg px-1 pb-2 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
         <div class="flex flex-row items-center flex-wrap gap-2">
@@ -35,7 +35,7 @@
       <template v-if="roleList.length > 0">
         <p
           v-if="member.workspaceLevelProjectRoles.length > 0"
-          class="text-lg p-2 w-full border-b mt-4"
+          class="text-lg px-1 pb-2 w-full border-b mt-4"
         >
           {{ $t("project.members.project-level-roles") }}
         </p>
