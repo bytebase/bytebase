@@ -35,7 +35,6 @@ func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	title := string(ctx.Rule.Type)
 
 	var adviceList []advisor.Advice
-
 	var hasDDL, hasDML bool
 	for _, stmt := range stmtList {
 		checker := &mysqlparser.StatementTypeChecker{}

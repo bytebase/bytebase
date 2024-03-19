@@ -1,6 +1,8 @@
 package tidb
 
 import (
+	"fmt"
+
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
@@ -33,12 +35,43 @@ func (*StatementDisallowMixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 	title := string(ctx.Rule.Type)
 
+	var adviceList []advisor.Advice
 	var hasDDL, hasDML bool
 	for _, stmtNode := range root {
+		var isDDL, isDML bool
 		if _, ok := stmtNode.(ast.DDLNode); ok {
-			hasDDL = true
+			isDDL = true
 		}
 		if _, ok := stmtNode.(ast.DMLNode); ok {
+			isDML = true
+		}
+
+		switch ctx.ChangeType {
+		case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL, storepb.PlanCheckRunConfig_DDL_GHOST:
+			if isDML {
+				adviceList = append(adviceList, advisor.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("Alter schema can only run DDL, \"%s\" is not DDL", stmtNode.Text()),
+					Code:    advisor.StatementDisallowMixDDLDML,
+					Line:    stmtNode.OriginTextPosition(),
+				})
+			}
+		case storepb.PlanCheckRunConfig_DML:
+			if isDDL {
+				adviceList = append(adviceList, advisor.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmtNode.Text()),
+					Code:    advisor.StatementDisallowMixDDLDML,
+					Line:    stmtNode.OriginTextPosition(),
+				})
+			}
+		}
+		if isDDL {
+			hasDDL = true
+		}
+		if isDML {
 			hasDML = true
 		}
 		if hasDDL && hasDML {
@@ -47,22 +80,22 @@ func (*StatementDisallowMixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 
 	if hasDDL && hasDML {
-		return []advisor.Advice{
-			{
-				Status:  level,
-				Title:   title,
-				Content: "Mixing DDL with DML is not allowed",
-				Code:    advisor.StatementDisallowMixDDLDML,
-			},
-		}, nil
+		adviceList = append(adviceList, advisor.Advice{
+			Status:  level,
+			Title:   title,
+			Content: "Mixing DDL with DML is not allowed",
+			Code:    advisor.StatementDisallowMixDDLDML,
+		})
 	}
 
-	return []advisor.Advice{
-		{
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
-		},
-	}, nil
+		})
+	}
+
+	return adviceList, nil
 }
