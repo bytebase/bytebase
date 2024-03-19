@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
@@ -32,12 +34,36 @@ func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 	title := string(ctx.Rule.Type)
 
-	checker := &mysqlparser.StatementTypeChecker{}
+	var adviceList []advisor.Advice
 
-	hasDDL := false
-	hasDML := false
+	var hasDDL, hasDML bool
 	for _, stmt := range stmtList {
+		checker := &mysqlparser.StatementTypeChecker{}
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+
+		switch ctx.ChangeType {
+		case storepb.PlanCheckRunConfig_DDL, storepb.PlanCheckRunConfig_SDL, storepb.PlanCheckRunConfig_DDL_GHOST:
+			if checker.IsDML {
+				adviceList = append(adviceList, advisor.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("Alter schema can only run DDL, \"%s\" is not DDL", checker.Text),
+					Code:    advisor.StatementDisallowMixDDLDML,
+					Line:    stmt.BaseLine,
+				})
+			}
+		case storepb.PlanCheckRunConfig_DML:
+			if checker.IsDDL {
+				adviceList = append(adviceList, advisor.Advice{
+					Status:  level,
+					Title:   title,
+					Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", checker.Text),
+					Code:    advisor.StatementDisallowMixDDLDML,
+					Line:    stmt.BaseLine,
+				})
+			}
+		}
+
 		if checker.IsDDL {
 			hasDDL = true
 		}
@@ -47,22 +73,22 @@ func (*StatementDisallowmixDDLDMLAdvisor) Check(ctx advisor.Context, _ string) (
 	}
 
 	if hasDDL && hasDML {
-		return []advisor.Advice{
-			{
-				Status:  level,
-				Title:   title,
-				Content: "Mixing DDL with DML is not allowed",
-				Code:    advisor.StatementDisallowMixDDLDML,
-			},
-		}, nil
+		adviceList = append(adviceList, advisor.Advice{
+			Status:  level,
+			Title:   title,
+			Content: "Mixing DDL with DML is not allowed",
+			Code:    advisor.StatementDisallowMixDDLDML,
+		})
 	}
 
-	return []advisor.Advice{
-		{
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
-		},
-	}, nil
+		})
+	}
+
+	return adviceList, nil
 }
