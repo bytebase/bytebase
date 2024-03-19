@@ -131,7 +131,10 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         h(
           EllipsisText,
           { performant: true },
-          humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000)
+          {
+            default: () =>
+              humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
+          }
         ),
     },
     {
