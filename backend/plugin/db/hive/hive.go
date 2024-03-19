@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
-	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -96,7 +96,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	defer cursor.Close()
 
 	var rowCount int64
-	statements, err := standard.SplitSQL(statementsStr)
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
 	}
@@ -121,7 +121,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	defer cursor.Close()
 
 	var results []*v1pb.QueryResult
-	statements, err := standard.SplitSQL(statementsStr)
+	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}

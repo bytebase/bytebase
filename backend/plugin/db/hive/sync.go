@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+// TODO(tommy): database is empty string.
 // TODO(tommy): another approch for this is fetching data from metastore database.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instanceMetadata db.InstanceMetadata
