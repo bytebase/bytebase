@@ -2002,7 +2002,9 @@
       "roles": "Roles",
       "search-member": "Buscar miembro",
       "revoke-members": "Revocar miembros",
-      "clean-up-expired-roles": "Limpiar roles caducados"
+      "clean-up-expired-roles": "Limpiar roles caducados",
+      "workspace-level-roles": "Roles a nivel de espacio de trabajo",
+      "project-level-roles": "Roles a nivel de proyecto"
     },
     "mode": {
       "standard": "Modo Estándar",
