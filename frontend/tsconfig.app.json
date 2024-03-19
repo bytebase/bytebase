@@ -6,13 +6,12 @@
     "composite": true,
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
 
-    "verbatimModuleSyntax": false,
     "baseUrl": ".",
+    "lib": ["WebWorker", "ES2023"],
     "types": ["unplugin-icons/types/vue", "vite/client"],
     "paths": {
       "@/*": ["./src/*"],
       "@sql-lsp/*": ["./src/plugins/sql-lsp/*"]
-    },
-    "lib": ["WebWorker", "DOM", "ESNext"]
+    }
   }
 }
