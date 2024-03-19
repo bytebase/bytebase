@@ -671,15 +671,6 @@ func (s *SQLService) accessCheck(
 		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
 	}
 
-	// Check if the environment is open for query privileges.
-	ok, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
-	}
-	if ok {
-		return nil
-	}
-
 	for _, span := range spans {
 		for column := range span.SourceColumns {
 			databaseResourceURL := common.FormatDatabase(instance.ResourceID, column.Database)
