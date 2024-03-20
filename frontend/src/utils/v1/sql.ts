@@ -1,8 +1,12 @@
+import dayjs from "dayjs";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
 import { Engine } from "@/types/proto/v1/common";
 import { RowValue } from "@/types/proto/v1/sql_service";
 
-export const extractSQLRowValue = (value: RowValue) => {
+export const extractSQLRowValue = (value: RowValue | undefined) => {
+  if (typeof value === "undefined") {
+    return null;
+  }
   if (value.nullValue === NullValue.NULL_VALUE) {
     return null;
   }
@@ -84,4 +88,47 @@ export const generateSimpleSelectAllStatement = (
   }
 
   return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;
+};
+
+export const compareQueryRowValues = (
+  type: string,
+  a: RowValue,
+  b: RowValue
+): number => {
+  const valueA = extractSQLRowValue(a);
+  const valueB = extractSQLRowValue(b);
+  if (type === "INT" || type === "INTEGER") {
+    const intA = toInt(valueA);
+    const intB = toInt(valueB);
+    return intA - intB;
+  }
+  if (type === "FLOAT") {
+    const floatA = toFloat(valueA);
+    const floatB = toFloat(valueB);
+    return floatA - floatB;
+  }
+  if (type === "DATE" || type === "DATETIME") {
+    const dateA = dayjs(valueA);
+    const dateB = dayjs(valueB);
+    return dateA.isBefore(dateB) ? -1 : dateA.isAfter(dateB) ? 1 : 0;
+  }
+  const stringA = String(valueA);
+  const stringB = String(valueB);
+  return stringA < stringB ? -1 : stringA > stringB ? 1 : 0;
+};
+
+const toInt = (a: any) => {
+  return typeof a === "number"
+    ? a
+    : typeof a === "string"
+    ? parseInt(a, 10)
+    : Number(a);
+};
+
+const toFloat = (a: any) => {
+  return typeof a === "number"
+    ? a
+    : typeof a === "string"
+    ? parseFloat(a)
+    : Number(a);
 };
