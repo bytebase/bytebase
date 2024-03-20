@@ -84,6 +84,9 @@ func (checker *collationAllowlistChecker) EnterQuery(ctx *mysql.QueryContext) {
 
 // EnterCreateDatabase is called when production createDatabase is entered.
 func (checker *collationAllowlistChecker) EnterCreateDatabase(ctx *mysql.CreateDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	for _, option := range ctx.AllCreateDatabaseOption() {
 		if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
 			collation := mysqlparser.NormalizeMySQLCollationName(option.DefaultCollation().CollationName())
@@ -107,6 +110,9 @@ func (checker *collationAllowlistChecker) checkCollation(collation string, lineN
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateTableOptions() != nil {
 		for _, option := range ctx.CreateTableOptions().AllCreateTableOption() {
 			if option != nil && option.DefaultCollation() != nil && option.DefaultCollation().CollationName() != nil {
@@ -140,6 +146,9 @@ func (checker *collationAllowlistChecker) EnterCreateTable(ctx *mysql.CreateTabl
 
 // EnterAlterDatabase is called when production alterDatabase is entered.
 func (checker *collationAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDatabaseContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	for _, option := range ctx.AllAlterDatabaseOption() {
 		if option == nil || option.CreateDatabaseOption() == nil || option.CreateDatabaseOption().DefaultCollation() == nil || option.CreateDatabaseOption().DefaultCollation().CollationName() == nil {
 			continue
@@ -151,6 +160,9 @@ func (checker *collationAllowlistChecker) EnterAlterDatabase(ctx *mysql.AlterDat
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *collationAllowlistChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

@@ -81,6 +81,9 @@ func (checker *insertDisallowOrderByRandChecker) EnterQuery(ctx *mysql.QueryCont
 
 // EnterInsertStatement is called when production insertStatement is entered.
 func (checker *insertDisallowOrderByRandChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.InsertQueryExpression() == nil {
 		return
 	}

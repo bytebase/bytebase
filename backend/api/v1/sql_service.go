@@ -434,8 +434,9 @@ func (s *SQLService) doExport(ctx context.Context, request *v1pb.ExportRequest, 
 	if err != nil {
 		return nil, durationNs, err
 	}
-	if len(result) != 1 {
-		return nil, durationNs, errors.Errorf("expecting 1 result, but got %d", len(result))
+	// only return the last result
+	if len(result) > 1 {
+		result = result[len(result)-1:]
 	}
 
 	var content []byte
@@ -1199,16 +1200,9 @@ func (s *SQLService) preCheck(ctx context.Context, instanceName, connectionDatab
 			return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.PermissionDenied, "permission denied, require permission %q", iam.PermissionInstancesAdminExecute)
 		}
 	}
-	// Check if the environment is open for query privileges.
-	result, err := s.checkWorkspaceIAMPolicy(ctx, environment, isExport)
-	if err != nil {
-		return nil, nil, nil, advisor.Success, nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if !result {
-		// Check if the user has permission to execute the query.
-		if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
-			return nil, nil, nil, advisor.Success, nil, nil, err
-		}
+	// Check if the user has permission to execute the query.
+	if err := s.checkQueryRights(ctx, connectionDatabase, dataShare, statement, limit, user, instance, isExport); err != nil {
+		return nil, nil, nil, advisor.Success, nil, nil, err
 	}
 
 	// Run SQL review.
@@ -2280,56 +2274,6 @@ func (s *SQLService) extractResourceList(ctx context.Context, engine storepb.Eng
 	default:
 		return base.ExtractResourceList(engine, databaseName, "", statement)
 	}
-}
-
-func (s *SQLService) checkWorkspaceIAMPolicy(
-	ctx context.Context,
-	environment *store.EnvironmentMessage,
-	isExport bool,
-) (bool, error) {
-	role := api.ProjectQuerier
-	if isExport {
-		role = api.ProjectExporter
-	}
-
-	workspacePolicyResourceType := api.PolicyResourceTypeWorkspace
-	workspaceIAMPolicyType := api.PolicyTypeWorkspaceIAM
-	policy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
-		ResourceType: &workspacePolicyResourceType,
-		Type:         &workspaceIAMPolicyType,
-		ResourceUID:  &defaultWorkspaceResourceID,
-	})
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get workspace IAM policy")
-	}
-	if policy == nil {
-		return false, nil
-	}
-
-	v1pbPolicy, err := convertToPolicy("", policy)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to convert policy")
-	}
-
-	attributes := map[string]any{
-		"resource.environment_name": fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, environment.ResourceID),
-	}
-	formattedRole := fmt.Sprintf("roles/%s", role)
-	bindings := v1pbPolicy.GetWorkspaceIamPolicy().Bindings
-	for _, binding := range bindings {
-		if binding.Role != formattedRole {
-			continue
-		}
-
-		ok, err := evaluateQueryExportPolicyCondition(binding.Condition.Expression, attributes)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to evaluate condition")
-		}
-		if ok {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (s *SQLService) checkQueryRights(

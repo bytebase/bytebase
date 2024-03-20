@@ -68,6 +68,7 @@ func (*Provider) StoreLicense(_ context.Context, _ *enterprise.SubscriptionPatch
 func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscription {
 	subscription := &enterprise.Subscription{
 		InstanceCount: 0,
+		Seat:          0,
 		Plan:          api.FREE,
 		OrgID:         aws.ToString(p.identity.Account),
 		OrgName:       aws.ToString(p.identity.Arn),

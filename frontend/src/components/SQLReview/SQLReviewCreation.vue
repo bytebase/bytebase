@@ -1,11 +1,14 @@
 <template>
-  <div>
+  <div class="-my-4">
     <StepTab
       :sticky="true"
       :current-index="state.currentStep"
       :step-list="STEP_LIST"
       :allow-next="allowNext"
       :finish-title="$t(`common.confirm-and-${policy ? 'update' : 'add'}`)"
+      header-class="!-top-4"
+      footer-class="!-bottom-4 !pt-4"
+      pane-class="!mb-4"
       @update:current-index="changeStepIndex"
       @cancel="onCancel"
       @finish="tryFinishSetup"
