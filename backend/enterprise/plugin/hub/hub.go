@@ -31,6 +31,7 @@ type Provider struct {
 // We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
 type claims struct {
 	InstanceCount int    `json:"instanceCount"`
+	Seat          int    `json:"seat"`
 	Trialing      bool   `json:"trialing"`
 	Plan          string `json:"plan"`
 	OrgName       string `json:"orgName"`
@@ -79,6 +80,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 			ExpiresTs: -1,
 			// Instance license count.
 			InstanceCount: 0,
+			Seat:          0,
 		}
 	}
 
@@ -87,6 +89,7 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 		ExpiresTs:     license.ExpiresTs,
 		StartedTs:     license.IssuedTs,
 		InstanceCount: license.InstanceCount,
+		Seat:          license.Seat,
 		Trialing:      license.Trialing,
 		OrgID:         license.OrgID(),
 		OrgName:       license.OrgName,
@@ -203,6 +206,7 @@ func (p *Provider) parseClaims(ctx context.Context, claim *claims) (*enterprise.
 
 	license := &enterprise.License{
 		InstanceCount: claim.InstanceCount,
+		Seat:          claim.Seat,
 		ExpiresTs:     claim.ExpiresAt.Unix(),
 		IssuedTs:      claim.IssuedAt.Unix(),
 		Plan:          planType,
