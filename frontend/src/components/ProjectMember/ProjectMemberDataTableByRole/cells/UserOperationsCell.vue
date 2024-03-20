@@ -20,12 +20,14 @@ import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useCurrentUserV1 } from "@/store";
-import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
+import { ComposedProject, SYSTEM_BOT_USER_NAME } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { hasProjectPermissionV2 } from "@/utils";
 import { ProjectMember } from "../../types";
 
 const props = defineProps<{
+  project: ComposedProject;
   projectMember: ProjectMember;
 }>();
 
@@ -36,8 +38,11 @@ defineEmits<{
 const currentUserV1 = useCurrentUserV1();
 
 const allowEdit = computed(() => {
-  // Only allow workspace admin to manage user.
-  return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+  return hasProjectPermissionV2(
+    props.project,
+    currentUserV1.value,
+    "bb.projects.setIamPolicy"
+  );
 });
 
 const user = computed(() => props.projectMember.user);

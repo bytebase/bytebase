@@ -90,6 +90,7 @@ const columns = computed(() => {
           return "";
         } else {
           return h(UserOperationsCell, {
+            project: props.project,
             projectMember: row.member,
             "onUpdate-user": () => {
               emit("update-member", row.member.user.email);
