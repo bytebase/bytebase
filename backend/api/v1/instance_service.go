@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc/codes"
@@ -1132,7 +1131,7 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 	}
 
 	return &store.DataSourceMessage{
-		ID:                                 uuid.NewString(),
+		ID:                                 dataSource.Id,
 		Type:                               dsType,
 		Username:                           dataSource.Username,
 		ObfuscatedPassword:                 common.Obfuscate(dataSource.Password, s.secret),

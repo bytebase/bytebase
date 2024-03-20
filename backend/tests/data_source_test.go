@@ -47,9 +47,10 @@ func TestDataSource(t *testing.T) {
 
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
-	instance, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
+			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",
@@ -62,9 +63,10 @@ func TestDataSource(t *testing.T) {
 
 	err = ctl.setLicense(ctx)
 	a.NoError(err)
-	instance, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
+	_, err = ctl.instanceServiceClient.AddDataSource(ctx, &v1pb.AddDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
+			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
 			Username: "ro_ds",
 			Password: "",
@@ -81,20 +83,10 @@ func TestDataSource(t *testing.T) {
 	err = ctl.removeLicense(ctx)
 	a.NoError(err)
 
-	var readonlyDataSource *v1pb.DataSource
-	for _, ds := range instance.DataSources {
-		if ds.Type == v1pb.DataSourceType_READ_ONLY {
-			readonlyDataSource = ds
-			break
-		}
-	}
-	a.NotNil(readonlyDataSource)
-
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Type: v1pb.DataSourceType_READ_ONLY,
-			Id:   readonlyDataSource.Id,
+			Id:   "readonly",
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -109,7 +101,7 @@ func TestDataSource(t *testing.T) {
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, &v1pb.UpdateDataSourceRequest{
 		Instance: instance.Name,
 		DataSource: &v1pb.DataSource{
-			Id:   readonlyDataSource.Id,
+			Id:   "readonly",
 			Host: "127.0.0.1",
 			Port: "8000",
 		},
@@ -135,7 +127,7 @@ func TestDataSource(t *testing.T) {
 
 	_, err = ctl.instanceServiceClient.RemoveDataSource(ctx, &v1pb.RemoveDataSourceRequest{
 		Instance:   instance.Name,
-		DataSource: &v1pb.DataSource{Id: readonlyDataSource.Id},
+		DataSource: &v1pb.DataSource{Id: "readonly"},
 	})
 	a.NoError(err)
 }
