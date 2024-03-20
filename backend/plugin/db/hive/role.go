@@ -72,7 +72,7 @@ func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, err
 		databaseName := row.Values[0].GetStringValue()
 		tableName := row.Values[1].GetStringValue()
 		privilege := row.Values[6].GetStringValue()
-		// @TODO(tommy): the format of this string should be carefully considered
+		// TODO(tommy): the format of this string should be carefully considered.
 		grantStrings = append(grantStrings, fmt.Sprintf("%s/%s: %s", databaseName, tableName, privilege))
 	}
 	grantString := strings.Join(grantStrings, ", ")

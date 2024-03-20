@@ -105,7 +105,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	for _, statement := range statements {
 		cursor.Execute(ctx, statement.Text, false)
 		if cursor.Err != nil {
-			return affectedRows, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
+			return 0, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
 		}
 		operationStatus := cursor.Poll(false)
 		affectedRows += operationStatus.GetNumModifiedRows()
