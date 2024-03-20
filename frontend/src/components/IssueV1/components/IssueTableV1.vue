@@ -43,7 +43,6 @@ import { reactive, computed, watch, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import EllipsisText from "@/components/EllipsisText.vue";
 import BatchIssueActionsV1 from "@/components/IssueV1/components/BatchIssueActionsV1.vue";
 import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1.vue";
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
@@ -127,16 +126,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       resizable: true,
       hide: !showExtendedColumns.value,
-      render: (issue) =>
-        h(
-          EllipsisText,
-          { performant: true },
-          {
-            default: () => {
-              return humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000);
-            },
-          }
-        ),
+      render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
     },
     {
       key: "approver",
