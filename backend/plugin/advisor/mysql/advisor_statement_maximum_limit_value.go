@@ -77,11 +77,17 @@ func (checker *statementMaximumLimitValueChecker) EnterQuery(ctx *mysql.QueryCon
 	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
-func (checker *statementMaximumLimitValueChecker) EnterSelectStatement(*mysql.SelectStatementContext) {
+func (checker *statementMaximumLimitValueChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.isSelect = true
 }
 
-func (checker *statementMaximumLimitValueChecker) ExitSelectStatement(*mysql.SelectStatementContext) {
+func (checker *statementMaximumLimitValueChecker) ExitSelectStatement(ctx *mysql.SelectStatementContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	checker.isSelect = false
 }
 

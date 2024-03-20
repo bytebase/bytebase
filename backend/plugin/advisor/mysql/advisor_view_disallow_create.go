@@ -72,6 +72,9 @@ func (checker *viewDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext) {
 }
 
 func (checker *viewDisallowCreateChecker) EnterCreateView(ctx *mysql.CreateViewContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.ViewName() != nil {
 		code = advisor.DisallowCreateView

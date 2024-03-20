@@ -5,7 +5,7 @@
     <div v-if="allowAdmin" class="flex justify-end gap-x-2">
       <NButton
         v-if="state.selectedTab === 'users'"
-        :disabled="state.selectedMemberNameList.size === 0"
+        :disabled="state.selectedMembers.length === 0"
         @click="handleRevokeSelectedMembers"
       >
         {{ $t("project.members.revoke-access") }}
@@ -38,51 +38,13 @@
         />
       </template>
       <NTabPane name="users" :tab="$t('project.members.users')">
-        <ProjectMemberTable
+        <ProjectMemberDataTable
           :project="project"
-          :ready="ready"
-          :allow-edit="allowAdmin"
-          :member-list="renderedComposedMemberList"
-        >
-          <template #selection-all="{ memberList }">
-            <NCheckbox
-              v-if="renderedComposedMemberList.length > 0"
-              v-bind="getAllSelectionState(memberList)"
-              @update:checked="toggleAllMembersSelection(memberList, $event)"
-            />
-          </template>
-          <template #selection="{ member }">
-            <NCheckbox
-              :checked="isMemeberSelected(member)"
-              @update:checked="
-                (checked) => toggleMemberSelection(member, checked)
-              "
-            />
-          </template>
-        </ProjectMemberTable>
-
-        <div v-if="inactiveComposedMemberList.length > 0" class="mt-4 ml-2">
-          <NCheckbox v-model:checked="state.showInactiveMemberList">
-            <span class="textinfolabel">
-              {{ $t("project.members.show-inactive") }}
-            </span>
-          </NCheckbox>
-        </div>
-
-        <div v-if="state.showInactiveMemberList" class="my-4 space-y-2">
-          <div class="text-lg font-medium leading-7 text-main">
-            <span>{{ $t("project.members.inactive-members") }}</span>
-            <span class="ml-1 font-normal text-control-light">
-              ({{ inactiveComposedMemberList.length }})
-            </span>
-          </div>
-          <ProjectMemberTable
-            :project="project"
-            :ready="ready"
-            :allow-edit="false"
-            :member-list="inactiveComposedMemberList"
-          />
-        </div>
+          :members="projectMembers"
+          :selected-members="state.selectedMembers"
+          @update-member="state.editingMember = $event"
+          @update-selected-members="state.selectedMembers = $event"
+        />
       </NTabPane>
       <NTabPane name="roles" :tab="$t('project.members.roles')">
         <ProjectRoleTable
@@ -93,14 +55,6 @@
         />
       </NTabPane>
     </NTabs>
-
-    <BBButtonConfirm
-      v-if="allowRemoveExpiredRoles"
-      :style="'DELETE'"
-      :button-text="$t('project.members.clean-up-expired-roles')"
-      :require-confirm="true"
-      @confirm="handleRemoveExpiredRoles"
-    />
   </div>
 
   <AddProjectMembersPanel
@@ -108,11 +62,18 @@
     :project="project"
     @close="state.showAddMemberPanel = false"
   />
+
+  <ProjectMemberRolePanel
+    v-if="editingMember"
+    :project="project"
+    :member="editingMember"
+    @close="state.editingMember = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, orderBy, uniq } from "lodash-es";
-import { NButton, NCheckbox, NTabs, NTabPane, useDialog } from "naive-ui";
+import { cloneDeep, uniq, uniqBy } from "lodash-es";
+import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -129,23 +90,25 @@ import {
   getUserEmailInBinding,
   unknownUser,
   PresetRoleType,
+  ALL_USERS_USER_EMAIL,
+  PRESET_WORKSPACE_ROLES,
 } from "@/types";
+import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
-import ProjectMemberTable, {
-  ComposedProjectMember,
-} from "./ProjectMemberTable";
+import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
+import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
 import ProjectRoleTable from "./ProjectRoleTable";
-import { getExpiredDateTime } from "./ProjectRoleTable/utils";
+import { ProjectMember } from "./types";
 
 interface LocalState {
   searchText: string;
   selectedTab: "users" | "roles";
-  selectedMemberNameList: Set<string>;
+  selectedMembers: string[];
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
+  editingMember?: string;
 }
 
 const props = defineProps<{
@@ -162,7 +125,7 @@ const { policy: iamPolicy, ready } = useProjectIamPolicy(projectResourceName);
 const state = reactive<LocalState>({
   searchText: "",
   selectedTab: "users",
-  selectedMemberNameList: new Set(),
+  selectedMembers: [],
   showInactiveMemberList: false,
   showAddMemberPanel: false,
 });
@@ -181,170 +144,98 @@ const allowAdmin = computed(() => {
   return props.allowEdit;
 });
 
-const allowRemoveExpiredRoles = computed(() => {
-  for (const binding of iamPolicy.value.bindings) {
-    const parsedExpr = binding.parsedExpr;
-    if (parsedExpr?.expr) {
-      const expression = convertFromExpr(parsedExpr.expr);
-      // Skip EXPORTER role if it has a non-empty statement condition.
-      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
+const projectIAMPolicyBindings = computed(() => {
+  return iamPolicy.value.bindings.filter((binding) => {
+    // Don't show EXPORTER role if it has a non-empty statement condition.
+    if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
+      const parsedExpr = binding.parsedExpr;
+      if (parsedExpr?.expr) {
+        const expression = convertFromExpr(parsedExpr.expr);
         if (expression.statement && expression.statement !== "") {
-          continue;
+          return false;
         }
-      }
-
-      const expiredDateTime = getExpiredDateTime(binding);
-      if (
-        expiredDateTime &&
-        new Date().getTime() >= expiredDateTime.getTime()
-      ) {
-        return true;
       }
     }
-  }
-
-  return false;
+    return true;
+  });
 });
 
-const composedMemberList = computed(() => {
-  const distinctUserResourceNameList = uniq(
-    iamPolicy.value.bindings.flatMap((binding) => binding.members)
-  );
+const activeUserList = computed(() => {
+  const workspaceLevelProjectMembers = userStore.userList
+    .filter(
+      (user) =>
+        user.state === State.ACTIVE && user.email !== ALL_USERS_USER_EMAIL
+    )
+    .filter((user) =>
+      user.roles.some((role) => !PRESET_WORKSPACE_ROLES.includes(role))
+    );
 
-  const userList = distinctUserResourceNameList.map((user) => {
+  const projectMembers = uniq(
+    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
+  ).map((user) => {
     const email = extractUserEmail(user);
     return (
-      userStore.getUserByEmail(email) ?? {
+      userStore.getUserByEmail(email) ??
+      ({
         ...unknownUser(),
         email,
-      }
+      } as User)
     );
   });
 
-  const usersByRole = iamPolicy.value.bindings
-    .filter((binding) => {
-      // Don't show EXPORTER role if it has a non-empty statement condition.
-      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
-        const parsedExpr = binding.parsedExpr;
-        if (parsedExpr?.expr) {
-          const expression = convertFromExpr(parsedExpr.expr);
-          if (expression.statement && expression.statement !== "") {
-            return false;
-          }
-        }
-      }
-      return true;
-    })
-    .map((binding) => {
-      return {
-        binding: binding,
-        role: binding.role,
-        users: new Set(binding.members.map(extractUserEmail)),
-      };
-    });
+  const combinedMembers = uniqBy(
+    [...workspaceLevelProjectMembers, ...projectMembers],
+    "email"
+  ).filter((user) => user.state === State.ACTIVE);
 
-  const userRolesList = userList.map<ComposedProjectMember>((user) => {
-    const bindingList = uniq(
-      usersByRole
-        .filter((item) => item.users.has(user.email))
-        .map((item) => item.binding)
+  if (state.searchText) {
+    return combinedMembers.filter(
+      (user) =>
+        user.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
+        user.email.toLowerCase().includes(state.searchText.toLowerCase())
     );
-    return {
-      user,
-      bindingList,
-    };
-  });
+  }
+  return combinedMembers;
+});
 
-  return orderBy(
-    userRolesList,
-    [
-      (item) =>
-        item.bindingList.find(
-          (binding) => binding.role === PresetRoleType.PROJECT_OWNER
+const projectMembers = computed(() => {
+  return activeUserList.value
+    .map((user) => {
+      const roles = user.roles.filter(
+        (role) => !PRESET_WORKSPACE_ROLES.includes(role)
+      );
+      const bindings = projectIAMPolicyBindings.value.filter((binding) =>
+        binding.members.some(
+          (member) => extractUserEmail(member) === user.email
         )
-          ? 0
-          : 1,
-      (item) => parseInt(extractUserUID(item.user.name), 10),
-    ],
-    ["asc", "asc"]
-  );
+      );
+      if (roles.length === 0 && bindings.length === 0) {
+        return null;
+      }
+      return {
+        user,
+        workspaceLevelProjectRoles: roles,
+        projectRoleBindings: bindings,
+      } as ProjectMember;
+    })
+    .filter(Boolean) as ProjectMember[];
 });
 
-const activeComposedMemberList = computed(() => {
-  return composedMemberList.value.filter(
-    (item) => item.user.state === State.ACTIVE
-  );
-});
-
-const renderedComposedMemberList = computed(() => {
-  const { searchText } = state;
-  if (searchText === "") {
-    return activeComposedMemberList.value;
+const editingMember = computed(() => {
+  if (!state.editingMember) {
+    return undefined;
   }
-  return activeComposedMemberList.value.filter(
-    (item) =>
-      item.user.title.toLowerCase().includes(searchText.toLowerCase()) ||
-      item.user.email.toLowerCase().includes(searchText.toLowerCase())
+  return projectMembers.value.find(
+    (member) => member.user.email === state.editingMember
   );
 });
-
-const inactiveComposedMemberList = computed(() => {
-  return composedMemberList.value.filter(
-    (item) => item.user.state === State.DELETED
-  );
-});
-
-const isMemeberSelected = (member: ComposedProjectMember) => {
-  return state.selectedMemberNameList.has(member.user.name);
-};
-
-const getAllSelectionState = (
-  memberList: ComposedProjectMember[]
-): { checked: boolean; indeterminate: boolean } => {
-  const checked =
-    state.selectedMemberNameList.size > 0 &&
-    memberList.every((member) => isMemeberSelected(member));
-  const indeterminate =
-    !checked && memberList.some((member) => isMemeberSelected(member));
-
-  return {
-    checked,
-    indeterminate,
-  };
-};
-
-const toggleMemberSelection = (member: ComposedProjectMember, on: boolean) => {
-  if (on) {
-    state.selectedMemberNameList.add(member.user.name);
-  } else {
-    state.selectedMemberNameList.delete(member.user.name);
-  }
-};
-
-const toggleAllMembersSelection = (
-  memberList: ComposedProjectMember[],
-  on: boolean
-): void => {
-  const set = state.selectedMemberNameList;
-  if (on) {
-    memberList.forEach((member) => {
-      set.add(member.user.name);
-    });
-  } else {
-    memberList.forEach((member) => {
-      set.delete(member.user.name);
-    });
-  }
-};
 
 const handleRevokeSelectedMembers = () => {
-  const selectedMembers = Array.from(state.selectedMemberNameList.values())
-    .map((name) => {
-      return composedMemberList.value.find(
-        (member) => member.user.name === name
-      );
+  const selectedMembers = state.selectedMembers
+    .map((email) => {
+      return projectMembers.value.find((member) => member.user.email === email);
     })
-    .filter((member) => member !== undefined) as ComposedProjectMember[];
+    .filter((member) => member !== undefined) as ProjectMember[];
   if (selectedMembers.length === 0) {
     return;
   }
@@ -389,25 +280,8 @@ const handleRevokeSelectedMembers = () => {
         style: "SUCCESS",
         title: "Revoke succeed",
       });
-      state.selectedMemberNameList.clear();
+      state.selectedMembers = [];
     },
   });
-};
-
-const handleRemoveExpiredRoles = async () => {
-  const policy = cloneDeep(iamPolicy.value);
-  // Filter out expired roles.
-  policy.bindings = policy.bindings.filter((binding) => {
-    const expiredDateTime = getExpiredDateTime(binding);
-    if (expiredDateTime && new Date().getTime() >= expiredDateTime.getTime()) {
-      return false;
-    }
-    return true;
-  });
-
-  await useProjectIamPolicyStore().updateProjectIamPolicy(
-    projectResourceName.value,
-    policy
-  );
 };
 </script>

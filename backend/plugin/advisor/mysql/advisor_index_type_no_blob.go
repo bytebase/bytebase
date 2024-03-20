@@ -77,6 +77,9 @@ type indexTypeNoBlobChecker struct {
 }
 
 func (checker *indexTypeNoBlobChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -103,6 +106,9 @@ func (checker *indexTypeNoBlobChecker) EnterCreateTable(ctx *mysql.CreateTableCo
 }
 
 func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -157,6 +163,9 @@ func (checker *indexTypeNoBlobChecker) EnterAlterTable(ctx *mysql.AlterTableCont
 }
 
 func (checker *indexTypeNoBlobChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.GetType_() == nil {
 		return
 	}

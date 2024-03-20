@@ -78,6 +78,9 @@ type tableCommentConventionChecker struct {
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *tableCommentConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}

@@ -301,3 +301,32 @@ func IsMySQLAffectedRowsStatement(statement string) bool {
 
 	return false
 }
+
+// IsTopMySQLRule returns true if the given context is a top-level MySQL rule.
+func IsTopMySQLRule(ctx *antlr.BaseParserRuleContext) bool {
+	if ctx.GetParent() == nil {
+		return false
+	}
+	switch ctx.GetParent().(type) {
+	case *parser.SimpleStatementContext:
+		if ctx.GetParent().GetParent() == nil {
+			return false
+		}
+		if _, ok := ctx.GetParent().GetParent().(*parser.QueryContext); !ok {
+			return false
+		}
+	case *parser.CreateStatementContext, *parser.DropStatementContext, *parser.TransactionOrLockingStatementContext, *parser.AlterStatementContext:
+		if ctx.GetParent().GetParent() == nil {
+			return false
+		}
+		if ctx.GetParent().GetParent().GetParent() == nil {
+			return false
+		}
+		if _, ok := ctx.GetParent().GetParent().GetParent().(*parser.QueryContext); !ok {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
+}

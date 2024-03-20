@@ -85,6 +85,9 @@ type duplicateIndex struct {
 }
 
 func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -113,6 +116,9 @@ func (checker *tableNoDuplicateIndexChecker) EnterCreateTable(ctx *mysql.CreateT
 }
 
 func (checker *tableNoDuplicateIndexChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRef() == nil {
 		return
 	}
@@ -174,6 +180,9 @@ func (checker *tableNoDuplicateIndexChecker) handleConstraintDef(tableName strin
 }
 
 func (checker *tableNoDuplicateIndexChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return
 	}

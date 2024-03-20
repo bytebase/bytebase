@@ -76,6 +76,9 @@ type indexTypeAllowListChecker struct {
 }
 
 func (checker *indexTypeAllowListChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -92,6 +95,9 @@ func (checker *indexTypeAllowListChecker) EnterCreateTable(ctx *mysql.CreateTabl
 }
 
 func (checker *indexTypeAllowListChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRef() == nil {
 		return
 	}
@@ -130,6 +136,9 @@ func (checker *indexTypeAllowListChecker) handleConstraintDef(ctx mysql.ITableCo
 }
 
 func (checker *indexTypeAllowListChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil || ctx.CreateIndexTarget().KeyListVariants() == nil {
 		return
 	}

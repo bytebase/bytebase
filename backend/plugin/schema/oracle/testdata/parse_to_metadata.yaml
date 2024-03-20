@@ -160,9 +160,9 @@
                 {
                   "name": "IDX_EMPLOYEE_NAME_DEPARTMENT",
                   "expressions": [
-                    "LAST_NAME",
-                    "FIRST_NAME",
-                    "DEPARTMENT_ID"
+                    "\"LAST_NAME\"",
+                    "\"FIRST_NAME\"",
+                    "\"DEPARTMENT_ID\""
                   ],
                   "visible": true
                 }

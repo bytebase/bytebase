@@ -509,8 +509,6 @@ func (l *statementListener) EnterSql_script(ctx *parser.Sql_scriptContext) {
 		for _, action := range actions {
 			switch action := action.(type) {
 			case *StringsManipulatorActionAddIndex:
-				// Add an empty line before the index definition.
-				l.results = append(l.results, "")
 				l.results = append(l.results, action.IndexDefine)
 			default:
 				// Do nothing.
@@ -554,10 +552,9 @@ func (r *rewriter) EnterCreate_index(ctx *parser.Create_indexContext) {
 		return
 	}
 
-	_, indexName := NormalizeIndexName(ctx.Index_name())
-
 	indexDefinition := ctx.Table_index_clause()
-	schema, table := NormalizeTableViewName("", indexDefinition.Tableview_name())
+	schema, indexName := NormalizeIndexName(ctx.Index_name())
+	_, table := NormalizeTableViewName("", indexDefinition.Tableview_name())
 	indexID := indexID{
 		schema: schema,
 		table:  table,
