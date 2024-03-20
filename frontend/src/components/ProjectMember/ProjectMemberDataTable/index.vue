@@ -23,7 +23,6 @@ defineProps<{
   project: ComposedProject;
   members: ProjectMember[];
   selectedMembers: string[];
-  allowEdit: boolean;
 }>();
 
 const emit = defineEmits<{
