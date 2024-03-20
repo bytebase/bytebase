@@ -75,7 +75,7 @@ func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, err
 		// TODO(tommy): the format of this string should be carefully considered.
 		grantStrings = append(grantStrings, fmt.Sprintf("%s/%s: %s", databaseName, tableName, privilege))
 	}
-	grantString := strings.Join(grantStrings, ", ")
+	grantString := strings.Join(grantStrings, "\n")
 
 	return grantString, nil
 }

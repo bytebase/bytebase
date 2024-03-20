@@ -197,7 +197,7 @@ func (d *Driver) getRoles(ctx context.Context) ([]*storepb.InstanceRoleMetadata,
 
 func (d *Driver) getViews(ctx context.Context) ([]*storepb.ViewMetadata, error) {
 	var viewMetadata []*storepb.ViewMetadata
-	viewResults, err := d.QueryConn(ctx, nil, fmt.Sprintf("SHOW VIEWS"), nil)
+	viewResults, err := d.QueryConn(ctx, nil, "SHOW VIEWS", nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views")
 	}

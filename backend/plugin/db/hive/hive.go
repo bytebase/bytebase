@@ -14,7 +14,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -87,7 +86,7 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive temporarily.
-// Even in Hive's bucketed transaction table, all the statements are commited automatically by
+// Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
 	if d.dbClient == nil {
@@ -96,7 +95,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	cursor := d.dbClient.Cursor()
 	defer cursor.Close()
 
-	var affectedRows int64 = 0
+	var affectedRows int64
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
@@ -119,7 +118,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 		return nil, errors.Errorf("no database connection established")
 	}
 	cursor := d.dbClient.Cursor()
-	defer cursor.Close()
+	// defer cursor.Close()
 
 	var results []*v1pb.QueryResult
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
@@ -129,11 +128,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 
 	for _, statement := range statements {
 		statementStr := statement.Text
-		if queryCtx.Limit > 0 {
+		if queryCtx != nil && queryCtx.Limit > 0 {
 			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
 		}
 
-		result, err := runSingleQuery(ctx, statement.Text, cursor)
+		result, err := runSingleQuery(ctx, statementStr, cursor)
 		if err != nil {
 			result.Error = err.Error()
 		}
