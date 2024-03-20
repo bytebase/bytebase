@@ -14,7 +14,7 @@ import { DataTableColumn, NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoleStore } from "@/store";
-import { ComposedProject } from "@/types";
+import { ComposedProject, PRESET_WORKSPACE_ROLES } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
 import { ProjectMember } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
@@ -103,7 +103,11 @@ const columns = computed(() => {
 });
 
 const userListByRole = computed(() => {
-  const roles = sortRoles(roleStore.roleList.map((role) => role.name));
+  const roles = sortRoles(
+    roleStore.roleList
+      .map((role) => role.name)
+      .filter((role) => !PRESET_WORKSPACE_ROLES.includes(role))
+  );
   const rowDataList: RoleRowData[] = [];
 
   for (const role of roles) {
