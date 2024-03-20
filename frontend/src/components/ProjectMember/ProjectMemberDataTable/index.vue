@@ -19,11 +19,10 @@ import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
-defineProps<{
+const props = defineProps<{
   project: ComposedProject;
   members: ProjectMember[];
   selectedMembers: string[];
-  allowEdit: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -66,6 +65,7 @@ const columns = computed(() => {
       width: "4rem",
       render: (projectMember: ProjectMember) => {
         return h(UserOperationsCell, {
+          project: props.project,
           projectMember,
           "onUpdate-user": () => {
             emit("update-member", projectMember.user.email);

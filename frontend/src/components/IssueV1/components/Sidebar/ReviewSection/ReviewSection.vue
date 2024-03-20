@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isCreating" class="flex flex-col gap-y-1">
+  <div v-if="!isCreating" class="flex flex-col gap-y-2">
     <NTooltip
       :disabled="!showApprovalTooltip"
       placement="bottom"
