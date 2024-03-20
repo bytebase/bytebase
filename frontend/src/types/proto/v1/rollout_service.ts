@@ -105,6 +105,8 @@ export interface Plan_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
+  /** IDs of the specs that block this spec. */
+  blockedBySpecs: string[];
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: Plan_RestoreDatabaseConfig | undefined;
@@ -1759,6 +1761,7 @@ function createBasePlan_Spec(): Plan_Spec {
   return {
     earliestAllowedTime: undefined,
     id: "",
+    blockedBySpecs: [],
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -1772,6 +1775,9 @@ export const Plan_Spec = {
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
+    }
+    for (const v of message.blockedBySpecs) {
+      writer.uint32(50).string(v!);
     }
     if (message.createDatabaseConfig !== undefined) {
       Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).ldelim();
@@ -1805,6 +1811,13 @@ export const Plan_Spec = {
           }
 
           message.id = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.blockedBySpecs.push(reader.string());
           continue;
         case 1:
           if (tag !== 10) {
@@ -1842,6 +1855,9 @@ export const Plan_Spec = {
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
+      blockedBySpecs: globalThis.Array.isArray(object?.blockedBySpecs)
+        ? object.blockedBySpecs.map((e: any) => globalThis.String(e))
+        : [],
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -1862,6 +1878,9 @@ export const Plan_Spec = {
     if (message.id !== "") {
       obj.id = message.id;
     }
+    if (message.blockedBySpecs?.length) {
+      obj.blockedBySpecs = message.blockedBySpecs;
+    }
     if (message.createDatabaseConfig !== undefined) {
       obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
     }
@@ -1881,6 +1900,7 @@ export const Plan_Spec = {
     const message = createBasePlan_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
     message.id = object.id ?? "";
+    message.blockedBySpecs = object.blockedBySpecs?.map((e) => e) || [];
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
