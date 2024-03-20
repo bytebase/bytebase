@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -35,9 +37,6 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	}
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
-	}
-	if config.Database == "" {
-		return nil, errors.Errorf("database not set")
 	}
 
 	d.config = config
@@ -87,7 +86,9 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-// TODO(tommy): support transaction.
+// Transaction statements [BEGIN, COMMIT, ROLLBACK] are not supported in Hive temporarily.
+// Even in Hive's bucketed transaction table, all the statements are commited automatically by
+// the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
 	if d.dbClient == nil {
 		return 0, errors.Errorf("no database connection established")
@@ -95,7 +96,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	cursor := d.dbClient.Cursor()
 	defer cursor.Close()
 
-	var rowCount int64
+	var affectedRows int64 = 0
 	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to split statements")
@@ -104,16 +105,16 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	for _, statement := range statements {
 		cursor.Execute(ctx, statement.Text, false)
 		if cursor.Err != nil {
-			return 0, errors.Wrapf(cursor.Err, "failed to execute statement")
+			return affectedRows, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
 		}
 		operationStatus := cursor.Poll(false)
-		rowCount += operationStatus.GetNumModifiedRows()
+		affectedRows += operationStatus.GetNumModifiedRows()
 	}
 
-	return rowCount, nil
+	return affectedRows, nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if d.dbClient == nil {
 		return nil, errors.Errorf("no database connection established")
 	}
@@ -127,6 +128,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	}
 
 	for _, statement := range statements {
+		statementStr := statement.Text
+		if queryCtx.Limit > 0 {
+			statementStr = fmt.Sprintf("%s LIMIT %d", statementStr, queryCtx.Limit)
+		}
+
 		result, err := runSingleQuery(ctx, statement.Text, cursor)
 		if err != nil {
 			result.Error = err.Error()
