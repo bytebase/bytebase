@@ -2084,6 +2084,10 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	if database.EffectiveEnvironmentID != "" {
 		effectiveEnvironment = fmt.Sprintf("%s%s", common.EnvironmentNamePrefix, database.EffectiveEnvironmentID)
 	}
+	instanceResource, err := convertToInstanceResource(instance)
+	if err != nil {
+		return nil, err
+	}
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		Uid:                  fmt.Sprintf("%d", database.UID),
@@ -2094,7 +2098,7 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		EffectiveEnvironment: effectiveEnvironment,
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
-		InstanceResource:     convertToInstanceResource(instance),
+		InstanceResource:     instanceResource,
 	}, nil
 }
 

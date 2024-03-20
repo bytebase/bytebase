@@ -97,6 +97,8 @@
     - [BatchSyncInstanceResponse](#bytebase-v1-BatchSyncInstanceResponse)
     - [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest)
     - [DataSource](#bytebase-v1-DataSource)
+    - [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption)
     - [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest)
     - [GetInstanceRequest](#bytebase-v1-GetInstanceRequest)
     - [Instance](#bytebase-v1-Instance)
@@ -114,6 +116,8 @@
     - [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest)
     - [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest)
   
+    - [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType)
+    - [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType)
     - [DataSourceType](#bytebase-v1-DataSourceType)
   
     - [InstanceService](#bytebase-v1-InstanceService)
@@ -1988,6 +1992,45 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | ssh_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| external_secret | [DataSourceExternalSecret](#bytebase-v1-DataSourceExternalSecret) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret"></a>
+
+### DataSourceExternalSecret
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-v1-DataSourceExternalSecret-SecretType) |  |  |
+| url | [string](#string) |  |  |
+| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-v1-DataSourceExternalSecret-AuthType) |  |  |
+| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
+| token | [string](#string) |  |  |
+| engine_name | [string](#string) |  | engine name is the name for secret engine. |
+| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
+| key_name | [string](#string) |  | the key name for the password. |
+
+
+
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AppRoleAuthOption"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption
+app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  |  |
 
 
 
@@ -2260,6 +2303,31 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
  
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-AuthType"></a>
+
+### DataSourceExternalSecret.AuthType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_TYPE_UNSPECIFIED | 0 |  |
+| TOKEN | 1 |  |
+| APP_ROLE | 2 |  |
+
+
+
+<a name="bytebase-v1-DataSourceExternalSecret-SecretType"></a>
+
+### DataSourceExternalSecret.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SAECRET_TYPE_UNSPECIFIED | 0 |  |
+| VAULT_KV_V2 | 1 |  |
+
 
 
 <a name="bytebase-v1-DataSourceType"></a>

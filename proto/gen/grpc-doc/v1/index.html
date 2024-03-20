@@ -541,6 +541,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret"><span class="badge">M</span>DataSourceExternalSecret</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption"><span class="badge">M</span>DataSourceExternalSecret.AppRoleAuthOption</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeleteInstanceRequest"><span class="badge">M</span>DeleteInstanceRequest</a>
                 </li>
               
@@ -604,6 +612,14 @@
                   <a href="#bytebase.v1.UpdateInstanceRequest"><span class="badge">M</span>UpdateInstanceRequest</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.AuthType"><span class="badge">E</span>DataSourceExternalSecret.AuthType</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DataSourceExternalSecret.SecretType"><span class="badge">E</span>DataSourceExternalSecret.SecretType</a>
+                </li>
               
                 <li>
                   <a href="#bytebase.v1.DataSourceType"><span class="badge">E</span>DataSourceType</a>
@@ -6216,6 +6232,117 @@ Required. </p></td>
 Used for authentication when connecting to the data source. </p></td>
                 </tr>
               
+                <tr>
+                  <td>external_secret</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret">DataSourceExternalSecret</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret">DataSourceExternalSecret</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>secret_type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>auth_type</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>app_role</td>
+                  <td><a href="#bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>engine_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>engine name is the name for secret engine. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the secret name in the engine to store the password. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>key_name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>the key name for the password. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption">DataSourceExternalSecret.AppRoleAuthOption</h3>
+        <p>app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>role_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>secret_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6808,6 +6935,58 @@ Format: instances/{instance} </p></td>
         
       
 
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.AuthType">DataSourceExternalSecret.AuthType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUTH_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>TOKEN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>APP_ROLE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.DataSourceExternalSecret.SecretType">DataSourceExternalSecret.SecretType</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>SAECRET_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VAULT_KV_V2</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
         <h3 id="bytebase.v1.DataSourceType">DataSourceType</h3>
         <p></p>
