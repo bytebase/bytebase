@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,7 @@ func TestClassification(t *testing.T) {
 		classification string
 		userComment    string
 		rebuildComment string
+		workspaceID    string
 	}{
 		{
 			rawComment:     "1abc",
@@ -49,12 +51,14 @@ func TestClassification(t *testing.T) {
 			classification: "1-2",
 			userComment:    "abc",
 			rebuildComment: "1-2-abc",
+			workspaceID:    "a4fea42c-c097-47c3-b661-4a6fcea1cf6d",
 		},
 		{
 			rawComment:     "1 abc",
 			classification: "1",
 			userComment:    "abc",
 			rebuildComment: "1-abc",
+			workspaceID:    "a4fea42c-c097-47c3-b661-4a6fcea1cf6d",
 		},
 		{
 			rawComment:     "1",
@@ -73,6 +77,7 @@ func TestClassification(t *testing.T) {
 			classification: "1",
 			userComment:    "2",
 			rebuildComment: "1-2",
+			workspaceID:    "a4fea42c-c097-47c3-b661-4a6fcea1cf6d",
 		},
 		{
 			rawComment:     "1-2",
@@ -96,6 +101,8 @@ func TestClassification(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("test classification for comment: %v", test.rawComment), func(t *testing.T) {
+			err := os.Setenv("BYTEBASE_WORKSPACE_ID", test.workspaceID)
+			assert.NoError(t, err)
 			classification, userComment := GetClassificationAndUserComment(test.rawComment)
 			assert.Equal(t, test.classification, classification)
 			assert.Equal(t, test.userComment, userComment)
