@@ -1229,7 +1229,6 @@ func (s *Service) processPushEvent(ctx context.Context, oauthContext *common.Oau
 			repoInfo := fileInfoListSorted[0].repoInfo
 			pushEvent := baseVCSPushEvent
 			pushEvent.VCSType = repoInfo.vcs.Type
-			pushEvent.BaseDirectory = repoInfo.repository.BaseDirectory
 			createdMessage, created, activityCreateList, err := s.processFilesInProject(
 				ctx,
 				oauthContext,
