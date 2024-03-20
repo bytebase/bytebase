@@ -25,8 +25,8 @@ export interface PlanConfig_Spec {
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
-  /** IDs of the specs that block this spec. */
-  blockedBySpecs: string[];
+  /** IDs of the specs that this spec depends on. */
+  dependsOnSpecs: string[];
   createDatabaseConfig?: PlanConfig_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: PlanConfig_ChangeDatabaseConfig | undefined;
   restoreDatabaseConfig?: PlanConfig_RestoreDatabaseConfig | undefined;
@@ -358,7 +358,7 @@ function createBasePlanConfig_Spec(): PlanConfig_Spec {
   return {
     earliestAllowedTime: undefined,
     id: "",
-    blockedBySpecs: [],
+    dependsOnSpecs: [],
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     restoreDatabaseConfig: undefined,
@@ -373,7 +373,7 @@ export const PlanConfig_Spec = {
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
     }
-    for (const v of message.blockedBySpecs) {
+    for (const v of message.dependsOnSpecs) {
       writer.uint32(50).string(v!);
     }
     if (message.createDatabaseConfig !== undefined) {
@@ -414,7 +414,7 @@ export const PlanConfig_Spec = {
             break;
           }
 
-          message.blockedBySpecs.push(reader.string());
+          message.dependsOnSpecs.push(reader.string());
           continue;
         case 1:
           if (tag !== 10) {
@@ -452,8 +452,8 @@ export const PlanConfig_Spec = {
         ? fromJsonTimestamp(object.earliestAllowedTime)
         : undefined,
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      blockedBySpecs: globalThis.Array.isArray(object?.blockedBySpecs)
-        ? object.blockedBySpecs.map((e: any) => globalThis.String(e))
+      dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
+        ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
         : [],
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? PlanConfig_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
@@ -475,8 +475,8 @@ export const PlanConfig_Spec = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.blockedBySpecs?.length) {
-      obj.blockedBySpecs = message.blockedBySpecs;
+    if (message.dependsOnSpecs?.length) {
+      obj.dependsOnSpecs = message.dependsOnSpecs;
     }
     if (message.createDatabaseConfig !== undefined) {
       obj.createDatabaseConfig = PlanConfig_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
@@ -497,7 +497,7 @@ export const PlanConfig_Spec = {
     const message = createBasePlanConfig_Spec();
     message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
     message.id = object.id ?? "";
-    message.blockedBySpecs = object.blockedBySpecs?.map((e) => e) || [];
+    message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? PlanConfig_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;

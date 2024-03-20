@@ -39,7 +39,7 @@ type TaskMessage struct {
 	Type              api.TaskType
 	Payload           string
 	EarliestAllowedTs int64
-	BlockedBy         []int
+	DependsOn         []int
 
 	DatabaseName string
 	// Statement used by grouping batch change, Bytebase use it to render.
@@ -268,7 +268,7 @@ func (s *Store) ListTasks(ctx context.Context, find *api.TaskFind) ([]*TaskMessa
 		); err != nil {
 			return nil, err
 		}
-		if err := blockedBy.AssignTo(&task.BlockedBy); err != nil {
+		if err := blockedBy.AssignTo(&task.DependsOn); err != nil {
 			return nil, err
 		}
 		tasks = append(tasks, task)
