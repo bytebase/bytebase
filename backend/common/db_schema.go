@@ -1,31 +1,26 @@
 package common
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
 
-// classificationIDPattern is the pattern for classification, it should joined id (numbers) by "-", like 1-2, 1-2-3.
-const classificationIDPattern = "^[0-9]+(-([0-9])+){0,}"
+var numberReg = regexp.MustCompile("^[0-9]+$")
 
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string) (string, string) {
-	classificationIDReg := regexp.MustCompile(classificationIDPattern)
-	classification := classificationIDReg.FindString(comment)
-	if classification == comment {
-		// the extract classification id matches full comment, for example, raw comment is "1-2-3"
-		return classification, ""
+	sections := strings.Split(comment, "-")
+	classification := []string{}
+	userComment := ""
+	for i, section := range sections {
+		if numberReg.MatchString(section) {
+			classification = append(classification, section)
+		} else {
+			userComment = strings.Join(sections[i:], "-")
+			break
+		}
 	}
-
-	// we will handle "{classification id}-{comment}" and "{classification id} {comment}"
-	classificationIDReg = regexp.MustCompile(fmt.Sprintf(`%s[-|\s]{1}`, classificationIDPattern))
-	classification = classificationIDReg.FindString(comment)
-
-	userComment := strings.TrimPrefix(comment, classification)
-	classification = strings.TrimSuffix(classification, "-")
-	classification = strings.TrimSuffix(classification, " ")
-	return classification, userComment
+	return strings.Join(classification, "-"), userComment
 }
 
 // GetCommentFromClassificationAndUserComment returns the comment from the given classification and user comment.

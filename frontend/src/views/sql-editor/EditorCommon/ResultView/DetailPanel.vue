@@ -83,20 +83,23 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { DrawerContent } from "@/components/v2";
 import { pushNotification } from "@/store";
+import { RowValue } from "@/types/proto/v1/sql_service";
+import { extractSQLRowValue } from "@/utils";
 import { useSQLResultViewContext } from "./context";
 
 const { t } = useI18n();
 const { dark, detail, disallowCopyingData } = useSQLResultViewContext();
 
-const detailValue = computed(() => {
+const detailValueString = computed(() => {
   const { row, col, table } = detail.value;
   if (!table) return undefined;
 
   const value = table
     .getPrePaginationRowModel()
     .rows[row]?.getVisibleCells()
-    [col]?.getValue<string>();
-  return value;
+    [col]?.getValue<RowValue>();
+
+  return String(extractSQLRowValue(value));
 });
 
 const totalCount = computed(() => {
@@ -106,7 +109,7 @@ const totalCount = computed(() => {
 });
 
 const html = computed(() => {
-  const str = detailValue.value;
+  const str = detailValueString.value;
   if (!str || str.length === 0) {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }
@@ -116,7 +119,7 @@ const html = computed(() => {
 
 const { copy, copied } = useClipboard({
   source: computed(() => {
-    return detailValue.value ?? "";
+    return detailValueString.value ?? "";
   }),
   legacy: true,
 });
