@@ -62,10 +62,10 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 			UpdateTime:      time.Now(),
 		})
 
-	if len(task.BlockedBy) != 1 {
+	if len(task.DependsOn) != 1 {
 		return true, nil, errors.Errorf("failed to find task dag for ToTask %v", task.ID)
 	}
-	syncTaskID := task.BlockedBy[0]
+	syncTaskID := task.DependsOn[0]
 	defer e.stateCfg.GhostTaskState.Delete(syncTaskID)
 
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
