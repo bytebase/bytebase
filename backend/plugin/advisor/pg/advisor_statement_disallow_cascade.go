@@ -4,7 +4,6 @@ package pg
 
 import (
 	"encoding/json"
-	"fmt"
 
 	pgquery "github.com/pganalyze/pg_query_go/v4"
 	"github.com/pkg/errors"
@@ -56,51 +55,86 @@ func (*StatementDisallowCascadeAdvisor) Check(ctx advisor.Context, _ string) ([]
 		return nil, errors.Wrapf(err, "failed to unmarshal JSON")
 	}
 
-	cascadeNum := cascadeNumRecursive(jsonData)
-	if cascadeNum > 0 {
-		return []advisor.Advice{
-			{
-				Status:  level,
-				Code:    advisor.StatementDisallowCascade,
-				Title:   string(ctx.Rule.Type),
-				Content: fmt.Sprintf("CASCADE is not allowed, but detect %d CASCADE", cascadeNum),
-			},
-		}, nil
-	}
+	cascadeLocations := cascadeNumRecursive(jsonData, 0)
+	cascadePositions := convertLocationsToPositions(stmt, cascadeLocations)
 
-	return []advisor.Advice{
-		{
+	var adviceList []advisor.Advice
+	for _, p := range cascadePositions {
+		adviceList = append(adviceList, advisor.Advice{
+			Status:  level,
+			Title:   string(ctx.Rule.Type),
+			Content: "Cascade is disallowed but used in this statement",
+			Code:    advisor.StatementDisallowCascade,
+			Line:    p.line + 1,
+			Column:  p.column + 1,
+		})
+	}
+	if len(adviceList) == 0 {
+		adviceList = append(adviceList, advisor.Advice{
 			Status:  advisor.Success,
 			Code:    advisor.Ok,
 			Title:   "OK",
 			Content: "",
-		},
-	}, nil
+		})
+	}
+	return adviceList, nil
 }
 
-func cascadeNumRecursive(jsonData map[string]any) int {
-	cnt := 0
-	if jsonData["behavior"] == "DROP_CASCADE" {
-		cnt++
+type pos struct {
+	line   int
+	column int
+}
+
+func convertLocationsToPositions(statement string, locations []int) []pos {
+	idx := 0
+	line := 0
+	columnStart := 0
+	var positions []pos
+	for i, c := range statement {
+		if c == '\n' {
+			line++
+			columnStart = i + 1
+			continue
+		}
+		if idx < len(locations) && i >= locations[idx] {
+			positions = append(positions, pos{line, i - columnStart})
+			idx++
+		}
 	}
-	if jsonData["fk_del_action"] == "c" {
-		cnt++
+	for idx < len(locations) {
+		positions = append(positions, pos{line, 0})
+		idx++
 	}
+	return positions
+}
+
+func cascadeNumRecursive(jsonData map[string]any, stmtLocation int) []int {
+	if l, ok := jsonData["stmt_location"]; ok {
+		if l, ok := l.(float64); ok {
+			stmtLocation = int(l)
+		}
+	}
+
+	var cascadeLocations []int
 
 	for _, value := range jsonData {
 		switch value := value.(type) {
 		case map[string]any:
-			cnt += cascadeNumRecursive(value)
+			cascadeLocations = append(cascadeLocations, cascadeNumRecursive(value, stmtLocation)...)
 		case []any:
 			for _, v := range value {
 				mv, ok := v.(map[string]any)
 				if !ok {
 					continue
 				}
-				cnt += cascadeNumRecursive(mv)
+				cascadeLocations = append(cascadeLocations, cascadeNumRecursive(mv, stmtLocation)...)
 			}
 		}
 	}
 
-	return cnt
+	if jsonData["behavior"] == "DROP_CASCADE" || jsonData["fk_del_action"] == "c" {
+		cascadeLocations = append(cascadeLocations, stmtLocation)
+	}
+
+	return cascadeLocations
 }
