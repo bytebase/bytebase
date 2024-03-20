@@ -185,8 +185,9 @@ import {
 } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
-import { QueryResult } from "@/types/proto/v1/sql_service";
+import { QueryResult, QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import {
+  compareQueryRowValues,
   createExplainToken,
   extractSQLRowValue,
   hasPermissionToCreateRequestGrantIssue,
@@ -296,28 +297,42 @@ const updateKeyword = (value: string) => {
 };
 
 const columns = computed(() => {
-  const columns = props.result.columnNames;
-  return columns.map<ColumnDef<string[]>>((col, index) => ({
-    id: `${col}@${index}`,
-    accessorFn: (item) => item[index],
-    header: col,
-  }));
+  return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
+    (columnName, index) => {
+      const columnType = props.result.columnTypeNames[index] as string;
+      console.debug("column", columnName, columnType);
+      return {
+        id: `${columnName}@${index}`,
+        accessorFn: (item) => item.values[index],
+        header: columnName,
+        sortingFn: (rowA, rowB) => {
+          return compareQueryRowValues(
+            columnType,
+            rowA.original.values[index],
+            rowB.original.values[index]
+          );
+        },
+      };
+    }
+  );
 });
 
-const convertedData = computed(() => {
-  const rows = props.result.rows;
-  return rows.map((row) => {
-    return row.values.map((value) => extractSQLRowValue(value));
-  });
-});
+// const convertedData = computed(() => {
+//   const rows = props.result.rows;
+//   return rows.map((row) => {
+//     return row.values.map((value) => extractSQLRowValue(value));
+//   });
+// });
 
 const data = computed(() => {
-  const data = convertedData.value;
+  const data = props.result.rows;
   const search = keyword.value.trim().toLowerCase();
   let temp = data;
   if (search) {
     temp = data.filter((item) => {
-      return item.some((col) => String(col).toLowerCase().includes(search));
+      return item.values.some((col) =>
+        String(extractSQLRowValue(col)).toLowerCase().includes(search)
+      );
     });
   }
   return temp;
@@ -334,7 +349,9 @@ const isColumnMissingSensitive = (columnIndex: number): boolean => {
   );
 };
 
-const table = useVueTable<string[]>({
+// const sortingState = ref<SortingState>([]);
+
+const table = useVueTable<QueryRow>({
   get data() {
     return data.value;
   },
