@@ -4,6 +4,40 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
+message DataSourceExternalSecret {
+  enum SecretType {
+    SAECRET_TYPE_UNSPECIFIED = 0;
+    VAULT_KV_V2 = 1;
+  }
+  SecretType secret_type = 1;
+  string url = 2;
+
+  enum AuthType {
+    AUTH_TYPE_UNSPECIFIED = 0;
+    TOKEN = 1;
+    APP_ROLE = 2;
+  }
+  AuthType auth_type = 3;
+
+  // app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+  message AppRoleAuthOption {
+    string role_id = 1;
+    string secret_id = 2;
+  }
+
+  oneof auth_option {
+    AppRoleAuthOption app_role = 4;
+    string token = 5;
+  }
+
+  // engine name is the name for secret engine.
+  string engine_name = 6;
+  // the secret name in the engine to store the password.
+  string secret_name = 7;
+  // the key name for the password.
+  string key_name = 8;
+}
+
 message DataSourceOptions {
   // srv is a boolean flag that indicates whether the host is a DNS SRV record.
   bool srv = 1;
@@ -29,4 +63,6 @@ message DataSourceOptions {
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
   string authentication_private_key_obfuscated = 10;
+
+  DataSourceExternalSecret external_secret = 11;
 }
