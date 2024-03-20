@@ -99,9 +99,5 @@ export default defineConfig({
       "@public": fileURLToPath(new URL("./public", import.meta.url)),
     },
   },
-  test: {
-    globals: true,
-    environment: "node",
-  },
   envPrefix: "BB_",
 });
