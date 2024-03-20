@@ -63,6 +63,16 @@ func TestClassification(t *testing.T) {
 			classification: "",
 			userComment:    "1:a",
 		},
+		{
+			rawComment:     "1-2 abc",
+			classification: "1",
+			userComment:    "2 abc",
+		},
+		{
+			rawComment:     "1 2",
+			classification: "",
+			userComment:    "1 2",
+		},
 	}
 
 	for _, test := range tests {
