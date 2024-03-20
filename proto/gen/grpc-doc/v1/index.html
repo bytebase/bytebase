@@ -644,10 +644,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.FileCommit"><span class="badge">M</span>FileCommit</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.PushEvent"><span class="badge">M</span>PushEvent</a>
                 </li>
               
@@ -7381,79 +7377,6 @@ Format: instances/{instance} </p></td>
 
         
       
-        <h3 id="bytebase.v1.FileCommit">FileCommit</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>message</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>created_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>author_name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>author_email</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>added</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.PushEvent">PushEvent</h3>
         <p></p>
 
@@ -7467,13 +7390,6 @@ Format: instances/{instance} </p></td>
                 <tr>
                   <td>vcs_type</td>
                   <td><a href="#bytebase.v1.VcsType">VcsType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>base_dir</td>
-                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -7531,13 +7447,6 @@ Format: instances/{instance} </p></td>
                   <td>commits</td>
                   <td><a href="#bytebase.v1.Commit">Commit</a></td>
                   <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>file_commit</td>
-                  <td><a href="#bytebase.v1.FileCommit">FileCommit</a></td>
-                  <td></td>
                   <td><p> </p></td>
                 </tr>
               

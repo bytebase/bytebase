@@ -1407,7 +1407,6 @@ func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
 	}
 	return &v1pb.PushEvent{
 		VcsType:            convertToVcsType(e.VcsType),
-		BaseDir:            e.BaseDir,
 		Ref:                e.Ref,
 		Before:             e.Before,
 		After:              e.After,
@@ -1416,7 +1415,6 @@ func convertToPushEvent(e *storepb.PushEvent) *v1pb.PushEvent {
 		RepositoryFullPath: e.RepositoryFullPath,
 		AuthorName:         e.AuthorName,
 		Commits:            convertToCommits(e.Commits),
-		FileCommit:         convertToFileCommit(e.FileCommit),
 	}
 }
 
@@ -1451,22 +1449,6 @@ func convertToCommits(commits []*storepb.Commit) []*v1pb.Commit {
 		})
 	}
 	return converted
-}
-
-func convertToFileCommit(c *storepb.FileCommit) *v1pb.FileCommit {
-	if c == nil {
-		return nil
-	}
-	return &v1pb.FileCommit{
-		Id:          c.Id,
-		Title:       c.Title,
-		Message:     c.Message,
-		CreatedTime: timestamppb.New(time.Unix(c.CreatedTs, 0)),
-		Url:         c.Url,
-		AuthorName:  c.AuthorName,
-		AuthorEmail: c.AuthorEmail,
-		Added:       c.Added,
-	}
 }
 
 func convertToChangeHistorySource(source db.MigrationSource) v1pb.ChangeHistory_Source {
