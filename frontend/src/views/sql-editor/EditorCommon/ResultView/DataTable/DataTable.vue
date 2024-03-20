@@ -108,6 +108,7 @@
 import { Table } from "@tanstack/vue-table";
 import { computed, nextTick, ref, watch } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import { QueryRow } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import ColumnSortedIcon from "./ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
@@ -120,7 +121,7 @@ export type DataTableColumn = {
 };
 
 const props = defineProps<{
-  table: Table<string[]>;
+  table: Table<QueryRow>;
   setIndex: number;
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
