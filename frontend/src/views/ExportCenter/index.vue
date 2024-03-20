@@ -52,7 +52,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import { getExpiredDateTime } from "@/components/ProjectMember/ProjectRoleTable/utils";
+import { getExpiredDateTime } from "@/components/ProjectMember/utils";
 import {
   featureToRef,
   useCurrentUserV1,
