@@ -11,17 +11,6 @@
           <PencilIcon class="w-4 h-auto" />
         </template>
       </NButton>
-      <BBButtonConfirm
-        v-if="allowReactiveUser(user)"
-        :style="'RESTORE'"
-        :require-confirm="true"
-        :ok-text="$t('settings.members.action.reactivate')"
-        :confirm-title="`${$t(
-          'settings.members.action.reactivate-confirm-title'
-        )} '${user.title}'?`"
-        :confirm-description="''"
-        @confirm="changeRowStatus(user, State.ACTIVE)"
-      />
     </template>
   </div>
 </template>
@@ -30,7 +19,7 @@
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
 import { User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
@@ -45,7 +34,6 @@ defineEmits<{
 }>();
 
 const currentUserV1 = useCurrentUserV1();
-const userStore = useUserStore();
 
 const allowEdit = computed(() => {
   // Only allow workspace admin to manage user.
@@ -59,17 +47,5 @@ const allowUpdateUser = (user: User) => {
     return false;
   }
   return allowEdit.value && user.state === State.ACTIVE;
-};
-
-const allowReactiveUser = (user: User) => {
-  return allowEdit.value && user.state === State.DELETED;
-};
-
-const changeRowStatus = (user: User, state: State) => {
-  if (state === State.ACTIVE) {
-    userStore.restoreUser(user);
-  } else {
-    userStore.archiveUser(user);
-  }
 };
 </script>
