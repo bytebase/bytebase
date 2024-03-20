@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -48,11 +49,15 @@ func (s *Server) getInitSetting(ctx context.Context, datastore *store.Store) (st
 	secret = authSetting.Value
 
 	// initial workspace
-	if _, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+	workspaceIDSetting, _, err := datastore.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceID,
 		Value:       uuid.New().String(),
 		Description: "The workspace identifier",
-	}, api.SystemBotID); err != nil {
+	}, api.SystemBotID)
+	if err != nil {
+		return "", 0, err
+	}
+	if err := os.Setenv("BYTEBASE_WORKSPACE_ID", workspaceIDSetting.Value); err != nil {
 		return "", 0, err
 	}
 
