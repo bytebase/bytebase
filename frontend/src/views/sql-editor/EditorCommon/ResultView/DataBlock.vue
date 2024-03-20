@@ -41,7 +41,7 @@
           <div class="flex-1">
             <TableCell
               :table="table"
-              :value="row.getVisibleCells()[header.index].getValue()"
+              :value="row.getVisibleCells()[header.index].getValue() as RowValue"
               :keyword="keyword"
               :set-index="setIndex"
               :row-index="offset + rowIndex"
@@ -61,12 +61,13 @@
 import { Table } from "@tanstack/vue-table";
 import { computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
+import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import SensitiveDataIcon from "./DataTable/SensitiveDataIcon.vue";
 import TableCell from "./DataTable/TableCell.vue";
 import { useSQLResultViewContext } from "./context";
 
 const props = defineProps<{
-  table: Table<string[]>;
+  table: Table<QueryRow>;
   setIndex: number;
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
