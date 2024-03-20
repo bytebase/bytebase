@@ -77,7 +77,12 @@
     - [VcsType](#bytebase-store-VcsType)
   
 - [store/data_source.proto](#store_data_source-proto)
+    - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
+    - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
     - [DataSourceOptions](#bytebase-store-DataSourceOptions)
+  
+    - [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType)
+    - [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType)
   
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
@@ -1316,6 +1321,44 @@ Used internally for obfuscating the page token.
 
 
 
+<a name="bytebase-store-DataSourceExternalSecret"></a>
+
+### DataSourceExternalSecret
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| secret_type | [DataSourceExternalSecret.SecretType](#bytebase-store-DataSourceExternalSecret-SecretType) |  |  |
+| url | [string](#string) |  |  |
+| auth_type | [DataSourceExternalSecret.AuthType](#bytebase-store-DataSourceExternalSecret-AuthType) |  |  |
+| app_role | [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption) |  |  |
+| token | [string](#string) |  |  |
+| engine_name | [string](#string) |  | engine name is the name for secret engine. |
+| secret_name | [string](#string) |  | the secret name in the engine to store the password. |
+| key_name | [string](#string) |  | the key name for the password. |
+
+
+
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AppRoleAuthOption"></a>
+
+### DataSourceExternalSecret.AppRoleAuthOption
+app role auth method: https://developer.hashicorp.com/vault/docs/auth/approle
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role_id | [string](#string) |  |  |
+| secret_id | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-DataSourceOptions"></a>
 
 ### DataSourceOptions
@@ -1334,12 +1377,38 @@ Used internally for obfuscating the page token.
 | ssh_obfuscated_password | [string](#string) |  | The password to login the server. If it&#39;s empty string, no password is required. |
 | ssh_obfuscated_private_key | [string](#string) |  | The private key to login the server. If it&#39;s empty string, we will use the system default private key from os.Getenv(&#34;SSH_AUTH_SOCK&#34;). |
 | authentication_private_key_obfuscated | [string](#string) |  | PKCS#8 private key in PEM format. If it&#39;s empty string, no private key is required. Used for authentication when connecting to the data source. |
+| external_secret | [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret) |  |  |
 
 
 
 
 
  
+
+
+<a name="bytebase-store-DataSourceExternalSecret-AuthType"></a>
+
+### DataSourceExternalSecret.AuthType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUTH_TYPE_UNSPECIFIED | 0 |  |
+| TOKEN | 1 |  |
+| APP_ROLE | 2 |  |
+
+
+
+<a name="bytebase-store-DataSourceExternalSecret-SecretType"></a>
+
+### DataSourceExternalSecret.SecretType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SAECRET_TYPE_UNSPECIFIED | 0 |  |
+| VAULT_KV_V2 | 1 |  |
+
 
  
 
