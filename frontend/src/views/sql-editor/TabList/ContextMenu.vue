@@ -17,7 +17,7 @@
 import { NDropdown, DropdownOption } from "naive-ui";
 import { computed, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
-import { TabInfo, TabMode } from "@/types";
+import { SQLEditorTab } from "@/types";
 import { CloseTabAction, useTabListContext } from "./context";
 
 const { t } = useI18n();
@@ -58,7 +58,7 @@ const options = computed((): DropdownOption[] => {
   ];
 
   const { tab } = state.value;
-  if (tab.mode === TabMode.ReadOnly) {
+  if (tab.mode === "READONLY" || tab.mode === "STANDARD") {
     const DIVIDER: DropdownOption = {
       type: "divider",
       key: "DIVIDER",
@@ -74,7 +74,7 @@ const options = computed((): DropdownOption[] => {
   return options;
 });
 
-const show = (tab: TabInfo, index: number, e: MouseEvent) => {
+const show = (tab: SQLEditorTab, index: number, e: MouseEvent) => {
   e.preventDefault();
   e.stopPropagation();
   state.value = undefined;

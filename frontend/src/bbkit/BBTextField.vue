@@ -12,6 +12,7 @@
     :autosize="autosize"
     :status="state.hasError ? 'error' : undefined"
     @blur="onBlur"
+    @focus="$emit('on-focus')"
     @update:value="onInput($event)"
     @keypress.enter="onPressEnter"
     @input="$emit('input', $event)"
@@ -57,6 +58,7 @@ const emit = defineEmits<{
   (event: "end-editing", value: string): void;
   (event: "update:value", value: string): void;
   (event: "input", value: string): void;
+  (event: "on-focus"): void;
 }>();
 
 const inputField = ref();

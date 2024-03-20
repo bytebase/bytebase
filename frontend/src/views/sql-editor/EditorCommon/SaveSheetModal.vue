@@ -15,8 +15,12 @@
 <script lang="ts" setup>
 import { reactive } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useDatabaseV1Store, useWorkSheetStore, useTabStore } from "@/store";
-import { UNKNOWN_ID, TabInfo } from "@/types";
+import {
+  useDatabaseV1Store,
+  useWorkSheetStore,
+  useSQLEditorTabStore,
+} from "@/store";
+import { UNKNOWN_ID, SQLEditorTab } from "@/types";
 import {
   Worksheet,
   Worksheet_Visibility,
@@ -27,10 +31,10 @@ import { useSQLEditorContext } from "../context";
 import SaveSheetForm from "./SaveSheetForm.vue";
 
 type LocalState = {
-  pendingEditTab?: TabInfo;
+  pendingEditTab?: SQLEditorTab;
 };
 
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const worksheetV1Store = useWorkSheetStore();
 const { events: sheetEvents } = useSheetContext();
@@ -38,44 +42,44 @@ const { events: editorEvents } = useSQLEditorContext();
 
 const state = reactive<LocalState>({});
 
-const doSaveSheet = async (tab: TabInfo) => {
-  const { name, statement, sheetName } = tab;
+const doSaveSheet = async (tab: SQLEditorTab) => {
+  const { title, statement, sheet } = tab;
 
-  if (name === "" || statement === "") {
+  if (title === "" || statement === "") {
     return;
   }
 
-  const sheetId = Number(extractWorksheetUID(sheetName ?? ""));
+  const sheetId = Number(extractWorksheetUID(sheet ?? ""));
 
   if (sheetId !== UNKNOWN_ID) {
-    const sheet = await worksheetV1Store.patchSheet(
+    const updatedSheet = await worksheetV1Store.patchSheet(
       {
-        name: sheetName,
-        title: name,
+        name: sheet,
+        title: title,
         content: new TextEncoder().encode(statement),
       },
       ["title", "content"]
     );
-    if (sheet) {
-      const tab = tabStore.tabList.find((t) => t.sheetName === sheet.name);
+    if (updatedSheet) {
+      const tab = tabStore.tabList.find((t) => t.sheet === updatedSheet.name);
       if (tab) {
         tabStore.updateTab(tab.id, {
-          isSaved: true,
-          name,
+          title,
+          status: "CLEAN",
         });
       }
     }
   } else {
-    if (tab.connection.databaseId === String(UNKNOWN_ID)) {
+    if (!tab.connection.database) {
       return false;
     }
-    const database = await databaseStore.getOrFetchDatabaseByUID(
-      tab.connection.databaseId,
+    const database = await databaseStore.getOrFetchDatabaseByName(
+      tab.connection.database,
       true /* silent */
     );
-    const sheet = await worksheetV1Store.createSheet(
+    const createdSheet = await worksheetV1Store.createSheet(
       Worksheet.fromPartial({
-        title: name,
+        title,
         project: database.project,
         content: new TextEncoder().encode(statement),
         database: database.name,
@@ -84,9 +88,9 @@ const doSaveSheet = async (tab: TabInfo) => {
     );
     if (tabStore.currentTabId === tab.id) {
       tabStore.updateCurrentTab({
-        sheetName: sheet.name,
-        isSaved: true,
-        name,
+        sheet: createdSheet.name,
+        title,
+        status: "CLEAN",
       });
     }
   }
@@ -96,15 +100,15 @@ const doSaveSheet = async (tab: TabInfo) => {
   state.pendingEditTab = undefined;
 };
 
-const needSheetTitle = (tab: TabInfo) => {
-  if (tab.sheetName) {
+const needSheetTitle = (tab: SQLEditorTab) => {
+  if (tab.sheet) {
     // If the sheet is saved, we don't need to show the name popup.
     return false;
   }
   return true;
 };
 
-const trySaveSheet = (tab: TabInfo, editTitle?: boolean) => {
+const trySaveSheet = (tab: SQLEditorTab, editTitle?: boolean) => {
   if (needSheetTitle(tab) || editTitle) {
     state.pendingEditTab = tab;
     return;

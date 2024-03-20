@@ -41,7 +41,7 @@ import {
   PlanCheckRun_Type,
   Task,
 } from "@/types/proto/v1/rollout_service";
-import { humanizeDate, extractEnvironmentResourceName } from "@/utils";
+import { humanizeDate } from "@/utils";
 import PlanCheckBadgeBar from "./PlanCheckBadgeBar.vue";
 import PlanCheckDetail from "./PlanCheckDetail.vue";
 
@@ -106,8 +106,6 @@ const environment = computed(() => {
     return;
   }
   const database = databaseForTask(issue.value, task);
-  return extractEnvironmentResourceName(
-    database.effectiveEnvironmentEntity.name
-  );
+  return database.effectiveEnvironmentEntity.name;
 });
 </script>

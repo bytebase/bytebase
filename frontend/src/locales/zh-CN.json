@@ -317,7 +317,7 @@
       "statement-type": "语句类型",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "预估影响行数",
+      "affected-rows": "影响行数（基于统计信息估算）",
       "sql-type": "SQL 类型",
       "summary-report": "概要报告"
     },
@@ -366,7 +366,8 @@
       "generating": "生成中",
       "empty-rollback-statement": "回滚语句为空",
       "cancel-generating": "取消生成回滚语句",
-      "sql-rollback-tips": "开启时，Bytebase 会保留数据变更的回滚日志，\n可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能\n会影响重复的行。执行前请注意确认。\n{link}"
+      "sql-rollback-tips": "开启时会保留数据变更的回滚日志，可以用于创建一个新的工单来回滚这次变更。\n警告：如果你的数据表没有主键，回滚语句可能会影响重复的行。执行前请注意确认。\n{link}",
+      "maximum-size-tips": "支持的最大回滚数据量为 32MB"
     },
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "apply-change-to-all-pending-tasks": {
@@ -828,14 +829,6 @@
         "override-desc": "已有的分类分级数据将会被覆盖，涉及到的项目都会受到影响。",
         "override-confirm": "继续导入"
       }
-    },
-    "access-control": {
-      "description": "配置审批流来控制数据的查询和导出。{link}",
-      "skip-approval": "跳过人工审批",
-      "query-data": "数据查询",
-      "export-data": "数据导出",
-      "disallowed": "禁止",
-      "copy-data-from-sql-editor": "从 SQL 编辑器复制数据"
     },
     "release": {
       "new-version-available": "有新版本可更新",
@@ -1405,7 +1398,11 @@
       "self": "禁用数据库自动备份",
       "content": "禁用自动备份策略仅对新添加的数据库生效。\n是否要将该设置应用到当前环境下的所有数据库？"
     },
-    "production-environment": "生产环境"
+    "production-environment": "生产环境",
+    "access-control": {
+      "title": "访问控制",
+      "disable-copy-data-from-sql-editor": "禁止从 SQL 编辑器复制数据"
+    }
   },
   "quick-start": {
     "self": "新手任务",
@@ -2005,7 +2002,9 @@
       "roles": "角色",
       "search-member": "搜索成员",
       "revoke-members": "撤销成员",
-      "clean-up-expired-roles": "清除过期的角色"
+      "clean-up-expired-roles": "清除过期的角色",
+      "workspace-level-roles": "工作空间级别角色",
+      "project-level-roles": "项目级别角色"
     },
     "mode": {
       "standard": "标准模式",
@@ -2254,9 +2253,10 @@
     "link-access": "链接访问权限",
     "private": "私有",
     "private-desc": "只有您自己可以访问此工作表",
-    "project-desc": "工作表所有者或者项目所有者拥有读、写权限，项目开发者拥有只读权限",
-    "public": "公开",
-    "public-desc": "工作表所有者拥有读写权限，其他人只拥有只读权限.",
+    "project-read": "项目内可读",
+    "project-read-desc": "工作表所有者或者项目所有者拥有读、写权限，其他成员拥有只读权限",
+    "project-write": "项目内读写",
+    "project-write-desc": "工作表所有者和项目内成员都有读写权限",
     "create-read-only-data-source": "前去创建",
     "go-back": "返回",
     "save-sheet": "保存工作表",
@@ -2539,7 +2539,7 @@
       },
       "bb-feature-access-control": {
         "title": "数据访问控制",
-        "desc": "配置审批流来控制数据的查询和导出。"
+        "desc": "限制用户对数据的访问权限，例如禁止用户复制数据查询结果"
       },
       "bb-feature-lgtm": {
         "title": "LGTM 检查",
@@ -3317,7 +3317,7 @@
     "search-tables": "搜索表",
     "use-tips": "选择需要设计的表",
     "apply-to-database": "应用变更到数据库",
-    "select-database-placeholder": "选择数据库 (仅限 MySQL，PostgreSQL 和 TiDB)",
+    "select-database-placeholder": "选择数据库（仅限 MySQL、PostgreSQL、TiDB 和 Oracle）",
     "message": {
       "created-succeed": "分支创建成功",
       "updated-succeed": "分支更新成功",

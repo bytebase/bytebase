@@ -27,14 +27,15 @@ import { useResizeObserver } from "@vueuse/core";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import { useDatabaseV1Store, useTabStore } from "@/store";
+import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { extractSQLRowValue, getHighlightHTMLByRegExp } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 
 const props = defineProps<{
-  table: Table<string[]>;
-  value: unknown;
+  table: Table<QueryRow>;
+  value: RowValue;
   setIndex: number;
   rowIndex: number;
   colIndex: number;
@@ -55,11 +56,7 @@ useResizeObserver(wrapperRef, (entries) => {
     truncated.value = false;
   }
 });
-
-const database = computed(() => {
-  const conn = useTabStore().currentTab.connection;
-  return useDatabaseV1Store().getDatabaseByUID(conn.databaseId);
-});
+const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const clickable = computed(() => {
   if (truncated.value) return true;
@@ -87,10 +84,11 @@ const classes = computed(() => {
 });
 
 const html = computed(() => {
-  if (props.value === null) {
+  const value = extractSQLRowValue(props.value);
+  if (value === null) {
     return `<span class="text-gray-400 italic">NULL</span>`;
   }
-  const str = String(props.value);
+  const str = String(value);
   if (str.length === 0) {
     return `<br style="min-width: 1rem; display: inline-flex;" />`;
   }

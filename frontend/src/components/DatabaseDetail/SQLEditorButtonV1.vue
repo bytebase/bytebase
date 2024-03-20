@@ -32,14 +32,19 @@ import { computed } from "vue";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { SQL_EDITOR_DETAIL_MODULE } from "@/router/sqlEditor";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { useCurrentUserV1, usePageMode, useSQLEditorTreeStore } from "@/store";
 import {
   ComposedDatabase,
   DEFAULT_PROJECT_V1_NAME,
   defaultProject,
 } from "@/types";
-import { VueClass, connectionV1Slug, hasProjectPermissionV2 } from "@/utils";
+import {
+  VueClass,
+  hasProjectPermissionV2,
+  extractProjectResourceName,
+  extractInstanceResourceName,
+} from "@/utils";
 
 interface LocalState {
   showRequestQueryPanel: boolean;
@@ -124,17 +129,15 @@ const gotoSQLEditor = () => {
   }
 
   const route = router.resolve({
-    name: SQL_EDITOR_DETAIL_MODULE,
+    name: SQL_EDITOR_DATABASE_MODULE,
     params: {
-      connectionSlug: connectionV1Slug(database.instanceEntity, database),
+      project: extractProjectResourceName(database.project),
+      instance: extractInstanceResourceName(database.instance),
+      database: database.databaseName,
     },
     query: {
-      filter: props.table
-        ? JSON.stringify({
-            table: props.table,
-            schema: props.schema,
-          })
-        : undefined,
+      table: props.table ? props.table : undefined,
+      schema: props.schema ? props.schema : undefined,
     },
   });
   window.open(route.fullPath);

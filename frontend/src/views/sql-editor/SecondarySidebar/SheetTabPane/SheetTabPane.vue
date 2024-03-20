@@ -28,7 +28,7 @@ import { computed, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   usePageMode,
-  useTabStore,
+  useSQLEditorTabStore,
   useWorkSheetStore,
   useCurrentUserV1,
 } from "@/store";
@@ -37,7 +37,7 @@ import SheetList from "./SheetList";
 
 const { events: sheetEvents } = useSheetContext();
 const pageMode = usePageMode();
-const tabStore = useTabStore();
+const tabStore = useSQLEditorTabStore();
 const sheetStore = useWorkSheetStore();
 const me = useCurrentUserV1();
 
@@ -52,10 +52,13 @@ useEmitteryEventListener(sheetEvents, "add-sheet", () => {
 watch(
   () => tabStore.currentTab,
   (tab) => {
-    if (!tab.isSaved || !tab.sheetName) {
+    if (!tab) {
       return;
     }
-    const sheet = sheetStore.getSheetByName(tab.sheetName);
+    if (tab.sheet) {
+      return;
+    }
+    const sheet = sheetStore.getSheetByName(tab.sheet);
     if (!sheet) {
       return;
     }

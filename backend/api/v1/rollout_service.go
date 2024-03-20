@@ -72,7 +72,11 @@ func (s *RolloutService) GetPlan(ctx context.Context, request *v1pb.GetPlanReque
 	if plan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan not found for id: %d", planID)
 	}
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // ListPlans lists plans.
@@ -126,22 +130,25 @@ func (s *RolloutService) ListPlans(ctx context.Context, request *v1pb.ListPlansR
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
 	}
 
+	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
+		pageToken, err := getPageToken(limit, offset+limit)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		return &v1pb.ListPlansResponse{
-			Plans:         convertToPlans(plans[:limit]),
-			NextPageToken: nextPageToken,
-		}, nil
+		nextPageToken = pageToken
+		plans = plans[:limit]
 	}
 
-	// no subsequent pages
+	convertedPlans, err := convertToPlans(ctx, s.store, plans)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plans, error: %v", err)
+	}
+
 	return &v1pb.ListPlansResponse{
-		Plans:         convertToPlans(plans),
-		NextPageToken: "",
+		Plans:         convertedPlans,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
@@ -178,12 +185,12 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 		},
 	}
 
+	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, planMessage.Config.GetSteps(), project); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+	}
 	plan, err := s.store.CreatePlan(ctx, planMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create plan, error: %v", err)
-	}
-	if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, plan.Config.GetSteps(), project); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
 	}
 
 	planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, plan)
@@ -197,7 +204,11 @@ func (s *RolloutService) CreatePlan(ctx context.Context, request *v1pb.CreatePla
 	// Tickle plan check scheduler.
 	s.stateCfg.PlanCheckTickleChan <- 0
 
-	return convertToPlan(plan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, plan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // PreviewRollout previews the rollout for a plan.
@@ -254,6 +265,9 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	rollout, err := s.store.GetRollout(ctx, rolloutID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get pipeline, error: %v", err)
+	}
+	if rollout == nil {
+		return nil, status.Errorf(codes.NotFound, "rollout not found for id: %d", rolloutID)
 	}
 
 	rolloutV1, err := convertToRollout(ctx, s.store, project, rollout)
@@ -802,13 +816,6 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	for _, path := range request.UpdateMask.Paths {
-		switch path {
-		case "steps":
-		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
-		}
-	}
 	planID, err := common.GetPlanID(request.Plan.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -819,6 +826,23 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 	}
 	if oldPlan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &oldPlan.ProjectID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project %q, err: %v", oldPlan.ProjectID, err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", oldPlan.ProjectID)
+	}
+	for _, path := range request.UpdateMask.Paths {
+		switch path {
+		case "steps":
+			if _, err := GetPipelineCreate(ctx, s.store, s.licenseService, s.dbFactory, convertPlanSteps(request.Plan.GetSteps()), project); err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "failed to get pipeline from the plan, please check you request, error: %v", err)
+			}
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update_mask path %q", path)
+		}
 	}
 
 	ok, err = func() (bool, error) {
@@ -951,8 +975,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				switch task.Type {
 				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
 					var taskPayload struct {
-						SpecID  string `json:"specId"`
-						SheetID int    `json:"sheetId"`
+						SheetID int `json:"sheetId"`
 					}
 					if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
 						return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
@@ -988,6 +1011,28 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						TaskName:   task.Name,
 						IssueName:  issue.Title,
 					})
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// version
+			if err := func() error {
+				switch task.Type {
+				case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				default:
+					return nil
+				}
+				var taskPayload struct {
+					SchemaVersion string `json:"schemaVersion"`
+				}
+				if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+					return errors.Wrapf(err, "failed to unmarshal task payload")
+				}
+				if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != taskPayload.SchemaVersion {
+					taskPatch.SchemaVersion = &v
+					doUpdate = true
 				}
 				return nil
 			}(); err != nil {
@@ -1137,7 +1182,11 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 		}
 	}
 
-	return convertToPlan(updatedPlan), nil
+	convertedPlan, err := convertToPlan(ctx, s.store, updatedPlan)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to plan, error: %v", err)
+	}
+	return convertedPlan, nil
 }
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.

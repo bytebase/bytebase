@@ -11,7 +11,6 @@ import {
   SQLReviewPolicy,
   IdType,
   MaybeRef,
-  RuleType,
 } from "@/types";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
@@ -35,7 +34,7 @@ const convertToSQLReviewPolicy = async (
   const ruleList: SchemaPolicyRule[] = [];
   for (const r of policy.sqlReviewPolicy.rules) {
     const rule: SchemaPolicyRule = {
-      type: r.type as RuleType,
+      type: r.type,
       level: r.level,
       engine: r.engine,
       comment: r.comment,
@@ -219,7 +218,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
     ): SQLReviewPolicy | undefined {
       return this.reviewPolicyList.find((g) => g.environment.name === name);
     },
-    getReviewPolicyByEnvironmentId(
+    getReviewPolicyByEnvironmentUID(
       environmentId: string
     ): SQLReviewPolicy | undefined {
       return this.getReviewPolicyByEnvironmentName(
@@ -267,11 +266,11 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       }
       return reviewPolicy;
     },
-    async getOrFetchReviewPolicyByEnvironmentId(
-      environmentId: string
+    async getOrFetchReviewPolicyByEnvironmentUID(
+      uid: string
     ): Promise<SQLReviewPolicy | undefined> {
       return this.getOrFetchReviewPolicyByEnvironmentName(
-        `${environmentNamePrefix}${environmentId}`
+        `${environmentNamePrefix}${uid}`
       );
     },
   },
@@ -288,15 +287,16 @@ export const useSQLReviewPolicyList = () => {
 };
 
 export const useReviewPolicyByEnvironmentName = (
-  environmentId: MaybeRef<string>
+  name: MaybeRef<string | undefined>
 ) => {
   const store = useSQLReviewStore();
   watchEffect(() => {
-    const id = unref(environmentId);
-    store.getOrFetchReviewPolicyByEnvironmentName(id);
+    if (!unref(name)) return;
+    store.getOrFetchReviewPolicyByEnvironmentName(unref(name)!);
   });
 
-  return computed(() =>
-    store.getReviewPolicyByEnvironmentName(unref(environmentId))
-  );
+  return computed(() => {
+    if (!unref(name)) return undefined;
+    return store.getReviewPolicyByEnvironmentName(unref(name)!);
+  });
 };

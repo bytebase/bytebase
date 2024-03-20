@@ -78,6 +78,9 @@ func (checker *statementMergeAlterTableChecker) EnterQuery(ctx *mysql.QueryConte
 
 // EnterCreateTable is called when production createTable is entered.
 func (checker *statementMergeAlterTableChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -92,6 +95,9 @@ func (checker *statementMergeAlterTableChecker) EnterCreateTable(ctx *mysql.Crea
 
 // EnterAlterTable is called when production alterTable is entered.
 func (checker *statementMergeAlterTableChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRef() == nil {
 		return
 	}

@@ -317,7 +317,7 @@
       "statement-type": "Statement type",
       "lgtm": "LGTM",
       "pitr": "PITR",
-      "affected-rows": "Estimated affected rows",
+      "affected-rows": "Affected rows (estimation based on statistical information)",
       "sql-type": "SQL type",
       "summary-report": "Summary report"
     },
@@ -366,7 +366,8 @@
       "generating": "Generating",
       "empty-rollback-statement": "The rollback statement is empty",
       "cancel-generating": "Cancel generating the SQL rollback",
-      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}"
+      "sql-rollback-tips": "When enabled, Bytebase will keep the rollback logs for the data change\nand allow you to create a new issue to revert this change.\nWarning: If the table does not have a primary key. Undo SQL may affect\nduplicate rows. Please carefully confirm before executing.\n{link}",
+      "maximum-size-tips": "Maximum rollback data size supported is 32MB"
     },
     "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "apply-change-to-all-pending-tasks": {
@@ -828,14 +829,6 @@
         "override-desc": "Existed classification data will be overridden and affect all projects.",
         "override-confirm": "Still upload"
       }
-    },
-    "access-control": {
-      "description": "Configure approval flow to control data query and export. {link}",
-      "skip-approval": "Skip approval",
-      "query-data": "Query Data",
-      "export-data": "Export Data",
-      "disallowed": "Disallowed",
-      "copy-data-from-sql-editor": "Copy Data From SQL Editor"
     },
     "release": {
       "new-version-available": "New version is available",
@@ -1405,7 +1398,11 @@
       "self": "Disable database automatic backup",
       "content": "Disabling automatic backup policy is not applied retroactively.\nAre you sure about applying to all databases in this environment?"
     },
-    "production-environment": "Production environment"
+    "production-environment": "Production environment",
+    "access-control": {
+      "title": "Access control",
+      "disable-copy-data-from-sql-editor": "Disable copy data from SQL editor"
+    }
   },
   "quick-start": {
     "self": "Quickstart",
@@ -1979,7 +1976,7 @@
       }
     },
     "members": {
-      "description": "Project members determine the permission to operate database and issues inside the proejct. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
+      "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
       "add-member": "Add member",
       "revoke-member": "Revoke member",
       "revoke-access": "Revoke Access",
@@ -2005,7 +2002,9 @@
       "roles": "Roles",
       "search-member": "Search member",
       "revoke-members": "Revoke these members",
-      "clean-up-expired-roles": "Clean up expired roles"
+      "clean-up-expired-roles": "Clean up expired roles",
+      "workspace-level-roles": "Workspace level roles",
+      "project-level-roles": "Project level roles"
     },
     "mode": {
       "standard": "Standard Mode",
@@ -2254,9 +2253,10 @@
     "link-access": "Link access",
     "private": "Private",
     "private-desc": "Only you can access this sheet",
-    "project-desc": "Both sheet OWNER and project OWNER can read/write, and project DEVELOPER can read",
-    "public": "Public",
-    "public-desc": "Sheet OWNER can read/write, and all others can read",
+    "project-read": "Project read",
+    "project-read-desc": "Both sheet OWNER and project OWNER can read/write, other project members can read",
+    "project-write": "Project write",
+    "project-write-desc": "Both sheet OWNER and project members can read/write",
     "create-read-only-data-source": "Go to create",
     "go-back": "Go Back",
     "save-sheet": "Save Sheet",
@@ -2539,8 +2539,8 @@
         "desc": "Mark table columns as sensitive data and the query result of them will be displayed as \"******\"."
       },
       "bb-feature-access-control": {
-        "title": "Data Access control",
-        "desc": "Configure approval flow to control data query and export."
+        "title": "Data Access Control",
+        "desc": "Restrict user access to data, such as prohibiting users from copying data query results."
       },
       "bb-feature-lgtm": {
         "title": "LGTM check",
@@ -3317,7 +3317,7 @@
     "search-tables": "Search tables",
     "use-tips": "Click a table to start.",
     "apply-to-database": "Apply change to database",
-    "select-database-placeholder": "Select a database (MySQL, PostgreSQL and TiDB only)",
+    "select-database-placeholder": "Select a database (MySQL, PostgreSQL, TiDB and Oracle only)",
     "message": {
       "created-succeed": "Branch created successfully",
       "updated-succeed": "Branch updated successfully",

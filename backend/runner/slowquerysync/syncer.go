@@ -199,7 +199,7 @@ func (s *Syncer) syncPostgreSQLSlowQuery(ctx context.Context, instance *store.In
 	latestLogDate = latestLogDate.Truncate(24 * time.Hour)
 	nextLogDate := latestLogDate.AddDate(0, 0, 1)
 
-	for _, database := range enabledDatabases {
+	for _, database := range databases {
 		statistics, exists := logMap[database.DatabaseName]
 		if !exists {
 			continue

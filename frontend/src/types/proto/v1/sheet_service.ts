@@ -1,7 +1,6 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { DatabaseConfig } from "./database_service";
@@ -48,14 +47,6 @@ export interface UpdateSheetRequest {
    * - `statement`
    */
   updateMask: string[] | undefined;
-}
-
-export interface DeleteSheetRequest {
-  /**
-   * The name of the sheet to delete.
-   * Format: projects/{project}/sheets/{sheet}
-   */
-  name: string;
 }
 
 export interface Sheet {
@@ -360,63 +351,6 @@ export const UpdateSheetRequest = {
     const message = createBaseUpdateSheetRequest();
     message.sheet = (object.sheet !== undefined && object.sheet !== null) ? Sheet.fromPartial(object.sheet) : undefined;
     message.updateMask = object.updateMask ?? undefined;
-    return message;
-  },
-};
-
-function createBaseDeleteSheetRequest(): DeleteSheetRequest {
-  return { name: "" };
-}
-
-export const DeleteSheetRequest = {
-  encode(message: DeleteSheetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteSheetRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteSheetRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteSheetRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
-  },
-
-  toJSON(message: DeleteSheetRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
-    return DeleteSheetRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeleteSheetRequest>): DeleteSheetRequest {
-    const message = createBaseDeleteSheetRequest();
-    message.name = object.name ?? "";
     return message;
   },
 };
@@ -870,55 +804,6 @@ export const SheetServiceDefinition = {
               101,
               116,
               46,
-              110,
-              97,
-              109,
-              101,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              47,
-              115,
-              104,
-              101,
-              101,
-              116,
-              115,
-              47,
-              42,
-              125,
-            ]),
-          ],
-        },
-      },
-    },
-    deleteSheet: {
-      name: "DeleteSheet",
-      requestType: DeleteSheetRequest,
-      requestStream: false,
-      responseType: Empty,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          578365826: [
-            new Uint8Array([
-              32,
-              42,
-              30,
-              47,
-              118,
-              49,
-              47,
-              123,
               110,
               97,
               109,

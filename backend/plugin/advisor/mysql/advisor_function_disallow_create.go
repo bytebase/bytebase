@@ -72,6 +72,9 @@ func (checker *functionDisallowCreateChecker) EnterQuery(ctx *mysql.QueryContext
 }
 
 func (checker *functionDisallowCreateChecker) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	code := advisor.Ok
 	if ctx.FunctionName() != nil {
 		code = advisor.DisallowCreateFunction

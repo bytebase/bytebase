@@ -19,16 +19,20 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertToPlans(plans []*store.PlanMessage) []*v1pb.Plan {
+func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMessage) ([]*v1pb.Plan, error) {
 	v1Plans := make([]*v1pb.Plan, len(plans))
 	for i := range plans {
-		v1Plans[i] = convertToPlan(plans[i])
+		p, err := convertToPlan(ctx, s, plans[i])
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert plan")
+		}
+		v1Plans[i] = p
 	}
-	return v1Plans
+	return v1Plans, nil
 }
 
-func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
-	return &v1pb.Plan{
+func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
+	p := &v1pb.Plan{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, plan.ProjectID, common.PlanPrefix, plan.UID),
 		Uid:         fmt.Sprintf("%d", plan.UID),
 		Issue:       "",
@@ -36,6 +40,15 @@ func convertToPlan(plan *store.PlanMessage) *v1pb.Plan {
 		Description: plan.Description,
 		Steps:       convertToPlanSteps(plan.Config.Steps),
 	}
+
+	issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get issue by plan uid %d", plan.UID)
+	}
+	if issue != nil {
+		p.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssuePrefix, issue.UID)
+	}
+	return p, nil
 }
 
 func convertToPlanSteps(steps []*storepb.PlanConfig_Step) []*v1pb.Plan_Step {
@@ -529,6 +542,14 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		Stages: nil,
 	}
 
+	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &rollout.ID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get plan")
+	}
+	if plan != nil {
+		rolloutV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.PlanPrefix, plan.UID)
+	}
+
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
@@ -561,8 +582,8 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	for i, rolloutStage := range rolloutV1.Stages {
 		for j, rolloutTask := range rolloutStage.Tasks {
 			task := rollout.Stages[i].TaskList[j]
-			for _, blockingTask := range task.BlockedBy {
-				rolloutTask.BlockedByTasks = append(rolloutTask.BlockedByTasks, taskIDToName[blockingTask])
+			for _, blockingTask := range task.DependsOn {
+				rolloutTask.DependsOnTasks = append(rolloutTask.DependsOnTasks, taskIDToName[blockingTask])
 			}
 		}
 	}
@@ -633,7 +654,7 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
 		Payload: &v1pb.Task_DatabaseCreate_{
 			DatabaseCreate: &v1pb.Task_DatabaseCreate{
@@ -675,7 +696,7 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaBaseline_{
 			DatabaseSchemaBaseline: &v1pb.Task_DatabaseSchemaBaseline{
@@ -717,7 +738,7 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseSchemaUpdate_{
 			DatabaseSchemaUpdate: &v1pb.Task_DatabaseSchemaUpdate{
@@ -752,7 +773,7 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
 		Type:           convertToTaskType(task.Type),
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
@@ -794,7 +815,7 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
@@ -869,7 +890,7 @@ func convertToTaskFromDatabaseBackup(ctx context.Context, s *store.Store, projec
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload: &v1pb.Task_DatabaseBackup_{
 			DatabaseBackup: &v1pb.Task_DatabaseBackup{
@@ -906,7 +927,7 @@ func convertToTaskFromDatabaseRestoreRestore(ctx context.Context, s *store.Store
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}
@@ -985,7 +1006,7 @@ func convertToTaskFromDatabaseRestoreCutOver(ctx context.Context, s *store.Store
 		Type:           convertToTaskType(task.Type),
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
 		SkippedReason:  payload.SkippedReason,
-		BlockedByTasks: nil,
+		DependsOnTasks: nil,
 		Target:         fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName),
 		Payload:        nil,
 	}

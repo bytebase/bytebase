@@ -179,12 +179,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 
-	if opts.BeginFunc != nil {
-		if err := opts.BeginFunc(ctx, conn); err != nil {
-			return 0, err
-		}
-	}
-
 	var nonTransactionStmts []string
 	var totalCommands int
 	var chunks [][]base.SingleSQL

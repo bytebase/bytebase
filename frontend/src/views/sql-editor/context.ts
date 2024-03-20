@@ -1,6 +1,7 @@
 import Emittery from "emittery";
 import { InjectionKey, inject, provide, Ref, ref } from "vue";
-import { ComposedDatabase, TabInfo } from "@/types";
+import { useSQLEditorStore } from "@/store";
+import { ComposedDatabase, SQLEditorTab } from "@/types";
 import {
   DatabaseMetadata,
   ExternalTableMetadata,
@@ -9,11 +10,16 @@ import {
 } from "@/types/proto/v1/database_service";
 
 type SQLEditorEvents = Emittery<{
-  "save-sheet": { tab: TabInfo; editTitle?: boolean };
+  "save-sheet": { tab: SQLEditorTab; editTitle?: boolean };
   "alter-schema": {
     databaseUID: string;
     schema: string;
     table: string;
+  };
+  "format-content": undefined;
+  "tree-ready": undefined;
+  "project-context-ready": {
+    project: string;
   };
 }>;
 
@@ -32,6 +38,8 @@ export type SQLEditorContext = {
   >;
 
   events: SQLEditorEvents;
+
+  maybeSwitchProject: (project: string) => Promise<string>;
 };
 
 export const KEY = Symbol(
@@ -43,10 +51,19 @@ export const useSQLEditorContext = () => {
 };
 
 export const provideSQLEditorContext = () => {
+  const editorStore = useSQLEditorStore();
   const context: SQLEditorContext = {
     showAIChatBox: ref(false),
     selectedDatabaseSchemaByDatabaseName: ref(new Map()),
     events: new Emittery(),
+
+    maybeSwitchProject: (project) => {
+      if (editorStore.project !== project) {
+        editorStore.project = project;
+        return context.events.once("project-context-ready").then(() => project);
+      }
+      return Promise.resolve(editorStore.project);
+    },
   };
 
   provide(KEY, context);

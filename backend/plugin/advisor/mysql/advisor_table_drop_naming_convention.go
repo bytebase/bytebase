@@ -76,6 +76,9 @@ type namingDropTableConventionChecker struct {
 
 // EnterDropTable is called when production dropTable is entered.
 func (checker *namingDropTableConventionChecker) EnterDropTable(ctx *mysql.DropTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableRefList() == nil {
 		return
 	}

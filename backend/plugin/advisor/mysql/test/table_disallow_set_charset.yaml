@@ -1,0 +1,30 @@
+- statement: |-
+    CREATE TABLE employee (
+      id INT PRIMARY KEY,
+      name VARCHAR(50)
+    ) CHARSET=utf8;
+  want:
+    - status: WARN
+      code: 612
+      title: table.disallow-set-charset
+      content: |-
+        Set charset on tables is disallowed, but "CREATE TABLE employee (
+          id INT PRIMARY KEY,
+          name VARCHAR(50)
+        ) CHARSET=utf8;" uses
+      line: 1
+      details: ""
+- statement: |-
+    CREATE TABLE employee (
+      id INT PRIMARY KEY,
+      name VARCHAR(50)
+    );
+    ALTER TABLE employee CONVERT TO CHARACTER SET utf8;
+  want:
+    - status: WARN
+      code: 612
+      title: table.disallow-set-charset
+      content: |-
+        Set charset on tables is disallowed, but "ALTER TABLE employee CONVERT TO CHARACTER SET utf8;" uses
+      line: 5
+      details: ""

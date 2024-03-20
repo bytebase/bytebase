@@ -22,8 +22,7 @@
         }}</span>
         <span
           v-if="
-            currentTab.mode === TabMode.ReadOnly &&
-            data.length === RESULT_ROWS_LIMIT
+            currentTab?.mode !== 'ADMIN' && data.length === RESULT_ROWS_LIMIT
           "
           class="ml-2 whitespace-nowrap text-sm text-gray-500"
         >
@@ -142,8 +141,8 @@
   </template>
 
   <RequestExportPanel
-    v-if="state.showRequestExportPanel"
-    :database-id="currentTab.connection.databaseId"
+    v-if="database && state.showRequestExportPanel"
+    :database-id="database.uid"
     :statement="result.statement"
     :statement-only="true"
     :redirect-to-issue-page="pageMode === 'BUNDLED'"
@@ -169,28 +168,26 @@ import { ExportOption } from "@/components/DataExportButton.vue";
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import { DISMISS_PLACEHOLDER } from "@/plugins/ai/components/state";
 import {
-  useInstanceV1Store,
-  useTabStore,
+  useSQLEditorTabStore,
   RESULT_ROWS_LIMIT,
   featureToRef,
-  useDatabaseV1Store,
   useCurrentUserV1,
   usePageMode,
   useActuatorV1Store,
+  useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import {
   ComposedDatabase,
-  ExecuteConfig,
-  ExecuteOption,
+  SQLEditorQueryParams,
   SQLResultSetV1,
-  TabMode,
   UNKNOWN_ID,
 } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
-import { QueryResult } from "@/types/proto/v1/sql_service";
+import { QueryResult, QueryRow, RowValue } from "@/types/proto/v1/sql_service";
 import {
+  compareQueryRowValues,
   createExplainToken,
   extractSQLRowValue,
   hasPermissionToCreateRequestGrantIssue,
@@ -214,11 +211,7 @@ const PAGE_SIZES = [20, 50, 100];
 const DEFAULT_PAGE_SIZE = 50;
 
 const props = defineProps<{
-  params: {
-    query: string;
-    config: ExecuteConfig;
-    option?: Partial<ExecuteOption> | undefined;
-  };
+  params: SQLEditorQueryParams;
   database?: ComposedDatabase;
   sqlResultSet: SQLResultSetV1;
   result: QueryResult;
@@ -235,13 +228,12 @@ const { dark, keyword } = useSQLResultViewContext();
 
 const actuatorStore = useActuatorV1Store();
 const { t } = useI18n();
-const tabStore = useTabStore();
-const instanceStore = useInstanceV1Store();
-const databaseStore = useDatabaseV1Store();
+const tabStore = useSQLEditorTabStore();
 const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const pageMode = usePageMode();
+const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -259,10 +251,10 @@ const viewMode = computed((): ViewMode => {
 });
 
 const showSearchFeature = computed(() => {
-  const instance = instanceStore.getInstanceByUID(
-    tabStore.currentTab.connection.instanceId
-  );
-  return instanceV1HasStructuredQueryResult(instance);
+  if (connectedInstance.value.uid === String(UNKNOWN_ID)) {
+    return false;
+  }
+  return instanceV1HasStructuredQueryResult(connectedInstance.value);
 });
 
 const showExportButton = computed(() => {
@@ -284,12 +276,11 @@ const allowToExportData = computed(() => {
 });
 
 const allowToRequestExportData = computed(() => {
-  const { databaseId } = tabStore.currentTab.connection;
-  const database =
-    databaseId === String(UNKNOWN_ID)
-      ? undefined
-      : databaseStore.getDatabaseByUID(databaseId);
+  const { database } = props;
   if (!database) {
+    return false;
+  }
+  if (database.uid === String(UNKNOWN_ID)) {
     return false;
   }
 
@@ -306,28 +297,34 @@ const updateKeyword = (value: string) => {
 };
 
 const columns = computed(() => {
-  const columns = props.result.columnNames;
-  return columns.map<ColumnDef<string[]>>((col, index) => ({
-    id: `${col}@${index}`,
-    accessorFn: (item) => item[index],
-    header: col,
-  }));
-});
-
-const convertedData = computed(() => {
-  const rows = props.result.rows;
-  return rows.map((row) => {
-    return row.values.map((value) => extractSQLRowValue(value));
-  });
+  return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
+    (columnName, index) => {
+      const columnType = props.result.columnTypeNames[index] as string;
+      return {
+        id: `${columnName}@${index}`,
+        accessorFn: (item) => item.values[index],
+        header: columnName,
+        sortingFn: (rowA, rowB) => {
+          return compareQueryRowValues(
+            columnType,
+            rowA.original.values[index],
+            rowB.original.values[index]
+          );
+        },
+      };
+    }
+  );
 });
 
 const data = computed(() => {
-  const data = convertedData.value;
+  const data = props.result.rows;
   const search = keyword.value.trim().toLowerCase();
   let temp = data;
   if (search) {
     temp = data.filter((item) => {
-      return item.some((col) => String(col).toLowerCase().includes(search));
+      return item.values.some((col) =>
+        String(extractSQLRowValue(col)).toLowerCase().includes(search)
+      );
     });
   }
   return temp;
@@ -344,7 +341,7 @@ const isColumnMissingSensitive = (columnIndex: number): boolean => {
   );
 };
 
-const table = useVueTable<string[]>({
+const table = useVueTable<QueryRow>({
   get data() {
     return data.value;
   },
@@ -380,11 +377,9 @@ const handleExportBtnClick = async (
   const instance =
     props.database && props.database.uid !== String(UNKNOWN_ID)
       ? props.database.instance
-      : instanceStore.getInstanceByUID(
-          tabStore.currentTab.connection.instanceId
-        ).name;
+      : connectedInstance.value.name;
   const statement = props.result.statement;
-  const admin = tabStore.currentTab.mode === TabMode.Admin;
+  const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : RESULT_ROWS_LIMIT);
 
   const content = await exportData({
@@ -401,23 +396,20 @@ const handleExportBtnClick = async (
 };
 
 const showVisualizeButton = computed((): boolean => {
-  const instance = instanceStore.getInstanceByUID(
-    tabStore.currentTab.connection.instanceId
+  return (
+    connectedInstance.value.engine === Engine.POSTGRES && props.params.explain
   );
-  const databaseType = instance.engine;
-  const { executeParams } = tabStore.currentTab;
-  return databaseType === Engine.POSTGRES && !!executeParams?.option?.explain;
 });
 
 const visualizeExplain = () => {
   try {
-    const { executeParams } = tabStore.currentTab;
-    if (!executeParams || !props.sqlResultSet) return;
+    const { params, sqlResultSet } = props;
+    if (!sqlResultSet) return;
 
-    const statement = executeParams.query || "";
+    const { statement } = params;
     if (!statement) return;
 
-    const explain = explainFromSQLResultSetV1(props.sqlResultSet);
+    const explain = explainFromSQLResultSetV1(sqlResultSet);
     if (!explain) return;
 
     const token = createExplainToken(statement, explain);

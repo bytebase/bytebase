@@ -34,14 +34,14 @@ import {
   useEditorContextKey,
   formatEditorContent,
 } from "@/components/MonacoEditor/utils";
-import { useTabStore, useSQLEditorStore, useInstanceV1ByUID } from "@/store";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  dialectOfEngineV1,
-  ExecuteConfig,
-  ExecuteOption,
-  SQLDialect,
-} from "@/types";
-import { formatEngineV1, useInstanceV1EditorLanguage } from "@/utils";
+  useSQLEditorTabStore,
+  useConnectionOfCurrentSQLEditorTab,
+} from "@/store";
+import { dialectOfEngineV1, SQLDialect, SQLEditorQueryParams } from "@/types";
+import { useInstanceV1EditorLanguage } from "@/utils";
+import { useSQLEditorContext } from "../context";
 import {
   checkCursorAtFirstLine,
   checkCursorAtLast,
@@ -62,12 +62,7 @@ const props = defineProps({
 
 const emit = defineEmits<{
   (e: "update:sql", sql: string): void;
-  (
-    e: "execute",
-    sql: string,
-    config: ExecuteConfig,
-    option?: ExecuteOption
-  ): void;
+  (e: "execute", params: SQLEditorQueryParams): void;
   (e: "history", direction: "up" | "down", editor: IStandaloneCodeEditor): void;
   (e: "clear-screen"): void;
 }>();
@@ -75,16 +70,12 @@ const emit = defineEmits<{
 const MIN_EDITOR_HEIGHT = 40; // ~= 1 line
 const MAX_EDITOR_HEIGHT = 360; // ~= 2 lines
 
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const tabStore = useSQLEditorTabStore();
 
-const { instance } = useInstanceV1ByUID(
-  computed(() => tabStore.currentTab.connection.instanceId)
-);
-const instanceEngine = computed(() => {
-  return formatEngineV1(instance.value);
-});
+const { events: editorEvents } = useSQLEditorContext();
+const { connection, instance } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
+const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
@@ -127,7 +118,7 @@ const handleChange = (value: string) => {
   }
   tabStore.updateCurrentTab({
     statement: value,
-    isSaved: false,
+    status: "DIRTY",
   });
 
   emit("update:sql", value);
@@ -140,12 +131,12 @@ const handleChangeSelection = (value: string) => {
 };
 
 const execute = (explain = false) => {
-  emit(
-    "execute",
-    props.sql,
-    { databaseType: instanceEngine.value },
-    { explain }
-  );
+  emit("execute", {
+    connection: { ...connection.value },
+    statement: props.sql,
+    engine: instance.value.engine,
+    explain,
+  });
 };
 
 const handleEditorReady = (
@@ -264,18 +255,22 @@ const handleEditorReady = (
   );
 
   watch(
-    () => sqlEditorStore.shouldFormatContent,
-    async (shouldFormat) => {
-      if (shouldFormat) {
-        await formatEditorContent(editor, dialect.value);
-        sqlEditorStore.setShouldFormatContent(false);
+    pendingFormatContentCommand,
+    (pending) => {
+      if (pending) {
+        formatEditorContent(editor, dialect.value);
+        nextTick(() => {
+          pendingFormatContentCommand.value = false;
+        });
       }
     },
-    {
-      immediate: true,
-    }
+    { immediate: true }
   );
 };
+
+useEmitteryEventListener(editorEvents, "format-content", () => {
+  pendingFormatContentCommand.value = true;
+});
 
 const EDITOR_OPTIONS = computed<Editor.IStandaloneEditorConstructionOptions>(
   () => ({

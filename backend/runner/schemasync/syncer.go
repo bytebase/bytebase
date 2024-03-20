@@ -429,7 +429,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		); err != nil {
 			if strings.Contains(err.Error(), "escape sequence") {
 				if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
-					slog.Error("unsupproted Unicode escape sequence", slog.String("metadata", string(metadataBytes)))
+					slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)))
 				}
 			}
 			return errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)

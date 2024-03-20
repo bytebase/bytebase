@@ -79,6 +79,9 @@ type indexPkTypeChecker struct {
 }
 
 func (checker *indexPkTypeChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -105,6 +108,9 @@ func (checker *indexPkTypeChecker) EnterCreateTable(ctx *mysql.CreateTableContex
 }
 
 func (checker *indexPkTypeChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}

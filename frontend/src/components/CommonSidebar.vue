@@ -86,6 +86,7 @@ export interface SidebarItem {
   icon?: VNode;
   hide?: boolean;
   type: "route" | "div" | "divider" | "link";
+  expand?: boolean;
   children?: SidebarItem[];
 }
 
@@ -149,7 +150,10 @@ watch(
   () => {
     state.expandedSidebar.clear();
     for (let i = 0; i < filteredSidebarList.value.length; i++) {
-      if (filteredSidebarList.value[i].children.length > 0) {
+      if (
+        filteredSidebarList.value[i].children.length > 0 &&
+        filteredSidebarList.value[i].expand
+      ) {
         state.expandedSidebar.add(`${i}`);
       }
     }

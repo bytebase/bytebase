@@ -24,6 +24,7 @@ const (
 	pgUnknownFieldName = "?column?"
 	generateSeries     = "generate_series"
 	generateSubscripts = "generate_subscripts"
+	unnest             = "unnest"
 )
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
@@ -174,7 +175,7 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 }
 
 func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.Node_RangeFunction) (base.TableSource, error) {
-	schemaName, funcName := extractFunctionNameInRangeFunction(node.RangeFunction)
+	schemaName, funcName, args := extractFunctionNameAndArgsInRangeFunction(node.RangeFunction)
 	if schemaName == "" || funcName == "" {
 		return nil, &parsererror.TypeNotSupportedError{
 			Type: "function",
@@ -182,7 +183,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 		}
 	}
 
-	tableSource, err := q.findFunctionDefine(schemaName, funcName)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, args)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
 	}
@@ -210,7 +211,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 	return base.NewPseudoTable(node.RangeFunction.Alias.Aliasname, columns), nil
 }
 
-func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (base.TableSource, error) {
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, args []*pgquery.Node) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
@@ -262,6 +263,15 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 				},
 			},
 		}, nil
+	case unnest:
+		table := &base.PseudoTable{Columns: []base.QuerySpanResult{}}
+		for range args {
+			table.Columns = append(table.Columns, base.QuerySpanResult{
+				Name:          unnest,
+				SourceColumns: make(base.SourceColumnSet),
+			})
+		}
+		return table, nil
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
@@ -1633,7 +1643,7 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupportedError {
 	switch node := node.Node.(type) {
 	case *pgquery.Node_RangeFunction:
-		schemaName, funcName := extractFunctionNameInRangeFunction(node.RangeFunction)
+		schemaName, funcName, _ := extractFunctionNameAndArgsInRangeFunction(node.RangeFunction)
 		if schemaName == "" && funcName == "" {
 			return &parsererror.TypeNotSupportedError{
 				Type: "function",
@@ -1651,7 +1661,7 @@ func newTypeNotSupportedErrorByNode(node *pgquery.Node) *parsererror.TypeNotSupp
 	}
 }
 
-func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) (string, string) {
+func extractFunctionNameAndArgsInRangeFunction(node *pgquery.RangeFunction) (string, string, []*pgquery.Node) {
 	// Capture the function name from the range function.
 	for _, f := range node.GetFunctions() {
 		if listNode, ok := f.Node.(*pgquery.Node_List); ok {
@@ -1664,21 +1674,23 @@ func extractFunctionNameInRangeFunction(node *pgquery.RangeFunction) (string, st
 						}
 					}
 
+					args := funcCall.FuncCall.GetArgs()
+
 					switch len(names) {
 					case 2:
-						return names[0], names[1]
+						return names[0], names[1], args
 					case 1:
-						return "public", names[0]
+						return "public", names[0], args
 					case 0:
-						return "", ""
+						return "", "", args
 					default:
 						slog.Debug("Unknow function name", "name", strings.Join(names, "."))
-						return names[0], names[1]
+						return names[0], names[1], args
 					}
 				}
 			}
 		}
 	}
 
-	return "", ""
+	return "", "", nil
 }

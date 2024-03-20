@@ -6,12 +6,12 @@ import {
   useAuthStore,
   useActuatorV1Store,
   useRouterStore,
-  useTabStore,
   useCurrentUserV1,
   usePageMode,
   useProjectV1Store,
   useDatabaseV1Store,
   useInstanceV1Store,
+  useSQLEditorTabStore,
 } from "@/store";
 import authRoutes, {
   AUTH_2FA_SETUP_MODULE,
@@ -31,13 +31,9 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_HOME_MODULE,
-  WORKSPACE_ROUTE_SLOW_QUERY,
-  WORKSPACE_ROUTE_EXPORT_CENTER,
-  WORKSPACE_ROUTE_ANOMALY_CENTER,
-  WORKSPACE_ROUTE_USER_PROFILE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
-import sqlEditorRoutes, { SQL_EDITOR_HOME_MODULE } from "./sqlEditor";
+import sqlEditorRoutes from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -110,7 +106,7 @@ router.beforeEach((to, from, next) => {
     to.name === AUTH_MFA_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE
   ) {
-    useTabStore().reset();
+    useSQLEditorTabStore().reset();
     useDatabaseV1Store().reset();
     useProjectV1Store().reset();
     useInstanceV1Store().reset();
@@ -176,19 +172,15 @@ router.beforeEach((to, from, next) => {
     to.name === "error.403" ||
     to.name === "error.404" ||
     to.name === "error.500" ||
-    to.name === WORKSPACE_HOME_MODULE ||
-    to.name === WORKSPACE_ROUTE_SLOW_QUERY ||
-    to.name === WORKSPACE_ROUTE_EXPORT_CENTER ||
-    to.name === WORKSPACE_ROUTE_ANOMALY_CENTER ||
-    to.name === WORKSPACE_ROUTE_USER_PROFILE ||
     to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(INSTANCE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(DATABASE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(ISSUE_ROUTE_DASHBOARD) ||
     to.name === INSTANCE_ROUTE_DETAIL ||
-    to.name === SQL_EDITOR_HOME_MODULE ||
-    to.name?.toString().startsWith(SETTING_ROUTE)
+    to.name?.toString().startsWith("sql-editor") ||
+    to.name?.toString().startsWith(SETTING_ROUTE) ||
+    to.name?.toString().startsWith("workspace")
   ) {
     next();
     return;

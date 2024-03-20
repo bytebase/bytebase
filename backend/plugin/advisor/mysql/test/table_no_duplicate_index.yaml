@@ -112,3 +112,19 @@
   want:
     - status: SUCCESS
       title: OK
+- statement: |-
+    CREATE TABLE orders_sh (
+        id INT PRIMARY KEY,
+        order_number INT,
+        customer VARCHAR(50)
+    );
+    CREATE INDEX idx_customer_sh ON orders_sh (customer);
+    CREATE TABLE orders_bj (
+        id INT PRIMARY KEY,
+        order_number INT,
+        customer VARCHAR(50)
+    );
+    CREATE INDEX idx_customer_bj ON orders_bj (customer);
+  want:
+    - status: SUCCESS
+      title: OK

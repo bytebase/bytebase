@@ -96,6 +96,9 @@ func (checker *namingIndexConventionChecker) EnterQuery(ctx *mysql.QueryContext)
 }
 
 func (checker *namingIndexConventionChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.TableName() == nil {
 		return
 	}
@@ -121,6 +124,9 @@ func (checker *namingIndexConventionChecker) EnterCreateTable(ctx *mysql.CreateT
 }
 
 func (checker *namingIndexConventionChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	if ctx.AlterTableActions() == nil {
 		return
 	}
@@ -180,6 +186,9 @@ func (checker *namingIndexConventionChecker) EnterAlterTable(ctx *mysql.AlterTab
 }
 
 func (checker *namingIndexConventionChecker) EnterCreateIndex(ctx *mysql.CreateIndexContext) {
+	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
+		return
+	}
 	// Unique index naming convention should in advisor_naming_unique_key_convention.go
 	if ctx.UNIQUE_SYMBOL() != nil || ctx.FULLTEXT_SYMBOL() != nil || ctx.SPATIAL_SYMBOL() != nil {
 		return

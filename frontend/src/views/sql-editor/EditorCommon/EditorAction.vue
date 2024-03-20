@@ -85,11 +85,7 @@
           <template #trigger>
             <NButton
               size="small"
-              :disabled="
-                isEmptyStatement ||
-                tabStore.isDisconnected ||
-                !tabStore.currentTab.isSaved
-              "
+              :disabled="!allowShare"
               @click="handleShareButtonClick"
             >
               <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
@@ -117,20 +113,18 @@
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
-import { computed, reactive, ref, unref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref } from "vue";
 import {
-  useTabStore,
-  useSQLEditorStore,
   useUIStateStore,
   featureToRef,
-  useInstanceV1ByUID,
-  useWebTerminalV1Store,
   usePageMode,
   useActuatorV1Store,
+  useSQLEditorTabStore,
+  useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import type { ExecuteConfig, ExecuteOption, FeatureType } from "@/types";
-import { TabMode, UNKNOWN_ID } from "@/types";
-import { formatEngineV1, keyboardShortcutStr } from "@/utils";
+import type { FeatureType, SQLEditorQueryParams } from "@/types";
+import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
@@ -141,21 +135,14 @@ interface LocalState {
 }
 
 const emit = defineEmits<{
-  (
-    e: "execute",
-    sql: string,
-    config: ExecuteConfig,
-    option?: ExecuteOption
-  ): void;
+  (e: "execute", params: SQLEditorQueryParams): void;
   (e: "clear-screen"): void;
 }>();
 
 const actuatorStore = useActuatorV1Store();
 const state = reactive<LocalState>({});
-const tabStore = useTabStore();
-const sqlEditorStore = useSQLEditorStore();
+const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
-const webTerminalStore = useWebTerminalV1Store();
 const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
@@ -163,31 +150,33 @@ const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const pageMode = usePageMode();
 
 const isStandaloneMode = computed(() => pageMode.value === "STANDALONE");
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
-const connection = computed(() => tabStore.currentTab.connection);
-
-const isDisconnected = computed(() => {
-  return tabStore.isDisconnected;
+const isEmptyStatement = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return true;
+  }
+  return tab.statement === "";
 });
-const isEmptyStatement = computed(
-  () => !tabStore.currentTab || tabStore.currentTab.statement === ""
+const isExecutingSQL = computed(
+  () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
-const isExecutingSQL = computed(() => tabStore.currentTab.isExecutingSQL);
-const { instance: selectedInstance } = useInstanceV1ByUID(
-  computed(() => connection.value.instanceId)
-);
-const selectedInstanceEngine = computed(() => {
-  return formatEngineV1(selectedInstance.value);
-});
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const showSheetsFeature = computed(() => {
-  return tabStore.currentTab.mode === TabMode.ReadOnly;
+  const mode = currentTab.value?.mode;
+  return mode === "READONLY" || mode === "STANDARD";
 });
 
 const showRunSelected = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return false;
+  }
   return (
-    tabStore.currentTab.mode === TabMode.ReadOnly &&
-    !!tabStore.currentTab.selectedStatement
+    (tab.mode === "READONLY" || tab.mode === "STANDARD") &&
+    tab.selectedStatement !== ""
   );
 });
 
@@ -206,43 +195,64 @@ const allowSave = computed(() => {
   if (isEmptyStatement.value) {
     return false;
   }
-  if (tabStore.currentTab.isSaved) {
+  const tab = currentTab.value;
+  if (!tab) {
     return false;
   }
-  // Temporarily disable saving and sharing if we are connected to an instance
-  // but not a database.
-  if (tabStore.currentTab.connection.databaseId === String(UNKNOWN_ID)) {
+  if (tab.status === "NEW" || tab.status === "CLEAN") {
     return false;
   }
+
+  return true;
+});
+
+const allowShare = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) return false;
+  if (tab.status === "NEW" || tab.status === "DIRTY") return false;
+  if (isEmptyStatement.value) return false;
+  if (isDisconnected.value) return false;
   return true;
 });
 
 const showClearScreen = computed(() => {
-  return tabStore.currentTab.mode === TabMode.Admin;
+  return currentTab.value?.mode === "ADMIN";
 });
 
 const queryList = computed(() => {
-  return (
-    unref(
-      webTerminalStore.getQueryStateByTab(tabStore.currentTab).queryItemList
-    ) || []
-  );
+  const tab = currentTab.value;
+  if (!tab) {
+    return [];
+  }
+  // TODO: refactor WebTerminal store types
+  // return unref(webTerminalStore.getQueryStateByTab(tab).queryItemList) || [];
+  return [];
 });
 
 const showQueryContextSettingPopover = computed(() => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return false;
+  }
   return (
-    Boolean(selectedInstance.value) &&
-    tabStore.currentTab.mode !== TabMode.Admin &&
+    Boolean(instance.value) &&
+    tab.mode !== "ADMIN" &&
     actuatorStore.customTheme === "lixiang"
   );
 });
 
-const handleRunQuery = async () => {
-  const currentTab = tabStore.currentTab;
-  const statement = currentTab.statement;
-  const selectedStatement = currentTab.selectedStatement;
-  const query = selectedStatement || statement;
-  await emit("execute", query, { databaseType: selectedInstanceEngine.value });
+const handleRunQuery = () => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
+  const statement = tab.selectedStatement || tab.statement;
+  emit("execute", {
+    statement,
+    connection: { ...tab.connection },
+    engine: instance.value.engine,
+    explain: false,
+  });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
     newState: true,
@@ -250,20 +260,21 @@ const handleRunQuery = async () => {
 };
 
 const handleExplainQuery = () => {
-  const currentTab = tabStore.currentTab;
-  const statement = currentTab.statement;
-  const selectedStatement = currentTab.selectedStatement;
-  const query = selectedStatement || statement;
-  emit(
-    "execute",
-    query,
-    { databaseType: selectedInstanceEngine.value },
-    { explain: true }
-  );
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
+  const statement = tab.selectedStatement || tab.statement;
+  emit("execute", {
+    statement,
+    connection: { ...tab.connection },
+    engine: instance.value.engine,
+    explain: true,
+  });
 };
 
 const handleFormatSQL = () => {
-  sqlEditorStore.setShouldFormatContent(true);
+  events.emit("format-content");
 };
 
 const handleClearScreen = () => {
@@ -271,8 +282,12 @@ const handleClearScreen = () => {
 };
 
 const handleClickSave = () => {
+  const tab = currentTab.value;
+  if (!tab) {
+    return;
+  }
   events.emit("save-sheet", {
-    tab: tabStore.currentTab,
+    tab,
   });
 };
 

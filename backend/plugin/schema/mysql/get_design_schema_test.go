@@ -27,7 +27,10 @@ func TestGetDesignSchema(t *testing.T) {
 	var (
 		filepaths = []string{
 			"testdata/get-design-schema/get_design_schema.yaml",
-			"testdata/get-design-schema/partition.yaml",
+			"testdata/get-design-schema/partition/range.yaml",
+			"testdata/get-design-schema/partition/list.yaml",
+			"testdata/get-design-schema/partition/hash.yaml",
+			"testdata/get-design-schema/partition/key.yaml",
 		}
 	)
 
@@ -45,17 +48,17 @@ func TestGetDesignSchema(t *testing.T) {
 		for i, t := range tests {
 			targetMeta := &storepb.DatabaseSchemaMetadata{}
 			a.NoError(protojson.Unmarshal([]byte(t.Target), targetMeta))
-			result, err := GetDesignSchema(t.Baseline, targetMeta)
+			result, err := GetDesignSchema("", t.Baseline, targetMeta)
 			a.NoError(err)
 
 			// Addintional parse stage to verify the result is parsable.
-			_, err = parser.ParseMySQL(t.Result)
-			a.NoError(err)
+			_, err = parser.ParseMySQL(result)
+			a.NoErrorf(err, "[%s] test case %d: %s\n content:\n%s", filepath, i, t.Description, result)
 
 			if record {
 				tests[i].Result = result
 			} else {
-				a.Equalf(t.Result, result, "test case %d: %s", i, t.Description)
+				a.Equalf(t.Result, result, "[%s] test case %d: %s", filepath, i, t.Description)
 			}
 		}
 
