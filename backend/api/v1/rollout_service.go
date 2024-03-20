@@ -975,8 +975,7 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 				switch task.Type {
 				case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
 					var taskPayload struct {
-						SpecID  string `json:"specId"`
-						SheetID int    `json:"sheetId"`
+						SheetID int `json:"sheetId"`
 					}
 					if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
 						return status.Errorf(codes.Internal, "failed to unmarshal task payload: %v", err)
@@ -1012,6 +1011,28 @@ func (s *RolloutService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePla
 						TaskName:   task.Name,
 						IssueName:  issue.Title,
 					})
+				}
+				return nil
+			}(); err != nil {
+				return nil, err
+			}
+
+			// version
+			if err := func() error {
+				switch task.Type {
+				case api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseDataUpdate:
+				default:
+					return nil
+				}
+				var taskPayload struct {
+					SchemaVersion string `json:"schemaVersion"`
+				}
+				if err := json.Unmarshal([]byte(task.Payload), &taskPayload); err != nil {
+					return errors.Wrapf(err, "failed to unmarshal task payload")
+				}
+				if v := spec.GetChangeDatabaseConfig().GetSchemaVersion(); v != "" && v != taskPayload.SchemaVersion {
+					taskPatch.SchemaVersion = &v
+					doUpdate = true
 				}
 				return nil
 			}(); err != nil {
