@@ -136,10 +136,6 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 	subscription := s.LoadSubscription(ctx)
 
 	limit := v[subscription.Plan]
-	if subscription.Trialing {
-		limit = v[api.FREE]
-	}
-
 	if limit == -1 {
 		return math.MaxInt64
 	}
