@@ -374,7 +374,8 @@ const isIssueExpanded = (issue: ComposedIssue): boolean => {
 </script>
 
 <style lang="postcss" scoped>
-.issue-table-list :deep(.n-data-table-td) {
+.issue-table-list :deep(.n-data-table-td),
+.issue-table-list :deep(.n-data-table-th) {
   @apply !py-1.5;
 }
 </style>
