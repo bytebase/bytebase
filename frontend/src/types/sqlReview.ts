@@ -1,5 +1,5 @@
 import { pullAt, cloneDeep, groupBy } from "lodash-es";
-import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 import { Engine, engineFromJSON } from "@/types/proto/v1/common";
 import { Environment } from "@/types/proto/v1/environment_service";
 import {
@@ -818,7 +818,6 @@ export const getRuleLocalizationKey = (type: string): string => {
 export const getRuleLocalization = (
   type: string
 ): { title: string; description: string } => {
-  const { t } = useI18n();
   const key = getRuleLocalizationKey(type);
 
   const title = t(`sql-review.rule.${key}.title`);
