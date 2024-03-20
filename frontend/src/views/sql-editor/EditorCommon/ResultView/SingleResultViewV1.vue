@@ -300,7 +300,6 @@ const columns = computed(() => {
   return props.result.columnNames.map<ColumnDef<QueryRow, RowValue>>(
     (columnName, index) => {
       const columnType = props.result.columnTypeNames[index] as string;
-      console.debug("column", columnName, columnType);
       return {
         id: `${columnName}@${index}`,
         accessorFn: (item) => item.values[index],
@@ -316,13 +315,6 @@ const columns = computed(() => {
     }
   );
 });
-
-// const convertedData = computed(() => {
-//   const rows = props.result.rows;
-//   return rows.map((row) => {
-//     return row.values.map((value) => extractSQLRowValue(value));
-//   });
-// });
 
 const data = computed(() => {
   const data = props.result.rows;
@@ -348,8 +340,6 @@ const isColumnMissingSensitive = (columnIndex: number): boolean => {
     !isSensitiveColumn(columnIndex)
   );
 };
-
-// const sortingState = ref<SortingState>([]);
 
 const table = useVueTable<QueryRow>({
   get data() {
